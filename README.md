@@ -2,6 +2,16 @@
 
 [![Become a Sponsor](https://img.shields.io/static/v1?label=Become%20a%20Sponsor&message=%E2%9D%A4&logo=GitHub&style=flat&color=1ABC9C)](https://github.com/sponsors/datalayer)
 
+## Project Status
+[![Build Status](https://github.com/datalayer/jupyter-vscode/actions/workflows/extension.yml/badge.svg)](https://github.com/datalayer/jupyter-vscode/actions/workflows/extension.yml)
+[![VS Code Marketplace](https://img.shields.io/visual-studio-marketplace/v/datalayer.datalayer-jupyter-vscode?label=VS%20Code%20Marketplace&logo=visual-studio-code)](https://marketplace.visualstudio.com/items?itemName=datalayer.datalayer-jupyter-vscode)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
+## Built With
+[![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=flat&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![React](https://img.shields.io/badge/React-61DAFB?style=flat&logo=react&logoColor=black)](https://reactjs.org/)
+[![Jupyter](https://img.shields.io/badge/Jupyter-F37626?style=flat&logo=jupyter&logoColor=white)](https://jupyter.org/)
+
 # Jupyter Notebook for Visual Studio Code
 
 This [Visual Studio Code](https://code.visualstudio.com) extension allows you to edit [Jupyter](https://jupyter.org) Notebooks files (`ipynb` extensions) with seamless integration to the [Datalayer](https://datalayer.io) platform. The extension is publicly available in the [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=datalayer.datalayer-jupyter-vscode).
@@ -210,9 +220,25 @@ All workflows trigger only on changes to the VS Code extension package for effic
 
 - Websocket binary support: The extension currently forbids the usage of the newer protocol v1.kernel.websocket.jupyter.org due to serialization issues between the webview and extension.
 
-## Documentation
+## 📚 Documentation
 
-The codebase is fully documented using TypeDoc. To generate documentation:
+The codebase is fully documented using TypeDoc with comprehensive coverage of all modules, classes, and functions.
+
+### 🌐 Online Documentation
+
+**Live Documentation**: [https://datalayer-vscode-docs.netlify.app](https://datalayer-vscode-docs.netlify.app)
+
+The documentation is automatically built and deployed on every push to the main branch using Netlify. It includes:
+
+- **API Reference**: Complete TypeScript API documentation
+- **Module Documentation**: Detailed module and namespace documentation
+- **Interface Documentation**: All TypeScript interfaces and types
+- **Code Examples**: Usage examples and code snippets
+- **Coverage Reports**: Documentation coverage metrics
+
+### 🛠️ Local Documentation
+
+Generate documentation locally during development:
 
 ```bash
 # Generate HTML documentation
@@ -221,11 +247,26 @@ npm run doc
 # Generate markdown documentation
 npm run doc:markdown
 
-# Watch mode for development
+# Watch mode for development (rebuilds on file changes)
 npm run doc:watch
+
+# Check documentation coverage
+npm run doc:coverage
 ```
 
-Documentation is generated in the `docs/` folder (HTML) or `docs-markdown/` folder (Markdown).
+**Output Directories:**
+- `docs/` - HTML documentation (TypeDoc default theme)
+- `docs-markdown/` - Markdown documentation for integration with other systems
+
+### 🚀 Automated Builds
+
+The documentation system includes:
+
+- **Automatic Deployment**: Every push to `main` triggers a new documentation build
+- **Multi-format Output**: Generates both HTML and Markdown formats
+- **Coverage Tracking**: Monitors documentation completeness
+- **Performance Optimization**: CSS/JS minification and bundling via Netlify
+- **SEO Optimization**: Proper meta tags, sitemap generation, and clean URLs
 
 ## Development
 

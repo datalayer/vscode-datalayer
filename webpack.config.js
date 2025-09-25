@@ -6,33 +6,33 @@
 
 //@ts-check
 
-'use strict';
+"use strict";
 
-const path = require('path');
-const webpack = require('webpack');
-const miniSVGDataURI = require('mini-svg-data-uri');
+const path = require("path");
+const webpack = require("webpack");
+const miniSVGDataURI = require("mini-svg-data-uri");
 
 //@ts-check
 /** @typedef {import('webpack').Configuration} WebpackConfig **/
 
 /** @type WebpackConfig */
 const extensionConfig = {
-  target: 'node', // VS Code extensions run in a Node.js-context 📖 -> https://webpack.js.org/configuration/node/
-  mode: 'none', // this leaves the source code as close as possible to the original (when packaging we set this to 'production')
-  entry: './src/extension.ts', // the entry point of this extension, 📖 -> https://webpack.js.org/configuration/entry-context/
+  target: "node", // VS Code extensions run in a Node.js-context 📖 -> https://webpack.js.org/configuration/node/
+  mode: "none", // this leaves the source code as close as possible to the original (when packaging we set this to 'production')
+  entry: "./src/extension.ts", // the entry point of this extension, 📖 -> https://webpack.js.org/configuration/entry-context/
   output: {
     // the bundle is stored in the 'dist' folder (check package.json), 📖 -> https://webpack.js.org/configuration/output/
-    path: path.resolve(__dirname, 'dist'),
-    filename: 'extension.js',
-    libraryTarget: 'commonjs2',
+    path: path.resolve(__dirname, "dist"),
+    filename: "extension.js",
+    libraryTarget: "commonjs2",
   },
   externals: {
-    vscode: 'commonjs vscode', // the vscode-module is created on-the-fly and must be excluded. Add other modules that cannot be webpack'ed, 📖 -> https://webpack.js.org/configuration/externals/
+    vscode: "commonjs vscode", // the vscode-module is created on-the-fly and must be excluded. Add other modules that cannot be webpack'ed, 📖 -> https://webpack.js.org/configuration/externals/
     // modules added here also need to be added in the .vscodeignore file
   },
   resolve: {
     // support reading TypeScript and JavaScript files, 📖 -> https://github.com/TypeStrong/ts-loader
-    extensions: ['.ts', '.js'],
+    extensions: [".ts", ".js"],
   },
   module: {
     rules: [
@@ -41,69 +41,69 @@ const extensionConfig = {
         exclude: /node_modules/,
         use: [
           {
-            loader: 'ts-loader',
+            loader: "ts-loader",
           },
         ],
       },
     ],
   },
-  devtool: 'nosources-source-map',
+  devtool: "nosources-source-map",
   infrastructureLogging: {
-    level: 'log', // enables logging required for problem matchers
+    level: "log", // enables logging required for problem matchers
   },
 };
 
 const webviewConfig = {
-  target: 'web',
-  mode: 'none',
+  target: "web",
+  mode: "none",
   // Use inline source map to ease debug of webview
   // Xref. https://github.com/microsoft/vscode/issues/145292#issuecomment-1072879043
-  devtool: 'inline-source-map',
-  entry: './webview/main.ts',
+  devtool: "inline-source-map",
+  entry: "./webview/main.ts",
   output: {
-    path: path.resolve(__dirname, 'dist'),
-    filename: 'webview.js',
+    path: path.resolve(__dirname, "dist"),
+    filename: "webview.js",
   },
   resolve: {
-    extensions: ['.ts', '.tsx', '.js', '.jsx', '.json', '.svg'],
+    extensions: [".ts", ".tsx", ".js", ".jsx", ".json", ".svg"],
     fallback: {
-      process: require.resolve('process/browser'),
+      process: require.resolve("process/browser"),
       stream: false,
     },
     // Deduplicate CodeMirror modules to prevent multiple instances
     alias: {
-      '@codemirror/state': path.resolve(
+      "@codemirror/state": path.resolve(
         __dirname,
-        './node_modules/@codemirror/state',
+        "./node_modules/@codemirror/state"
       ),
-      '@codemirror/view': path.resolve(
+      "@codemirror/view": path.resolve(
         __dirname,
-        './node_modules/@codemirror/view',
+        "./node_modules/@codemirror/view"
       ),
-      '@codemirror/language': path.resolve(
+      "@codemirror/language": path.resolve(
         __dirname,
-        './node_modules/@codemirror/language',
+        "./node_modules/@codemirror/language"
       ),
-      '@codemirror/commands': path.resolve(
+      "@codemirror/commands": path.resolve(
         __dirname,
-        './node_modules/@codemirror/commands',
+        "./node_modules/@codemirror/commands"
       ),
-      '@codemirror/search': path.resolve(
+      "@codemirror/search": path.resolve(
         __dirname,
-        './node_modules/@codemirror/search',
+        "./node_modules/@codemirror/search"
       ),
-      '@codemirror/autocomplete': path.resolve(
+      "@codemirror/autocomplete": path.resolve(
         __dirname,
-        './node_modules/@codemirror/autocomplete',
+        "./node_modules/@codemirror/autocomplete"
       ),
-      '@codemirror/lint': path.resolve(
+      "@codemirror/lint": path.resolve(
         __dirname,
-        './node_modules/@codemirror/lint',
+        "./node_modules/@codemirror/lint"
       ),
       // Also deduplicate yjs to prevent synchronization issues
-      yjs: path.resolve(__dirname, './node_modules/yjs'),
-      'y-protocols': path.resolve(__dirname, './node_modules/y-protocols'),
-      'y-websocket': path.resolve(__dirname, './node_modules/y-websocket'),
+      yjs: path.resolve(__dirname, "./node_modules/yjs"),
+      "y-protocols": path.resolve(__dirname, "./node_modules/y-protocols"),
+      "y-websocket": path.resolve(__dirname, "./node_modules/y-websocket"),
     },
   },
   module: {
@@ -112,31 +112,31 @@ const webviewConfig = {
         test: /\.tsx?$/,
         exclude: /node_modules/,
         use: {
-          loader: 'ts-loader',
+          loader: "ts-loader",
           options: {
-            configFile: path.join(__dirname, 'tsconfig.webview.json'),
+            configFile: path.join(__dirname, "tsconfig.webview.json"),
             experimentalWatchApi: true,
             // transpileOnly enables hot-module-replacement
             transpileOnly: true,
           },
         },
       },
-      { test: /\.raw\.css$/, type: 'asset/source' },
+      { test: /\.raw\.css$/, type: "asset/source" },
       {
         test: /(?<!\.raw)\.css$/,
-        use: [require.resolve('style-loader'), require.resolve('css-loader')],
+        use: [require.resolve("style-loader"), require.resolve("css-loader")],
       },
       {
         test: /\.(jpe?g|png|gif|ico|eot|ttf|map|woff2?)(\?v=\d+\.\d+\.\d+)?$/i,
-        type: 'asset/resource',
+        type: "asset/resource",
       },
       {
         // In .css files, svg is loaded as a data URI.
         test: /\.svg(\?v=\d+\.\d+\.\d+)?$/,
         issuer: /\.css$/,
-        type: 'asset',
+        type: "asset",
         generator: {
-          dataUrl: content => miniSVGDataURI(content.toString()),
+          dataUrl: (content) => miniSVGDataURI(content.toString()),
         },
       },
       {
@@ -144,7 +144,7 @@ const webviewConfig = {
         // must be loaded as a raw string instead of data URIs.
         test: /\.svg(\?v=\d+\.\d+\.\d+)?$/,
         issuer: /\.js$/,
-        type: 'asset/source',
+        type: "asset/source",
       },
       {
         test: /\.(c|m)?js/,
@@ -155,32 +155,32 @@ const webviewConfig = {
       // Ship the JupyterLite service worker.
       {
         resourceQuery: /text/,
-        type: 'asset/resource',
+        type: "asset/resource",
         generator: {
-          filename: '[name][ext]',
+          filename: "[name][ext]",
         },
       },
       // Rule for pyodide kernel wheel files
       {
         test: /\.whl$/,
-        type: 'asset/resource',
+        type: "asset/resource",
         generator: {
-          filename: 'pypi/[name][ext]',
+          filename: "pypi/[name][ext]",
         },
       },
       // Rule for other pyodide kernel resources
       {
         test: /pypi\/.*/,
-        type: 'asset/resource',
+        type: "asset/resource",
         generator: {
-          filename: 'pypi/[name][ext][query]',
+          filename: "pypi/[name][ext][query]",
         },
       },
       {
         test: /pyodide-kernel-extension\/schema\/.*/,
-        type: 'asset/resource',
+        type: "asset/resource",
         generator: {
-          filename: 'schema/[name][ext][query]',
+          filename: "schema/[name][ext][query]",
         },
       },
     ],
@@ -190,7 +190,7 @@ const webviewConfig = {
       maxChunks: 1,
     }),
     new webpack.ProvidePlugin({
-      process: 'process/browser',
+      process: "process/browser",
     }),
   ],
 };
@@ -198,13 +198,13 @@ const webviewConfig = {
 // Config for Lexical editor webview
 const lexicalWebviewConfig = {
   ...webviewConfig,
-  entry: './webview/lexicalWebview.tsx',
+  entry: "./webview/lexicalWebview.tsx",
   output: {
-    path: path.resolve(__dirname, 'dist'),
-    filename: 'lexicalWebview.js',
+    path: path.resolve(__dirname, "dist"),
+    filename: "lexicalWebview.js",
     // This will be overridden at runtime by __webpack_public_path__
-    publicPath: 'auto',
-    webassemblyModuleFilename: '[hash].module.wasm',
+    publicPath: "auto",
+    webassemblyModuleFilename: "[hash].module.wasm",
   },
   experiments: {
     asyncWebAssembly: true,
@@ -215,35 +215,35 @@ const lexicalWebviewConfig = {
         test: /\.tsx?$/,
         exclude: /node_modules/,
         use: {
-          loader: 'ts-loader',
+          loader: "ts-loader",
           options: {
-            configFile: path.join(__dirname, 'tsconfig.webview.json'),
+            configFile: path.join(__dirname, "tsconfig.webview.json"),
             experimentalWatchApi: true,
             transpileOnly: true,
           },
         },
       },
-      { test: /\.raw\.css$/, type: 'asset/source' },
+      { test: /\.raw\.css$/, type: "asset/source" },
       {
         test: /(?<!\.raw)\.css$/,
-        use: [require.resolve('style-loader'), require.resolve('css-loader')],
+        use: [require.resolve("style-loader"), require.resolve("css-loader")],
       },
       {
         test: /\.(jpe?g|png|gif|ico|eot|ttf|map|woff2?)(\?v=\d+\.\d+\.\d+)?$/i,
-        type: 'asset/resource',
+        type: "asset/resource",
       },
       {
         test: /\.svg(\?v=\d+\.\d+\.\d+)?$/,
         issuer: /\.css$/,
-        type: 'asset',
+        type: "asset",
         generator: {
-          dataUrl: content => miniSVGDataURI(content.toString()),
+          dataUrl: (content) => miniSVGDataURI(content.toString()),
         },
       },
       {
         test: /\.svg(\?v=\d+\.\d+\.\d+)?$/,
         issuer: /\.js$/,
-        type: 'asset/source',
+        type: "asset/source",
       },
       {
         test: /\.(c|m)?js/,
@@ -253,50 +253,50 @@ const lexicalWebviewConfig = {
       },
       {
         test: /\.wasm$/,
-        type: 'webassembly/async',
+        type: "webassembly/async",
       },
     ],
   },
   resolve: {
-    extensions: ['.ts', '.tsx', '.js', '.jsx', '.json', '.svg', '.wasm'],
+    extensions: [".ts", ".tsx", ".js", ".jsx", ".json", ".svg", ".wasm"],
     fallback: {
-      process: require.resolve('process/browser'),
+      process: require.resolve("process/browser"),
       stream: false,
     },
     // Deduplicate CodeMirror modules to prevent multiple instances
     alias: {
-      '@codemirror/state': path.resolve(
+      "@codemirror/state": path.resolve(
         __dirname,
-        './node_modules/@codemirror/state',
+        "./node_modules/@codemirror/state"
       ),
-      '@codemirror/view': path.resolve(
+      "@codemirror/view": path.resolve(
         __dirname,
-        './node_modules/@codemirror/view',
+        "./node_modules/@codemirror/view"
       ),
-      '@codemirror/language': path.resolve(
+      "@codemirror/language": path.resolve(
         __dirname,
-        './node_modules/@codemirror/language',
+        "./node_modules/@codemirror/language"
       ),
-      '@codemirror/commands': path.resolve(
+      "@codemirror/commands": path.resolve(
         __dirname,
-        './node_modules/@codemirror/commands',
+        "./node_modules/@codemirror/commands"
       ),
-      '@codemirror/search': path.resolve(
+      "@codemirror/search": path.resolve(
         __dirname,
-        './node_modules/@codemirror/search',
+        "./node_modules/@codemirror/search"
       ),
-      '@codemirror/autocomplete': path.resolve(
+      "@codemirror/autocomplete": path.resolve(
         __dirname,
-        './node_modules/@codemirror/autocomplete',
+        "./node_modules/@codemirror/autocomplete"
       ),
-      '@codemirror/lint': path.resolve(
+      "@codemirror/lint": path.resolve(
         __dirname,
-        './node_modules/@codemirror/lint',
+        "./node_modules/@codemirror/lint"
       ),
       // Also deduplicate yjs to prevent synchronization issues
-      yjs: path.resolve(__dirname, './node_modules/yjs'),
-      'y-protocols': path.resolve(__dirname, './node_modules/y-protocols'),
-      'y-websocket': path.resolve(__dirname, './node_modules/y-websocket'),
+      yjs: path.resolve(__dirname, "./node_modules/yjs"),
+      "y-protocols": path.resolve(__dirname, "./node_modules/y-protocols"),
+      "y-websocket": path.resolve(__dirname, "./node_modules/y-websocket"),
     },
   },
   plugins: [...webviewConfig.plugins],

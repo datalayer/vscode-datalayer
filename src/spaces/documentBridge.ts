@@ -11,17 +11,17 @@
  * Manages the lifecycle of documents opened from the Datalayer platform.
  */
 
-import * as vscode from 'vscode';
-import * as fs from 'fs';
-import * as path from 'path';
-import * as os from 'os';
-import { Document } from './spaceItem';
-import { SpacerApiService } from './spacerApiService';
+import * as vscode from "vscode";
+import * as fs from "fs";
+import * as path from "path";
+import * as os from "os";
+import { Document } from "./spaceItem";
+import { SpacerApiService } from "./spacerApiService";
 import {
   RuntimesApiService,
   RuntimeResponse,
-} from '../runtimes/runtimesApiService';
-import { DatalayerFileSystemProvider } from './datalayerFileSystemProvider';
+} from "../runtimes/runtimesApiService";
+import { DatalayerFileSystemProvider } from "./datalayerFileSystemProvider";
 
 /**
  * Metadata for a downloaded document.
@@ -58,7 +58,7 @@ export class DocumentBridge {
     this.apiService = SpacerApiService.getInstance();
     this.runtimesApiService = RuntimesApiService.getInstance(context);
     // Create a temp directory for Datalayer documents
-    this.tempDir = path.join(os.tmpdir(), 'datalayer-vscode');
+    this.tempDir = path.join(os.tmpdir(), "datalayer-vscode");
     if (!fs.existsSync(this.tempDir)) {
       fs.mkdirSync(this.tempDir, { recursive: true });
     }
@@ -82,26 +82,26 @@ export class DocumentBridge {
   async openDocument(
     document: Document,
     spaceId?: string,
-    spaceName?: string,
+    spaceName?: string
   ): Promise<vscode.Uri> {
     const docName =
       document.name_t ||
       document.notebook_name_s ||
       document.document_name_s ||
-      'Untitled';
+      "Untitled";
     const isNotebook =
-      document.type_s === 'notebook' ||
-      document.notebook_extension_s === 'ipynb';
+      document.type_s === "notebook" ||
+      document.notebook_extension_s === "ipynb";
 
     try {
       // Create a clean filename without UID visible
-      const extension = isNotebook ? '.ipynb' : '.lexical';
-      const cleanName = docName.replace(/\.[^/.]+$/, '');
+      const extension = isNotebook ? ".ipynb" : ".lexical";
+      const cleanName = docName.replace(/\.[^/.]+$/, "");
 
       // Create a subdirectory using the space name for better organization
       // Sanitize the space name to be filesystem-friendly
-      const safeSpaceName = (spaceName || 'Untitled Space')
-        .replace(/[<>:"/\\|?*]/g, '_') // Replace invalid filesystem characters
+      const safeSpaceName = (spaceName || "Untitled Space")
+        .replace(/[<>:"/\\|?*]/g, "_") // Replace invalid filesystem characters
         .trim();
 
       const spaceDir = path.join(this.tempDir, safeSpaceName);
@@ -127,37 +127,37 @@ export class DocumentBridge {
         const metadata = this.documentMetadata.get(document.uid)!;
         if (fs.existsSync(metadata.localPath)) {
           console.log(
-            '[DocumentBridge] Document already cached:',
-            metadata.localPath,
+            "[DocumentBridge] Document already cached:",
+            metadata.localPath
           );
 
           // Return the virtual URI, not the real file path
           const fileSystemProvider = DatalayerFileSystemProvider.getInstance();
           const existingVirtualUri = fileSystemProvider.getVirtualUri(
-            metadata.localPath,
+            metadata.localPath
           );
 
           if (existingVirtualUri) {
             console.log(
-              '[DocumentBridge] Returning existing virtual URI:',
-              existingVirtualUri.toString(),
+              "[DocumentBridge] Returning existing virtual URI:",
+              existingVirtualUri.toString()
             );
             return existingVirtualUri;
           } else {
             // If for some reason the virtual mapping is lost, recreate it
-            const cleanName = docName.replace(/\.[^/.]+$/, '');
+            const cleanName = docName.replace(/\.[^/.]+$/, "");
             const virtualPath = metadata.spaceName
               ? `${metadata.spaceName}/${cleanName}${extension}`
               : `${cleanName}${extension}`;
 
             const virtualUri = fileSystemProvider.registerMapping(
               virtualPath,
-              metadata.localPath,
+              metadata.localPath
             );
 
             console.log(
-              '[DocumentBridge] Recreated virtual URI for cached file:',
-              virtualUri.toString(),
+              "[DocumentBridge] Recreated virtual URI for cached file:",
+              virtualUri.toString()
             );
             return virtualUri;
           }
@@ -169,18 +169,18 @@ export class DocumentBridge {
         ? await this.apiService.getNotebookContent(document)
         : await this.apiService.getDocumentContent(document);
 
-      console.log('[DocumentBridge] Raw content fetched:', content);
-      console.log('[DocumentBridge] Content type:', typeof content);
-      if (typeof content === 'object') {
-        console.log('[DocumentBridge] Content keys:', Object.keys(content));
+      console.log("[DocumentBridge] Raw content fetched:", content);
+      console.log("[DocumentBridge] Content type:", typeof content);
+      if (typeof content === "object") {
+        console.log("[DocumentBridge] Content keys:", Object.keys(content));
         console.log(
-          '[DocumentBridge] Content stringified preview:',
-          JSON.stringify(content).substring(0, 500),
+          "[DocumentBridge] Content stringified preview:",
+          JSON.stringify(content).substring(0, 500)
         );
       }
 
       // Write to local file
-      if (typeof content === 'string') {
+      if (typeof content === "string") {
         fs.writeFileSync(localPath, content);
       } else {
         fs.writeFileSync(localPath, JSON.stringify(content, null, 2));
@@ -192,7 +192,7 @@ export class DocumentBridge {
       }
 
       // Small delay to ensure file system operations are complete
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 100));
 
       // Double-check the file exists after the delay
       if (!fs.existsSync(localPath)) {
@@ -209,9 +209,9 @@ export class DocumentBridge {
       };
       this.documentMetadata.set(document.uid, metadata);
 
-      console.log('[DocumentBridge] Document downloaded to:', localPath);
-      console.log('[DocumentBridge] File exists:', fs.existsSync(localPath));
-      console.log('[DocumentBridge] File size:', fs.statSync(localPath).size);
+      console.log("[DocumentBridge] Document downloaded to:", localPath);
+      console.log("[DocumentBridge] File exists:", fs.existsSync(localPath));
+      console.log("[DocumentBridge] File size:", fs.statSync(localPath).size);
 
       // Create a virtual URI that shows clean path structure
       const virtualPath = spaceName
@@ -222,17 +222,17 @@ export class DocumentBridge {
       const fileSystemProvider = DatalayerFileSystemProvider.getInstance();
       const virtualUri = fileSystemProvider.registerMapping(
         virtualPath,
-        localPath,
+        localPath
       );
 
       console.log(
-        '[DocumentBridge] Virtual URI created:',
-        virtualUri.toString(),
+        "[DocumentBridge] Virtual URI created:",
+        virtualUri.toString()
       );
 
       return virtualUri;
     } catch (error) {
-      console.error('[DocumentBridge] Error opening document:', error);
+      console.error("[DocumentBridge] Error opening document:", error);
       throw error;
     }
   }
@@ -244,7 +244,7 @@ export class DocumentBridge {
     let realPath = inputPath;
 
     // If this looks like a virtual URI path, resolve it to real path
-    if (inputPath.startsWith('datalayer:/')) {
+    if (inputPath.startsWith("datalayer:/")) {
       const fileSystemProvider = DatalayerFileSystemProvider.getInstance();
       const virtualUri = vscode.Uri.parse(inputPath);
       const resolved = fileSystemProvider.getRealPath(virtualUri);
@@ -279,7 +279,7 @@ export class DocumentBridge {
         return metadata;
       }
       // Also check for virtual URIs
-      if (uri.scheme === 'datalayer') {
+      if (uri.scheme === "datalayer") {
         // Virtual URIs may have been mapped, check if this document ID matches
         if (metadata.document.uid === id) {
           return metadata;
@@ -299,7 +299,7 @@ export class DocumentBridge {
         fs.unlinkSync(metadata.localPath);
         this.documentMetadata.delete(documentId);
       } catch (error) {
-        console.error('[DocumentBridge] Error clearing document:', error);
+        console.error("[DocumentBridge] Error clearing document:", error);
       }
     }
   }
@@ -308,33 +308,33 @@ export class DocumentBridge {
    * Get or create a runtime for the document
    */
   async ensureRuntime(
-    documentId: string,
+    documentId: string
   ): Promise<RuntimeResponse | undefined> {
     const metadata = this.documentMetadata.get(documentId);
 
     // Check if we have a cached runtime, but verify it's still running
     if (metadata?.runtime?.pod_name) {
       console.log(
-        '[DocumentBridge] Checking if cached runtime is still active:',
-        metadata.runtime.pod_name,
+        "[DocumentBridge] Checking if cached runtime is still active:",
+        metadata.runtime.pod_name
       );
 
       try {
         // Verify the runtime still exists and is running
         const currentRuntime = await this.runtimesApiService.getRuntime(
-          metadata.runtime.pod_name,
+          metadata.runtime.pod_name
         );
 
         if (
           currentRuntime &&
-          (currentRuntime.status === 'running' ||
-            currentRuntime.status === 'ready') &&
+          (currentRuntime.status === "running" ||
+            currentRuntime.status === "ready") &&
           currentRuntime.ingress &&
           currentRuntime.token
         ) {
           console.log(
-            '[DocumentBridge] Cached runtime is still active:',
-            currentRuntime.pod_name,
+            "[DocumentBridge] Cached runtime is still active:",
+            currentRuntime.pod_name
           );
 
           // Update the cached runtime with fresh data
@@ -344,7 +344,7 @@ export class DocumentBridge {
           return currentRuntime;
         } else {
           console.log(
-            '[DocumentBridge] Cached runtime is no longer active or missing URLs, will create new one',
+            "[DocumentBridge] Cached runtime is no longer active or missing URLs, will create new one"
           );
           // Clear the invalid cached runtime
           metadata.runtime = undefined;
@@ -352,8 +352,8 @@ export class DocumentBridge {
         }
       } catch (error) {
         console.warn(
-          '[DocumentBridge] Failed to verify cached runtime, will create new one:',
-          error,
+          "[DocumentBridge] Failed to verify cached runtime, will create new one:",
+          error
         );
         // Clear the invalid cached runtime
         if (metadata) {
@@ -403,7 +403,7 @@ export class DocumentBridge {
             fs.rmdirSync(dirPath);
           }
         } catch (error) {
-          console.error('[DocumentBridge] Error cleaning up file:', error);
+          console.error("[DocumentBridge] Error cleaning up file:", error);
         }
       }
     }
@@ -411,8 +411,8 @@ export class DocumentBridge {
     // Log active runtimes (they should be cleaned up by the platform automatically)
     if (this.activeRuntimes.size > 0) {
       console.log(
-        '[DocumentBridge] Active runtimes at shutdown:',
-        Array.from(this.activeRuntimes),
+        "[DocumentBridge] Active runtimes at shutdown:",
+        Array.from(this.activeRuntimes)
       );
     }
 

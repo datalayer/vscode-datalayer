@@ -10,9 +10,9 @@
  * Enables seamless integration of remote documents with VS Code's file system.
  */
 
-import * as vscode from 'vscode';
-import * as fs from 'fs';
-import * as path from 'path';
+import * as vscode from "vscode";
+import * as fs from "fs";
+import * as path from "path";
 
 /**
  * A virtual file system provider that maps Datalayer documents to a cleaner URI scheme
@@ -162,28 +162,28 @@ export class DatalayerFileSystemProvider implements vscode.FileSystemProvider {
   readFile(uri: vscode.Uri): Uint8Array {
     const realPath = this.getRealPath(uri);
     console.log(
-      '[DatalayerFS] Reading virtual file:',
+      "[DatalayerFS] Reading virtual file:",
       uri.toString(),
-      '-> real path:',
-      realPath,
+      "-> real path:",
+      realPath
     );
 
     if (!realPath) {
       console.error(
-        '[DatalayerFS] No real path found for virtual URI:',
-        uri.toString(),
+        "[DatalayerFS] No real path found for virtual URI:",
+        uri.toString()
       );
       throw vscode.FileSystemError.FileNotFound(uri);
     }
 
     if (!fs.existsSync(realPath)) {
-      console.error('[DatalayerFS] Real file does not exist:', realPath);
+      console.error("[DatalayerFS] Real file does not exist:", realPath);
       throw vscode.FileSystemError.FileNotFound(uri);
     }
 
     console.log(
-      '[DatalayerFS] Successfully reading file, size:',
-      fs.statSync(realPath).size,
+      "[DatalayerFS] Successfully reading file, size:",
+      fs.statSync(realPath).size
     );
     return new Uint8Array(fs.readFileSync(realPath));
   }
@@ -198,7 +198,7 @@ export class DatalayerFileSystemProvider implements vscode.FileSystemProvider {
   writeFile(
     uri: vscode.Uri,
     content: Uint8Array,
-    options: { create: boolean; overwrite: boolean },
+    options: { create: boolean; overwrite: boolean }
   ): void {
     const realPath = this.getRealPath(uri);
     if (!realPath) {
@@ -260,7 +260,7 @@ export class DatalayerFileSystemProvider implements vscode.FileSystemProvider {
   rename(
     oldUri: vscode.Uri,
     newUri: vscode.Uri,
-    options: { overwrite: boolean },
+    options: { overwrite: boolean }
   ): void {
     const oldRealPath = this.getRealPath(oldUri);
     const newRealPath = this.getRealPath(newUri);

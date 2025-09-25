@@ -4,11 +4,42 @@
  * MIT License
  */
 
-import type { ServiceManager } from '@jupyterlab/services';
+/**
+ * @module mockServiceManager
+ * Mock service manager for Jupyter components when kernel execution is disabled.
+ * Provides all necessary JupyterLab service interfaces without actual functionality,
+ * allowing the notebook UI to function in read-only or demonstration modes.
+ */
+
+import type { ServiceManager } from "@jupyterlab/services";
 
 /**
- * A mock service manager that doesn't actually execute cells
- * but provides the necessary interface for the Notebook component
+ * Creates a mock service manager that provides the JupyterLab service interfaces
+ * without actual execution capabilities. All service methods throw appropriate
+ * error messages indicating that kernel execution is not available.
+ *
+ * @function createMockServiceManager
+ * @returns {ServiceManager.IManager} A mock service manager instance
+ *
+ * @remarks
+ * This mock service manager is used when:
+ * - Displaying notebooks without kernel execution
+ * - Demo or presentation modes
+ * - When actual kernel services are not available
+ *
+ * The mock includes:
+ * - Kernel specifications (python3 mock)
+ * - Disabled kernel and session management
+ * - Disabled contents management
+ * - Disabled settings and workspace management
+ * - Disabled terminal and nbconvert services
+ *
+ * @example
+ * ```typescript
+ * const serviceManager = createMockServiceManager();
+ * // serviceManager.kernels.startNew() will throw an error
+ * // but serviceManager.kernelspecs.specs will return mock data
+ * ```
  */
 export function createMockServiceManager(): ServiceManager.IManager {
   const mockServiceManager = {
@@ -23,12 +54,12 @@ export function createMockServiceManager(): ServiceManager.IManager {
       ready: Promise.resolve(),
       isReady: true,
       specs: {
-        default: 'python3',
+        default: "python3",
         kernelspecs: {
           python3: {
-            name: 'python3',
-            display_name: 'Python 3 (Mock)',
-            language: 'python',
+            name: "python3",
+            display_name: "Python 3 (Mock)",
+            language: "python",
             argv: [],
             metadata: {},
             resources: {},
@@ -55,13 +86,13 @@ export function createMockServiceManager(): ServiceManager.IManager {
       refreshRunning: () => Promise.resolve(),
       startNew: async () => {
         throw new Error(
-          'To enable running cells, you must select a kernel. Cell execution is not yet available for Datalayer notebooks.',
+          "To enable running cells, you must select a kernel. Cell execution is not yet available for Datalayer notebooks."
         );
       },
       findById: () => undefined,
       connectTo: () => {
         throw new Error(
-          'To enable running cells, you must select a kernel. Cell execution is not yet available for Datalayer notebooks.',
+          "To enable running cells, you must select a kernel. Cell execution is not yet available for Datalayer notebooks."
         );
       },
       shutdown: () => Promise.resolve(),
@@ -81,14 +112,14 @@ export function createMockServiceManager(): ServiceManager.IManager {
       refreshRunning: () => Promise.resolve(),
       startNew: async () => {
         throw new Error(
-          'To enable running cells, you must select a kernel. Cell execution is not yet available for Datalayer notebooks.',
+          "To enable running cells, you must select a kernel. Cell execution is not yet available for Datalayer notebooks."
         );
       },
       findById: () => undefined,
       findByPath: () => undefined,
       connectTo: () => {
         throw new Error(
-          'To enable running cells, you must select a kernel. Cell execution is not yet available for Datalayer notebooks.',
+          "To enable running cells, you must select a kernel. Cell execution is not yet available for Datalayer notebooks."
         );
       },
       shutdown: () => Promise.resolve(),
@@ -105,24 +136,24 @@ export function createMockServiceManager(): ServiceManager.IManager {
       disposed: { connect: () => {}, disconnect: () => {} },
       isDisposed: false,
       dispose: () => {},
-      driveName: () => '',
-      localPath: () => '',
+      driveName: () => "",
+      localPath: () => "",
       normalize: (path: string) => path,
       resolvePath: (path: string) => path,
-      get: () => Promise.reject(new Error('Contents not available')),
-      getDownloadUrl: () => Promise.resolve(''),
-      newUntitled: () => Promise.reject(new Error('Contents not available')),
-      delete: () => Promise.reject(new Error('Contents not available')),
-      rename: () => Promise.reject(new Error('Contents not available')),
-      save: () => Promise.reject(new Error('Contents not available')),
-      copy: () => Promise.reject(new Error('Contents not available')),
+      get: () => Promise.reject(new Error("Contents not available")),
+      getDownloadUrl: () => Promise.resolve(""),
+      newUntitled: () => Promise.reject(new Error("Contents not available")),
+      delete: () => Promise.reject(new Error("Contents not available")),
+      rename: () => Promise.reject(new Error("Contents not available")),
+      save: () => Promise.reject(new Error("Contents not available")),
+      copy: () => Promise.reject(new Error("Contents not available")),
       createCheckpoint: () =>
-        Promise.reject(new Error('Contents not available')),
+        Promise.reject(new Error("Contents not available")),
       listCheckpoints: () => Promise.resolve([]),
       restoreCheckpoint: () =>
-        Promise.reject(new Error('Contents not available')),
+        Promise.reject(new Error("Contents not available")),
       deleteCheckpoint: () =>
-        Promise.reject(new Error('Contents not available')),
+        Promise.reject(new Error("Contents not available")),
       addDrive: () => {},
       getSharedModelFactory: () => undefined,
     },
@@ -135,10 +166,10 @@ export function createMockServiceManager(): ServiceManager.IManager {
       disposed: { connect: () => {}, disconnect: () => {} },
       isDisposed: false,
       dispose: () => {},
-      fetch: () => Promise.reject(new Error('Settings not available')),
-      save: () => Promise.reject(new Error('Settings not available')),
-      remove: () => Promise.reject(new Error('Settings not available')),
-      list: () => Promise.reject(new Error('Settings not available')),
+      fetch: () => Promise.reject(new Error("Settings not available")),
+      save: () => Promise.reject(new Error("Settings not available")),
+      remove: () => Promise.reject(new Error("Settings not available")),
+      list: () => Promise.reject(new Error("Settings not available")),
     },
 
     // Mock workspace manager
@@ -148,11 +179,11 @@ export function createMockServiceManager(): ServiceManager.IManager {
       disposed: { connect: () => {}, disconnect: () => {} },
       isDisposed: false,
       dispose: () => {},
-      fetch: () => Promise.reject(new Error('Workspaces not available')),
-      save: () => Promise.reject(new Error('Workspaces not available')),
-      remove: () => Promise.reject(new Error('Workspaces not available')),
-      list: () => Promise.reject(new Error('Workspaces not available')),
-      rename: () => Promise.reject(new Error('Workspaces not available')),
+      fetch: () => Promise.reject(new Error("Workspaces not available")),
+      save: () => Promise.reject(new Error("Workspaces not available")),
+      remove: () => Promise.reject(new Error("Workspaces not available")),
+      list: () => Promise.reject(new Error("Workspaces not available")),
+      rename: () => Promise.reject(new Error("Workspaces not available")),
     },
 
     // Mock terminals manager
@@ -167,9 +198,9 @@ export function createMockServiceManager(): ServiceManager.IManager {
       dispose: () => {},
       running: () => [],
       refreshRunning: () => Promise.resolve(),
-      startNew: () => Promise.reject(new Error('Terminals not available')),
+      startNew: () => Promise.reject(new Error("Terminals not available")),
       connectTo: () => {
-        throw new Error('Terminals not available');
+        throw new Error("Terminals not available");
       },
       shutdown: () => Promise.resolve(),
       shutdownAll: () => Promise.resolve(),
@@ -183,8 +214,8 @@ export function createMockServiceManager(): ServiceManager.IManager {
       isDisposed: false,
       dispose: () => {},
       getExportFormats: () =>
-        Promise.reject(new Error('NBConvert not available')),
-      fetchExport: () => Promise.reject(new Error('NBConvert not available')),
+        Promise.reject(new Error("NBConvert not available")),
+      fetchExport: () => Promise.reject(new Error("NBConvert not available")),
     },
 
     // Mock builder
@@ -196,10 +227,10 @@ export function createMockServiceManager(): ServiceManager.IManager {
       dispose: () => {},
       isAvailable: () => false,
       shouldCheck: false,
-      status: () => Promise.reject(new Error('Builder not available')),
-      build: () => Promise.reject(new Error('Builder not available')),
-      cancel: () => Promise.reject(new Error('Builder not available')),
-      getStatus: () => Promise.reject(new Error('Builder not available')),
+      status: () => Promise.reject(new Error("Builder not available")),
+      build: () => Promise.reject(new Error("Builder not available")),
+      cancel: () => Promise.reject(new Error("Builder not available")),
+      getStatus: () => Promise.reject(new Error("Builder not available")),
     },
 
     // Mock events manager
@@ -210,7 +241,7 @@ export function createMockServiceManager(): ServiceManager.IManager {
       isDisposed: false,
       dispose: () => {},
       stream: { connect: () => {}, disconnect: () => {} },
-      emit: () => Promise.reject(new Error('Events not available')),
+      emit: () => Promise.reject(new Error("Events not available")),
     },
 
     // Mock user manager
@@ -223,15 +254,15 @@ export function createMockServiceManager(): ServiceManager.IManager {
       userChanged: { connect: () => {}, disconnect: () => {} },
       identity: undefined,
       permissions: undefined,
-      refreshUser: () => Promise.reject(new Error('User not available')),
+      refreshUser: () => Promise.reject(new Error("User not available")),
     },
 
     // Server settings
     serverSettings: {
-      baseUrl: '',
-      appUrl: '',
-      wsUrl: '',
-      token: '',
+      baseUrl: "",
+      appUrl: "",
+      wsUrl: "",
+      token: "",
       appendToken: false,
       init: {},
       fetch: globalThis.fetch.bind(globalThis),
@@ -242,7 +273,7 @@ export function createMockServiceManager(): ServiceManager.IManager {
   } as unknown as ServiceManager.IManager;
 
   console.log(
-    '[MockServiceManager] Created mock service manager for Datalayer notebooks',
+    "[MockServiceManager] Created mock service manager for Datalayer notebooks"
   );
   return mockServiceManager;
 }

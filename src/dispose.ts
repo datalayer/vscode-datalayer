@@ -10,7 +10,7 @@
  * Implements the disposable pattern for proper cleanup of resources.
  */
 
-import type * as vscode from 'vscode';
+import type * as vscode from "vscode";
 
 /**
  * Disposes of all items in the disposables array.

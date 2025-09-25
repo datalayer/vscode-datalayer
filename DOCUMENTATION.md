@@ -182,11 +182,11 @@ The GitHub Actions workflow automatically:
     */
    enum State {
      /** Initial state */
-     Idle = 'idle',
+     Idle = "idle",
      /** Processing state */
-     Running = 'running',
+     Running = "running",
      /** Error state */
-     Error = 'error',
+     Error = "error",
    }
    ```
 

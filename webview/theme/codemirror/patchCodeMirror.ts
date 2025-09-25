@@ -9,8 +9,8 @@
  * Patches CodeMirror initialization to inject VS Code syntax highlighting
  */
 
-import { tags } from '@lezer/highlight';
-import { HighlightStyle, syntaxHighlighting } from '@codemirror/language';
+import { tags } from "@lezer/highlight";
+import { HighlightStyle, syntaxHighlighting } from "@codemirror/language";
 
 /**
  * VS Code theme colors interface
@@ -35,7 +35,7 @@ interface VSCodeColors {
  * Create a CodeMirror HighlightStyle from VS Code colors
  */
 export function createVSCodeHighlightStyle(
-  colors: VSCodeColors,
+  colors: VSCodeColors
 ): HighlightStyle {
   return HighlightStyle.define([
     // Keywords (if, for, def, class, return, etc.)
@@ -51,10 +51,10 @@ export function createVSCodeHighlightStyle(
     { tag: tags.regexp, color: colors.string },
 
     // Comments
-    { tag: tags.comment, color: colors.comment, fontStyle: 'italic' },
-    { tag: tags.lineComment, color: colors.comment, fontStyle: 'italic' },
-    { tag: tags.blockComment, color: colors.comment, fontStyle: 'italic' },
-    { tag: tags.docComment, color: colors.comment, fontStyle: 'italic' },
+    { tag: tags.comment, color: colors.comment, fontStyle: "italic" },
+    { tag: tags.lineComment, color: colors.comment, fontStyle: "italic" },
+    { tag: tags.blockComment, color: colors.comment, fontStyle: "italic" },
+    { tag: tags.docComment, color: colors.comment, fontStyle: "italic" },
 
     // Functions and methods
     { tag: tags.function(tags.variableName), color: colors.function },
@@ -112,15 +112,15 @@ export function createVSCodeHighlightStyle(
     { tag: tags.processingInstruction, color: colors.meta },
 
     // Markup (for markdown, HTML, etc.)
-    { tag: tags.heading, color: colors.keyword, fontWeight: 'bold' },
-    { tag: tags.emphasis, fontStyle: 'italic' },
-    { tag: tags.strong, fontWeight: 'bold' },
-    { tag: tags.link, color: colors.string, textDecoration: 'underline' },
-    { tag: tags.url, color: colors.string, textDecoration: 'underline' },
+    { tag: tags.heading, color: colors.keyword, fontWeight: "bold" },
+    { tag: tags.emphasis, fontStyle: "italic" },
+    { tag: tags.strong, fontWeight: "bold" },
+    { tag: tags.link, color: colors.string, textDecoration: "underline" },
+    { tag: tags.url, color: colors.string, textDecoration: "underline" },
 
     // Other
     { tag: tags.atom, color: colors.constant },
-    { tag: tags.self, color: colors.keyword, fontStyle: 'italic' },
+    { tag: tags.self, color: colors.keyword, fontStyle: "italic" },
     { tag: tags.unit, color: colors.number },
   ]);
 }
@@ -140,7 +140,7 @@ export function patchCodeMirrorForVSCode(): void {
 
   if (!originalRegistry) {
     console.warn(
-      '[patchCodeMirror] EditorExtensionRegistry not found on window',
+      "[patchCodeMirror] EditorExtensionRegistry not found on window"
     );
     // We'll try a different approach - patch after the notebook is created
     patchAfterNotebookCreation();
@@ -165,13 +165,13 @@ export function patchCodeMirrorForVSCode(): void {
 
         // Add as an immutable extension
         const immutableExtension = {
-          name: 'vscode-syntax-highlighting',
+          name: "vscode-syntax-highlighting",
           factory: () => syntaxExtension,
         };
 
         originalAddExtension.call(this, immutableExtension);
         console.log(
-          '[patchCodeMirror] Added VS Code syntax highlighting extension',
+          "[patchCodeMirror] Added VS Code syntax highlighting extension"
         );
       }
     }
@@ -183,13 +183,13 @@ export function patchCodeMirrorForVSCode(): void {
  */
 function patchAfterNotebookCreation(): void {
   // Listen for notebook creation and patch the editors
-  const observer = new MutationObserver(mutations => {
-    mutations.forEach(mutation => {
-      mutation.addedNodes.forEach(node => {
+  const observer = new MutationObserver((mutations) => {
+    mutations.forEach((mutation) => {
+      mutation.addedNodes.forEach((node) => {
         if (node instanceof HTMLElement) {
           // Look for CodeMirror editors
-          const editors = node.querySelectorAll('.cm-editor');
-          editors.forEach(editor => {
+          const editors = node.querySelectorAll(".cm-editor");
+          editors.forEach((editor) => {
             patchExistingEditor(editor as HTMLElement);
           });
         }
@@ -204,7 +204,7 @@ function patchAfterNotebookCreation(): void {
   });
 
   // Also patch any existing editors
-  document.querySelectorAll('.cm-editor').forEach(editor => {
+  document.querySelectorAll(".cm-editor").forEach((editor) => {
     patchExistingEditor(editor as HTMLElement);
   });
 }
@@ -242,10 +242,10 @@ function patchExistingEditor(editorElement: HTMLElement): void {
     });
 
     console.log(
-      '[patchCodeMirror] Patched existing editor with VS Code syntax highlighting',
+      "[patchCodeMirror] Patched existing editor with VS Code syntax highlighting"
     );
   } catch (error) {
-    console.error('[patchCodeMirror] Failed to patch editor:', error);
+    console.error("[patchCodeMirror] Failed to patch editor:", error);
   }
 }
 
@@ -256,91 +256,91 @@ function getVSCodeColors(): VSCodeColors | null {
   // Try to get colors from our theme provider
   const provider = (window as any).__vscodeThemeProvider;
 
-  if (provider && typeof provider.extractSyntaxColors === 'function') {
+  if (provider && typeof provider.extractSyntaxColors === "function") {
     const syntaxColors = provider.extractSyntaxColors();
-    const isDark = provider._colorMode === 'dark';
+    const isDark = provider._colorMode === "dark";
 
     return {
-      keyword: syntaxColors.get('keyword') || (isDark ? '#C586C0' : '#0000FF'),
-      string: syntaxColors.get('string') || (isDark ? '#CE9178' : '#A31515'),
-      comment: syntaxColors.get('comment') || (isDark ? '#6A9955' : '#008000'),
+      keyword: syntaxColors.get("keyword") || (isDark ? "#C586C0" : "#0000FF"),
+      string: syntaxColors.get("string") || (isDark ? "#CE9178" : "#A31515"),
+      comment: syntaxColors.get("comment") || (isDark ? "#6A9955" : "#008000"),
       function:
-        syntaxColors.get('function') || (isDark ? '#DCDCAA' : '#795E26'),
-      number: syntaxColors.get('number') || (isDark ? '#B5CEA8' : '#098658'),
+        syntaxColors.get("function") || (isDark ? "#DCDCAA" : "#795E26"),
+      number: syntaxColors.get("number") || (isDark ? "#B5CEA8" : "#098658"),
       variable:
-        syntaxColors.get('variable') || (isDark ? '#9CDCFE' : '#001080'),
-      type: syntaxColors.get('type') || (isDark ? '#4EC9B0' : '#267F99'),
+        syntaxColors.get("variable") || (isDark ? "#9CDCFE" : "#001080"),
+      type: syntaxColors.get("type") || (isDark ? "#4EC9B0" : "#267F99"),
       constant:
-        syntaxColors.get('constant') || (isDark ? '#569CD6' : '#0070C1'),
+        syntaxColors.get("constant") || (isDark ? "#569CD6" : "#0070C1"),
       operator:
-        syntaxColors.get('operator') || (isDark ? '#D4D4D4' : '#000000'),
-      bracket: syntaxColors.get('operator') || (isDark ? '#D4D4D4' : '#000000'),
-      meta: syntaxColors.get('keyword') || (isDark ? '#C586C0' : '#0000FF'),
+        syntaxColors.get("operator") || (isDark ? "#D4D4D4" : "#000000"),
+      bracket: syntaxColors.get("operator") || (isDark ? "#D4D4D4" : "#000000"),
+      meta: syntaxColors.get("keyword") || (isDark ? "#C586C0" : "#0000FF"),
       property:
-        syntaxColors.get('variable') || (isDark ? '#9CDCFE' : '#001080'),
+        syntaxColors.get("variable") || (isDark ? "#9CDCFE" : "#001080"),
     };
   }
 
   // Fallback to extracting from CSS variables
   const getColor = (cssVar: string, fallback: string) => {
     const value = getComputedStyle(document.documentElement).getPropertyValue(
-      cssVar,
+      cssVar
     );
     return value?.trim() || fallback;
   };
 
-  const isDark = getColor('--vscode-editor-background', '#ffffff')
+  const isDark = getColor("--vscode-editor-background", "#ffffff")
     .toLowerCase()
-    .includes('2');
+    .includes("2");
 
   return {
     keyword: getColor(
-      '--vscode-debugTokenExpression-name',
-      isDark ? '#C586C0' : '#0000FF',
+      "--vscode-debugTokenExpression-name",
+      isDark ? "#C586C0" : "#0000FF"
     ),
     string: getColor(
-      '--vscode-debugTokenExpression-string',
-      isDark ? '#CE9178' : '#A31515',
+      "--vscode-debugTokenExpression-string",
+      isDark ? "#CE9178" : "#A31515"
     ),
     comment: getColor(
-      '--vscode-editor-foreground',
-      isDark ? '#6A9955' : '#008000',
+      "--vscode-editor-foreground",
+      isDark ? "#6A9955" : "#008000"
     ),
     function: getColor(
-      '--vscode-debugTokenExpression-value',
-      isDark ? '#DCDCAA' : '#795E26',
+      "--vscode-debugTokenExpression-value",
+      isDark ? "#DCDCAA" : "#795E26"
     ),
     number: getColor(
-      '--vscode-debugTokenExpression-number',
-      isDark ? '#B5CEA8' : '#098658',
+      "--vscode-debugTokenExpression-number",
+      isDark ? "#B5CEA8" : "#098658"
     ),
     variable: getColor(
-      '--vscode-debugTokenExpression-name',
-      isDark ? '#9CDCFE' : '#001080',
+      "--vscode-debugTokenExpression-name",
+      isDark ? "#9CDCFE" : "#001080"
     ),
     type: getColor(
-      '--vscode-debugTokenExpression-type',
-      isDark ? '#4EC9B0' : '#267F99',
+      "--vscode-debugTokenExpression-type",
+      isDark ? "#4EC9B0" : "#267F99"
     ),
     constant: getColor(
-      '--vscode-symbolIcon-constantForeground',
-      isDark ? '#569CD6' : '#0070C1',
+      "--vscode-symbolIcon-constantForeground",
+      isDark ? "#569CD6" : "#0070C1"
     ),
     operator: getColor(
-      '--vscode-editor-foreground',
-      isDark ? '#D4D4D4' : '#000000',
+      "--vscode-editor-foreground",
+      isDark ? "#D4D4D4" : "#000000"
     ),
     bracket: getColor(
-      '--vscode-editor-foreground',
-      isDark ? '#D4D4D4' : '#000000',
+      "--vscode-editor-foreground",
+      isDark ? "#D4D4D4" : "#000000"
     ),
     meta: getColor(
-      '--vscode-debugTokenExpression-name',
-      isDark ? '#C586C0' : '#0000FF',
+      "--vscode-debugTokenExpression-name",
+      isDark ? "#C586C0" : "#0000FF"
     ),
     property: getColor(
-      '--vscode-debugTokenExpression-name',
-      isDark ? '#9CDCFE' : '#001080',
+      "--vscode-debugTokenExpression-name",
+      isDark ? "#9CDCFE" : "#001080"
     ),
   };
 }

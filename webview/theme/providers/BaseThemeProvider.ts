@@ -10,14 +10,14 @@
  * Provides common functionality for all theme provider implementations.
  */
 
-import { IDisposable } from '@lumino/disposable';
+import { IDisposable } from "@lumino/disposable";
 import {
   IThemeProvider,
   IThemeDefinition,
   ColorMode,
   IPrimerThemeMapping,
   ThemeProviderType,
-} from '../types';
+} from "../types";
 
 /**
  * Base theme provider implementation
@@ -28,7 +28,7 @@ export abstract class BaseThemeProvider implements IThemeProvider {
   /** Set of theme change listeners */
   protected _listeners: Set<() => void> = new Set();
   /** Current color mode */
-  protected _colorMode: ColorMode = 'light';
+  protected _colorMode: ColorMode = "light";
 
   /**
    * Creates a new BaseThemeProvider
@@ -40,7 +40,7 @@ export abstract class BaseThemeProvider implements IThemeProvider {
     public readonly id: string,
     public readonly name: string,
     /** Type of theme provider */
-    protected readonly providerType: ThemeProviderType,
+    protected readonly providerType: ThemeProviderType
   ) {}
 
   /**
@@ -100,11 +100,11 @@ export abstract class BaseThemeProvider implements IThemeProvider {
    * Notify listeners of theme changes
    */
   protected notifyListeners(): void {
-    this._listeners.forEach(listener => {
+    this._listeners.forEach((listener) => {
       try {
         listener();
       } catch (error) {
-        console.error('Error notifying theme listener:', error);
+        console.error("Error notifying theme listener:", error);
       }
     });
   }

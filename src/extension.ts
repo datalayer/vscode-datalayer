@@ -15,17 +15,17 @@
  * - Document synchronization and collaboration features
  */
 
-import * as vscode from 'vscode';
-import { NotebookEditorProvider } from './editors/notebookEditor';
-import { LexicalEditorProvider } from './editors/lexicalEditor';
-import { RuntimeControllerManager } from './runtimes/runtimeControllerManager';
-import { AuthService } from './auth/authService';
-import { TokenProvider } from './auth/tokenProvider';
-import { SpacesTreeProvider } from './spaces/spacesTreeProvider';
-import { SpacerApiService } from './spaces/spacerApiService';
-import { Document } from './spaces/spaceItem';
-import { DocumentBridge } from './spaces/documentBridge';
-import { DatalayerFileSystemProvider } from './spaces/datalayerFileSystemProvider';
+import * as vscode from "vscode";
+import { NotebookEditorProvider } from "./editors/notebookEditor";
+import { LexicalEditorProvider } from "./editors/lexicalEditor";
+import { RuntimeControllerManager } from "./runtimes/runtimeControllerManager";
+import { AuthService } from "./auth/authService";
+import { TokenProvider } from "./auth/tokenProvider";
+import { SpacesTreeProvider } from "./spaces/spacesTreeProvider";
+import { SpacerApiService } from "./spaces/spacerApiService";
+import { Document } from "./spaces/spaceItem";
+import { DocumentBridge } from "./spaces/documentBridge";
+import { DatalayerFileSystemProvider } from "./spaces/datalayerFileSystemProvider";
 
 /**
  * Activates the Datalayer VS Code extension.
@@ -56,13 +56,13 @@ export function activate(context: vscode.ExtensionContext): void {
   // Register the virtual file system provider for cleaner paths
   context.subscriptions.push(
     vscode.workspace.registerFileSystemProvider(
-      'datalayer',
+      "datalayer",
       fileSystemProvider,
       {
         isCaseSensitive: true,
         isReadonly: false,
-      },
-    ),
+      }
+    )
   );
 
   // Register the notebook editor provider
@@ -76,17 +76,17 @@ export function activate(context: vscode.ExtensionContext): void {
   context.subscriptions.push(runtimeControllerManager);
 
   // Initialize controllers (this will create initial controllers based on available runtimes)
-  runtimeControllerManager.initialize().catch(error => {
+  runtimeControllerManager.initialize().catch((error) => {
     console.error(
-      '[Extension] Failed to initialize runtime controller manager:',
-      error,
+      "[Extension] Failed to initialize runtime controller manager:",
+      error
     );
   });
-  console.log('[Extension] Runtime controller manager initialized');
+  console.log("[Extension] Runtime controller manager initialized");
 
   // Create and register the spaces tree provider
   const spacesTreeProvider = new SpacesTreeProvider(context);
-  const treeView = vscode.window.createTreeView('datalayerSpaces', {
+  const treeView = vscode.window.createTreeView("datalayerSpaces", {
     treeDataProvider: spacesTreeProvider,
     showCollapseAll: true,
   });
@@ -102,17 +102,17 @@ export function activate(context: vscode.ExtensionContext): void {
    */
   const updateAuthState = (): void => {
     vscode.commands.executeCommand(
-      'setContext',
-      'datalayer.authenticated',
-      authService.getAuthState().isAuthenticated,
+      "setContext",
+      "datalayer.authenticated",
+      authService.getAuthState().isAuthenticated
     );
     spacesTreeProvider.refresh();
 
     // Refresh runtime controllers when authentication state changes
-    runtimeControllerManager.forceRefresh().catch(error => {
+    runtimeControllerManager.forceRefresh().catch((error) => {
       console.error(
-        '[Extension] Failed to refresh runtime controllers on auth state change:',
-        error,
+        "[Extension] Failed to refresh runtime controllers on auth state change:",
+        error
       );
     });
   };
@@ -134,51 +134,51 @@ export function activate(context: vscode.ExtensionContext): void {
 
   // Register authentication commands
   context.subscriptions.push(
-    vscode.commands.registerCommand('datalayer.login', async () => {
+    vscode.commands.registerCommand("datalayer.login", async () => {
       await TokenProvider.login();
-    }),
+    })
   );
 
   context.subscriptions.push(
-    vscode.commands.registerCommand('datalayer.logout', async () => {
+    vscode.commands.registerCommand("datalayer.logout", async () => {
       await TokenProvider.logout();
-    }),
+    })
   );
 
   context.subscriptions.push(
-    vscode.commands.registerCommand('datalayer.showAuthStatus', async () => {
+    vscode.commands.registerCommand("datalayer.showAuthStatus", async () => {
       await TokenProvider.showAuthStatus();
-    }),
+    })
   );
 
   // Register tree view commands
   context.subscriptions.push(
-    vscode.commands.registerCommand('datalayer.refreshSpaces', () => {
+    vscode.commands.registerCommand("datalayer.refreshSpaces", () => {
       spacesTreeProvider.refresh();
-    }),
+    })
   );
 
   // Register runtime controller refresh command
   context.subscriptions.push(
     vscode.commands.registerCommand(
-      'datalayer.refreshRuntimeControllers',
+      "datalayer.refreshRuntimeControllers",
       async (selectRuntimeUid?: string) => {
         console.log(
-          '[Extension] Runtime controller refresh triggered',
-          selectRuntimeUid ? `(select: ${selectRuntimeUid})` : '',
+          "[Extension] Runtime controller refresh triggered",
+          selectRuntimeUid ? `(select: ${selectRuntimeUid})` : ""
         );
         return await runtimeControllerManager.forceRefresh(selectRuntimeUid);
-      },
-    ),
+      }
+    )
   );
 
   context.subscriptions.push(
     vscode.commands.registerCommand(
-      'datalayer.openDocument',
+      "datalayer.openDocument",
       async (document: Document, spaceName?: string) => {
         try {
           if (!document) {
-            vscode.window.showErrorMessage('No document selected');
+            vscode.window.showErrorMessage("No document selected");
             return;
           }
 
@@ -186,14 +186,14 @@ export function activate(context: vscode.ExtensionContext): void {
             document.name_t ||
             document.notebook_name_s ||
             document.document_name_s ||
-            'Untitled';
+            "Untitled";
           const isNotebook =
-            document.type_s === 'notebook' ||
-            document.notebook_extension_s === 'ipynb';
+            document.type_s === "notebook" ||
+            document.notebook_extension_s === "ipynb";
           const isLexical =
-            document.document_format_s === 'lexical' ||
-            document.document_extension_s === 'lexical';
-          const isCell = document.type_s === 'cell';
+            document.document_format_s === "lexical" ||
+            document.document_extension_s === "lexical";
+          const isCell = document.type_s === "cell";
 
           if (isNotebook) {
             // Show progress while downloading notebook
@@ -203,38 +203,38 @@ export function activate(context: vscode.ExtensionContext): void {
                 title: `Opening notebook: ${docName}`,
                 cancellable: false,
               },
-              async progress => {
+              async (progress) => {
                 progress.report({
                   increment: 0,
-                  message: 'Downloading notebook content...',
+                  message: "Downloading notebook content...",
                 });
 
                 // Use DocumentBridge to handle the download and caching
                 const uri = await documentBridge.openDocument(
                   document,
                   undefined,
-                  spaceName,
+                  spaceName
                 );
 
                 // For Datalayer notebooks, we don't create a runtime automatically
                 // The notebook will use collaboration with the document UID
                 console.log(
-                  '[Datalayer] Opening notebook with collaboration - document ID:',
-                  document.uid || document.id,
+                  "[Datalayer] Opening notebook with collaboration - document ID:",
+                  document.uid || document.id
                 );
 
                 progress.report({
                   increment: 75,
-                  message: 'Opening notebook editor...',
+                  message: "Opening notebook editor...",
                 });
 
                 // Open the notebook with our custom editor
                 // The notebook will connect to the runtime in collaborative mode
                 // which provides automatic saving
                 await vscode.commands.executeCommand(
-                  'vscode.openWith',
+                  "vscode.openWith",
                   uri,
-                  'datalayer.jupyter-notebook',
+                  "datalayer.jupyter-notebook"
                 );
 
                 // Set a better tab title after opening
@@ -242,8 +242,8 @@ export function activate(context: vscode.ExtensionContext): void {
                 // Unfortunately VS Code doesn't allow changing tab labels directly
                 // The title will be based on the filename, but at least it won't have the UID
 
-                progress.report({ increment: 100, message: 'Done!' });
-              },
+                progress.report({ increment: 100, message: "Done!" });
+              }
             );
           } else if (isLexical) {
             // Show progress while downloading lexical document
@@ -253,65 +253,67 @@ export function activate(context: vscode.ExtensionContext): void {
                 title: `Opening lexical document: ${docName}`,
                 cancellable: false,
               },
-              async progress => {
+              async (progress) => {
                 progress.report({
                   increment: 0,
-                  message: 'Downloading document content...',
+                  message: "Downloading document content...",
                 });
 
                 // Use DocumentBridge to handle the download and caching
                 const uri = await documentBridge.openDocument(
                   document,
                   undefined,
-                  spaceName,
+                  spaceName
                 );
 
                 progress.report({
                   increment: 50,
-                  message: 'Opening document in read-only mode...',
+                  message: "Opening document in read-only mode...",
                 });
 
                 // Open the lexical document with our custom editor in read-only mode
                 await vscode.commands.executeCommand(
-                  'vscode.openWith',
+                  "vscode.openWith",
                   uri,
-                  'datalayer.lexical-editor',
+                  "datalayer.lexical-editor"
                 );
 
-                progress.report({ increment: 100, message: 'Done!' });
-              },
+                progress.report({ increment: 100, message: "Done!" });
+              }
             );
           } else if (isCell) {
             vscode.window.showInformationMessage(
-              `Cell viewer coming soon: ${docName}`,
+              `Cell viewer coming soon: ${docName}`
             );
             // TODO: Implement cell viewer
           } else {
             vscode.window.showInformationMessage(
-              `Document type not supported: ${docName}`,
+              `Document type not supported: ${docName}`
             );
           }
         } catch (error) {
-          console.error('[Datalayer] Error opening document:', error);
+          console.error("[Datalayer] Error opening document:", error);
           vscode.window.showErrorMessage(
-            `Failed to open document: ${error instanceof Error ? error.message : 'Unknown error'}`,
+            `Failed to open document: ${
+              error instanceof Error ? error.message : "Unknown error"
+            }`
           );
         }
-      },
-    ),
+      }
+    )
   );
 
   // Create Space command
   context.subscriptions.push(
-    vscode.commands.registerCommand('datalayer.createSpace', async () => {
+    vscode.commands.registerCommand("datalayer.createSpace", async () => {
       try {
         // Prompt for space name
         const name = await vscode.window.showInputBox({
-          prompt: 'Enter space name',
-          placeHolder: 'My Space',
-          validateInput: value => {
+          prompt: "Enter space name",
+          placeHolder: "My Space",
+          validateInput: (value) => {
             if (!value || value.trim().length === 0) {
-              return 'Space name is required';
+              return "Space name is required";
             }
             return null;
           },
@@ -323,24 +325,24 @@ export function activate(context: vscode.ExtensionContext): void {
 
         // Prompt for description (optional)
         const description = await vscode.window.showInputBox({
-          prompt: 'Enter space description (optional)',
-          placeHolder: 'A brief description of the space',
+          prompt: "Enter space description (optional)",
+          placeHolder: "A brief description of the space",
         });
 
         // Ask if the space should be public
         const visibility = await vscode.window.showQuickPick(
-          ['Private', 'Public'],
+          ["Private", "Public"],
           {
-            placeHolder: 'Select space visibility',
-            title: 'Space Visibility',
-          },
+            placeHolder: "Select space visibility",
+            title: "Space Visibility",
+          }
         );
 
         if (!visibility) {
           return;
         }
 
-        const isPublic = visibility === 'Public';
+        const isPublic = visibility === "Public";
 
         // Create the space
         await vscode.window.withProgress(
@@ -353,36 +355,38 @@ export function activate(context: vscode.ExtensionContext): void {
             const space = await spacerApiService.createSpace(
               name,
               description,
-              isPublic,
+              isPublic
             );
 
             if (space) {
               vscode.window.showInformationMessage(
-                `Successfully created ${visibility.toLowerCase()} space "${name}"`,
+                `Successfully created ${visibility.toLowerCase()} space "${name}"`
               );
               spacesTreeProvider.refresh();
             } else {
-              throw new Error('Failed to create space');
+              throw new Error("Failed to create space");
             }
-          },
+          }
         );
       } catch (error) {
-        console.error('[Datalayer] Error creating space:', error);
+        console.error("[Datalayer] Error creating space:", error);
         vscode.window.showErrorMessage(
-          `Failed to create space: ${error instanceof Error ? error.message : 'Unknown error'}`,
+          `Failed to create space: ${
+            error instanceof Error ? error.message : "Unknown error"
+          }`
         );
       }
-    }),
+    })
   );
 
   // Create Notebook in Space command
   context.subscriptions.push(
     vscode.commands.registerCommand(
-      'datalayer.createNotebookInSpace',
-      async spaceItem => {
+      "datalayer.createNotebookInSpace",
+      async (spaceItem) => {
         try {
           if (!spaceItem?.data?.space) {
-            vscode.window.showErrorMessage('Please select a space');
+            vscode.window.showErrorMessage("Please select a space");
             return;
           }
 
@@ -390,11 +394,11 @@ export function activate(context: vscode.ExtensionContext): void {
 
           // Prompt for notebook name
           const name = await vscode.window.showInputBox({
-            prompt: 'Enter notebook name',
-            placeHolder: 'My Notebook',
-            validateInput: value => {
+            prompt: "Enter notebook name",
+            placeHolder: "My Notebook",
+            validateInput: (value) => {
               if (!value || value.trim().length === 0) {
-                return 'Notebook name is required';
+                return "Notebook name is required";
               }
               return null;
             },
@@ -406,8 +410,8 @@ export function activate(context: vscode.ExtensionContext): void {
 
           // Prompt for description (optional)
           const description = await vscode.window.showInputBox({
-            prompt: 'Enter notebook description (optional)',
-            placeHolder: 'A brief description of the notebook',
+            prompt: "Enter notebook description (optional)",
+            placeHolder: "A brief description of the notebook",
           });
 
           // Create the notebook
@@ -421,37 +425,39 @@ export function activate(context: vscode.ExtensionContext): void {
               const notebook = await spacerApiService.createNotebook(
                 space.uid,
                 name,
-                description,
+                description
               );
 
               if (notebook) {
                 vscode.window.showInformationMessage(
-                  `Successfully created notebook "${name}"`,
+                  `Successfully created notebook "${name}"`
                 );
                 spacesTreeProvider.refreshSpace(space.uid);
               } else {
-                throw new Error('Failed to create notebook');
+                throw new Error("Failed to create notebook");
               }
-            },
+            }
           );
         } catch (error) {
-          console.error('[Datalayer] Error creating notebook:', error);
+          console.error("[Datalayer] Error creating notebook:", error);
           vscode.window.showErrorMessage(
-            `Failed to create notebook: ${error instanceof Error ? error.message : 'Unknown error'}`,
+            `Failed to create notebook: ${
+              error instanceof Error ? error.message : "Unknown error"
+            }`
           );
         }
-      },
-    ),
+      }
+    )
   );
 
   // Create Lexical Document in Space command
   context.subscriptions.push(
     vscode.commands.registerCommand(
-      'datalayer.createLexicalInSpace',
-      async spaceItem => {
+      "datalayer.createLexicalInSpace",
+      async (spaceItem) => {
         try {
           if (!spaceItem?.data?.space) {
-            vscode.window.showErrorMessage('Please select a space');
+            vscode.window.showErrorMessage("Please select a space");
             return;
           }
 
@@ -459,11 +465,11 @@ export function activate(context: vscode.ExtensionContext): void {
 
           // Prompt for document name
           const name = await vscode.window.showInputBox({
-            prompt: 'Enter document name',
-            placeHolder: 'My Document',
-            validateInput: value => {
+            prompt: "Enter document name",
+            placeHolder: "My Document",
+            validateInput: (value) => {
               if (!value || value.trim().length === 0) {
-                return 'Document name is required';
+                return "Document name is required";
               }
               return null;
             },
@@ -475,8 +481,8 @@ export function activate(context: vscode.ExtensionContext): void {
 
           // Prompt for description (optional)
           const description = await vscode.window.showInputBox({
-            prompt: 'Enter document description (optional)',
-            placeHolder: 'A brief description of the document',
+            prompt: "Enter document description (optional)",
+            placeHolder: "A brief description of the document",
           });
 
           // Create the lexical document
@@ -490,38 +496,40 @@ export function activate(context: vscode.ExtensionContext): void {
               const document = await spacerApiService.createLexicalDocument(
                 space.uid,
                 name,
-                description,
+                description
               );
 
               if (document) {
                 vscode.window.showInformationMessage(
-                  `Successfully created lexical document "${name}"`,
+                  `Successfully created lexical document "${name}"`
                 );
                 spacesTreeProvider.refreshSpace(space.uid);
               } else {
-                throw new Error('Failed to create lexical document');
+                throw new Error("Failed to create lexical document");
               }
-            },
+            }
           );
         } catch (error) {
-          console.error('[Datalayer] Error creating lexical document:', error);
+          console.error("[Datalayer] Error creating lexical document:", error);
           vscode.window.showErrorMessage(
-            `Failed to create lexical document: ${error instanceof Error ? error.message : 'Unknown error'}`,
+            `Failed to create lexical document: ${
+              error instanceof Error ? error.message : "Unknown error"
+            }`
           );
         }
-      },
-    ),
+      }
+    )
   );
 
   // Rename Item command
   context.subscriptions.push(
     vscode.commands.registerCommand(
-      'datalayer.renameItem',
+      "datalayer.renameItem",
       async (item: any) => {
         try {
           if (!item?.data?.document) {
             vscode.window.showErrorMessage(
-              'Please select a document to rename',
+              "Please select a document to rename"
             );
             return;
           }
@@ -531,15 +539,15 @@ export function activate(context: vscode.ExtensionContext): void {
             document.name_t ||
             document.notebook_name_s ||
             document.document_name_s ||
-            'Untitled';
+            "Untitled";
 
           // Prompt for new name
           const newName = await vscode.window.showInputBox({
-            prompt: 'Enter new name',
+            prompt: "Enter new name",
             value: currentName,
-            validateInput: value => {
+            validateInput: (value) => {
               if (!value || value.trim().length === 0) {
-                return 'Name is required';
+                return "Name is required";
               }
               return null;
             },
@@ -551,9 +559,9 @@ export function activate(context: vscode.ExtensionContext): void {
 
           // Determine item type
           const isNotebook =
-            document.type_s === 'notebook' ||
-            document.notebook_extension_s === 'ipynb';
-          const itemType = isNotebook ? 'notebook' : 'document';
+            document.type_s === "notebook" ||
+            document.notebook_extension_s === "ipynb";
+          const itemType = isNotebook ? "notebook" : "document";
 
           // Rename the item
           await vscode.window.withProgress(
@@ -564,44 +572,46 @@ export function activate(context: vscode.ExtensionContext): void {
             },
             async () => {
               // Pass the existing description or empty string
-              const existingDescription = document.description_t || '';
+              const existingDescription = document.description_t || "";
               const success = await spacerApiService.updateItemName(
                 document.uid,
                 itemType,
                 newName,
-                existingDescription,
+                existingDescription
               );
 
               if (success) {
                 vscode.window.showInformationMessage(
-                  `Successfully renamed to "${newName}"`,
+                  `Successfully renamed to "${newName}"`
                 );
                 // Refresh the parent space
                 spacesTreeProvider.refresh();
               } else {
-                throw new Error('Failed to rename item');
+                throw new Error("Failed to rename item");
               }
-            },
+            }
           );
         } catch (error) {
-          console.error('[Datalayer] Error renaming item:', error);
+          console.error("[Datalayer] Error renaming item:", error);
           vscode.window.showErrorMessage(
-            `Failed to rename item: ${error instanceof Error ? error.message : 'Unknown error'}`,
+            `Failed to rename item: ${
+              error instanceof Error ? error.message : "Unknown error"
+            }`
           );
         }
-      },
-    ),
+      }
+    )
   );
 
   // Delete Item command
   context.subscriptions.push(
     vscode.commands.registerCommand(
-      'datalayer.deleteItem',
+      "datalayer.deleteItem",
       async (item: any) => {
         try {
           if (!item?.data?.document) {
             vscode.window.showErrorMessage(
-              'Please select a document to delete',
+              "Please select a document to delete"
             );
             return;
           }
@@ -611,16 +621,16 @@ export function activate(context: vscode.ExtensionContext): void {
             document.name_t ||
             document.notebook_name_s ||
             document.document_name_s ||
-            'Untitled';
+            "Untitled";
 
           // Confirm deletion
           const confirmation = await vscode.window.showWarningMessage(
             `Are you sure you want to delete "${itemName}"?`,
-            'Delete',
-            'Cancel',
+            "Delete",
+            "Cancel"
           );
 
-          if (confirmation !== 'Delete') {
+          if (confirmation !== "Delete") {
             return;
           }
 
@@ -636,35 +646,37 @@ export function activate(context: vscode.ExtensionContext): void {
 
               if (success) {
                 vscode.window.showInformationMessage(
-                  `Successfully deleted "${itemName}"`,
+                  `Successfully deleted "${itemName}"`
                 );
                 // Refresh the tree
                 spacesTreeProvider.refresh();
               } else {
-                throw new Error('Failed to delete item');
+                throw new Error("Failed to delete item");
               }
-            },
+            }
           );
         } catch (error) {
-          console.error('[Datalayer] Error deleting item:', error);
+          console.error("[Datalayer] Error deleting item:", error);
           vscode.window.showErrorMessage(
-            `Failed to delete item: ${error instanceof Error ? error.message : 'Unknown error'}`,
+            `Failed to delete item: ${
+              error instanceof Error ? error.message : "Unknown error"
+            }`
           );
         }
-      },
-    ),
+      }
+    )
   );
 
   // Register notebook controller status commands
   context.subscriptions.push(
     vscode.commands.registerCommand(
-      'datalayer.showNotebookControllerStatus',
+      "datalayer.showNotebookControllerStatus",
       () => {
         const controllers = runtimeControllerManager.getActiveControllers();
 
         if (controllers.length === 0) {
           vscode.window.showInformationMessage(
-            'No active Datalayer runtime controllers. Login to see available runtimes.',
+            "No active Datalayer runtime controllers. Login to see available runtimes."
           );
           return;
         }
@@ -679,9 +691,11 @@ export function activate(context: vscode.ExtensionContext): void {
           statusMessage += `• ${config.displayName}\n`;
 
           if (runtime) {
-            statusMessage += `  Pod: ${runtime.pod_name || 'N/A'}\n`;
-            statusMessage += `  Status: ${runtime.status || 'Unknown'}\n`;
-            statusMessage += `  Environment: ${runtime.environment_name || runtime.environment_title || 'default'}\n`;
+            statusMessage += `  Pod: ${runtime.pod_name || "N/A"}\n`;
+            statusMessage += `  Status: ${runtime.status || "Unknown"}\n`;
+            statusMessage += `  Environment: ${
+              runtime.environment_name || runtime.environment_title || "default"
+            }\n`;
             if (runtime.credits_used !== undefined && runtime.credits_limit) {
               statusMessage += `  Credits: ${runtime.credits_used}/${runtime.credits_limit}\n`;
             }
@@ -691,26 +705,28 @@ export function activate(context: vscode.ExtensionContext): void {
               statusMessage += `  Environment: ${config.environmentName}\n`;
             }
           }
-          statusMessage += '\n';
+          statusMessage += "\n";
         }
 
         vscode.window.showInformationMessage(statusMessage);
-      },
-    ),
+      }
+    )
   );
 
   context.subscriptions.push(
     vscode.commands.registerCommand(
-      'datalayer.restartNotebookRuntime',
+      "datalayer.restartNotebookRuntime",
       async () => {
         try {
           if (runtimeControllerManager) {
             const controllers = runtimeControllerManager.getActiveControllers();
-            const runtimeControllers = controllers.filter(c => c.activeRuntime);
+            const runtimeControllers = controllers.filter(
+              (c) => c.activeRuntime
+            );
 
             if (runtimeControllers.length === 0) {
               vscode.window.showInformationMessage(
-                'No active runtimes to restart.',
+                "No active runtimes to restart."
               );
               return;
             }
@@ -721,12 +737,14 @@ export function activate(context: vscode.ExtensionContext): void {
               const runtime = controller.activeRuntime!;
 
               const restart = await vscode.window.showWarningMessage(
-                `Restart runtime "${runtime.pod_name || runtime.uid}"? This will interrupt any running executions.`,
-                'Restart',
-                'Cancel',
+                `Restart runtime "${
+                  runtime.pod_name || runtime.uid
+                }"? This will interrupt any running executions.`,
+                "Restart",
+                "Cancel"
               );
 
-              if (restart === 'Restart') {
+              if (restart === "Restart") {
                 // Dispose the controller to force reconnection
                 controller.dispose();
 
@@ -734,12 +752,12 @@ export function activate(context: vscode.ExtensionContext): void {
                 await runtimeControllerManager.forceRefresh();
 
                 vscode.window.showInformationMessage(
-                  'Runtime restarted. Controllers have been refreshed.',
+                  "Runtime restarted. Controllers have been refreshed."
                 );
               }
             } else {
               // Multiple runtimes - show picker
-              const runtimeNames = runtimeControllers.map(c => {
+              const runtimeNames = runtimeControllers.map((c) => {
                 const runtime = c.activeRuntime!;
                 return runtime.pod_name || runtime.uid;
               });
@@ -747,30 +765,30 @@ export function activate(context: vscode.ExtensionContext): void {
               const selectedRuntime = await vscode.window.showQuickPick(
                 runtimeNames,
                 {
-                  placeHolder: 'Select runtime to restart',
-                },
+                  placeHolder: "Select runtime to restart",
+                }
               );
 
               if (selectedRuntime) {
                 const controller = runtimeControllers.find(
-                  c =>
+                  (c) =>
                     (c.activeRuntime!.pod_name || c.activeRuntime!.uid) ===
-                    selectedRuntime,
+                    selectedRuntime
                 );
 
                 if (controller) {
                   const restart = await vscode.window.showWarningMessage(
                     `Restart runtime "${selectedRuntime}"? This will interrupt any running executions.`,
-                    'Restart',
-                    'Cancel',
+                    "Restart",
+                    "Cancel"
                   );
 
-                  if (restart === 'Restart') {
+                  if (restart === "Restart") {
                     controller.dispose();
                     await runtimeControllerManager.forceRefresh();
 
                     vscode.window.showInformationMessage(
-                      `Runtime "${selectedRuntime}" restarted. Controllers have been refreshed.`,
+                      `Runtime "${selectedRuntime}" restarted. Controllers have been refreshed.`
                     );
                   }
                 }
@@ -778,23 +796,23 @@ export function activate(context: vscode.ExtensionContext): void {
             }
           } else {
             vscode.window.showInformationMessage(
-              'No active runtimes to restart.',
+              "No active runtimes to restart."
             );
           }
         } catch (error) {
           vscode.window.showErrorMessage(`Failed to restart runtime: ${error}`);
         }
-      },
-    ),
+      }
+    )
   );
 
   // Note: datalayer.refreshRuntimeControllers command is already registered above
 
   // Set initial authentication context for viewsWelcome
   vscode.commands.executeCommand(
-    'setContext',
-    'datalayer.authenticated',
-    authService.getAuthState().isAuthenticated,
+    "setContext",
+    "datalayer.authenticated",
+    authService.getAuthState().isAuthenticated
   );
 
   context.subscriptions.push(authService);

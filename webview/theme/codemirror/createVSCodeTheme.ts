@@ -9,10 +9,10 @@
  * Creates a proper CodeMirror 6 theme from VS Code colors
  */
 
-import { EditorView } from '@codemirror/view';
-import { Extension } from '@codemirror/state';
-import { HighlightStyle, syntaxHighlighting } from '@codemirror/language';
-import { tags } from '@lezer/highlight';
+import { EditorView } from "@codemirror/view";
+import { Extension } from "@codemirror/state";
+import { HighlightStyle, syntaxHighlighting } from "@codemirror/language";
+import { tags } from "@lezer/highlight";
 
 /**
  * VS Code theme colors for CodeMirror syntax highlighting
@@ -55,56 +55,56 @@ export interface VSCodeThemeColors {
  */
 export function createVSCodeTheme(
   colors: VSCodeThemeColors,
-  isDark: boolean = true,
+  isDark: boolean = true
 ): Extension {
   // Create the editor theme
   const theme = EditorView.theme(
     {
-      '&': {
+      "&": {
         color: colors.foreground,
         backgroundColor: colors.background,
       },
-      '.cm-content': {
+      ".cm-content": {
         caretColor: colors.cursor || colors.foreground,
       },
-      '.cm-cursor, .cm-dropCursor': {
+      ".cm-cursor, .cm-dropCursor": {
         borderLeftColor: colors.cursor || colors.foreground,
       },
-      '&.cm-editor.cm-focused .cm-cursor': {
+      "&.cm-editor.cm-focused .cm-cursor": {
         borderLeftColor: colors.cursor || colors.foreground,
       },
-      '&.cm-editor .cm-selectionBackground, .cm-selectionBackground, ::selection':
+      "&.cm-editor .cm-selectionBackground, .cm-selectionBackground, ::selection":
         {
           backgroundColor:
             colors.selection ||
-            (isDark ? 'rgba(56, 139, 253, 0.4)' : 'rgba(0, 120, 215, 0.3)'),
+            (isDark ? "rgba(56, 139, 253, 0.4)" : "rgba(0, 120, 215, 0.3)"),
         },
-      '&.cm-editor.cm-focused .cm-selectionBackground': {
+      "&.cm-editor.cm-focused .cm-selectionBackground": {
         backgroundColor:
           colors.selection ||
-          (isDark ? 'rgba(56, 139, 253, 0.4)' : 'rgba(0, 120, 215, 0.3)'),
+          (isDark ? "rgba(56, 139, 253, 0.4)" : "rgba(0, 120, 215, 0.3)"),
       },
-      '.cm-activeLine': {
+      ".cm-activeLine": {
         backgroundColor:
           colors.activeLine ||
-          (isDark ? 'rgba(255, 255, 255, 0.04)' : 'rgba(0, 0, 0, 0.02)'),
+          (isDark ? "rgba(255, 255, 255, 0.04)" : "rgba(0, 0, 0, 0.02)"),
       },
-      '.cm-activeLineGutter': {
+      ".cm-activeLineGutter": {
         backgroundColor:
           colors.activeLine ||
-          (isDark ? 'rgba(255, 255, 255, 0.04)' : 'rgba(0, 0, 0, 0.02)'),
+          (isDark ? "rgba(255, 255, 255, 0.04)" : "rgba(0, 0, 0, 0.02)"),
       },
-      '.cm-gutters': {
+      ".cm-gutters": {
         backgroundColor: colors.background,
-        color: isDark ? '#858585' : '#6e7681',
-        borderRight: 'none',
+        color: isDark ? "#858585" : "#6e7681",
+        borderRight: "none",
       },
-      '.cm-lineNumbers .cm-gutterElement': {
-        color: isDark ? '#858585' : '#6e7681',
-        padding: '0 3px 0 5px',
+      ".cm-lineNumbers .cm-gutterElement": {
+        color: isDark ? "#858585" : "#6e7681",
+        padding: "0 3px 0 5px",
       },
     },
-    { dark: isDark },
+    { dark: isDark }
   );
 
   // Create the syntax highlighting style
@@ -122,10 +122,10 @@ export function createVSCodeTheme(
     { tag: tags.regexp, color: colors.string },
 
     // Comments
-    { tag: tags.comment, color: colors.comment, fontStyle: 'italic' },
-    { tag: tags.lineComment, color: colors.comment, fontStyle: 'italic' },
-    { tag: tags.blockComment, color: colors.comment, fontStyle: 'italic' },
-    { tag: tags.docComment, color: colors.comment, fontStyle: 'italic' },
+    { tag: tags.comment, color: colors.comment, fontStyle: "italic" },
+    { tag: tags.lineComment, color: colors.comment, fontStyle: "italic" },
+    { tag: tags.blockComment, color: colors.comment, fontStyle: "italic" },
+    { tag: tags.docComment, color: colors.comment, fontStyle: "italic" },
 
     // Functions and methods
     { tag: tags.function(tags.variableName), color: colors.function },
@@ -190,17 +190,17 @@ export function createVSCodeTheme(
  */
 export function applyVSCodeThemeToEditors(
   colors: VSCodeThemeColors,
-  isDark: boolean = true,
+  isDark: boolean = true
 ): void {
   // Find all CodeMirror instances
-  const editors = document.querySelectorAll('.cm-editor');
+  const editors = document.querySelectorAll(".cm-editor");
 
   if (editors.length === 0) {
     // No editors found yet, they might not be rendered
     return;
   }
 
-  editors.forEach(editorElement => {
+  editors.forEach((editorElement) => {
     // Try to access the CodeMirror view instance
     // CodeMirror 6 stores the view instance on the DOM element
     const cmView =
@@ -217,9 +217,9 @@ export function applyVSCodeThemeToEditors(
           }),
         });
 
-        console.log('[CodeMirror Theme] Applied VS Code theme to editor');
+        console.log("[CodeMirror Theme] Applied VS Code theme to editor");
       } catch (error) {
-        console.error('[CodeMirror Theme] Failed to apply theme:', error);
+        console.error("[CodeMirror Theme] Failed to apply theme:", error);
       }
     } else {
       // Don't log warnings for elements that might not be initialized yet

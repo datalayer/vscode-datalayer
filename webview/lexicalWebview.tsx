@@ -17,18 +17,18 @@
  * @packageDocumentation
  */
 
-import React, { useEffect, useState, useCallback } from 'react';
-import ReactDOM from 'react-dom/client';
-import { LexicalEditor } from './LexicalEditor';
-import './LexicalEditor.css';
+import React, { useEffect, useState, useCallback } from "react";
+import ReactDOM from "react-dom/client";
+import { LexicalEditor } from "./LexicalEditor";
+import "./LexicalEditor.css";
 
 // Configure webpack public path for WASM loading
 declare let __webpack_public_path__: string;
 if (
-  typeof __webpack_public_path__ !== 'undefined' &&
+  typeof __webpack_public_path__ !== "undefined" &&
   !(window as any).__webpack_public_path__
 ) {
-  const baseUri = document.querySelector('base')?.getAttribute('href');
+  const baseUri = document.querySelector("base")?.getAttribute("href");
   if (baseUri) {
     __webpack_public_path__ = baseUri;
     (window as any).__webpack_public_path__ = baseUri;
@@ -69,7 +69,7 @@ const getVSCodeAPI = () => {
     (window as any).vscode = api;
     return api;
   } catch (error) {
-    console.error('Failed to acquire VS Code API:', error);
+    console.error("Failed to acquire VS Code API:", error);
     return null;
   }
 };
@@ -123,7 +123,7 @@ interface WebviewMessage {
  * @returns {React.ReactElement} The Lexical editor wrapped with VS Code integration
  */
 function LexicalWebview() {
-  const [content, setContent] = useState<string>('');
+  const [content, setContent] = useState<string>("");
   const [isEditable, setIsEditable] = useState(true);
   const [isReady, setIsReady] = useState(false);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
@@ -137,7 +137,7 @@ function LexicalWebview() {
       const message = event.data;
 
       switch (message.type) {
-        case 'update': {
+        case "update": {
           if (message.content && message.content.length > 0) {
             const decoder = new TextDecoder();
             const jsonString = decoder.decode(new Uint8Array(message.content));
@@ -154,14 +154,14 @@ function LexicalWebview() {
           }
           break;
         }
-        case 'getFileData': {
+        case "getFileData": {
           // Send current content back as Uint8Array
           if (vscode) {
             const currentContent = vscode.getState()?.content || content;
             const encoder = new TextEncoder();
             const encoded = encoder.encode(currentContent);
             vscode.postMessage({
-              type: 'response',
+              type: "response",
               requestId: message.requestId,
               body: Array.from(encoded),
             });
@@ -171,7 +171,7 @@ function LexicalWebview() {
       }
     };
 
-    window.addEventListener('message', messageHandler);
+    window.addEventListener("message", messageHandler);
 
     // Check if we have saved state
     if (vscode) {
@@ -183,15 +183,15 @@ function LexicalWebview() {
       }
 
       // Tell the extension we're ready
-      vscode.postMessage({ type: 'ready' });
+      vscode.postMessage({ type: "ready" });
     }
 
-    return () => window.removeEventListener('message', messageHandler);
+    return () => window.removeEventListener("message", messageHandler);
   }, [content]);
 
   const handleSave = useCallback((newContent: string) => {
     if (!vscode) {
-      console.error('VS Code API not available');
+      console.error("VS Code API not available");
       return;
     }
     // Save to VS Code state
@@ -200,14 +200,14 @@ function LexicalWebview() {
 
     // Trigger VS Code save command
     vscode.postMessage({
-      type: 'save',
+      type: "save",
     });
   }, []);
 
   const handleContentChange = useCallback(
     (newContent: string) => {
       if (!vscode) {
-        console.error('VS Code API not available');
+        console.error("VS Code API not available");
         return;
       }
       // Update local state
@@ -220,7 +220,7 @@ function LexicalWebview() {
         // Only notify extension about content change if it's not the initial load
         if (!isInitialLoad) {
           vscode.postMessage({
-            type: 'contentChanged',
+            type: "contentChanged",
             content: newContent,
           });
         } else {
@@ -229,17 +229,17 @@ function LexicalWebview() {
         }
       }
     },
-    [isInitialLoad, collaborationConfig.enabled],
+    [isInitialLoad, collaborationConfig.enabled]
   );
 
   return (
     <div
       style={{
-        height: '100vh',
-        width: '100vw',
-        overflow: 'hidden',
-        backgroundColor: 'var(--vscode-editor-background)',
-        color: 'var(--vscode-editor-foreground)',
+        height: "100vh",
+        width: "100vw",
+        overflow: "hidden",
+        backgroundColor: "var(--vscode-editor-background)",
+        color: "var(--vscode-editor-foreground)",
       }}
     >
       {isReady ? (
@@ -254,11 +254,11 @@ function LexicalWebview() {
       ) : (
         <div
           style={{
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
-            height: '100vh',
-            color: 'var(--vscode-descriptionForeground)',
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            height: "100vh",
+            color: "var(--vscode-descriptionForeground)",
           }}
         >
           Loading editor...
@@ -269,7 +269,7 @@ function LexicalWebview() {
 }
 
 // Initialize the React app
-const container = document.getElementById('root');
+const container = document.getElementById("root");
 if (container) {
   try {
     const root = ReactDOM.createRoot(container);

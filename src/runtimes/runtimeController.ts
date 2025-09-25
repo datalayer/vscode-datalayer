@@ -11,16 +11,16 @@
  * Provides WebSocket-based Jupyter protocol communication and output handling.
  */
 
-import * as vscode from 'vscode';
-import { WebSocket } from 'ws';
-import { v4 as uuidv4 } from 'uuid';
-import { AuthService } from '../auth/authService';
-import { SpacerApiService } from '../spaces/spacerApiService';
-import { RuntimesApiService, RuntimeResponse } from './runtimesApiService';
+import * as vscode from "vscode";
+import { WebSocket } from "ws";
+import { v4 as uuidv4 } from "uuid";
+import { AuthService } from "../auth/authService";
+import { SpacerApiService } from "../spaces/spacerApiService";
+import { RuntimesApiService, RuntimeResponse } from "./runtimesApiService";
 import {
   RuntimeControllerConfig,
   RuntimeControllerType,
-} from './runtimeControllerManager';
+} from "./runtimeControllerManager";
 
 /**
  * Interface for notebook cell execution context.
@@ -91,7 +91,7 @@ export class RuntimeController implements vscode.Disposable {
   constructor(
     context: vscode.ExtensionContext,
     config: RuntimeControllerConfig,
-    spacerApiService: SpacerApiService,
+    spacerApiService: SpacerApiService
   ) {
     this._context = context;
     this._config = config;
@@ -107,14 +107,14 @@ export class RuntimeController implements vscode.Disposable {
     // Create the notebook controller
     this._controller = vscode.notebooks.createNotebookController(
       this.getControllerId(),
-      'jupyter-notebook',
-      config.displayName,
+      "jupyter-notebook",
+      config.displayName
     );
 
     // Configure controller properties
     this._controller.description = config.description;
     this._controller.detail = config.detail;
-    this._controller.supportedLanguages = ['python'];
+    this._controller.supportedLanguages = ["python"];
     this._controller.supportsExecutionOrder = true;
 
     // Set execution handler
@@ -123,10 +123,10 @@ export class RuntimeController implements vscode.Disposable {
     // For selector controllers, handle selection immediately
     if (config.type !== RuntimeControllerType.ExistingRuntime) {
       // When this controller is selected, immediately show the runtime picker
-      this._controller.onDidChangeSelectedNotebooks(async e => {
+      this._controller.onDidChangeSelectedNotebooks(async (e) => {
         if (e.selected && e.notebook) {
           console.log(
-            '[RuntimeController] Selector controller selected, showing runtime picker',
+            "[RuntimeController] Selector controller selected, showing runtime picker"
           );
           // Show the runtime selector when the controller is selected
           await this._showRuntimeSelectorForNotebook(e.notebook);
@@ -139,7 +139,7 @@ export class RuntimeController implements vscode.Disposable {
     context.subscriptions.push(this);
 
     console.log(
-      `[RuntimeController] Controller created: ${this.getControllerId()}`,
+      `[RuntimeController] Controller created: ${this.getControllerId()}`
     );
   }
 
@@ -164,7 +164,7 @@ export class RuntimeController implements vscode.Disposable {
     }
 
     console.log(
-      `[RuntimeController] Updated config for: ${this.getControllerId()}`,
+      `[RuntimeController] Updated config for: ${this.getControllerId()}`
     );
   }
 
@@ -179,9 +179,9 @@ export class RuntimeController implements vscode.Disposable {
       case RuntimeControllerType.ExistingRuntime:
         return `datalayer-runtime-${this._config.runtime!.uid}`;
       case RuntimeControllerType.CreatePythonCpu:
-        return 'datalayer-create-python-cpu';
+        return "datalayer-create-python-cpu";
       case RuntimeControllerType.CreateAiEnv:
-        return 'datalayer-create-ai-env';
+        return "datalayer-create-ai-env";
       default:
         throw new Error(`Unknown controller type: ${this._config.type}`);
     }
@@ -211,10 +211,12 @@ export class RuntimeController implements vscode.Disposable {
   private async _executeHandler(
     cells: vscode.NotebookCell[],
     _notebook: vscode.NotebookDocument,
-    _controller: vscode.NotebookController,
+    _controller: vscode.NotebookController
   ): Promise<void> {
     console.log(
-      `[RuntimeController] Executing cells: ${cells.length} (${this.getControllerId()})`,
+      `[RuntimeController] Executing cells: ${
+        cells.length
+      } (${this.getControllerId()})`
     );
 
     // Check authentication first
@@ -228,8 +230,8 @@ export class RuntimeController implements vscode.Disposable {
       // If we already have an active runtime from a previous selection, use it
       if (this._activeRuntime) {
         console.log(
-          '[RuntimeController] Using previously selected runtime:',
-          this._activeRuntime.pod_name,
+          "[RuntimeController] Using previously selected runtime:",
+          this._activeRuntime.pod_name
         );
         // Execute with the existing runtime
         for (const cell of cells) {
@@ -247,7 +249,7 @@ export class RuntimeController implements vscode.Disposable {
 
             execution.end(true, Date.now());
           } catch (error) {
-            console.error('[RuntimeController] Cell execution failed:', error);
+            console.error("[RuntimeController] Cell execution failed:", error);
 
             execution.replaceOutput([
               new vscode.NotebookCellOutput([
@@ -262,7 +264,7 @@ export class RuntimeController implements vscode.Disposable {
       }
 
       // Show runtime picker for first-time selection or creation
-      console.log('[RuntimeController] Showing runtime selector');
+      console.log("[RuntimeController] Showing runtime selector");
       await this._showRuntimeSelector(cells);
       return;
     }
@@ -283,7 +285,7 @@ export class RuntimeController implements vscode.Disposable {
 
         execution.end(true, Date.now());
       } catch (error) {
-        console.error('[RuntimeController] Cell execution failed:', error);
+        console.error("[RuntimeController] Cell execution failed:", error);
 
         // Add error output to cell
         execution.replaceOutput([
@@ -307,16 +309,16 @@ export class RuntimeController implements vscode.Disposable {
    * @returns {Promise<void>}
    */
   private async _handleUnauthenticatedExecution(
-    cells: vscode.NotebookCell[],
+    cells: vscode.NotebookCell[]
   ): Promise<void> {
-    const loginAction = 'Login to Datalayer';
+    const loginAction = "Login to Datalayer";
     const selection = await vscode.window.showErrorMessage(
-      'You must be logged in to execute cells with Datalayer Runtime.',
-      loginAction,
+      "You must be logged in to execute cells with Datalayer Runtime.",
+      loginAction
     );
 
     if (selection === loginAction) {
-      await vscode.commands.executeCommand('datalayer.login');
+      await vscode.commands.executeCommand("datalayer.login");
       return;
     }
 
@@ -329,8 +331,8 @@ export class RuntimeController implements vscode.Disposable {
         new vscode.NotebookCellOutput([
           vscode.NotebookCellOutputItem.error(
             new Error(
-              'Authentication required: Please login to Datalayer to execute cells.',
-            ),
+              "Authentication required: Please login to Datalayer to execute cells."
+            )
           ),
         ]),
       ]);
@@ -349,22 +351,22 @@ export class RuntimeController implements vscode.Disposable {
    * @returns {Promise<void>}
    */
   private async _showRuntimeSelectorForNotebook(
-    notebook: vscode.NotebookDocument,
+    notebook: vscode.NotebookDocument
   ): Promise<void> {
     try {
-      console.log('[RuntimeController] Showing runtime selector for notebook');
+      console.log("[RuntimeController] Showing runtime selector for notebook");
 
       // Check authentication
       const authState = this._authService.getAuthState();
       if (!authState.isAuthenticated) {
-        const loginAction = 'Login to Datalayer';
+        const loginAction = "Login to Datalayer";
         const selection = await vscode.window.showErrorMessage(
-          'You must be logged in to select or create Datalayer runtimes.',
-          loginAction,
+          "You must be logged in to select or create Datalayer runtimes.",
+          loginAction
         );
 
         if (selection === loginAction) {
-          await vscode.commands.executeCommand('datalayer.login');
+          await vscode.commands.executeCommand("datalayer.login");
         }
         return;
       }
@@ -374,7 +376,7 @@ export class RuntimeController implements vscode.Disposable {
 
       // Create picker options
       interface RuntimePickerItem extends vscode.QuickPickItem {
-        type: 'existing' | 'create';
+        type: "existing" | "create";
         runtime?: RuntimeResponse;
         environmentName?: string;
       }
@@ -384,20 +386,20 @@ export class RuntimeController implements vscode.Disposable {
       // Add existing runtimes
       for (const runtime of runtimes) {
         if (
-          runtime.status === 'running' ||
-          runtime.status === 'ready' ||
+          runtime.status === "running" ||
+          runtime.status === "ready" ||
           (!runtime.status && runtime.ingress && runtime.token)
         ) {
           const runtimeName =
             runtime.given_name || runtime.pod_name || runtime.uid;
           const environmentName =
-            runtime.environment_name || runtime.environment_title || 'default';
+            runtime.environment_name || runtime.environment_title || "default";
 
           pickerItems.push({
             label: `$(server) ${runtimeName}`,
             description: environmentName,
-            detail: `Use existing runtime (${runtime.status || 'active'})`,
-            type: 'existing',
+            detail: `Use existing runtime (${runtime.status || "active"})`,
+            type: "existing",
             runtime,
           });
         }
@@ -406,46 +408,46 @@ export class RuntimeController implements vscode.Disposable {
       // Add separator if there are existing runtimes
       if (pickerItems.length > 0) {
         pickerItems.push({
-          label: '',
+          label: "",
           kind: vscode.QuickPickItemKind.Separator,
-          type: 'existing',
+          type: "existing",
         } as any);
       }
 
       // Add creation options
       pickerItems.push({
-        label: '$(add) Create Python CPU Runtime',
-        description: 'python-cpu-env',
+        label: "$(add) Create Python CPU Runtime",
+        description: "python-cpu-env",
         detail:
-          'Create a new Python CPU runtime with standard scientific libraries',
-        type: 'create',
-        environmentName: 'python-cpu-env',
+          "Create a new Python CPU runtime with standard scientific libraries",
+        type: "create",
+        environmentName: "python-cpu-env",
       });
 
       pickerItems.push({
-        label: '$(add) Create AI Runtime',
-        description: 'ai-env',
-        detail: 'Create a new AI runtime with machine learning frameworks',
-        type: 'create',
-        environmentName: 'ai-env',
+        label: "$(add) Create AI Runtime",
+        description: "ai-env",
+        detail: "Create a new AI runtime with machine learning frameworks",
+        type: "create",
+        environmentName: "ai-env",
       });
 
       // Show picker
       const selected = await vscode.window.showQuickPick(pickerItems, {
-        title: 'Select or Create Datalayer Runtime',
-        placeHolder: 'Choose an existing runtime or create a new one',
+        title: "Select or Create Datalayer Runtime",
+        placeHolder: "Choose an existing runtime or create a new one",
       });
 
       if (!selected) {
         return; // User cancelled
       }
 
-      if (selected.type === 'existing') {
+      if (selected.type === "existing") {
         // Use existing runtime
         this._activeRuntime = selected.runtime!;
         console.log(
-          '[RuntimeController] Selected existing runtime:',
-          this._activeRuntime.pod_name,
+          "[RuntimeController] Selected existing runtime:",
+          this._activeRuntime.pod_name
         );
 
         // Update the controller label to show the selected runtime
@@ -459,23 +461,23 @@ export class RuntimeController implements vscode.Disposable {
         // Associate this controller with the notebook
         this._controller.updateNotebookAffinity(
           notebook,
-          vscode.NotebookControllerAffinity.Default,
+          vscode.NotebookControllerAffinity.Default
         );
 
         vscode.window.showInformationMessage(
-          `Selected runtime: ${runtimeName}`,
+          `Selected runtime: ${runtimeName}`
         );
 
         // Trigger a refresh to show the selected runtime in the picker
         console.log(
-          '[RuntimeController] Triggering controller manager refresh after runtime selection',
+          "[RuntimeController] Triggering controller manager refresh after runtime selection"
         );
-        vscode.commands.executeCommand('datalayer.refreshRuntimeControllers');
+        vscode.commands.executeCommand("datalayer.refreshRuntimeControllers");
       } else {
         // Create new runtime
         const creditsLimit = vscode.workspace
-          .getConfiguration('datalayer.runtime')
-          .get<number>('creditsLimit', 10);
+          .getConfiguration("datalayer.runtime")
+          .get<number>("creditsLimit", 10);
 
         await vscode.window.withProgress(
           {
@@ -483,7 +485,7 @@ export class RuntimeController implements vscode.Disposable {
             title: `Creating ${selected.environmentName} runtime...`,
             cancellable: false,
           },
-          async progress => {
+          async (progress) => {
             try {
               // Generate a unique name for the runtime
               const shortId = Math.random()
@@ -491,20 +493,20 @@ export class RuntimeController implements vscode.Disposable {
                 .substring(2, 8)
                 .toUpperCase();
               const envDisplayName =
-                selected.environmentName === 'python-cpu-env'
-                  ? 'Python CPU Env'
-                  : 'AI Env';
+                selected.environmentName === "python-cpu-env"
+                  ? "Python CPU Env"
+                  : "AI Env";
               const generatedName = `VSCode Runtime ${shortId}`;
 
               const runtime = await this._runtimesApiService.createRuntime(
                 creditsLimit,
-                'notebook',
+                "notebook",
                 generatedName,
-                selected.environmentName!,
+                selected.environmentName!
               );
 
               if (!runtime) {
-                throw new Error('Failed to create runtime');
+                throw new Error("Failed to create runtime");
               }
 
               this._activeRuntime = runtime;
@@ -518,32 +520,36 @@ export class RuntimeController implements vscode.Disposable {
               // Associate this controller with the notebook
               this._controller.updateNotebookAffinity(
                 notebook,
-                vscode.NotebookControllerAffinity.Default,
+                vscode.NotebookControllerAffinity.Default
               );
 
               vscode.window.showInformationMessage(
-                `Successfully created runtime: ${displayName}`,
+                `Successfully created runtime: ${displayName}`
               );
 
               // Trigger a refresh of the controller manager to create a proper controller for this runtime
               console.log(
-                '[RuntimeController] Triggering controller manager refresh after runtime creation',
+                "[RuntimeController] Triggering controller manager refresh after runtime creation"
               );
               vscode.commands.executeCommand(
-                'datalayer.refreshRuntimeControllers',
+                "datalayer.refreshRuntimeControllers"
               );
             } catch (error) {
               vscode.window.showErrorMessage(
-                `Failed to create runtime: ${error instanceof Error ? error.message : 'Unknown error'}`,
+                `Failed to create runtime: ${
+                  error instanceof Error ? error.message : "Unknown error"
+                }`
               );
             }
-          },
+          }
         );
       }
     } catch (error) {
-      console.error('[RuntimeController] Runtime selection failed:', error);
+      console.error("[RuntimeController] Runtime selection failed:", error);
       vscode.window.showErrorMessage(
-        `Failed to select runtime: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        `Failed to select runtime: ${
+          error instanceof Error ? error.message : "Unknown error"
+        }`
       );
     }
   }
@@ -558,13 +564,13 @@ export class RuntimeController implements vscode.Disposable {
    * @returns {Promise<void>}
    */
   private async _showRuntimeSelector(
-    cells: vscode.NotebookCell[],
+    cells: vscode.NotebookCell[]
   ): Promise<void> {
     try {
       // Extensive debugging start
-      console.log('='.repeat(80));
-      console.log('[RuntimeController] KERNEL SELECTION DEBUG SESSION START');
-      console.log('[RuntimeController] Controller config:', {
+      console.log("=".repeat(80));
+      console.log("[RuntimeController] KERNEL SELECTION DEBUG SESSION START");
+      console.log("[RuntimeController] Controller config:", {
         type: this._config.type,
         displayName: this._config.displayName,
         environmentName: this._config.environmentName,
@@ -579,7 +585,7 @@ export class RuntimeController implements vscode.Disposable {
 
       // Check authentication status
       const authState = this._authService.getAuthState();
-      console.log('[RuntimeController] Authentication status:', {
+      console.log("[RuntimeController] Authentication status:", {
         isAuthenticated: authState.isAuthenticated,
         hasToken: !!this._authService.getToken(),
         serverUrl: this._authService.getServerUrl(),
@@ -587,33 +593,33 @@ export class RuntimeController implements vscode.Disposable {
 
       if (!authState.isAuthenticated) {
         console.log(
-          '[RuntimeController] ERROR: User not authenticated, cannot fetch runtimes',
+          "[RuntimeController] ERROR: User not authenticated, cannot fetch runtimes"
         );
-        throw new Error('Please login to Datalayer to access runtimes');
+        throw new Error("Please login to Datalayer to access runtimes");
       }
 
       // Fetch available runtimes
       console.log(
-        '[RuntimeController] Fetching available runtimes from API...',
+        "[RuntimeController] Fetching available runtimes from API..."
       );
       const startTime = Date.now();
       const runtimes = await this._runtimesApiService.listRuntimes();
       const fetchTime = Date.now() - startTime;
 
-      console.log('[RuntimeController] API call completed in', fetchTime, 'ms');
-      console.log('[RuntimeController] API Response Summary:', {
+      console.log("[RuntimeController] API call completed in", fetchTime, "ms");
+      console.log("[RuntimeController] API Response Summary:", {
         totalRuntimes: runtimes.length,
         responseTime: `${fetchTime}ms`,
         hasRuntimes: runtimes.length > 0,
       });
       console.log(
-        '[RuntimeController] Full API response:',
-        JSON.stringify(runtimes, null, 2),
+        "[RuntimeController] Full API response:",
+        JSON.stringify(runtimes, null, 2)
       );
 
       // Create picker options
       interface RuntimePickerItem extends vscode.QuickPickItem {
-        type: 'existing' | 'create';
+        type: "existing" | "create";
         runtime?: RuntimeResponse;
         environmentName?: string;
       }
@@ -626,8 +632,8 @@ export class RuntimeController implements vscode.Disposable {
       const otherRuntimes: RuntimeResponse[] = [];
 
       // Add existing runtimes
-      console.log('[RuntimeController] ANALYZING RUNTIMES');
-      console.log('[RuntimeController] Total runtimes found:', runtimes.length);
+      console.log("[RuntimeController] ANALYZING RUNTIMES");
+      console.log("[RuntimeController] Total runtimes found:", runtimes.length);
 
       for (let i = 0; i < runtimes.length; i++) {
         const runtime = runtimes[i];
@@ -642,37 +648,43 @@ export class RuntimeController implements vscode.Disposable {
             environment_title: runtime.environment_title,
             credits_limit: runtime.credits_limit,
             credits_used: runtime.credits_used,
-            ingress: runtime.ingress ? 'present' : 'missing',
-            token: runtime.token ? 'present' : 'missing',
-          },
+            ingress: runtime.ingress ? "present" : "missing",
+            token: runtime.token ? "present" : "missing",
+          }
         );
 
         // Categorize runtime by status
-        if (runtime.status === 'running') {
+        if (runtime.status === "running") {
           runningRuntimes.push(runtime);
           console.log(
-            `[RuntimeController] Runtime ${i + 1} is RUNNING - will be added to picker`,
+            `[RuntimeController] Runtime ${
+              i + 1
+            } is RUNNING - will be added to picker`
           );
-        } else if (runtime.status === 'ready') {
+        } else if (runtime.status === "ready") {
           readyRuntimes.push(runtime);
           console.log(
-            `[RuntimeController] Runtime ${i + 1} is READY - will be added to picker`,
+            `[RuntimeController] Runtime ${
+              i + 1
+            } is READY - will be added to picker`
           );
         } else {
           otherRuntimes.push(runtime);
           console.log(
-            `[RuntimeController] Runtime ${i + 1} has status '${runtime.status}' - will be skipped`,
+            `[RuntimeController] Runtime ${i + 1} has status '${
+              runtime.status
+            }' - will be skipped`
           );
         }
 
         // Only add running/ready runtimes to picker
-        if (runtime.status === 'running' || runtime.status === 'ready') {
+        if (runtime.status === "running" || runtime.status === "ready") {
           const runtimeName =
             runtime.given_name || runtime.pod_name || runtime.uid;
           const environmentName =
-            runtime.environment_name || runtime.environment_title || 'default';
+            runtime.environment_name || runtime.environment_title || "default";
 
-          let creditsInfo = '';
+          let creditsInfo = "";
           if (runtime.credits_limit && runtime.credits_used !== undefined) {
             creditsInfo = ` (${runtime.credits_used}/${runtime.credits_limit} credits)`;
           }
@@ -681,7 +693,7 @@ export class RuntimeController implements vscode.Disposable {
             label: `$(server) ${runtimeName}`,
             description: `${environmentName}${creditsInfo}`,
             detail: `Status: ${runtime.status} • Ready to use`,
-            type: 'existing' as const,
+            type: "existing" as const,
             runtime,
           };
 
@@ -694,14 +706,14 @@ export class RuntimeController implements vscode.Disposable {
           pickerItems.push(pickerItem);
         } else {
           console.log(
-            '[RuntimeController] Skipping runtime due to status:',
-            runtime.status,
+            "[RuntimeController] Skipping runtime due to status:",
+            runtime.status
           );
         }
       }
 
       // Runtime analysis summary
-      console.log('[RuntimeController] RUNTIME ANALYSIS SUMMARY:', {
+      console.log("[RuntimeController] RUNTIME ANALYSIS SUMMARY:", {
         totalRuntimes: runtimes.length,
         runningRuntimes: runningRuntimes.length,
         readyRuntimes: readyRuntimes.length,
@@ -710,72 +722,72 @@ export class RuntimeController implements vscode.Disposable {
       });
 
       console.log(
-        '[RuntimeController] Running runtimes:',
-        runningRuntimes.map(r => ({
+        "[RuntimeController] Running runtimes:",
+        runningRuntimes.map((r) => ({
           name: r.given_name || r.pod_name,
           environment: r.environment_name,
           status: r.status,
-        })),
+        }))
       );
 
       console.log(
-        '[RuntimeController] Ready runtimes:',
-        readyRuntimes.map(r => ({
+        "[RuntimeController] Ready runtimes:",
+        readyRuntimes.map((r) => ({
           name: r.given_name || r.pod_name,
           environment: r.environment_name,
           status: r.status,
-        })),
+        }))
       );
 
       // Add creation options
       const createPythonOption = {
-        label: '$(add) Create Python CPU Runtime',
-        description: 'Standard scientific libraries',
-        detail: 'NumPy, Pandas, Matplotlib, Scikit-learn, etc.',
-        type: 'create' as const,
-        environmentName: 'python-cpu-env',
+        label: "$(add) Create Python CPU Runtime",
+        description: "Standard scientific libraries",
+        detail: "NumPy, Pandas, Matplotlib, Scikit-learn, etc.",
+        type: "create" as const,
+        environmentName: "python-cpu-env",
       };
 
       const createAiOption = {
-        label: '$(add) Create AI Runtime',
-        description: 'Machine learning frameworks',
-        detail: 'TensorFlow, PyTorch, Transformers, etc.',
-        type: 'create' as const,
-        environmentName: 'ai-env',
+        label: "$(add) Create AI Runtime",
+        description: "Machine learning frameworks",
+        detail: "TensorFlow, PyTorch, Transformers, etc.",
+        type: "create" as const,
+        environmentName: "ai-env",
       };
 
       pickerItems.push(createPythonOption, createAiOption);
 
-      console.log('[RuntimeController] Added creation options to picker');
+      console.log("[RuntimeController] Added creation options to picker");
       console.log(
-        '[RuntimeController] Final picker items count:',
-        pickerItems.length,
+        "[RuntimeController] Final picker items count:",
+        pickerItems.length
       );
       console.log(
-        '[RuntimeController] All picker items:',
-        pickerItems.map(item => ({
+        "[RuntimeController] All picker items:",
+        pickerItems.map((item) => ({
           label: item.label,
           description: item.description,
           type: item.type,
-        })),
+        }))
       );
 
       // Show picker
-      console.log('[RuntimeController] Displaying runtime picker to user...');
+      console.log("[RuntimeController] Displaying runtime picker to user...");
       const selected = await vscode.window.showQuickPick(pickerItems, {
-        placeHolder: 'Select a Datalayer runtime or create a new one',
-        title: 'Datalayer Runtime Selection',
+        placeHolder: "Select a Datalayer runtime or create a new one",
+        title: "Datalayer Runtime Selection",
       });
 
       console.log(
-        '[RuntimeController] User selection result:',
+        "[RuntimeController] User selection result:",
         selected
           ? {
               label: selected.label,
               type: selected.type,
               hasRuntime: !!selected.runtime,
             }
-          : 'No selection (cancelled)',
+          : "No selection (cancelled)"
       );
 
       if (!selected) {
@@ -788,12 +800,12 @@ export class RuntimeController implements vscode.Disposable {
         return;
       }
 
-      if (selected.type === 'existing') {
+      if (selected.type === "existing") {
         // Use existing runtime
         this._activeRuntime = selected.runtime!;
         console.log(
-          '[RuntimeController] Selected existing runtime:',
-          this._activeRuntime.pod_name,
+          "[RuntimeController] Selected existing runtime:",
+          this._activeRuntime.pod_name
         );
 
         // Update controller label to show selected runtime
@@ -807,27 +819,27 @@ export class RuntimeController implements vscode.Disposable {
         // IMPORTANT: First trigger a refresh to ensure a proper controller exists for this runtime
         // This needs to happen BEFORE we try to execute cells
         console.log(
-          '[RuntimeController] Triggering controller manager refresh for selected runtime:',
-          this._activeRuntime.uid,
+          "[RuntimeController] Triggering controller manager refresh for selected runtime:",
+          this._activeRuntime.uid
         );
         const existingController = await vscode.commands.executeCommand<any>(
-          'datalayer.refreshRuntimeControllers',
-          this._activeRuntime.uid,
+          "datalayer.refreshRuntimeControllers",
+          this._activeRuntime.uid
         );
 
         // If we got a specific runtime controller back, use it to execute the cells
         // Otherwise fall back to executing with this selector controller
         if (
           existingController &&
-          typeof existingController._executeCellsWithRuntime === 'function'
+          typeof existingController._executeCellsWithRuntime === "function"
         ) {
           console.log(
-            '[RuntimeController] Using existing runtime controller to execute cells',
+            "[RuntimeController] Using existing runtime controller to execute cells"
           );
           await existingController._executeCellsWithRuntime(cells);
         } else {
           console.log(
-            '[RuntimeController] No specific controller returned, executing with selector controller',
+            "[RuntimeController] No specific controller returned, executing with selector controller"
           );
           await this._executeCellsWithRuntime(cells);
         }
@@ -835,40 +847,40 @@ export class RuntimeController implements vscode.Disposable {
         // Create new runtime
         const createdRuntimeUid = await this._createAndExecuteRuntime(
           selected.environmentName!,
-          cells,
+          cells
         );
 
         // Wait a bit for the runtime to be fully initialized and show up in the API
         console.log(
-          '[RuntimeController] Waiting 3 seconds for runtime to be fully initialized...',
+          "[RuntimeController] Waiting 3 seconds for runtime to be fully initialized..."
         );
-        await new Promise(resolve => setTimeout(resolve, 3000));
+        await new Promise((resolve) => setTimeout(resolve, 3000));
 
         // Force a refresh of the controller manager to ensure we have the latest runtimes
         console.log(
-          '[RuntimeController] Refreshing controller manager to get latest runtimes...',
+          "[RuntimeController] Refreshing controller manager to get latest runtimes..."
         );
         await vscode.commands.executeCommand(
-          'datalayer.refreshRuntimeControllers',
+          "datalayer.refreshRuntimeControllers"
         );
 
         // After creating the runtime, show the picker again so user can select the newly created runtime
         console.log(
-          '[RuntimeController] Showing runtime picker again after creation to select the new runtime',
+          "[RuntimeController] Showing runtime picker again after creation to select the new runtime"
         );
         await this._showRuntimeSelector(cells);
       }
 
       console.log(
-        '[RuntimeController] KERNEL SELECTION DEBUG SESSION END - SUCCESS',
+        "[RuntimeController] KERNEL SELECTION DEBUG SESSION END - SUCCESS"
       );
-      console.log('='.repeat(80));
+      console.log("=".repeat(80));
     } catch (error) {
-      console.error('[RuntimeController] Runtime selection failed:', error);
+      console.error("[RuntimeController] Runtime selection failed:", error);
       console.log(
-        '[RuntimeController] KERNEL SELECTION DEBUG SESSION END - ERROR',
+        "[RuntimeController] KERNEL SELECTION DEBUG SESSION END - ERROR"
       );
-      console.log('='.repeat(80));
+      console.log("=".repeat(80));
 
       // Mark all cells as failed
       for (const cell of cells) {
@@ -879,8 +891,10 @@ export class RuntimeController implements vscode.Disposable {
           new vscode.NotebookCellOutput([
             vscode.NotebookCellOutputItem.error(
               new Error(
-                `Failed to fetch runtimes: ${error instanceof Error ? error.message : 'Unknown error'}`,
-              ),
+                `Failed to fetch runtimes: ${
+                  error instanceof Error ? error.message : "Unknown error"
+                }`
+              )
             ),
           ]),
         ]);
@@ -889,7 +903,9 @@ export class RuntimeController implements vscode.Disposable {
       }
 
       vscode.window.showErrorMessage(
-        `Failed to fetch runtimes: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        `Failed to fetch runtimes: ${
+          error instanceof Error ? error.message : "Unknown error"
+        }`
       );
     }
   }
@@ -903,7 +919,7 @@ export class RuntimeController implements vscode.Disposable {
    * @returns {Promise<void>}
    */
   public async _executeCellsWithRuntime(
-    cells: vscode.NotebookCell[],
+    cells: vscode.NotebookCell[]
   ): Promise<void> {
     for (const cell of cells) {
       const execution = this._controller.createNotebookCellExecution(cell);
@@ -920,7 +936,7 @@ export class RuntimeController implements vscode.Disposable {
 
         execution.end(true, Date.now());
       } catch (error) {
-        console.error('[RuntimeController] Cell execution failed:', error);
+        console.error("[RuntimeController] Cell execution failed:", error);
 
         execution.replaceOutput([
           new vscode.NotebookCellOutput([
@@ -944,11 +960,11 @@ export class RuntimeController implements vscode.Disposable {
    */
   private async _createAndExecuteRuntime(
     environmentName: string,
-    cells: vscode.NotebookCell[],
+    cells: vscode.NotebookCell[]
   ): Promise<string | undefined> {
     const creditsLimit = vscode.workspace
-      .getConfiguration('datalayer.runtime')
-      .get<number>('creditsLimit', 10);
+      .getConfiguration("datalayer.runtime")
+      .get<number>("creditsLimit", 10);
 
     // Show progress while creating runtime - IMPORTANT: We must return the promise from withProgress
     return await vscode.window.withProgress(
@@ -957,10 +973,10 @@ export class RuntimeController implements vscode.Disposable {
         title: `Creating ${environmentName} runtime...`,
         cancellable: false,
       },
-      async progress => {
+      async (progress) => {
         progress.report({
           increment: 0,
-          message: 'Requesting new runtime...',
+          message: "Requesting new runtime...",
         });
 
         try {
@@ -970,12 +986,12 @@ export class RuntimeController implements vscode.Disposable {
             .substring(2, 8)
             .toUpperCase();
           const envDisplayName =
-            environmentName === 'python-cpu-env' ? 'Python CPU Env' : 'AI Env';
+            environmentName === "python-cpu-env" ? "Python CPU Env" : "AI Env";
           const generatedName = `VSCode Runtime - ${shortId}`;
 
-          console.log('[RuntimeController] Creating runtime with parameters:', {
+          console.log("[RuntimeController] Creating runtime with parameters:", {
             creditsLimit,
-            type: 'notebook',
+            type: "notebook",
             givenName: generatedName,
             environmentName,
           });
@@ -983,18 +999,18 @@ export class RuntimeController implements vscode.Disposable {
           // Create the runtime
           const runtime = await this._runtimesApiService.createRuntime(
             creditsLimit,
-            'notebook',
+            "notebook",
             generatedName,
-            environmentName,
+            environmentName
           );
 
           if (!runtime) {
-            throw new Error('Failed to create runtime');
+            throw new Error("Failed to create runtime");
           }
 
           progress.report({
             increment: 50,
-            message: 'Runtime created, waiting for initialization...',
+            message: "Runtime created, waiting for initialization...",
           });
 
           // Store the created runtime
@@ -1014,36 +1030,36 @@ export class RuntimeController implements vscode.Disposable {
           if (notebook) {
             this._controller.updateNotebookAffinity(
               notebook,
-              vscode.NotebookControllerAffinity.Preferred,
+              vscode.NotebookControllerAffinity.Preferred
             );
           }
 
           progress.report({
             increment: 80,
-            message: 'Runtime ready, refreshing available runtimes...',
+            message: "Runtime ready, refreshing available runtimes...",
           });
 
           // Trigger a refresh of the controller manager to create a proper controller for this runtime
           console.log(
-            '[RuntimeController] Triggering controller manager refresh after runtime creation with UID:',
-            runtime.uid,
+            "[RuntimeController] Triggering controller manager refresh after runtime creation with UID:",
+            runtime.uid
           );
           await vscode.commands.executeCommand(
-            'datalayer.refreshRuntimeControllers',
-            runtime.uid,
+            "datalayer.refreshRuntimeControllers",
+            runtime.uid
           );
 
-          progress.report({ increment: 100, message: 'Done!' });
+          progress.report({ increment: 100, message: "Done!" });
 
           // Show success message with runtime info
           vscode.window.showInformationMessage(
-            `Successfully created ${environmentName} runtime: ${displayName}`,
+            `Successfully created ${environmentName} runtime: ${displayName}`
           );
 
           // Return the runtime UID so the caller can use it
           return runtime.uid;
         } catch (error) {
-          console.error('[RuntimeController] Runtime creation failed:', error);
+          console.error("[RuntimeController] Runtime creation failed:", error);
 
           // Mark all cells as failed
           for (const cell of cells) {
@@ -1055,8 +1071,10 @@ export class RuntimeController implements vscode.Disposable {
               new vscode.NotebookCellOutput([
                 vscode.NotebookCellOutputItem.error(
                   new Error(
-                    `Failed to create runtime: ${error instanceof Error ? error.message : 'Unknown error'}`,
-                  ),
+                    `Failed to create runtime: ${
+                      error instanceof Error ? error.message : "Unknown error"
+                    }`
+                  )
                 ),
               ]),
             ]);
@@ -1065,12 +1083,14 @@ export class RuntimeController implements vscode.Disposable {
           }
 
           vscode.window.showErrorMessage(
-            `Failed to create ${environmentName} runtime: ${error instanceof Error ? error.message : 'Unknown error'}`,
+            `Failed to create ${environmentName} runtime: ${
+              error instanceof Error ? error.message : "Unknown error"
+            }`
           );
 
           return undefined;
         }
-      },
+      }
     );
   }
 
@@ -1096,7 +1116,7 @@ export class RuntimeController implements vscode.Disposable {
     await this._ensureKernelConnection();
 
     if (!this._activeRuntime || !this._kernelConnection) {
-      throw new Error('Failed to create or connect to Datalayer runtime');
+      throw new Error("Failed to create or connect to Datalayer runtime");
     }
 
     // Get cell source code
@@ -1106,8 +1126,8 @@ export class RuntimeController implements vscode.Disposable {
     }
 
     console.log(
-      '[RuntimeController] Executing code:',
-      sourceCode.substring(0, 100),
+      "[RuntimeController] Executing code:",
+      sourceCode.substring(0, 100)
     );
 
     // Create execute request message
@@ -1115,11 +1135,11 @@ export class RuntimeController implements vscode.Disposable {
     const executeMessage: JupyterMessage = {
       header: {
         msg_id: msgId,
-        msg_type: 'execute_request',
-        username: 'datalayer-vscode',
+        msg_type: "execute_request",
+        username: "datalayer-vscode",
         session: this._kernelConnection.sessionId,
         date: new Date().toISOString(),
-        version: '5.3',
+        version: "5.3",
       },
       parent_header: {},
       metadata: {},
@@ -1139,10 +1159,10 @@ export class RuntimeController implements vscode.Disposable {
     // Send the execution request
     this._kernelConnection.websocket.send(JSON.stringify(executeMessage));
 
-    console.log('[RuntimeController] Sent execute request:', msgId);
+    console.log("[RuntimeController] Sent execute request:", msgId);
 
     // Wait for execution to complete
-    await new Promise<void>(resolve => {
+    await new Promise<void>((resolve) => {
       const checkInterval = setInterval(() => {
         // Check if we received execute_reply (execution is done)
         if (!this._pendingExecutions.has(msgId)) {
@@ -1173,33 +1193,33 @@ export class RuntimeController implements vscode.Disposable {
       // Verify the runtime is still active
       try {
         console.log(
-          '[RuntimeController] Verifying runtime health:',
-          this._activeRuntime.pod_name,
+          "[RuntimeController] Verifying runtime health:",
+          this._activeRuntime.pod_name
         );
         const currentRuntime = await this._runtimesApiService.getRuntime(
-          this._activeRuntime.pod_name,
+          this._activeRuntime.pod_name
         );
 
         if (currentRuntime) {
           // Check if runtime is in a usable state
           const isRunning =
-            currentRuntime.status === 'running' ||
-            currentRuntime.status === 'ready';
+            currentRuntime.status === "running" ||
+            currentRuntime.status === "ready";
           const hasConnection = currentRuntime.ingress && currentRuntime.token;
 
           if (isRunning && hasConnection) {
             console.log(
-              '[RuntimeController] Runtime is healthy, updating token/ingress',
+              "[RuntimeController] Runtime is healthy, updating token/ingress"
             );
             this._activeRuntime = currentRuntime;
             return;
           } else if (
-            currentRuntime.status === 'stopped' ||
-            currentRuntime.status === 'expired'
+            currentRuntime.status === "stopped" ||
+            currentRuntime.status === "expired"
           ) {
             console.log(
-              '[RuntimeController] Runtime is stopped/expired:',
-              currentRuntime.status,
+              "[RuntimeController] Runtime is stopped/expired:",
+              currentRuntime.status
             );
 
             // Store the runtime name before resetting
@@ -1210,17 +1230,17 @@ export class RuntimeController implements vscode.Disposable {
             this._kernelConnection = undefined;
 
             // Reset controller label to show runtime is unavailable
-            this._controller.label = 'Datalayer Runtimes...';
+            this._controller.label = "Datalayer Runtimes...";
             this._controller.description =
-              'Runtime no longer available - select a new one';
+              "Runtime no longer available - select a new one";
 
             // Show error to user
-            const createNew = 'Create New Runtime';
-            const selectExisting = 'Select Existing Runtime';
+            const createNew = "Create New Runtime";
+            const selectExisting = "Select Existing Runtime";
             const selection = await vscode.window.showErrorMessage(
               `Runtime ${runtimeName} is ${currentRuntime.status}. Please select or create a new runtime.`,
               createNew,
-              selectExisting,
+              selectExisting
             );
 
             if (selection === createNew || selection === selectExisting) {
@@ -1236,12 +1256,12 @@ export class RuntimeController implements vscode.Disposable {
             }
 
             throw new Error(
-              `Runtime is ${currentRuntime.status}. Please select or create a new runtime.`,
+              `Runtime is ${currentRuntime.status}. Please select or create a new runtime.`
             );
           } else {
             console.log(
-              '[RuntimeController] Runtime status uncertain, attempting to use:',
-              currentRuntime.status,
+              "[RuntimeController] Runtime status uncertain, attempting to use:",
+              currentRuntime.status
             );
             // Try to use it anyway if it has connection info
             if (hasConnection) {
@@ -1250,23 +1270,23 @@ export class RuntimeController implements vscode.Disposable {
             }
           }
         } else {
-          console.log('[RuntimeController] Runtime not found on server');
+          console.log("[RuntimeController] Runtime not found on server");
           // Runtime doesn't exist anymore
           this._activeRuntime = undefined;
           this._kernelConnection = undefined;
 
           // Reset controller label
-          this._controller.label = 'Datalayer Runtimes...';
-          this._controller.description = 'Runtime not found - select a new one';
+          this._controller.label = "Datalayer Runtimes...";
+          this._controller.description = "Runtime not found - select a new one";
 
           throw new Error(
-            'Runtime no longer exists. Please select or create a new runtime.',
+            "Runtime no longer exists. Please select or create a new runtime."
           );
         }
       } catch (error) {
         console.error(
-          '[RuntimeController] Runtime verification failed:',
-          error,
+          "[RuntimeController] Runtime verification failed:",
+          error
         );
 
         // Reset state on error
@@ -1274,7 +1294,9 @@ export class RuntimeController implements vscode.Disposable {
         this._kernelConnection = undefined;
 
         throw new Error(
-          `Failed to verify runtime: ${error instanceof Error ? error.message : 'Unknown error'}`,
+          `Failed to verify runtime: ${
+            error instanceof Error ? error.message : "Unknown error"
+          }`
         );
       }
     }
@@ -1286,7 +1308,7 @@ export class RuntimeController implements vscode.Disposable {
 
     // No runtime available at all
     throw new Error(
-      'Runtime not available for execution. Please select or create a runtime.',
+      "Runtime not available for execution. Please select or create a runtime."
     );
   }
 
@@ -1303,13 +1325,13 @@ export class RuntimeController implements vscode.Disposable {
       this._kernelConnection &&
       this._kernelConnection.websocket.readyState === WebSocket.OPEN
     ) {
-      console.log('[RuntimeController] WebSocket connection is active');
+      console.log("[RuntimeController] WebSocket connection is active");
       return; // Connection is already active
     }
 
     // If connection exists but is not open, clean it up
     if (this._kernelConnection) {
-      console.log('[RuntimeController] Cleaning up stale WebSocket connection');
+      console.log("[RuntimeController] Cleaning up stale WebSocket connection");
       try {
         this._kernelConnection.websocket.close();
       } catch (error) {
@@ -1319,42 +1341,42 @@ export class RuntimeController implements vscode.Disposable {
     }
 
     if (!this._activeRuntime) {
-      throw new Error('No active runtime available for kernel connection');
+      throw new Error("No active runtime available for kernel connection");
     }
 
-    console.log('[RuntimeController] Establishing kernel connection...');
+    console.log("[RuntimeController] Establishing kernel connection...");
     console.log(
-      '[RuntimeController] Runtime ingress:',
-      this._activeRuntime.ingress,
+      "[RuntimeController] Runtime ingress:",
+      this._activeRuntime.ingress
     );
 
     try {
       // Create WebSocket connection to the kernel
       if (!this._activeRuntime.ingress) {
-        throw new Error('Runtime ingress URL is not available');
+        throw new Error("Runtime ingress URL is not available");
       }
 
       // First, create a kernel session via REST API
       const baseUrl = this._activeRuntime.ingress;
 
       console.log(
-        '[RuntimeController] Creating kernel session at:',
-        `${baseUrl}/api/sessions`,
+        "[RuntimeController] Creating kernel session at:",
+        `${baseUrl}/api/sessions`
       );
 
       // Create a new kernel session
       const sessionResponse = await fetch(`${baseUrl}/api/sessions`, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
           Authorization: `Bearer ${this._activeRuntime.token}`,
         },
         body: JSON.stringify({
-          path: 'vscode-notebook.ipynb', // Required field for Jupyter session
-          name: 'VSCode Notebook',
-          type: 'notebook',
+          path: "vscode-notebook.ipynb", // Required field for Jupyter session
+          name: "VSCode Notebook",
+          type: "notebook",
           kernel: {
-            name: 'python3',
+            name: "python3",
           },
         }),
       });
@@ -1362,7 +1384,7 @@ export class RuntimeController implements vscode.Disposable {
       if (!sessionResponse.ok) {
         const errorText = await sessionResponse.text();
         throw new Error(
-          `Failed to create kernel session: ${sessionResponse.status} ${errorText}`,
+          `Failed to create kernel session: ${sessionResponse.status} ${errorText}`
         );
       }
 
@@ -1371,18 +1393,21 @@ export class RuntimeController implements vscode.Disposable {
       const sessionId = sessionData.id || uuidv4(); // Use the actual session ID from response
 
       if (!kernelId) {
-        throw new Error('No kernel ID returned from session creation');
+        throw new Error("No kernel ID returned from session creation");
       }
 
-      console.log('[RuntimeController] Created kernel session:', {
+      console.log("[RuntimeController] Created kernel session:", {
         session_id: sessionId,
         kernel_id: kernelId,
         kernel_name: sessionData.kernel?.name,
       });
 
       // Now connect to the kernel WebSocket
-      const wsUrl = `${baseUrl.replace('https', 'wss')}/api/kernels/${kernelId}/channels`;
-      console.log('[RuntimeController] Connecting to WebSocket:', wsUrl);
+      const wsUrl = `${baseUrl.replace(
+        "https",
+        "wss"
+      )}/api/kernels/${kernelId}/channels`;
+      console.log("[RuntimeController] Connecting to WebSocket:", wsUrl);
 
       const websocket = new WebSocket(wsUrl, {
         headers: {
@@ -1391,27 +1416,27 @@ export class RuntimeController implements vscode.Disposable {
       });
 
       // Set up WebSocket event handlers
-      websocket.on('open', () => {
-        console.log('[RuntimeController] WebSocket connection established');
+      websocket.on("open", () => {
+        console.log("[RuntimeController] WebSocket connection established");
       });
 
-      websocket.on('message', (data: Buffer) => {
+      websocket.on("message", (data: Buffer) => {
         this._handleKernelMessage(data);
       });
 
-      websocket.on('error', (error: Error) => {
-        console.error('[RuntimeController] WebSocket error:', error);
+      websocket.on("error", (error: Error) => {
+        console.error("[RuntimeController] WebSocket error:", error);
       });
 
-      websocket.on('close', () => {
-        console.log('[RuntimeController] WebSocket connection closed');
+      websocket.on("close", () => {
+        console.log("[RuntimeController] WebSocket connection closed");
         this._kernelConnection = undefined;
       });
 
       // Wait for connection to open
       await new Promise<void>((resolve, reject) => {
-        websocket.once('open', resolve);
-        websocket.once('error', reject);
+        websocket.once("open", resolve);
+        websocket.once("error", reject);
       });
 
       this._kernelConnection = {
@@ -1420,11 +1445,11 @@ export class RuntimeController implements vscode.Disposable {
         kernelId,
       };
 
-      console.log('[RuntimeController] Kernel connection ready');
+      console.log("[RuntimeController] Kernel connection ready");
     } catch (error) {
       console.error(
-        '[RuntimeController] Failed to establish kernel connection:',
-        error,
+        "[RuntimeController] Failed to establish kernel connection:",
+        error
       );
       throw new Error(`Failed to connect to kernel: ${error}`);
     }
@@ -1443,7 +1468,7 @@ export class RuntimeController implements vscode.Disposable {
       const message: JupyterMessage = JSON.parse(data.toString());
       const parentMsgId = message.parent_header?.msg_id;
 
-      console.log('[RuntimeController] Received kernel message:', {
+      console.log("[RuntimeController] Received kernel message:", {
         msg_type: message.header.msg_type,
         parent_msg_id: parentMsgId,
         has_content: !!message.content,
@@ -1452,7 +1477,7 @@ export class RuntimeController implements vscode.Disposable {
 
       if (!parentMsgId || !this._pendingExecutions.has(parentMsgId)) {
         console.log(
-          '[RuntimeController] Message not related to pending execution, skipping',
+          "[RuntimeController] Message not related to pending execution, skipping"
         );
         return; // Not related to our execution
       }
@@ -1461,11 +1486,11 @@ export class RuntimeController implements vscode.Disposable {
       const { execution } = context;
 
       switch (message.header.msg_type) {
-        case 'execute_reply':
+        case "execute_reply":
           // Execution completed - mark as done
           console.log(
-            '[RuntimeController] Execute reply received, execution status:',
-            message.content.status,
+            "[RuntimeController] Execute reply received, execution status:",
+            message.content.status
           );
           // Small delay to allow any pending output messages to be processed
           setTimeout(() => {
@@ -1473,35 +1498,33 @@ export class RuntimeController implements vscode.Disposable {
           }, 100);
           break;
 
-        case 'stream': {
+        case "stream": {
           // Standard output/error
           const streamOutput = new vscode.NotebookCellOutput([
             vscode.NotebookCellOutputItem.text(
               message.content.text,
-              message.content.name === 'stderr'
-                ? 'text/x-stderr'
-                : 'text/plain',
+              message.content.name === "stderr" ? "text/x-stderr" : "text/plain"
             ),
           ]);
           execution.appendOutput([streamOutput]);
           break;
         }
 
-        case 'display_data':
-        case 'execute_result': {
+        case "display_data":
+        case "execute_result": {
           // Rich output (HTML, images, etc.)
           const outputItems: vscode.NotebookCellOutputItem[] = [];
 
           for (const [mimeType, data] of Object.entries(
-            message.content.data || {},
+            message.content.data || {}
           )) {
-            if (typeof data === 'string') {
+            if (typeof data === "string") {
               outputItems.push(
-                vscode.NotebookCellOutputItem.text(data, mimeType),
+                vscode.NotebookCellOutputItem.text(data, mimeType)
               );
             } else {
               outputItems.push(
-                vscode.NotebookCellOutputItem.json(data, mimeType),
+                vscode.NotebookCellOutputItem.json(data, mimeType)
               );
             }
           }
@@ -1514,9 +1537,9 @@ export class RuntimeController implements vscode.Disposable {
           break;
         }
 
-        case 'error': {
+        case "error": {
           // Execution error
-          const error = new Error(message.content.evalue || 'Execution error');
+          const error = new Error(message.content.evalue || "Execution error");
           execution.appendOutput([
             new vscode.NotebookCellOutput([
               vscode.NotebookCellOutputItem.error(error),
@@ -1528,8 +1551,8 @@ export class RuntimeController implements vscode.Disposable {
       }
     } catch (error) {
       console.error(
-        '[RuntimeController] Error handling kernel message:',
-        error,
+        "[RuntimeController] Error handling kernel message:",
+        error
       );
     }
   }
@@ -1584,7 +1607,7 @@ export class RuntimeController implements vscode.Disposable {
     // Dispose the controller
     this._controller.dispose();
     console.log(
-      `[RuntimeController] Controller disposed: ${this.getControllerId()}`,
+      `[RuntimeController] Controller disposed: ${this.getControllerId()}`
     );
   }
 }

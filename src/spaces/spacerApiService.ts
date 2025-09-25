@@ -11,9 +11,9 @@
  * Provides methods for CRUD operations on spaces and their content.
  */
 
-import * as vscode from 'vscode';
-import { AuthService } from '../auth/authService';
-import { Space, Document } from './spaceItem';
+import * as vscode from "vscode";
+import { AuthService } from "../auth/authService";
+import { Space, Document } from "./spaceItem";
 
 /**
  * Response structure for spaces API.
@@ -80,10 +80,10 @@ export class SpacerApiService {
   private getAuthHeaders(): Record<string, string> {
     const token = this.authService.getToken();
     if (!token) {
-      throw new Error('Not authenticated');
+      throw new Error("Not authenticated");
     }
     return {
-      'Content-Type': 'application/json',
+      "Content-Type": "application/json",
       Authorization: `Bearer ${token}`,
     };
   }
@@ -93,7 +93,7 @@ export class SpacerApiService {
       // Don't set Content-Type if body is FormData
       const headers = { ...this.getAuthHeaders() };
       if (options?.body instanceof FormData) {
-        delete headers['Content-Type']; // Let browser set it with boundary
+        delete headers["Content-Type"]; // Let browser set it with boundary
       }
 
       const response = await fetch(url, {
@@ -105,7 +105,7 @@ export class SpacerApiService {
       });
 
       if (response.status === 401) {
-        throw new Error('Authentication failed. Please login again.');
+        throw new Error("Authentication failed. Please login again.");
       }
 
       return response;
@@ -122,7 +122,7 @@ export class SpacerApiService {
     const serverUrl = this.authService.getServerUrl();
     const url = `${serverUrl}/api/spacer/v1/spaces/users/me`;
 
-    console.log('[SpacerAPI] Fetching user spaces from:', url);
+    console.log("[SpacerAPI] Fetching user spaces from:", url);
 
     try {
       const response = await this.fetchWithAuth(url);
@@ -130,22 +130,22 @@ export class SpacerApiService {
       if (!response.ok) {
         const errorText = await response.text();
         console.error(
-          '[SpacerAPI] Failed to fetch spaces:',
+          "[SpacerAPI] Failed to fetch spaces:",
           response.status,
-          errorText,
+          errorText
         );
         throw new Error(`Failed to fetch spaces: ${response.status}`);
       }
 
       const data = (await response.json()) as any;
-      console.log('[SpacerAPI] Spaces response:', data);
+      console.log("[SpacerAPI] Spaces response:", data);
       console.log(
-        '[SpacerAPI] Spaces array:',
-        JSON.stringify(data.spaces, null, 2),
+        "[SpacerAPI] Spaces array:",
+        JSON.stringify(data.spaces, null, 2)
       );
 
       if (!data.success) {
-        throw new Error(data.message || 'Failed to fetch spaces');
+        throw new Error(data.message || "Failed to fetch spaces");
       }
 
       // The API returns 'spaces' property, not 'data'
@@ -154,32 +154,32 @@ export class SpacerApiService {
       // Log the first space to understand its structure
       if (spaces.length > 0) {
         console.log(
-          '[SpacerAPI] First space structure:',
-          JSON.stringify(spaces[0], null, 2),
+          "[SpacerAPI] First space structure:",
+          JSON.stringify(spaces[0], null, 2)
         );
         console.log(
-          '[SpacerAPI] Space keys:',
-          Object.keys(spaces[0]).join(', '),
+          "[SpacerAPI] Space keys:",
+          Object.keys(spaces[0]).join(", ")
         );
 
         // Log each key and its value to find the ID field
-        Object.keys(spaces[0]).forEach(key => {
+        Object.keys(spaces[0]).forEach((key) => {
           console.log(`[SpacerAPI] Space field "${key}":`, spaces[0][key]);
         });
       }
 
       return spaces;
     } catch (error) {
-      console.error('[SpacerAPI] Error fetching spaces:', error);
+      console.error("[SpacerAPI] Error fetching spaces:", error);
       if (
         error instanceof Error &&
-        error.message.includes('Not authenticated')
+        error.message.includes("Not authenticated")
       ) {
         vscode.window
-          .showErrorMessage('Please login to Datalayer to view spaces', 'Login')
-          .then(selection => {
-            if (selection === 'Login') {
-              vscode.commands.executeCommand('datalayer.login');
+          .showErrorMessage("Please login to Datalayer to view spaces", "Login")
+          .then((selection) => {
+            if (selection === "Login") {
+              vscode.commands.executeCommand("datalayer.login");
             }
           });
       }
@@ -194,7 +194,7 @@ export class SpacerApiService {
     const serverUrl = this.authService.getServerUrl();
     const url = `${serverUrl}/api/spacer/v1/spaces/${spaceId}/items`;
 
-    console.log('[SpacerAPI] Fetching space items from:', url);
+    console.log("[SpacerAPI] Fetching space items from:", url);
 
     try {
       const response = await this.fetchWithAuth(url);
@@ -202,24 +202,24 @@ export class SpacerApiService {
       if (!response.ok) {
         const errorText = await response.text();
         console.error(
-          '[SpacerAPI] Failed to fetch space items:',
+          "[SpacerAPI] Failed to fetch space items:",
           response.status,
-          errorText,
+          errorText
         );
         throw new Error(`Failed to fetch space items: ${response.status}`);
       }
 
       const data = (await response.json()) as any;
-      console.log('[SpacerAPI] Space items response:', data);
+      console.log("[SpacerAPI] Space items response:", data);
 
       if (!data.success) {
-        throw new Error(data.message || 'Failed to fetch space items');
+        throw new Error(data.message || "Failed to fetch space items");
       }
 
       // Check for 'items' or 'data' property
       return data.items || data.data || [];
     } catch (error) {
-      console.error('[SpacerAPI] Error fetching space items:', error);
+      console.error("[SpacerAPI] Error fetching space items:", error);
       throw error;
     }
   }
@@ -229,12 +229,12 @@ export class SpacerApiService {
    */
   async getSpaceItemsByType(
     spaceId: string,
-    type: string,
+    type: string
   ): Promise<Document[]> {
     const serverUrl = this.authService.getServerUrl();
     const url = `${serverUrl}/api/spacer/v1/spaces/${spaceId}/items/types/${type}`;
 
-    console.log('[SpacerAPI] Fetching space items by type from:', url);
+    console.log("[SpacerAPI] Fetching space items by type from:", url);
 
     try {
       const response = await this.fetchWithAuth(url);
@@ -242,24 +242,24 @@ export class SpacerApiService {
       if (!response.ok) {
         const errorText = await response.text();
         console.error(
-          '[SpacerAPI] Failed to fetch space items by type:',
+          "[SpacerAPI] Failed to fetch space items by type:",
           response.status,
-          errorText,
+          errorText
         );
         throw new Error(`Failed to fetch space items: ${response.status}`);
       }
 
       const data = (await response.json()) as any;
-      console.log('[SpacerAPI] Space items by type response:', data);
+      console.log("[SpacerAPI] Space items by type response:", data);
 
       if (!data.success) {
-        throw new Error(data.message || 'Failed to fetch space items');
+        throw new Error(data.message || "Failed to fetch space items");
       }
 
       // Check for 'items' or 'data' property
       return data.items || data.data || [];
     } catch (error) {
-      console.error('[SpacerAPI] Error fetching space items by type:', error);
+      console.error("[SpacerAPI] Error fetching space items by type:", error);
       throw error;
     }
   }
@@ -271,7 +271,7 @@ export class SpacerApiService {
     const serverUrl = this.authService.getServerUrl();
     const url = `${serverUrl}/api/spacer/v1/notebooks/${notebookId}`;
 
-    console.log('[SpacerAPI] Fetching notebook details from:', url);
+    console.log("[SpacerAPI] Fetching notebook details from:", url);
 
     try {
       const response = await this.fetchWithAuth(url);
@@ -279,23 +279,23 @@ export class SpacerApiService {
       if (!response.ok) {
         const errorText = await response.text();
         console.error(
-          '[SpacerAPI] Failed to fetch notebook:',
+          "[SpacerAPI] Failed to fetch notebook:",
           response.status,
-          errorText,
+          errorText
         );
         throw new Error(`Failed to fetch notebook: ${response.status}`);
       }
 
       const data = (await response.json()) as NotebookResponse;
-      console.log('[SpacerAPI] Notebook details response:', data);
+      console.log("[SpacerAPI] Notebook details response:", data);
 
       if (!data.success) {
-        throw new Error(data.message || 'Failed to fetch notebook');
+        throw new Error(data.message || "Failed to fetch notebook");
       }
 
       return data.data;
     } catch (error) {
-      console.error('[SpacerAPI] Error fetching notebook:', error);
+      console.error("[SpacerAPI] Error fetching notebook:", error);
       throw error;
     }
   }
@@ -307,26 +307,26 @@ export class SpacerApiService {
     // First try to use the CDN URL if available
     if (document.cdn_url_s) {
       console.log(
-        '[SpacerAPI] Fetching notebook content from CDN:',
-        document.cdn_url_s,
+        "[SpacerAPI] Fetching notebook content from CDN:",
+        document.cdn_url_s
       );
 
       try {
         const response = await this.fetchWithAuth(document.cdn_url_s);
 
         if (!response.ok) {
-          console.warn('[SpacerAPI] CDN fetch failed, falling back to API');
+          console.warn("[SpacerAPI] CDN fetch failed, falling back to API");
         } else {
           const data = await response.json();
           console.log(
-            '[SpacerAPI] Notebook content fetched from CDN successfully',
+            "[SpacerAPI] Notebook content fetched from CDN successfully"
           );
           return data;
         }
       } catch (error) {
         console.warn(
-          '[SpacerAPI] CDN fetch error, falling back to API:',
-          error,
+          "[SpacerAPI] CDN fetch error, falling back to API:",
+          error
         );
       }
     }
@@ -335,7 +335,7 @@ export class SpacerApiService {
     const serverUrl = this.authService.getServerUrl();
     const url = `${serverUrl}/api/spacer/v1/notebooks/${document.uid}/content`;
 
-    console.log('[SpacerAPI] Fetching notebook content from API:', url);
+    console.log("[SpacerAPI] Fetching notebook content from API:", url);
 
     try {
       const response = await this.fetchWithAuth(url);
@@ -343,19 +343,19 @@ export class SpacerApiService {
       if (!response.ok) {
         const errorText = await response.text();
         console.error(
-          '[SpacerAPI] Failed to fetch notebook content:',
+          "[SpacerAPI] Failed to fetch notebook content:",
           response.status,
-          errorText,
+          errorText
         );
         throw new Error(`Failed to fetch notebook content: ${response.status}`);
       }
 
       const data = await response.json();
-      console.log('[SpacerAPI] Notebook content fetched from API successfully');
+      console.log("[SpacerAPI] Notebook content fetched from API successfully");
 
       return data;
     } catch (error) {
-      console.error('[SpacerAPI] Error fetching notebook content:', error);
+      console.error("[SpacerAPI] Error fetching notebook content:", error);
       throw error;
     }
   }
@@ -367,48 +367,48 @@ export class SpacerApiService {
     // First try to use the CDN URL if available
     if (document.cdn_url_s) {
       console.log(
-        '[SpacerAPI] Fetching document content from CDN:',
-        document.cdn_url_s,
+        "[SpacerAPI] Fetching document content from CDN:",
+        document.cdn_url_s
       );
 
       try {
         const response = await this.fetchWithAuth(document.cdn_url_s);
 
         if (!response.ok) {
-          console.warn('[SpacerAPI] CDN fetch failed, falling back to API');
+          console.warn("[SpacerAPI] CDN fetch failed, falling back to API");
         } else {
-          const contentType = response.headers.get('content-type') || '';
+          const contentType = response.headers.get("content-type") || "";
 
           // Check if it's JSON content
-          if (contentType.includes('application/json')) {
+          if (contentType.includes("application/json")) {
             const data = await response.json();
             console.log(
-              '[SpacerAPI] Document content fetched from CDN successfully',
+              "[SpacerAPI] Document content fetched from CDN successfully"
             );
             return data;
           } else {
             // For text or other content types
             const text = await response.text();
             console.log(
-              '[SpacerAPI] Document text content fetched from CDN successfully',
+              "[SpacerAPI] Document text content fetched from CDN successfully"
             );
             return text;
           }
         }
       } catch (error) {
         console.warn(
-          '[SpacerAPI] CDN fetch error, falling back to API:',
-          error,
+          "[SpacerAPI] CDN fetch error, falling back to API:",
+          error
         );
       }
     }
 
     // Fall back to API endpoint based on document type
     const serverUrl = this.authService.getServerUrl();
-    const endpoint = document.type_s === 'notebook' ? 'notebooks' : 'documents';
+    const endpoint = document.type_s === "notebook" ? "notebooks" : "documents";
     const url = `${serverUrl}/api/spacer/v1/${endpoint}/${document.uid}/content`;
 
-    console.log('[SpacerAPI] Fetching document content from API:', url);
+    console.log("[SpacerAPI] Fetching document content from API:", url);
 
     try {
       const response = await this.fetchWithAuth(url);
@@ -416,30 +416,30 @@ export class SpacerApiService {
       if (!response.ok) {
         const errorText = await response.text();
         console.error(
-          '[SpacerAPI] Failed to fetch document content:',
+          "[SpacerAPI] Failed to fetch document content:",
           response.status,
-          errorText,
+          errorText
         );
         throw new Error(`Failed to fetch document content: ${response.status}`);
       }
 
-      const contentType = response.headers.get('content-type') || '';
+      const contentType = response.headers.get("content-type") || "";
 
-      if (contentType.includes('application/json')) {
+      if (contentType.includes("application/json")) {
         const data = await response.json();
         console.log(
-          '[SpacerAPI] Document content fetched from API successfully',
+          "[SpacerAPI] Document content fetched from API successfully"
         );
         return data;
       } else {
         const text = await response.text();
         console.log(
-          '[SpacerAPI] Document text content fetched from API successfully',
+          "[SpacerAPI] Document text content fetched from API successfully"
         );
         return text;
       }
     } catch (error) {
-      console.error('[SpacerAPI] Error fetching document content:', error);
+      console.error("[SpacerAPI] Error fetching document content:", error);
       throw error;
     }
   }
@@ -459,7 +459,7 @@ export class SpacerApiService {
   }> {
     // For Lexical documents in Datalayer, the document UID IS the session ID
     console.log(
-      `[SpacerAPI] Using document UID as lexical collaboration session ID: ${documentId}`,
+      `[SpacerAPI] Using document UID as lexical collaboration session ID: ${documentId}`
     );
 
     return {
@@ -475,47 +475,47 @@ export class SpacerApiService {
     spaceId: string,
     name: string,
     description?: string,
-    notebookType: string = 'jupyter',
+    notebookType: string = "jupyter"
   ): Promise<Document | undefined> {
     const serverUrl = this.authService.getServerUrl();
     // Using the notebooks endpoint with spaceId parameter
     const url = `${serverUrl}/api/spacer/v1/notebooks`;
 
-    console.log('[SpacerAPI] Creating notebook at:', url);
+    console.log("[SpacerAPI] Creating notebook at:", url);
 
     try {
       // Create FormData for multipart/form-data request
       const formData = new FormData();
-      formData.append('spaceId', spaceId); // Changed from space_uid to spaceId
-      formData.append('name', name);
-      formData.append('notebookType', 'jupyter'); // Required field - type of notebook
-      formData.append('description', description || ''); // Required field - can be empty
+      formData.append("spaceId", spaceId); // Changed from space_uid to spaceId
+      formData.append("name", name);
+      formData.append("notebookType", "jupyter"); // Required field - type of notebook
+      formData.append("description", description || ""); // Required field - can be empty
 
       const response = await this.fetchWithAuth(url, {
-        method: 'POST',
+        method: "POST",
         body: formData,
       });
 
       if (!response.ok) {
         const errorText = await response.text();
         console.error(
-          '[SpacerAPI] Failed to create notebook:',
+          "[SpacerAPI] Failed to create notebook:",
           response.status,
-          errorText,
+          errorText
         );
         throw new Error(`Failed to create notebook: ${response.status}`);
       }
 
       const data = (await response.json()) as any;
-      console.log('[SpacerAPI] Create notebook response:', data);
+      console.log("[SpacerAPI] Create notebook response:", data);
 
       if (data.success === false) {
-        throw new Error(data.message || 'Failed to create notebook');
+        throw new Error(data.message || "Failed to create notebook");
       }
 
       return data.notebook || data.data || data;
     } catch (error) {
-      console.error('[SpacerAPI] Error creating notebook:', error);
+      console.error("[SpacerAPI] Error creating notebook:", error);
       throw error;
     }
   }
@@ -526,49 +526,49 @@ export class SpacerApiService {
   async createSpace(
     name: string,
     description?: string,
-    isPublic: boolean = false,
+    isPublic: boolean = false
   ): Promise<Space | undefined> {
     const serverUrl = this.authService.getServerUrl();
     const url = `${serverUrl}/api/spacer/v1/spaces`;
 
-    console.log('[SpacerAPI] Creating space at:', url);
+    console.log("[SpacerAPI] Creating space at:", url);
 
     // Generate a handle from the name (lowercase with spaces as hyphens)
-    const spaceHandle = name.toLowerCase().replace(/\s+/g, '-');
+    const spaceHandle = name.toLowerCase().replace(/\s+/g, "-");
 
     try {
       // Spaces endpoint expects application/json
       const response = await this.fetchWithAuth(url, {
-        method: 'POST',
+        method: "POST",
         body: JSON.stringify({
           name: name,
           spaceHandle: spaceHandle,
-          description: description || '',
+          description: description || "",
           public: isPublic,
-          variant: 'standard', // Required field - typically 'standard' for user-created spaces
+          variant: "standard", // Required field - typically 'standard' for user-created spaces
         }),
       });
 
       if (!response.ok) {
         const errorText = await response.text();
         console.error(
-          '[SpacerAPI] Failed to create space:',
+          "[SpacerAPI] Failed to create space:",
           response.status,
-          errorText,
+          errorText
         );
         throw new Error(`Failed to create space: ${response.status}`);
       }
 
       const data = (await response.json()) as any;
-      console.log('[SpacerAPI] Create space response:', data);
+      console.log("[SpacerAPI] Create space response:", data);
 
       if (data.success === false) {
-        throw new Error(data.message || 'Failed to create space');
+        throw new Error(data.message || "Failed to create space");
       }
 
       return data.space || data.data || data;
     } catch (error) {
-      console.error('[SpacerAPI] Error creating space:', error);
+      console.error("[SpacerAPI] Error creating space:", error);
       throw error;
     }
   }
@@ -579,49 +579,49 @@ export class SpacerApiService {
   async createLexicalDocument(
     spaceId: string,
     name: string,
-    description?: string,
+    description?: string
   ): Promise<Document | undefined> {
     const serverUrl = this.authService.getServerUrl();
     // Using the lexicals endpoint
     const url = `${serverUrl}/api/spacer/v1/lexicals`;
 
-    console.log('[SpacerAPI] Creating lexical document at:', url);
+    console.log("[SpacerAPI] Creating lexical document at:", url);
 
     try {
       // Create FormData for multipart/form-data request
       const formData = new FormData();
-      formData.append('spaceId', spaceId); // Changed from space_uid to spaceId
-      formData.append('name', name);
-      formData.append('documentType', 'lexical'); // Required field for lexical documents
-      formData.append('description', description || ''); // Required field - can be empty
+      formData.append("spaceId", spaceId); // Changed from space_uid to spaceId
+      formData.append("name", name);
+      formData.append("documentType", "lexical"); // Required field for lexical documents
+      formData.append("description", description || ""); // Required field - can be empty
 
       const response = await this.fetchWithAuth(url, {
-        method: 'POST',
+        method: "POST",
         body: formData,
       });
 
       if (!response.ok) {
         const errorText = await response.text();
         console.error(
-          '[SpacerAPI] Failed to create lexical document:',
+          "[SpacerAPI] Failed to create lexical document:",
           response.status,
-          errorText,
+          errorText
         );
         throw new Error(
-          `Failed to create lexical document: ${response.status}`,
+          `Failed to create lexical document: ${response.status}`
         );
       }
 
       const data = (await response.json()) as any;
-      console.log('[SpacerAPI] Create lexical document response:', data);
+      console.log("[SpacerAPI] Create lexical document response:", data);
 
       if (data.success === false) {
-        throw new Error(data.message || 'Failed to create lexical document');
+        throw new Error(data.message || "Failed to create lexical document");
       }
 
       return data.lexical || data.document || data.data || data;
     } catch (error) {
-      console.error('[SpacerAPI] Error creating lexical document:', error);
+      console.error("[SpacerAPI] Error creating lexical document:", error);
       throw error;
     }
   }
@@ -631,43 +631,43 @@ export class SpacerApiService {
    */
   async updateItemName(
     itemId: string,
-    itemType: 'notebook' | 'document',
+    itemType: "notebook" | "document",
     newName: string,
-    description?: string,
+    description?: string
   ): Promise<boolean> {
     const serverUrl = this.authService.getServerUrl();
     // Use 'notebooks' for notebooks and 'lexicals' for lexical documents
-    const endpoint = itemType === 'notebook' ? 'notebooks' : 'lexicals';
+    const endpoint = itemType === "notebook" ? "notebooks" : "lexicals";
     const url = `${serverUrl}/api/spacer/v1/${endpoint}/${itemId}`;
 
-    console.log('[SpacerAPI] Updating item name at:', url);
+    console.log("[SpacerAPI] Updating item name at:", url);
 
     try {
       // Use PUT method for updates
       const response = await this.fetchWithAuth(url, {
-        method: 'PUT',
+        method: "PUT",
         body: JSON.stringify({
           name: newName,
-          description: description || '', // API requires description field
+          description: description || "", // API requires description field
         }),
       });
 
       if (!response.ok) {
         const errorText = await response.text();
         console.error(
-          '[SpacerAPI] Failed to update item name:',
+          "[SpacerAPI] Failed to update item name:",
           response.status,
-          errorText,
+          errorText
         );
         throw new Error(`Failed to update item name: ${response.status}`);
       }
 
       const data = (await response.json()) as any;
-      console.log('[SpacerAPI] Update item name response:', data);
+      console.log("[SpacerAPI] Update item name response:", data);
 
       return data.success !== false;
     } catch (error) {
-      console.error('[SpacerAPI] Error updating item name:', error);
+      console.error("[SpacerAPI] Error updating item name:", error);
       throw error;
     }
   }
@@ -680,37 +680,37 @@ export class SpacerApiService {
     // Use the spaces/items endpoint for deleting items
     const url = `${serverUrl}/api/spacer/v1/spaces/items/${itemId}`;
 
-    console.log('[SpacerAPI] Deleting item at:', url);
+    console.log("[SpacerAPI] Deleting item at:", url);
 
     try {
       const response = await this.fetchWithAuth(url, {
-        method: 'DELETE',
+        method: "DELETE",
       });
 
       if (!response.ok) {
         const errorText = await response.text();
         console.error(
-          '[SpacerAPI] Failed to delete item:',
+          "[SpacerAPI] Failed to delete item:",
           response.status,
-          errorText,
+          errorText
         );
         throw new Error(`Failed to delete item: ${response.status}`);
       }
 
       // DELETE might return empty response
       if (
-        response.headers.get('content-length') === '0' ||
+        response.headers.get("content-length") === "0" ||
         response.status === 204
       ) {
         return true;
       }
 
       const data = (await response.json()) as any;
-      console.log('[SpacerAPI] Delete item response:', data);
+      console.log("[SpacerAPI] Delete item response:", data);
 
       return data.success !== false;
     } catch (error) {
-      console.error('[SpacerAPI] Error deleting item:', error);
+      console.error("[SpacerAPI] Error deleting item:", error);
       throw error;
     }
   }

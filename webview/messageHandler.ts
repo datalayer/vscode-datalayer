@@ -10,8 +10,8 @@
  * Manages bidirectional message passing between the webview and VS Code extension.
  */
 
-import { PromiseDelegate } from '@lumino/coreutils';
-import { createContext } from 'react';
+import { PromiseDelegate } from "@lumino/coreutils";
+import { createContext } from "react";
 
 declare let acquireVsCodeApi: any;
 
@@ -66,7 +66,7 @@ export class MessageHandler {
    * Creates a new MessageHandler instance
    */
   constructor() {
-    window.addEventListener('message', this._handleMessage.bind(this));
+    window.addEventListener("message", this._handleMessage.bind(this));
   }
 
   /**
@@ -75,7 +75,7 @@ export class MessageHandler {
    * @param message Message to send
    */
   postMessage(message: ExtensionMessage) {
-    console.log('[MessageHandler] Sending message to extension:', {
+    console.log("[MessageHandler] Sending message to extension:", {
       type: message.type,
       hasBody: !!message.body,
       bodyKeys: message.body ? Object.keys(message.body) : undefined,
@@ -91,7 +91,7 @@ export class MessageHandler {
    * @returns Reply
    */
   async postRequest(message: ExtensionMessage): Promise<ExtensionMessage> {
-    const requestId = 'request-' + (MessageHandler._requestCount++).toString();
+    const requestId = "request-" + (MessageHandler._requestCount++).toString();
     const promise = new PromiseDelegate<ExtensionMessage>();
     this._pendingReplies.set(requestId, promise);
     message.id = requestId;
@@ -142,7 +142,7 @@ export class MessageHandler {
       try {
         handler(message);
       } catch (reason) {
-        console.error('Failed to handle message: ', reason);
+        console.error("Failed to handle message: ", reason);
       }
     }
   }
@@ -157,5 +157,5 @@ export class MessageHandler {
  * Singleton {@link MessageHandler} instance as React context.
  */
 export const MessageHandlerContext = createContext<MessageHandler>(
-  MessageHandler.instance,
+  MessageHandler.instance
 );

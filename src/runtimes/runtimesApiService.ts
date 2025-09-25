@@ -11,8 +11,8 @@
  * Provides methods for interacting with the Datalayer runtimes API.
  */
 
-import * as vscode from 'vscode';
-import { AuthService } from '../auth/authService';
+import * as vscode from "vscode";
+import { AuthService } from "../auth/authService";
 
 /**
  * Response structure for a Datalayer runtime.
@@ -106,20 +106,20 @@ export class RuntimesApiService {
   private getAuthHeaders(): Record<string, string> {
     const token = this.authService.getToken();
     if (!token) {
-      throw new Error('Not authenticated - no token available');
+      throw new Error("Not authenticated - no token available");
     }
 
     // Log token info for debugging (just first/last few chars for security)
     const tokenPreview =
       token.length > 10
         ? `${token.substring(0, 5)}...${token.substring(token.length - 5)}`
-        : 'short_token';
-    console.log('[RuntimesAPI] Using token:', tokenPreview);
-    console.log('[RuntimesAPI] Token length:', token.length);
+        : "short_token";
+    console.log("[RuntimesAPI] Using token:", tokenPreview);
+    console.log("[RuntimesAPI] Token length:", token.length);
 
     // Check if token looks like a JWT (should have 3 parts separated by dots)
-    const tokenParts = token.split('.');
-    console.log('[RuntimesAPI] Token structure: ', {
+    const tokenParts = token.split(".");
+    console.log("[RuntimesAPI] Token structure: ", {
       parts: tokenParts.length,
       isJWT: tokenParts.length === 3,
       headerLength: tokenParts[0]?.length,
@@ -131,38 +131,38 @@ export class RuntimesApiService {
     if (tokenParts.length === 3) {
       try {
         const payload = JSON.parse(
-          Buffer.from(tokenParts[1], 'base64').toString(),
+          Buffer.from(tokenParts[1], "base64").toString()
         );
         const now = Math.floor(Date.now() / 1000);
-        console.log('[RuntimesAPI] Token payload info:', {
+        console.log("[RuntimesAPI] Token payload info:", {
           issued: payload.iat
             ? new Date(payload.iat * 1000).toISOString()
-            : 'unknown',
+            : "unknown",
           expires: payload.exp
             ? new Date(payload.exp * 1000).toISOString()
-            : 'unknown',
-          isExpired: payload.exp ? now > payload.exp : 'unknown',
-          subject: payload.sub || 'unknown',
+            : "unknown",
+          isExpired: payload.exp ? now > payload.exp : "unknown",
+          subject: payload.sub || "unknown",
         });
 
         if (payload.exp && now > payload.exp) {
-          console.error('[RuntimesAPI] TOKEN IS EXPIRED!');
+          console.error("[RuntimesAPI] TOKEN IS EXPIRED!");
           throw new Error(
-            'Authentication token has expired. Please login again.',
+            "Authentication token has expired. Please login again."
           );
         }
       } catch (e) {
-        console.warn('[RuntimesAPI] Could not decode token payload:', e);
+        console.warn("[RuntimesAPI] Could not decode token payload:", e);
       }
     }
 
     const headers = {
-      'Content-Type': 'application/json',
+      "Content-Type": "application/json",
       Authorization: `Bearer ${token}`,
     };
 
-    console.log('[RuntimesAPI] Headers being sent:', {
-      'Content-Type': headers['Content-Type'],
+    console.log("[RuntimesAPI] Headers being sent:", {
+      "Content-Type": headers["Content-Type"],
       Authorization: `Bearer ${tokenPreview}`,
     });
 
@@ -172,33 +172,33 @@ export class RuntimesApiService {
   private async fetchWithAuth(url: string, options?: any): Promise<Response> {
     try {
       const headers = this.getAuthHeaders();
-      console.log('[RuntimesAPI] Making request to:', url);
-      console.log('[RuntimesAPI] Request method:', options?.method || 'GET');
+      console.log("[RuntimesAPI] Making request to:", url);
+      console.log("[RuntimesAPI] Request method:", options?.method || "GET");
 
       const finalHeaders = {
         ...headers,
         ...options?.headers,
       };
 
-      console.log('[RuntimesAPI] Final headers:', Object.keys(finalHeaders));
+      console.log("[RuntimesAPI] Final headers:", Object.keys(finalHeaders));
 
       const response = await fetch(url, {
         ...options,
         headers: finalHeaders,
       });
 
-      console.log('[RuntimesAPI] Response status:', response.status);
-      console.log('[RuntimesAPI] Response headers:', {
-        'content-type': response.headers.get('content-type'),
-        'www-authenticate': response.headers.get('www-authenticate'),
+      console.log("[RuntimesAPI] Response status:", response.status);
+      console.log("[RuntimesAPI] Response headers:", {
+        "content-type": response.headers.get("content-type"),
+        "www-authenticate": response.headers.get("www-authenticate"),
       });
 
       if (response.status === 401) {
         // Try to get more info from the response
-        let errorDetails = '';
+        let errorDetails = "";
         try {
           const errorText = await response.text();
-          console.error('[RuntimesAPI] 401 Error response body:', errorText);
+          console.error("[RuntimesAPI] 401 Error response body:", errorText);
           errorDetails = ` Details: ${errorText}`;
 
           // Try to parse as JSON to get more specific error
@@ -214,7 +214,7 @@ export class RuntimesApiService {
           // Ignore text extraction errors
         }
         throw new Error(
-          `Authentication failed (401).${errorDetails} Please login again.`,
+          `Authentication failed (401).${errorDetails} Please login again.`
         );
       }
 
@@ -231,7 +231,7 @@ export class RuntimesApiService {
   async verifyAuth(): Promise<boolean> {
     try {
       const authState = this.authService.getAuthState();
-      console.log('[RuntimesAPI] Auth state check:', {
+      console.log("[RuntimesAPI] Auth state check:", {
         isAuthenticated: authState.isAuthenticated,
         hasToken: !!authState.token,
         tokenLength: authState.token?.length,
@@ -240,34 +240,34 @@ export class RuntimesApiService {
       });
 
       if (!authState.isAuthenticated || !authState.token) {
-        console.error('[RuntimesAPI] Not authenticated!');
+        console.error("[RuntimesAPI] Not authenticated!");
         return false;
       }
 
       // Test with user info endpoint first
-      console.log('[RuntimesAPI] Testing auth with user info endpoint...');
+      console.log("[RuntimesAPI] Testing auth with user info endpoint...");
       const testUrl = `${authState.serverUrl}/api/spacer/v1/spaces/users/me`;
 
       try {
         const testResponse = await this.fetchWithAuth(testUrl);
         if (testResponse.ok) {
           console.log(
-            '[RuntimesAPI] Auth test successful - user endpoint works!',
+            "[RuntimesAPI] Auth test successful - user endpoint works!"
           );
           return true;
         } else {
           console.error(
-            '[RuntimesAPI] Auth test failed with user endpoint:',
-            testResponse.status,
+            "[RuntimesAPI] Auth test failed with user endpoint:",
+            testResponse.status
           );
           return false;
         }
       } catch (testError) {
-        console.error('[RuntimesAPI] Auth test error:', testError);
+        console.error("[RuntimesAPI] Auth test error:", testError);
         return false;
       }
     } catch (error) {
-      console.error('[RuntimesAPI] Auth verification error:', error);
+      console.error("[RuntimesAPI] Auth verification error:", error);
       return false;
     }
   }
@@ -279,13 +279,13 @@ export class RuntimesApiService {
     // Verify auth first
     const isAuth = await this.verifyAuth();
     if (!isAuth) {
-      throw new Error('Not authenticated. Please login first.');
+      throw new Error("Not authenticated. Please login first.");
     }
 
     const serverUrl = this.authService.getServerUrl();
     const url = `${serverUrl}/api/runtimes/v1/runtimes`;
 
-    console.log('[RuntimesAPI] Fetching runtimes from:', url);
+    console.log("[RuntimesAPI] Fetching runtimes from:", url);
 
     try {
       const response = await this.fetchWithAuth(url);
@@ -293,15 +293,15 @@ export class RuntimesApiService {
       if (!response.ok) {
         const errorText = await response.text();
         console.error(
-          '[RuntimesAPI] Failed to fetch runtimes:',
+          "[RuntimesAPI] Failed to fetch runtimes:",
           response.status,
-          errorText,
+          errorText
         );
         throw new Error(`Failed to fetch runtimes: ${response.status}`);
       }
 
       const data = (await response.json()) as any;
-      console.log('[RuntimesAPI] Runtimes response:', data);
+      console.log("[RuntimesAPI] Runtimes response:", data);
 
       // The API returns runtimes in a wrapper object
       if (data.runtimes && Array.isArray(data.runtimes)) {
@@ -316,7 +316,7 @@ export class RuntimesApiService {
       // No runtimes found
       return [];
     } catch (error) {
-      console.error('[RuntimesAPI] Error fetching runtimes:', error);
+      console.error("[RuntimesAPI] Error fetching runtimes:", error);
       throw error;
     }
   }
@@ -326,14 +326,14 @@ export class RuntimesApiService {
    */
   async createRuntime(
     creditsLimit: number = 10,
-    type: 'notebook' | 'cell' = 'notebook',
+    type: "notebook" | "cell" = "notebook",
     givenName?: string,
-    environmentName?: string,
+    environmentName?: string
   ): Promise<RuntimeResponse | undefined> {
     const serverUrl = this.authService.getServerUrl();
     const url = `${serverUrl}/api/runtimes/v1/runtimes`;
 
-    console.log('[RuntimesAPI] Creating runtime at:', url);
+    console.log("[RuntimesAPI] Creating runtime at:", url);
 
     try {
       const body: any = {
@@ -350,25 +350,25 @@ export class RuntimesApiService {
       }
 
       console.log(
-        '[RuntimesAPI] Creating runtime with body:',
-        JSON.stringify(body, null, 2),
+        "[RuntimesAPI] Creating runtime with body:",
+        JSON.stringify(body, null, 2)
       );
 
       const response = await this.fetchWithAuth(url, {
-        method: 'POST',
+        method: "POST",
         body: JSON.stringify(body),
       });
 
       if (!response.ok) {
         const errorText = await response.text();
         console.error(
-          '[RuntimesAPI] Failed to create runtime:',
+          "[RuntimesAPI] Failed to create runtime:",
           response.status,
-          errorText,
+          errorText
         );
         console.error(
-          '[RuntimesAPI] Request body was:',
-          JSON.stringify(body, null, 2),
+          "[RuntimesAPI] Request body was:",
+          JSON.stringify(body, null, 2)
         );
 
         // Try to parse error message from response
@@ -390,15 +390,15 @@ export class RuntimesApiService {
 
       const data = (await response.json()) as any;
       console.log(
-        '[RuntimesAPI] Create runtime response:',
-        JSON.stringify(data, null, 2),
+        "[RuntimesAPI] Create runtime response:",
+        JSON.stringify(data, null, 2)
       );
 
       // The API returns the runtime wrapped in an object
       if (data.success && data.runtime) {
         console.log(
-          '[RuntimesAPI] Extracted runtime:',
-          JSON.stringify(data.runtime, null, 2),
+          "[RuntimesAPI] Extracted runtime:",
+          JSON.stringify(data.runtime, null, 2)
         );
         return data.runtime as RuntimeResponse;
       }
@@ -409,12 +409,12 @@ export class RuntimesApiService {
       }
 
       console.error(
-        '[RuntimesAPI] Unexpected runtime response structure:',
-        data,
+        "[RuntimesAPI] Unexpected runtime response structure:",
+        data
       );
       return undefined;
     } catch (error) {
-      console.error('[RuntimesAPI] Error creating runtime:', error);
+      console.error("[RuntimesAPI] Error creating runtime:", error);
       throw error;
     }
   }
@@ -426,7 +426,7 @@ export class RuntimesApiService {
     const serverUrl = this.authService.getServerUrl();
     const url = `${serverUrl}/api/runtimes/v1/runtimes/${podName}`;
 
-    console.log('[RuntimesAPI] Fetching runtime from:', url);
+    console.log("[RuntimesAPI] Fetching runtime from:", url);
 
     try {
       const response = await this.fetchWithAuth(url);
@@ -434,32 +434,32 @@ export class RuntimesApiService {
       if (!response.ok) {
         const errorText = await response.text();
         console.error(
-          '[RuntimesAPI] Failed to fetch runtime:',
+          "[RuntimesAPI] Failed to fetch runtime:",
           response.status,
-          errorText,
+          errorText
         );
         throw new Error(`Failed to fetch runtime: ${response.status}`);
       }
 
       const data = (await response.json()) as any;
       console.log(
-        '[RuntimesAPI] Raw runtime fetch response:',
-        JSON.stringify(data, null, 2),
+        "[RuntimesAPI] Raw runtime fetch response:",
+        JSON.stringify(data, null, 2)
       );
 
       // The API returns the runtime as "kernel" when fetching a single runtime
       if (data.success && data.kernel) {
         console.log(
-          '[RuntimesAPI] Extracted kernel (runtime) from wrapper:',
-          JSON.stringify(data.kernel, null, 2),
+          "[RuntimesAPI] Extracted kernel (runtime) from wrapper:",
+          JSON.stringify(data.kernel, null, 2)
         );
         return data.kernel as RuntimeResponse;
       }
 
-      console.warn('[RuntimesAPI] Unexpected runtime response format:', data);
+      console.warn("[RuntimesAPI] Unexpected runtime response format:", data);
       return undefined;
     } catch (error) {
-      console.error('[RuntimesAPI] Error fetching runtime:', error);
+      console.error("[RuntimesAPI] Error fetching runtime:", error);
       throw error;
     }
   }
@@ -470,15 +470,15 @@ export class RuntimesApiService {
   async ensureRuntime(): Promise<RuntimeResponse | undefined> {
     try {
       // Get configuration values
-      const vscode = await import('vscode');
-      const config = vscode.workspace.getConfiguration('datalayer.runtime');
-      const creditsLimit = config.get<number>('creditsLimit', 10);
+      const vscode = await import("vscode");
+      const config = vscode.workspace.getConfiguration("datalayer.runtime");
+      const creditsLimit = config.get<number>("creditsLimit", 10);
       const environmentName = config.get<string>(
-        'environment',
-        'python-cpu-env',
+        "environment",
+        "python-cpu-env"
       );
 
-      console.log('[RuntimesAPI] Runtime configuration:', {
+      console.log("[RuntimesAPI] Runtime configuration:", {
         creditsLimit,
         environmentName,
       });
@@ -488,34 +488,34 @@ export class RuntimesApiService {
 
       // Look for an active runtime with the same environment
       const activeRuntime = runtimes.find(
-        r =>
-          (r.status === 'running' || r.status === 'ready') &&
-          (!r.environment_name || r.environment_name === environmentName),
+        (r) =>
+          (r.status === "running" || r.status === "ready") &&
+          (!r.environment_name || r.environment_name === environmentName)
       );
 
       if (activeRuntime) {
         console.log(
-          '[RuntimesAPI] Using existing runtime:',
-          activeRuntime.pod_name,
+          "[RuntimesAPI] Using existing runtime:",
+          activeRuntime.pod_name
         );
         return activeRuntime;
       }
 
       // No active runtime found, create a new one with configuration
-      console.log('[RuntimesAPI] No active runtime found, creating new one...');
+      console.log("[RuntimesAPI] No active runtime found, creating new one...");
       console.log(
-        `[RuntimesAPI] Using environment: ${environmentName}, credits limit: ${creditsLimit}`,
+        `[RuntimesAPI] Using environment: ${environmentName}, credits limit: ${creditsLimit}`
       );
 
       const runtime = await this.createRuntime(
         creditsLimit,
-        'notebook',
-        'VSCode Notebook Runtime',
-        environmentName,
+        "notebook",
+        "VSCode Notebook Runtime",
+        environmentName
       );
 
       if (runtime) {
-        console.log('[RuntimesAPI] Created new runtime:', runtime.pod_name);
+        console.log("[RuntimesAPI] Created new runtime:", runtime.pod_name);
 
         // Wait for runtime to initialize and get URL/token
         if (runtime.pod_name) {
@@ -525,24 +525,26 @@ export class RuntimesApiService {
           const retryDelay = 3000; // 3 seconds between retries
 
           while (retries < maxRetries) {
-            await new Promise(resolve => setTimeout(resolve, retryDelay));
+            await new Promise((resolve) => setTimeout(resolve, retryDelay));
 
             try {
               const updatedRuntime = await this.getRuntime(runtime.pod_name);
               if (updatedRuntime?.ingress && updatedRuntime?.token) {
                 console.log(
-                  '[RuntimesAPI] Runtime initialized with URL:',
-                  updatedRuntime.ingress,
+                  "[RuntimesAPI] Runtime initialized with URL:",
+                  updatedRuntime.ingress
                 );
                 return updatedRuntime;
               }
               console.log(
-                `[RuntimesAPI] Runtime not ready yet, retry ${retries + 1}/${maxRetries}`,
+                `[RuntimesAPI] Runtime not ready yet, retry ${
+                  retries + 1
+                }/${maxRetries}`
               );
             } catch (error) {
               console.warn(
-                '[RuntimesAPI] Error checking runtime status:',
-                error,
+                "[RuntimesAPI] Error checking runtime status:",
+                error
               );
             }
 
@@ -550,14 +552,14 @@ export class RuntimesApiService {
           }
 
           // Return the original runtime if we couldn't get updated info
-          console.warn('[RuntimesAPI] Runtime may not be fully initialized');
+          console.warn("[RuntimesAPI] Runtime may not be fully initialized");
           return runtime;
         }
       }
 
       return runtime;
     } catch (error) {
-      console.error('[RuntimesAPI] Error ensuring runtime:', error);
+      console.error("[RuntimesAPI] Error ensuring runtime:", error);
       throw error;
     }
   }

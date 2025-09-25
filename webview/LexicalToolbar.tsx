@@ -11,8 +11,8 @@
  * Automatically syncs with the current editor selection state.
  */
 
-import React, { useCallback, useEffect, useState } from 'react';
-import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext';
+import React, { useCallback, useEffect, useState } from "react";
+import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext";
 import {
   $getSelection,
   $isRangeSelection,
@@ -23,25 +23,25 @@ import {
   CAN_UNDO_COMMAND,
   CAN_REDO_COMMAND,
   COMMAND_PRIORITY_CRITICAL,
-} from 'lexical';
+} from "lexical";
 import {
   $isHeadingNode,
   $createHeadingNode,
   $createQuoteNode,
-} from '@lexical/rich-text';
+} from "@lexical/rich-text";
 import {
   INSERT_UNORDERED_LIST_COMMAND,
   INSERT_ORDERED_LIST_COMMAND,
   REMOVE_LIST_COMMAND,
   $isListNode,
-} from '@lexical/list';
-import { $isLinkNode, TOGGLE_LINK_COMMAND } from '@lexical/link';
+} from "@lexical/list";
+import { $isLinkNode, TOGGLE_LINK_COMMAND } from "@lexical/link";
 import {
   $getSelectionStyleValueForProperty,
   $patchStyleText,
-} from '@lexical/selection';
-import { $getNearestNodeOfType } from '@lexical/utils';
-import { $isCodeNode, CODE_LANGUAGE_COMMAND } from '@lexical/code';
+} from "@lexical/selection";
+import { $getNearestNodeOfType } from "@lexical/utils";
+import { $isCodeNode, CODE_LANGUAGE_COMMAND } from "@lexical/code";
 
 /**
  * Properties for individual toolbar buttons.
@@ -83,34 +83,34 @@ function ToolbarButton({
       disabled={disabled}
       title={title}
       style={{
-        padding: '4px 8px',
-        margin: '0 2px',
+        padding: "4px 8px",
+        margin: "0 2px",
         backgroundColor: isActive
-          ? 'var(--vscode-button-background)'
-          : 'transparent',
+          ? "var(--vscode-button-background)"
+          : "transparent",
         color: isActive
-          ? 'var(--vscode-button-foreground)'
-          : 'var(--vscode-editor-foreground)',
-        border: '1px solid',
+          ? "var(--vscode-button-foreground)"
+          : "var(--vscode-editor-foreground)",
+        border: "1px solid",
         borderColor: isActive
-          ? 'var(--vscode-button-border, var(--vscode-button-background))'
-          : 'transparent',
-        borderRadius: '3px',
-        cursor: disabled ? 'not-allowed' : 'pointer',
+          ? "var(--vscode-button-border, var(--vscode-button-background))"
+          : "transparent",
+        borderRadius: "3px",
+        cursor: disabled ? "not-allowed" : "pointer",
         opacity: disabled ? 0.5 : 1,
-        fontSize: '14px',
-        fontFamily: 'var(--vscode-editor-font-family)',
-        transition: 'all 0.2s',
+        fontSize: "14px",
+        fontFamily: "var(--vscode-editor-font-family)",
+        transition: "all 0.2s",
       }}
-      onMouseEnter={e => {
+      onMouseEnter={(e) => {
         if (!disabled && !isActive) {
           (e.target as HTMLButtonElement).style.backgroundColor =
-            'var(--vscode-toolbar-hoverBackground)';
+            "var(--vscode-toolbar-hoverBackground)";
         }
       }}
-      onMouseLeave={e => {
+      onMouseLeave={(e) => {
         if (!disabled && !isActive) {
-          (e.target as HTMLButtonElement).style.backgroundColor = 'transparent';
+          (e.target as HTMLButtonElement).style.backgroundColor = "transparent";
         }
       }}
     >
@@ -130,12 +130,12 @@ function Divider() {
   return (
     <span
       style={{
-        width: '1px',
-        height: '20px',
-        backgroundColor: 'var(--vscode-panel-border)',
-        margin: '0 4px',
-        display: 'inline-block',
-        verticalAlign: 'middle',
+        width: "1px",
+        height: "20px",
+        backgroundColor: "var(--vscode-panel-border)",
+        margin: "0 4px",
+        display: "inline-block",
+        verticalAlign: "middle",
       }}
     />
   );
@@ -179,22 +179,22 @@ export function LexicalToolbar({ disabled = false }: LexicalToolbarProps = {}) {
   const [isCode, setIsCode] = useState(false);
   const [canUndo, setCanUndo] = useState(false);
   const [canRedo, setCanRedo] = useState(false);
-  const [blockType, setBlockType] = useState('paragraph');
+  const [blockType, setBlockType] = useState("paragraph");
 
   const updateToolbar = useCallback(() => {
     const selection = $getSelection();
     if ($isRangeSelection(selection)) {
       // Update text format
-      setIsBold(selection.hasFormat('bold'));
-      setIsItalic(selection.hasFormat('italic'));
-      setIsUnderline(selection.hasFormat('underline'));
-      setIsStrikethrough(selection.hasFormat('strikethrough'));
-      setIsCode(selection.hasFormat('code'));
+      setIsBold(selection.hasFormat("bold"));
+      setIsItalic(selection.hasFormat("italic"));
+      setIsUnderline(selection.hasFormat("underline"));
+      setIsStrikethrough(selection.hasFormat("strikethrough"));
+      setIsCode(selection.hasFormat("code"));
 
       // Update block type
       const anchorNode = selection.anchor.getNode();
       const element =
-        anchorNode.getKey() === 'root'
+        anchorNode.getKey() === "root"
           ? anchorNode
           : anchorNode.getTopLevelElementOrThrow();
 
@@ -205,7 +205,7 @@ export function LexicalToolbar({ disabled = false }: LexicalToolbarProps = {}) {
         const listType = element.getListType();
         setBlockType(listType);
       } else if ($isCodeNode(element)) {
-        setBlockType('code');
+        setBlockType("code");
       } else {
         const type = element.getType();
         setBlockType(type);
@@ -224,43 +224,43 @@ export function LexicalToolbar({ disabled = false }: LexicalToolbarProps = {}) {
   useEffect(() => {
     return editor.registerCommand(
       CAN_UNDO_COMMAND,
-      payload => {
+      (payload) => {
         setCanUndo(payload);
         return false;
       },
-      COMMAND_PRIORITY_CRITICAL,
+      COMMAND_PRIORITY_CRITICAL
     );
   }, [editor]);
 
   useEffect(() => {
     return editor.registerCommand(
       CAN_REDO_COMMAND,
-      payload => {
+      (payload) => {
         setCanRedo(payload);
         return false;
       },
-      COMMAND_PRIORITY_CRITICAL,
+      COMMAND_PRIORITY_CRITICAL
     );
   }, [editor]);
 
   const formatBold = () => {
-    editor.dispatchCommand(FORMAT_TEXT_COMMAND, 'bold');
+    editor.dispatchCommand(FORMAT_TEXT_COMMAND, "bold");
   };
 
   const formatItalic = () => {
-    editor.dispatchCommand(FORMAT_TEXT_COMMAND, 'italic');
+    editor.dispatchCommand(FORMAT_TEXT_COMMAND, "italic");
   };
 
   const formatUnderline = () => {
-    editor.dispatchCommand(FORMAT_TEXT_COMMAND, 'underline');
+    editor.dispatchCommand(FORMAT_TEXT_COMMAND, "underline");
   };
 
   const formatStrikethrough = () => {
-    editor.dispatchCommand(FORMAT_TEXT_COMMAND, 'strikethrough');
+    editor.dispatchCommand(FORMAT_TEXT_COMMAND, "strikethrough");
   };
 
   const formatCode = () => {
-    editor.dispatchCommand(FORMAT_TEXT_COMMAND, 'code');
+    editor.dispatchCommand(FORMAT_TEXT_COMMAND, "code");
   };
 
   const undo = () => {
@@ -271,21 +271,21 @@ export function LexicalToolbar({ disabled = false }: LexicalToolbarProps = {}) {
     editor.dispatchCommand(REDO_COMMAND, undefined);
   };
 
-  const formatHeading = (headingTag: 'h1' | 'h2' | 'h3') => {
+  const formatHeading = (headingTag: "h1" | "h2" | "h3") => {
     editor.update(() => {
       const selection = $getSelection();
       if ($isRangeSelection(selection)) {
         const anchorNode = selection.anchor.getNode();
         const element =
-          anchorNode.getKey() === 'root'
+          anchorNode.getKey() === "root"
             ? anchorNode
             : anchorNode.getTopLevelElementOrThrow();
 
         if ($isHeadingNode(element) && element.getTag() === headingTag) {
           // If already this heading type, convert to paragraph
           const paragraph = element.replace(
-            $createHeadingNode('h1').replace($createHeadingNode('h1')),
-            true,
+            $createHeadingNode("h1").replace($createHeadingNode("h1")),
+            true
           );
         } else {
           // Convert to heading
@@ -305,26 +305,26 @@ export function LexicalToolbar({ disabled = false }: LexicalToolbarProps = {}) {
   };
 
   const formatAlignLeft = () => {
-    editor.dispatchCommand(FORMAT_ELEMENT_COMMAND, 'left');
+    editor.dispatchCommand(FORMAT_ELEMENT_COMMAND, "left");
   };
 
   const formatAlignCenter = () => {
-    editor.dispatchCommand(FORMAT_ELEMENT_COMMAND, 'center');
+    editor.dispatchCommand(FORMAT_ELEMENT_COMMAND, "center");
   };
 
   const formatAlignRight = () => {
-    editor.dispatchCommand(FORMAT_ELEMENT_COMMAND, 'right');
+    editor.dispatchCommand(FORMAT_ELEMENT_COMMAND, "right");
   };
 
   return (
     <div
       style={{
-        display: 'flex',
-        alignItems: 'center',
-        padding: '8px',
-        backgroundColor: 'var(--vscode-editor-background)',
-        flexWrap: 'wrap',
-        gap: '4px',
+        display: "flex",
+        alignItems: "center",
+        padding: "8px",
+        backgroundColor: "var(--vscode-editor-background)",
+        flexWrap: "wrap",
+        gap: "4px",
         opacity: disabled ? 0.5 : 1,
       }}
     >
@@ -383,30 +383,30 @@ export function LexicalToolbar({ disabled = false }: LexicalToolbarProps = {}) {
         disabled={disabled}
         title="Inline Code"
       >
-        {'</>'}
+        {"</>"}
       </ToolbarButton>
 
       <Divider />
 
       <ToolbarButton
-        onClick={() => formatHeading('h1')}
-        isActive={blockType === 'h1'}
+        onClick={() => formatHeading("h1")}
+        isActive={blockType === "h1"}
         disabled={disabled}
         title="Heading 1"
       >
         H1
       </ToolbarButton>
       <ToolbarButton
-        onClick={() => formatHeading('h2')}
-        isActive={blockType === 'h2'}
+        onClick={() => formatHeading("h2")}
+        isActive={blockType === "h2"}
         disabled={disabled}
         title="Heading 2"
       >
         H2
       </ToolbarButton>
       <ToolbarButton
-        onClick={() => formatHeading('h3')}
-        isActive={blockType === 'h3'}
+        onClick={() => formatHeading("h3")}
+        isActive={blockType === "h3"}
         disabled={disabled}
         title="Heading 3"
       >
@@ -417,7 +417,7 @@ export function LexicalToolbar({ disabled = false }: LexicalToolbarProps = {}) {
 
       <ToolbarButton
         onClick={insertBulletList}
-        isActive={blockType === 'bullet'}
+        isActive={blockType === "bullet"}
         disabled={disabled}
         title="Bullet List"
       >
@@ -425,7 +425,7 @@ export function LexicalToolbar({ disabled = false }: LexicalToolbarProps = {}) {
       </ToolbarButton>
       <ToolbarButton
         onClick={insertNumberedList}
-        isActive={blockType === 'number'}
+        isActive={blockType === "number"}
         disabled={disabled}
         title="Numbered List"
       >

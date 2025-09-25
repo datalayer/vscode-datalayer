@@ -4,23 +4,23 @@
  * MIT License
  */
 
-import * as vscode from 'vscode';
-import { WebSocket, RawData } from 'ws';
-import { Disposable, disposeAll } from '../dispose';
-import { getNonce } from '../util';
-import { setRuntime } from '../runtimes/runtimePicker';
+import * as vscode from "vscode";
+import { WebSocket, RawData } from "ws";
+import { Disposable, disposeAll } from "../dispose";
+import { getNonce } from "../util";
+import { setRuntime } from "../runtimes/runtimePicker";
 import {
   RuntimesApiService,
   type RuntimeResponse,
-} from '../runtimes/runtimesApiService';
-import { AuthService } from '../auth/authService';
-import type { ExtensionMessage } from '../messages';
+} from "../runtimes/runtimesApiService";
+import { AuthService } from "../auth/authService";
+import type { ExtensionMessage } from "../messages";
 
 /**
  * Define the type of edits used in notebook files.
  */
 interface NotebookEdit {
-  readonly type: 'content-update';
+  readonly type: "content-update";
   readonly content: Uint8Array;
 }
 
@@ -36,17 +36,17 @@ class NotebookDocument extends Disposable implements vscode.CustomDocument {
   static async create(
     uri: vscode.Uri,
     backupId: string | undefined,
-    delegate: NotebookDocumentDelegate,
+    delegate: NotebookDocumentDelegate
   ): Promise<NotebookDocument | PromiseLike<NotebookDocument>> {
     // If we have a backup, read that. Otherwise read the resource from the workspace
     const dataFile =
-      typeof backupId === 'string' ? vscode.Uri.parse(backupId) : uri;
+      typeof backupId === "string" ? vscode.Uri.parse(backupId) : uri;
     const fileData = await NotebookDocument.readFile(dataFile);
     return new NotebookDocument(uri, fileData, delegate);
   }
 
   private static async readFile(uri: vscode.Uri): Promise<Uint8Array> {
-    if (uri.scheme === 'untitled') {
+    if (uri.scheme === "untitled") {
       return new Uint8Array();
     }
     return new Uint8Array(await vscode.workspace.fs.readFile(uri));
@@ -63,7 +63,7 @@ class NotebookDocument extends Disposable implements vscode.CustomDocument {
   private constructor(
     uri: vscode.Uri,
     initialContent: Uint8Array,
-    delegate: NotebookDocumentDelegate,
+    delegate: NotebookDocumentDelegate
   ) {
     super();
     this._uri = uri;
@@ -80,7 +80,7 @@ class NotebookDocument extends Disposable implements vscode.CustomDocument {
   }
 
   private readonly _onDidDispose = this._register(
-    new vscode.EventEmitter<void>(),
+    new vscode.EventEmitter<void>()
   );
   /**
    * Fired when the document is disposed of.
@@ -91,7 +91,7 @@ class NotebookDocument extends Disposable implements vscode.CustomDocument {
     new vscode.EventEmitter<{
       readonly content?: Uint8Array;
       readonly edits: readonly NotebookEdit[];
-    }>(),
+    }>()
   );
   /**
    * Fired to notify webviews that the document has changed.
@@ -103,7 +103,7 @@ class NotebookDocument extends Disposable implements vscode.CustomDocument {
       readonly label: string;
       undo(): void;
       redo(): void;
-    }>(),
+    }>()
   );
   /**
    * Fired to tell VS Code that an edit has occurred in the document.
@@ -131,18 +131,18 @@ class NotebookDocument extends Disposable implements vscode.CustomDocument {
     this._edits.push(edit);
 
     // Update the document data if it's a content update
-    if (edit.type === 'content-update') {
+    if (edit.type === "content-update") {
       this._documentData = edit.content;
     }
 
     this._onDidChange.fire({
-      label: 'Edit',
+      label: "Edit",
       undo: async () => {
         this._edits.pop();
         // Restore previous content if available
         if (this._edits.length > 0) {
           const lastEdit = this._edits[this._edits.length - 1];
-          if (lastEdit.type === 'content-update') {
+          if (lastEdit.type === "content-update") {
             this._documentData = lastEdit.content;
           }
         }
@@ -153,7 +153,7 @@ class NotebookDocument extends Disposable implements vscode.CustomDocument {
       },
       redo: async () => {
         this._edits.push(edit);
-        if (edit.type === 'content-update') {
+        if (edit.type === "content-update") {
           this._documentData = edit.content;
         }
         this._onDidChangeDocument.fire({
@@ -182,10 +182,10 @@ class NotebookDocument extends Disposable implements vscode.CustomDocument {
    */
   async saveAs(
     targetResource: vscode.Uri,
-    cancellation: vscode.CancellationToken,
+    cancellation: vscode.CancellationToken
   ): Promise<void> {
     // For Datalayer notebooks, always use original data (read-only)
-    if (this.uri.scheme === 'datalayer') {
+    if (this.uri.scheme === "datalayer") {
       const fileData = this._documentData;
       if (cancellation.isCancellationRequested) {
         return;
@@ -209,7 +209,7 @@ class NotebookDocument extends Disposable implements vscode.CustomDocument {
       this._savedEdits = Array.from(this._edits);
       this._edits = [];
     } catch (error) {
-      console.error('[NotebookDocument] Error saving document:', error);
+      console.error("[NotebookDocument] Error saving document:", error);
       throw error;
     }
   }
@@ -234,7 +234,7 @@ class NotebookDocument extends Disposable implements vscode.CustomDocument {
    */
   async backup(
     destination: vscode.Uri,
-    cancellation: vscode.CancellationToken,
+    cancellation: vscode.CancellationToken
   ): Promise<vscode.CustomDocumentBackup> {
     await this.saveAs(destination, cancellation);
 
@@ -275,24 +275,24 @@ export class NotebookEditorProvider
    * @returns Disposable for cleanup
    */
   public static register(context: vscode.ExtensionContext): vscode.Disposable {
-    vscode.commands.registerCommand('datalayer.jupyter-notebook-new', () => {
+    vscode.commands.registerCommand("datalayer.jupyter-notebook-new", () => {
       const workspaceFolders = vscode.workspace.workspaceFolders;
       if (!workspaceFolders) {
         vscode.window.showErrorMessage(
-          'Creating new Datalayer notebook files currently requires opening a workspace',
+          "Creating new Datalayer notebook files currently requires opening a workspace"
         );
         return;
       }
 
       const uri = vscode.Uri.joinPath(
         workspaceFolders[0].uri,
-        `new-${NotebookEditorProvider.newNotebookFileId++}.ipynb`,
-      ).with({ scheme: 'untitled' });
+        `new-${NotebookEditorProvider.newNotebookFileId++}.ipynb`
+      ).with({ scheme: "untitled" });
 
       vscode.commands.executeCommand(
-        'vscode.openWith',
+        "vscode.openWith",
         uri,
-        NotebookEditorProvider.viewType,
+        NotebookEditorProvider.viewType
       );
     });
 
@@ -304,11 +304,11 @@ export class NotebookEditorProvider
           retainContextWhenHidden: false,
         },
         supportsMultipleEditorsPerDocument: false,
-      },
+      }
     );
   }
 
-  private static readonly viewType = 'datalayer.jupyter-notebook';
+  private static readonly viewType = "datalayer.jupyter-notebook";
 
   /**
    * Tracks all known webviews
@@ -335,7 +335,7 @@ export class NotebookEditorProvider
   async openCustomDocument(
     uri: vscode.Uri,
     openContext: { backupId?: string },
-    _token: vscode.CancellationToken,
+    _token: vscode.CancellationToken
   ): Promise<NotebookDocument> {
     const document: NotebookDocument = await NotebookDocument.create(
       uri,
@@ -343,20 +343,20 @@ export class NotebookEditorProvider
       {
         getFileData: async () => {
           const webviewsForDocument = Array.from(
-            this.webviews.get(document.uri),
+            this.webviews.get(document.uri)
           );
           if (!webviewsForDocument.length) {
-            throw new Error('Could not find webview to save for');
+            throw new Error("Could not find webview to save for");
           }
           const panel = webviewsForDocument[0];
           const response = await this.postMessageWithResponse<number[]>(
             panel,
-            'getFileData',
-            {},
+            "getFileData",
+            {}
           );
           return new Uint8Array(response);
         },
-      },
+      }
     );
 
     const listeners: vscode.Disposable[] = [];
@@ -369,8 +369,8 @@ export class NotebookEditorProvider
             document,
             ...e,
           });
-        },
-      ),
+        }
+      )
     );
 
     listeners.push(
@@ -381,13 +381,13 @@ export class NotebookEditorProvider
         }) => {
           // Update all webviews when the document changes
           for (const webviewPanel of this.webviews.get(document.uri)) {
-            this.postMessage(webviewPanel, 'update', {
+            this.postMessage(webviewPanel, "update", {
               edits: e.edits,
               content: e.content,
             });
           }
-        },
-      ),
+        }
+      )
     );
 
     document.onDidDispose(() => disposeAll(listeners));
@@ -398,7 +398,7 @@ export class NotebookEditorProvider
   async resolveCustomEditor(
     document: NotebookDocument,
     webviewPanel: vscode.WebviewPanel,
-    _token: vscode.CancellationToken,
+    _token: vscode.CancellationToken
   ): Promise<void> {
     // Add the webview to our internal set of active webviews
     this.webviews.add(document.uri, webviewPanel);
@@ -409,8 +409,8 @@ export class NotebookEditorProvider
     };
     webviewPanel.webview.html = this.getHtmlForWebview(webviewPanel.webview);
 
-    webviewPanel.webview.onDidReceiveMessage(e =>
-      this.onMessage(webviewPanel, document, e),
+    webviewPanel.webview.onDidReceiveMessage((e) =>
+      this.onMessage(webviewPanel, document, e)
     );
 
     // Listen for theme changes
@@ -418,10 +418,10 @@ export class NotebookEditorProvider
       () => {
         const theme =
           vscode.window.activeColorTheme.kind === vscode.ColorThemeKind.Dark
-            ? 'dark'
-            : 'light';
-        this.postMessage(webviewPanel, 'theme-change', { theme });
-      },
+            ? "dark"
+            : "light";
+        this.postMessage(webviewPanel, "theme-change", { theme });
+      }
     );
 
     webviewPanel.onDidDispose(() => {
@@ -429,27 +429,27 @@ export class NotebookEditorProvider
     });
 
     // Wait for the webview to be properly ready before we init
-    webviewPanel.webview.onDidReceiveMessage(async e => {
-      if (e.type === 'ready') {
+    webviewPanel.webview.onDidReceiveMessage(async (e) => {
+      if (e.type === "ready") {
         // Detect VS Code theme
         const theme =
           vscode.window.activeColorTheme.kind === vscode.ColorThemeKind.Dark
-            ? 'dark'
-            : 'light';
+            ? "dark"
+            : "light";
 
-        if (document.uri.scheme === 'untitled') {
-          this.postMessage(webviewPanel, 'init', {
+        if (document.uri.scheme === "untitled") {
+          this.postMessage(webviewPanel, "init", {
             untitled: true,
             editable: true,
             theme,
           });
         } else {
           const editable = vscode.workspace.fs.isWritableFileSystem(
-            document.uri.scheme,
+            document.uri.scheme
           );
 
           // Check if this is a Datalayer notebook (from spaces)
-          const isDatalayerNotebook = document.uri.scheme === 'datalayer';
+          const isDatalayerNotebook = document.uri.scheme === "datalayer";
 
           // Get document ID and server info for Datalayer notebooks
           let documentId: string | undefined;
@@ -458,14 +458,14 @@ export class NotebookEditorProvider
 
           if (isDatalayerNotebook) {
             // Get the Datalayer server configuration
-            const config = vscode.workspace.getConfiguration('datalayer');
+            const config = vscode.workspace.getConfiguration("datalayer");
             serverUrl = config.get<string>(
-              'serverUrl',
-              'https://prod1.datalayer.run',
+              "serverUrl",
+              "https://prod1.datalayer.run"
             );
 
             // Get the authentication token
-            const AuthService = await import('../auth/authService');
+            const AuthService = await import("../auth/authService");
             const authService = AuthService.AuthService.getInstance();
             const jwtToken = await authService.getToken();
             if (jwtToken) {
@@ -473,32 +473,32 @@ export class NotebookEditorProvider
             }
 
             // First try to get metadata from document bridge
-            const DocumentBridge = await import('../spaces/documentBridge');
+            const DocumentBridge = await import("../spaces/documentBridge");
             const documentBridge = DocumentBridge.DocumentBridge.getInstance();
             const metadata = documentBridge.getDocumentMetadata(document.uri);
 
             if (metadata && metadata.document.uid) {
               documentId = metadata.document.uid;
               console.log(
-                '[NotebookEditor] Got document ID from metadata:',
-                documentId,
+                "[NotebookEditor] Got document ID from metadata:",
+                documentId
               );
             } else {
               // Fallback: try to extract document ID from the filename
-              const filename = document.uri.path.split('/').pop() || '';
+              const filename = document.uri.path.split("/").pop() || "";
               const match = filename.match(/_([a-zA-Z0-9-]+)\.ipynb$/);
               documentId = match ? match[1] : undefined;
 
               if (documentId) {
                 console.log(
-                  '[NotebookEditor] Got document ID from filename fallback:',
-                  documentId,
+                  "[NotebookEditor] Got document ID from filename fallback:",
+                  documentId
                 );
               }
             }
           }
 
-          this.postMessage(webviewPanel, 'init', {
+          this.postMessage(webviewPanel, "init", {
             value: document.documentData,
             editable,
             isDatalayerNotebook,
@@ -520,7 +520,7 @@ export class NotebookEditorProvider
 
   public saveCustomDocument(
     document: NotebookDocument,
-    cancellation: vscode.CancellationToken,
+    cancellation: vscode.CancellationToken
   ): Thenable<void> {
     return document.save(cancellation);
   }
@@ -528,14 +528,14 @@ export class NotebookEditorProvider
   public saveCustomDocumentAs(
     document: NotebookDocument,
     destination: vscode.Uri,
-    cancellation: vscode.CancellationToken,
+    cancellation: vscode.CancellationToken
   ): Thenable<void> {
     return document.saveAs(destination, cancellation);
   }
 
   public revertCustomDocument(
     document: NotebookDocument,
-    cancellation: vscode.CancellationToken,
+    cancellation: vscode.CancellationToken
   ): Thenable<void> {
     return document.revert(cancellation);
   }
@@ -543,7 +543,7 @@ export class NotebookEditorProvider
   public backupCustomDocument(
     document: NotebookDocument,
     context: vscode.CustomDocumentBackupContext,
-    cancellation: vscode.CancellationToken,
+    cancellation: vscode.CancellationToken
   ): Thenable<vscode.CustomDocumentBackup> {
     return document.backup(context.destination, cancellation);
   }
@@ -554,21 +554,21 @@ export class NotebookEditorProvider
   private getHtmlForWebview(webview: vscode.Webview): string {
     // Local path to script and css for the webview
     const scriptUri = webview.asWebviewUri(
-      vscode.Uri.joinPath(this._context.extensionUri, 'dist', 'webview.js'),
+      vscode.Uri.joinPath(this._context.extensionUri, "dist", "webview.js")
     );
 
     // Get the codicon font file from node_modules
     const codiconFontUri = webview.asWebviewUri(
       vscode.Uri.joinPath(
         this._context.extensionUri,
-        '..',
-        '..',
-        'node_modules',
-        '@vscode',
-        'codicons',
-        'dist',
-        'codicon.ttf',
-      ),
+        "..",
+        "..",
+        "node_modules",
+        "@vscode",
+        "codicons",
+        "dist",
+        "codicon.ttf"
+      )
     );
 
     // Use a nonce to whitelist which scripts can be run
@@ -690,11 +690,11 @@ export class NotebookEditorProvider
   private postMessageWithResponse<R = unknown>(
     panel: vscode.WebviewPanel,
     type: string,
-    body: any,
+    body: any
   ): Promise<R> {
     const requestId = (this._requestId++).toString();
-    const p = new Promise<R>(resolve =>
-      this._callbacks.set(requestId, resolve),
+    const p = new Promise<R>((resolve) =>
+      this._callbacks.set(requestId, resolve)
     );
     panel.webview.postMessage({ type, requestId, body });
     return p;
@@ -704,14 +704,14 @@ export class NotebookEditorProvider
     panel: vscode.WebviewPanel,
     type: string,
     body: any,
-    id?: string,
+    id?: string
   ): void {
     panel.webview.postMessage({ type, body, id });
   }
 
   private async handleRuntimeSelection(
     webview: vscode.WebviewPanel,
-    message: ExtensionMessage,
+    message: ExtensionMessage
   ) {
     try {
       const runtimesApi = RuntimesApiService.getInstance(this._context);
@@ -720,7 +720,7 @@ export class NotebookEditorProvider
       // Check if authenticated
       const authState = authService.getAuthState();
       if (!authState.isAuthenticated) {
-        vscode.window.showErrorMessage('Please login to Datalayer first');
+        vscode.window.showErrorMessage("Please login to Datalayer first");
         return;
       }
 
@@ -730,33 +730,33 @@ export class NotebookEditorProvider
         runtimes = await vscode.window.withProgress(
           {
             location: vscode.ProgressLocation.Notification,
-            title: 'Loading runtimes...',
+            title: "Loading runtimes...",
             cancellable: false,
           },
           async () => {
             return await runtimesApi.listRuntimes();
-          },
+          }
         );
       } catch (error) {
-        console.error('[NotebookEditor] Error loading runtimes:', error);
+        console.error("[NotebookEditor] Error loading runtimes:", error);
 
         // Check if it's a token expiration error
         const errorMessage =
           error instanceof Error ? error.message : String(error);
-        if (errorMessage.includes('expired') || errorMessage.includes('401')) {
+        if (errorMessage.includes("expired") || errorMessage.includes("401")) {
           vscode.window
             .showErrorMessage(
-              'Authentication expired. Please logout and login again.',
-              'Logout',
+              "Authentication expired. Please logout and login again.",
+              "Logout"
             )
-            .then(selection => {
-              if (selection === 'Logout') {
-                vscode.commands.executeCommand('datalayer.logout');
+            .then((selection) => {
+              if (selection === "Logout") {
+                vscode.commands.executeCommand("datalayer.logout");
               }
             });
         } else {
           vscode.window.showErrorMessage(
-            `Failed to load runtimes: ${errorMessage}`,
+            `Failed to load runtimes: ${errorMessage}`
           );
         }
         return;
@@ -767,18 +767,22 @@ export class NotebookEditorProvider
 
       // Add existing runtimes
       if (runtimes && runtimes.length > 0) {
-        runtimes.forEach(runtime => {
+        runtimes.forEach((runtime) => {
           const statusIcon =
-            runtime.status === 'running' || runtime.status === 'ready'
-              ? '$(vm-active)'
-              : '$(vm-outline)';
+            runtime.status === "running" || runtime.status === "ready"
+              ? "$(vm-active)"
+              : "$(vm-outline)";
           const creditsUsed = runtime.credits_used || 0;
           const creditsLimit = runtime.credits_limit || 10;
 
           const item: any = {
-            label: `${statusIcon} ${runtime.given_name || runtime.pod_name || 'Runtime'}`,
+            label: `${statusIcon} ${
+              runtime.given_name || runtime.pod_name || "Runtime"
+            }`,
             description: `${runtime.status} • ${creditsUsed}/${creditsLimit} credits`,
-            detail: `Environment: ${runtime.environment_name || 'python-cpu-env'}`,
+            detail: `Environment: ${
+              runtime.environment_name || "python-cpu-env"
+            }`,
           };
           item.runtime = runtime;
           items.push(item);
@@ -786,35 +790,35 @@ export class NotebookEditorProvider
 
         // Add separator
         items.push({
-          label: '',
+          label: "",
           kind: vscode.QuickPickItemKind.Separator,
         } as vscode.QuickPickItem);
       }
 
       // Add create options
       const cpuItem: any = {
-        label: '$(add) Create CPU Runtime',
-        description: 'Python CPU Environment',
-        detail: 'Create a new runtime with CPU resources',
+        label: "$(add) Create CPU Runtime",
+        description: "Python CPU Environment",
+        detail: "Create a new runtime with CPU resources",
       };
-      cpuItem.action = 'create-cpu';
+      cpuItem.action = "create-cpu";
       items.push(cpuItem);
 
       const aiItem: any = {
-        label: '$(add) Create AI Runtime',
-        description: 'Python AI Environment',
-        detail: 'Create a new runtime with GPU resources for AI/ML workloads',
+        label: "$(add) Create AI Runtime",
+        description: "Python AI Environment",
+        detail: "Create a new runtime with GPU resources for AI/ML workloads",
       };
-      aiItem.action = 'create-ai';
+      aiItem.action = "create-ai";
       items.push(aiItem);
 
       // Show quick pick
       const selected = await vscode.window.showQuickPick(items, {
         placeHolder:
           runtimes.length === 0
-            ? 'No runtimes found. Create a new one?'
-            : 'Select a runtime or create a new one',
-        title: 'Select Datalayer Runtime',
+            ? "No runtimes found. Create a new one?"
+            : "Select a runtime or create a new one",
+        title: "Select Datalayer Runtime",
       });
 
       if (!selected) {
@@ -830,24 +834,26 @@ export class NotebookEditorProvider
       } else if (selectedAny.action) {
         // Create new runtime
         const environment =
-          selectedAny.action === 'create-ai' ? 'ai-env' : 'python-cpu-env';
+          selectedAny.action === "create-ai" ? "ai-env" : "python-cpu-env";
 
         await vscode.window.withProgress(
           {
             location: vscode.ProgressLocation.Notification,
-            title: 'Creating runtime...',
+            title: "Creating runtime...",
             cancellable: false,
           },
           async () => {
             const config =
-              vscode.workspace.getConfiguration('datalayer.runtime');
-            const creditsLimit = config.get<number>('creditsLimit', 10);
+              vscode.workspace.getConfiguration("datalayer.runtime");
+            const creditsLimit = config.get<number>("creditsLimit", 10);
 
             const newRuntime = await runtimesApi.createRuntime(
               creditsLimit,
-              'notebook',
-              `VSCode ${selectedAny.action === 'create-ai' ? 'AI' : 'CPU'} Runtime`,
-              environment,
+              "notebook",
+              `VSCode ${
+                selectedAny.action === "create-ai" ? "AI" : "CPU"
+              } Runtime`,
+              environment
             );
 
             if (newRuntime) {
@@ -855,14 +861,14 @@ export class NotebookEditorProvider
               let retries = 0;
               const maxRetries = 10;
               while (retries < maxRetries && newRuntime.pod_name) {
-                await new Promise(resolve => setTimeout(resolve, 3000));
+                await new Promise((resolve) => setTimeout(resolve, 3000));
                 const updatedRuntime = await runtimesApi.getRuntime(
-                  newRuntime.pod_name,
+                  newRuntime.pod_name
                 );
                 if (updatedRuntime?.ingress && updatedRuntime?.token) {
                   this.sendRuntimeToWebview(webview, updatedRuntime);
                   vscode.window.showInformationMessage(
-                    'Runtime created successfully',
+                    "Runtime created successfully"
                   );
                   return;
                 }
@@ -872,80 +878,80 @@ export class NotebookEditorProvider
               // Use whatever we have if not fully ready
               this.sendRuntimeToWebview(webview, newRuntime);
               vscode.window.showWarningMessage(
-                'Runtime created but may not be fully ready',
+                "Runtime created but may not be fully ready"
               );
             }
-          },
+          }
         );
       }
     } catch (error) {
-      console.error('[NotebookEditor] Error in runtime selection:', error);
+      console.error("[NotebookEditor] Error in runtime selection:", error);
       vscode.window.showErrorMessage(`Failed to select runtime: ${error}`);
     }
   }
 
   private async handleLocalNotebookRuntimeSelection(
     webview: vscode.WebviewPanel,
-    message: ExtensionMessage,
+    message: ExtensionMessage
   ) {
     // Show quick pick with options
     const items: vscode.QuickPickItem[] = [
       {
-        label: '$(cloud) Datalayer Runtimes',
-        description: 'Use a Datalayer cloud runtime',
-        detail: 'Select from existing runtimes or create a new one',
+        label: "$(cloud) Datalayer Runtimes",
+        description: "Use a Datalayer cloud runtime",
+        detail: "Select from existing runtimes or create a new one",
       },
       {
-        label: '$(server) Jupyter Server URL',
-        description: 'Connect to a Jupyter server',
-        detail: 'Enter the URL of a running Jupyter server',
+        label: "$(server) Jupyter Server URL",
+        description: "Connect to a Jupyter server",
+        detail: "Enter the URL of a running Jupyter server",
       },
     ];
 
     const selected = await vscode.window.showQuickPick(items, {
-      placeHolder: 'Select kernel source',
-      title: 'Select Kernel',
+      placeHolder: "Select kernel source",
+      title: "Select Kernel",
     });
 
     if (!selected) {
       return;
     }
 
-    if (selected.label.includes('Datalayer Runtimes')) {
+    if (selected.label.includes("Datalayer Runtimes")) {
       // Use the existing Datalayer runtime selection
       this.handleRuntimeSelection(webview, message);
-    } else if (selected.label.includes('Jupyter Server URL')) {
+    } else if (selected.label.includes("Jupyter Server URL")) {
       // Show input box for Jupyter server URL
       setRuntime()
         .then((baseURL: string | undefined) => {
           if (baseURL) {
             const parsedURL = new URL(baseURL);
-            const token = parsedURL.searchParams.get('token') ?? '';
-            parsedURL.search = '';
+            const token = parsedURL.searchParams.get("token") ?? "";
+            parsedURL.search = "";
             const baseUrl = parsedURL.toString();
 
             this.postMessage(
               webview,
-              'set-runtime',
+              "set-runtime",
               {
                 baseUrl,
                 token,
               },
-              message.id,
+              message.id
             );
           }
         })
         .catch((reason: any) => {
-          console.error('Failed to get a server URL:', reason);
+          console.error("Failed to get a server URL:", reason);
         });
     }
   }
 
   private sendRuntimeToWebview(
     webview: vscode.WebviewPanel,
-    runtime: RuntimeResponse,
+    runtime: RuntimeResponse
   ) {
-    this.postMessage(webview, 'runtime-selected', {
+    this.postMessage(webview, "runtime-selected", {
       runtime: {
         uid: runtime.uid,
         name: runtime.given_name || runtime.pod_name,
@@ -962,13 +968,13 @@ export class NotebookEditorProvider
   private onMessage(
     webview: vscode.WebviewPanel,
     document: NotebookDocument,
-    message: ExtensionMessage,
+    message: ExtensionMessage
   ) {
     switch (message.type) {
-      case 'ready':
+      case "ready":
         // Handle in resolveCustomEditor
         return;
-      case 'select-runtime': {
+      case "select-runtime": {
         const isDatalayerNotebook = message.body?.isDatalayerNotebook;
         if (isDatalayerNotebook) {
           this.handleRuntimeSelection(webview, message);
@@ -979,41 +985,41 @@ export class NotebookEditorProvider
         return;
       }
 
-      case 'http-request': {
+      case "http-request": {
         this._forwardRequest(message, webview);
         return;
       }
 
-      case 'response': {
+      case "response": {
         const callback = this._callbacks.get(message.requestId!);
         if (callback) {
           callback(message.body);
           this._callbacks.delete(message.requestId!);
         } else {
           console.warn(
-            '[NotebookEditor] No callback found for requestId:',
-            message.requestId,
+            "[NotebookEditor] No callback found for requestId:",
+            message.requestId
           );
         }
         return;
       }
 
-      case 'websocket-open': {
+      case "websocket-open": {
         this._openWebsocket(message, webview);
         return;
       }
 
-      case 'websocket-message': {
+      case "websocket-message": {
         console.log(
           `Sending websocket message from ${message.id}.`,
-          message.body,
+          message.body
         );
         const { id } = message;
-        const ws = this._websockets.get(id ?? '');
+        const ws = this._websockets.get(id ?? "");
         if (!ws) {
           console.error(
-            'Failed to send websocket message from editor with no matching websocket.',
-            message,
+            "Failed to send websocket message from editor with no matching websocket.",
+            message
           );
         }
 
@@ -1021,16 +1027,16 @@ export class NotebookEditorProvider
         return;
       }
 
-      case 'websocket-close': {
+      case "websocket-close": {
         const { id } = message;
-        this._websockets.get(id ?? '')?.close();
+        this._websockets.get(id ?? "")?.close();
         return;
       }
 
-      case 'notebook-content-changed': {
+      case "notebook-content-changed": {
         // Only track changes for local notebooks, not Datalayer space notebooks
-        const isDatalayerNotebook = document.uri.scheme === 'datalayer';
-        console.log('[NotebookEditor] notebook-content-changed received', {
+        const isDatalayerNotebook = document.uri.scheme === "datalayer";
+        console.log("[NotebookEditor] notebook-content-changed received", {
           isDatalayerNotebook,
           scheme: document.uri.scheme,
           hasContent: !!message.body?.content,
@@ -1040,7 +1046,7 @@ export class NotebookEditorProvider
 
         if (!isDatalayerNotebook) {
           console.log(
-            '[NotebookEditor] Processing content change for local notebook',
+            "[NotebookEditor] Processing content change for local notebook"
           );
 
           // Ensure content is a Uint8Array
@@ -1052,34 +1058,34 @@ export class NotebookEditorProvider
             content = new Uint8Array(message.body.content);
           } else {
             console.error(
-              '[NotebookEditor] Invalid content type:',
-              typeof message.body.content,
+              "[NotebookEditor] Invalid content type:",
+              typeof message.body.content
             );
             return;
           }
 
           console.log(
-            '[NotebookEditor] Making edit with content size:',
-            content.length,
+            "[NotebookEditor] Making edit with content size:",
+            content.length
           );
           document.makeEdit({
-            type: 'content-update',
+            type: "content-update",
             content: content,
           });
           console.log(
-            '[NotebookEditor] Edit made, document should be marked dirty',
+            "[NotebookEditor] Edit made, document should be marked dirty"
           );
         } else {
           console.log(
-            '[NotebookEditor] Skipping content change for Datalayer notebook',
+            "[NotebookEditor] Skipping content change for Datalayer notebook"
           );
         }
         return;
       }
 
       // This case should not happen as getFileData is handled differently
-      case 'getFileData': {
-        console.warn('[NotebookEditor] Unexpected getFileData message');
+      case "getFileData": {
+        console.warn("[NotebookEditor] Unexpected getFileData message");
         return;
       }
     }
@@ -1088,7 +1094,7 @@ export class NotebookEditorProvider
 
   private _forwardRequest(
     message: ExtensionMessage,
-    webview: vscode.WebviewPanel,
+    webview: vscode.WebviewPanel
   ) {
     const { body, id } = message;
     fetch(body.url, {
@@ -1098,36 +1104,36 @@ export class NotebookEditorProvider
     }).then(async (reply: any) => {
       const headers: Record<string, string> = [...reply.headers].reduce(
         (agg, pair) => ({ ...agg, [pair[0]]: pair[1] }),
-        {},
+        {}
       );
       const rawBody =
-        body.method !== 'DELETE' ? await reply.arrayBuffer() : undefined;
+        body.method !== "DELETE" ? await reply.arrayBuffer() : undefined;
       this.postMessage(
         webview,
-        'http-response',
+        "http-response",
         {
           headers,
           body: rawBody,
           status: reply.status,
           statusText: reply.statusText,
         },
-        id,
+        id
       );
     });
   }
 
   private _openWebsocket(
     message: ExtensionMessage,
-    webview: vscode.WebviewPanel,
+    webview: vscode.WebviewPanel
   ) {
     const { body, id } = message;
     const wsURL = new URL(body.origin);
-    if (wsURL.searchParams.has('token')) {
-      wsURL.searchParams.set('token', 'xxxxx');
+    if (wsURL.searchParams.has("token")) {
+      wsURL.searchParams.set("token", "xxxxx");
     }
     const protocol = body.protocol || undefined;
     console.debug(
-      `Opening websocket to ${wsURL.toString()} with protocol '${protocol}'.`,
+      `Opening websocket to ${wsURL.toString()} with protocol '${protocol}'.`
     );
     const ws = new WebSocket(body.origin, protocol);
     this._websockets.set(id!, ws);
@@ -1135,29 +1141,29 @@ export class NotebookEditorProvider
       this._websockets.delete(id!);
       ws.close();
     });
-    ws.onopen = event => {
+    ws.onopen = (event) => {
       console.log(`Websocket to ${body.origin} opened.`);
-      this.postMessage(webview, 'websocket-open', {}, id);
+      this.postMessage(webview, "websocket-open", {}, id);
     };
-    ws.onmessage = event => {
+    ws.onmessage = (event) => {
       const { data } = event;
       console.debug(`Message on ${wsURL.toString()}:`, { data });
-      this.postMessage(webview, 'websocket-message', { data }, id);
+      this.postMessage(webview, "websocket-message", { data }, id);
     };
-    ws.onclose = event => {
+    ws.onclose = (event) => {
       console.log(`Websocket to ${wsURL.toString()} closed.`);
       const { code, reason, wasClean } = event;
       this.postMessage(
         webview,
-        'websocket-close',
+        "websocket-close",
         { code, reason, wasClean },
-        id,
+        id
       );
     };
-    ws.onerror = event => {
+    ws.onerror = (event) => {
       console.debug(`Error on ${wsURL.toString()}:`, event);
       const { error, message } = event;
-      this.postMessage(webview, 'websocket-error', { error, message }, id);
+      this.postMessage(webview, "websocket-error", { error, message }, id);
     };
   }
 }

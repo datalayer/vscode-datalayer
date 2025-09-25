@@ -11,20 +11,20 @@
  */
 
 // Export types
-export * from './types';
+export * from "./types";
 
 // Export providers
-export { BaseThemeProvider } from './providers/BaseThemeProvider';
-export { VSCodeThemeProvider } from './providers/VSCodeThemeProvider';
+export { BaseThemeProvider } from "./providers/BaseThemeProvider";
+export { VSCodeThemeProvider } from "./providers/VSCodeThemeProvider";
 
 // Export mapping utilities
-export { UniversalColorMapper } from './mapping/UniversalColorMapper';
+export { UniversalColorMapper } from "./mapping/UniversalColorMapper";
 
 // Export components
 export {
   EnhancedJupyterReactTheme,
   useTheme,
-} from './components/EnhancedJupyterReactTheme';
+} from "./components/EnhancedJupyterReactTheme";
 
 // Re-export the default
-export { default as ThemeProvider } from './components/EnhancedJupyterReactTheme';
+export { default as ThemeProvider } from "./components/EnhancedJupyterReactTheme";

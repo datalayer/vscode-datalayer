@@ -7,15 +7,18 @@ This folder contains an extensible theme system that supports multiple theme pro
 ### Core Components
 
 1. **Theme Providers** (`providers/`)
+
    - `BaseThemeProvider`: Abstract base class for all theme providers
    - `VSCodeThemeProvider`: Extracts and maps VS Code theme colors
    - Future: `JupyterLabThemeProvider`, `CustomThemeProvider`
 
 2. **Color Mapping** (`mapping/`)
+
    - `UniversalColorMapper`: Maps semantic colors between different theme systems
    - Provides unified color abstraction layer
 
 3. **Components** (`components/`)
+
    - `EnhancedJupyterReactTheme`: Enhanced theme wrapper component
    - Supports auto-detection of environment
 
@@ -37,7 +40,7 @@ This folder contains an extensible theme system that supports multiple theme pro
 ### Basic Usage with VS Code Theme
 
 ```tsx
-import { EnhancedJupyterReactTheme } from './theme';
+import { EnhancedJupyterReactTheme } from "./theme";
 
 function App() {
   return (
@@ -59,7 +62,7 @@ function App() {
 ### Custom Theme Provider
 
 ```tsx
-import { BaseThemeProvider } from './theme';
+import { BaseThemeProvider } from "./theme";
 
 class MyCustomProvider extends BaseThemeProvider {
   // Implementation...
@@ -75,7 +78,7 @@ const provider = new MyCustomProvider();
 ### Access Theme in Components
 
 ```tsx
-import { useTheme } from './theme';
+import { useTheme } from "./theme";
 
 function MyComponent() {
   const { theme, colorMode, provider } = useTheme();

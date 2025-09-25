@@ -11,11 +11,11 @@
  * Handles controller lifecycle, real-time updates, and runtime status synchronization.
  */
 
-import * as vscode from 'vscode';
-import { AuthService } from '../auth/authService';
-import { SpacerApiService } from '../spaces/spacerApiService';
-import { RuntimesApiService, RuntimeResponse } from './runtimesApiService';
-import { RuntimeController } from './runtimeController';
+import * as vscode from "vscode";
+import { AuthService } from "../auth/authService";
+import { SpacerApiService } from "../spaces/spacerApiService";
+import { RuntimesApiService, RuntimeResponse } from "./runtimesApiService";
+import { RuntimeController } from "./runtimeController";
 
 /**
  * Types of runtime controllers that can be created.
@@ -23,11 +23,11 @@ import { RuntimeController } from './runtimeController';
  */
 export enum RuntimeControllerType {
   /** Controller for an existing runtime */
-  ExistingRuntime = 'existing',
+  ExistingRuntime = "existing",
   /** Controller for creating a Python CPU runtime */
-  CreatePythonCpu = 'create-python-cpu',
+  CreatePythonCpu = "create-python-cpu",
   /** Controller for creating an AI environment runtime */
-  CreateAiEnv = 'create-ai-env',
+  CreateAiEnv = "create-ai-env",
 }
 
 /**
@@ -77,7 +77,7 @@ export class RuntimeControllerManager implements vscode.Disposable {
     this._runtimesApiService = RuntimesApiService.getInstance(context);
 
     console.log(
-      '[RuntimeControllerManager] Initializing runtime controller manager',
+      "[RuntimeControllerManager] Initializing runtime controller manager"
     );
   }
 
@@ -90,30 +90,30 @@ export class RuntimeControllerManager implements vscode.Disposable {
    * @returns {Promise<void>}
    */
   public async initialize(): Promise<void> {
-    console.log('[RuntimeControllerManager] Starting initialization...');
+    console.log("[RuntimeControllerManager] Starting initialization...");
 
     try {
       // Create initial controllers
       await this.refreshControllers();
       console.log(
-        '[RuntimeControllerManager] Initialization completed successfully',
+        "[RuntimeControllerManager] Initialization completed successfully"
       );
     } catch (error) {
-      console.error('[RuntimeControllerManager] Initialization failed:', error);
+      console.error("[RuntimeControllerManager] Initialization failed:", error);
       throw error;
     }
 
     // Set up periodic refresh if enabled (default 10 seconds for more responsive updates)
     const refreshInterval = vscode.workspace
-      .getConfiguration('datalayer.notebook')
-      .get<number>('refreshInterval', 10000);
+      .getConfiguration("datalayer.notebook")
+      .get<number>("refreshInterval", 10000);
     if (refreshInterval > 0) {
       this._refreshTimer = setInterval(() => {
         if (!this._disposed) {
-          this.refreshControllers().catch(error => {
+          this.refreshControllers().catch((error) => {
             console.error(
-              '[RuntimeControllerManager] Error during periodic refresh:',
-              error,
+              "[RuntimeControllerManager] Error during periodic refresh:",
+              error
             );
           });
         }
@@ -121,8 +121,8 @@ export class RuntimeControllerManager implements vscode.Disposable {
     }
 
     console.log(
-      '[RuntimeControllerManager] Initialized with refresh interval:',
-      refreshInterval,
+      "[RuntimeControllerManager] Initialized with refresh interval:",
+      refreshInterval
     );
   }
 
@@ -137,16 +137,16 @@ export class RuntimeControllerManager implements vscode.Disposable {
   public async refreshControllers(): Promise<void> {
     if (this._disposed) {
       console.log(
-        '[RuntimeControllerManager] Manager is disposed, skipping refresh',
+        "[RuntimeControllerManager] Manager is disposed, skipping refresh"
       );
       return;
     }
 
-    console.log('[RuntimeControllerManager] Starting controller refresh...');
+    console.log("[RuntimeControllerManager] Starting controller refresh...");
 
     // IMPORTANT: Always clear all existing controllers first to avoid stale data
     console.log(
-      '[RuntimeControllerManager] Clearing existing controllers to ensure fresh state',
+      "[RuntimeControllerManager] Clearing existing controllers to ensure fresh state"
     );
     this.clearAllControllers();
 
@@ -154,22 +154,22 @@ export class RuntimeControllerManager implements vscode.Disposable {
       // Check if user is authenticated - if not, only show creation controllers
       const isAuthenticated = this._authService.getAuthState().isAuthenticated;
       console.log(
-        '[RuntimeControllerManager] Authentication status:',
-        isAuthenticated,
+        "[RuntimeControllerManager] Authentication status:",
+        isAuthenticated
       );
       if (!isAuthenticated) {
         console.log(
-          '[RuntimeControllerManager] User not authenticated, showing only creation controllers',
+          "[RuntimeControllerManager] User not authenticated, showing only creation controllers"
         );
 
         // For unauthenticated users, show a single selector controller
         const creationConfigs = [
           {
             type: RuntimeControllerType.CreatePythonCpu, // Use as a placeholder for selector
-            environmentName: 'selector',
-            displayName: 'Datalayer Runtimes...',
-            description: 'Login to select or create a Datalayer runtime',
-            detail: 'Authentication required to access runtimes',
+            environmentName: "selector",
+            displayName: "Datalayer Runtimes...",
+            description: "Login to select or create a Datalayer runtime",
+            detail: "Authentication required to access runtimes",
           },
         ];
 
@@ -177,38 +177,38 @@ export class RuntimeControllerManager implements vscode.Disposable {
         for (const config of creationConfigs) {
           const controllerId = this.getControllerId(config);
           console.log(
-            '[RuntimeControllerManager] Creating selector controller:',
-            controllerId,
+            "[RuntimeControllerManager] Creating selector controller:",
+            controllerId
           );
           this.createController(config);
         }
 
         console.log(
-          '[RuntimeControllerManager] Created controllers for unauthenticated user',
+          "[RuntimeControllerManager] Created controllers for unauthenticated user"
         );
         return;
       }
 
       // Get current runtimes
       console.log(
-        '[RuntimeControllerManager] ========== FETCHING RUNTIMES ==========',
+        "[RuntimeControllerManager] ========== FETCHING RUNTIMES =========="
       );
       const startTime = Date.now();
       const runtimes = await this._runtimesApiService.listRuntimes();
       const fetchTime = Date.now() - startTime;
 
       console.log(
-        '[RuntimeControllerManager] API call completed in',
+        "[RuntimeControllerManager] API call completed in",
         fetchTime,
-        'ms',
+        "ms"
       );
       console.log(
-        '[RuntimeControllerManager] Found runtimes:',
-        runtimes.length,
+        "[RuntimeControllerManager] Found runtimes:",
+        runtimes.length
       );
       console.log(
-        '[RuntimeControllerManager] Raw runtimes response:',
-        JSON.stringify(runtimes, null, 2),
+        "[RuntimeControllerManager] Raw runtimes response:",
+        JSON.stringify(runtimes, null, 2)
       );
 
       // Create configurations for all controllers we want
@@ -218,20 +218,20 @@ export class RuntimeControllerManager implements vscode.Disposable {
       for (const config of desiredConfigs) {
         const controllerId = this.getControllerId(config);
         console.log(
-          '[RuntimeControllerManager] Creating controller:',
-          controllerId,
+          "[RuntimeControllerManager] Creating controller:",
+          controllerId
         );
         this.createController(config);
       }
 
       console.log(
-        '[RuntimeControllerManager] Refresh complete, active controllers:',
-        this._controllers.size,
+        "[RuntimeControllerManager] Refresh complete, active controllers:",
+        this._controllers.size
       );
     } catch (error) {
       console.error(
-        '[RuntimeControllerManager] Error refreshing controllers:',
-        error,
+        "[RuntimeControllerManager] Error refreshing controllers:",
+        error
       );
     }
   }
@@ -245,21 +245,21 @@ export class RuntimeControllerManager implements vscode.Disposable {
    * @returns {RuntimeControllerConfig[]} Array of controller configurations
    */
   private generateControllerConfigs(
-    runtimes: RuntimeResponse[],
+    runtimes: RuntimeResponse[]
   ): RuntimeControllerConfig[] {
     console.log(
-      '[RuntimeControllerManager] ========== GENERATING CONTROLLER CONFIGS ==========',
+      "[RuntimeControllerManager] ========== GENERATING CONTROLLER CONFIGS =========="
     );
     console.log(
-      '[RuntimeControllerManager] Processing',
+      "[RuntimeControllerManager] Processing",
       runtimes.length,
-      'runtimes',
+      "runtimes"
     );
 
     const configs: RuntimeControllerConfig[] = [];
     const showDetails = vscode.workspace
-      .getConfiguration('datalayer.notebook')
-      .get<boolean>('showRuntimeDetails', true);
+      .getConfiguration("datalayer.notebook")
+      .get<boolean>("showRuntimeDetails", true);
 
     let validRuntimeCount = 0;
     let skippedRuntimeCount = 0;
@@ -268,19 +268,21 @@ export class RuntimeControllerManager implements vscode.Disposable {
     for (let i = 0; i < runtimes.length; i++) {
       const runtime = runtimes[i];
       console.log(
-        `[RuntimeControllerManager] Processing runtime ${i + 1}/${runtimes.length}:`,
+        `[RuntimeControllerManager] Processing runtime ${i + 1}/${
+          runtimes.length
+        }:`,
         {
           uid: runtime.uid,
           given_name: runtime.given_name,
           pod_name: runtime.pod_name,
           status: runtime.status,
           environment_name: runtime.environment_name,
-        },
+        }
       );
 
       // Accept runtimes that are running, ready, or have missing status but have ingress/token
       const hasValidStatus =
-        runtime.status === 'running' || runtime.status === 'ready';
+        runtime.status === "running" || runtime.status === "ready";
       const hasConnection = runtime.ingress && runtime.token;
       const isUsable = hasValidStatus || (!runtime.status && hasConnection);
 
@@ -288,14 +290,16 @@ export class RuntimeControllerManager implements vscode.Disposable {
         validRuntimeCount++;
         const reason = hasValidStatus
           ? `status: ${runtime.status}`
-          : 'has ingress/token despite missing status';
+          : "has ingress/token despite missing status";
         console.log(
-          `[RuntimeControllerManager] Runtime ${i + 1} is valid (${reason}) - creating controller`,
+          `[RuntimeControllerManager] Runtime ${
+            i + 1
+          } is valid (${reason}) - creating controller`
         );
         const runtimeName =
           runtime.given_name || runtime.pod_name || runtime.uid;
         const environmentName =
-          runtime.environment_name || runtime.environment_title || 'default';
+          runtime.environment_name || runtime.environment_title || "default";
 
         let displayName = `Datalayer: ${runtimeName}`;
         let detail = `Runtime: ${runtimeName}`;
@@ -304,7 +308,7 @@ export class RuntimeControllerManager implements vscode.Disposable {
           const creditsInfo =
             runtime.credits_limit && runtime.credits_used !== undefined
               ? ` (${runtime.credits_used}/${runtime.credits_limit} credits)`
-              : '';
+              : "";
 
           displayName += ` (${environmentName}${creditsInfo})`;
           detail = `Environment: ${environmentName}, Status: ${runtime.status}${creditsInfo}`;
@@ -324,19 +328,21 @@ export class RuntimeControllerManager implements vscode.Disposable {
             displayName: config.displayName,
             description: config.description,
             runtime_status: runtime.status,
-          },
+          }
         );
 
         configs.push(config);
       } else {
         skippedRuntimeCount++;
         console.log(
-          `[RuntimeControllerManager] Runtime ${i + 1} skipped - status: ${runtime.status}, hasIngress: ${!!runtime.ingress}, hasToken: ${!!runtime.token}`,
+          `[RuntimeControllerManager] Runtime ${i + 1} skipped - status: ${
+            runtime.status
+          }, hasIngress: ${!!runtime.ingress}, hasToken: ${!!runtime.token}`
         );
       }
     }
 
-    console.log('[RuntimeControllerManager] Runtime processing summary:', {
+    console.log("[RuntimeControllerManager] Runtime processing summary:", {
       totalRuntimes: runtimes.length,
       validRuntimes: validRuntimeCount,
       skippedRuntimes: skippedRuntimeCount,
@@ -348,20 +354,20 @@ export class RuntimeControllerManager implements vscode.Disposable {
     if (configs.length === 0) {
       configs.push({
         type: RuntimeControllerType.CreatePythonCpu, // Use as a placeholder for selector
-        environmentName: 'selector',
-        displayName: 'Datalayer Runtimes...',
-        description: 'Select or create a Datalayer runtime',
-        detail: 'Choose from existing runtimes or create a new one',
+        environmentName: "selector",
+        displayName: "Datalayer Runtimes...",
+        description: "Select or create a Datalayer runtime",
+        detail: "Choose from existing runtimes or create a new one",
       });
     }
 
-    console.log('[RuntimeControllerManager] Final controller config summary:', {
+    console.log("[RuntimeControllerManager] Final controller config summary:", {
       totalConfigs: configs.length,
       runtimeConfigs: validRuntimeCount,
       createConfigs: 2,
     });
     console.log(
-      '[RuntimeControllerManager] ========== CONTROLLER CONFIG GENERATION COMPLETE ==========',
+      "[RuntimeControllerManager] ========== CONTROLLER CONFIG GENERATION COMPLETE =========="
     );
 
     return configs;
@@ -381,12 +387,12 @@ export class RuntimeControllerManager implements vscode.Disposable {
       const controller = new RuntimeController(
         this._context,
         config,
-        this._spacerApiService,
+        this._spacerApiService
       );
       this._controllers.set(controllerId, controller);
 
       console.log(
-        `[RuntimeControllerManager] Created controller: ${controllerId}`,
+        `[RuntimeControllerManager] Created controller: ${controllerId}`
       );
 
       // If this is a runtime controller (not selector) and we have an active notebook,
@@ -399,16 +405,16 @@ export class RuntimeControllerManager implements vscode.Disposable {
         // Set affinity to Preferred to make it the default choice
         controller.controller.updateNotebookAffinity(
           notebook,
-          vscode.NotebookControllerAffinity.Preferred,
+          vscode.NotebookControllerAffinity.Preferred
         );
         console.log(
-          `[RuntimeControllerManager] Set preferred affinity for controller: ${controllerId}`,
+          `[RuntimeControllerManager] Set preferred affinity for controller: ${controllerId}`
         );
       }
     } catch (error) {
       console.error(
         `[RuntimeControllerManager] Failed to create controller ${controllerId}:`,
-        error,
+        error
       );
     }
   }
@@ -426,7 +432,7 @@ export class RuntimeControllerManager implements vscode.Disposable {
       controller.dispose();
       this._controllers.delete(controllerId);
       console.log(
-        `[RuntimeControllerManager] Removed controller: ${controllerId}`,
+        `[RuntimeControllerManager] Removed controller: ${controllerId}`
       );
     }
   }
@@ -438,7 +444,7 @@ export class RuntimeControllerManager implements vscode.Disposable {
    * @returns {void}
    */
   private clearAllControllers(): void {
-    console.log('[RuntimeControllerManager] Clearing all controllers');
+    console.log("[RuntimeControllerManager] Clearing all controllers");
 
     for (const [controllerId, controller] of this._controllers) {
       controller.dispose();
@@ -459,9 +465,9 @@ export class RuntimeControllerManager implements vscode.Disposable {
       case RuntimeControllerType.ExistingRuntime:
         return `datalayer-runtime-${config.runtime!.uid}`;
       case RuntimeControllerType.CreatePythonCpu:
-        return 'datalayer-create-python-cpu';
+        return "datalayer-create-python-cpu";
       case RuntimeControllerType.CreateAiEnv:
-        return 'datalayer-create-ai-env';
+        return "datalayer-create-ai-env";
       default:
         throw new Error(`Unknown controller type: ${config.type}`);
     }
@@ -488,11 +494,11 @@ export class RuntimeControllerManager implements vscode.Disposable {
    * @returns {Promise<RuntimeController | undefined>} The selected controller if found
    */
   public async forceRefresh(
-    selectRuntimeUid?: string,
+    selectRuntimeUid?: string
   ): Promise<RuntimeController | undefined> {
     console.log(
-      '[RuntimeControllerManager] Force refresh requested',
-      selectRuntimeUid ? `(select: ${selectRuntimeUid})` : '',
+      "[RuntimeControllerManager] Force refresh requested",
+      selectRuntimeUid ? `(select: ${selectRuntimeUid})` : ""
     );
     await this.refreshControllers();
 
@@ -507,11 +513,11 @@ export class RuntimeControllerManager implements vscode.Disposable {
         // Select this controller for the notebook
         controller.controller.updateNotebookAffinity(
           notebook,
-          vscode.NotebookControllerAffinity.Preferred,
+          vscode.NotebookControllerAffinity.Preferred
         );
 
         console.log(
-          `[RuntimeControllerManager] Selected controller ${controllerId} for active notebook`,
+          `[RuntimeControllerManager] Selected controller ${controllerId} for active notebook`
         );
 
         // Return the controller so caller can use it
@@ -530,7 +536,7 @@ export class RuntimeControllerManager implements vscode.Disposable {
    * @returns {void}
    */
   public dispose(): void {
-    console.log('[RuntimeControllerManager] Disposing controller manager');
+    console.log("[RuntimeControllerManager] Disposing controller manager");
 
     this._disposed = true;
 
@@ -543,6 +549,6 @@ export class RuntimeControllerManager implements vscode.Disposable {
     // Dispose all controllers
     this.clearAllControllers();
 
-    console.log('[RuntimeControllerManager] Controller manager disposed');
+    console.log("[RuntimeControllerManager] Controller manager disposed");
   }
 }

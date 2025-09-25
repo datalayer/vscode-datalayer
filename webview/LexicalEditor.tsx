@@ -11,26 +11,26 @@
  * and markdown shortcuts. Includes optional toolbar and automatic saving functionality.
  */
 
-import React, { useCallback, useEffect, useRef } from 'react';
-import { $getRoot, $createParagraphNode, EditorState } from 'lexical';
-import { LexicalComposer } from '@lexical/react/LexicalComposer';
-import { RichTextPlugin } from '@lexical/react/LexicalRichTextPlugin';
-import { ContentEditable } from '@lexical/react/LexicalContentEditable';
-import { HistoryPlugin } from '@lexical/react/LexicalHistoryPlugin';
-import { OnChangePlugin } from '@lexical/react/LexicalOnChangePlugin';
-import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext';
-import { LexicalErrorBoundary } from '@lexical/react/LexicalErrorBoundary';
-import { AutoFocusPlugin } from '@lexical/react/LexicalAutoFocusPlugin';
-import { MarkdownShortcutPlugin } from '@lexical/react/LexicalMarkdownShortcutPlugin';
-import { TRANSFORMERS } from '@lexical/markdown';
-import { HeadingNode, QuoteNode } from '@lexical/rich-text';
-import { ListNode, ListItemNode } from '@lexical/list';
-import { CodeNode, CodeHighlightNode } from '@lexical/code';
-import { LinkNode, AutoLinkNode } from '@lexical/link';
-import { ListPlugin } from '@lexical/react/LexicalListPlugin';
-import { LinkPlugin } from '@lexical/react/LexicalLinkPlugin';
-import { LexicalToolbar } from './LexicalToolbar';
-import { LoroCollaborationPlugin } from '@datalayer/lexical-loro';
+import React, { useCallback, useEffect, useRef } from "react";
+import { $getRoot, $createParagraphNode, EditorState } from "lexical";
+import { LexicalComposer } from "@lexical/react/LexicalComposer";
+import { RichTextPlugin } from "@lexical/react/LexicalRichTextPlugin";
+import { ContentEditable } from "@lexical/react/LexicalContentEditable";
+import { HistoryPlugin } from "@lexical/react/LexicalHistoryPlugin";
+import { OnChangePlugin } from "@lexical/react/LexicalOnChangePlugin";
+import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext";
+import { LexicalErrorBoundary } from "@lexical/react/LexicalErrorBoundary";
+import { AutoFocusPlugin } from "@lexical/react/LexicalAutoFocusPlugin";
+import { MarkdownShortcutPlugin } from "@lexical/react/LexicalMarkdownShortcutPlugin";
+import { TRANSFORMERS } from "@lexical/markdown";
+import { HeadingNode, QuoteNode } from "@lexical/rich-text";
+import { ListNode, ListItemNode } from "@lexical/list";
+import { CodeNode, CodeHighlightNode } from "@lexical/code";
+import { LinkNode, AutoLinkNode } from "@lexical/link";
+import { ListPlugin } from "@lexical/react/LexicalListPlugin";
+import { LinkPlugin } from "@lexical/react/LexicalLinkPlugin";
+import { LexicalToolbar } from "./LexicalToolbar";
+import { LoroCollaborationPlugin } from "@datalayer/lexical-loro";
 
 /**
  * Collaboration configuration for Lexical documents
@@ -84,7 +84,7 @@ function SavePlugin({ onSave }: { onSave?: (content: string) => void }) {
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
-      if ((event.metaKey || event.ctrlKey) && event.key === 's') {
+      if ((event.metaKey || event.ctrlKey) && event.key === "s") {
         event.preventDefault();
         const editorState = editor.getEditorState();
         const jsonString = JSON.stringify(editorState);
@@ -94,8 +94,8 @@ function SavePlugin({ onSave }: { onSave?: (content: string) => void }) {
       }
     };
 
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
   }, [editor, onSave]);
 
   return null;
@@ -117,29 +117,29 @@ function LoadContentPlugin({ content }: { content?: string }) {
   const isFirstRender = useRef(true);
 
   useEffect(() => {
-    console.log('[InitialStatePlugin] Effect triggered');
-    console.log('[InitialStatePlugin] content:', content?.substring(0, 200));
-    console.log('[InitialStatePlugin] isFirstRender:', isFirstRender.current);
+    console.log("[InitialStatePlugin] Effect triggered");
+    console.log("[InitialStatePlugin] content:", content?.substring(0, 200));
+    console.log("[InitialStatePlugin] isFirstRender:", isFirstRender.current);
     if (content && isFirstRender.current) {
       isFirstRender.current = false;
       try {
         // First try to parse as JSON to validate format
         const parsed = JSON.parse(content);
-        console.log('[InitialStatePlugin] Parsed content:', parsed);
+        console.log("[InitialStatePlugin] Parsed content:", parsed);
 
         // Check if it's a valid Lexical editor state
-        if (parsed && typeof parsed === 'object' && parsed.root) {
+        if (parsed && typeof parsed === "object" && parsed.root) {
           const editorState = editor.parseEditorState(content);
           console.log(
-            '[InitialStatePlugin] Setting editor state from initial content',
+            "[InitialStatePlugin] Setting editor state from initial content"
           );
           // Use setEditorState with skipHistoryPush option to avoid adding to undo stack
           editor.setEditorState(editorState, {
-            tag: 'history-merge',
+            tag: "history-merge",
           });
-          console.log('[InitialStatePlugin] Editor state set successfully');
+          console.log("[InitialStatePlugin] Editor state set successfully");
         } else {
-          throw new Error('Invalid Lexical editor state format');
+          throw new Error("Invalid Lexical editor state format");
         }
       } catch (error) {
         // Create a default empty state if parsing fails
@@ -151,8 +151,8 @@ function LoadContentPlugin({ content }: { content?: string }) {
             root.append(paragraph);
           },
           {
-            tag: 'history-merge',
-          },
+            tag: "history-merge",
+          }
         );
       }
     }
@@ -184,27 +184,27 @@ export function LexicalEditor({
   initialContent,
   onSave,
   onContentChange,
-  className = '',
+  className = "",
   showToolbar = true,
   editable = true,
   collaboration,
 }: LexicalEditorProps) {
   // Debug logging to understand content flow
   React.useEffect(() => {
-    console.log('[LexicalEditor] Component mounted/updated');
-    console.log('[LexicalEditor] Has initial content:', !!initialContent);
+    console.log("[LexicalEditor] Component mounted/updated");
+    console.log("[LexicalEditor] Has initial content:", !!initialContent);
     console.log(
-      '[LexicalEditor] Initial content preview:',
-      initialContent?.substring(0, 500),
+      "[LexicalEditor] Initial content preview:",
+      initialContent?.substring(0, 500)
     );
     console.log(
-      '[LexicalEditor] Collaboration enabled:',
-      collaboration?.enabled,
+      "[LexicalEditor] Collaboration enabled:",
+      collaboration?.enabled
     );
-    console.log('[LexicalEditor] Collaboration config:', collaboration);
+    console.log("[LexicalEditor] Collaboration config:", collaboration);
   }, [initialContent, collaboration]);
   const editorConfig = {
-    namespace: 'VSCodeLexicalEditor',
+    namespace: "VSCodeLexicalEditor",
     editable,
     nodes: [
       HeadingNode,
@@ -217,39 +217,39 @@ export function LexicalEditor({
       AutoLinkNode,
     ],
     theme: {
-      root: 'lexical-editor-root',
-      link: 'lexical-editor-link',
+      root: "lexical-editor-root",
+      link: "lexical-editor-link",
       text: {
-        bold: 'lexical-editor-bold',
-        underline: 'lexical-editor-underline',
-        italic: 'lexical-editor-italic',
-        strikethrough: 'lexical-editor-strikethrough',
-        code: 'lexical-editor-code',
+        bold: "lexical-editor-bold",
+        underline: "lexical-editor-underline",
+        italic: "lexical-editor-italic",
+        strikethrough: "lexical-editor-strikethrough",
+        code: "lexical-editor-code",
       },
-      code: 'lexical-editor-code-block',
-      paragraph: 'lexical-editor-paragraph',
+      code: "lexical-editor-code-block",
+      paragraph: "lexical-editor-paragraph",
       heading: {
-        h1: 'lexical-editor-h1',
-        h2: 'lexical-editor-h2',
-        h3: 'lexical-editor-h3',
-        h4: 'lexical-editor-h4',
-        h5: 'lexical-editor-h5',
-        h6: 'lexical-editor-h6',
+        h1: "lexical-editor-h1",
+        h2: "lexical-editor-h2",
+        h3: "lexical-editor-h3",
+        h4: "lexical-editor-h4",
+        h5: "lexical-editor-h5",
+        h6: "lexical-editor-h6",
       },
       list: {
-        listitem: 'lexical-editor-listitem',
-        listitemChecked: 'lexical-editor-listitem-checked',
-        listitemUnchecked: 'lexical-editor-listitem-unchecked',
+        listitem: "lexical-editor-listitem",
+        listitemChecked: "lexical-editor-listitem-checked",
+        listitemUnchecked: "lexical-editor-listitem-unchecked",
         nested: {
-          listitem: 'lexical-editor-nested-listitem',
+          listitem: "lexical-editor-nested-listitem",
         },
-        ol: 'lexical-editor-ol',
-        ul: 'lexical-editor-ul',
+        ol: "lexical-editor-ol",
+        ul: "lexical-editor-ul",
       },
-      quote: 'lexical-editor-quote',
+      quote: "lexical-editor-quote",
     },
     onError(error: Error) {
-      console.error('Lexical error:', error);
+      console.error("Lexical error:", error);
     },
   };
 
@@ -260,7 +260,7 @@ export function LexicalEditor({
         onContentChange(jsonString);
       }
     },
-    [onContentChange],
+    [onContentChange]
   );
 
   return (
@@ -269,75 +269,75 @@ export function LexicalEditor({
         {(showToolbar || collaboration?.enabled) && (
           <div
             style={{
-              display: 'flex',
-              alignItems: 'flex-start',
-              justifyContent: 'space-between',
-              borderBottom: '1px solid var(--vscode-panel-border)',
-              backgroundColor: 'var(--vscode-editor-background)',
+              display: "flex",
+              alignItems: "flex-start",
+              justifyContent: "space-between",
+              borderBottom: "1px solid var(--vscode-panel-border)",
+              backgroundColor: "var(--vscode-editor-background)",
             }}
           >
             {showToolbar && <LexicalToolbar disabled={!editable} />}
             {collaboration?.enabled && (
               <div
                 style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '16px',
-                  margin: '8px 24px 8px 0',
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "16px",
+                  margin: "8px 24px 8px 0",
                 }}
               >
                 <div
                   style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '6px',
-                    fontSize: '13px',
-                    fontFamily: 'var(--vscode-font-family)',
-                    color: 'var(--vscode-editor-foreground)',
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "6px",
+                    fontSize: "13px",
+                    fontFamily: "var(--vscode-font-family)",
+                    color: "var(--vscode-editor-foreground)",
                   }}
                 >
                   <span
                     style={{
-                      width: '8px',
-                      height: '8px',
+                      width: "8px",
+                      height: "8px",
                       backgroundColor:
-                        'var(--vscode-debugIcon-startForeground, var(--vscode-terminal-ansiGreen, var(--vscode-charts-green)))',
-                      borderRadius: '50%',
-                      display: 'inline-block',
+                        "var(--vscode-debugIcon-startForeground, var(--vscode-terminal-ansiGreen, var(--vscode-charts-green)))",
+                      borderRadius: "50%",
+                      display: "inline-block",
                     }}
                   ></span>
                   <span>Collaborative</span>
                 </div>
                 <button
                   style={{
-                    backgroundColor: 'transparent',
-                    color: 'var(--vscode-editor-foreground)',
+                    backgroundColor: "transparent",
+                    color: "var(--vscode-editor-foreground)",
                     border:
-                      '1px solid var(--vscode-button-border, transparent)',
-                    padding: '4px 12px',
-                    borderRadius: '2px',
-                    fontSize: '13px',
-                    fontFamily: 'var(--vscode-font-family)',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '6px',
-                    transition: 'background-color 0.1s, border-color 0.1s',
-                    height: '28px',
-                    whiteSpace: 'nowrap',
+                      "1px solid var(--vscode-button-border, transparent)",
+                    padding: "4px 12px",
+                    borderRadius: "2px",
+                    fontSize: "13px",
+                    fontFamily: "var(--vscode-font-family)",
+                    cursor: "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "6px",
+                    transition: "background-color 0.1s, border-color 0.1s",
+                    height: "28px",
+                    whiteSpace: "nowrap",
                     flexShrink: 0,
-                    marginRight: '4px',
+                    marginRight: "4px",
                   }}
-                  onMouseEnter={e => {
+                  onMouseEnter={(e) => {
                     e.currentTarget.style.backgroundColor =
-                      'var(--vscode-toolbar-hoverBackground)';
+                      "var(--vscode-toolbar-hoverBackground)";
                     e.currentTarget.style.borderColor =
-                      'var(--vscode-button-border, var(--vscode-contrastBorder, transparent))';
+                      "var(--vscode-button-border, var(--vscode-contrastBorder, transparent))";
                   }}
-                  onMouseLeave={e => {
-                    e.currentTarget.style.backgroundColor = 'transparent';
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = "transparent";
                     e.currentTarget.style.borderColor =
-                      'var(--vscode-button-border, transparent)';
+                      "var(--vscode-button-border, transparent)";
                   }}
                   title="Select a runtime for code execution"
                 >

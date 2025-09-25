@@ -10,8 +10,8 @@
  * Defines the structure of items displayed in the spaces tree view.
  */
 
-import * as vscode from 'vscode';
-import * as path from 'path';
+import * as vscode from "vscode";
+import * as path from "path";
 
 /**
  * Types of items that can appear in the spaces tree.
@@ -19,21 +19,21 @@ import * as path from 'path';
  */
 export enum ItemType {
   /** Root node of the tree */
-  ROOT = 'root',
+  ROOT = "root",
   /** Space container */
-  SPACE = 'space',
+  SPACE = "space",
   /** Jupyter notebook document */
-  NOTEBOOK = 'notebook',
+  NOTEBOOK = "notebook",
   /** Generic document */
-  DOCUMENT = 'document',
+  DOCUMENT = "document",
   /** Folder container */
-  FOLDER = 'folder',
+  FOLDER = "folder",
   /** Notebook cell */
-  CELL = 'cell',
+  CELL = "cell",
   /** Loading indicator */
-  LOADING = 'loading',
+  LOADING = "loading",
   /** Error state */
-  ERROR = 'error',
+  ERROR = "error",
 }
 
 /**
@@ -154,7 +154,7 @@ export class SpaceItem extends vscode.TreeItem {
     public readonly label: string,
     public readonly collapsibleState: vscode.TreeItemCollapsibleState,
     public readonly data: SpaceItemData,
-    public readonly parent?: SpaceItem,
+    public readonly parent?: SpaceItem
   ) {
     super(label, collapsibleState);
     this.tooltip = this.getTooltip();
@@ -166,7 +166,9 @@ export class SpaceItem extends vscode.TreeItem {
   private getTooltip(): string | undefined {
     switch (this.data.type) {
       case ItemType.ROOT:
-        return `Datalayer Spaces${this.data.username ? ` - ${this.data.username}` : ''}`;
+        return `Datalayer Spaces${
+          this.data.username ? ` - ${this.data.username}` : ""
+        }`;
       case ItemType.SPACE:
         return this.data.space?.description_t || this.data.space?.name_t;
       case ItemType.NOTEBOOK:
@@ -175,8 +177,8 @@ export class SpaceItem extends vscode.TreeItem {
           const lastMod = this.data.document.last_update_ts_dt
             ? new Date(this.data.document.last_update_ts_dt).toLocaleString()
             : this.data.document.creation_ts_dt
-              ? new Date(this.data.document.creation_ts_dt).toLocaleString()
-              : 'Unknown';
+            ? new Date(this.data.document.creation_ts_dt).toLocaleString()
+            : "Unknown";
           return `${this.data.document.name_t}\nLast modified: ${lastMod}`;
         }
         return this.label;
@@ -190,24 +192,24 @@ export class SpaceItem extends vscode.TreeItem {
   private getIcon(): vscode.ThemeIcon | undefined {
     switch (this.data.type) {
       case ItemType.ROOT:
-        return new vscode.ThemeIcon('menu');
+        return new vscode.ThemeIcon("menu");
       case ItemType.SPACE:
-        if (this.data.space?.variant_s === 'default') {
-          return new vscode.ThemeIcon('library');
+        if (this.data.space?.variant_s === "default") {
+          return new vscode.ThemeIcon("library");
         }
-        return new vscode.ThemeIcon('folder');
+        return new vscode.ThemeIcon("folder");
       case ItemType.NOTEBOOK:
-        return new vscode.ThemeIcon('notebook');
+        return new vscode.ThemeIcon("notebook");
       case ItemType.DOCUMENT:
         return this.getDocumentIcon();
       case ItemType.FOLDER:
-        return new vscode.ThemeIcon('folder');
+        return new vscode.ThemeIcon("folder");
       case ItemType.CELL:
-        return new vscode.ThemeIcon('code');
+        return new vscode.ThemeIcon("code");
       case ItemType.LOADING:
-        return new vscode.ThemeIcon('loading~spin');
+        return new vscode.ThemeIcon("loading~spin");
       case ItemType.ERROR:
-        return new vscode.ThemeIcon('error');
+        return new vscode.ThemeIcon("error");
       default:
         return undefined;
     }
@@ -215,72 +217,72 @@ export class SpaceItem extends vscode.TreeItem {
 
   private getDocumentIcon(): vscode.ThemeIcon {
     if (!this.data.document) {
-      return new vscode.ThemeIcon('file');
+      return new vscode.ThemeIcon("file");
     }
 
     // Check the document type/extension
-    const fileName = this.data.document.name_t || '';
+    const fileName = this.data.document.name_t || "";
     const docExtension = this.data.document.document_extension_s;
     const docFormat = this.data.document.document_format_s;
 
     // Check for lexical documents
-    if (docExtension === 'lexical' || docFormat === 'lexical') {
-      return new vscode.ThemeIcon('file-text');
+    if (docExtension === "lexical" || docFormat === "lexical") {
+      return new vscode.ThemeIcon("file-text");
     }
 
     const ext =
       path.extname(fileName).toLowerCase() ||
-      (docExtension ? `.${docExtension}` : '');
+      (docExtension ? `.${docExtension}` : "");
     switch (ext) {
-      case '.py':
-        return new vscode.ThemeIcon('file-code');
-      case '.ipynb':
-        return new vscode.ThemeIcon('notebook');
-      case '.md':
-        return new vscode.ThemeIcon('markdown');
-      case '.json':
-        return new vscode.ThemeIcon('json');
-      case '.csv':
-        return new vscode.ThemeIcon('table');
-      case '.txt':
-      case '.lexical':
-        return new vscode.ThemeIcon('file-text');
-      case '.pdf':
-        return new vscode.ThemeIcon('file-pdf');
-      case '.png':
-      case '.jpg':
-      case '.jpeg':
-      case '.gif':
-      case '.svg':
-        return new vscode.ThemeIcon('file-media');
+      case ".py":
+        return new vscode.ThemeIcon("file-code");
+      case ".ipynb":
+        return new vscode.ThemeIcon("notebook");
+      case ".md":
+        return new vscode.ThemeIcon("markdown");
+      case ".json":
+        return new vscode.ThemeIcon("json");
+      case ".csv":
+        return new vscode.ThemeIcon("table");
+      case ".txt":
+      case ".lexical":
+        return new vscode.ThemeIcon("file-text");
+      case ".pdf":
+        return new vscode.ThemeIcon("file-pdf");
+      case ".png":
+      case ".jpg":
+      case ".jpeg":
+      case ".gif":
+      case ".svg":
+        return new vscode.ThemeIcon("file-media");
       default:
-        return new vscode.ThemeIcon('file');
+        return new vscode.ThemeIcon("file");
     }
   }
 
   private getCommand(): vscode.Command | undefined {
     if (this.data.type === ItemType.NOTEBOOK && this.data.document) {
       return {
-        command: 'datalayer.openDocument',
-        title: 'Open Notebook',
+        command: "datalayer.openDocument",
+        title: "Open Notebook",
         arguments: [this.data.document, this.data.spaceName],
       };
     } else if (this.data.type === ItemType.DOCUMENT && this.data.document) {
       return {
-        command: 'datalayer.openDocument',
-        title: 'Open Document',
+        command: "datalayer.openDocument",
+        title: "Open Document",
         arguments: [this.data.document, this.data.spaceName],
       };
     } else if (this.data.type === ItemType.CELL && this.data.document) {
       return {
-        command: 'datalayer.openDocument',
-        title: 'Open Cell',
+        command: "datalayer.openDocument",
+        title: "Open Cell",
         arguments: [this.data.document, this.data.spaceName],
       };
     } else if (this.data.type === ItemType.ERROR) {
       return {
-        command: 'datalayer.refreshSpaces',
-        title: 'Retry',
+        command: "datalayer.refreshSpaces",
+        title: "Retry",
       };
     }
     return undefined;

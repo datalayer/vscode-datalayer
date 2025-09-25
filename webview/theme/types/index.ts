@@ -10,78 +10,78 @@
  * Provides interfaces for theme providers, color palettes, and theme definitions.
  */
 
-import { IDisposable } from '@lumino/disposable';
+import { IDisposable } from "@lumino/disposable";
 
 /**
  * Extended color modes supporting high contrast and auto-detection
  */
 export type ColorMode =
-  | 'light'
-  | 'dark'
-  | 'auto'
-  | 'high-contrast-light'
-  | 'high-contrast-dark';
+  | "light"
+  | "dark"
+  | "auto"
+  | "high-contrast-light"
+  | "high-contrast-dark";
 
 /**
  * Theme provider types
  */
-export type ThemeProviderType = 'jupyterlab' | 'vscode' | 'custom' | 'auto';
+export type ThemeProviderType = "jupyterlab" | "vscode" | "custom" | "auto";
 
 /**
  * Color palette interface for theme colors
  */
 export interface IColorPalette {
   /** Primary background color */
-  'background.primary': string;
+  "background.primary": string;
   /** Secondary background color for panels */
-  'background.secondary': string;
+  "background.secondary": string;
   /** Tertiary background color for nested elements */
-  'background.tertiary': string;
+  "background.tertiary": string;
   /** Overlay background color for popups */
-  'background.overlay': string;
+  "background.overlay": string;
 
   /** Primary text color */
-  'text.primary': string;
+  "text.primary": string;
   /** Secondary text color for descriptions */
-  'text.secondary': string;
+  "text.secondary": string;
   /** Disabled text color */
-  'text.disabled': string;
+  "text.disabled": string;
   /** Link text color */
-  'text.link': string;
+  "text.link": string;
 
   /** Default border color */
-  'border.default': string;
+  "border.default": string;
   /** Muted border color */
-  'border.muted': string;
+  "border.muted": string;
   /** Subtle border color */
-  'border.subtle': string;
+  "border.subtle": string;
 
   /** Error status color */
-  'status.error': string;
+  "status.error": string;
   /** Warning status color */
-  'status.warning': string;
+  "status.warning": string;
   /** Success status color */
-  'status.success': string;
+  "status.success": string;
   /** Info status color */
-  'status.info': string;
+  "status.info": string;
 
   /** Hover state color */
-  'interactive.hover': string;
+  "interactive.hover": string;
   /** Active state color */
-  'interactive.active': string;
+  "interactive.active": string;
   /** Focus state color */
-  'interactive.focus': string;
+  "interactive.focus": string;
 
   /** Editor background color */
-  'editor.background': string;
+  "editor.background": string;
   /** Editor foreground color */
-  'editor.foreground': string;
+  "editor.foreground": string;
   /** Editor selection background color */
-  'editor.selectionBackground': string;
+  "editor.selectionBackground": string;
   /** Editor active line highlight color */
-  'editor.lineHighlight': string;
+  "editor.lineHighlight": string;
   /** Editor cursor color */
-  'editor.cursor': string;
+  "editor.cursor": string;
 
   /** Additional semantic colors */
   [key: string]: string;

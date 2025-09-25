@@ -18,8 +18,8 @@
  * The fake WebSocket is largely copied from mock-server licensed under MIT License.
  */
 
-import { ServiceManager, ServerConnection } from '@jupyterlab/services';
-import { MessageHandler, type ExtensionMessage } from './messageHandler';
+import { ServiceManager, ServerConnection } from "@jupyterlab/services";
+import { MessageHandler, type ExtensionMessage } from "./messageHandler";
 
 /**
  * Forward HTTP request through postMessage to the extension.
@@ -30,18 +30,18 @@ import { MessageHandler, type ExtensionMessage } from './messageHandler';
  */
 async function fetch(
   request: RequestInfo,
-  init?: RequestInit | null,
+  init?: RequestInit | null
 ): Promise<Response> {
   const r = new Request(request, init ?? undefined);
-  const body = !['GET', 'HEAD'].includes(r.method)
+  const body = !["GET", "HEAD"].includes(r.method)
     ? await r.arrayBuffer()
     : undefined;
   const headers: Record<string, string> = [...r.headers].reduce(
     (agg, pair) => ({ ...agg, [pair[0]]: pair[1] }),
-    {},
+    {}
   );
   const reply = await MessageHandler.instance.postRequest({
-    type: 'http-request',
+    type: "http-request",
     body: {
       method: r.method,
       url: r.url,
@@ -63,7 +63,7 @@ async function fetch(
  */
 export function createServiceManager(
   baseUrl: string,
-  token: string = '',
+  token: string = ""
 ): ServiceManager {
   const refSettings = ServerConnection.makeSettings();
 
@@ -74,15 +74,15 @@ export function createServiceManager(
       ...refSettings,
       appendToken: true, // Append token as query parameter
       baseUrl,
-      appUrl: '',
+      appUrl: "",
       fetch: fetch,
       init: {
-        cache: 'no-store',
-        credentials: 'same-origin',
+        cache: "no-store",
+        credentials: "same-origin",
       } as any,
       token, // This is the runtime-specific token, not the JWT auth token
       WebSocket: WebSocket as any,
-      wsUrl: baseUrl.replace(/^http/, 'ws'),
+      wsUrl: baseUrl.replace(/^http/, "ws"),
     },
   });
 }
@@ -175,7 +175,7 @@ function normalizeSendData(data) {
   // FIXME this does not work -> JupyterLab fails to serialize the data
   // when the protocol is v1.kernel.websocket.jupyter.org
   if (
-    Object.prototype.toString.call(data) !== '[object Blob]' &&
+    Object.prototype.toString.call(data) !== "[object Blob]" &&
     !(data instanceof ArrayBuffer)
   ) {
     data = String(data);
@@ -185,29 +185,29 @@ function normalizeSendData(data) {
 
 function protocolVerification(protocols?: string | string[]): string[] {
   protocols = protocols ?? new Array<string>();
-  if (!Array.isArray(protocols) && typeof protocols !== 'string') {
+  if (!Array.isArray(protocols) && typeof protocols !== "string") {
     throw new SyntaxError(
       `${ERROR_PREFIX.CONSTRUCTOR_ERROR} The subprotocol '${(
         protocols as string | string[]
-      ).toString()}' is invalid.`,
+      ).toString()}' is invalid.`
     );
   }
-  if (typeof protocols === 'string') {
+  if (typeof protocols === "string") {
     protocols = [protocols];
   }
   const uniq = protocols
-    .map(p => ({ count: 1, protocol: p }))
+    .map((p) => ({ count: 1, protocol: p }))
     .reduce((a, b) => {
       a[b.protocol] = (a[b.protocol] || 0) + b.count;
       return a;
     }, {});
-  const duplicates = Object.keys(uniq).filter(a => uniq[a] > 1);
+  const duplicates = Object.keys(uniq).filter((a) => uniq[a] > 1);
   if (duplicates.length > 0) {
     throw new SyntaxError(
-      `${ERROR_PREFIX.CONSTRUCTOR_ERROR} The subprotocol '${duplicates[0]}' is duplicated.`,
+      `${ERROR_PREFIX.CONSTRUCTOR_ERROR} The subprotocol '${duplicates[0]}' is duplicated.`
     );
   }
-  return protocols.filter(p => p !== 'v1.kernel.websocket.jupyter.org');
+  return protocols.filter((p) => p !== "v1.kernel.websocket.jupyter.org");
 }
 
 function urlVerification(url: string | URL) {
@@ -215,27 +215,27 @@ function urlVerification(url: string | URL) {
   const { pathname, protocol, hash } = urlRecord;
   if (!url) {
     throw new TypeError(
-      `${ERROR_PREFIX.CONSTRUCTOR_ERROR} 1 argument required, but only 0 present.`,
+      `${ERROR_PREFIX.CONSTRUCTOR_ERROR} 1 argument required, but only 0 present.`
     );
   }
   if (!pathname) {
-    urlRecord.pathname = '/';
+    urlRecord.pathname = "/";
   }
-  if (protocol === '') {
+  if (protocol === "") {
     throw new SyntaxError(
       `${
         ERROR_PREFIX.CONSTRUCTOR_ERROR
-      } The URL '${urlRecord.toString()}' is invalid.`,
+      } The URL '${urlRecord.toString()}' is invalid.`
     );
   }
-  if (protocol !== 'ws:' && protocol !== 'wss:') {
+  if (protocol !== "ws:" && protocol !== "wss:") {
     throw new SyntaxError(
-      `${ERROR_PREFIX.CONSTRUCTOR_ERROR} The URL's scheme must be either 'ws' or 'wss'. '${protocol}' is not allowed.`,
+      `${ERROR_PREFIX.CONSTRUCTOR_ERROR} The URL's scheme must be either 'ws' or 'wss'. '${protocol}' is not allowed.`
     );
   }
-  if (hash !== '') {
+  if (hash !== "") {
     throw new SyntaxError(
-      `${ERROR_PREFIX.CONSTRUCTOR_ERROR} The URL contains a fragment identifier ('${hash}'). Fragment identifiers are not allowed in WebSocket URLs.`,
+      `${ERROR_PREFIX.CONSTRUCTOR_ERROR} The URL contains a fragment identifier ('${hash}'). Fragment identifiers are not allowed in WebSocket URLs.`
     );
   }
   return urlRecord.toString();
@@ -261,9 +261,9 @@ class EventTarget {
    */
   addEventListener(
     type: string,
-    listener: (...args: any[]) => void /* , useCapture */,
+    listener: (...args: any[]) => void /* , useCapture */
   ) {
-    if (typeof listener === 'function') {
+    if (typeof listener === "function") {
       if (!this.listeners.has(type)) {
         this.listeners.set(type, new Set());
       }
@@ -281,7 +281,7 @@ class EventTarget {
    */
   removeEventListener(
     type: string,
-    listener: (...args: any[]) => void /* , useCapture */,
+    listener: (...args: any[]) => void /* , useCapture */
   ) {
     this.listeners.get(type)?.delete(listener);
   }
@@ -298,7 +298,7 @@ class EventTarget {
     if (!listeners) {
       return false;
     }
-    listeners.forEach(listener => {
+    listeners.forEach((listener) => {
       if (customArguments.length > 0) {
         listener.apply(this, customArguments);
       } else {
@@ -328,14 +328,14 @@ class WebSocket extends EventTarget {
 
   constructor(url: string | URL, protocols: string | string[] = []) {
     super();
-    this.clientId = 'ws-' + (WebSocket._clientCounter++).toString();
+    this.clientId = "ws-" + (WebSocket._clientCounter++).toString();
     this.url = urlVerification(url);
     protocols = protocolVerification(protocols);
-    this.protocol = protocols[0] || '';
-    this.binaryType = 'blob';
+    this.protocol = protocols[0] || "";
+    this.binaryType = "blob";
     this._readyState = WebSocket.CONNECTING;
     this._disposable = MessageHandler.instance.registerCallback(
-      this._onExtensionMessage.bind(this),
+      this._onExtensionMessage.bind(this)
     );
     this._open();
   }
@@ -372,49 +372,49 @@ class WebSocket extends EventTarget {
   }
 
   get onopen() {
-    return this.listeners.get('open') as any;
+    return this.listeners.get("open") as any;
   }
 
   get onmessage() {
-    return this.listeners.get('message') as any;
+    return this.listeners.get("message") as any;
   }
 
   get onclose() {
-    return this.listeners.get('close') as any;
+    return this.listeners.get("close") as any;
   }
 
   get onerror() {
-    return this.listeners.get('error') as any;
+    return this.listeners.get("error") as any;
   }
 
   set onopen(listener: (...args: any[]) => void) {
-    this.listeners.delete('open');
-    this.addEventListener('open', listener);
+    this.listeners.delete("open");
+    this.addEventListener("open", listener);
   }
 
   set onmessage(listener: (...args: any[]) => void) {
-    this.listeners.delete('message');
-    this.addEventListener('message', listener);
+    this.listeners.delete("message");
+    this.addEventListener("message", listener);
   }
 
   set onclose(listener: (...args: any[]) => void) {
-    this.listeners.delete('close');
-    this.addEventListener('close', listener);
+    this.listeners.delete("close");
+    this.addEventListener("close", listener);
   }
 
   set onerror(listener: (...args: any[]) => void) {
-    this.listeners.delete('error');
-    this.addEventListener('error', listener);
+    this.listeners.delete("error");
+    this.addEventListener("error", listener);
   }
 
   close(code?: number, reason?: string) {
     if (code !== undefined) {
       if (
-        typeof code !== 'number' ||
+        typeof code !== "number" ||
         (code !== 1000 && (code < 3000 || code > 4999))
       ) {
         throw new TypeError(
-          `${ERROR_PREFIX.CLOSE_ERROR} The code must be either 1000, or between 3000 and 4999. ${code} is neither.`,
+          `${ERROR_PREFIX.CLOSE_ERROR} The code must be either 1000, or between 3000 and 4999. ${code} is neither.`
         );
       }
     }
@@ -424,7 +424,7 @@ class WebSocket extends EventTarget {
 
       if (length > 123) {
         throw new SyntaxError(
-          `${ERROR_PREFIX.CLOSE_ERROR} The message must not be greater than 123 bytes.`,
+          `${ERROR_PREFIX.CLOSE_ERROR} The message must not be greater than 123 bytes.`
         );
       }
     }
@@ -440,14 +440,14 @@ class WebSocket extends EventTarget {
     this._readyState = WebSocket.CLOSING;
     this._disposable.dispose();
     const closeEvent = createCloseEvent({
-      type: 'close',
+      type: "close",
       target: this,
       code,
       reason,
     });
     setTimeout(() => {
       MessageHandler.instance.postMessage({
-        type: 'websocket-close',
+        type: "websocket-close",
         id: this.clientId,
         body: {
           origin: this.url,
@@ -456,7 +456,7 @@ class WebSocket extends EventTarget {
       this._readyState = WebSocket.CLOSED;
       if (wasConnecting) {
         const errorEvent = createEvent({
-          type: 'error',
+          type: "error",
           target: this,
         });
         this.dispatchEvent(errorEvent);
@@ -470,12 +470,12 @@ class WebSocket extends EventTarget {
       this.readyState === WebSocket.CLOSING ||
       this.readyState === WebSocket.CLOSED
     ) {
-      throw new Error('WebSocket is already in CLOSING or CLOSED state');
+      throw new Error("WebSocket is already in CLOSING or CLOSED state");
     }
 
     // TODO: handle bufferedAmount
     MessageHandler.instance.postMessage({
-      type: 'websocket-message',
+      type: "websocket-message",
       id: this.clientId,
       body: {
         origin: this.url,
@@ -488,22 +488,22 @@ class WebSocket extends EventTarget {
     const { type, body, id } = message;
     if (id === this.clientId) {
       switch (type) {
-        case 'websocket-message':
+        case "websocket-message":
           // FIXME this does not work -> JupyterLab fails to deserialize the array
           // when the protocol is v1.kernel.websocket.jupyter.org
           // A part of the fix probably lies in the need to convert the binaryType
           // to 'arraybuffer' for kernel websocket (in the extension side!!):
           // https://github.com/jupyterlab/jupyterlab/blob/85c82eba1caa7e28a0d818c0840e13756c1b1256/packages/services/src/kernel/default.ts#L1468
-          if (body.data.type === 'Buffer' && body.data.data) {
+          if (body.data.type === "Buffer" && body.data.data) {
             body.data = new ArrayBuffer(body.data.data);
           }
-          this.dispatchEvent(new MessageEvent('message', body));
+          this.dispatchEvent(new MessageEvent("message", body));
           break;
-        case 'websocket-open':
+        case "websocket-open":
           this._readyState = WebSocket.OPEN;
-          this.dispatchEvent(new Event('open'));
+          this.dispatchEvent(new Event("open"));
           break;
-        case 'websocket-close':
+        case "websocket-close":
           this.close();
           break;
       }
@@ -514,7 +514,7 @@ class WebSocket extends EventTarget {
 
   private _open(): void {
     MessageHandler.instance.postMessage({
-      type: 'websocket-open',
+      type: "websocket-open",
       id: this.clientId,
       body: {
         origin: this.url,

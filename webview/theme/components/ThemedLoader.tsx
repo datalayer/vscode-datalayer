@@ -9,7 +9,7 @@
  * Loading component that uses VS Code theme colors
  */
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState } from "react";
 
 /**
  * @hidden
@@ -21,11 +21,11 @@ interface ThemedLoaderProps {
 /**
  * A loading component that matches VS Code's current theme
  */
-export function ThemedLoader({ message = 'Loading...' }: ThemedLoaderProps) {
+export function ThemedLoader({ message = "Loading..." }: ThemedLoaderProps) {
   const [colors, setColors] = useState({
-    background: '',
-    foreground: '',
-    border: '',
+    background: "",
+    foreground: "",
+    border: "",
   });
 
   useEffect(() => {
@@ -39,7 +39,7 @@ export function ThemedLoader({ message = 'Loading...' }: ThemedLoaderProps) {
     };
 
     const isDark = (() => {
-      const bg = getVSCodeColor('--vscode-editor-background', '#1e1e1e');
+      const bg = getVSCodeColor("--vscode-editor-background", "#1e1e1e");
       // Parse RGB from background color to determine if dark
       const rgbMatch = bg.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
       if (rgbMatch) {
@@ -50,7 +50,7 @@ export function ThemedLoader({ message = 'Loading...' }: ThemedLoaderProps) {
         return luminance < 0.5;
       }
       // Check hex colors
-      if (bg.startsWith('#')) {
+      if (bg.startsWith("#")) {
         const hex = bg.slice(1);
         let r = 0,
           g = 0,
@@ -72,16 +72,16 @@ export function ThemedLoader({ message = 'Loading...' }: ThemedLoaderProps) {
 
     setColors({
       background: getVSCodeColor(
-        '--vscode-editor-background',
-        isDark ? '#1e1e1e' : '#ffffff',
+        "--vscode-editor-background",
+        isDark ? "#1e1e1e" : "#ffffff"
       ),
       foreground: getVSCodeColor(
-        '--vscode-editor-foreground',
-        isDark ? '#cccccc' : '#333333',
+        "--vscode-editor-foreground",
+        isDark ? "#cccccc" : "#333333"
       ),
       border: getVSCodeColor(
-        '--vscode-focusBorder',
-        isDark ? '#007acc' : '#0078d4',
+        "--vscode-focusBorder",
+        isDark ? "#007acc" : "#0078d4"
       ),
     });
   }, []);
@@ -89,32 +89,32 @@ export function ThemedLoader({ message = 'Loading...' }: ThemedLoaderProps) {
   return (
     <div
       style={{
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        height: '100%',
-        minHeight: '200px',
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        height: "100%",
+        minHeight: "200px",
         backgroundColor: colors.background,
         color: colors.foreground,
         fontFamily:
           'var(--vscode-font-family, -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif)',
-        fontSize: '14px',
+        fontSize: "14px",
       }}
     >
       <div
         style={{
-          marginBottom: '16px',
+          marginBottom: "16px",
         }}
       >
         <div
           style={{
-            width: '40px',
-            height: '40px',
+            width: "40px",
+            height: "40px",
             border: `3px solid ${colors.border}`,
-            borderRadius: '50%',
-            borderTopColor: 'transparent',
-            animation: 'spin 1s linear infinite',
+            borderRadius: "50%",
+            borderTopColor: "transparent",
+            animation: "spin 1s linear infinite",
           }}
         />
       </div>

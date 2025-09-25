@@ -22,8 +22,8 @@ export function loadFromBytes(raw: Uint8Array): any {
   for (const cell of parsed.cells) {
     if (cell.outputs) {
       for (const output of cell.outputs) {
-        if (Array.isArray(output.data?.['text/html'])) {
-          output.data['text/html'] = output.data['text/html'].join('');
+        if (Array.isArray(output.data?.["text/html"])) {
+          output.data["text/html"] = output.data["text/html"].join("");
         }
       }
     }
@@ -50,7 +50,7 @@ export function saveToBytes(notebook: any): Uint8Array {
 export function getNonce() {
   const node = document.querySelector('meta[property="csp-nonce"]');
   if (node) {
-    return node.getAttribute('content');
+    return node.getAttribute("content");
   } else {
     return null;
   }

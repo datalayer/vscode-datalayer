@@ -11,8 +11,8 @@
  * Supports GitHub OAuth integration for enhanced user profiles.
  */
 
-import * as vscode from 'vscode';
-import { GitHubService } from './githubService';
+import * as vscode from "vscode";
+import { GitHubService } from "./githubService";
 
 /**
  * GitHub user profile information.
@@ -73,7 +73,7 @@ export interface AuthState {
   /** JWT authentication token */
   token?: string;
   /** Current user information */
-  user?: LoginResponse['user'];
+  user?: LoginResponse["user"];
   /** Datalayer server URL */
   serverUrl: string;
 }
@@ -97,14 +97,14 @@ export class AuthService implements vscode.Disposable {
   private statusBarItem: vscode.StatusBarItem;
   private authState: AuthState = {
     isAuthenticated: false,
-    serverUrl: 'https://prod1.datalayer.run',
+    serverUrl: "https://prod1.datalayer.run",
   };
 
   private constructor(context: vscode.ExtensionContext) {
     this.context = context;
     this.statusBarItem = vscode.window.createStatusBarItem(
       vscode.StatusBarAlignment.Right,
-      100,
+      100
     );
     this.initialize();
   }
@@ -119,7 +119,7 @@ export class AuthService implements vscode.Disposable {
   static getInstance(context?: vscode.ExtensionContext): AuthService {
     if (!AuthService.instance) {
       if (!context) {
-        throw new Error('Context required for first initialization');
+        throw new Error("Context required for first initialization");
       }
       AuthService.instance = new AuthService(context);
     }
@@ -135,35 +135,35 @@ export class AuthService implements vscode.Disposable {
    */
   private async initialize(): Promise<void> {
     const serverUrl = vscode.workspace
-      .getConfiguration('datalayer')
-      .get<string>('serverUrl', 'https://prod1.datalayer.run');
+      .getConfiguration("datalayer")
+      .get<string>("serverUrl", "https://prod1.datalayer.run");
     this.authState.serverUrl = serverUrl;
 
-    console.log('[Datalayer Auth] Initializing auth service');
-    console.log('[Datalayer Auth] Server URL:', serverUrl);
+    console.log("[Datalayer Auth] Initializing auth service");
+    console.log("[Datalayer Auth] Server URL:", serverUrl);
 
-    const token = await this.context.secrets.get('datalayer.jwt');
+    const token = await this.context.secrets.get("datalayer.jwt");
     if (token) {
-      console.log('[Datalayer Auth] Found stored JWT token');
+      console.log("[Datalayer Auth] Found stored JWT token");
       this.authState.isAuthenticated = true;
       this.authState.token = token;
-      const userJson = await this.context.secrets.get('datalayer.user');
+      const userJson = await this.context.secrets.get("datalayer.user");
       if (userJson) {
         try {
           this.authState.user = JSON.parse(userJson);
           console.log(
-            '[Datalayer Auth] Restored user session:',
-            this.authState.user?.email,
+            "[Datalayer Auth] Restored user session:",
+            this.authState.user?.email
           );
         } catch (e) {
           console.error(
-            '[Datalayer Auth] Failed to parse stored user data:',
-            e,
+            "[Datalayer Auth] Failed to parse stored user data:",
+            e
           );
         }
       }
     } else {
-      console.log('[Datalayer Auth] No stored authentication found');
+      console.log("[Datalayer Auth] No stored authentication found");
     }
     this.updateStatusBar();
   }
@@ -180,24 +180,24 @@ export class AuthService implements vscode.Disposable {
       const user = this.authState.user as any;
       const displayName = user?.githubLogin
         ? `@${user.githubLogin}`
-        : user?.email || 'User';
+        : user?.email || "User";
       // Using menu icon (three horizontal lines) as a visual representation of Datalayer's stacked bars logo
       this.statusBarItem.text = `$(menu) Datalayer`;
       this.statusBarItem.tooltip = `Connected as ${displayName}`;
-      this.statusBarItem.command = 'datalayer.showAuthStatus';
+      this.statusBarItem.command = "datalayer.showAuthStatus";
       // Reset colors to default when authenticated
       this.statusBarItem.color = undefined;
       this.statusBarItem.backgroundColor = undefined;
     } else {
-      this.statusBarItem.text = '$(menu) Datalayer: Not Connected';
-      this.statusBarItem.tooltip = 'Click to login';
-      this.statusBarItem.command = 'datalayer.login';
+      this.statusBarItem.text = "$(menu) Datalayer: Not Connected";
+      this.statusBarItem.tooltip = "Click to login";
+      this.statusBarItem.command = "datalayer.login";
       // Use warning theme colors when not connected
       this.statusBarItem.color = new vscode.ThemeColor(
-        'statusBarItem.warningForeground',
+        "statusBarItem.warningForeground"
       );
       this.statusBarItem.backgroundColor = new vscode.ThemeColor(
-        'statusBarItem.warningBackground',
+        "statusBarItem.warningBackground"
       );
     }
     this.statusBarItem.show();
@@ -217,65 +217,65 @@ export class AuthService implements vscode.Disposable {
       const loginUrl = `${this.authState.serverUrl}/api/iam/v1/login`;
       const requestBody = { token };
 
-      console.log('[Datalayer Auth] Starting login request...');
-      console.log('[Datalayer Auth] Login URL:', loginUrl);
-      console.log('[Datalayer Auth] Request body:', {
-        token: token.substring(0, 10) + '...',
+      console.log("[Datalayer Auth] Starting login request...");
+      console.log("[Datalayer Auth] Login URL:", loginUrl);
+      console.log("[Datalayer Auth] Request body:", {
+        token: token.substring(0, 10) + "...",
       });
 
       const response = await fetch(loginUrl, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify(requestBody),
       });
 
-      console.log('[Datalayer Auth] Response status:', response.status);
+      console.log("[Datalayer Auth] Response status:", response.status);
       console.log(
-        '[Datalayer Auth] Response headers:',
-        Object.fromEntries(response.headers.entries()),
+        "[Datalayer Auth] Response headers:",
+        Object.fromEntries(response.headers.entries())
       );
 
       if (!response.ok) {
         const errorText = await response.text();
         console.error(
-          '[Datalayer Auth] Login failed with status:',
-          response.status,
+          "[Datalayer Auth] Login failed with status:",
+          response.status
         );
-        console.error('[Datalayer Auth] Error response:', errorText);
+        console.error("[Datalayer Auth] Error response:", errorText);
         throw new Error(
-          `Login failed: ${response.status} ${response.statusText}. ${errorText}`,
+          `Login failed: ${response.status} ${response.statusText}. ${errorText}`
         );
       }
 
       const data = (await response.json()) as LoginResponse;
-      console.log('[Datalayer Auth] Login successful!');
+      console.log("[Datalayer Auth] Login successful!");
       console.log(
-        '[Datalayer Auth] Raw response data:',
-        JSON.stringify(data, null, 2),
+        "[Datalayer Auth] Raw response data:",
+        JSON.stringify(data, null, 2)
       );
-      console.log('[Datalayer Auth] User:', data.user);
+      console.log("[Datalayer Auth] User:", data.user);
       console.log(
-        '[Datalayer Auth] JWT token received:',
-        data.token ? 'Yes' : 'No',
+        "[Datalayer Auth] JWT token received:",
+        data.token ? "Yes" : "No"
       );
-      console.log('[Datalayer Auth] Token length:', data.token?.length);
+      console.log("[Datalayer Auth] Token length:", data.token?.length);
 
       // Check for handle_s at root level or in user object
       const handle_s = data.handle_s || data.user?.handle_s;
-      console.log('[Datalayer Auth] handle_s:', handle_s);
+      console.log("[Datalayer Auth] handle_s:", handle_s);
 
       // Enrich user data with GitHub information if available
       const enrichedUser = await GitHubService.enrichUserWithGitHub(
         data.user,
-        handle_s,
+        handle_s
       );
 
-      await this.context.secrets.store('datalayer.jwt', data.token);
+      await this.context.secrets.store("datalayer.jwt", data.token);
       await this.context.secrets.store(
-        'datalayer.user',
-        JSON.stringify(enrichedUser),
+        "datalayer.user",
+        JSON.stringify(enrichedUser)
       );
 
       this.authState = {
@@ -285,7 +285,7 @@ export class AuthService implements vscode.Disposable {
         serverUrl: this.authState.serverUrl,
       };
 
-      console.log('[Datalayer Auth] Auth state updated:', {
+      console.log("[Datalayer Auth] Auth state updated:", {
         isAuthenticated: this.authState.isAuthenticated,
         serverUrl: this.authState.serverUrl,
         user: this.authState.user?.email,
@@ -297,14 +297,14 @@ export class AuthService implements vscode.Disposable {
       const githubLogin = (enrichedUser as any).githubLogin;
       const name = enrichedUser.name || (enrichedUser as any).github?.name;
 
-      let message = 'Successfully logged in';
+      let message = "Successfully logged in";
       if (githubLogin) {
-        if (name && name !== 'undefined') {
+        if (name && name !== "undefined") {
           message = `Successfully logged in as @${githubLogin} (${name})`;
         } else {
           message = `Successfully logged in as @${githubLogin}`;
         }
-      } else if (name && name !== 'undefined') {
+      } else if (name && name !== "undefined") {
         message = `Successfully logged in as ${name}`;
       } else if (enrichedUser.email) {
         message = `Successfully logged in as ${enrichedUser.email}`;
@@ -312,13 +312,15 @@ export class AuthService implements vscode.Disposable {
 
       vscode.window.showInformationMessage(message);
     } catch (error) {
-      console.error('[Datalayer Auth] Login error:', error);
+      console.error("[Datalayer Auth] Login error:", error);
       if (error instanceof Error) {
-        console.error('[Datalayer Auth] Error message:', error.message);
-        console.error('[Datalayer Auth] Error stack:', error.stack);
+        console.error("[Datalayer Auth] Error message:", error.message);
+        console.error("[Datalayer Auth] Error stack:", error.stack);
       }
       vscode.window.showErrorMessage(
-        `Login failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        `Login failed: ${
+          error instanceof Error ? error.message : "Unknown error"
+        }`
       );
       throw error;
     }
@@ -334,17 +336,17 @@ export class AuthService implements vscode.Disposable {
     try {
       if (this.authState.token) {
         await fetch(`${this.authState.serverUrl}/api/iam/v1/logout`, {
-          method: 'GET',
+          method: "GET",
           headers: {
             Authorization: `Bearer ${this.authState.token}`,
           },
-        }).catch(err => {
-          console.error('Logout API call failed:', err);
+        }).catch((err) => {
+          console.error("Logout API call failed:", err);
         });
       }
 
-      await this.context.secrets.delete('datalayer.jwt');
-      await this.context.secrets.delete('datalayer.user');
+      await this.context.secrets.delete("datalayer.jwt");
+      await this.context.secrets.delete("datalayer.user");
 
       this.authState = {
         isAuthenticated: false,
@@ -352,11 +354,13 @@ export class AuthService implements vscode.Disposable {
       };
 
       this.updateStatusBar();
-      vscode.window.showInformationMessage('Successfully logged out');
+      vscode.window.showInformationMessage("Successfully logged out");
     } catch (error) {
-      console.error('Logout error:', error);
+      console.error("Logout error:", error);
       vscode.window.showErrorMessage(
-        `Logout failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        `Logout failed: ${
+          error instanceof Error ? error.message : "Unknown error"
+        }`
       );
     }
   }
@@ -397,13 +401,13 @@ export class AuthService implements vscode.Disposable {
    */
   async updateServerUrl(url: string): Promise<void> {
     await vscode.workspace
-      .getConfiguration('datalayer')
-      .update('serverUrl', url, vscode.ConfigurationTarget.Global);
+      .getConfiguration("datalayer")
+      .update("serverUrl", url, vscode.ConfigurationTarget.Global);
     this.authState.serverUrl = url;
     if (this.authState.isAuthenticated) {
       await this.logout();
       vscode.window.showInformationMessage(
-        'Server URL changed. Please login again.',
+        "Server URL changed. Please login again."
       );
     }
   }

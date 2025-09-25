@@ -16,19 +16,19 @@ import React, {
   useMemo,
   createContext,
   useContext,
-} from 'react';
-import { JupyterReactTheme } from '@datalayer/jupyter-react';
-import { IDisposable } from '@lumino/disposable';
+} from "react";
+import { JupyterReactTheme } from "@datalayer/jupyter-react";
+import { IDisposable } from "@lumino/disposable";
 import {
   IThemeProvider,
   IThemeDefinition,
   ColorMode,
   ThemeProviderType,
   IThemeContext,
-} from '../types';
-import { VSCodeThemeProvider } from '../providers/VSCodeThemeProvider';
-import { UniversalColorMapper } from '../mapping/UniversalColorMapper';
-import { CodeMirrorThemeInjector } from './CodeMirrorThemeInjector';
+} from "../types";
+import { VSCodeThemeProvider } from "../providers/VSCodeThemeProvider";
+import { UniversalColorMapper } from "../mapping/UniversalColorMapper";
+import { CodeMirrorThemeInjector } from "./CodeMirrorThemeInjector";
 
 /**
  * Theme context for accessing theme state
@@ -36,7 +36,7 @@ import { CodeMirrorThemeInjector } from './CodeMirrorThemeInjector';
 const ThemeContext = createContext<IThemeContext>({
   provider: null,
   theme: null,
-  colorMode: 'light',
+  colorMode: "light",
   setProvider: () => {},
   setColorMode: () => {},
 });
@@ -109,11 +109,11 @@ function CSSVariableInjector({
   useEffect(() => {
     // Create or update style element for variables
     let styleEl = document.getElementById(
-      'enhanced-theme-variables',
+      "enhanced-theme-variables"
     ) as HTMLStyleElement;
     if (!styleEl) {
-      styleEl = document.createElement('style');
-      styleEl.id = 'enhanced-theme-variables';
+      styleEl = document.createElement("style");
+      styleEl.id = "enhanced-theme-variables";
       document.head.appendChild(styleEl);
     }
 
@@ -121,31 +121,31 @@ function CSSVariableInjector({
     const cssContent = Object.entries(variables)
       .map(([key, value]) => {
         // Ensure key starts with --
-        const varName = key.startsWith('--') ? key : `--${key}`;
+        const varName = key.startsWith("--") ? key : `--${key}`;
         return `${varName}: ${value};`;
       })
-      .join('\n  ');
+      .join("\n  ");
 
     let fullCSS = `:root {\n  ${cssContent}\n}`;
 
     // Force root elements to use VS Code editor background
     // This fixes black background gaps that appear between VS Code interface and notebook
-    if (provider && provider.id === 'vscode-theme') {
+    if (provider && provider.id === "vscode-theme") {
       const vscodeColors = (provider as any)._vscodeColors as Map<
         string,
         string
       >;
       const editorBg =
-        vscodeColors.get('--vscode-editor-background') ||
-        variables['--theme-editor-background'] ||
-        '#1e1e1e';
+        vscodeColors.get("--vscode-editor-background") ||
+        variables["--theme-editor-background"] ||
+        "#1e1e1e";
 
       // Use VS Code notebook cell background for CodeMirror editors (darker than main editor)
       const cellBg =
-        vscodeColors.get('--vscode-notebook-cellEditorBackground') ||
-        vscodeColors.get('--vscode-editor-background') ||
-        variables['--theme-editor-background'] ||
-        '#1e1e1e';
+        vscodeColors.get("--vscode-notebook-cellEditorBackground") ||
+        vscodeColors.get("--vscode-editor-background") ||
+        variables["--theme-editor-background"] ||
+        "#1e1e1e";
 
       fullCSS += `\n\n/* VS Code Root Background Fix - Eliminates black background gaps */\n`;
       fullCSS += `html, body, #notebook-editor { background-color: ${editorBg} !important; }\n`;
@@ -158,7 +158,7 @@ function CSSVariableInjector({
     }
 
     // Add CodeMirror-specific CSS if provider supports it
-    if (provider && 'getCodeMirrorCSS' in provider) {
+    if (provider && "getCodeMirrorCSS" in provider) {
       const codeMirrorCSS = (provider as any).getCodeMirrorCSS();
       if (codeMirrorCSS) {
         fullCSS += `\n\n/* CodeMirror Syntax Highlighting */\n${codeMirrorCSS}`;
@@ -181,8 +181,8 @@ function CSSVariableInjector({
  * Enhanced JupyterReactTheme component
  */
 export function EnhancedJupyterReactTheme({
-  provider: providerType = 'auto',
-  colorMode: initialColorMode = 'light',
+  provider: providerType = "auto",
+  colorMode: initialColorMode = "light",
   theme: customTheme,
   customProvider,
   loadJupyterLabCss = true,
@@ -190,10 +190,10 @@ export function EnhancedJupyterReactTheme({
   children,
 }: IEnhancedJupyterReactThemeProps): JSX.Element {
   const [themeProvider, setThemeProvider] = useState<IThemeProvider | null>(
-    null,
+    null
   );
   const [currentTheme, setCurrentTheme] = useState<IThemeDefinition | null>(
-    null,
+    null
   );
   const [colorMode, setColorMode] = useState<ColorMode>(initialColorMode);
   const [primerTheme, setPrimerTheme] = useState<any>(null);
@@ -201,10 +201,10 @@ export function EnhancedJupyterReactTheme({
 
   // Update color mode when prop changes (e.g., from VS Code theme changes)
   useEffect(() => {
-    if (initialColorMode !== colorMode && initialColorMode !== 'auto') {
+    if (initialColorMode !== colorMode && initialColorMode !== "auto") {
       console.log(
-        '[EnhancedJupyterReactTheme] Color mode prop changed:',
-        initialColorMode,
+        "[EnhancedJupyterReactTheme] Color mode prop changed:",
+        initialColorMode
       );
       setColorMode(initialColorMode);
     }
@@ -225,14 +225,14 @@ export function EnhancedJupyterReactTheme({
       if (customProvider) {
         provider = customProvider;
       } else if (
-        providerType === 'vscode' ||
-        (providerType === 'auto' && detectVSCodeEnvironment())
+        providerType === "vscode" ||
+        (providerType === "auto" && detectVSCodeEnvironment())
       ) {
-        console.log('[EnhancedJupyterReactTheme] Using VS Code theme provider');
+        console.log("[EnhancedJupyterReactTheme] Using VS Code theme provider");
         provider = new VSCodeThemeProvider(colorMode);
       } else {
         // For now, fall back to no provider (use default JupyterReactTheme behavior)
-        console.log('[EnhancedJupyterReactTheme] Using default theme behavior');
+        console.log("[EnhancedJupyterReactTheme] Using default theme behavior");
         return;
       }
 
@@ -242,7 +242,7 @@ export function EnhancedJupyterReactTheme({
 
         // Subscribe to theme changes
         disposable = provider.subscribeToChanges(() => {
-          console.log('[EnhancedJupyterReactTheme] Theme provider changed');
+          console.log("[EnhancedJupyterReactTheme] Theme provider changed");
           updateTheme(provider);
         });
 
@@ -261,7 +261,7 @@ export function EnhancedJupyterReactTheme({
       setCssVariables(variables);
       setColorMode(provider.getColorMode());
 
-      console.log('[EnhancedJupyterReactTheme] Theme updated:', {
+      console.log("[EnhancedJupyterReactTheme] Theme updated:", {
         theme: theme.name,
         colorMode: provider.getColorMode(),
         variableCount: Object.keys(variables).length,
@@ -282,10 +282,10 @@ export function EnhancedJupyterReactTheme({
 
   // Force refresh when color mode changes
   useEffect(() => {
-    if (themeProvider && themeProvider.id === 'vscode-theme') {
+    if (themeProvider && themeProvider.id === "vscode-theme") {
       console.log(
-        '[EnhancedJupyterReactTheme] Triggering VS Code provider refresh for color mode:',
-        colorMode,
+        "[EnhancedJupyterReactTheme] Triggering VS Code provider refresh for color mode:",
+        colorMode
       );
       (themeProvider as any).refresh?.();
     }
@@ -294,7 +294,7 @@ export function EnhancedJupyterReactTheme({
   // Update color mode when it changes externally
   useEffect(() => {
     if (themeProvider && themeProvider.getColorMode() !== colorMode) {
-      console.log('[EnhancedJupyterReactTheme] Syncing color mode:', colorMode);
+      console.log("[EnhancedJupyterReactTheme] Syncing color mode:", colorMode);
       // If the provider supports setting color mode, do it here
       // For now, we'll just update our local state
     }
@@ -309,7 +309,7 @@ export function EnhancedJupyterReactTheme({
       setProvider: setThemeProvider,
       setColorMode,
     }),
-    [themeProvider, currentTheme, colorMode],
+    [themeProvider, currentTheme, colorMode]
   );
 
   // Render with appropriate theme
@@ -325,7 +325,7 @@ export function EnhancedJupyterReactTheme({
         </>
       )}
       <JupyterReactTheme
-        colormode={colorMode === 'dark' ? 'dark' : 'light'}
+        colormode={colorMode === "dark" ? "dark" : "light"}
         loadJupyterLabCss={loadJupyterLabCss}
         theme={primerTheme || undefined}
       >
@@ -341,10 +341,10 @@ export function EnhancedJupyterReactTheme({
 function detectVSCodeEnvironment(): boolean {
   // Check for VS Code-specific CSS variables
   const style = getComputedStyle(document.documentElement);
-  const hasVSCodeVar = !!style.getPropertyValue('--vscode-editor-background');
+  const hasVSCodeVar = !!style.getPropertyValue("--vscode-editor-background");
 
   // Check for VS Code API
-  const hasVSCodeAPI = typeof (window as any).acquireVsCodeApi !== 'undefined';
+  const hasVSCodeAPI = typeof (window as any).acquireVsCodeApi !== "undefined";
 
   return hasVSCodeVar || hasVSCodeAPI;
 }
@@ -355,10 +355,10 @@ function detectVSCodeEnvironment(): boolean {
 function detectJupyterLabEnvironment(): boolean {
   // Check for JupyterLab-specific CSS variables
   const style = getComputedStyle(document.documentElement);
-  const hasJupyterVar = !!style.getPropertyValue('--jp-layout-color0');
+  const hasJupyterVar = !!style.getPropertyValue("--jp-layout-color0");
 
   // Check for JupyterLab body class
-  const hasJupyterClass = document.body.classList.contains('jp-Notebook');
+  const hasJupyterClass = document.body.classList.contains("jp-Notebook");
 
   return hasJupyterVar || hasJupyterClass;
 }

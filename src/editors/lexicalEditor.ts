@@ -17,13 +17,13 @@
  * @packageDocumentation
  */
 
-import * as vscode from 'vscode';
-import * as fs from 'fs';
-import { Disposable, disposeAll } from '../dispose';
-import { getNonce } from '../util';
-import { DocumentBridge } from '../spaces/documentBridge';
-import { AuthService } from '../auth/authService';
-import { SpacerApiService } from '../spaces/spacerApiService';
+import * as vscode from "vscode";
+import * as fs from "fs";
+import { Disposable, disposeAll } from "../dispose";
+import { getNonce } from "../util";
+import { DocumentBridge } from "../spaces/documentBridge";
+import { AuthService } from "../auth/authService";
+import { SpacerApiService } from "../spaces/spacerApiService";
 
 /**
  * Delegate interface for lexical document operations.
@@ -52,17 +52,17 @@ class LexicalDocument extends Disposable implements vscode.CustomDocument {
   static async create(
     uri: vscode.Uri,
     backupId: string | undefined,
-    delegate: LexicalDocumentDelegate,
+    delegate: LexicalDocumentDelegate
   ): Promise<LexicalDocument | PromiseLike<LexicalDocument>> {
     // If we have a backup, read that. Otherwise read the resource from the workspace
     const dataFile =
-      typeof backupId === 'string' ? vscode.Uri.parse(backupId) : uri;
+      typeof backupId === "string" ? vscode.Uri.parse(backupId) : uri;
     const fileData = await LexicalDocument.readFile(dataFile);
     return new LexicalDocument(uri, fileData, delegate);
   }
 
   private static async readFile(uri: vscode.Uri): Promise<Uint8Array> {
-    if (uri.scheme === 'untitled') {
+    if (uri.scheme === "untitled") {
       // Return default Lexical state for new documents
       const defaultState = {
         root: {
@@ -72,24 +72,24 @@ class LexicalDocument extends Disposable implements vscode.CustomDocument {
                 {
                   detail: 0,
                   format: 0,
-                  mode: 'normal',
-                  style: '',
-                  text: 'Welcome to Datalayer Lexical Editor!',
-                  type: 'text',
+                  mode: "normal",
+                  style: "",
+                  text: "Welcome to Datalayer Lexical Editor!",
+                  type: "text",
                   version: 1,
                 },
               ],
-              direction: 'ltr',
-              format: '',
+              direction: "ltr",
+              format: "",
               indent: 0,
-              type: 'paragraph',
+              type: "paragraph",
               version: 1,
             },
           ],
-          direction: 'ltr',
-          format: '',
+          direction: "ltr",
+          format: "",
           indent: 0,
-          type: 'root',
+          type: "root",
           version: 1,
         },
       };
@@ -98,7 +98,7 @@ class LexicalDocument extends Disposable implements vscode.CustomDocument {
 
     // For Datalayer documents, the file should already be downloaded
     // and the virtual mapping should exist
-    if (uri.scheme === 'datalayer') {
+    if (uri.scheme === "datalayer") {
       // Try to get the document metadata from DocumentBridge
       const documentBridge = DocumentBridge.getInstance();
       const metadata = documentBridge.getDocumentMetadata(uri);
@@ -108,13 +108,13 @@ class LexicalDocument extends Disposable implements vscode.CustomDocument {
         if (fs.existsSync(metadata.localPath)) {
           const fileContent = fs.readFileSync(metadata.localPath);
           console.log(
-            '[LexicalDocument] Reading file from:',
-            metadata.localPath,
+            "[LexicalDocument] Reading file from:",
+            metadata.localPath
           );
-          console.log('[LexicalDocument] File size:', fileContent.length);
+          console.log("[LexicalDocument] File size:", fileContent.length);
           console.log(
-            '[LexicalDocument] File content preview:',
-            fileContent.toString('utf8').substring(0, 500),
+            "[LexicalDocument] File content preview:",
+            fileContent.toString("utf8").substring(0, 500)
           );
           return new Uint8Array(fileContent);
         }
@@ -125,21 +125,21 @@ class LexicalDocument extends Disposable implements vscode.CustomDocument {
         return new Uint8Array(await vscode.workspace.fs.readFile(uri));
       } catch (error) {
         console.error(
-          '[LexicalDocument] Failed to read Datalayer file:',
-          error,
+          "[LexicalDocument] Failed to read Datalayer file:",
+          error
         );
         // Return empty default state if file can't be read
         return new TextEncoder().encode(
           JSON.stringify({
             root: {
               children: [],
-              direction: 'ltr',
-              format: '',
+              direction: "ltr",
+              format: "",
               indent: 0,
-              type: 'root',
+              type: "root",
               version: 1,
             },
-          }),
+          })
         );
       }
     }
@@ -156,7 +156,7 @@ class LexicalDocument extends Disposable implements vscode.CustomDocument {
   private constructor(
     uri: vscode.Uri,
     initialContent: Uint8Array,
-    delegate: LexicalDocumentDelegate,
+    delegate: LexicalDocumentDelegate
   ) {
     super();
     this._uri = uri;
@@ -186,19 +186,19 @@ class LexicalDocument extends Disposable implements vscode.CustomDocument {
   }
 
   private readonly _onDidDispose = this._register(
-    new vscode.EventEmitter<void>(),
+    new vscode.EventEmitter<void>()
   );
   public readonly onDidDispose = this._onDidDispose.event;
 
   private readonly _onDidChangeDocument = this._register(
     new vscode.EventEmitter<{
       readonly content?: Uint8Array;
-    }>(),
+    }>()
   );
   public readonly onDidChangeContent = this._onDidChangeDocument.event;
 
   private readonly _onDidChange = this._register(
-    new vscode.EventEmitter<void>(),
+    new vscode.EventEmitter<void>()
   );
   public readonly onDidChange = this._onDidChange.event;
 
@@ -229,7 +229,7 @@ class LexicalDocument extends Disposable implements vscode.CustomDocument {
 
   async saveAs(
     targetResource: vscode.Uri,
-    cancellation: vscode.CancellationToken,
+    cancellation: vscode.CancellationToken
   ): Promise<void> {
     const fileData = await this._delegate.getFileData();
     if (cancellation.isCancellationRequested) {
@@ -249,7 +249,7 @@ class LexicalDocument extends Disposable implements vscode.CustomDocument {
 
   async backup(
     destination: vscode.Uri,
-    cancellation: vscode.CancellationToken,
+    cancellation: vscode.CancellationToken
   ): Promise<vscode.CustomDocumentBackup> {
     await this.saveAs(destination, cancellation);
     return {
@@ -298,24 +298,24 @@ export class LexicalEditorProvider
    * @public
    */
   public static register(context: vscode.ExtensionContext): vscode.Disposable {
-    vscode.commands.registerCommand('datalayer.lexical-editor-new', () => {
+    vscode.commands.registerCommand("datalayer.lexical-editor-new", () => {
       const workspaceFolders = vscode.workspace.workspaceFolders;
       if (!workspaceFolders) {
         vscode.window.showErrorMessage(
-          'Creating new Datalayer Lexical documents currently requires opening a workspace',
+          "Creating new Datalayer Lexical documents currently requires opening a workspace"
         );
         return;
       }
 
       const uri = vscode.Uri.joinPath(
         workspaceFolders[0].uri,
-        `new-${Date.now()}.lexical`,
-      ).with({ scheme: 'untitled' });
+        `new-${Date.now()}.lexical`
+      ).with({ scheme: "untitled" });
 
       vscode.commands.executeCommand(
-        'vscode.openWith',
+        "vscode.openWith",
         uri,
-        LexicalEditorProvider.viewType,
+        LexicalEditorProvider.viewType
       );
     });
 
@@ -327,11 +327,11 @@ export class LexicalEditorProvider
           retainContextWhenHidden: true,
         },
         supportsMultipleEditorsPerDocument: false,
-      },
+      }
     );
   }
 
-  private static readonly viewType = 'datalayer.lexical-editor';
+  private static readonly viewType = "datalayer.lexical-editor";
 
   /**
    * Map of currently active webviews keyed by document URI.
@@ -354,7 +354,7 @@ export class LexicalEditorProvider
   async openCustomDocument(
     uri: vscode.Uri,
     openContext: { backupId?: string },
-    _token: vscode.CancellationToken,
+    _token: vscode.CancellationToken
   ): Promise<LexicalDocument> {
     const document: LexicalDocument = await LexicalDocument.create(
       uri,
@@ -362,43 +362,43 @@ export class LexicalEditorProvider
       {
         getFileData: async () => {
           const webviewsForDocument = Array.from(this.webviews.values()).filter(
-            entry => entry.resource === uri.toString(),
+            (entry) => entry.resource === uri.toString()
           );
           if (webviewsForDocument.length !== 1) {
-            throw new Error('Expected exactly one webview for document');
+            throw new Error("Expected exactly one webview for document");
           }
           const panel = webviewsForDocument[0].webviewPanel;
           const response = await this.postMessageWithResponse<
             number[] | undefined
-          >(panel, 'getFileData', {});
+          >(panel, "getFileData", {});
           return new Uint8Array(response ?? []);
         },
-      },
+      }
     );
 
     const listeners: vscode.Disposable[] = [];
 
     listeners.push(
-      document.onDidChange(e => {
+      document.onDidChange((e) => {
         // Fire content change event
         this._onDidChangeCustomDocument.fire({
           document,
           undo: () => {},
           redo: () => {},
         });
-      }),
+      })
     );
 
     listeners.push(
-      document.onDidChangeContent(e => {
+      document.onDidChangeContent((e) => {
         for (const webviewData of this.webviews.values()) {
           if (webviewData.resource === uri.toString()) {
-            this.postMessage(webviewData.webviewPanel, 'update', {
+            this.postMessage(webviewData.webviewPanel, "update", {
               content: e.content,
             });
           }
         }
-      }),
+      })
     );
 
     document.onDidDispose(() => disposeAll(listeners));
@@ -409,7 +409,7 @@ export class LexicalEditorProvider
   async resolveCustomEditor(
     document: LexicalDocument,
     webviewPanel: vscode.WebviewPanel,
-    _token: vscode.CancellationToken,
+    _token: vscode.CancellationToken
   ): Promise<void> {
     this.webviews.set(document.uri.toString(), {
       resource: document.uri.toString(),
@@ -425,8 +425,8 @@ export class LexicalEditorProvider
     // Store a flag to track when webview is ready
     let webviewReady = false;
 
-    webviewPanel.webview.onDidReceiveMessage(e => {
-      if (e.type === 'ready' && !webviewReady) {
+    webviewPanel.webview.onDidReceiveMessage((e) => {
+      if (e.type === "ready" && !webviewReady) {
         webviewReady = true;
         // Send content when webview signals it's ready
         sendInitialContent();
@@ -443,7 +443,7 @@ export class LexicalEditorProvider
     // Function to send initial content
     const sendInitialContent = async () => {
       // Check if this file is from Datalayer spaces
-      const isFromDatalayer = document.uri.scheme === 'datalayer';
+      const isFromDatalayer = document.uri.scheme === "datalayer";
 
       // Set collaborative mode for Datalayer documents
       if (isFromDatalayer) {
@@ -454,13 +454,11 @@ export class LexicalEditorProvider
       // The LoroCollaborativePlugin needs initial content to establish baseline
       const contentArray = Array.from(document.documentData);
 
-      console.log('[LexicalEditor] Sending initial content to webview');
-      console.log('[LexicalEditor] Content length:', contentArray.length);
+      console.log("[LexicalEditor] Sending initial content to webview");
+      console.log("[LexicalEditor] Content length:", contentArray.length);
       console.log(
-        '[LexicalEditor] Content as string:',
-        new TextDecoder()
-          .decode(new Uint8Array(contentArray))
-          .substring(0, 500),
+        "[LexicalEditor] Content as string:",
+        new TextDecoder().decode(new Uint8Array(contentArray)).substring(0, 500)
       );
 
       // Prepare collaboration configuration if this is a Datalayer document
@@ -481,7 +479,7 @@ export class LexicalEditorProvider
               // Get collaboration session ID for lexical documents
               const sessionResult =
                 await apiService.getLexicalCollaborationSessionId(
-                  metadata.document.uid,
+                  metadata.document.uid
                 );
 
               if (sessionResult.success && sessionResult.sessionId) {
@@ -489,13 +487,13 @@ export class LexicalEditorProvider
                 const user = authState.user as any;
                 const username = user?.githubLogin
                   ? `@${user.githubLogin}`
-                  : user?.name || user?.email || 'Anonymous';
+                  : user?.name || user?.email || "Anonymous";
 
                 // Get spacerWsUrl configuration
-                const config = vscode.workspace.getConfiguration('datalayer');
+                const config = vscode.workspace.getConfiguration("datalayer");
                 const spacerWsUrl = config.get<string>(
-                  'spacerWsUrl',
-                  'wss://prod1.datalayer.run',
+                  "spacerWsUrl",
+                  "wss://prod1.datalayer.run"
                 );
 
                 // Construct WebSocket URL for collaboration
@@ -509,18 +507,18 @@ export class LexicalEditorProvider
                   sessionId: sessionResult.sessionId,
                   username,
                   userColor:
-                    '#' + Math.floor(Math.random() * 16777215).toString(16), // Random color
+                    "#" + Math.floor(Math.random() * 16777215).toString(16), // Random color
                 };
               }
             }
           }
         } catch (error) {
-          console.error('[Lexical] Failed to setup collaboration:', error);
+          console.error("[Lexical] Failed to setup collaboration:", error);
         }
       }
 
       webviewPanel.webview.postMessage({
-        type: 'update',
+        type: "update",
         content: contentArray,
         editable: true,
         collaboration: collaborationConfig,
@@ -536,7 +534,7 @@ export class LexicalEditorProvider
 
   public saveCustomDocument(
     document: LexicalDocument,
-    cancellation: vscode.CancellationToken,
+    cancellation: vscode.CancellationToken
   ): Thenable<void> {
     return document.save(cancellation);
   }
@@ -544,14 +542,14 @@ export class LexicalEditorProvider
   public saveCustomDocumentAs(
     document: LexicalDocument,
     destination: vscode.Uri,
-    cancellation: vscode.CancellationToken,
+    cancellation: vscode.CancellationToken
   ): Thenable<void> {
     return document.saveAs(destination, cancellation);
   }
 
   public revertCustomDocument(
     document: LexicalDocument,
-    cancellation: vscode.CancellationToken,
+    cancellation: vscode.CancellationToken
   ): Thenable<void> {
     return document.revert(cancellation);
   }
@@ -559,7 +557,7 @@ export class LexicalEditorProvider
   public backupCustomDocument(
     document: LexicalDocument,
     context: vscode.CustomDocumentBackupContext,
-    cancellation: vscode.CancellationToken,
+    cancellation: vscode.CancellationToken
   ): Thenable<vscode.CustomDocumentBackup> {
     return document.backup(context.destination, cancellation);
   }
@@ -575,20 +573,20 @@ export class LexicalEditorProvider
     const scriptUri = webview.asWebviewUri(
       vscode.Uri.joinPath(
         this._context.extensionUri,
-        'dist',
-        'lexicalWebview.js',
-      ),
+        "dist",
+        "lexicalWebview.js"
+      )
     );
     const styleUri = webview.asWebviewUri(
       vscode.Uri.joinPath(
         this._context.extensionUri,
-        'webview',
-        'LexicalEditor.css',
-      ),
+        "webview",
+        "LexicalEditor.css"
+      )
     );
     // Get base URI for loading additional resources like WASM
     const distUri = webview.asWebviewUri(
-      vscode.Uri.joinPath(this._context.extensionUri, 'dist'),
+      vscode.Uri.joinPath(this._context.extensionUri, "dist")
     );
     const nonce = getNonce();
 
@@ -620,11 +618,11 @@ export class LexicalEditorProvider
   private postMessageWithResponse<R = unknown>(
     panel: vscode.WebviewPanel,
     type: string,
-    body: any,
+    body: any
   ): Promise<R> {
     const requestId = this._requestId++;
-    const p = new Promise<R>(resolve =>
-      this._callbacks.set(requestId, resolve),
+    const p = new Promise<R>((resolve) =>
+      this._callbacks.set(requestId, resolve)
     );
     panel.webview.postMessage({ type, requestId, body });
     return p;
@@ -633,36 +631,36 @@ export class LexicalEditorProvider
   private postMessage(
     panel: vscode.WebviewPanel,
     type: string,
-    body: any,
+    body: any
   ): void {
     panel.webview.postMessage({ type, body });
   }
 
   private onMessage(document: LexicalDocument, message: any) {
     // Check if this document is from Datalayer spaces
-    const isFromDatalayer = document.uri.scheme === 'datalayer';
+    const isFromDatalayer = document.uri.scheme === "datalayer";
 
     switch (message.type) {
-      case 'response': {
+      case "response": {
         const callback = this._callbacks.get(message.requestId);
         callback?.(message.body);
         return;
       }
-      case 'contentChanged': {
+      case "contentChanged": {
         // Mark as dirty only for local files (not Datalayer)
         if (!isFromDatalayer) {
           document.makeEdit(message);
         }
         return;
       }
-      case 'save': {
+      case "save": {
         // Handle save command (Cmd/Ctrl+S)
         if (!isFromDatalayer) {
-          vscode.commands.executeCommand('workbench.action.files.save');
+          vscode.commands.executeCommand("workbench.action.files.save");
         }
         return;
       }
-      case 'ready': {
+      case "ready": {
         // Handled in the message listener above
         return;
       }

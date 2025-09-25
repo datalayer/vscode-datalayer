@@ -1,0 +1,69 @@
+# Netlify configuration for Datalayer VS Code Extension documentation
+# Automatically builds TypeDoc documentation on every push to main branch
+
+[build]
+  # Build command
+  command = "npm ci && npm run doc"
+  # Publish directory (TypeDoc output)
+  publish = "docs/"
+
+[build.processing]
+  # Skip processing since TypeDoc generates static HTML
+  skip_processing = false
+
+[build.processing.css]
+  # Bundle CSS for faster loading
+  bundle = true
+  minify = true
+
+[build.processing.js]
+  # Bundle and minify JavaScript
+  bundle = true
+  minify = true
+
+[build.processing.html]
+  # Pretty URLs for better UX
+  pretty_urls = true
+
+# Branch-specific build settings
+[context.production]
+  command = "npm ci --production=false && npm run doc"
+
+[context.deploy-preview]
+  command = "npm ci --production=false && npm run doc"
+
+[context.branch-deploy]
+  command = "npm ci --production=false && npm run doc"
+
+# Custom headers for documentation
+[[headers]]
+  for = "/*.html"
+  [headers.values]
+    Cache-Control = "public, max-age=3600"
+
+[[headers]]
+  for = "/*.css"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000"
+
+[[headers]]
+  for = "/*.js"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000"
+
+
+# Security and performance
+[build.environment]
+  NODE_ENV = "production"
+  NODE_VERSION = "20"
+  GENERATE_SOURCEMAP = "false"
+  CI = "true"
+  # Increase Node.js heap size for large documentation builds
+  NODE_OPTIONS = "--max-old-space-size=4096"
+  # Skip Husky hooks in CI
+  HUSKY = "0"
+  # Disable npm update notifier
+  NO_UPDATE_NOTIFIER = "1"
+  # Disable npm funding messages
+  OPEN_SOURCE_CONTRIBUTOR = "1"
+
