@@ -68,41 +68,42 @@ const webviewConfig = {
     extensions: ['.ts', '.tsx', '.js', '.jsx', '.json', '.svg'],
     fallback: {
       process: require.resolve('process/browser'),
+      stream: false,
     },
     // Deduplicate CodeMirror modules to prevent multiple instances
     alias: {
       '@codemirror/state': path.resolve(
         __dirname,
-        '../../node_modules/@codemirror/state',
+        './node_modules/@codemirror/state',
       ),
       '@codemirror/view': path.resolve(
         __dirname,
-        '../../node_modules/@codemirror/view',
+        './node_modules/@codemirror/view',
       ),
       '@codemirror/language': path.resolve(
         __dirname,
-        '../../node_modules/@codemirror/language',
+        './node_modules/@codemirror/language',
       ),
       '@codemirror/commands': path.resolve(
         __dirname,
-        '../../node_modules/@codemirror/commands',
+        './node_modules/@codemirror/commands',
       ),
       '@codemirror/search': path.resolve(
         __dirname,
-        '../../node_modules/@codemirror/search',
+        './node_modules/@codemirror/search',
       ),
       '@codemirror/autocomplete': path.resolve(
         __dirname,
-        '../../node_modules/@codemirror/autocomplete',
+        './node_modules/@codemirror/autocomplete',
       ),
       '@codemirror/lint': path.resolve(
         __dirname,
-        '../../node_modules/@codemirror/lint',
+        './node_modules/@codemirror/lint',
       ),
       // Also deduplicate yjs to prevent synchronization issues
-      yjs: path.resolve(__dirname, '../../node_modules/yjs'),
-      'y-protocols': path.resolve(__dirname, '../../node_modules/y-protocols'),
-      'y-websocket': path.resolve(__dirname, '../../node_modules/y-websocket'),
+      yjs: path.resolve(__dirname, './node_modules/yjs'),
+      'y-protocols': path.resolve(__dirname, './node_modules/y-protocols'),
+      'y-websocket': path.resolve(__dirname, './node_modules/y-websocket'),
     },
   },
   module: {
@@ -260,41 +261,42 @@ const lexicalWebviewConfig = {
     extensions: ['.ts', '.tsx', '.js', '.jsx', '.json', '.svg', '.wasm'],
     fallback: {
       process: require.resolve('process/browser'),
+      stream: false,
     },
     // Deduplicate CodeMirror modules to prevent multiple instances
     alias: {
       '@codemirror/state': path.resolve(
         __dirname,
-        '../../node_modules/@codemirror/state',
+        './node_modules/@codemirror/state',
       ),
       '@codemirror/view': path.resolve(
         __dirname,
-        '../../node_modules/@codemirror/view',
+        './node_modules/@codemirror/view',
       ),
       '@codemirror/language': path.resolve(
         __dirname,
-        '../../node_modules/@codemirror/language',
+        './node_modules/@codemirror/language',
       ),
       '@codemirror/commands': path.resolve(
         __dirname,
-        '../../node_modules/@codemirror/commands',
+        './node_modules/@codemirror/commands',
       ),
       '@codemirror/search': path.resolve(
         __dirname,
-        '../../node_modules/@codemirror/search',
+        './node_modules/@codemirror/search',
       ),
       '@codemirror/autocomplete': path.resolve(
         __dirname,
-        '../../node_modules/@codemirror/autocomplete',
+        './node_modules/@codemirror/autocomplete',
       ),
       '@codemirror/lint': path.resolve(
         __dirname,
-        '../../node_modules/@codemirror/lint',
+        './node_modules/@codemirror/lint',
       ),
       // Also deduplicate yjs to prevent synchronization issues
-      yjs: path.resolve(__dirname, '../../node_modules/yjs'),
-      'y-protocols': path.resolve(__dirname, '../../node_modules/y-protocols'),
-      'y-websocket': path.resolve(__dirname, '../../node_modules/y-websocket'),
+      yjs: path.resolve(__dirname, './node_modules/yjs'),
+      'y-protocols': path.resolve(__dirname, './node_modules/y-protocols'),
+      'y-websocket': path.resolve(__dirname, './node_modules/y-websocket'),
     },
   },
   plugins: [...webviewConfig.plugins],
