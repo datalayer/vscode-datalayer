@@ -1,97 +1,124 @@
-# Welcome to Datalayer VS Code Extension
+# Contributing to Datalayer VS Code Extension
 
-## What's in the folder
+Thank you for your interest in contributing to the Datalayer VS Code extension! This document outlines the contribution process and quality standards.
 
-- `package.json` - this is the manifest file in which you declare your extension and entry points.
-- `src` - this is the extension code living within VS Code _core_.
-- `src/extension.ts` - this is the main file where you will provide the implementation of your extension.
-  - The file exports one function, `activate`, which is called the very first time your extension is activated.
-    Inside the `activate` function we call `NotebookEditorProvider.register` to add our custom editor provider.
-- `webview` - this is the webview code for the editor living in an iframe.
-- `webview/main.ts` - this is the main file for the webview.
+## How to Contribute
 
-## Setup
+1. **Fork the Repository**: Create a fork of the repository on GitHub
+2. **Create a Branch**: Create a feature branch from `main` for your changes
+3. **Make Changes**: Implement your feature or bug fix following our guidelines
+4. **Test Thoroughly**: Ensure your changes work correctly in the Extension Development Host
+5. **Submit a Pull Request**: Create a PR with a clear description of your changes
 
-Install the recommended extensions: `amodio.tsl-problem-matcher`, `ms-vscode.extension-test-runner` and `dbaeumer.vscode-eslint`.
+## Development Workflow
 
-## Get up and running straight away
+### Before You Start
 
-Press `F5` to open a new VS Code with your extension loaded and pen a notebook (extension `.ipynb`) file.
+1. Review the [DEVELOPMENT.md](./DEVELOPMENT.md) file for setup instructions
+2. Ensure you have the required prerequisites installed
+3. Run `npm install` to install dependencies
+4. Run `npm run watch` to start development mode
 
-Set breakpoints in your code inside `src/*` to debug your extension.
+### Code Quality Standards
 
-Find output from your extension in the devtools debug console (CTRL-SHIFT-I).
+All contributions must meet these quality standards:
 
-## Make changes
-
-- You can relaunch the extension from the debug toolbar after changing code in `src/*`.
-- You can also reload (`Ctrl+R` or `Cmd+R` on Mac) the VS Code window with your extension to load your changes.
-
-> [!TIP]
->
-> It is adviced to run `npm run watch` while developing to always build the latest version of the extension.
-
-## Explore the API
-
-You can open the full set of our API when you open the file `node_modules/@types/vscode/index.d.ts`.
-
-## Run tests
-
-Install the [Extension Test Runner](https://marketplace.visualstudio.com/items?itemName=ms-vscode.extension-test-runner)
-
-Run the "watch" task via the \*_Tasks: Run Task_- command. Make sure this is running, or tests might not be discovered.
-
-Open the Testing view from the activity bar and click the Run Test" button, or use the hotkey `Ctrl/Cmd + ; A`
-
-See the output of the test result in the Test Results view.
-
-Make changes to `src/test/extension.test.ts` or create new test files inside the `test` folder.
-
-- The provided test runner will only consider files matching the name pattern `**.test.ts`.
-- You can create folders inside the `test` folder to structure your tests any way you want.
-
-## How does it work?
-
-The editor is encapsulted within an iframe. Therefore all communications between the editor and external services (aka: Jupyter Service, VS Code filesystem API, VS Code UI - user input, notifications,...) involve posting message from the extension to the editor and vice-versa.
-
-In particular to interact with Jupyter Server, once the user has provided a server URL, that information is used to create a JupyterLab `ServiceManager` in the editor (aka in the iframe) with mocked `fetch` and `WebSocket` that:
-
-1. Serialize requests and messages.
-2. Post a message to the extension.
-3. The extension unserialize the content to do the actual `fetch` or to send the websocket message.
-4. If needed, the extension waits for the response. Serialize it and post it back to the iframe.
-
-## Package
-
-This extension uses webpack to bundle both the extension and webview code. This is done by specifying two entries.
-
-For the webview bundle, the code is bundled in a single chunk containing inline source code in non-production mode to ease debugging in the webview.
+#### TypeScript & Linting
 
 ```bash
-npm run package
+# Check TypeScript compilation
+npx tsc --noEmit
+
+# Run ESLint
+npm run lint
+
+# Auto-fix linting issues
+npm run lint:fix
 ```
 
-## Publish
+#### Documentation
 
-```bash
-# npx @vscode/vsce package
-npm run vsix
-# DONE  Packaged: .../ui/packages/vscode/datalayer-jupyter-vscode-0.0.1.vsix (17 files, 1.37 MB)
-```
+- All exported functions, classes, and interfaces must have JSDoc comments
+- Use TypeDoc syntax for comprehensive API documentation
+- Include usage examples for complex functionality
 
-Go to https://marketplace.visualstudio.com/manage/publishers/datalayer and upload the `vsix` file.
+#### Code Style
 
-Optionally, run via CLI.
+- Use Prettier for code formatting (configured in `.prettierrc.json`)
+- Follow existing architectural patterns and naming conventions
+- Maintain consistency with the existing codebase
 
-```bash
-$ vsce publish
-# datalayer.datalayer published to VS Code Marketplace
-```
+## CI/CD & Quality Assurance
 
-## References
+The project includes comprehensive GitHub Actions workflows that run on every PR:
 
-- Custom editor sample: https://github.com/microsoft/vscode-extension-samples/tree/main/custom-editor-sample
-- Real extension using React and webviews: https://github.com/microsoft/vscode-pull-request-github
-- Reduce the extension size and improve the startup time by [bundling your extension](https://code.visualstudio.com/api/working-with-extensions/bundling-extension).
-- [Publish your extension](https://code.visualstudio.com/api/working-with-extensions/publishing-extension) on the VS Code extension marketplace.
-- Automate builds by setting up [Continuous Integration](https://code.visualstudio.com/api/working-with-extensions/continuous-integration).
+### Automated Workflows
+
+#### Extension Build & Test
+- **Platforms**: Multi-platform build (Windows, macOS, Linux)
+- **Artifacts**: Generates `.vsix` extension packages for all platforms
+- **Testing**: Verifies extension packaging and installation
+
+#### Code Quality
+- **Linting**: Automated ESLint checks with zero-tolerance for errors
+- **Formatting**: Prettier formatting validation
+- **Console.log Detection**: Warns about console.log statements in source code
+- **Import Ordering**: Validates import statement organization
+
+#### Type Check
+- **TypeScript Compilation**: Verifies code compiles without errors
+- **Strict Mode**: Checks compatibility with strict TypeScript settings
+- **Declaration Files**: Tests TypeScript declaration generation
+- **Type Coverage**: Analyzes type safety coverage
+
+### Quality Gates
+
+All PRs must pass these automated checks:
+
+- ✅ TypeScript compilation without errors
+- ✅ ESLint rules with zero errors
+- ✅ Prettier formatting compliance
+- ✅ Extension builds successfully on all platforms
+- ✅ No console.log statements in production code
+
+## Architecture Overview
+
+The extension consists of two main parts:
+
+- **Extension Context** (`src/`): Node.js environment, handles authentication & server communication
+- **Webview** (`webview/`): React-based notebook editor with VS Code theme integration
+- **Message Passing**: JWT token injection between extension and webview
+
+### Communication Flow
+
+The editor is encapsulated within an iframe. All communications between the editor and external services involve posting messages between the extension and webview:
+
+1. **Jupyter Service Interaction**: The webview creates a JupyterLab `ServiceManager` with mocked `fetch` and `WebSocket`
+2. **Message Serialization**: Requests are serialized and posted to the extension
+3. **Extension Processing**: The extension deserializes and makes actual network requests
+4. **Response Handling**: Responses are serialized and posted back to the webview
+
+## Getting Help
+
+### Resources
+
+- **Development Guide**: [DEVELOPMENT.md](./DEVELOPMENT.md)
+- **Release Process**: [RELEASE.md](./RELEASE.md)
+- **API Documentation**: [https://datalayer-desktop.netlify.app](https://datalayer-desktop.netlify.app)
+
+### Communication
+
+- **Issues**: Use GitHub issues for bug reports and feature requests
+- **Discussions**: Use GitHub discussions for questions and ideas
+- **Support**: For general support, visit our [GitHub repository](https://github.com/datalayer/jupyter-ui)
+
+## Code of Conduct
+
+We are committed to providing a welcoming and inclusive environment for all contributors. Please:
+
+- Be respectful and constructive in all interactions
+- Focus on what is best for the community
+- Show empathy towards other community members
+- Provide helpful and actionable feedback
+
+Thank you for contributing to the Datalayer VS Code extension!

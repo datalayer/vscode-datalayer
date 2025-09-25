@@ -4,6 +4,8 @@
 
 ## Project Status
 [![Build Status](https://github.com/datalayer/jupyter-vscode/actions/workflows/extension.yml/badge.svg)](https://github.com/datalayer/jupyter-vscode/actions/workflows/extension.yml)
+[![Netlify Status](https://api.netlify.com/api/v1/badges/d73cd7a0-952b-405e-9e94-63d00ce01320/deploy-status)](https://app.netlify.com/sites/datalayer-desktop/deploys)
+[![Documentation](https://img.shields.io/badge/docs-TypeDoc-blue.svg)](https://datalayer-desktop.netlify.app)
 [![VS Code Marketplace](https://img.shields.io/visual-studio-marketplace/v/datalayer.datalayer-jupyter-vscode?label=VS%20Code%20Marketplace&logo=visual-studio-code)](https://marketplace.visualstudio.com/items?itemName=datalayer.datalayer-jupyter-vscode)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
@@ -199,124 +201,31 @@ The extension automatically manages Datalayer runtimes for notebook execution:
 - **Credits Management**: Configure default credits limit for new runtimes
 - **Health Verification**: Automatic verification of runtime availability before reuse
 
-## CI/CD & Quality Assurance
+## Installation
 
-The project includes comprehensive GitHub Actions workflows:
+Install the extension from the [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=datalayer.datalayer-jupyter-vscode) or:
 
-### Workflows
+1. Press `Ctrl+Shift+X` (or `Cmd+Shift+X` on Mac) to open Extensions
+2. Search for "Datalayer Platform"
+3. Click "Install"
 
-- **VSCode - Extension Build & Test**: Multi-platform build (Windows, macOS, Linux) with artifact generation
-- **VSCode - Code Quality**: Automated linting and formatting checks
-- **VSCode - Type Check**: TypeScript compilation and type safety verification
-
-All workflows trigger only on changes to the VS Code extension package for efficient CI/CD.
-
-## Not Implemented
-
-- Save the Notebook.
-- Notifying of updates to have a UI feedback the document is in dirty state.
+Alternatively, install from a `.vsix` file:
+1. Download the latest `.vsix` from our [releases](https://github.com/datalayer/jupyter-vscode/releases)
+2. In VS Code: `Ctrl+Shift+P` → "Extensions: Install from VSIX..."
+3. Select the downloaded file
 
 ## Known Limitations
 
-- Websocket binary support: The extension currently forbids the usage of the newer protocol v1.kernel.websocket.jupyter.org due to serialization issues between the webview and extension.
+- **Save Functionality**: Saving notebooks back to Datalayer platform is not yet implemented
+- **Dirty State Indicator**: No UI feedback when documents have unsaved changes
+- **WebSocket Protocol**: Uses older Jupyter protocol due to serialization constraints between webview and extension
 
-## 📚 Documentation
+## Developer Resources
 
-The codebase is fully documented using TypeDoc with comprehensive coverage of all modules, classes, and functions.
-
-### 🌐 Online Documentation
-
-**Live Documentation**: [https://datalayer-vscode-docs.netlify.app](https://datalayer-vscode-docs.netlify.app)
-
-The documentation is automatically built and deployed on every push to the main branch using Netlify. It includes:
-
-- **API Reference**: Complete TypeScript API documentation
-- **Module Documentation**: Detailed module and namespace documentation
-- **Interface Documentation**: All TypeScript interfaces and types
-- **Code Examples**: Usage examples and code snippets
-- **Coverage Reports**: Documentation coverage metrics
-
-### 🛠️ Local Documentation
-
-Generate documentation locally during development:
-
-```bash
-# Generate HTML documentation
-npm run doc
-
-# Generate markdown documentation
-npm run doc:markdown
-
-# Watch mode for development (rebuilds on file changes)
-npm run doc:watch
-
-# Check documentation coverage
-npm run doc:coverage
-```
-
-**Output Directories:**
-- `docs/` - HTML documentation (TypeDoc default theme)
-- `docs-markdown/` - Markdown documentation for integration with other systems
-
-### 🚀 Automated Builds
-
-The documentation system includes:
-
-- **Automatic Deployment**: Every push to `main` triggers a new documentation build
-- **Multi-format Output**: Generates both HTML and Markdown formats
-- **Coverage Tracking**: Monitors documentation completeness
-- **Performance Optimization**: CSS/JS minification and bundling via Netlify
-- **SEO Optimization**: Proper meta tags, sitemap generation, and clean URLs
-
-## Development
-
-### Prerequisites
-
-- Node.js >= 20.0.0
-- VS Code >= 1.98.0
-- npm (not yarn)
-
-### Setup
-
-```bash
-# Install dependencies
-npm install
-
-# Watch for changes (development)
-npm run watch
-
-# Run linting
-npm run lint
-
-# Build extension
-npm run compile
-
-# Package extension
-npm run package
-
-# Create VSIX package
-npm run vsix
-```
-
-### Testing
-
-```bash
-# Run tests
-npm test
-
-# Compile tests
-npm run compile-tests
-
-# Watch tests
-npm run watch-tests
-```
-
-### Debugging
-
-1. Open the project in VS Code
-2. Run `npm run watch` in terminal
-3. Press `F5` to launch Extension Development Host
-4. Open any `.ipynb` file to test the extension
+- **🛠️ Development Guide**: [DEVELOPMENT.md](./DEVELOPMENT.md) - Setup, debugging, and architecture
+- **🤝 Contributing**: [CONTRIBUTING.md](./CONTRIBUTING.md) - How to contribute and code standards
+- **🚀 Release Process**: [RELEASE.md](./RELEASE.md) - Release workflow and roadmap
+- **📚 API Documentation**: [https://datalayer-desktop.netlify.app](https://datalayer-desktop.netlify.app) - Complete TypeScript API docs
 
 ## License
 

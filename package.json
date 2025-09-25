@@ -17,7 +17,8 @@
     "url": "https://github.com/datalayer/jupyter-vscode.git"
   },
   "engines": {
-    "vscode": "^1.98.0"
+    "vscode": "^1.98.0",
+    "node": ">=20.0.0 <21.0.0"
   },
   "main": "./dist/extension.js",
   "activationEvents": [],
@@ -314,7 +315,7 @@
   },
   "devDependencies": {
     "@types/mocha": "^10.0.10",
-    "@types/node": "^22.14.1",
+    "@types/node": "^20.14.0",
     "@types/react": "18.3.20",
     "@types/react-dom": "18.3.6",
     "@types/uuid": "^8.3.4",
