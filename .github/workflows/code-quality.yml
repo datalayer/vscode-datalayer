@@ -4,21 +4,21 @@ on:
   push:
     branches: [main]
     paths:
-      - 'src/**'
-      - 'webview/**'
-      - '*.json'
-      - '*.js'
-      - '*.ts'
-      - '.github/workflows/code-quality.yml'
+      - "src/**"
+      - "webview/**"
+      - "*.json"
+      - "*.js"
+      - "*.ts"
+      - ".github/workflows/code-quality.yml"
   pull_request:
     branches: [main]
     paths:
-      - 'src/**'
-      - 'webview/**'
-      - '*.json'
-      - '*.js'
-      - '*.ts'
-      - '.github/workflows/code-quality.yml'
+      - "src/**"
+      - "webview/**"
+      - "*.json"
+      - "*.js"
+      - "*.ts"
+      - ".github/workflows/code-quality.yml"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -38,7 +38,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v5
         with:
-          node-version: '20'
+          node-version: "20"
 
       - name: Install dependencies
         run: npm install

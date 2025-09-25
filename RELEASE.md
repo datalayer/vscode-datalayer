@@ -58,6 +58,7 @@ Before release, test the extension thoroughly:
 #### Manual Publishing
 
 1. **Build Package**:
+
    ```bash
    npm run vsix
    ```
@@ -138,6 +139,7 @@ We follow [Semantic Versioning](https://semver.org/):
 ## Release History
 
 ### v0.0.2 (Current)
+
 - Complete VS Code theme integration
 - Spaces tree view with document management
 - Lexical editor for rich text documents
@@ -145,20 +147,22 @@ We follow [Semantic Versioning](https://semver.org/):
 - Authentication system with GitHub enrichment
 
 ### v0.0.1 (Initial Release)
+
 - Basic notebook editing functionality
 - Jupyter kernel integration
 - Custom VS Code editor provider
 
 ## Compatibility Matrix
 
-| Extension Version | VS Code Version | Node.js Version | Status |
-|-------------------|-----------------|-----------------|--------|
-| 0.0.2 | ^1.98.0 | >= 20.0.0 | Current |
-| 0.0.1 | ^1.95.0 | >= 18.0.0 | Deprecated |
+| Extension Version | VS Code Version | Node.js Version | Status     |
+| ----------------- | --------------- | --------------- | ---------- |
+| 0.0.2             | ^1.98.0         | >= 20.0.0       | Current    |
+| 0.0.1             | ^1.95.0         | >= 18.0.0       | Deprecated |
 
 ## Breaking Changes
 
 ### v0.0.2
+
 - Minimum VS Code version increased to 1.98.0
 - Node.js 20+ required for development
 - Configuration property names changed (see migration guide)

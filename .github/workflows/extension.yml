@@ -4,19 +4,19 @@ on:
   push:
     branches: [main]
     paths:
-      - 'src/**'
-      - 'webview/**'
-      - 'package.json'
-      - 'webpack.config.js'
-      - '.github/workflows/extension.yml'
+      - "src/**"
+      - "webview/**"
+      - "package.json"
+      - "webpack.config.js"
+      - ".github/workflows/extension.yml"
   pull_request:
     branches: [main]
     paths:
-      - 'src/**'
-      - 'webview/**'
-      - 'package.json'
-      - 'webpack.config.js'
-      - '.github/workflows/extension.yml'
+      - "src/**"
+      - "webview/**"
+      - "package.json"
+      - "webpack.config.js"
+      - ".github/workflows/extension.yml"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -30,7 +30,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
-        node-version: ['20']
+        node-version: ["20"]
 
     steps:
       - name: Checkout repository
@@ -72,7 +72,7 @@ jobs:
         uses: actions/upload-artifact@v5
         with:
           name: extension-${{ matrix.os }}-node${{ matrix.node-version }}
-          path: '*.vsix'
+          path: "*.vsix"
           retention-days: 30
 
   test-installation:

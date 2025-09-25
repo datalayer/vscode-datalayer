@@ -326,7 +326,9 @@ export function createThemeFromVSCode(): Extension {
  */
 function isColorDark(color: string): boolean {
   // Default to dark if we can't determine
-  if (!color) return true;
+  if (!color) {
+    return true;
+  }
 
   // Parse RGB values
   let r = 0,

@@ -3,20 +3,22 @@
 [![Become a Sponsor](https://img.shields.io/static/v1?label=Become%20a%20Sponsor&message=%E2%9D%A4&logo=GitHub&style=flat&color=1ABC9C)](https://github.com/sponsors/datalayer)
 
 ## Project Status
+
 [![Build Status](https://github.com/datalayer/jupyter-vscode/actions/workflows/extension.yml/badge.svg)](https://github.com/datalayer/jupyter-vscode/actions/workflows/extension.yml)
 [![Netlify Status](https://api.netlify.com/api/v1/badges/d73cd7a0-952b-405e-9e94-63d00ce01320/deploy-status)](https://app.netlify.com/sites/datalayer-desktop/deploys)
-[![Documentation](https://img.shields.io/badge/docs-TypeDoc-blue.svg)](https://datalayer-desktop.netlify.app)
+[![Documentation](https://img.shields.io/badge/docs-TypeDoc-blue.svg)](https://vscode-datalayer.netlify.app)
 [![VS Code Marketplace](https://img.shields.io/visual-studio-marketplace/v/datalayer.datalayer-jupyter-vscode?label=VS%20Code%20Marketplace&logo=visual-studio-code)](https://marketplace.visualstudio.com/items?itemName=datalayer.datalayer-jupyter-vscode)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 ## Built With
+
 [![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=flat&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![React](https://img.shields.io/badge/React-61DAFB?style=flat&logo=react&logoColor=black)](https://reactjs.org/)
 [![Jupyter](https://img.shields.io/badge/Jupyter-F37626?style=flat&logo=jupyter&logoColor=white)](https://jupyter.org/)
 
-# Jupyter Notebook for Visual Studio Code
+# Datalayer for Visual Studio Code
 
-This [Visual Studio Code](https://code.visualstudio.com) extension allows you to edit [Jupyter](https://jupyter.org) Notebooks files (`ipynb` extensions) with seamless integration to the [Datalayer](https://datalayer.io) platform. The extension is publicly available in the [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=datalayer.datalayer-jupyter-vscode).
+This [Visual Studio Code](https://code.visualstudio.com) extension enables you to edit and collaborate on [Jupyter](https://jupyter.org) Notebooks (`.ipynb` files) and Lexical documents (`.lexical` files) with seamless integration to the [Datalayer](https://datalayer.io) platform. The extension supports real-time collaborative editing for both document types, allowing multiple users to work together simultaneously. Available in the [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=datalayer.datalayer-jupyter-vscode).
 
 <img src="https://jupyter-examples.datalayer.tech/jupyter-react-vscode.gif" />
 
@@ -24,29 +26,7 @@ This [Visual Studio Code](https://code.visualstudio.com) extension allows you to
 
 The extension now features **complete VS Code theme integration** for a native development experience:
 
-### Theme Features
-
-- **🎯 Perfect Theme Matching**: Notebook cells automatically match your VS Code theme colors
-- **🖌️ Syntax Highlighting**: CodeMirror editors use VS Code's exact syntax colors for all languages
-- **🌓 Auto Theme Switching**: Seamlessly adapts when you change VS Code themes
-- **📱 Native Toolbar**: VS Code-style toolbar with codicon icons for notebook operations
-- **🎨 Background Harmony**: Eliminates visual gaps with proper background color inheritance
-- **💾 Cell Backgrounds**: Code cells use VS Code's native notebook cell editor background
-
-### Supported VS Code Themes
-
-Works perfectly with all VS Code themes including:
-
-- Dark+ (default dark)
-- Light+ (default light)
-- Monokai
-- Solarized Dark/Light
-- Dracula
-- One Dark Pro
-- Material Theme variants
-- And all other VS Code themes!
-
-## Working Features
+## Features
 
 - **Notebook Operations**: Load, display, and run Jupyter Notebooks with full kernel support
 - **VS Code Theme Integration**: Perfect visual harmony with your VS Code environment
@@ -92,28 +72,21 @@ The extension provides a tree view in the Explorer sidebar that displays all you
 - **Default Space**: Marks your default space with "(Default)" label
 - **Real-time Updates**: Refreshes when authentication state changes
 - **Error Handling**: Shows helpful messages when not authenticated or when spaces are empty
-- **Space Management**: Create new spaces directly from the tree view
 - **Document Creation**: Create notebooks and lexical documents within any space
 - **Item Management**: Rename and delete documents with API synchronization
 
 ### Tree Structure
 
 ```
-Datalayer (@username) [+]
+Datalayer (@username)
 ├── My Library (Default) [📓] [📄]
 │   ├── notebook1.ipynb
 │   ├── document1.lexical
 │   └── notebook2.ipynb
-├── Project Space [📓] [📄]
-│   ├── analysis.ipynb
-│   └── notes.lexical
-└── Shared Space [📓] [📄]
-    └── collaboration.ipynb
 ```
 
 **Legend:**
 
-- `[+]` - Create new space
 - `[📓]` - Create new notebook
 - `[📄]` - Create new lexical document
 
@@ -210,14 +183,13 @@ Install the extension from the [VS Code Marketplace](https://marketplace.visuals
 3. Click "Install"
 
 Alternatively, install from a `.vsix` file:
+
 1. Download the latest `.vsix` from our [releases](https://github.com/datalayer/jupyter-vscode/releases)
 2. In VS Code: `Ctrl+Shift+P` → "Extensions: Install from VSIX..."
 3. Select the downloaded file
 
 ## Known Limitations
 
-- **Save Functionality**: Saving notebooks back to Datalayer platform is not yet implemented
-- **Dirty State Indicator**: No UI feedback when documents have unsaved changes
 - **WebSocket Protocol**: Uses older Jupyter protocol due to serialization constraints between webview and extension
 
 ## Developer Resources
@@ -225,7 +197,7 @@ Alternatively, install from a `.vsix` file:
 - **🛠️ Development Guide**: [DEVELOPMENT.md](./DEVELOPMENT.md) - Setup, debugging, and architecture
 - **🤝 Contributing**: [CONTRIBUTING.md](./CONTRIBUTING.md) - How to contribute and code standards
 - **🚀 Release Process**: [RELEASE.md](./RELEASE.md) - Release workflow and roadmap
-- **📚 API Documentation**: [https://datalayer-desktop.netlify.app](https://datalayer-desktop.netlify.app) - Complete TypeScript API docs
+- **📚 API Documentation**: [https://vscode-datalayer.netlify.app](https://vscode-datalayer.netlify.app) - Complete TypeScript API docs
 
 ## License
 

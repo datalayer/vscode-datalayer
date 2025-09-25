@@ -55,17 +55,20 @@ The project includes comprehensive GitHub Actions workflows that run on every PR
 ### Automated Workflows
 
 #### Extension Build & Test
+
 - **Platforms**: Multi-platform build (Windows, macOS, Linux)
 - **Artifacts**: Generates `.vsix` extension packages for all platforms
 - **Testing**: Verifies extension packaging and installation
 
 #### Code Quality
+
 - **Linting**: Automated ESLint checks with zero-tolerance for errors
 - **Formatting**: Prettier formatting validation
 - **Console.log Detection**: Warns about console.log statements in source code
 - **Import Ordering**: Validates import statement organization
 
 #### Type Check
+
 - **TypeScript Compilation**: Verifies code compiles without errors
 - **Strict Mode**: Checks compatibility with strict TypeScript settings
 - **Declaration Files**: Tests TypeScript declaration generation
@@ -104,7 +107,7 @@ The editor is encapsulated within an iframe. All communications between the edit
 
 - **Development Guide**: [DEVELOPMENT.md](./DEVELOPMENT.md)
 - **Release Process**: [RELEASE.md](./RELEASE.md)
-- **API Documentation**: [https://datalayer-desktop.netlify.app](https://datalayer-desktop.netlify.app)
+- **API Documentation**: [https://vscode-datalayer.netlify.app](https://vscode-datalayer.netlify.app)
 
 ### Communication
 

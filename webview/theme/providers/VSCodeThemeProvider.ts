@@ -345,7 +345,9 @@ export class VSCodeThemeProvider extends BaseThemeProvider {
    */
   private lightenDarkenColor(color: string, amount: number): string {
     const rgb = this.parseColor(color);
-    if (!rgb) return color;
+    if (!rgb) {
+      return color;
+    }
 
     // Adjust each component
     const adjust = (value: number) => {

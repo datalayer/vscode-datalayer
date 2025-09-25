@@ -95,7 +95,7 @@ npm run doc:coverage
 
 ### Online Documentation
 
-**Live Documentation**: [https://datalayer-desktop.netlify.app](https://datalayer-desktop.netlify.app)
+**Live Documentation**: [https://vscode-datalayer.netlify.app](https://vscode-datalayer.netlify.app)
 
 The documentation is automatically built and deployed on every push to the main branch using Netlify. It includes:
 
