@@ -13,6 +13,12 @@ Press F5 in VS Code to launch Extension Development Host
 # Build & Package
 npm run compile
 npm run vsix
+
+# Production Build (Electron Desktop App)
+# From desktop directory:
+npm run build
+npm run dist:mac  # Builds universal macOS app
+# Note: Post-build script automatically fixes CSS import issues
 ```
 
 ## Architecture Overview
@@ -168,6 +174,10 @@ npm run doc        # Documentation
 2. **Theme not matching**: Verify VSCodeThemeProvider is active
 3. **Syntax highlighting missing**: Check patch-vscode-highlighting.js ran during build
 4. **Black backgrounds**: Enhanced theme provider should inject CSS fixes
+5. **Module specifier error for @primer/react-brand CSS**:
+   - Error: `Failed to resolve module specifier "@primer/react-brand/lib/css/main.css"`
+   - Fix: Run post-build script to remove problematic CSS imports from bundled JS files
+   - The fix-production-bundle.js script automatically handles this during build
 
 ### Debug Commands
 
@@ -184,6 +194,8 @@ npm run doc        # Documentation
 - ✅ Comprehensive TypeDoc documentation
 - ✅ Four separate CI/CD workflows for quality assurance
 - ✅ Virtual file system for Datalayer documents
+- ✅ Production build CSS import fix for @primer/react-brand
+- ✅ Post-build script to remove problematic module specifiers
 
 ## Version
 
