@@ -1,4 +1,4 @@
-name: VSCode - Type Check
+name: Type Check
 
 on:
   push:
@@ -9,7 +9,7 @@ on:
       - '*.ts'
       - '*.tsx'
       - 'tsconfig*.json'
-      - '.github/workflows/vscode-type-check.yml'
+      - '.github/workflows/type-check.yml'
   pull_request:
     branches: [main]
     paths:
@@ -18,7 +18,7 @@ on:
       - '*.ts'
       - '*.tsx'
       - 'tsconfig*.json'
-      - '.github/workflows/vscode-type-check.yml'
+      - '.github/workflows/type-check.yml'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -31,12 +31,12 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           fetch-depth: 0
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: '20'
 

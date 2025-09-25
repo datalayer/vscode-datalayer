@@ -1,4 +1,4 @@
-name: VSCode - Extension Build & Test
+name: Extension Build & Test
 
 on:
   push:
@@ -8,7 +8,7 @@ on:
       - 'webview/**'
       - 'package.json'
       - 'webpack.config.js'
-      - '.github/workflows/vscode-extension.yml'
+      - '.github/workflows/extension.yml'
   pull_request:
     branches: [main]
     paths:
@@ -16,7 +16,7 @@ on:
       - 'webview/**'
       - 'package.json'
       - 'webpack.config.js'
-      - '.github/workflows/vscode-extension.yml'
+      - '.github/workflows/extension.yml'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -34,12 +34,12 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           fetch-depth: 0
 
       - name: Setup Node.js ${{ matrix.node-version }}
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: ${{ matrix.node-version }}
 
@@ -69,10 +69,10 @@ jobs:
         shell: bash
 
       - name: Upload VS Code extension artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
-          name: vscode-extension-${{ matrix.os }}-node${{ matrix.node-version }}
-          path: packages/vscode/*.vsix
+          name: extension-${{ matrix.os }}-node${{ matrix.node-version }}
+          path: '*.vsix'
           retention-days: 30
 
   test-installation:
@@ -83,7 +83,7 @@ jobs:
       - name: Download extension artifact
         uses: actions/download-artifact@v4
         with:
-          name: vscode-extension-ubuntu-latest-node20
+          name: extension-ubuntu-latest-node20
           path: ./artifacts
 
       - name: List downloaded artifacts

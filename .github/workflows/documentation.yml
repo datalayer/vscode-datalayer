@@ -1,4 +1,4 @@
-name: VSCode - Documentation
+name: Documentation
 
 on:
   push:
@@ -8,7 +8,7 @@ on:
       - 'webview/**'
       - '*.md'
       - 'typedoc.json'
-      - '.github/workflows/vscode-documentation.yml'
+      - '.github/workflows/documentation.yml'
   pull_request:
     branches: [main]
     paths:
@@ -16,7 +16,7 @@ on:
       - 'webview/**'
       - '*.md'
       - 'typedoc.json'
-      - '.github/workflows/vscode-documentation.yml'
+      - '.github/workflows/documentation.yml'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -29,12 +29,12 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           fetch-depth: 0
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: '20'
 
@@ -87,7 +87,7 @@ jobs:
           fi
 
       - name: Upload HTML documentation artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: vscode-docs-html
           path: docs/
@@ -95,7 +95,7 @@ jobs:
           if-no-files-found: error
 
       - name: Upload Markdown documentation artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: vscode-docs-markdown
           path: docs-markdown/

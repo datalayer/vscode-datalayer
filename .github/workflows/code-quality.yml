@@ -1,4 +1,4 @@
-name: VSCode - Code Quality
+name: Code Quality
 
 on:
   push:
@@ -9,7 +9,7 @@ on:
       - '*.json'
       - '*.js'
       - '*.ts'
-      - '.github/workflows/vscode-code-quality.yml'
+      - '.github/workflows/code-quality.yml'
   pull_request:
     branches: [main]
     paths:
@@ -18,7 +18,7 @@ on:
       - '*.json'
       - '*.js'
       - '*.ts'
-      - '.github/workflows/vscode-code-quality.yml'
+      - '.github/workflows/code-quality.yml'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -31,12 +31,12 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           fetch-depth: 0
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: '20'
 
