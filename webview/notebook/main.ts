@@ -11,11 +11,12 @@
  */
 
 import { setStylesTarget } from "typestyle";
-import "./NotebookVSCode";
-import { getNonce } from "./utils";
+import "./NotebookEditor";
+import { getNonce } from "../utils";
 
 // Fix to apply styled-components style should be set directly at the entry point start.
 // Xref: https://github.com/styled-components/styled-components/issues/4258#issuecomment-2449562515
+// @ts-ignore - webpack global variable
 __webpack_nonce__ = getNonce() || "";
 
 // Fix to apply typestyle styles

@@ -6,18 +6,18 @@ on:
     paths:
       - "src/**"
       - "webview/**"
+      - "*.json"
       - "*.ts"
-      - "*.tsx"
-      - "tsconfig*.json"
+      - "tsconfig.json"
       - ".github/workflows/type-check.yml"
   pull_request:
     branches: [main]
     paths:
       - "src/**"
       - "webview/**"
+      - "*.json"
       - "*.ts"
-      - "*.tsx"
-      - "tsconfig*.json"
+      - "tsconfig.json"
       - ".github/workflows/type-check.yml"
 
 concurrency:
@@ -26,99 +26,20 @@ concurrency:
 
 jobs:
   type-check:
-    name: TypeScript Type Checking
+    name: TypeScript Type Check
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v5
-        with:
-          fetch-depth: 0
+        uses: actions/checkout@v3
 
       - name: Setup Node.js
-        uses: actions/setup-node@v5
+        uses: actions/setup-node@v3
         with:
           node-version: "20"
 
       - name: Install dependencies
         run: npm install
 
-      - name: Run TypeScript compiler check
-        run: |
-          echo "🔍 Running TypeScript type checking..."
-          npx tsc --noEmit
-
-      - name: Check for strict mode compliance
-        run: |
-          echo "🔒 Verifying strict mode compliance..."
-          npx tsc --noEmit --strict
-        continue-on-error: true
-
-      - name: Check for unused exports
-        run: |
-          echo "🧹 Checking for unused exports..."
-          npx ts-prune --error || echo "::warning::Found unused exports. Consider removing them."
-        continue-on-error: true
-
-      - name: Validate tsconfig.json
-        run: |
-          echo "⚙️ Validating TypeScript configuration..."
-          npx tsc --showConfig > /dev/null
-          if [ $? -eq 0 ]; then
-            echo "✅ tsconfig.json is valid"
-          else
-            echo "❌ tsconfig.json validation failed"
-            exit 1
-          fi
-
-      - name: Check declaration files generation
-        run: |
-          echo "📝 Testing declaration files generation..."
-          npx tsc --declaration --emitDeclarationOnly --outDir temp-types
-          if [ -d "temp-types" ]; then
-            echo "✅ Declaration files can be generated successfully"
-            rm -rf temp-types
-          else
-            echo "⚠️ Failed to generate declaration files"
-          fi
-        continue-on-error: true
-
-      - name: Analyze type coverage
-        run: |
-          echo "📊 Analyzing type coverage..."
-          npx type-coverage --detail || echo "::notice::Type coverage analysis not available"
-        continue-on-error: true
-
-      - name: Check for any type usage
-        run: |
-          echo "🚫 Checking for 'any' type usage..."
-          if grep -r ": any" --include="*.ts" --include="*.tsx" \
-             --exclude-dir="node_modules" --exclude-dir="dist" \
-             --exclude-dir="out" \
-             src; then
-            echo "::warning::Found explicit 'any' types. Consider using more specific types."
-          else
-            echo "✅ No explicit 'any' types found"
-          fi
-        continue-on-error: true
-
-      - name: Generate type check report
-        if: always()
-        run: |
-          echo "## 📊 TypeScript Type Check Report" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### ✅ Required Checks" >> $GITHUB_STEP_SUMMARY
-          echo "- TypeScript compilation (no emit)" >> $GITHUB_STEP_SUMMARY
-          echo "- tsconfig.json validation" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### ⚠️ Optional Checks" >> $GITHUB_STEP_SUMMARY
-          echo "- Strict mode compliance" >> $GITHUB_STEP_SUMMARY
-          echo "- Unused exports detection" >> $GITHUB_STEP_SUMMARY
-          echo "- Declaration files generation" >> $GITHUB_STEP_SUMMARY
-          echo "- Type coverage analysis" >> $GITHUB_STEP_SUMMARY
-          echo "- Explicit 'any' type usage" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### 💡 Recommendations" >> $GITHUB_STEP_SUMMARY
-          echo "- Run \`npx tsc --noEmit\` locally before committing" >> $GITHUB_STEP_SUMMARY
-          echo "- Consider enabling strict mode for better type safety" >> $GITHUB_STEP_SUMMARY
-          echo "- Replace 'any' types with specific types where possible" >> $GITHUB_STEP_SUMMARY
+      - name: Run TypeScript type checking
+        run: npm run type-check

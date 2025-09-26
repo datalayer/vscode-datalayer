@@ -4,10 +4,10 @@
 
 ## Project Status
 
-[![Build Status](https://github.com/datalayer/jupyter-vscode/actions/workflows/extension.yml/badge.svg)](https://github.com/datalayer/jupyter-vscode/actions/workflows/extension.yml)
+[![Build Status](https://github.com/datalayer/vscode-datalayer/actions/workflows/build-extension.yml/badge.svg)](https://github.com/datalayer/vscode-datalayer/actions/workflows/build-extension.yml)
 [![Netlify Status](https://api.netlify.com/api/v1/badges/d73cd7a0-952b-405e-9e94-63d00ce01320/deploy-status)](https://app.netlify.com/sites/datalayer-desktop/deploys)
 [![Documentation](https://img.shields.io/badge/docs-TypeDoc-blue.svg)](https://vscode-datalayer.netlify.app)
-[![VS Code Marketplace](https://img.shields.io/visual-studio-marketplace/v/datalayer.datalayer-jupyter-vscode?label=VS%20Code%20Marketplace&logo=visual-studio-code)](https://marketplace.visualstudio.com/items?itemName=datalayer.datalayer-jupyter-vscode)
+[![VS Code Marketplace](https://img.shields.io/visual-studio-marketplace/v/datalayer.datalayer-vscode-datalayer?label=VS%20Code%20Marketplace&logo=visual-studio-code)](https://marketplace.visualstudio.com/items?itemName=datalayer.datalayer-vscode-datalayer)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 ## Built With
@@ -18,7 +18,7 @@
 
 # Datalayer for Visual Studio Code
 
-This [Visual Studio Code](https://code.visualstudio.com) extension enables you to edit and collaborate on [Jupyter](https://jupyter.org) Notebooks (`.ipynb` files) and Lexical documents (`.lexical` files) with seamless integration to the [Datalayer](https://datalayer.io) platform. The extension supports real-time collaborative editing for both document types, allowing multiple users to work together simultaneously. Available in the [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=datalayer.datalayer-jupyter-vscode).
+This [Visual Studio Code](https://code.visualstudio.com) extension enables you to edit and collaborate on [Jupyter](https://jupyter.org) Notebooks (`.ipynb` files) and Lexical documents (`.lexical` files) with seamless integration to the [Datalayer](https://datalayer.io) platform. The extension supports real-time collaborative editing for both document types, allowing multiple users to work together simultaneously. Available in the [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=datalayer.datalayer-vscode-datalayer).
 
 <img src="https://jupyter-examples.datalayer.tech/jupyter-react-vscode.gif" />
 
@@ -176,7 +176,7 @@ The extension automatically manages Datalayer runtimes for notebook execution:
 
 ## Installation
 
-Install the extension from the [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=datalayer.datalayer-jupyter-vscode) or:
+Install the extension from the [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=datalayer.datalayer-vscode-datalayer) or:
 
 1. Press `Ctrl+Shift+X` (or `Cmd+Shift+X` on Mac) to open Extensions
 2. Search for "Datalayer Platform"
@@ -184,7 +184,7 @@ Install the extension from the [VS Code Marketplace](https://marketplace.visuals
 
 Alternatively, install from a `.vsix` file:
 
-1. Download the latest `.vsix` from our [releases](https://github.com/datalayer/jupyter-vscode/releases)
+1. Download the latest `.vsix` from our [releases](https://github.com/datalayer/vscode-datalayer/releases)
 2. In VS Code: `Ctrl+Shift+P` → "Extensions: Install from VSIX..."
 3. Select the downloaded file
 

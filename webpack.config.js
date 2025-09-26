@@ -11,6 +11,7 @@
 const path = require("path");
 const webpack = require("webpack");
 const miniSVGDataURI = require("mini-svg-data-uri");
+const CopyPlugin = require("copy-webpack-plugin");
 
 //@ts-check
 /** @typedef {import('webpack').Configuration} WebpackConfig **/
@@ -59,7 +60,7 @@ const webviewConfig = {
   // Use inline source map to ease debug of webview
   // Xref. https://github.com/microsoft/vscode/issues/145292#issuecomment-1072879043
   devtool: "inline-source-map",
-  entry: "./webview/main.ts",
+  entry: "./webview/notebook/main.ts",
   output: {
     path: path.resolve(__dirname, "dist"),
     filename: "webview.js",
@@ -192,13 +193,25 @@ const webviewConfig = {
     new webpack.ProvidePlugin({
       process: "process/browser",
     }),
+    new CopyPlugin({
+      patterns: [
+        {
+          from: "node_modules/@vscode/codicons/dist/codicon.css",
+          to: "codicon.css",
+        },
+        {
+          from: "node_modules/@vscode/codicons/dist/codicon.ttf",
+          to: "codicon.ttf",
+        },
+      ],
+    }),
   ],
 };
 
 // Config for Lexical editor webview
 const lexicalWebviewConfig = {
   ...webviewConfig,
-  entry: "./webview/lexicalWebview.tsx",
+  entry: "./webview/lexical/lexicalWebview.tsx",
   output: {
     path: path.resolve(__dirname, "dist"),
     filename: "lexicalWebview.js",

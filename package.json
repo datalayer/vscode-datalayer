@@ -57,7 +57,7 @@
       },
       {
         "command": "datalayer.openDocument",
-        "title": "Open Document",
+        "title": "Open",
         "category": "Datalayer"
       },
       {
@@ -71,12 +71,6 @@
         "title": "New Lexical Document...",
         "category": "Datalayer",
         "icon": "$(file-text)"
-      },
-      {
-        "command": "datalayer.createSpace",
-        "title": "Create New Space",
-        "category": "Datalayer",
-        "icon": "$(add)"
       },
       {
         "command": "datalayer.renameItem",
@@ -128,11 +122,6 @@
           "command": "datalayer.refreshSpaces",
           "when": "view == datalayerSpaces",
           "group": "navigation@1"
-        },
-        {
-          "command": "datalayer.createSpace",
-          "when": "view == datalayerSpaces",
-          "group": "navigation@2"
         }
       ],
       "view/item/context": [
@@ -160,11 +149,6 @@
           "command": "datalayer.createLexicalInSpace",
           "when": "view == datalayerSpaces && viewItem == space",
           "group": "1_create"
-        },
-        {
-          "command": "datalayer.createSpace",
-          "when": "view == datalayerSpaces && viewItem == root",
-          "group": "inline"
         },
         {
           "command": "datalayer.createNotebookInSpace",
@@ -267,7 +251,13 @@
     "compile-tests": "tsc -p . --outDir out",
     "watch-tests": "tsc -p . -w --outDir out",
     "pretest": "npm run compile-tests && npm run compile && npm run lint",
-    "lint": "eslint src",
+    "format": "prettier --write 'src/**/*.{ts,tsx,js,jsx,json,css,md}' 'webview/**/*.{ts,tsx,js,jsx,json,css,md}' '*.{js,json,md}' 'tsconfig*.json' '.vscode/*.json' '.github/workflows/*.yml'",
+    "format:check": "prettier --check 'src/**/*.{ts,tsx,js,jsx,json,css,md}' 'webview/**/*.{ts,tsx,js,jsx,json,css,md}' '*.{js,json,md}' 'tsconfig*.json' '.vscode/*.json' '.github/workflows/*.yml'",
+    "lint": "eslint src webview",
+    "lint:fix": "eslint src webview --fix",
+    "type-check": "tsc --noEmit",
+    "check": "npm run format:check && npm run lint && npm run type-check",
+    "check:fix": "npm run format && npm run lint:fix && npm run type-check",
     "test": "vscode-test",
     "vsix": "npx @vscode/vsce package --no-yarn --no-dependencies",
     "doc": "typedoc",
@@ -283,7 +273,6 @@
     "@codemirror/search": "^6.5.11",
     "@codemirror/state": "^6.5.2",
     "@codemirror/view": "^6.38.3",
-    "codemirror": "^6.0.2",
     "@datalayer/core": "^0.0.12",
     "@datalayer/jupyter-react": "^1.1.6",
     "@datalayer/lexical-loro": "^0.1.0",
@@ -304,6 +293,7 @@
     "@lumino/signaling": "^2.1.1",
     "@primer/react": "^37.19.0",
     "@vscode/codicons": "^0.0.40",
+    "codemirror": "^6.0.2",
     "lexical": "^0.35.0",
     "react": "18.3.1",
     "react-dom": "18.3.1",
@@ -326,6 +316,7 @@
     "@vscode/test-cli": "^0.0.10",
     "@vscode/test-electron": "^2.4.1",
     "@vscode/vsce": "^3.3.2",
+    "copy-webpack-plugin": "^13.0.1",
     "css-loader": "^5.1.3",
     "eslint": "^9.0.0",
     "mini-svg-data-uri": "^1.4.4",

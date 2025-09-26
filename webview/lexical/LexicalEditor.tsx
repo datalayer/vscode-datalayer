@@ -30,7 +30,10 @@ import { LinkNode, AutoLinkNode } from "@lexical/link";
 import { ListPlugin } from "@lexical/react/LexicalListPlugin";
 import { LinkPlugin } from "@lexical/react/LexicalLinkPlugin";
 import { LexicalToolbar } from "./LexicalToolbar";
-import { LoroCollaborationPlugin } from "@datalayer/lexical-loro";
+import {
+  createWebsocketProvider,
+  LoroCollaborationPlugin,
+} from "@datalayer/lexical-loro";
 
 /**
  * Collaboration configuration for Lexical documents
@@ -369,8 +372,16 @@ export function LexicalEditor({
             collaboration.websocketUrl &&
             collaboration.documentId && (
               <LoroCollaborationPlugin
+                id={collaboration.sessionId || collaboration.documentId}
+                shouldBootstrap
+                providerFactory={createWebsocketProvider}
                 websocketUrl={collaboration.websocketUrl}
-                docId={collaboration.sessionId || collaboration.documentId}
+                onInitialization={(isInitialized) => {
+                  console.log(
+                    "[LexicalEditor] Collaboration initialized:",
+                    isInitialized
+                  );
+                }}
               />
             )}
         </div>

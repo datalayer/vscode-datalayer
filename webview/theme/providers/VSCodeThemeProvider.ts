@@ -922,6 +922,145 @@ export class VSCodeThemeProvider extends BaseThemeProvider {
   }
 
   /**
+   * Generate cell sidebar CSS to match VS Code theme
+   *
+   * @returns CSS string with sidebar styling rules
+   */
+  public getSidebarCSS(): string {
+    return `
+      /* Datalayer Cell Sidebar Styling to match VS Code theme */
+      .dla-CellSidebar-Container {
+        background-color: var(--vscode-editor-background) !important;
+        color: var(--vscode-foreground) !important;
+        font-family: var(--vscode-font-family) !important;
+        font-size: 13px !important;
+        font-weight: 400 !important;
+        -webkit-font-smoothing: antialiased !important;
+        -moz-osx-font-smoothing: grayscale !important;
+      }
+
+      .dla-CellSidebar-Container * {
+        color: var(--vscode-foreground) !important;
+        font-weight: 400 !important;
+        opacity: 1 !important;
+        -webkit-font-smoothing: antialiased !important;
+      }
+
+      .dla-CellSidebar-Container button {
+        background-color: transparent !important;
+        color: var(--vscode-foreground) !important;
+        border: none !important;
+        font-family: var(--vscode-font-family) !important;
+        font-size: 13px !important;
+        font-weight: 400 !important;
+        padding: 4px 8px !important;
+        width: 100% !important;
+        text-align: left !important;
+        cursor: pointer !important;
+        transition: background-color 0.1s !important;
+      }
+
+      /* Ensure text within buttons has correct color and weight */
+      .dla-CellSidebar-Container button span,
+      .dla-CellSidebar-Container button div,
+      .dla-CellSidebar-Container button p {
+        color: var(--vscode-foreground) !important;
+        font-weight: 400 !important;
+        opacity: 1 !important;
+      }
+
+      .dla-CellSidebar-Container button:hover {
+        background-color: var(--vscode-list-hoverBackground) !important;
+      }
+
+      .dla-CellSidebar-Container button:hover span,
+      .dla-CellSidebar-Container button:hover div {
+        color: var(--vscode-foreground) !important;
+      }
+
+      .dla-CellSidebar-Container button:active,
+      .dla-CellSidebar-Container button:focus {
+        background-color: var(--vscode-list-activeSelectionBackground) !important;
+        color: var(--vscode-list-activeSelectionForeground) !important;
+        outline: none !important;
+      }
+
+      /* Cell sidebar icons */
+      .dla-CellSidebar-Container button .codicon {
+        margin-right: 6px !important;
+        font-size: 14px !important;
+        vertical-align: middle !important;
+        color: inherit !important;
+      }
+
+      /* Also target any jp-SidePanel if it exists */
+      .jp-SidePanel {
+        background-color: var(--vscode-editor-background) !important;
+        color: var(--vscode-foreground) !important;
+        font-family: var(--vscode-font-family) !important;
+        font-size: 13px !important;
+        font-weight: 400 !important;
+      }
+
+      .jp-SidePanel button {
+        font-weight: 400 !important;
+        color: var(--vscode-foreground) !important;
+        opacity: 1 !important;
+      }
+
+      /* Cell drag and drop indicator to match VS Code theme */
+      .jp-Notebook .jp-dragImage {
+        border-top: 2px solid var(--vscode-editorWidget-border) !important;
+        opacity: 0.8 !important;
+      }
+
+      .jp-Notebook .jp-dropTarget {
+        border-top: 2px solid var(--vscode-focusBorder) !important;
+        opacity: 1 !important;
+      }
+
+      /* Cell drag placeholder line - use VS Code's accent color */
+      .jp-Notebook .jp-mod-dropTarget {
+        border-top: 2px solid var(--vscode-focusBorder) !important;
+        border-bottom: none !important;
+        opacity: 1 !important;
+      }
+
+      /* Override JupyterLab's blue drag indicators */
+      .jp-Notebook.jp-mod-dropTarget .jp-Notebook-cell.jp-mod-dropTarget {
+        border-top-color: var(--vscode-focusBorder) !important;
+        border-top-width: 2px !important;
+      }
+
+      /* Cell selection and active borders */
+      .jp-Notebook .jp-Cell.jp-mod-selected {
+        border-color: var(--vscode-focusBorder) !important;
+      }
+
+      .jp-Notebook .jp-Cell.jp-mod-active {
+        border-color: var(--vscode-focusBorder) !important;
+      }
+
+      /* Override any hardcoded blue colors in drag/drop */
+      .jp-Notebook .jp-Cell.jp-mod-dropTarget::before,
+      .jp-Notebook .jp-Cell.jp-mod-dropTarget::after {
+        border-color: var(--vscode-focusBorder) !important;
+        background-color: var(--vscode-focusBorder) !important;
+      }
+
+      /* Drag indicator line that appears between cells */
+      .jp-Notebook .jp-Cell-dropTarget {
+        border-top: 2px solid var(--vscode-focusBorder) !important;
+      }
+
+      .jp-Notebook .jp-Cell-dropTargetGhost {
+        opacity: 0.4 !important;
+        border: 2px dashed var(--vscode-focusBorder) !important;
+      }
+    `;
+  }
+
+  /**
    * Generate CodeMirror-specific CSS for syntax highlighting
    *
    * Creates CSS rules that map CodeMirror 6 token classes to VS Code theme colors.

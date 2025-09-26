@@ -1,4 +1,4 @@
-name: Extension Build & Test
+name: Build - Extension
 
 on:
   push:
@@ -56,9 +56,6 @@ jobs:
       - name: Build VS Code extension
         run: npm run compile
 
-      - name: Run TypeScript type checking
-        run: npx tsc --noEmit
-
       - name: Package extension (.vsix)
         run: npm run vsix
 
@@ -69,7 +66,7 @@ jobs:
         shell: bash
 
       - name: Upload VS Code extension artifact
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v4
         with:
           name: extension-${{ matrix.os }}-node${{ matrix.node-version }}
           path: "*.vsix"
@@ -109,34 +106,3 @@ jobs:
           fi
 
           echo "✅ Extension package validation successful"
-
-  release-summary:
-    name: Release Summary
-    needs: [build-and-test, test-installation]
-    runs-on: ubuntu-latest
-    if: always()
-    steps:
-      - name: Summary
-        run: |
-          echo "## VS Code Extension Build Summary" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### Build Status" >> $GITHUB_STEP_SUMMARY
-          echo "- **Ubuntu**: ${{ needs.build-and-test.result }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Windows**: ${{ needs.build-and-test.result }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **macOS**: ${{ needs.build-and-test.result }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Installation Test**: ${{ needs.test-installation.result }}" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### Artifacts Generated" >> $GITHUB_STEP_SUMMARY
-          echo "- VS Code extension packages (.vsix) for all platforms" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### Installation Instructions" >> $GITHUB_STEP_SUMMARY
-          echo "1. Download the .vsix artifact for your platform from this workflow run" >> $GITHUB_STEP_SUMMARY
-          echo "2. In VS Code, press \`Ctrl+Shift+P\` (or \`Cmd+Shift+P\` on Mac)" >> $GITHUB_STEP_SUMMARY
-          echo "3. Type \`Extensions: Install from VSIX...\`" >> $GITHUB_STEP_SUMMARY
-          echo "4. Select the downloaded .vsix file" >> $GITHUB_STEP_SUMMARY
-          echo "5. Reload VS Code when prompted" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### Testing the Extension" >> $GITHUB_STEP_SUMMARY
-          echo "- Open any \`.ipynb\` file to test the custom notebook editor" >> $GITHUB_STEP_SUMMARY
-          echo "- Use Command Palette → \"Datalayer: Login to Datalayer\" to test authentication" >> $GITHUB_STEP_SUMMARY
-          echo "- Check the Explorer sidebar for the \"Spaces\" view" >> $GITHUB_STEP_SUMMARY

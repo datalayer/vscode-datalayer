@@ -584,6 +584,10 @@ export class LexicalEditorProvider
         "LexicalEditor.css"
       )
     );
+    // Get the codicon CSS file from dist folder
+    const codiconCssUri = webview.asWebviewUri(
+      vscode.Uri.joinPath(this._context.extensionUri, "dist", "codicon.css")
+    );
     // Get base URI for loading additional resources like WASM
     const distUri = webview.asWebviewUri(
       vscode.Uri.joinPath(this._context.extensionUri, "dist")
@@ -596,9 +600,10 @@ export class LexicalEditorProvider
       <head>
         <meta charset="UTF-8">
         <base href="${distUri}/">
-        <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src ${webview.cspSource} blob:; style-src ${webview.cspSource} 'unsafe-inline'; script-src 'nonce-${nonce}' 'wasm-unsafe-eval' 'unsafe-eval'; connect-src ${webview.cspSource} https: wss: ws: data:; worker-src ${webview.cspSource} blob:;">
+        <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src ${webview.cspSource} blob:; style-src ${webview.cspSource} 'unsafe-inline'; font-src ${webview.cspSource}; script-src 'nonce-${nonce}' 'wasm-unsafe-eval' 'unsafe-eval'; connect-src ${webview.cspSource} https: wss: ws: data:; worker-src ${webview.cspSource} blob:;">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <link href="${styleUri}" rel="stylesheet">
+        <link href="${codiconCssUri}" rel="stylesheet">
         <title>Datalayer Lexical Editor</title>
         <script nonce="${nonce}">
           // Set webpack public path for dynamic imports and WASM loading

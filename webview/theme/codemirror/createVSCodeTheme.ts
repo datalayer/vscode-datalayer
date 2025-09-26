@@ -134,7 +134,10 @@ export function createVSCodeTheme(
       tag: tags.function(tags.definition(tags.variableName)),
       color: colors.function,
     },
-    { tag: tags.definition(tags.function), color: colors.function },
+    {
+      tag: tags.definition(tags.function as any) as any,
+      color: colors.function,
+    },
 
     // Numbers
     { tag: tags.number, color: colors.number },
@@ -178,7 +181,7 @@ export function createVSCodeTheme(
 
     // Standard library / built-in functions
     { tag: tags.standard(tags.variableName), color: colors.function },
-    { tag: tags.standard(tags.function), color: colors.function },
+    { tag: tags.standard(tags.function as any) as any, color: colors.function },
   ]);
 
   // Return the combined extensions

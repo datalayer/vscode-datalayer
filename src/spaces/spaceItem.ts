@@ -270,7 +270,7 @@ export class SpaceItem extends vscode.TreeItem {
     } else if (this.data.type === ItemType.DOCUMENT && this.data.document) {
       return {
         command: "datalayer.openDocument",
-        title: "Open Document",
+        title: "Open",
         arguments: [this.data.document, this.data.spaceName],
       };
     } else if (this.data.type === ItemType.CELL && this.data.document) {

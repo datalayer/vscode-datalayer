@@ -41,7 +41,7 @@ import {
   $patchStyleText,
 } from "@lexical/selection";
 import { $getNearestNodeOfType } from "@lexical/utils";
-import { $isCodeNode, CODE_LANGUAGE_COMMAND } from "@lexical/code";
+import { $isCodeNode } from "@lexical/code";
 
 /**
  * Properties for individual toolbar buttons.

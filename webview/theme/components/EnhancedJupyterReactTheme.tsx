@@ -155,6 +155,17 @@ function CSSVariableInjector({
       fullCSS += `.jp-Notebook, .jp-WindowedPanel { background-color: ${editorBg} !important; }\n`;
       fullCSS += `/* Use VS Code notebook cell background for CodeMirror editors */\n`;
       fullCSS += `.jp-CodeMirrorEditor, .cm-editor, .cm-content, .cm-focused { background-color: ${cellBg} !important; }\n`;
+
+      // Override JupyterLab's dirty cell styling with VS Code theme variables
+      const modifiedColor =
+        vscodeColors.get("--vscode-editorGutter-modifiedBackground") ||
+        vscodeColors.get("--vscode-gitDecoration-modifiedResourceForeground") ||
+        vscodeColors.get("--vscode-list-modifiedItemForeground") ||
+        "#ff9800"; // fallback to original color if no VS Code variables available
+
+      fullCSS += `/* Override JupyterLab dirty cell color with VS Code theme color */\n`;
+      fullCSS += `.jp-Cell.jp-mod-dirty, .jp-Cell[data-dirty="true"], .jp-Cell.jp-mod-stale {\n`;
+      fullCSS += `  border-left-color: ${modifiedColor} !important; }\n`;
     }
 
     // Add CodeMirror-specific CSS if provider supports it
@@ -162,6 +173,14 @@ function CSSVariableInjector({
       const codeMirrorCSS = (provider as any).getCodeMirrorCSS();
       if (codeMirrorCSS) {
         fullCSS += `\n\n/* CodeMirror Syntax Highlighting */\n${codeMirrorCSS}`;
+      }
+    }
+
+    // Add Sidebar-specific CSS if provider supports it
+    if (provider && "getSidebarCSS" in provider) {
+      const sidebarCSS = (provider as any).getSidebarCSS();
+      if (sidebarCSS) {
+        fullCSS += `\n\n/* Cell Sidebar Styling */\n${sidebarCSS}`;
       }
     }
 

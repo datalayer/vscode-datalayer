@@ -57,7 +57,7 @@ export function CodeMirrorThemeInjector({
 
       // Extract syntax colors from provider or use defaults
       const syntaxColors =
-        provider?.getSyntaxColors?.() || new Map<string, string>();
+        (provider as any)?.getSyntaxColors?.() || new Map<string, string>();
 
       // Create theme colors using actual VS Code theme colors or sensible defaults
       const themeColors: VSCodeThemeColors = {

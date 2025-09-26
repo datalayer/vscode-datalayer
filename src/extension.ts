@@ -25,6 +25,10 @@ import { SpacesTreeProvider } from "./spaces/spacesTreeProvider";
 import { SpacerApiService } from "./spaces/spacerApiService";
 import { Document } from "./spaces/spaceItem";
 import { DocumentBridge } from "./spaces/documentBridge";
+import {
+  detectDocumentType,
+  getDocumentDisplayName,
+} from "./spaces/documentUtils";
 import { DatalayerFileSystemProvider } from "./spaces/datalayerFileSystemProvider";
 
 /**
@@ -175,25 +179,31 @@ export function activate(context: vscode.ExtensionContext): void {
   context.subscriptions.push(
     vscode.commands.registerCommand(
       "datalayer.openDocument",
-      async (document: Document, spaceName?: string) => {
+      async (documentOrItem: any, spaceName?: string) => {
         try {
-          if (!document) {
+          if (!documentOrItem) {
             vscode.window.showErrorMessage("No document selected");
             return;
           }
 
-          const docName =
-            document.name_t ||
-            document.notebook_name_s ||
-            document.document_name_s ||
-            "Untitled";
-          const isNotebook =
-            document.type_s === "notebook" ||
-            document.notebook_extension_s === "ipynb";
-          const isLexical =
-            document.document_format_s === "lexical" ||
-            document.document_extension_s === "lexical";
-          const isCell = document.type_s === "cell";
+          // Handle case where VS Code passes the entire SpaceItem instead of just the document
+          let document: Document;
+          let actualSpaceName: string;
+
+          if (documentOrItem.data && documentOrItem.data.document) {
+            // This is a SpaceItem object from the tree view
+            document = documentOrItem.data.document;
+            actualSpaceName =
+              documentOrItem.data.spaceName || spaceName || "Unknown Space";
+          } else {
+            // This is already a Document object
+            document = documentOrItem;
+            actualSpaceName = spaceName || "Unknown Space";
+          }
+
+          const docName = getDocumentDisplayName(document);
+          const typeInfo = detectDocumentType(document);
+          const { isNotebook, isLexical, isCell } = typeInfo;
 
           if (isNotebook) {
             // Show progress while downloading notebook
@@ -288,7 +298,7 @@ export function activate(context: vscode.ExtensionContext): void {
             // TODO: Implement cell viewer
           } else {
             vscode.window.showInformationMessage(
-              `Document type not supported: ${docName}`
+              `Document type not supported: ${typeInfo.type} (${docName})`
             );
           }
         } catch (error) {
@@ -301,82 +311,6 @@ export function activate(context: vscode.ExtensionContext): void {
         }
       }
     )
-  );
-
-  // Create Space command
-  context.subscriptions.push(
-    vscode.commands.registerCommand("datalayer.createSpace", async () => {
-      try {
-        // Prompt for space name
-        const name = await vscode.window.showInputBox({
-          prompt: "Enter space name",
-          placeHolder: "My Space",
-          validateInput: (value) => {
-            if (!value || value.trim().length === 0) {
-              return "Space name is required";
-            }
-            return null;
-          },
-        });
-
-        if (!name) {
-          return;
-        }
-
-        // Prompt for description (optional)
-        const description = await vscode.window.showInputBox({
-          prompt: "Enter space description (optional)",
-          placeHolder: "A brief description of the space",
-        });
-
-        // Ask if the space should be public
-        const visibility = await vscode.window.showQuickPick(
-          ["Private", "Public"],
-          {
-            placeHolder: "Select space visibility",
-            title: "Space Visibility",
-          }
-        );
-
-        if (!visibility) {
-          return;
-        }
-
-        const isPublic = visibility === "Public";
-
-        // Create the space
-        await vscode.window.withProgress(
-          {
-            location: vscode.ProgressLocation.Notification,
-            title: `Creating ${visibility.toLowerCase()} space "${name}"...`,
-            cancellable: false,
-          },
-          async () => {
-            const space = await spacerApiService.createSpace(
-              name,
-              description,
-              isPublic
-            );
-
-            if (space) {
-              vscode.window.showInformationMessage(
-                `Successfully created ${visibility.toLowerCase()} space "${name}"`
-              );
-              spacesTreeProvider.refresh();
-            } else {
-              throw new Error("Failed to create space");
-            }
-          }
-        );
-      } catch (error) {
-        console.error("[Datalayer] Error creating space:", error);
-        vscode.window.showErrorMessage(
-          `Failed to create space: ${
-            error instanceof Error ? error.message : "Unknown error"
-          }`
-        );
-      }
-    })
   );
 
   // Create Notebook in Space command

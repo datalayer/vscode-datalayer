@@ -22,13 +22,16 @@ import {
   CellSidebarExtension,
 } from "@datalayer/jupyter-react";
 import { DatalayerCollaborationProvider } from "@datalayer/core/lib/collaboration";
-import { MessageHandlerContext, type ExtensionMessage } from "./messageHandler";
-import { loadFromBytes, saveToBytes } from "./utils";
-import { createMockServiceManager } from "./mockServiceManager";
-import { createServiceManager } from "./serviceManager";
+import {
+  MessageHandlerContext,
+  type ExtensionMessage,
+} from "../services/messageHandler";
+import { loadFromBytes, saveToBytes } from "../utils";
+import { createMockServiceManager } from "../services/mockServiceManager";
+import { createServiceManager } from "../services/serviceManager";
 import { ServiceManager } from "@jupyterlab/services";
 // Import the enhanced theme system
-import { EnhancedJupyterReactTheme } from "./theme";
+import { EnhancedJupyterReactTheme } from "../theme";
 // Import the custom VS Code-style toolbar
 import { NotebookToolbar } from "./NotebookToolbar";
 
@@ -52,6 +55,7 @@ interface NotebookVSCodeInnerProps {
   isInitialized: boolean;
   selectedRuntime?: RuntimeInfo;
   onRuntimeSelected?: (runtime: RuntimeInfo) => void;
+  notebookId: string;
 }
 
 function NotebookVSCodeInner({
@@ -63,11 +67,14 @@ function NotebookVSCodeInner({
   isInitialized,
   selectedRuntime,
   onRuntimeSelected,
+  notebookId,
 }: NotebookVSCodeInnerProps): JSX.Element {
   const messageHandler = useContext(MessageHandlerContext);
   const currentNotebookModel = useRef<any>(null);
   const lastSavedContent = useRef<Uint8Array | null>(null);
-  const contentChangeHandler = useRef<(() => void) | null>(null);
+  const contentChangeHandler = useRef<
+    ((sender: any, args: any) => void) | null
+  >(null);
 
   // Create notebook extensions (sidebar)
   const extensions = useMemo(() => [new CellSidebarExtension({})], []);
@@ -142,7 +149,7 @@ function NotebookVSCodeInner({
             "[NotebookVSCode] Restoring runtime from sessionStorage:",
             runtime
           );
-          setSelectedRuntime(runtime);
+          onRuntimeSelected?.(runtime);
         } catch (e) {
           console.error("[NotebookVSCode] Failed to parse stored runtime:", e);
           sessionStorage.removeItem(key);
@@ -399,6 +406,26 @@ function NotebookVSCodeInner({
     }
   }, [isDatalayerNotebook, messageHandler, nbformat]);
 
+  // Block Cmd/Ctrl+S for collaborative Datalayer notebooks
+  React.useEffect(() => {
+    if (isDatalayerNotebook) {
+      const handleKeyDown = (e: KeyboardEvent) => {
+        if ((e.metaKey || e.ctrlKey) && e.key === "s") {
+          e.preventDefault();
+          console.log(
+            "[NotebookEditor] Save shortcut blocked - notebook auto-saves via collaboration"
+          );
+          // TODO: Could show a toast notification here
+        }
+      };
+
+      document.addEventListener("keydown", handleKeyDown, true);
+      return () => {
+        document.removeEventListener("keydown", handleKeyDown, true);
+      };
+    }
+  }, [isDatalayerNotebook]);
+
   // Set up ResizeObserver for the notebook
   React.useEffect(() => {
     let resizeObserver: ResizeObserver | null = null;
@@ -411,16 +438,9 @@ function NotebookVSCodeInner({
 
       if (notebookElement || notebookPanel) {
         resizeObserver = new ResizeObserver(() => {
-          // Force a window resize event which JupyterLab components listen to
-          window.dispatchEvent(new Event("resize"));
-
-          // Also dispatch to the specific elements
-          if (notebookElement) {
-            notebookElement.dispatchEvent(new Event("resize"));
-          }
-          if (notebookPanel) {
-            notebookPanel.dispatchEvent(new Event("resize"));
-          }
+          // Use custom event that won't trigger window resize handler
+          const customResize = new CustomEvent("notebook-resize");
+          window.dispatchEvent(customResize);
         });
 
         if (notebookPanel && notebookPanel.parentElement) {
@@ -514,6 +534,8 @@ function NotebookVSCodeInner({
               },
               "& .jp-Cell": {
                 fontSize: "var(--vscode-editor-font-size, 13px)",
+                // Remove width constraint to allow sidebar
+                width: "100%",
               },
               "& .jp-InputArea-editor": {
                 fontSize: "var(--vscode-editor-font-size, 13px)",
@@ -532,10 +554,6 @@ function NotebookVSCodeInner({
               },
               "& .datalayer-NotebookPanel-header": {
                 display: "none",
-              },
-              "& .jp-Cell": {
-                // Remove width constraint to allow sidebar
-                width: "100%",
               },
               "& .jp-Notebook-footer": {
                 // Remove width constraint to allow sidebar
@@ -562,7 +580,7 @@ function NotebookVSCodeInner({
             <Notebook2
               nbformat={nbformat}
               id={documentId!}
-              serviceManager={serviceManager}
+              serviceManager={serviceManager as any}
               collaborationProvider={collaborationProvider}
               height={height}
               cellSidebarMargin={120}
@@ -585,6 +603,7 @@ function NotebookVSCodeInner({
       cellSidebarMargin={cellSidebarMargin}
       onNotebookModelChanged={handleNotebookModelChanged}
       selectedRuntime={selectedRuntime}
+      notebookId={notebookId}
     />
   );
 }
@@ -596,6 +615,7 @@ function LocalNotebook({
   cellSidebarMargin,
   onNotebookModelChanged,
   selectedRuntime,
+  notebookId,
 }: any) {
   // Create service manager from selected runtime if available
   const serviceManager = useMemo(() => {
@@ -628,16 +648,9 @@ function LocalNotebook({
 
       if (notebookElement || notebookPanel) {
         resizeObserver = new ResizeObserver(() => {
-          // Force a window resize event which JupyterLab components listen to
-          window.dispatchEvent(new Event("resize"));
-
-          // Also dispatch to the specific elements
-          if (notebookElement) {
-            notebookElement.dispatchEvent(new Event("resize"));
-          }
-          if (notebookPanel) {
-            notebookPanel.dispatchEvent(new Event("resize"));
-          }
+          // Use custom event that won't trigger window resize handler
+          const customResize = new CustomEvent("notebook-resize");
+          window.dispatchEvent(customResize);
         });
 
         if (notebookPanel && notebookPanel.parentElement) {
@@ -672,7 +685,7 @@ function LocalNotebook({
   return (
     <div style={{ height: "100vh", display: "flex", flexDirection: "column" }}>
       <NotebookToolbar
-        notebookId="local-notebook"
+        notebookId={notebookId}
         isDatalayerNotebook={false}
         selectedRuntime={selectedRuntime}
       />
@@ -705,6 +718,8 @@ function LocalNotebook({
             },
             "& .jp-Cell": {
               fontSize: "var(--vscode-editor-font-size, 13px)",
+              // Remove width constraint to allow sidebar
+              width: "100%",
             },
             "& .jp-InputArea-editor": {
               fontSize: "var(--vscode-editor-font-size, 13px)",
@@ -723,10 +738,6 @@ function LocalNotebook({
             },
             "& .datalayer-NotebookPanel-header": {
               display: "none",
-            },
-            "& .jp-Cell": {
-              // Remove width constraint to allow sidebar
-              width: "100%",
             },
             "& .jp-Notebook-footer": {
               // Remove width constraint to allow sidebar
@@ -752,8 +763,8 @@ function LocalNotebook({
         >
           <Notebook2
             nbformat={nbformat}
-            id="local-notebook"
-            serviceManager={serviceManager}
+            id={notebookId}
+            serviceManager={serviceManager as any}
             startDefaultKernel
             height={height}
             cellSidebarMargin={120}
@@ -779,6 +790,7 @@ function NotebookVSCodeWithJupyter(): JSX.Element {
   const [documentId, setDocumentId] = useState<string | undefined>();
   const [serverUrl, setServerUrl] = useState<string | undefined>();
   const [token, setToken] = useState<string | undefined>();
+  const [notebookId, setNotebookId] = useState<string>("local-notebook"); // Default fallback
   const [selectedRuntime, setSelectedRuntime] = useState<
     RuntimeInfo | undefined
   >();
@@ -790,14 +802,29 @@ function NotebookVSCodeWithJupyter(): JSX.Element {
 
   // Handle window resize
   useEffect(() => {
+    let resizeTimeout: NodeJS.Timeout;
+
     const handleResize = () => {
-      // Just dispatch resize event which JupyterLab components listen to
-      window.dispatchEvent(new Event("resize"));
+      // Debounce resize events
+      clearTimeout(resizeTimeout);
+      resizeTimeout = setTimeout(() => {
+        // Trigger a custom resize event that won't cause recursion
+        const customResize = new CustomEvent("notebook-resize");
+        window.dispatchEvent(customResize);
+
+        // Try to find and update any notebook widgets directly
+        const notebookPanels = document.querySelectorAll(".jp-NotebookPanel");
+        notebookPanels.forEach((panel) => {
+          const resizeEvent = new Event("resize");
+          panel.dispatchEvent(resizeEvent);
+        });
+      }, 100);
     };
 
     window.addEventListener("resize", handleResize);
 
     return () => {
+      clearTimeout(resizeTimeout);
       window.removeEventListener("resize", handleResize);
     };
   }, []);
@@ -831,6 +858,11 @@ function NotebookVSCodeWithJupyter(): JSX.Element {
         if (body.serverUrl) {
           setServerUrl(body.serverUrl);
           console.log("[NotebookVSCode] Got server URL:", body.serverUrl);
+        }
+
+        if (body.notebookId) {
+          setNotebookId(body.notebookId);
+          console.log("[NotebookVSCode] Got notebook ID:", body.notebookId);
         }
 
         if (body.token) {
@@ -919,6 +951,7 @@ function NotebookVSCodeWithJupyter(): JSX.Element {
         isInitialized={isInitialized}
         selectedRuntime={selectedRuntime}
         onRuntimeSelected={setSelectedRuntime}
+        notebookId={notebookId}
       />
     </EnhancedJupyterReactTheme>
   );

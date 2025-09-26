@@ -20,6 +20,7 @@ import {
 } from "./spaceItem";
 import { SpacerApiService } from "./spacerApiService";
 import { AuthService } from "../auth/authService";
+import { detectDocumentType, getDocumentDisplayName } from "./documentUtils";
 
 /**
  * Tree data provider for the Datalayer Spaces view.
@@ -247,31 +248,20 @@ export class SpacesTreeProvider implements vscode.TreeDataProvider<SpaceItem> {
         ];
       }
 
-      // Filter for notebooks, lexical documents, and cells only
+      // Filter for notebooks, lexical documents, and cells only using shared logic
       const notebooks = items.filter(
-        (item) =>
-          item.type_s === "notebook" || item.notebook_extension_s === "ipynb"
+        (item) => detectDocumentType(item).isNotebook
       );
-
       const lexicalDocuments = items.filter(
-        (item) =>
-          item.document_format_s === "lexical" ||
-          item.document_extension_s === "lexical" ||
-          (item.type_s === "document" && item.document_format_s === "lexical")
+        (item) => detectDocumentType(item).isLexical
       );
-
-      const cells = items.filter((item) => item.type_s === "cell");
+      const cells = items.filter((item) => detectDocumentType(item).isCell);
 
       const result: SpaceItem[] = [];
 
       // Add notebooks
       notebooks.forEach((notebook) => {
-        const notebookName =
-          notebook.name_t || notebook.notebook_name_s || "Untitled";
-        // Add .ipynb extension if not already present
-        const displayName = notebookName.endsWith(".ipynb")
-          ? notebookName
-          : `${notebookName}.ipynb`;
+        const displayName = getDocumentDisplayName(notebook);
         result.push(
           new SpaceItem(displayName, vscode.TreeItemCollapsibleState.None, {
             type: ItemType.NOTEBOOK,
@@ -283,11 +273,7 @@ export class SpacesTreeProvider implements vscode.TreeDataProvider<SpaceItem> {
 
       // Add lexical documents only
       lexicalDocuments.forEach((doc) => {
-        const docName = doc.name_t || doc.document_name_s || "Untitled";
-        // Add .lexical extension if not already present
-        const displayName = docName.endsWith(".lexical")
-          ? docName
-          : `${docName}.lexical`;
+        const displayName = getDocumentDisplayName(doc);
         result.push(
           new SpaceItem(displayName, vscode.TreeItemCollapsibleState.None, {
             type: ItemType.DOCUMENT,

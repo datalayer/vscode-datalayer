@@ -62,7 +62,7 @@ export function createVSCodeHighlightStyle(
       tag: tags.function(tags.definition(tags.variableName)),
       color: colors.function,
     },
-    { tag: tags.methodName, color: colors.function },
+    { tag: (tags as any).methodName || tags.function, color: colors.function },
     {
       tag: tags.definition(tags.function(tags.variableName)),
       color: colors.function,

@@ -128,6 +128,15 @@ class NotebookDocument extends Disposable implements vscode.CustomDocument {
    * This fires an event to notify VS Code that the document has been edited.
    */
   makeEdit(edit: NotebookEdit) {
+    // Skip dirty state tracking for collaborative Datalayer notebooks
+    // These notebooks auto-sync via WebSocket collaboration
+    if (this.uri.scheme === "datalayer") {
+      console.log(
+        "[NotebookDocument] Skipping edit tracking for collaborative Datalayer notebook"
+      );
+      return;
+    }
+
     this._edits.push(edit);
 
     // Update the document data if it's a content update
@@ -173,6 +182,15 @@ class NotebookDocument extends Disposable implements vscode.CustomDocument {
    * Called by VS Code when the user saves the document.
    */
   async save(cancellation: vscode.CancellationToken): Promise<void> {
+    // Collaborative Datalayer notebooks auto-save via WebSocket
+    // No manual save needed or allowed
+    if (this.uri.scheme === "datalayer") {
+      console.log(
+        "[NotebookDocument] Save called on collaborative notebook - no-op"
+      );
+      return;
+    }
+
     await this.saveAs(this.uri, cancellation);
     this._savedEdits = Array.from(this._edits);
   }
@@ -184,8 +202,18 @@ class NotebookDocument extends Disposable implements vscode.CustomDocument {
     targetResource: vscode.Uri,
     cancellation: vscode.CancellationToken
   ): Promise<void> {
-    // For Datalayer notebooks, always use original data (read-only)
+    // For Datalayer collaborative notebooks:
+    // - If saving to the same location: no-op (auto-synced)
+    // - If saving to a different location: export current state
     if (this.uri.scheme === "datalayer") {
+      if (targetResource.toString() === this.uri.toString()) {
+        // Same location - no-op for collaborative notebooks
+        console.log(
+          "[NotebookDocument] SaveAs to same location for collaborative notebook - no-op"
+        );
+        return;
+      }
+      // Different location - export the current content
       const fileData = this._documentData;
       if (cancellation.isCancellationRequested) {
         return;
@@ -301,7 +329,7 @@ export class NotebookEditorProvider
       new NotebookEditorProvider(context),
       {
         webviewOptions: {
-          retainContextWhenHidden: false,
+          retainContextWhenHidden: true,
         },
         supportsMultipleEditorsPerDocument: false,
       }
@@ -437,11 +465,16 @@ export class NotebookEditorProvider
             ? "dark"
             : "light";
 
+        const notebookId = `notebook-${document.uri
+          .toString()
+          .replace(/[^a-zA-Z0-9]/g, "-")}-${Date.now()}`;
+
         if (document.uri.scheme === "untitled") {
           this.postMessage(webviewPanel, "init", {
             untitled: true,
             editable: true,
             theme,
+            notebookId,
           });
         } else {
           const editable = vscode.workspace.fs.isWritableFileSystem(
@@ -506,6 +539,7 @@ export class NotebookEditorProvider
             documentId,
             serverUrl,
             token,
+            notebookId,
           });
         }
       }
@@ -557,18 +591,9 @@ export class NotebookEditorProvider
       vscode.Uri.joinPath(this._context.extensionUri, "dist", "webview.js")
     );
 
-    // Get the codicon font file from node_modules
-    const codiconFontUri = webview.asWebviewUri(
-      vscode.Uri.joinPath(
-        this._context.extensionUri,
-        "..",
-        "..",
-        "node_modules",
-        "@vscode",
-        "codicons",
-        "dist",
-        "codicon.ttf"
-      )
+    // Get the codicon CSS file from dist folder
+    const codiconCssUri = webview.asWebviewUri(
+      vscode.Uri.joinPath(this._context.extensionUri, "dist", "codicon.css")
     );
 
     // Use a nonce to whitelist which scripts can be run
@@ -597,16 +622,11 @@ export class NotebookEditorProvider
           -->
           <style id="typestyle-stylesheet" nonce="${nonce}"></style>
 
-          <!-- Custom styles for animated icons and codicons -->
-          <style nonce="${nonce}">
-            /* Load the codicon font */
-            @font-face {
-              font-family: 'codicon';
-              src: url('${codiconFontUri}') format('truetype');
-              font-weight: normal;
-              font-style: normal;
-            }
+          <!-- Import Codicon CSS -->
+          <link href="${codiconCssUri}" rel="stylesheet" />
 
+          <!-- Custom animation styles -->
+          <style nonce="${nonce}">
             @keyframes spin {
               0% { transform: rotate(0deg); }
               100% { transform: rotate(360deg); }
@@ -616,34 +636,55 @@ export class NotebookEditorProvider
               animation: spin 1s linear infinite;
             }
 
-            /* Use VS Code's built-in codicons */
-            .codicon {
-              font-family: 'codicon';
-              display: inline-block;
-              font-style: normal;
-              font-weight: normal;
-              text-decoration: none;
-              text-rendering: auto;
-              text-align: center;
-              -webkit-font-smoothing: antialiased;
-              -moz-osx-font-smoothing: grayscale;
-              user-select: none;
-              -webkit-user-select: none;
+            /* Cell Sidebar Styling to match VS Code theme */
+            .jp-SidePanel {
+              background-color: var(--vscode-editor-background) !important;
+              color: var(--vscode-foreground) !important;
+              font-family: var(--vscode-font-family) !important;
+              font-size: var(--vscode-editor-font-size, 13px) !important;
+              border: none !important;
             }
 
-            /* Icon definitions */
-            .codicon-run:before { content: '\\eb9d' }
-            .codicon-run-above:before { content: '\\ec06' }
-            .codicon-run-below:before { content: '\\ec07' }
-            .codicon-add:before { content: '\\ea60' }
-            .codicon-clear-all:before { content: '\\ebaa' }
-            .codicon-debug-restart:before { content: '\\ebb0' }
-            .codicon-debug-stop:before { content: '\\ead5' }
-            .codicon-circle-filled:before { content: '\\ea71' }
-            .codicon-loading:before { content: '\\eb19' }
-            .codicon-circle-slash:before { content: '\\eabd' }
-            .codicon-circle-outline:before { content: '\\eabc' }
-            .codicon-chevron-down:before { content: '\\eab4' }
+            .jp-SidePanel .jp-SidePanel-content {
+              background-color: var(--vscode-editor-background) !important;
+            }
+
+            .jp-SidePanel button {
+              background-color: transparent !important;
+              color: var(--vscode-foreground) !important;
+              border: none !important;
+              font-family: var(--vscode-font-family) !important;
+              font-size: var(--vscode-editor-font-size, 13px) !important;
+              padding: 4px 8px !important;
+              width: 100% !important;
+              text-align: left !important;
+              cursor: pointer !important;
+              transition: background-color 0.1s !important;
+            }
+
+            .jp-SidePanel button:hover {
+              background-color: var(--vscode-list-hoverBackground) !important;
+            }
+
+            .jp-SidePanel button:active,
+            .jp-SidePanel button:focus {
+              background-color: var(--vscode-list-activeSelectionBackground) !important;
+              color: var(--vscode-list-activeSelectionForeground) !important;
+              outline: none !important;
+            }
+
+            /* Cell sidebar icons */
+            .jp-SidePanel button .codicon {
+              margin-right: 6px !important;
+              font-size: 14px !important;
+              vertical-align: middle !important;
+            }
+
+            /* Cell sidebar panel positioning */
+            .jp-SidePanel-toolbar {
+              background-color: var(--vscode-editor-background) !important;
+              border-bottom: 1px solid var(--vscode-panel-border) !important;
+            }
 
             /* Fix body and html background */
             html, body {
@@ -669,12 +710,13 @@ export class NotebookEditorProvider
 
           <!--
           Use a content security policy to only allow loading images from https or from our extension directory, and only allow scripts that have a specific nonce.
+          Note: font-src is added to allow codicon font loading
           -->
           <!--
-          <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src ${webview.cspSource} blob: data:; style-src ${webview.cspSource} 'nonce-${nonce}'; script-src 'nonce-${nonce}';" />
+          <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src ${webview.cspSource} blob: data:; style-src ${webview.cspSource} 'nonce-${nonce}'; font-src ${webview.cspSource}; script-src 'nonce-${nonce}';" />
           -->
           <!--
-          <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src ${webview.cspSource} blob: data:; style-src 'unsafe-inline'; script-src 'nonce-${nonce}';" />
+          <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src ${webview.cspSource} blob: data:; style-src 'unsafe-inline' ${webview.cspSource}; font-src ${webview.cspSource}; script-src 'nonce-${nonce}';" />
           -->
 
         </head>

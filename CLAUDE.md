@@ -166,6 +166,52 @@ npm run doc        # Documentation
 - Maintain JSDoc comments for all exported functions
 - Use FormData for notebook/lexical creation, JSON for other endpoints
 
+### Notebook Cell Management
+
+**Adding Cells**: Use `NotebookActions` directly from `@jupyterlab/notebook`:
+
+```typescript
+import { NotebookActions } from "@jupyterlab/notebook";
+
+// ✅ CORRECT - Use NotebookActions directly
+const notebookWidget =
+  notebook?.adapter?.widget || notebook?.adapter?._notebookPanel?.content;
+const sessionContext =
+  notebook?.adapter?.sessionContext ||
+  notebook?.adapter?._notebookPanel?.context?.sessionContext;
+
+if (notebookWidget) {
+  // Add code cell
+  NotebookActions.insertBelow(notebookWidget);
+  NotebookActions.changeCellType(notebookWidget, "code");
+
+  // Add markdown cell
+  NotebookActions.insertBelow(notebookWidget);
+  NotebookActions.changeCellType(notebookWidget, "markdown");
+}
+
+if (notebookWidget && sessionContext) {
+  // Run all cells
+  NotebookActions.runAll(notebookWidget, sessionContext);
+}
+
+// ❌ INCORRECT - Commands and store methods don't work in VS Code extension context
+notebook.adapter.commands.execute("notebook-cells:insert-below", {
+  cellType: "code",
+});
+notebookStore.insertBelow({ id: notebookId, source: "", cellType: "code" });
+```
+
+**Key NotebookActions Methods**:
+
+- `NotebookActions.insertBelow(widget)` - Insert cell below current position
+- `NotebookActions.insertAbove(widget)` - Insert cell above current position
+- `NotebookActions.changeCellType(widget, cellType)` - Change cell type ('code' | 'markdown' | 'raw')
+- `NotebookActions.runAll(widget, sessionContext)` - Run all cells in the notebook
+- `NotebookActions.run(widget, sessionContext)` - Run current cell
+
+This approach bypasses the problematic command registry and uses the same low-level actions that the working JupyterLab commands use internally.
+
 ## Troubleshooting
 
 ### Common Issues
@@ -174,7 +220,10 @@ npm run doc        # Documentation
 2. **Theme not matching**: Verify VSCodeThemeProvider is active
 3. **Syntax highlighting missing**: Check patch-vscode-highlighting.js ran during build
 4. **Black backgrounds**: Enhanced theme provider should inject CSS fixes
-5. **Module specifier error for @primer/react-brand CSS**:
+5. **Add Cell buttons not working**: Import `NotebookActions` from `@jupyterlab/notebook` and use `NotebookActions.insertBelow()` + `NotebookActions.changeCellType()` instead of store/command methods
+6. **Run All button not working**: Use `NotebookActions.runAll(widget, sessionContext)` instead of store or command methods
+7. **Notebook widget not accessible**: Check `notebook?.adapter?.widget` or `notebook?.adapter?._notebookPanel?.content` for the JupyterLab widget
+8. **Module specifier error for @primer/react-brand CSS**:
    - Error: `Failed to resolve module specifier "@primer/react-brand/lib/css/main.css"`
    - Fix: Run post-build script to remove problematic CSS imports from bundled JS files
    - The fix-production-bundle.js script automatically handles this during build
