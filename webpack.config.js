@@ -46,6 +46,22 @@ const extensionConfig = {
           },
         ],
       },
+      {
+        test: /\.(c|m)?js/,
+        resolve: {
+          fullySpecified: false,
+        },
+      },
+      // Ignore CSS files in extension bundle since they're not needed in Node.js context
+      {
+        test: /\.css$/,
+        use: "null-loader",
+      },
+      // Handle other assets that might be imported
+      {
+        test: /\.(png|jpg|jpeg|gif|svg|woff|woff2|eot|ttf|otf)$/,
+        use: "null-loader",
+      },
     ],
   },
   devtool: "nosources-source-map",
@@ -70,6 +86,7 @@ const webviewConfig = {
     fallback: {
       process: require.resolve("process/browser"),
       stream: false,
+      buffer: require.resolve("buffer/"),
     },
     // Deduplicate CodeMirror modules to prevent multiple instances
     alias: {
@@ -275,6 +292,7 @@ const lexicalWebviewConfig = {
     fallback: {
       process: require.resolve("process/browser"),
       stream: false,
+      buffer: require.resolve("buffer/"),
     },
     // Deduplicate CodeMirror modules to prevent multiple instances
     alias: {

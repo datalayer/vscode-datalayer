@@ -130,17 +130,72 @@ All code should include proper JSDoc comments for TypeScript interfaces, classes
 
 ```
 src/
-├── auth/           # Authentication services
-├── spaces/         # Spaces tree view & API
-├── editors/        # Custom editors (notebook, lexical)
-└── runtimes/       # Runtime management
+├── extension.ts    # Main entry point
+├── commands/       # Command handlers (VS Code commands)
+│   ├── auth.ts     # Authentication commands
+│   ├── documents.ts # Document-related commands
+│   ├── runtimes.ts # Runtime management commands
+│   └── index.ts    # Command registration
+├── providers/      # VS Code API implementations
+│   ├── documentsFileSystemProvider.ts  # Virtual filesystem for Datalayer documents
+│   ├── jupyterNotebookProvider.ts      # Custom text editor for .ipynb files
+│   ├── lexicalDocumentProvider.ts      # Custom text editor for .lexical files
+│   ├── runtimeController.ts            # VS Code NotebookController wrapper
+│   ├── runtimeControllerManager.ts     # Manages multiple runtime controllers
+│   └── spacesTreeProvider.ts           # TreeDataProvider for spaces explorer
+├── services/       # Business logic and UI management
+│   ├── adapter.ts          # Bridge between Datalayer SDK and VS Code
+│   ├── authProvider.ts     # Authentication service (singleton)
+│   ├── authStateManager.ts # Authentication state persistence
+│   ├── documentBridge.ts   # Document bridge between Datalayer and local files
+│   ├── documentUtils.ts    # Document manipulation utilities
+│   ├── runtimeService.ts   # Runtime management service (singleton)
+│   ├── serviceInitializer.ts # Service initialization
+│   ├── spaceItem.ts        # Tree item model for spaces view
+│   ├── spacerService.ts    # Spaces API service (singleton)
+│   ├── statusBar.ts        # Status bar UI management
+│   └── uiInitializer.ts    # UI component initialization
+├── utils/          # Utility functions
+│   ├── dispose.ts          # Disposable pattern utilities
+│   ├── messages.ts         # Message types for webview communication
+│   ├── runtimeSelector.ts  # Runtime selection input box
+│   └── webviewSecurity.ts  # CSP nonce generation for webviews
+└── test/           # Extension tests
 
 webview/
+├── notebook/       # Jupyter notebook webview
+│   ├── main.ts              # Entry point
+│   ├── NotebookEditor.tsx   # Main notebook component
+│   └── NotebookToolbar.tsx  # VS Code-style toolbar
+├── lexical/        # Lexical editor webview
+│   ├── lexicalWebview.tsx   # Entry point
+│   ├── LexicalEditor.tsx    # Rich text editor component
+│   └── LexicalToolbar.tsx   # Editor toolbar
 ├── theme/          # VS Code theme integration
-├── NotebookVSCode.tsx    # Main notebook component
-├── NotebookToolbar.tsx   # VS Code-style toolbar
-└── LexicalEditor.tsx     # Rich text editor
+│   ├── codemirror/         # CodeMirror theme mapping
+│   ├── components/         # Theme-aware components
+│   ├── mapping/            # Color mapping utilities
+│   └── providers/          # Theme providers
+└── services/       # Webview services
+    ├── messageHandler.ts    # Message passing with extension
+    ├── mockServiceManager.ts # Mock for development
+    └── serviceManager.ts    # Datalayer service management
 ```
+
+### Architecture Principles
+
+1. **Separation of Concerns**:
+
+   - **Providers** implement VS Code APIs (TreeDataProvider, CustomTextEditorProvider, etc.)
+   - **Services** handle business logic and external API communication
+   - **Commands** are thin handlers that delegate to services
+   - **Utils** are pure utility functions with no side effects
+
+2. **Singleton Pattern**: Core services use singleton pattern for consistent state management
+
+3. **Message Passing**: Extension and webview communicate via structured messages with JWT tokens
+
+4. **Virtual File System**: Datalayer documents are mapped to virtual URIs for seamless VS Code integration
 
 ## Configuration
 

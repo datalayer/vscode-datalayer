@@ -5,27 +5,24 @@
  */
 
 /**
- * @module documentBridge
- * Bridge service for document management.
- * Handles document downloading, caching, and runtime association.
- * Manages the lifecycle of documents opened from the Datalayer platform.
+ * Document lifecycle management between Datalayer platform and VS Code.
+ * Handles downloading, caching, and runtime association for documents.
+ *
+ * @module services/documentBridge
  */
 
 import * as vscode from "vscode";
 import * as fs from "fs";
 import * as path from "path";
 import * as os from "os";
-import { Document } from "./spaceItem";
-import { SpacerApiService } from "./spacerApiService";
-import {
-  RuntimesApiService,
-  RuntimeResponse,
-} from "../runtimes/runtimesApiService";
-import { DatalayerFileSystemProvider } from "./datalayerFileSystemProvider";
+import { Document } from "../models/spaceItem";
+import { SDKSpacerService } from "./spacerService";
+import { SDKRuntimeService } from "./runtimeService";
+import type { Runtime } from "../../../core/lib/index.js";
+import { DatalayerFileSystemProvider } from "../providers/documentsFileSystemProvider";
 
 /**
  * Metadata for a downloaded document.
- * @interface DocumentMetadata
  */
 export interface DocumentMetadata {
   /** The document from Datalayer */
@@ -39,24 +36,36 @@ export interface DocumentMetadata {
   /** When the document was last downloaded */
   lastDownloaded: Date;
   /** Associated runtime for notebooks */
-  runtime?: RuntimeResponse;
+  runtime?: Runtime;
 }
 
 /**
  * Manages document lifecycle between Datalayer platform and local filesystem.
- * @class DocumentBridge
+ * Singleton service that handles document caching and runtime association.
+ *
+ * @example
+ * ```typescript
+ * const bridge = DocumentBridge.getInstance(context, runtimeService);
+ * const uri = await bridge.openDocument(document, spaceId, spaceName);
+ * ```
  */
 export class DocumentBridge {
   private static instance: DocumentBridge;
-  private apiService: SpacerApiService;
-  private runtimesApiService: RuntimesApiService;
+  private spacerService: SDKSpacerService;
+  private sdkRuntimeService: SDKRuntimeService;
   private documentMetadata: Map<string, DocumentMetadata> = new Map();
   private tempDir: string;
   private activeRuntimes: Set<string> = new Set();
 
-  private constructor(context?: vscode.ExtensionContext) {
-    this.apiService = SpacerApiService.getInstance();
-    this.runtimesApiService = RuntimesApiService.getInstance(context);
+  private constructor(
+    context?: vscode.ExtensionContext,
+    sdkRuntimeService?: SDKRuntimeService
+  ) {
+    this.spacerService = SDKSpacerService.getInstance();
+    if (!sdkRuntimeService) {
+      throw new Error("SDKRuntimeService is required for DocumentBridge");
+    }
+    this.sdkRuntimeService = sdkRuntimeService;
     // Create a temp directory for Datalayer documents
     this.tempDir = path.join(os.tmpdir(), "datalayer-vscode");
     if (!fs.existsSync(this.tempDir)) {
@@ -66,18 +75,29 @@ export class DocumentBridge {
 
   /**
    * Gets the singleton instance of DocumentBridge.
-   * @param {vscode.ExtensionContext} [context] - Extension context (required on first call)
-   * @returns {DocumentBridge} The singleton instance
+   *
+   * @param context - Extension context (required on first call)
+   * @param sdkRuntimeService - SDK runtime service (required on first call)
+   * @returns The singleton instance
    */
-  static getInstance(context?: vscode.ExtensionContext): DocumentBridge {
+  static getInstance(
+    context?: vscode.ExtensionContext,
+    sdkRuntimeService?: SDKRuntimeService
+  ): DocumentBridge {
     if (!DocumentBridge.instance) {
-      DocumentBridge.instance = new DocumentBridge(context);
+      DocumentBridge.instance = new DocumentBridge(context, sdkRuntimeService);
     }
     return DocumentBridge.instance;
   }
 
   /**
-   * Open a document from Datalayer
+   * Opens a document from Datalayer platform.
+   * Downloads content, caches locally, and creates virtual URI for VS Code.
+   *
+   * @param document - The document to open
+   * @param spaceId - ID of the containing space
+   * @param spaceName - Name of the containing space
+   * @returns Virtual URI for the opened document
    */
   async openDocument(
     document: Document,
@@ -166,8 +186,8 @@ export class DocumentBridge {
 
       // Fetch the document content
       const content = isNotebook
-        ? await this.apiService.getNotebookContent(document)
-        : await this.apiService.getDocumentContent(document);
+        ? await this.spacerService.getNotebookContent(document)
+        : await this.spacerService.getDocumentContent(document);
 
       console.log("[DocumentBridge] Raw content fetched:", content);
       console.log("[DocumentBridge] Content type:", typeof content);
@@ -238,7 +258,11 @@ export class DocumentBridge {
   }
 
   /**
-   * Get metadata for a document by its path (virtual or real)
+   * Gets document metadata by path.
+   * Resolves virtual URIs to real paths for lookup.
+   *
+   * @param inputPath - Virtual or real filesystem path
+   * @returns Document metadata if found
    */
   getMetadataByPath(inputPath: string): DocumentMetadata | undefined {
     let realPath = inputPath;
@@ -262,14 +286,21 @@ export class DocumentBridge {
   }
 
   /**
-   * Get metadata for a document by its ID
+   * Gets document metadata by document ID.
+   *
+   * @param documentId - Document UID
+   * @returns Document metadata if found
    */
   getMetadataById(documentId: string): DocumentMetadata | undefined {
     return this.documentMetadata.get(documentId);
   }
 
   /**
-   * Get document metadata by URI
+   * Gets document metadata by VS Code URI.
+   * Handles both real filesystem and virtual URI schemes.
+   *
+   * @param uri - Document URI
+   * @returns Document metadata if found
    */
   getDocumentMetadata(uri: vscode.Uri): DocumentMetadata | undefined {
     // Try to find metadata by matching the localPath
@@ -290,7 +321,9 @@ export class DocumentBridge {
   }
 
   /**
-   * Clear cached document
+   * Clears cached document from filesystem and memory.
+   *
+   * @param documentId - Document UID to clear
    */
   clearDocument(documentId: string): void {
     const metadata = this.documentMetadata.get(documentId);
@@ -305,11 +338,13 @@ export class DocumentBridge {
   }
 
   /**
-   * Get or create a runtime for the document
+   * Ensures a runtime exists for the document.
+   * Verifies cached runtime status or creates a new one if needed.
+   *
+   * @param documentId - Document UID needing runtime
+   * @returns Runtime instance or undefined if creation fails
    */
-  async ensureRuntime(
-    documentId: string
-  ): Promise<RuntimeResponse | undefined> {
+  async ensureRuntime(documentId: string): Promise<Runtime | undefined> {
     const metadata = this.documentMetadata.get(documentId);
 
     // Check if we have a cached runtime, but verify it's still running
@@ -321,7 +356,7 @@ export class DocumentBridge {
 
       try {
         // Verify the runtime still exists and is running
-        const currentRuntime = await this.runtimesApiService.getRuntime(
+        const currentRuntime = await this.sdkRuntimeService.getRuntime(
           metadata.runtime.pod_name
         );
 
@@ -364,7 +399,7 @@ export class DocumentBridge {
     }
 
     // Create or get a runtime
-    const runtime = await this.runtimesApiService.ensureRuntime();
+    const runtime = await this.sdkRuntimeService.ensureRuntime();
 
     // Store the runtime with the document metadata
     if (runtime && metadata) {
@@ -381,14 +416,17 @@ export class DocumentBridge {
   }
 
   /**
-   * Get list of active runtime pod names
+   * Gets list of active runtime pod names.
+   *
+   * @returns Array of runtime pod names
    */
   getActiveRuntimes(): string[] {
     return Array.from(this.activeRuntimes);
   }
 
   /**
-   * Clean up temporary files on disposal
+   * Cleans up temporary files and metadata on disposal.
+   * Removes cached documents and clears runtime tracking.
    */
   dispose(): void {
     // Clean up temp files

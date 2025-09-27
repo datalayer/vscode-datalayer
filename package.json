@@ -25,16 +25,6 @@
   "contributes": {
     "commands": [
       {
-        "command": "datalayer.jupyter-notebook-new",
-        "title": "Create new Datalayer Notebook",
-        "category": "Notebook"
-      },
-      {
-        "command": "datalayer.lexical-editor-new",
-        "title": "Create new Datalayer Lexical Document",
-        "category": "Datalayer"
-      },
-      {
         "command": "datalayer.login",
         "title": "Login to Datalayer",
         "category": "Datalayer"
@@ -50,52 +40,51 @@
         "category": "Datalayer"
       },
       {
+        "command": "datalayer.jupyter-notebook-new",
+        "title": "Create New Jupyter Notebook",
+        "category": "Datalayer"
+      },
+      {
+        "command": "datalayer.lexical-editor-new",
+        "title": "Create New Lexical Document",
+        "category": "Datalayer"
+      },
+      {
+        "command": "datalayer.showNotebookControllerStatus",
+        "title": "Show Runtime Controllers Status",
+        "category": "Datalayer"
+      },
+      {
+        "command": "datalayer.restartNotebookRuntime",
+        "title": "Restart Notebook Runtime",
+        "category": "Datalayer"
+      },
+      {
         "command": "datalayer.refreshSpaces",
         "title": "Refresh Spaces",
-        "category": "Datalayer",
         "icon": "$(refresh)"
       },
       {
         "command": "datalayer.openDocument",
-        "title": "Open",
-        "category": "Datalayer"
+        "title": "Open"
       },
       {
         "command": "datalayer.createNotebookInSpace",
-        "title": "New Datalayer Notebook...",
-        "category": "Datalayer",
+        "title": "New Notebook...",
         "icon": "$(notebook)"
       },
       {
         "command": "datalayer.createLexicalInSpace",
         "title": "New Lexical Document...",
-        "category": "Datalayer",
         "icon": "$(file-text)"
       },
       {
         "command": "datalayer.renameItem",
-        "title": "Rename...",
-        "category": "Datalayer"
+        "title": "Rename..."
       },
       {
         "command": "datalayer.deleteItem",
-        "title": "Delete",
-        "category": "Datalayer"
-      },
-      {
-        "command": "datalayer.showNotebookControllerStatus",
-        "title": "Show Notebook Controller Status",
-        "category": "Datalayer"
-      },
-      {
-        "command": "datalayer.restartNotebookRuntime",
-        "title": "Restart Datalayer Notebook Runtime",
-        "category": "Datalayer"
-      },
-      {
-        "command": "datalayer.refreshRuntimeControllers",
-        "title": "Refresh Runtime Controllers",
-        "category": "Datalayer"
+        "title": "Delete"
       }
     ],
     "views": {
@@ -117,6 +106,32 @@
       }
     ],
     "menus": {
+      "commandPalette": [
+        {
+          "command": "datalayer.refreshSpaces",
+          "when": "false"
+        },
+        {
+          "command": "datalayer.openDocument",
+          "when": "false"
+        },
+        {
+          "command": "datalayer.createNotebookInSpace",
+          "when": "false"
+        },
+        {
+          "command": "datalayer.createLexicalInSpace",
+          "when": "false"
+        },
+        {
+          "command": "datalayer.renameItem",
+          "when": "false"
+        },
+        {
+          "command": "datalayer.deleteItem",
+          "when": "false"
+        }
+      ],
       "view/title": [
         {
           "command": "datalayer.refreshSpaces",
@@ -165,10 +180,20 @@
     "configuration": {
       "title": "Datalayer",
       "properties": {
-        "datalayer.serverUrl": {
+        "datalayer.iamRunUrl": {
           "type": "string",
           "default": "https://prod1.datalayer.run",
-          "description": "Datalayer server URL"
+          "description": "IAM (Identity and Access Management) service URL"
+        },
+        "datalayer.runtimesRunUrl": {
+          "type": "string",
+          "default": "https://prod1.datalayer.run",
+          "description": "Runtimes service URL for computational environments"
+        },
+        "datalayer.spacerRunUrl": {
+          "type": "string",
+          "default": "https://prod1.datalayer.run",
+          "description": "Spacer service URL for workspaces and collaboration"
         },
         "datalayer.spacerWsUrl": {
           "type": "string",
@@ -244,11 +269,15 @@
     ]
   },
   "scripts": {
-    "vscode:prepublish": "npm run package",
-    "compile": "webpack",
-    "watch": "webpack --watch",
-    "package": "webpack --mode production --devtool hidden-source-map",
-    "compile-tests": "tsc -p . --outDir out",
+    "clean": "rm -rf dist out *.vsix",
+    "clean:dist": "rm -rf dist",
+    "clean:out": "rm -rf out",
+    "clean:vsix": "rm -rf *.vsix",
+    "vscode:prepublish": "npm run clean && npm run package",
+    "compile": "npm run clean:dist && webpack",
+    "watch": "npm run clean:dist && webpack --watch",
+    "package": "npm run clean:dist && webpack --mode production --devtool hidden-source-map",
+    "compile-tests": "npm run clean:out && tsc -p . --outDir out",
     "watch-tests": "tsc -p . -w --outDir out",
     "pretest": "npm run compile-tests && npm run compile && npm run lint",
     "format": "prettier --write 'src/**/*.{ts,tsx,js,jsx,json,css,md}' 'webview/**/*.{ts,tsx,js,jsx,json,css,md}' '*.{js,json,md}' 'tsconfig*.json' '.vscode/*.json' '.github/workflows/*.yml'",
@@ -259,7 +288,7 @@
     "check": "npm run format:check && npm run lint && npm run type-check",
     "check:fix": "npm run format && npm run lint:fix && npm run type-check",
     "test": "vscode-test",
-    "vsix": "npx @vscode/vsce package --no-yarn --no-dependencies",
+    "vsix": "npm run clean:vsix && npx @vscode/vsce package --no-yarn --no-dependencies",
     "doc": "typedoc",
     "doc:watch": "typedoc --watch",
     "doc:markdown": "typedoc --plugin typedoc-plugin-markdown --out docs-markdown",
@@ -273,7 +302,7 @@
     "@codemirror/search": "^6.5.11",
     "@codemirror/state": "^6.5.2",
     "@codemirror/view": "^6.38.3",
-    "@datalayer/core": "^0.0.12",
+    "@datalayer/core": "file:../core",
     "@datalayer/jupyter-react": "^1.1.6",
     "@datalayer/lexical-loro": "^0.1.0",
     "@jupyter/ydoc": "^2.0.0",
@@ -292,7 +321,9 @@
     "@lumino/disposable": "^2.1.1",
     "@lumino/signaling": "^2.1.1",
     "@primer/react": "^37.19.0",
+    "@primer/react-brand": "^0.58.1",
     "@vscode/codicons": "^0.0.40",
+    "buffer": "^6.0.3",
     "codemirror": "^6.0.2",
     "lexical": "^0.35.0",
     "react": "18.3.1",
@@ -320,6 +351,7 @@
     "css-loader": "^5.1.3",
     "eslint": "^9.0.0",
     "mini-svg-data-uri": "^1.4.4",
+    "null-loader": "^4.0.1",
     "patch-package": "^8.0.0",
     "process": "^0.11.10",
     "style-loader": "^2.0.0",

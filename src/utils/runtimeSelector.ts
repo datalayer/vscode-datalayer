@@ -5,15 +5,19 @@
  */
 
 /**
- * @module runtimePicker
  * Runtime selection utility for notebook execution.
  * Provides UI for selecting and configuring Jupyter runtime environments.
+ *
+ * @module utils/runtimeSelector
  */
 
 import { window, InputBoxValidationSeverity } from "vscode";
 
 /**
- * Prompt the user to enter an Jupyter Server URL.
+ * Prompts user to enter a Jupyter Server URL.
+ * Validates the URL by attempting to connect to the server's API endpoint.
+ *
+ * @returns The validated server URL or undefined if cancelled
  */
 export async function setRuntime(): Promise<string | undefined> {
   return window.showInputBox({

@@ -5,13 +5,15 @@
  */
 
 /**
- * @fileoverview Utility functions for document type detection and handling
+ * Utility functions for document type detection and handling.
+ *
+ * @module utils/documentUtils
  */
 
-import type { Document } from "./spaceItem";
+import type { Document } from "../models/spaceItem";
 
 /**
- * Document type detection results
+ * Document type detection results.
  */
 export interface DocumentTypeInfo {
   isNotebook: boolean;
@@ -21,11 +23,11 @@ export interface DocumentTypeInfo {
 }
 
 /**
- * Detect document type using consistent logic across the extension
- * This matches the filtering logic used in the spaces tree provider
+ * Detects document type using consistent logic across the extension.
+ * Matches the filtering logic used in the spaces tree provider.
  *
  * @param document - The document to analyze
- * @returns Document type information
+ * @returns Document type information with boolean flags and type string
  */
 export function detectDocumentType(document: Document): DocumentTypeInfo {
   const isNotebook =
@@ -57,10 +59,11 @@ export function detectDocumentType(document: Document): DocumentTypeInfo {
 }
 
 /**
- * Get display name for a document using consistent logic
+ * Gets display name for a document using consistent logic.
+ * Automatically adds appropriate file extensions if missing.
  *
- * @param document - The document
- * @param typeInfo - Document type info (optional, will be detected if not provided)
+ * @param document - The document to get display name for
+ * @param typeInfo - Document type info (detected if not provided)
  * @returns Display name with appropriate extension
  */
 export function getDocumentDisplayName(

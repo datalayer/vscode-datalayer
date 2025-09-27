@@ -5,17 +5,27 @@
  */
 
 /**
- * @module spaceItem
- * Data models and interfaces for spaces and documents.
- * Defines the structure of items displayed in the spaces tree view.
+ * Tree view item models for the Datalayer spaces explorer.
+ * Defines data structures and visual representation for spaces, documents, and tree nodes.
+ *
+ * @module models/spaceItem
  */
 
 import * as vscode from "vscode";
 import * as path from "path";
 
 /**
+ * Type alias for any SDK document model (Notebook or Lexical).
+ */
+export type Document = any;
+
+/**
+ * Type alias for any SDK space model.
+ */
+export type Space = any;
+
+/**
  * Types of items that can appear in the spaces tree.
- * @enum {string}
  */
 export enum ItemType {
   /** Root node of the tree */
@@ -37,96 +47,16 @@ export enum ItemType {
 }
 
 /**
- * Represents a Datalayer space.
- * @interface Space
- */
-export interface Space {
-  /** Unique identifier */
-  uid: string;
-  /** Handle string identifier */
-  handle_s: string;
-  /** Space variant (e.g., 'default') */
-  variant_s?: string;
-  /** Space name */
-  name_t: string;
-  /** Space description */
-  description_t?: string;
-  /** Tags associated with the space */
-  tags_ss?: string[];
-  /** Documents contained in the space */
-  items?: Document[];
-  /** Space members */
-  members?: any[];
-}
-
-/**
- * Represents a document in a Datalayer space.
- * @interface Document
- */
-export interface Document {
-  /** Document ID */
-  id: string;
-  /** Document UID */
-  uid: string;
-  /** Document type */
-  type_s: string;
-  /** Document name */
-  name_t: string;
-  /** Document description */
-  description_t?: string;
-  /** Creator's UID */
-  creator_uid?: string;
-  /** Creator's handle */
-  creator_handle_s?: string;
-  /** Whether the document is public */
-  public_b?: boolean;
-
-  // For notebooks
-  /** Notebook file name */
-  notebook_name_s?: string;
-  /** Notebook file extension */
-  notebook_extension_s?: string;
-  /** Notebook format */
-  notebook_format_s?: string;
-
-  // For documents
-  /** Document file name */
-  document_name_s?: string;
-  /** Document file extension */
-  document_extension_s?: string;
-  /** Document format */
-  document_format_s?: string;
-
-  // Common fields
-  /** Content size in bytes */
-  content_length_i?: number;
-  /** Content MIME type */
-  content_type_s?: string;
-  /** MIME type */
-  mime_type_s?: string;
-  /** S3 storage path */
-  s3_path_s?: string;
-  /** S3 URL */
-  s3_url_s?: string;
-  /** CDN URL */
-  cdn_url_s?: string;
-  /** Creation timestamp */
-  creation_ts_dt?: string;
-  /** Last update timestamp */
-  last_update_ts_dt?: string;
-}
-
-/**
  * Data associated with a space tree item.
- * @interface SpaceItemData
+ * Uses SDK model instances directly without custom interfaces.
  */
 export interface SpaceItemData {
   /** Type of the tree item */
   type: ItemType;
-  /** Space data (for SPACE type) */
-  space?: Space;
-  /** Document data (for NOTEBOOK/DOCUMENT types) */
-  document?: Document;
+  /** SDK Space model instance (for SPACE type) */
+  space?: any; // SDK Space model
+  /** SDK Notebook or Lexical model instance (for NOTEBOOK/DOCUMENT types) */
+  document?: any; // SDK Notebook or Lexical model
   /** Error message (for ERROR type) */
   error?: string;
   /** Username of the authenticated user */
@@ -139,16 +69,24 @@ export interface SpaceItemData {
 
 /**
  * Tree item representing a space or document in the explorer.
- * @class SpaceItem
- * @extends {vscode.TreeItem}
+ * Automatically configures tooltip, icon, and command based on item type.
+ *
+ * @example
+ * ```typescript
+ * const item = new SpaceItem("My Space", TreeItemCollapsibleState.Collapsed, {
+ *   type: ItemType.SPACE,
+ *   space: spaceModel
+ * });
+ * ```
  */
 export class SpaceItem extends vscode.TreeItem {
   /**
    * Creates a new SpaceItem.
-   * @param {string} label - Display label
-   * @param {vscode.TreeItemCollapsibleState} collapsibleState - Collapse state
-   * @param {SpaceItemData} data - Associated data
-   * @param {SpaceItem} [parent] - Parent item
+   *
+   * @param label - Display label for the tree item
+   * @param collapsibleState - Whether item can be expanded/collapsed
+   * @param data - Associated data containing type and models
+   * @param parent - Parent item for hierarchical navigation
    */
   constructor(
     public readonly label: string,
@@ -163,6 +101,9 @@ export class SpaceItem extends vscode.TreeItem {
     this.command = this.getCommand();
   }
 
+  /**
+   * Generates tooltip text based on item type and data.
+   */
   private getTooltip(): string | undefined {
     switch (this.data.type) {
       case ItemType.ROOT:
@@ -170,16 +111,16 @@ export class SpaceItem extends vscode.TreeItem {
           this.data.username ? ` - ${this.data.username}` : ""
         }`;
       case ItemType.SPACE:
-        return this.data.space?.description_t || this.data.space?.name_t;
+        // For spaces, we'll use the label since tooltip needs to be sync
+        // The label already contains the space name
+        return this.label;
       case ItemType.NOTEBOOK:
       case ItemType.DOCUMENT:
-        if (this.data.document) {
-          const lastMod = this.data.document.last_update_ts_dt
-            ? new Date(this.data.document.last_update_ts_dt).toLocaleString()
-            : this.data.document.creation_ts_dt
-            ? new Date(this.data.document.creation_ts_dt).toLocaleString()
-            : "Unknown";
-          return `${this.data.document.name_t}\nLast modified: ${lastMod}`;
+      case ItemType.CELL:
+        // For documents, use label + space name
+        // Since we can't call async methods in getTooltip
+        if (this.data.spaceName) {
+          return `${this.label}\nSpace: ${this.data.spaceName}`;
         }
         return this.label;
       case ItemType.ERROR:
@@ -189,13 +130,19 @@ export class SpaceItem extends vscode.TreeItem {
     }
   }
 
+  /**
+   * Selects appropriate VS Code theme icon based on item type.
+   */
   private getIcon(): vscode.ThemeIcon | undefined {
     switch (this.data.type) {
       case ItemType.ROOT:
         return new vscode.ThemeIcon("menu");
       case ItemType.SPACE:
-        if (this.data.space?.variant_s === "default") {
-          return new vscode.ThemeIcon("library");
+        if (this.data.space) {
+          const variant = this.data.space.variant;
+          if (variant === "default") {
+            return new vscode.ThemeIcon("library");
+          }
         }
         return new vscode.ThemeIcon("folder");
       case ItemType.NOTEBOOK:
@@ -215,24 +162,24 @@ export class SpaceItem extends vscode.TreeItem {
     }
   }
 
+  /**
+   * Selects document icon based on type and file extension.
+   */
   private getDocumentIcon(): vscode.ThemeIcon {
     if (!this.data.document) {
       return new vscode.ThemeIcon("file");
     }
 
-    // Check the document type/extension
-    const fileName = this.data.document.name_t || "";
-    const docExtension = this.data.document.document_extension_s;
-    const docFormat = this.data.document.document_format_s;
+    const type = this.data.document.type;
+    const name = this.data.document.name;
 
-    // Check for lexical documents
-    if (docExtension === "lexical" || docFormat === "lexical") {
+    // Check if it's a lexical document
+    if (type === "lexical") {
       return new vscode.ThemeIcon("file-text");
     }
 
-    const ext =
-      path.extname(fileName).toLowerCase() ||
-      (docExtension ? `.${docExtension}` : "");
+    // Check by file extension
+    const ext = path.extname(name).toLowerCase();
     switch (ext) {
       case ".py":
         return new vscode.ThemeIcon("file-code");
@@ -260,6 +207,10 @@ export class SpaceItem extends vscode.TreeItem {
     }
   }
 
+  /**
+   * Generates VS Code command for item interaction.
+   * Returns appropriate command based on item type and error state.
+   */
   private getCommand(): vscode.Command | undefined {
     if (this.data.type === ItemType.NOTEBOOK && this.data.document) {
       return {
@@ -280,6 +231,14 @@ export class SpaceItem extends vscode.TreeItem {
         arguments: [this.data.document, this.data.spaceName],
       };
     } else if (this.data.type === ItemType.ERROR) {
+      // If the error is about not being logged in, show login command
+      if (this.data.error?.includes("login") || this.label.includes("login")) {
+        return {
+          command: "datalayer.login",
+          title: "Login",
+        };
+      }
+      // Otherwise show refresh command
       return {
         command: "datalayer.refreshSpaces",
         title: "Retry",

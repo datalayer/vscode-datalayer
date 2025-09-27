@@ -5,16 +5,19 @@
  */
 
 /**
- * @module runtimeControllerManager
- * Manages multiple NotebookController instances for Datalayer runtimes.
- * Creates dynamic controllers for existing runtimes and provides options to create new ones.
- * Handles controller lifecycle, real-time updates, and runtime status synchronization.
+ * Manages multiple VS Code NotebookController instances for Datalayer runtimes.
+ * Creates dynamic controllers for existing runtimes, handles controller lifecycle,
+ * and provides real-time updates based on runtime status changes.
+ *
+ * @see https://code.visualstudio.com/api/extension-guides/notebook
+ * @module providers/runtimeControllerManager
  */
 
 import * as vscode from "vscode";
-import { AuthService } from "../auth/authService";
-import { SpacerApiService } from "../spaces/spacerApiService";
-import { RuntimesApiService, RuntimeResponse } from "./runtimesApiService";
+import type { DatalayerSDK, Runtime } from "../../../core/lib/index.js";
+import { SDKAuthProvider } from "../services/authProvider";
+import { SDKRuntimeService } from "../services/runtimeService";
+import { SDKSpacerService } from "../services/spacerService";
 import { RuntimeController } from "./runtimeController";
 
 /**
@@ -38,7 +41,7 @@ export interface RuntimeControllerConfig {
   /** Type of controller to create */
   type: RuntimeControllerType;
   /** Existing runtime information (for ExistingRuntime type) */
-  runtime?: RuntimeResponse;
+  runtime?: Runtime;
   /** Environment name for new runtimes */
   environmentName?: string;
   /** Display name shown in VS Code UI */
@@ -51,16 +54,22 @@ export interface RuntimeControllerConfig {
 
 /**
  * Manages multiple NotebookController instances for Datalayer runtimes.
- * Provides dynamic kernel options in VS Code's kernel picker based on available runtimes.
+ * Provides dynamic kernel options in VS Code's kernel picker based on available runtimes
+ * with automatic refresh and real-time status synchronization.
  *
- * @class RuntimeControllerManager
-
+ * @example
+ * ```typescript
+ * const manager = new RuntimeControllerManager(context, authProvider, runtimeService);
+ * await manager.initialize();
+ * await manager.forceRefresh(); // Manual refresh
+ * manager.dispose(); // Cleanup
+ * ```
  */
 export class RuntimeControllerManager implements vscode.Disposable {
   private readonly _context: vscode.ExtensionContext;
-  private readonly _authService: AuthService;
-  private readonly _spacerApiService: SpacerApiService;
-  private readonly _runtimesApiService: RuntimesApiService;
+  private readonly _authProvider: SDKAuthProvider;
+  private readonly _spacerService: SDKSpacerService;
+  private readonly _sdkRuntimeService: SDKRuntimeService;
   private readonly _controllers = new Map<string, RuntimeController>();
   private _refreshTimer: NodeJS.Timeout | undefined;
   private _disposed = false;
@@ -68,13 +77,19 @@ export class RuntimeControllerManager implements vscode.Disposable {
   /**
    * Creates a new RuntimeControllerManager instance.
    *
-   * @param {vscode.ExtensionContext} context - The extension context
+   * @param context - The extension context
+   * @param authProvider - The SDK auth provider
+   * @param sdkRuntimeService - The SDK runtime service
    */
-  constructor(context: vscode.ExtensionContext) {
+  constructor(
+    context: vscode.ExtensionContext,
+    authProvider: SDKAuthProvider,
+    sdkRuntimeService: SDKRuntimeService
+  ) {
     this._context = context;
-    this._authService = AuthService.getInstance(context);
-    this._spacerApiService = SpacerApiService.getInstance();
-    this._runtimesApiService = RuntimesApiService.getInstance(context);
+    this._authProvider = authProvider;
+    this._spacerService = SDKSpacerService.getInstance();
+    this._sdkRuntimeService = sdkRuntimeService;
 
     console.log(
       "[RuntimeControllerManager] Initializing runtime controller manager"
@@ -85,9 +100,7 @@ export class RuntimeControllerManager implements vscode.Disposable {
    * Initializes the controller manager and creates initial controllers.
    * Sets up periodic refresh for runtime status updates.
    *
-   * @public
-
-   * @returns {Promise<void>}
+   * @returns Promise that resolves when initialization is complete
    */
   public async initialize(): Promise<void> {
     console.log("[RuntimeControllerManager] Starting initialization...");
@@ -130,9 +143,7 @@ export class RuntimeControllerManager implements vscode.Disposable {
    * Refreshes all controllers based on current runtime state.
    * Removes controllers for deleted runtimes and creates controllers for new ones.
    *
-   * @public
-
-   * @returns {Promise<void>}
+   * @returns Promise that resolves when refresh is complete
    */
   public async refreshControllers(): Promise<void> {
     if (this._disposed) {
@@ -152,7 +163,7 @@ export class RuntimeControllerManager implements vscode.Disposable {
 
     try {
       // Check if user is authenticated - if not, only show creation controllers
-      const isAuthenticated = this._authService.getAuthState().isAuthenticated;
+      const isAuthenticated = this._authProvider.isAuthenticated();
       console.log(
         "[RuntimeControllerManager] Authentication status:",
         isAuthenticated
@@ -194,7 +205,7 @@ export class RuntimeControllerManager implements vscode.Disposable {
         "[RuntimeControllerManager] ========== FETCHING RUNTIMES =========="
       );
       const startTime = Date.now();
-      const runtimes = await this._runtimesApiService.listRuntimes();
+      const runtimes = await this._sdkRuntimeService.listRuntimes();
       const fetchTime = Date.now() - startTime;
 
       console.log(
@@ -240,12 +251,11 @@ export class RuntimeControllerManager implements vscode.Disposable {
    * Generates controller configurations based on available runtimes.
    * Creates configs for existing runtimes and runtime creation options.
    *
-   * @private
-   * @param {RuntimeResponse[]} runtimes - Available runtimes
-   * @returns {RuntimeControllerConfig[]} Array of controller configurations
+   * @param runtimes - Available runtimes
+   * @returns Array of controller configurations
    */
   private generateControllerConfigs(
-    runtimes: RuntimeResponse[]
+    runtimes: Runtime[]
   ): RuntimeControllerConfig[] {
     console.log(
       "[RuntimeControllerManager] ========== GENERATING CONTROLLER CONFIGS =========="
@@ -306,8 +316,11 @@ export class RuntimeControllerManager implements vscode.Disposable {
 
         if (showDetails) {
           const creditsInfo =
-            runtime.credits_limit && runtime.credits_used !== undefined
-              ? ` (${runtime.credits_used}/${runtime.credits_limit} credits)`
+            (runtime as any).creditsLimit &&
+            (runtime as any).creditsUsed !== undefined
+              ? ` (${(runtime as any).creditsUsed}/${
+                  (runtime as any).creditsLimit
+                } credits)`
               : "";
 
           displayName += ` (${environmentName}${creditsInfo})`;
@@ -376,9 +389,7 @@ export class RuntimeControllerManager implements vscode.Disposable {
   /**
    * Creates a new RuntimeController with the given configuration.
    *
-   * @private
-   * @param {RuntimeControllerConfig} config - Controller configuration
-   * @returns {void}
+   * @param config - Controller configuration
    */
   private createController(config: RuntimeControllerConfig): void {
     const controllerId = this.getControllerId(config);
@@ -387,7 +398,9 @@ export class RuntimeControllerManager implements vscode.Disposable {
       const controller = new RuntimeController(
         this._context,
         config,
-        this._spacerApiService
+        this._spacerService,
+        this._sdkRuntimeService,
+        this._authProvider
       );
       this._controllers.set(controllerId, controller);
 
@@ -477,8 +490,7 @@ export class RuntimeControllerManager implements vscode.Disposable {
    * Gets all active runtime controllers.
    * Used for debugging and status display.
    *
-   * @public
-   * @returns {RuntimeController[]} Array of active controllers
+   * @returns Array of active controllers
    */
   public getActiveControllers(): RuntimeController[] {
     return Array.from(this._controllers.values());
@@ -488,10 +500,8 @@ export class RuntimeControllerManager implements vscode.Disposable {
    * Forces a manual refresh of all controllers.
    * Useful for external triggers like runtime lifecycle events.
    *
-   * @public
-
-   * @param {string} [selectRuntimeUid] - Optional UID of runtime to select after refresh
-   * @returns {Promise<RuntimeController | undefined>} The selected controller if found
+   * @param selectRuntimeUid - Optional UID of runtime to select after refresh
+   * @returns The selected controller if found
    */
   public async forceRefresh(
     selectRuntimeUid?: string
@@ -531,9 +541,6 @@ export class RuntimeControllerManager implements vscode.Disposable {
   /**
    * Disposes of the controller manager and cleans up resources.
    * Called when the extension is deactivated.
-   *
-   * @public
-   * @returns {void}
    */
   public dispose(): void {
     console.log("[RuntimeControllerManager] Disposing controller manager");

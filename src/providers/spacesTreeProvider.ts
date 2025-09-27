@@ -5,25 +5,29 @@
  */
 
 /**
- * @module spacesTreeProvider
  * Tree data provider for the Datalayer spaces view.
- * Displays user's spaces and documents in a hierarchical tree structure.
+ * Displays user's spaces and documents in a hierarchical tree structure with caching.
+ *
+ * @see https://code.visualstudio.com/api/extension-guides/tree-view
+ * @module providers/spacesTreeProvider
  */
 
 import * as vscode from "vscode";
-import {
-  SpaceItem,
-  ItemType,
-  SpaceItemData,
-  Space,
-  Document,
-} from "./spaceItem";
-import { SpacerApiService } from "./spacerApiService";
-import { AuthService } from "../auth/authService";
-import { detectDocumentType, getDocumentDisplayName } from "./documentUtils";
+import { SpaceItem, ItemType } from "../models/spaceItem";
+import { SDKSpacerService } from "../services/spacerService";
+import { SDKAuthProvider } from "../services/authProvider";
 
 /**
  * Tree data provider for the Datalayer Spaces view.
+ * Implements VS Code's TreeDataProvider interface to display spaces and documents
+ * with caching for improved performance.
+ *
+ * @example
+ * ```typescript
+ * const provider = new SpacesTreeProvider(authProvider);
+ * provider.refresh(); // Refresh entire tree
+ * provider.refreshSpace(spaceId); // Refresh specific space
+ * ```
  */
 export class SpacesTreeProvider implements vscode.TreeDataProvider<SpaceItem> {
   private _onDidChangeTreeData: vscode.EventEmitter<
@@ -33,22 +37,23 @@ export class SpacesTreeProvider implements vscode.TreeDataProvider<SpaceItem> {
     SpaceItem | undefined | null | void
   > = this._onDidChangeTreeData.event;
 
-  private authService: AuthService;
-  private apiService: SpacerApiService;
-  private spacesCache: Map<string, Space[]> = new Map();
-  private itemsCache: Map<string, Document[]> = new Map();
+  private authService: SDKAuthProvider;
+  private spacerService: SDKSpacerService;
+  private spacesCache: Map<string, any[]> = new Map();
+  private itemsCache: Map<string, any[]> = new Map();
 
   /**
    * Creates a new SpacesTreeProvider.
-   * @param {vscode.ExtensionContext} context - Extension context
+   *
+   * @param authProvider - Authentication provider for user state management
    */
-  constructor(private context: vscode.ExtensionContext) {
-    this.authService = AuthService.getInstance();
-    this.apiService = SpacerApiService.getInstance();
+  constructor(authProvider: SDKAuthProvider) {
+    this.authService = authProvider;
+    this.spacerService = SDKSpacerService.getInstance();
   }
 
   /**
-   * Refreshes the entire tree view.
+   * Refreshes the entire tree view by clearing caches and firing change event.
    */
   refresh(): void {
     console.log("[SpacesTree] Refreshing tree...");
@@ -59,7 +64,8 @@ export class SpacesTreeProvider implements vscode.TreeDataProvider<SpaceItem> {
 
   /**
    * Refreshes a specific space in the tree.
-   * @param {string} spaceId - ID of the space to refresh
+   *
+   * @param spaceId - ID of the space to refresh
    */
   refreshSpace(spaceId: string): void {
     console.log(`[SpacesTree] Refreshing space: ${spaceId}`);
@@ -69,10 +75,22 @@ export class SpacesTreeProvider implements vscode.TreeDataProvider<SpaceItem> {
     this._onDidChangeTreeData.fire();
   }
 
+  /**
+   * Gets the tree item representation for display.
+   *
+   * @param element - The SpaceItem to convert
+   * @returns The tree item for VS Code to display
+   */
   getTreeItem(element: SpaceItem): vscode.TreeItem {
     return element;
   }
 
+  /**
+   * Gets the children of a tree item.
+   *
+   * @param element - The parent element, or undefined for root
+   * @returns Array of child SpaceItems
+   */
   async getChildren(element?: SpaceItem): Promise<SpaceItem[]> {
     const authState = this.authService.getAuthState();
 
@@ -93,9 +111,9 @@ export class SpacesTreeProvider implements vscode.TreeDataProvider<SpaceItem> {
 
       // Get username or GitHub login for display
       const user = authState.user as any;
-      const displayName = user?.githubLogin
+      const displayName = user.githubLogin
         ? `@${user.githubLogin}`
-        : user?.name || user?.email || "User";
+        : user.email;
 
       return [
         new SpaceItem(
@@ -104,7 +122,7 @@ export class SpacesTreeProvider implements vscode.TreeDataProvider<SpaceItem> {
           {
             type: ItemType.ROOT,
             username: displayName,
-            githubLogin: user?.githubLogin,
+            githubLogin: user.githubLogin,
           }
         ),
       ];
@@ -127,17 +145,22 @@ export class SpacesTreeProvider implements vscode.TreeDataProvider<SpaceItem> {
     return [];
   }
 
+  /**
+   * Fetches and returns user's spaces as tree items.
+   *
+   * @returns Array of SpaceItems representing user's spaces
+   */
   private async getSpaces(): Promise<SpaceItem[]> {
     try {
       // Check cache first
-      let spaces: Space[];
+      let spaces: any[];
       if (this.spacesCache.has("user")) {
         spaces = this.spacesCache.get("user")!;
       } else {
         // Show loading state
         this._onDidChangeTreeData.fire();
 
-        spaces = await this.apiService.getUserSpaces();
+        spaces = await this.spacerService.getUserSpaces();
         this.spacesCache.set("user", spaces);
       }
 
@@ -156,20 +179,21 @@ export class SpacesTreeProvider implements vscode.TreeDataProvider<SpaceItem> {
 
       // Sort spaces: default space first, then alphabetically
       spaces.sort((a, b) => {
-        if (a.variant_s === "default") {
+        if (a.variant === "default") {
           return -1;
         }
-        if (b.variant_s === "default") {
+        if (b.variant === "default") {
           return 1;
         }
-        return (a.name_t || "").localeCompare(b.name_t || "");
+        return a.name.localeCompare(b.name);
       });
 
+      // Create tree items
       return spaces.map((space) => {
         console.log("[SpacesTree] Creating tree item for space:", space);
-        const spaceName = space.name_t || "Unnamed Space";
-        const label =
-          space.variant_s === "default" ? `${spaceName} (Default)` : spaceName;
+        const name = space.name;
+        const variant = space.variant;
+        const label = variant === "default" ? `${name} (Default)` : name;
         return new SpaceItem(label, vscode.TreeItemCollapsibleState.Collapsed, {
           type: ItemType.SPACE,
           space: space,
@@ -190,7 +214,13 @@ export class SpacesTreeProvider implements vscode.TreeDataProvider<SpaceItem> {
     }
   }
 
-  private async getSpaceItems(space: Space): Promise<SpaceItem[]> {
+  /**
+   * Fetches and returns items within a specific space.
+   *
+   * @param space - The space object containing space metadata
+   * @returns Array of SpaceItems representing documents in the space
+   */
+  private async getSpaceItems(space: any): Promise<SpaceItem[]> {
     try {
       const spaceId = space.uid;
 
@@ -213,26 +243,15 @@ export class SpacesTreeProvider implements vscode.TreeDataProvider<SpaceItem> {
 
       console.log("[SpacesTree] Getting items for space ID:", spaceId);
 
-      // The items are already included in the space response
-      let items: Document[] = space.items || [];
+      let items: any[] = [];
 
-      // If items array is not present, try fetching from API
-      if (!space.items) {
-        if (this.itemsCache.has(spaceId)) {
-          items = this.itemsCache.get(spaceId)!;
-        } else {
-          console.log(
-            "[SpacesTree] Items not in space object, fetching from API..."
-          );
-          items = await this.apiService.getSpaceItems(spaceId);
-          this.itemsCache.set(spaceId, items);
-        }
+      if (this.itemsCache.has(spaceId)) {
+        items = this.itemsCache.get(spaceId)!;
+        console.log("[SpacesTree] Using cached items:", items.length);
       } else {
-        console.log(
-          "[SpacesTree] Using items from space object:",
-          items.length,
-          "items found"
-        );
+        console.log("[SpacesTree] Fetching items from API...");
+        items = await this.spacerService.getSpaceItems(spaceId);
+        this.itemsCache.set(spaceId, items);
       }
 
       if (items.length === 0) {
@@ -248,54 +267,43 @@ export class SpacesTreeProvider implements vscode.TreeDataProvider<SpaceItem> {
         ];
       }
 
-      // Filter for notebooks, lexical documents, and cells only using shared logic
-      const notebooks = items.filter(
-        (item) => detectDocumentType(item).isNotebook
-      );
-      const lexicalDocuments = items.filter(
-        (item) => detectDocumentType(item).isLexical
-      );
-      const cells = items.filter((item) => detectDocumentType(item).isCell);
-
+      const spaceName = space.name;
       const result: SpaceItem[] = [];
 
-      // Add notebooks
-      notebooks.forEach((notebook) => {
-        const displayName = getDocumentDisplayName(notebook);
-        result.push(
-          new SpaceItem(displayName, vscode.TreeItemCollapsibleState.None, {
-            type: ItemType.NOTEBOOK,
-            document: notebook,
-            spaceName: space.name_t || "Unnamed Space",
-          })
-        );
-      });
+      for (const item of items) {
+        const itemType = item.type;
+        const itemName = item.name;
 
-      // Add lexical documents only
-      lexicalDocuments.forEach((doc) => {
-        const displayName = getDocumentDisplayName(doc);
-        result.push(
-          new SpaceItem(displayName, vscode.TreeItemCollapsibleState.None, {
-            type: ItemType.DOCUMENT,
-            document: doc,
-            spaceName: space.name_t || "Unnamed Space",
-          })
-        );
-      });
+        if (itemType === "notebook") {
+          result.push(
+            new SpaceItem(itemName, vscode.TreeItemCollapsibleState.None, {
+              type: ItemType.NOTEBOOK,
+              document: item,
+              spaceName: spaceName,
+            })
+          );
+        } else if (itemType === "lexical") {
+          result.push(
+            new SpaceItem(itemName, vscode.TreeItemCollapsibleState.None, {
+              type: ItemType.DOCUMENT,
+              document: item,
+              spaceName: spaceName,
+            })
+          );
+        } else if (itemType === "cell") {
+          result.push(
+            new SpaceItem(itemName, vscode.TreeItemCollapsibleState.None, {
+              type: ItemType.CELL,
+              document: item,
+              spaceName: spaceName,
+            })
+          );
+        } else {
+          // Skip unknown types
+          console.warn("[SpacesTree] Unknown item type:", itemType, item);
+        }
+      }
 
-      // Add cells
-      cells.forEach((cell) => {
-        const cellName = cell.name_t || "Untitled Cell";
-        result.push(
-          new SpaceItem(cellName, vscode.TreeItemCollapsibleState.None, {
-            type: ItemType.CELL,
-            document: cell,
-            spaceName: space.name_t || "Unnamed Space",
-          })
-        );
-      });
-
-      // If we filtered everything out, show a message
       if (result.length === 0 && items.length > 0) {
         return [
           new SpaceItem(
@@ -325,6 +333,12 @@ export class SpacesTreeProvider implements vscode.TreeDataProvider<SpaceItem> {
     }
   }
 
+  /**
+   * Gets the parent of a tree item.
+   *
+   * @param element - The child element
+   * @returns The parent SpaceItem or undefined
+   */
   getParent(element: SpaceItem): vscode.ProviderResult<SpaceItem> {
     return element.parent;
   }

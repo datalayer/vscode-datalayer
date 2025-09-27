@@ -5,9 +5,11 @@
  */
 
 /**
- * @module datalayerFileSystemProvider
  * Virtual file system provider for Datalayer documents.
- * Enables seamless integration of remote documents with VS Code's file system.
+ * Maps remote documents to clean datalayer:// URIs for VS Code integration.
+ *
+ * @see https://code.visualstudio.com/api/extension-guides/virtual-documents
+ * @module providers/documentsFileSystemProvider
  */
 
 import * as vscode from "vscode";
@@ -15,21 +17,24 @@ import * as fs from "fs";
 import * as path from "path";
 
 /**
- * A virtual file system provider that maps Datalayer documents to a cleaner URI scheme
- * This allows us to show "datalayer://Space Name/Notebook.ipynb" instead of temp paths
+ * Virtual file system provider that maps Datalayer documents to clean URI scheme.
+ * Allows VS Code to display "datalayer://Space Name/Notebook.ipynb" instead of temp paths.
+ *
+ * @example
+ * ```typescript
+ * const provider = DatalayerFileSystemProvider.getInstance();
+ * const virtualUri = provider.registerMapping('My Space/notebook.ipynb', '/tmp/real-path.ipynb');
+ * ```
  */
 export class DatalayerFileSystemProvider implements vscode.FileSystemProvider {
   private static instance: DatalayerFileSystemProvider;
 
-  // Maps virtual URIs to real file paths
   private virtualToReal: Map<string, string> = new Map();
-  // Maps real file paths to virtual URIs
   private realToVirtual: Map<string, vscode.Uri> = new Map();
 
   private _emitter = new vscode.EventEmitter<vscode.FileChangeEvent[]>();
   /**
    * Event fired when files change in the virtual file system.
-   * This event allows VS Code to react to file changes.
    */
   readonly onDidChangeFile: vscode.Event<vscode.FileChangeEvent[]> =
     this._emitter.event;
@@ -38,7 +43,7 @@ export class DatalayerFileSystemProvider implements vscode.FileSystemProvider {
 
   /**
    * Gets the singleton instance of DatalayerFileSystemProvider.
-   * @returns {DatalayerFileSystemProvider} The singleton instance
+   * @returns The singleton instance
    */
   static getInstance(): DatalayerFileSystemProvider {
     if (!DatalayerFileSystemProvider.instance) {
@@ -48,7 +53,11 @@ export class DatalayerFileSystemProvider implements vscode.FileSystemProvider {
   }
 
   /**
-   * Register a mapping between a virtual URI and a real file path
+   * Register a mapping between a virtual URI and a real file path.
+   *
+   * @param virtualPath - Clean path for the virtual URI (e.g., "Space Name/Notebook.ipynb")
+   * @param realPath - Actual file system path to the document
+   * @returns The created virtual URI with datalayer:// scheme
    */
   registerMapping(virtualPath: string, realPath: string): vscode.Uri {
     // Create a virtual URI with the datalayer scheme
@@ -62,36 +71,40 @@ export class DatalayerFileSystemProvider implements vscode.FileSystemProvider {
   }
 
   /**
-   * Get the real file path for a virtual URI
+   * Get the real file path for a virtual URI.
+   *
+   * @param uri - Virtual URI to resolve
+   * @returns Real file path or undefined if not found
    */
   getRealPath(uri: vscode.Uri): string | undefined {
     return this.virtualToReal.get(uri.toString());
   }
 
   /**
-   * Get the virtual URI for a real file path
+   * Get the virtual URI for a real file path.
+   *
+   * @param realPath - Real file path to resolve
+   * @returns Virtual URI or undefined if not found
    */
   getVirtualUri(realPath: string): vscode.Uri | undefined {
     return this.realToVirtual.get(realPath);
   }
 
-  // FileSystemProvider implementation
-
   /**
    * Watch a file or directory for changes.
+   *
    * @param uri - The URI to watch
    * @returns A disposable that stops watching when disposed
    */
   watch(uri: vscode.Uri): vscode.Disposable {
-    // We don't need to watch for changes as documents are in collaborative mode
     return new vscode.Disposable(() => {});
   }
 
   /**
    * Get metadata about a file or directory.
+   *
    * @param uri - The URI of the file or directory
    * @returns Metadata about the file or directory
-   * @throws Error if the file or directory doesn't exist
    */
   stat(uri: vscode.Uri): vscode.FileStat {
     const realPath = this.getRealPath(uri);
@@ -112,9 +125,9 @@ export class DatalayerFileSystemProvider implements vscode.FileSystemProvider {
 
   /**
    * Read the contents of a directory.
+   *
    * @param uri - The URI of the directory
    * @returns Array of [name, type] tuples representing directory contents
-   * @throws Error if the directory doesn't exist
    */
   readDirectory(uri: vscode.Uri): [string, vscode.FileType][] {
     const realPath = this.getRealPath(uri);
@@ -139,8 +152,8 @@ export class DatalayerFileSystemProvider implements vscode.FileSystemProvider {
 
   /**
    * Create a new directory.
+   *
    * @param uri - The URI of the directory to create
-   * @throws Error if creation fails
    */
   createDirectory(uri: vscode.Uri): void {
     const realPath = this.getRealPath(uri);
@@ -155,9 +168,9 @@ export class DatalayerFileSystemProvider implements vscode.FileSystemProvider {
 
   /**
    * Read the contents of a file.
+   *
    * @param uri - The URI of the file to read
    * @returns The file contents as a byte array
-   * @throws Error if the file doesn't exist
    */
   readFile(uri: vscode.Uri): Uint8Array {
     const realPath = this.getRealPath(uri);
@@ -190,10 +203,10 @@ export class DatalayerFileSystemProvider implements vscode.FileSystemProvider {
 
   /**
    * Write data to a file.
+   *
    * @param uri - The URI of the file to write
    * @param content - The content to write
    * @param options - Write options (create and overwrite flags)
-   * @throws Error if write fails
    */
   writeFile(
     uri: vscode.Uri,
@@ -224,9 +237,9 @@ export class DatalayerFileSystemProvider implements vscode.FileSystemProvider {
 
   /**
    * Delete a file or directory.
+   *
    * @param uri - The URI to delete
    * @param options - Delete options (recursive flag)
-   * @throws Error if deletion fails
    */
   delete(uri: vscode.Uri, options: { recursive: boolean }): void {
     const realPath = this.getRealPath(uri);
@@ -252,10 +265,10 @@ export class DatalayerFileSystemProvider implements vscode.FileSystemProvider {
 
   /**
    * Rename or move a file or directory.
+   *
    * @param oldUri - The current URI
    * @param newUri - The new URI
    * @param options - Rename options (overwrite flag)
-   * @throws Error if rename fails
    */
   rename(
     oldUri: vscode.Uri,
@@ -279,7 +292,6 @@ export class DatalayerFileSystemProvider implements vscode.FileSystemProvider {
 
     fs.renameSync(oldRealPath, newRealPath);
 
-    // Update mappings
     this.virtualToReal.delete(oldUri.toString());
     this.realToVirtual.delete(oldRealPath);
     this.virtualToReal.set(newUri.toString(), newRealPath);
@@ -292,7 +304,7 @@ export class DatalayerFileSystemProvider implements vscode.FileSystemProvider {
   }
 
   /**
-   * Clean up all mappings
+   * Clean up all mappings.
    */
   dispose(): void {
     this.virtualToReal.clear();
