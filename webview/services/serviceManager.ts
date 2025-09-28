@@ -141,13 +141,12 @@ function createEvent(config: IEventConfiguration) {
 }
 
 /*
- * Creates a CloseEvent object and extends it to allow full modification of
- * its properties.
+ * Creates a CloseEvent object for WebSocket closure.
  *
- * @param {object} config - within config: type and optionally target, code, and reason
+ * @param {object} config - within config: type and optionally code, reason, wasClean
  */
 function createCloseEvent(config: ICloseEventConfiguration) {
-  const { code, reason, type, target } = config;
+  const { code, reason, type } = config;
   let { wasClean } = config;
   if (!wasClean) {
     wasClean = code === 1000;
@@ -157,11 +156,9 @@ function createCloseEvent(config: ICloseEventConfiguration) {
     reason,
     wasClean,
   });
-  if (target) {
-    (closeEvent as any).target = target;
-    (closeEvent as any).srcElement = target;
-    (closeEvent as any).currentTarget = target;
-  }
+  // Note: target, srcElement, and currentTarget are read-only properties
+  // that are automatically set by the browser when the event is dispatched.
+  // Attempting to set them manually causes errors.
   return closeEvent;
 }
 
@@ -441,7 +438,6 @@ class WebSocket extends EventTarget {
     this._disposable.dispose();
     const closeEvent = createCloseEvent({
       type: "close",
-      target: this,
       code,
       reason,
     });

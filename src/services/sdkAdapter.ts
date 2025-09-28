@@ -180,12 +180,14 @@ export function createVSCodeSDK(config: VSCodeSDKConfig): DatalayerSDK {
   // Define VS Code-specific handlers for logging and error handling
   const handlers: SDKHandlers = {
     beforeCall: (methodName: string, args: any[]) => {
-      console.log(`[SDK] Calling ${methodName}`, args.length > 0 ? args : '');
+      console.log(`[SDK] Calling ${methodName}`, args.length > 0 ? args : "");
     },
     afterCall: (methodName: string, result: any) => {
       // Only log non-sensitive results
-      if (methodName !== 'getToken' && methodName !== 'login') {
-        const resultInfo = Array.isArray(result) ? `(${result.length} items)` : '';
+      if (methodName !== "getToken" && methodName !== "login") {
+        const resultInfo = Array.isArray(result)
+          ? `(${result.length} items)`
+          : "";
         console.log(`[SDK] ${methodName} completed ${resultInfo}`);
       }
     },
@@ -194,7 +196,10 @@ export function createVSCodeSDK(config: VSCodeSDKConfig): DatalayerSDK {
 
       // Show user-friendly error messages for common errors
       if (error instanceof Error) {
-        if (error.message.includes("Not authenticated") || error.message.includes("401")) {
+        if (
+          error.message.includes("Not authenticated") ||
+          error.message.includes("401")
+        ) {
           const action = await vscode.window.showErrorMessage(
             "Authentication required. Please login to Datalayer.",
             "Login"
@@ -202,13 +207,16 @@ export function createVSCodeSDK(config: VSCodeSDKConfig): DatalayerSDK {
           if (action === "Login") {
             vscode.commands.executeCommand("datalayer.login");
           }
-        } else if (error.message.includes("Network") || error.message.includes("fetch")) {
+        } else if (
+          error.message.includes("Network") ||
+          error.message.includes("fetch")
+        ) {
           vscode.window.showErrorMessage(
             "Network error. Please check your connection and try again."
           );
         }
       }
-    }
+    },
   };
 
   const sdk = new DatalayerSDK({

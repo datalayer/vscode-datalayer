@@ -192,7 +192,7 @@ export class JupyterNotebookProvider
   ): Promise<void> {
     // Add the webview to our internal set of active webviews
     this.webviews.add(document.uri, webviewPanel);
-    
+
     // Register webview with kernel bridge for kernel communication
     this._kernelBridge.registerWebview(document.uri, webviewPanel);
 
@@ -436,12 +436,15 @@ export class JupyterNotebookProvider
    * @param document - Associated document
    * @param message - Received message
    */
-  private onMessage(
+  private async onMessage(
     webview: vscode.WebviewPanel,
     document: NotebookDocument,
     message: ExtensionMessage
   ) {
-    console.log("[JupyterNotebookProvider] Received message from webview:", message.type);
+    console.log(
+      "[JupyterNotebookProvider] Received message from webview:",
+      message.type
+    );
 
     switch (message.type) {
       case "ready":
@@ -449,21 +452,99 @@ export class JupyterNotebookProvider
         return;
       case "select-runtime":
       case "select-kernel": {
-        console.log("[JupyterNotebookProvider] Received select-kernel message from webview");
+        console.log(
+          "[JupyterNotebookProvider] Received select-kernel message from webview"
+        );
 
         // Show the kernel selector with available options
         const sdk = getSDKInstance();
         const authProvider = SDKAuthProvider.getInstance();
 
         // Pass the document URI and kernel bridge so the kernel can be connected
-        showKernelSelector(sdk, authProvider, this._kernelBridge, document.uri).then(() => {
-          console.log("[JupyterNotebookProvider] Kernel selection completed");
-        }).catch((error) => {
-          console.error("[JupyterNotebookProvider] Kernel selection failed:", error);
-          // Fallback to Datalayer runtime selector
-          this.showDatalayerRuntimeSelector(document);
-        });
+        showKernelSelector(sdk, authProvider, this._kernelBridge, document.uri)
+          .then(() => {
+            console.log("[JupyterNotebookProvider] Kernel selection completed");
+          })
+          .catch((error) => {
+            console.error(
+              "[JupyterNotebookProvider] Kernel selection failed:",
+              error
+            );
+            // Fallback to Datalayer runtime selector
+            this.showDatalayerRuntimeSelector(document);
+          });
 
+        return;
+      }
+
+      case "terminate-runtime": {
+        console.log(
+          "[JupyterNotebookProvider] Received terminate-runtime message from webview"
+        );
+
+        const runtime = message.body?.runtime;
+        if (!runtime) {
+          console.error(
+            "[JupyterNotebookProvider] No runtime provided for termination"
+          );
+          return;
+        }
+
+        // Show confirmation dialog
+        vscode.window
+          .showWarningMessage(
+            `Terminate runtime "${
+              runtime.name || runtime.uid
+            }"? This will stop all running notebooks using this runtime.`,
+            { modal: true },
+            "Terminate"
+          )
+          .then(async (selection) => {
+            if (selection === "Terminate") {
+              try {
+                const sdk = getSDKInstance();
+
+                // Delete the runtime via SDK - MUST use pod_name, not uid!
+                const podName =
+                  runtime.pod_name || runtime.podName || runtime.uid;
+                console.log(
+                  "[JupyterNotebookProvider] Deleting runtime with pod_name:",
+                  podName
+                );
+                console.log(
+                  "[JupyterNotebookProvider] Runtime object for context:",
+                  JSON.stringify(runtime, null, 2)
+                );
+
+                const result = await (sdk as any).deleteRuntime(podName);
+                console.log(
+                  "[JupyterNotebookProvider] deleteRuntime API result:",
+                  result
+                );
+
+                // Notify user of success
+                vscode.window.showInformationMessage(
+                  `Runtime "${
+                    runtime.name || runtime.uid
+                  }" terminated successfully.`
+                );
+
+                // Clear the kernel selection in the webview
+                await webview.webview.postMessage({
+                  type: "runtime-terminated",
+                  runtime: null,
+                });
+              } catch (error: any) {
+                console.error(
+                  "[JupyterNotebookProvider] Failed to terminate runtime:",
+                  error
+                );
+                vscode.window.showErrorMessage(
+                  `Failed to terminate runtime: ${error.message || error}`
+                );
+              }
+            }
+          });
         return;
       }
 
@@ -556,6 +637,30 @@ export class JupyterNotebookProvider
         console.warn("[NotebookEditor] Unexpected getFileData message");
         return;
       }
+      case "runtime-expired": {
+        console.log(
+          "[JupyterNotebookProvider] Received runtime-expired message from webview"
+        );
+        const runtime = message.body?.runtime;
+        if (!runtime) {
+          console.error(
+            "[JupyterNotebookProvider] No runtime provided for expiration handling"
+          );
+          return;
+        }
+        // Show notification that runtime expired
+        vscode.window.showWarningMessage(
+          `Runtime "${
+            runtime.name || runtime.uid
+          }" has expired. Switching back to mock service manager.`
+        );
+        // Clear the kernel selection in the webview (same as terminate-runtime)
+        await webview.webview.postMessage({
+          type: "runtime-terminated", // Reuse the same message type for cleanup
+          runtime: null,
+        });
+        return;
+      }
     }
     console.warn(`Unknown message ${message.type}.`, message);
   }
@@ -570,18 +675,29 @@ export class JupyterNotebookProvider
     const sdk = getSDKInstance();
     const authProvider = SDKAuthProvider.getInstance();
 
-    selectDatalayerRuntime(sdk, authProvider).then(async (runtime) => {
-      console.log("[JupyterNotebookProvider] selectDatalayerRuntime promise resolved with:", runtime);
-      if (runtime) {
-        console.log("[JupyterNotebookProvider] Runtime selected:", runtime);
+    selectDatalayerRuntime(sdk, authProvider)
+      .then(async (runtime) => {
+        console.log(
+          "[JupyterNotebookProvider] selectDatalayerRuntime promise resolved with:",
+          runtime
+        );
+        if (runtime) {
+          console.log("[JupyterNotebookProvider] Runtime selected:", runtime);
 
-        // Send selected runtime to webview via kernel bridge
-        await this._kernelBridge.connectWebviewNotebook(document.uri, runtime);
-      }
-    }).catch((error) => {
-      console.error("[JupyterNotebookProvider] Failed to select runtime:", error);
-      vscode.window.showErrorMessage(`Failed to select runtime: ${error}`);
-    });
+          // Send selected runtime to webview via kernel bridge
+          await this._kernelBridge.connectWebviewNotebook(
+            document.uri,
+            runtime
+          );
+        }
+      })
+      .catch((error) => {
+        console.error(
+          "[JupyterNotebookProvider] Failed to select runtime:",
+          error
+        );
+        vscode.window.showErrorMessage(`Failed to select runtime: ${error}`);
+      });
   }
 }
 

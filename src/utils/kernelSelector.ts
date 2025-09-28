@@ -11,11 +11,11 @@
  * @module utils/kernelSelector
  */
 
-import * as vscode from 'vscode';
-import { selectDatalayerRuntime, setRuntime } from './runtimeSelector';
-import type { DatalayerSDK } from '../../../core/lib/index.js';
-import { SDKAuthProvider } from '../services/authProvider';
-import { KernelBridge } from '../services/kernelBridge';
+import * as vscode from "vscode";
+import { selectDatalayerRuntime, setRuntime } from "./runtimeSelector";
+import type { DatalayerSDK } from "../../../core/lib/index.js";
+import { SDKAuthProvider } from "../services/authProvider";
+import { KernelBridge } from "../services/kernelBridge";
 
 interface KernelOption {
   label: string;
@@ -40,10 +40,9 @@ export async function showKernelSelector(
   kernelBridge: KernelBridge,
   documentUri?: vscode.Uri
 ): Promise<void> {
-
   const options: KernelOption[] = [
     {
-      label: 'Datalayer Platform',
+      label: "Datalayer Platform",
       action: async () => {
         const runtime = await selectDatalayerRuntime(sdk, authProvider);
         if (runtime) {
@@ -53,18 +52,18 @@ export async function showKernelSelector(
             await kernelBridge.connectWebviewNotebook(documentUri, runtime);
           }
         }
-      }
+      },
     },
     {
-      label: 'Python Environments... (coming soon)',
+      label: "Python Environments... (coming soon)",
       action: async () => {
         vscode.window.showInformationMessage(
-          'Local Python kernel support is coming soon. For now, please use Datalayer Platform or open the notebook directly in VS Code.'
+          "Local Python kernel support is coming soon. For now, please use Datalayer Platform or open the notebook directly in VS Code."
         );
-      }
+      },
     },
     {
-      label: 'Existing Jupyter Server...',
+      label: "Existing Jupyter Server...",
       action: async () => {
         // Use the existing setRuntime function to get Jupyter server URL
         const serverUrl = await setRuntime();
@@ -80,38 +79,48 @@ export async function showKernelSelector(
             // Create a runtime-like object for the Jupyter server
             const jupyterRuntime: any = {
               uid: `jupyter-${Date.now()}`,
-              given_name: 'Jupyter Server',
-              name: 'Jupyter Server',
+              given_name: "Jupyter Server",
+              name: "Jupyter Server",
               ingress: baseUrl,
               token: token,
-              status: 'ready',
-              environment_name: 'jupyter',
-              pod_name: 'jupyter-server',
-              burning_rate: 0
+              status: "ready",
+              environment_name: "jupyter",
+              pod_name: "jupyter-server",
+              burning_rate: 0,
             };
 
             // If we have a document URI, connect it to the Jupyter server
             if (documentUri) {
-              await kernelBridge.connectWebviewNotebook(documentUri, jupyterRuntime);
+              await kernelBridge.connectWebviewNotebook(
+                documentUri,
+                jupyterRuntime
+              );
             }
 
-            vscode.window.showInformationMessage(`Connected to Jupyter server at ${baseUrl}`);
+            vscode.window.showInformationMessage(
+              `Connected to Jupyter server at ${baseUrl}`
+            );
           } catch (error) {
-            console.error("[KernelSelector] Failed to connect to Jupyter server:", error);
-            vscode.window.showErrorMessage(`Failed to connect to Jupyter server: ${error}`);
+            console.error(
+              "[KernelSelector] Failed to connect to Jupyter server:",
+              error
+            );
+            vscode.window.showErrorMessage(
+              `Failed to connect to Jupyter server: ${error}`
+            );
           }
         }
-      }
-    }
+      },
+    },
   ];
 
-  const items = options.map(opt => ({
+  const items = options.map((opt) => ({
     label: opt.label,
-    option: opt
+    option: opt,
   }));
 
   const selected = await vscode.window.showQuickPick(items, {
-    placeHolder: 'Type to choose a kernel source'
+    placeHolder: "Type to choose a kernel source",
   });
 
   if (selected && selected.option) {

@@ -7,7 +7,7 @@
 /**
  * Kernel bridge service that routes kernel connections to appropriate handlers.
  * Detects notebook type and connects kernels accordingly.
- * 
+ *
  * @module services/kernelBridge
  */
 
@@ -24,10 +24,13 @@ interface KernelSelectionMessage {
   runtime: {
     uid: string;
     name: string;
-    url: string;  // Changed from 'ingress' to 'url' for LocalNotebook compatibility
+    url: string; // Changed from 'ingress' to 'url' for LocalNotebook compatibility
     token: string;
     status: string;
     environment_name?: string;
+    started_at?: string;
+    expires_at?: string;
+    credits?: number;
   };
 }
 
@@ -41,7 +44,7 @@ export class KernelBridge implements vscode.Disposable {
 
   /**
    * Creates a new KernelBridge instance.
-   * 
+   *
    * @param sdk - Datalayer SDK instance
    * @param authProvider - Authentication provider
    */
@@ -54,7 +57,7 @@ export class KernelBridge implements vscode.Disposable {
 
   /**
    * Registers a webview panel for kernel communication.
-   * 
+   *
    * @param uri - Notebook URI
    * @param webview - Webview panel
    */
@@ -66,7 +69,7 @@ export class KernelBridge implements vscode.Disposable {
 
   /**
    * Unregisters a webview panel.
-   * 
+   *
    * @param uri - Notebook URI
    */
   public unregisterWebview(uri: vscode.Uri): void {
@@ -108,33 +111,39 @@ export class KernelBridge implements vscode.Disposable {
 
     // Don't log the full runtime object as it might not serialize well
     // Just log that we received it
-    console.log("[KernelBridge] Received runtime object of type:", typeof runtime, runtime?.constructor?.name);
+    console.log(
+      "[KernelBridge] Received runtime object of type:",
+      typeof runtime,
+      runtime?.constructor?.name
+    );
 
     // First, serialize the runtime if it's a model object
     let runtimeData: any;
 
     // Log what type of runtime object we have
     console.log("[KernelBridge] Runtime object type check:", {
-      hasToJSON: typeof (runtime as any).toJSON === 'function',
-      isObject: typeof runtime === 'object',
+      hasToJSON: typeof (runtime as any).toJSON === "function",
+      isObject: typeof runtime === "object",
       constructor: runtime?.constructor?.name,
-      hasUID: 'uid' in runtime,
-      hasGivenName: 'givenName' in (runtime as any),
-      hasIngress: 'ingress' in (runtime as any),
-      hasJupyterUrl: 'jupyterUrl' in (runtime as any),
-      hasToken: 'token' in (runtime as any),
-      hasJupyterToken: 'jupyterToken' in (runtime as any)
+      hasUID: "uid" in runtime,
+      hasGivenName: "givenName" in (runtime as any),
+      hasIngress: "ingress" in (runtime as any),
+      hasJupyterUrl: "jupyterUrl" in (runtime as any),
+      hasToken: "token" in (runtime as any),
+      hasJupyterToken: "jupyterToken" in (runtime as any),
     });
 
     // Check if runtime is a model with toJSON method
-    if (runtime && typeof (runtime as any).toJSON === 'function') {
+    if (runtime && typeof (runtime as any).toJSON === "function") {
       console.log("[KernelBridge] Runtime is a model, calling toJSON()");
       const jsonResult = (runtime as any).toJSON();
       console.log("[KernelBridge] toJSON() result:", jsonResult);
 
       // If toJSON returns empty object, extract fields directly from the model
       if (!jsonResult || Object.keys(jsonResult).length === 0) {
-        console.log("[KernelBridge] toJSON() returned empty, extracting fields directly from model");
+        console.log(
+          "[KernelBridge] toJSON() returned empty, extracting fields directly from model"
+        );
         // Fall through to direct extraction
       } else {
         runtimeData = jsonResult;
@@ -143,12 +152,17 @@ export class KernelBridge implements vscode.Disposable {
 
     // If we don't have runtimeData yet, extract fields directly
     if (!runtimeData || Object.keys(runtimeData).length === 0) {
-      console.log("[KernelBridge] Extracting fields directly from runtime object");
+      console.log(
+        "[KernelBridge] Extracting fields directly from runtime object"
+      );
 
       // Check if runtime has _data property (SDK model pattern)
       const dataField = (runtime as any)._data;
       if (dataField) {
-        console.log("[KernelBridge] Found _data field on runtime model:", Object.keys(dataField));
+        console.log(
+          "[KernelBridge] Found _data field on runtime model:",
+          Object.keys(dataField)
+        );
 
         // Try to use _data directly if other methods failed
         if (dataField.ingress && dataField.token) {
@@ -158,40 +172,100 @@ export class KernelBridge implements vscode.Disposable {
             pod_name: dataField.pod_name,
             ingress: dataField.ingress,
             token: dataField.token,
-            status: dataField.status || dataField.state || 'ready',
-            environment_name: dataField.environment_name
+            status: dataField.status || dataField.state || "ready",
+            environment_name: dataField.environment_name,
+            started_at: dataField.started_at || dataField.created_at,
+            expires_at:
+              dataField.expired_at || dataField.expires_at || dataField.expiry,
+            credits: dataField.credits || dataField.burning_rate,
           };
-          console.log("[KernelBridge] Extracted runtime data from _data field");
+          console.log(
+            "[KernelBridge] Extracted runtime data from _data field with timing:",
+            {
+              started_at: runtimeData.started_at,
+              expires_at: runtimeData.expires_at,
+              credits: runtimeData.credits,
+            }
+          );
         }
       }
 
       // If still no data, try getters
       if (!runtimeData) {
-        console.log("[KernelBridge] Runtime enumerable properties:", Object.keys(runtime));
+        console.log(
+          "[KernelBridge] Runtime enumerable properties:",
+          Object.keys(runtime)
+        );
 
         // Try various field access patterns - check for model getters and direct properties
-        const uid = runtime.uid || (runtime as any)['uid'];
-        const givenName = (runtime as any).givenName || (runtime as any).given_name || (runtime as any)['given_name'];
-        const podName = (runtime as any).podName || (runtime as any).pod_name || (runtime as any)['pod_name'];
+        const uid = runtime.uid || (runtime as any)["uid"];
+        const givenName =
+          (runtime as any).givenName ||
+          (runtime as any).given_name ||
+          (runtime as any)["given_name"];
+        const podName =
+          (runtime as any).podName ||
+          (runtime as any).pod_name ||
+          (runtime as any)["pod_name"];
 
         // For URL, try multiple property names
-        const ingressUrl = (runtime as any).jupyterUrl ||
-                          (runtime as any).jupyter_url ||
-                          (runtime as any).ingress ||
-                          (runtime as any)['jupyterUrl'] ||
-                          (runtime as any)['jupyter_url'] ||
-                          (runtime as any)['ingress'];
+        const ingressUrl =
+          (runtime as any).jupyterUrl ||
+          (runtime as any).jupyter_url ||
+          (runtime as any).ingress ||
+          (runtime as any)["jupyterUrl"] ||
+          (runtime as any)["jupyter_url"] ||
+          (runtime as any)["ingress"];
 
         // For token, try multiple property names
-        const authToken = (runtime as any).jupyterToken ||
-                         (runtime as any).jupyter_token ||
-                         (runtime as any).token ||
-                         (runtime as any)['jupyterToken'] ||
-                         (runtime as any)['jupyter_token'] ||
-                         (runtime as any)['token'];
+        const authToken =
+          (runtime as any).jupyterToken ||
+          (runtime as any).jupyter_token ||
+          (runtime as any).token ||
+          (runtime as any)["jupyterToken"] ||
+          (runtime as any)["jupyter_token"] ||
+          (runtime as any)["token"];
 
-        const status = (runtime as any).state || (runtime as any).status || (runtime as any)['status'] || (runtime as any)['state'] || 'ready';
-        const environmentName = (runtime as any).environmentName || (runtime as any).environment_name || (runtime as any)['environment_name'] || (runtime as any)['environmentName'];
+        const status =
+          (runtime as any).state ||
+          (runtime as any).status ||
+          (runtime as any)["status"] ||
+          (runtime as any)["state"] ||
+          "ready";
+        const environmentName =
+          (runtime as any).environmentName ||
+          (runtime as any).environment_name ||
+          (runtime as any)["environment_name"] ||
+          (runtime as any)["environmentName"];
+
+        // Try to get timing fields with various naming conventions
+        const startedAt =
+          (runtime as any).startedAt ||
+          (runtime as any).started_at ||
+          (runtime as any)["startedAt"] ||
+          (runtime as any)["started_at"] ||
+          (runtime as any).created_at ||
+          (runtime as any).createdAt ||
+          (runtime as any)["created_at"] ||
+          (runtime as any)["createdAt"];
+
+        const expiresAt =
+          (runtime as any).expiresAt ||
+          (runtime as any).expires_at ||
+          (runtime as any)["expiresAt"] ||
+          (runtime as any)["expires_at"] ||
+          (runtime as any).expired_at ||
+          (runtime as any)["expired_at"] ||
+          (runtime as any).expiry ||
+          (runtime as any)["expiry"];
+
+        const credits =
+          (runtime as any).credits ||
+          (runtime as any).burningRate ||
+          (runtime as any).burning_rate ||
+          (runtime as any)["credits"] ||
+          (runtime as any)["burningRate"] ||
+          (runtime as any)["burning_rate"];
 
         runtimeData = {
           uid: uid,
@@ -200,7 +274,10 @@ export class KernelBridge implements vscode.Disposable {
           ingress: ingressUrl,
           token: authToken,
           status: status,
-          environment_name: environmentName
+          environment_name: environmentName,
+          started_at: startedAt,
+          expires_at: expiresAt,
+          credits: credits,
         };
 
         console.log("[KernelBridge] Extracted runtime data from getters:", {
@@ -210,20 +287,26 @@ export class KernelBridge implements vscode.Disposable {
           ingress: ingressUrl ? "***hidden***" : undefined,
           token: authToken ? "***hidden***" : undefined,
           status: status,
-          environment_name: environmentName
+          environment_name: environmentName,
+          started_at: startedAt,
+          expires_at: expiresAt,
+          credits: credits,
         });
       }
     }
 
     // Ensure we have required fields before sending
-    const ingressUrl = runtimeData.ingress || runtimeData.jupyter_url || runtimeData.jupyter_base_url;
+    const ingressUrl =
+      runtimeData.ingress ||
+      runtimeData.jupyter_url ||
+      runtimeData.jupyter_base_url;
     const authToken = runtimeData.token || runtimeData.jupyter_token;
 
     if (!ingressUrl || !authToken) {
       console.error("[KernelBridge] Runtime missing required fields:", {
         hasIngress: !!ingressUrl,
         hasToken: !!authToken,
-        runtimeData: runtimeData
+        runtimeData: runtimeData,
       });
       throw new Error("Runtime is missing ingress URL or token");
     }
@@ -234,12 +317,25 @@ export class KernelBridge implements vscode.Disposable {
       type: "kernel-selected",
       runtime: {
         uid: runtimeData.uid || "unknown",
-        name: runtimeData.given_name || runtimeData.pod_name || runtimeData.uid || "Jupyter Runtime",
-        url: ingressUrl,  // LocalNotebook expects 'url', not 'ingress'
+        name:
+          runtimeData.given_name ||
+          runtimeData.pod_name ||
+          runtimeData.uid ||
+          "Jupyter Runtime",
+        url: ingressUrl, // LocalNotebook expects 'url', not 'ingress'
         token: authToken,
         status: runtimeData.status || runtimeData.state || "ready",
-        environment_name: runtimeData.environment_name
-      }
+        environment_name: runtimeData.environment_name,
+        started_at:
+          runtimeData.started_at ||
+          runtimeData.startedAt ||
+          runtimeData.created_at,
+        expires_at:
+          runtimeData.expires_at ||
+          runtimeData.expired_at ||
+          runtimeData.expiresAt,
+        credits: runtimeData.credits || runtimeData.burning_rate,
+      },
     };
 
     console.log("[KernelBridge v2] Sending runtime to webview:", {
@@ -247,7 +343,11 @@ export class KernelBridge implements vscode.Disposable {
       name: message.runtime.name,
       url: message.runtime.url,
       hasToken: !!message.runtime.token,
-      status: message.runtime.status
+      status: message.runtime.status,
+      started_at: message.runtime.started_at,
+      expires_at: message.runtime.expires_at,
+      credits: message.runtime.credits,
+      environment_name: message.runtime.environment_name,
     });
 
     // Post message to webview
@@ -256,7 +356,7 @@ export class KernelBridge implements vscode.Disposable {
 
   /**
    * Detects the type of notebook (native vs webview).
-   * 
+   *
    * @param uri - Notebook URI
    * @returns "webview" for Datalayer notebooks, "native" for others
    */
@@ -268,15 +368,19 @@ export class KernelBridge implements vscode.Disposable {
 
     // Check if notebook is opened in custom editor
     const customEditors = vscode.window.tabGroups.all
-      .flatMap(group => group.tabs)
-      .filter(tab => {
-        if (tab.input && typeof tab.input === 'object' && "uri" in tab.input) {
+      .flatMap((group) => group.tabs)
+      .filter((tab) => {
+        if (tab.input && typeof tab.input === "object" && "uri" in tab.input) {
           return (tab.input as any).uri?.toString() === uri.toString();
         }
         return false;
       });
 
-    if (customEditors.some(tab => (tab.input as any).viewType === "datalayer.jupyter-notebook")) {
+    if (
+      customEditors.some(
+        (tab) => (tab.input as any).viewType === "datalayer.jupyter-notebook"
+      )
+    ) {
       return "webview";
     }
 
@@ -287,7 +391,7 @@ export class KernelBridge implements vscode.Disposable {
   /**
    * Finds webview panels for a given URI.
    * Searches through active tab groups.
-   * 
+   *
    * @param uri - Notebook URI
    * @returns Array of matching webview panels
    */
@@ -297,18 +401,21 @@ export class KernelBridge implements vscode.Disposable {
     // This is a limitation - we can't directly access WebviewPanels
     // We need to track them when they're created
     // For now, return empty array and rely on registration
-    
-    console.log("[KernelBridge] Searching for webviews for URI:", uri.toString());
-    
+
+    console.log(
+      "[KernelBridge] Searching for webviews for URI:",
+      uri.toString()
+    );
+
     // The webview should have been registered when created
     // If not found, it means the webview wasn't properly registered
-    
+
     return panels;
   }
 
   /**
    * Sends a kernel status update to a notebook.
-   * 
+   *
    * @param uri - Notebook URI
    * @param status - Kernel status
    */
@@ -325,7 +432,7 @@ export class KernelBridge implements vscode.Disposable {
       if (webview) {
         await webview.webview.postMessage({
           type: "kernel-status",
-          status
+          status,
         });
         console.log("[KernelBridge] Sent kernel status to webview:", status);
       }
@@ -335,7 +442,7 @@ export class KernelBridge implements vscode.Disposable {
 
   /**
    * Handles kernel lifecycle commands.
-   * 
+   *
    * @param uri - Notebook URI
    * @param command - Command to execute
    */
@@ -352,7 +459,7 @@ export class KernelBridge implements vscode.Disposable {
       if (webview) {
         await webview.webview.postMessage({
           type: "kernel-command",
-          command
+          command,
         });
         console.log("[KernelBridge] Sent kernel command to webview:", command);
       }
@@ -364,7 +471,7 @@ export class KernelBridge implements vscode.Disposable {
 
   /**
    * Gets the current kernel info for a notebook.
-   * 
+   *
    * @param uri - Notebook URI
    * @returns Kernel information or undefined
    */
@@ -379,9 +486,9 @@ export class KernelBridge implements vscode.Disposable {
     } else {
       // For native notebooks, get from active controller
       const notebook = vscode.workspace.notebookDocuments.find(
-        doc => doc.uri.toString() === uri.toString()
+        (doc) => doc.uri.toString() === uri.toString()
       );
-      
+
       if (notebook) {
         // Return notebook metadata if available
         return notebook.metadata;
@@ -401,7 +508,7 @@ export class KernelBridge implements vscode.Disposable {
 
     this._disposed = true;
     this._webviews.clear();
-    
+
     console.log("[KernelBridge] Bridge disposed");
   }
 }

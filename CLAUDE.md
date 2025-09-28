@@ -199,27 +199,28 @@ const sdk = new DatalayerSDK({
       console.log(`[SDK] Calling ${methodName}`, args);
     },
     onError: async (methodName, error) => {
-      if (error.message.includes('Not authenticated')) {
+      if (error.message.includes("Not authenticated")) {
         const action = await vscode.window.showErrorMessage(
-          'Authentication required. Please login to Datalayer.',
-          'Login'
+          "Authentication required. Please login to Datalayer.",
+          "Login"
         );
-        if (action === 'Login') {
-          vscode.commands.executeCommand('datalayer.login');
+        if (action === "Login") {
+          vscode.commands.executeCommand("datalayer.login");
         }
       }
-    }
-  }
+    },
+  },
 });
 
 // Usage throughout extension - cast as any when TypeScript definitions incomplete
-const notebooks = await (sdk as any).listNotebooks();
-const runtime = await (sdk as any).ensureRuntime();
+const notebooks = await(sdk as any).listNotebooks();
+const runtime = await(sdk as any).ensureRuntime();
 ```
 
 ### Service Layer Removal
 
 **Removed Services** (January 2025):
+
 - ❌ `spacerService.ts` - Deleted, use SDK directly
 - ❌ `runtimeService.ts` - Deleted, use SDK directly
 
@@ -310,6 +311,7 @@ const serviceManager = mutableServiceManager.createProxy();
 ```
 
 **Kernel Selection Flow**:
+
 1. User clicks "Select Kernel" in notebook toolbar
 2. Webview posts `select-kernel` message to extension
 3. Extension shows `kernelSelector` with three options
@@ -336,8 +338,9 @@ const serviceManager = mutableServiceManager.createProxy();
    - Cause: KernelBridge instance not shared between provider and selector
    - Fix: Pass existing KernelBridge instance to showKernelSelector
 10. **Notebook re-renders when changing runtimes**:
-   - Cause: React key changes with runtime causing unmount/remount
-   - Fix: Remove dynamic key, use MutableServiceManager for stable reference
+
+- Cause: React key changes with runtime causing unmount/remount
+- Fix: Remove dynamic key, use MutableServiceManager for stable reference
 
 ### Debug Commands
 

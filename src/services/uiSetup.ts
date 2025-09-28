@@ -64,8 +64,14 @@ export async function initializeUI(
 
   // Initialize environment cache on startup
   try {
-    const environments = await EnvironmentCache.getInstance().getEnvironments(sdk);
-    console.log("[Extension] Cached", environments.length, "environments on startup");
+    const environments = await EnvironmentCache.getInstance().getEnvironments(
+      sdk
+    );
+    console.log(
+      "[Extension] Cached",
+      environments.length,
+      "environments on startup"
+    );
   } catch (error) {
     console.error("[Extension] Failed to cache environments:", error);
   }

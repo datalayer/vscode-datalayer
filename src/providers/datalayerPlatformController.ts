@@ -8,7 +8,7 @@
  * Datalayer Platform kernel controller for VS Code.
  * Provides a single "Datalayer Platform" option in the kernel picker that
  * shows a runtime selection dialog when selected.
- * 
+ *
  * @module providers/datalayerPlatformController
  */
 
@@ -46,7 +46,7 @@ export class DatalayerPlatformController implements vscode.Disposable {
 
   /**
    * Creates and registers the Datalayer Platform controller.
-   * 
+   *
    * @param context - Extension context
    * @param sdk - Datalayer SDK instance
    * @param authProvider - Authentication provider
@@ -57,14 +57,18 @@ export class DatalayerPlatformController implements vscode.Disposable {
     sdk: DatalayerSDK,
     authProvider: SDKAuthProvider
   ): DatalayerPlatformController {
-    const controller = new DatalayerPlatformController(context, sdk, authProvider);
+    const controller = new DatalayerPlatformController(
+      context,
+      sdk,
+      authProvider
+    );
     context.subscriptions.push(controller);
     return controller;
   }
 
   /**
    * Creates a new DatalayerPlatformController instance.
-   * 
+   *
    * @param context - Extension context
    * @param sdk - Datalayer SDK instance
    * @param authProvider - Authentication provider
@@ -86,7 +90,8 @@ export class DatalayerPlatformController implements vscode.Disposable {
 
     // Set controller properties
     this._controller.description = "Connect to Datalayer Platform runtimes";
-    this._controller.detail = "Select or create a Datalayer runtime for notebook execution (Use 'Datalayer: Select Runtime' command to change)";
+    this._controller.detail =
+      "Select or create a Datalayer runtime for notebook execution (Use 'Datalayer: Select Runtime' command to change)";
     this._controller.supportedLanguages = ["python", "markdown", "raw"];
     this._controller.supportsExecutionOrder = true;
 
@@ -96,12 +101,13 @@ export class DatalayerPlatformController implements vscode.Disposable {
     // Set up interrupt handler to trigger runtime selection
     // This can be triggered by users to re-select runtime
     this._controller.interruptHandler = async () => {
-      console.log("[DatalayerPlatformController] Interrupt handler called - showing runtime selector");
+      console.log(
+        "[DatalayerPlatformController] Interrupt handler called - showing runtime selector"
+      );
       // Always show runtime selector when interrupt is called
       // This allows users to change runtime
       await this.selectRuntime();
     };
-
 
     // Create kernel bridge for routing
     this._kernelBridge = new KernelBridge(sdk, authProvider);
@@ -114,15 +120,20 @@ export class DatalayerPlatformController implements vscode.Disposable {
 
     // Listen for when this controller is selected for a notebook
     this._controller.onDidChangeSelectedNotebooks(async (e) => {
-      console.log("[DatalayerPlatformController] ⭐ onDidChangeSelectedNotebooks fired", {
-        notebook: e.notebook.uri.toString(),
-        selected: e.selected,
-        hasSelectedRuntime: !!this._selectedRuntime
-      });
-      
+      console.log(
+        "[DatalayerPlatformController] ⭐ onDidChangeSelectedNotebooks fired",
+        {
+          notebook: e.notebook.uri.toString(),
+          selected: e.selected,
+          hasSelectedRuntime: !!this._selectedRuntime,
+        }
+      );
+
       if (e.selected) {
-        console.log("[DatalayerPlatformController] Controller selected - showing runtime selector");
-        
+        console.log(
+          "[DatalayerPlatformController] Controller selected - showing runtime selector"
+        );
+
         // ALWAYS show runtime selector when this controller is selected
         // This allows users to switch between runtimes even after one is already selected
         setTimeout(async () => {
@@ -133,26 +144,39 @@ export class DatalayerPlatformController implements vscode.Disposable {
 
     // Try to hook into notebook open events to offer our controller
     vscode.workspace.onDidOpenNotebookDocument(async (notebook) => {
-      console.log("[DatalayerPlatformController] Notebook opened:", notebook.uri.toString());
+      console.log(
+        "[DatalayerPlatformController] Notebook opened:",
+        notebook.uri.toString()
+      );
       // Check if it's a Jupyter notebook
-      if (notebook.notebookType === 'jupyter-notebook') {
+      if (notebook.notebookType === "jupyter-notebook") {
         console.log("[DatalayerPlatformController] Jupyter notebook detected");
       }
     });
 
-    console.log("[DatalayerPlatformController] Controller created and registered");
+    console.log(
+      "[DatalayerPlatformController] Controller created and registered"
+    );
   }
 
   /**
    * Public method to select runtime for a specific notebook.
    * This can be called from commands or other parts of the extension.
    */
-  public async selectRuntimeForNotebook(notebook: vscode.NotebookDocument): Promise<void> {
-    console.log("[DatalayerPlatformController] selectRuntimeForNotebook called for", notebook.uri.toString());
-    
+  public async selectRuntimeForNotebook(
+    notebook: vscode.NotebookDocument
+  ): Promise<void> {
+    console.log(
+      "[DatalayerPlatformController] selectRuntimeForNotebook called for",
+      notebook.uri.toString()
+    );
+
     // First, update the affinity to select this controller for the notebook
-    await this._controller.updateNotebookAffinity(notebook, vscode.NotebookControllerAffinity.Preferred);
-    
+    await this._controller.updateNotebookAffinity(
+      notebook,
+      vscode.NotebookControllerAffinity.Preferred
+    );
+
     // Then prompt for runtime selection
     await this.selectRuntime();
   }
@@ -163,7 +187,7 @@ export class DatalayerPlatformController implements vscode.Disposable {
    */
   private async selectRuntime(): Promise<void> {
     console.log("[DatalayerPlatformController] Showing runtime selector");
-    
+
     // Check authentication first
     if (!this._authProvider.isAuthenticated()) {
       const action = await vscode.window.showErrorMessage(
@@ -175,7 +199,7 @@ export class DatalayerPlatformController implements vscode.Disposable {
       }
       return;
     }
-    
+
     const runtime = await selectDatalayerRuntime(this._sdk, this._authProvider);
     if (!runtime) {
       console.log("[DatalayerPlatformController] Runtime selection cancelled");
@@ -184,78 +208,86 @@ export class DatalayerPlatformController implements vscode.Disposable {
 
     // Store the runtime directly - it should have all the data we need
     this._selectedRuntime = runtime;
-    
+
     // Log what we received
-    console.log("[DatalayerPlatformController] Runtime received from selector:", {
-      uid: runtime.uid,
-      given_name: runtime.given_name,
-      hasIngress: !!runtime.ingress,
-      hasJupyterUrl: !!runtime.jupyter_base_url,
-      hasToken: !!runtime.token,
-      hasJupyterToken: !!runtime.jupyter_token
-    });
-    
+    console.log(
+      "[DatalayerPlatformController] Runtime received from selector:",
+      {
+        uid: runtime.uid,
+        given_name: runtime.given_name,
+        hasIngress: !!runtime.ingress,
+        hasJupyterUrl: !!runtime.jupyter_url,
+        hasToken: !!runtime.token,
+        hasJupyterToken: !!runtime.jupyter_token,
+      }
+    );
+
     // Keep the controller label as "Datalayer Platform" so it remains selectable
     // Show runtime info in the description instead
-    let environmentTitle = '';
-    let environmentName = '';
-    let givenName = '';
-    
+    let environmentTitle = "";
+    let environmentName = "";
+    let givenName = "";
+
     // Extract runtime information based on model or plain object
-    if (runtime && typeof runtime === 'object') {
-      if ('environmentName' in runtime || 'givenName' in runtime) {
+    if (runtime && typeof runtime === "object") {
+      if ("environmentName" in runtime || "givenName" in runtime) {
         // Runtime model with properties
-        environmentName = runtime.environmentName || runtime.environment_name || '';
-        givenName = runtime.givenName || runtime.given_name || '';
-      } else if (typeof runtime.toJSON === 'function') {
+        environmentName =
+          runtime.environment_name || runtime.environment_name || "";
+        givenName = runtime.given_name || runtime.given_name || "";
+      } else if (typeof (runtime as any).toJSON === "function") {
         // Has toJSON method
-        const data = runtime.toJSON();
-        environmentName = data.environment_name || '';
-        givenName = data.given_name || '';
-        environmentTitle = data.environment_title || '';
+        const data = (runtime as any).toJSON();
+        environmentName = data.environment_name || "";
+        givenName = data.given_name || "";
+        environmentTitle = data.environment_title || "";
       } else {
         // Plain object
-        environmentName = runtime.environment_name || '';
-        givenName = runtime.given_name || '';
-        environmentTitle = runtime.environment_title || '';
+        environmentName = runtime.environment_name || "";
+        givenName = runtime.given_name || "";
+        environmentTitle = runtime.environment_title || "";
       }
     }
-    
+
     // If we don't have environment title, try to derive it from given_name
     // Given names often follow pattern: "Python CPU Runtime" or "AI Runtime"
     if (!environmentTitle && givenName) {
-      if (givenName.includes('Python CPU')) {
-        environmentTitle = 'Python CPU Environment';
-      } else if (givenName.includes('AI')) {
-        environmentTitle = 'AI Environment';
-      } else if (givenName.endsWith(' Runtime')) {
+      if (givenName.includes("Python CPU")) {
+        environmentTitle = "Python CPU Environment";
+      } else if (givenName.includes("AI")) {
+        environmentTitle = "AI Environment";
+      } else if (givenName.endsWith(" Runtime")) {
         // Convert "XXX Runtime" to "XXX Environment"
-        environmentTitle = givenName.replace(' Runtime', ' Environment');
+        environmentTitle = givenName.replace(" Runtime", " Environment");
       } else {
         environmentTitle = givenName;
       }
     }
-    
+
     // Keep the main label as "Datalayer Platform" to maintain selectability
     // Show runtime info in the description to indicate which runtime is active
     this._controller.label = DatalayerPlatformController.DISPLAY_NAME;
-    
+
     if (environmentTitle && environmentName) {
       this._controller.description = `Connected to ${environmentTitle} (${environmentName})`;
     } else if (givenName) {
       this._controller.description = `Connected to ${givenName}`;
     } else {
-      const displayName = runtime.pod_name || `Runtime ${runtime.uid?.slice(0, 8) || 'Unknown'}`;
+      const displayName =
+        runtime.pod_name || `Runtime ${runtime.uid?.slice(0, 8) || "Unknown"}`;
       this._controller.description = `Connected to ${displayName}`;
     }
-    
-    console.log("[DatalayerPlatformController] Runtime selected:", this._controller.description);
+
+    console.log(
+      "[DatalayerPlatformController] Runtime selected:",
+      this._controller.description
+    );
   }
 
   /**
    * Handles cell execution requests.
    * Shows runtime selector on first execution, then uses selected runtime.
-   * 
+   *
    * @param cells - Cells to execute
    * @param notebook - Target notebook
    * @param controller - The notebook controller
@@ -265,14 +297,20 @@ export class DatalayerPlatformController implements vscode.Disposable {
     notebook: vscode.NotebookDocument,
     controller: vscode.NotebookController
   ): Promise<void> {
-    console.log("[DatalayerPlatformController] Execute requested for", cells.length, "cells");
+    console.log(
+      "[DatalayerPlatformController] Execute requested for",
+      cells.length,
+      "cells"
+    );
 
     // If no runtime selected, show selection dialog
     if (!this._selectedRuntime) {
       await this.selectRuntime();
       // Check if runtime was selected
       if (!this._selectedRuntime) {
-        console.log("[DatalayerPlatformController] No runtime selected, aborting execution");
+        console.log(
+          "[DatalayerPlatformController] No runtime selected, aborting execution"
+        );
         return;
       }
     }
@@ -284,8 +322,11 @@ export class DatalayerPlatformController implements vscode.Disposable {
     if (isWebviewNotebook) {
       // For webview notebooks, send runtime info via message
       console.log("[DatalayerPlatformController] Routing to webview notebook");
-      await this._kernelBridge.connectWebviewNotebook(notebook.uri, this._selectedRuntime);
-      
+      await this._kernelBridge.connectWebviewNotebook(
+        notebook.uri,
+        this._selectedRuntime
+      );
+
       // Webview handles execution, just mark cells as successful
       for (const cell of cells) {
         const execution = this._controller.createNotebookCellExecution(cell);
@@ -296,11 +337,13 @@ export class DatalayerPlatformController implements vscode.Disposable {
     } else {
       // For native notebooks, use WebSocket connection
       console.log("[DatalayerPlatformController] Routing to native notebook");
-      
+
       // Ensure we have full runtime details before connecting
-      const fullRuntime = await this.ensureRuntimeDetails(this._selectedRuntime);
+      const fullRuntime = await this.ensureRuntimeDetails(
+        this._selectedRuntime
+      );
       this._selectedRuntime = fullRuntime;
-      
+
       // Get or create kernel client for this notebook
       let kernelClient = this._activeKernels.get(notebookUri);
       if (!kernelClient) {
@@ -318,7 +361,7 @@ export class DatalayerPlatformController implements vscode.Disposable {
 
   /**
    * Gets the full runtime details from SDK if needed.
-   * 
+   *
    * @param runtime - Runtime that might need more details
    * @returns Runtime with full details
    */
@@ -328,12 +371,12 @@ export class DatalayerPlatformController implements vscode.Disposable {
       uid: runtime.uid,
       given_name: runtime.given_name,
       ingress: runtime.ingress,
-      jupyter_base_url: runtime.jupyter_base_url,
+      jupyter_url: runtime.jupyter_url,
       token: runtime.token,
       jupyter_token: runtime.jupyter_token,
-      status: runtime.status
+      status: runtime.status,
     });
-    
+
     // The runtime from listRuntimes should already have all the info we need
     // Just return it as is - no need to fetch again
     return runtime;
@@ -341,7 +384,7 @@ export class DatalayerPlatformController implements vscode.Disposable {
 
   /**
    * Executes a cell via WebSocket connection.
-   * 
+   *
    * @param cell - Cell to execute
    * @param kernelClient - WebSocket kernel client
    */
@@ -365,23 +408,29 @@ export class DatalayerPlatformController implements vscode.Disposable {
         if (output.type === "stream") {
           await execution.appendOutput(
             new vscode.NotebookCellOutput([
-              vscode.NotebookCellOutputItem.text(output.text)
+              vscode.NotebookCellOutputItem.text(output.text || ""),
             ])
           );
         } else if (output.type === "execute_result") {
           const items: vscode.NotebookCellOutputItem[] = [];
-          
+
           if (output.data["text/html"]) {
             items.push(
-              vscode.NotebookCellOutputItem.text(output.data["text/html"], "text/html")
+              vscode.NotebookCellOutputItem.text(
+                output.data["text/html"],
+                "text/html"
+              )
             );
           }
           if (output.data["text/plain"]) {
             items.push(
-              vscode.NotebookCellOutputItem.text(output.data["text/plain"], "text/plain")
+              vscode.NotebookCellOutputItem.text(
+                output.data["text/plain"],
+                "text/plain"
+              )
             );
           }
-          
+
           if (items.length > 0) {
             await execution.appendOutput(new vscode.NotebookCellOutput(items));
           }
@@ -389,10 +438,10 @@ export class DatalayerPlatformController implements vscode.Disposable {
           await execution.appendOutput(
             new vscode.NotebookCellOutput([
               vscode.NotebookCellOutputItem.error({
-                name: output.ename,
-                message: output.evalue,
-                stack: output.traceback.join("\n")
-              })
+                name: output.ename || "",
+                message: output.evalue || "",
+                stack: output.traceback?.join("\n") || "",
+              }),
             ])
           );
         }
@@ -401,16 +450,16 @@ export class DatalayerPlatformController implements vscode.Disposable {
       execution.end(true, Date.now());
     } catch (error) {
       console.error("[DatalayerPlatformController] Execution error:", error);
-      
+
       await execution.appendOutput(
         new vscode.NotebookCellOutput([
           vscode.NotebookCellOutputItem.error({
             name: "ExecutionError",
-            message: error instanceof Error ? error.message : String(error)
-          })
+            message: error instanceof Error ? error.message : String(error),
+          }),
         ])
       );
-      
+
       execution.end(false, Date.now());
     }
   }
@@ -418,7 +467,7 @@ export class DatalayerPlatformController implements vscode.Disposable {
   /**
    * Handles notebook open events.
    * Sets controller affinity for Datalayer notebooks.
-   * 
+   *
    * @param notebook - The opened notebook
    */
   private onDidOpenNotebook(notebook: vscode.NotebookDocument): void {
@@ -428,24 +477,28 @@ export class DatalayerPlatformController implements vscode.Disposable {
         notebook,
         vscode.NotebookControllerAffinity.Preferred
       );
-      console.log("[DatalayerPlatformController] Set preferred affinity for Datalayer notebook");
+      console.log(
+        "[DatalayerPlatformController] Set preferred affinity for Datalayer notebook"
+      );
     }
   }
 
   /**
    * Handles notebook close events.
    * Cleans up kernel connections.
-   * 
+   *
    * @param notebook - The closed notebook
    */
   private onDidCloseNotebook(notebook: vscode.NotebookDocument): void {
     const notebookUri = notebook.uri.toString();
     const kernelClient = this._activeKernels.get(notebookUri);
-    
+
     if (kernelClient) {
       kernelClient.dispose();
       this._activeKernels.delete(notebookUri);
-      console.log("[DatalayerPlatformController] Cleaned up kernel for closed notebook");
+      console.log(
+        "[DatalayerPlatformController] Cleaned up kernel for closed notebook"
+      );
     }
   }
 
@@ -456,19 +509,19 @@ export class DatalayerPlatformController implements vscode.Disposable {
     this._selectedRuntime = undefined;
     this._controller.label = DatalayerPlatformController.DISPLAY_NAME;
     this._controller.description = "Connect to Datalayer Platform runtimes";
-    
+
     // Clean up all active kernels
     for (const kernelClient of this._activeKernels.values()) {
       kernelClient.dispose();
     }
     this._activeKernels.clear();
-    
+
     console.log("[DatalayerPlatformController] Runtime reset");
   }
 
   /**
    * Gets the currently selected runtime.
-   * 
+   *
    * @returns The selected runtime or undefined
    */
   public getSelectedRuntime(): Runtime | undefined {

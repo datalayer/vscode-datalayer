@@ -29,22 +29,18 @@ export async function activate(
   context: vscode.ExtensionContext
 ): Promise<void> {
   console.log("[Extension] ===== DATALAYER EXTENSION ACTIVATING =====");
-  
+
   // Create output channel for logging
   const outputChannel = vscode.window.createOutputChannel("Datalayer");
   outputChannel.appendLine("Datalayer Extension Starting...");
   outputChannel.show();
-  
+
   try {
     outputChannel.appendLine("Initializing services...");
     const services = await initializeServices(context);
 
     outputChannel.appendLine("Initializing UI...");
-    const ui = await initializeUI(
-      context,
-      services.authProvider,
-      services.sdk
-    );
+    const ui = await initializeUI(context, services.authProvider, services.sdk);
     outputChannel.appendLine("UI initialized");
 
     outputChannel.appendLine("Setting up auth state management...");

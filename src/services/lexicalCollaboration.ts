@@ -82,10 +82,9 @@ export class LexicalCollaborationService {
       }
 
       const sdk = getSDKInstance();
-      const sessionResult =
-        await (sdk as any).getLexicalCollaborationSessionId(
-          metadata.document.uid
-        );
+      const sessionResult = await (sdk as any).getLexicalCollaborationSessionId(
+        metadata.document.uid
+      );
 
       if (!sessionResult.success || !sessionResult.sessionId) {
         return undefined;

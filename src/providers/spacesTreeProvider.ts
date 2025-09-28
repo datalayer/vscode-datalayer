@@ -157,7 +157,7 @@ export class SpacesTreeProvider implements vscode.TreeDataProvider<SpaceItem> {
         this._onDidChangeTreeData.fire();
 
         const sdk = getSDKInstance();
-        spaces = await (sdk as any).getMySpaces() || [];
+        spaces = (await (sdk as any).getMySpaces()) || [];
         this.spacesCache.set("user", spaces);
       }
 
@@ -250,7 +250,7 @@ export class SpacesTreeProvider implements vscode.TreeDataProvider<SpaceItem> {
 
         if (targetSpace) {
           // Get items from the space - returns Notebook, Lexical, and Cell model instances
-          items = await targetSpace.getItems() || [];
+          items = (await targetSpace.getItems()) || [];
         } else {
           items = [];
         }

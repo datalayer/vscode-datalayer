@@ -43,35 +43,86 @@ export class MutableServiceManager {
    * @param token - The authentication token
    */
   updateConnection(url: string, token: string): void {
-    console.log("[MutableServiceManager] Updating connection to:", url);
+    // Updating connection
 
     // Dispose the old service manager if it has a dispose method
-    if (this._serviceManager && typeof (this._serviceManager as any).dispose === 'function') {
-      (this._serviceManager as any).dispose();
+    if (
+      this._serviceManager &&
+      typeof (this._serviceManager as any).dispose === "function"
+    ) {
+      // Disposing old service manager
+      try {
+        // Add a small delay to allow any pending operations to complete
+        setTimeout(() => {
+          try {
+            (this._serviceManager as any).dispose();
+          } catch (error) {
+            console.warn(
+              "[MutableServiceManager] Error during delayed disposal:",
+              error
+            );
+          }
+        }, 50);
+      } catch (error) {
+        console.warn(
+          "[MutableServiceManager] Error disposing old service manager:",
+          error
+        );
+        // Continue with connection update anyway
+      }
     }
 
     // Create new service manager with new settings
     this._serviceManager = createServiceManager(url, token);
 
     // Notify listeners that the service manager has changed
-    this._listeners.forEach(listener => listener());
+    this._listeners.forEach((listener) => listener());
   }
 
   /**
    * Reset to mock service manager.
    */
   resetToMock(): void {
-    console.log("[MutableServiceManager] Resetting to mock service manager");
+    // Resetting to mock service manager
 
-    // Dispose the old service manager if it has a dispose method
-    if (this._serviceManager && typeof (this._serviceManager as any).dispose === 'function') {
-      (this._serviceManager as any).dispose();
+    // Check if we're already using mock - if so, no need to change
+    const currentIsMock = (this._serviceManager as any).__isMockServiceManager;
+    if (currentIsMock) {
+      // Already using mock service manager
+      return;
+    }
+
+    // Dispose the old service manager if it has a dispose method and it's not mock
+    if (
+      this._serviceManager &&
+      typeof (this._serviceManager as any).dispose === "function"
+    ) {
+      // Disposing old service manager
+      try {
+        // Add a small delay to allow any pending operations to complete
+        setTimeout(() => {
+          try {
+            (this._serviceManager as any).dispose();
+          } catch (error) {
+            console.warn(
+              "[MutableServiceManager] Error during delayed disposal:",
+              error
+            );
+          }
+        }, 50);
+      } catch (error) {
+        console.warn(
+          "[MutableServiceManager] Error disposing old service manager:",
+          error
+        );
+        // Continue with reset anyway
+      }
     }
 
     this._serviceManager = createMockServiceManager();
 
     // Notify listeners
-    this._listeners.forEach(listener => listener());
+    this._listeners.forEach((listener) => listener());
   }
 
   /**
@@ -88,7 +139,7 @@ export class MutableServiceManager {
         if (index >= 0) {
           this._listeners.splice(index, 1);
         }
-      }
+      },
     };
   }
 
@@ -118,7 +169,7 @@ export class MutableServiceManager {
       getOwnPropertyDescriptor: (target, prop) => {
         const current = this._serviceManager;
         return Object.getOwnPropertyDescriptor(current, prop);
-      }
+      },
     });
   }
 }

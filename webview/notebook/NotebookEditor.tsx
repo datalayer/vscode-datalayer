@@ -4,6 +4,13 @@
  * MIT License
  */
 
+/**
+ * Notebook editor component for VS Code webview.
+ * Provides JupyterLab-based notebook editing with VS Code theme integration.
+ *
+ * @module notebook/NotebookEditor
+ */
+
 import React, {
   useCallback,
   useContext,
@@ -28,6 +35,7 @@ import {
 } from "../services/messageHandler";
 import { loadFromBytes, saveToBytes } from "../utils";
 import { createMockServiceManager } from "../services/mockServiceManager";
+import { RuntimeProgressBar } from "./RuntimeProgressBar";
 import { createServiceManager } from "../services/serviceManager";
 import { ServiceManager } from "@jupyterlab/services";
 import { MutableServiceManager } from "../services/mutableServiceManager";
@@ -133,11 +141,11 @@ function NotebookVSCodeInner({
       if (documentId) {
         const key = `datalayer_runtime_${documentId}`;
         sessionStorage.setItem(key, JSON.stringify(selectedRuntime));
-        console.log("[NotebookVSCode] Stored runtime info in sessionStorage");
+        // Runtime stored in sessionStorage
       }
     } else if (isDatalayerNotebook) {
       // Reset to mock if no runtime selected
-      console.log("[NotebookVSCode] No runtime, resetting to mock service manager");
+      // No runtime selected, using mock service manager
       mutableServiceManager.resetToMock();
     }
   }, [selectedRuntime, isDatalayerNotebook, documentId, mutableServiceManager]);
@@ -166,15 +174,7 @@ function NotebookVSCodeInner({
   // Handle notebook model changes for local notebooks only
   const handleNotebookModelChanged = useCallback(
     (notebookModel: any) => {
-      console.log("[NotebookVSCode] handleNotebookModelChanged called", {
-        isDatalayerNotebook,
-        hasModel: !!notebookModel,
-        modelType: notebookModel?.constructor?.name,
-        isDirty: notebookModel?.dirty,
-        hasStateChanged: !!notebookModel?.stateChanged,
-        hasContentChanged: !!notebookModel?.contentChanged,
-        modelKeys: notebookModel ? Object.keys(notebookModel) : [],
-      });
+      // Notebook model changed - setting up signal handlers
 
       // Only track changes for local notebooks
       if (!isDatalayerNotebook && notebookModel) {
@@ -205,10 +205,10 @@ function NotebookVSCodeInner({
 
         // First try contentChanged signal (more direct for content changes)
         if (notebookModel.contentChanged) {
-          console.log("[NotebookVSCode] Connecting to contentChanged signal");
+          // Connected to contentChanged signal
 
           const handleContentChange = () => {
-            console.log("[NotebookVSCode] Content changed signal fired!");
+            // Content changed
             try {
               // Get the notebook content as JSON
               const notebookData = notebookModel.toJSON();
@@ -624,12 +624,18 @@ function LocalNotebook({
   notebookId,
 }: any) {
   console.log("🚀🚀🚀 NOTEBOOK LOADED - THIS IS NEW CODE 🚀🚀🚀");
-  console.log("[LocalNotebook] Component rendered with selectedRuntime:", selectedRuntime);
+  console.log(
+    "[LocalNotebook] Component rendered with selectedRuntime:",
+    selectedRuntime
+  );
 
   // Create service manager from selected runtime if available
   const serviceManager = useMemo(() => {
     console.log("🔧🔧🔧 SERVICE MANAGER CREATION 🔧🔧🔧");
-    console.log("[LocalNotebook] useMemo executing with selectedRuntime:", selectedRuntime);
+    console.log(
+      "[LocalNotebook] useMemo executing with selectedRuntime:",
+      selectedRuntime
+    );
 
     // Check for both 'url' and 'ingress' fields for compatibility
     const kernelUrl = selectedRuntime?.url || selectedRuntime?.ingress;
@@ -640,16 +646,13 @@ function LocalNotebook({
       const url = kernelUrl || selectedRuntime.ingress;
       const token = kernelToken || selectedRuntime.token;
 
-      console.log(
-        "✅✅✅ CREATING REAL SERVICE MANAGER ✅✅✅",
-        {
-          url: url,
-          token: token ? "***hidden***" : undefined,
-          hasUrl: !!url,
-          hasToken: !!token,
-          runtime: selectedRuntime
-        }
-      );
+      console.log("✅✅✅ CREATING REAL SERVICE MANAGER ✅✅✅", {
+        url: url,
+        token: token ? "***hidden***" : undefined,
+        hasUrl: !!url,
+        hasToken: !!token,
+        runtime: selectedRuntime,
+      });
 
       // Force creation even if token might be undefined
       if (url) {
@@ -713,8 +716,19 @@ function LocalNotebook({
     );
   }
 
+  // Check if this is a Datalayer runtime (not a Jupyter server or local kernel)
+  const isDatalayerRuntime =
+    selectedRuntime &&
+    !selectedRuntime.uid?.startsWith("jupyter-") &&
+    selectedRuntime.environment_name !== "jupyter";
+
   return (
     <div style={{ height: "100vh", display: "flex", flexDirection: "column" }}>
+      {/* Runtime progress bar - only shows for Datalayer runtimes */}
+      <RuntimeProgressBar
+        runtime={selectedRuntime}
+        isDatalayerRuntime={isDatalayerRuntime}
+      />
       <NotebookToolbar
         notebookId={notebookId}
         isDatalayerNotebook={false}
@@ -864,7 +878,7 @@ function NotebookVSCodeWithJupyter(): JSX.Element {
   useEffect(() => {
     const handleMessage = (message: ExtensionMessage) => {
       const { type, body } = message;
-      console.log("[NotebookVSCode] Parent received message:", type, body);
+      // Processing webview message
 
       if (type === "init") {
         // Handle theme
@@ -938,6 +952,16 @@ function NotebookVSCodeWithJupyter(): JSX.Element {
             runtime
           );
         }
+      } else if (type === "runtime-terminated") {
+        // Runtime was terminated, clear runtime selection
+        console.log(
+          "[NotebookVSCode] Runtime terminated, clearing runtime selection"
+        );
+        // Add a small delay to allow current notebook widget to dispose properly
+        // before triggering the reset to mock service manager
+        setTimeout(() => {
+          setSelectedRuntime(undefined);
+        }, 100);
       } else if (type === "set-runtime" && body.baseUrl) {
         // Handle runtime selection for local notebooks
         console.log(

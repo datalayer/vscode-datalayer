@@ -7,7 +7,7 @@
 /**
  * Environment caching service for Datalayer runtime creation.
  * Loads and caches available environments to avoid repeated API calls.
- * 
+ *
  * @module services/environmentCache
  */
 
@@ -26,7 +26,7 @@ export class EnvironmentCache {
 
   /**
    * Gets the singleton instance of EnvironmentCache.
-   * 
+   *
    * @returns The singleton instance
    */
   public static getInstance(): EnvironmentCache {
@@ -45,7 +45,7 @@ export class EnvironmentCache {
 
   /**
    * Gets cached environments or fetches them if cache is stale.
-   * 
+   *
    * @param sdk - Datalayer SDK instance
    * @param forceRefresh - Force refresh even if cache is valid
    * @returns Array of available environments
@@ -59,7 +59,10 @@ export class EnvironmentCache {
 
     // Return cached if valid and not forcing refresh
     if (!forceRefresh && cacheValid && this._environments.length > 0) {
-      console.log("[EnvironmentCache] Returning cached environments:", this._environments.length);
+      console.log(
+        "[EnvironmentCache] Returning cached environments:",
+        this._environments.length
+      );
       return this._environments;
     }
 
@@ -77,7 +80,7 @@ export class EnvironmentCache {
 
   /**
    * Fetches environments from the API.
-   * 
+   *
    * @param sdk - Datalayer SDK instance
    */
   private async fetchEnvironments(sdk: DatalayerSDK): Promise<void> {
@@ -87,19 +90,22 @@ export class EnvironmentCache {
     try {
       // Call SDK to list environments
       const environments = await (sdk as any).listEnvironments();
-      
+
       // Filter and process environments
       this._environments = this.processEnvironments(environments);
       this._lastFetch = Date.now();
-      
-      console.log("[EnvironmentCache] Fetched", this._environments.length, "environments");
 
+      console.log(
+        "[EnvironmentCache] Fetched",
+        this._environments.length,
+        "environments"
+      );
     } catch (error) {
       console.error("[EnvironmentCache] Failed to fetch environments:", error);
-      
+
       // On error, keep existing cache but mark as stale
       this._lastFetch = 0;
-      
+
       // If no cached environments, provide defaults
       if (this._environments.length === 0) {
         this._environments = this.getDefaultEnvironments();
@@ -111,45 +117,55 @@ export class EnvironmentCache {
 
   /**
    * Processes raw environment data from API.
-   * 
+   *
    * @param environments - Raw environment data
    * @returns Processed environments
    */
   private processEnvironments(environments: any[]): Environment[] {
     if (!Array.isArray(environments)) {
-      console.warn("[EnvironmentCache] Invalid environments response, using defaults");
+      console.warn(
+        "[EnvironmentCache] Invalid environments response, using defaults"
+      );
       return this.getDefaultEnvironments();
     }
 
     // Filter and map environments
     return environments
-      .filter(env => env && env.name)
-      .map(env => ({
-        uid: env.uid || env.name,
-        name: env.name,
-        title: env.title || this.formatEnvironmentTitle(env.name),
-        description: env.description || this.getEnvironmentDescription(env.name),
-        ...env
-      } as Environment))
+      .filter((env) => env && env.name)
+      .map(
+        (env) =>
+          ({
+            uid: env.uid || env.name,
+            name: env.name,
+            title: env.title || this.formatEnvironmentTitle(env.name),
+            description:
+              env.description || this.getEnvironmentDescription(env.name),
+            ...env,
+          } as Environment)
+      )
       .sort((a, b) => {
         // Sort with common environments first
         const priority = ["python-cpu-env", "ai-env", "python-gpu-env"];
-        const aIndex = priority.indexOf(a.name || '');
-        const bIndex = priority.indexOf(b.name || '');
-        
+        const aIndex = priority.indexOf(a.name || "");
+        const bIndex = priority.indexOf(b.name || "");
+
         if (aIndex !== -1 && bIndex !== -1) {
           return aIndex - bIndex;
         }
-        if (aIndex !== -1) {return -1;}
-        if (bIndex !== -1) {return 1;}
-        
-        return (a.name || '').localeCompare(b.name || '');
+        if (aIndex !== -1) {
+          return -1;
+        }
+        if (bIndex !== -1) {
+          return 1;
+        }
+
+        return (a.name || "").localeCompare(b.name || "");
       });
   }
 
   /**
    * Formats environment name into a readable title.
-   * 
+   *
    * @param name - Environment name
    * @returns Formatted title
    */
@@ -157,7 +173,7 @@ export class EnvironmentCache {
     return name
       .replace(/-env$/, "")
       .replace(/-/g, " ")
-      .replace(/\b\w/g, c => c.toUpperCase())
+      .replace(/\b\w/g, (c) => c.toUpperCase())
       .replace(/Cpu/g, "CPU")
       .replace(/Gpu/g, "GPU")
       .replace(/Ai/g, "AI");
@@ -165,7 +181,7 @@ export class EnvironmentCache {
 
   /**
    * Gets a description for an environment based on its name.
-   * 
+   *
    * @param name - Environment name
    * @returns Environment description
    */
@@ -176,15 +192,17 @@ export class EnvironmentCache {
       "ai-env": "AI/ML environment with popular frameworks",
       "data-science-env": "Data science environment with analytics tools",
       "r-env": "R statistical computing environment",
-      "julia-env": "Julia scientific computing environment"
+      "julia-env": "Julia scientific computing environment",
     };
 
-    return descriptions[name] || `${this.formatEnvironmentTitle(name)} environment`;
+    return (
+      descriptions[name] || `${this.formatEnvironmentTitle(name)} environment`
+    );
   }
 
   /**
    * Provides default environments when API is unavailable.
-   * 
+   *
    * @returns Default environment list
    */
   private getDefaultEnvironments(): Environment[] {
@@ -196,7 +214,7 @@ export class EnvironmentCache {
         description: "Standard Python environment with CPU support",
         dockerImage: "",
         language: "python",
-        burning_rate: 0
+        burning_rate: 0,
       } as Environment,
       {
         uid: "ai-env",
@@ -205,8 +223,8 @@ export class EnvironmentCache {
         description: "AI/ML environment with popular frameworks",
         dockerImage: "",
         language: "python",
-        burning_rate: 0
-      } as Environment
+        burning_rate: 0,
+      } as Environment,
     ];
   }
 
@@ -218,7 +236,7 @@ export class EnvironmentCache {
     const startTime = Date.now();
 
     while (this._fetching && Date.now() - startTime < maxWait) {
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 100));
     }
 
     if (this._fetching) {
@@ -237,7 +255,7 @@ export class EnvironmentCache {
 
   /**
    * Sets custom cache timeout.
-   * 
+   *
    * @param timeout - Timeout in milliseconds
    */
   public setCacheTimeout(timeout: number): void {
@@ -247,7 +265,7 @@ export class EnvironmentCache {
 
   /**
    * Gets current cache status.
-   * 
+   *
    * @returns Cache status information
    */
   public getStatus(): {
@@ -261,7 +279,7 @@ export class EnvironmentCache {
       environmentCount: this._environments.length,
       lastFetch: this._lastFetch ? new Date(this._lastFetch) : null,
       cacheValid: now - this._lastFetch < this._cacheTimeout,
-      fetching: this._fetching
+      fetching: this._fetching,
     };
   }
 }

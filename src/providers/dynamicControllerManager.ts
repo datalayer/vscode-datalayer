@@ -8,7 +8,7 @@
  * Dynamic controller manager that creates separate VS Code notebook controllers
  * for each available runtime. This solves the "controller already selected" issue
  * by making each runtime a distinct selectable option.
- * 
+ *
  * @module providers/dynamicControllerManager
  */
 
@@ -33,6 +33,7 @@ export class DynamicControllerManager implements vscode.Disposable {
   private readonly _notebookRuntimes = new Map<string, Runtime>();
   private _executionOrder = 0;
   private _disposed = false;
+  private _pickerEntry: any;
 
   /**
    * Creates a new DynamicControllerManager.
@@ -75,8 +76,10 @@ export class DynamicControllerManager implements vscode.Disposable {
 
     // When this controller is selected, show runtime selector
     controller.executeHandler = async (cells, notebook, ctrl) => {
-      console.log("[DynamicControllerManager] Select runtime controller executeHandler called");
-      
+      console.log(
+        "[DynamicControllerManager] Select runtime controller executeHandler called"
+      );
+
       if (cells.length === 0) {
         // No cells to execute - user just selected this controller
         await this.showRuntimeSelector(notebook);
@@ -86,15 +89,17 @@ export class DynamicControllerManager implements vscode.Disposable {
       // Always show runtime selector when main controller tries to execute
       // This ensures user selects or confirms a runtime
       const runtime = await this.showRuntimeSelector(notebook);
-      
+
       if (runtime) {
         // IMPORTANT: After selecting a runtime, the runtime controller should be selected
         // We should NOT execute with the main controller - let the runtime controller handle it
         const runtimeControllerId = this.getRuntimeControllerId(runtime);
         const runtimeController = this._controllers.get(runtimeControllerId);
-        
+
         if (runtimeController) {
-          console.log("[DynamicControllerManager] Runtime selected, execution should use runtime controller");
+          console.log(
+            "[DynamicControllerManager] Runtime selected, execution should use runtime controller"
+          );
           // The runtime controller should now be selected due to Preferred affinity
           // If execution continues here, it means VS Code didn't switch controllers
           // In that case, we execute anyway but with the runtime
@@ -105,14 +110,19 @@ export class DynamicControllerManager implements vscode.Disposable {
 
     // Listen for when this controller is selected
     controller.onDidChangeSelectedNotebooks((e) => {
-      console.log("[DynamicControllerManager] Main controller selection changed:", e);
-      
+      console.log(
+        "[DynamicControllerManager] Main controller selection changed:",
+        e
+      );
+
       // Check if this controller was selected for any notebook
       if (e.selected) {
         // Controller was selected - immediately show runtime selector
         const activeNotebook = vscode.window.activeNotebookEditor?.notebook;
         if (activeNotebook) {
-          console.log("[DynamicControllerManager] Main controller selected, showing runtime selector");
+          console.log(
+            "[DynamicControllerManager] Main controller selected, showing runtime selector"
+          );
           // Show runtime selector after a brief delay to ensure VS Code finishes selection
           setTimeout(() => {
             this.showRuntimeSelector(activeNotebook);
@@ -130,11 +140,18 @@ export class DynamicControllerManager implements vscode.Disposable {
   /**
    * Shows the runtime selector and creates/updates controllers based on selection.
    */
-  private async showRuntimeSelector(notebook: vscode.NotebookDocument): Promise<Runtime | undefined> {
-    console.log("[DynamicControllerManager] showRuntimeSelector called for notebook:", notebook.uri.toString());
-    
+  private async showRuntimeSelector(
+    notebook: vscode.NotebookDocument
+  ): Promise<Runtime | undefined> {
+    console.log(
+      "[DynamicControllerManager] showRuntimeSelector called for notebook:",
+      notebook.uri.toString()
+    );
+
     if (!this._authProvider.isAuthenticated()) {
-      console.log("[DynamicControllerManager] User not authenticated, showing login prompt");
+      console.log(
+        "[DynamicControllerManager] User not authenticated, showing login prompt"
+      );
       const action = await vscode.window.showErrorMessage(
         "Authentication required. Please login to Datalayer.",
         "Login"
@@ -145,86 +162,119 @@ export class DynamicControllerManager implements vscode.Disposable {
       return undefined;
     }
 
-    console.log("[DynamicControllerManager] User authenticated, calling selectDatalayerRuntime...");
+    console.log(
+      "[DynamicControllerManager] User authenticated, calling selectDatalayerRuntime..."
+    );
     const runtime = await selectDatalayerRuntime(this._sdk, this._authProvider);
-    console.log("[DynamicControllerManager] selectDatalayerRuntime returned:", runtime ? {
-      uid: runtime.uid,
-      givenName: runtime.givenName || runtime.given_name,
-      podName: runtime.podName || runtime.pod_name
-    } : "undefined");
-    
+    console.log(
+      "[DynamicControllerManager] selectDatalayerRuntime returned:",
+      runtime
+        ? {
+            uid: runtime.uid,
+            givenName: runtime.given_name || runtime.given_name,
+            podName: runtime.podName || runtime.pod_name,
+          }
+        : "undefined"
+    );
+
     if (runtime) {
       // Create a controller for this specific runtime
       await this.createRuntimeController(runtime);
-      
+
       // Update notebook affinity to prefer the new runtime controller
       const runtimeControllerId = this.getRuntimeControllerId(runtime);
-      console.log("[DynamicControllerManager] Looking for controller with ID:", runtimeControllerId);
+      console.log(
+        "[DynamicControllerManager] Looking for controller with ID:",
+        runtimeControllerId
+      );
       const runtimeController = this._controllers.get(runtimeControllerId);
       if (runtimeController) {
-        console.log("[DynamicControllerManager] Setting runtime controller as preferred for notebook");
-        
+        console.log(
+          "[DynamicControllerManager] Setting runtime controller as preferred for notebook"
+        );
+
         // Store this runtime as the active one for the notebook
         this._notebookRuntimes.set(notebook.uri.toString(), runtime);
-        
+
         // CRITICAL: We must remove ALL other controllers' affinity to this notebook
         // This forces VS Code to re-evaluate which controller to use
         for (const [id, controller] of this._controllers) {
           if (id !== runtimeControllerId) {
-            console.log(`[DynamicControllerManager] Removing affinity for controller: ${id}`);
+            console.log(
+              `[DynamicControllerManager] Removing affinity for controller: ${id}`
+            );
             await controller.updateNotebookAffinity(
               notebook,
               vscode.NotebookControllerAffinity.Default
             );
           }
         }
-        
+
         // Now set ONLY the runtime controller as preferred
-        console.log("[DynamicControllerManager] Setting runtime controller as preferred");
+        console.log(
+          "[DynamicControllerManager] Setting runtime controller as preferred"
+        );
         await runtimeController.updateNotebookAffinity(
           notebook,
           vscode.NotebookControllerAffinity.Preferred
         );
-        
+
         // Force VS Code to recognize this controller as selected
-        console.log("[DynamicControllerManager] Ensuring controller is properly associated");
-        
+        console.log(
+          "[DynamicControllerManager] Ensuring controller is properly associated"
+        );
+
         // Wait a moment for affinity changes to be processed
-        await new Promise(resolve => setTimeout(resolve, 100));
-        
+        await new Promise((resolve) => setTimeout(resolve, 100));
+
         // Update the picker entry label to show the selected runtime
         const displayInfo = this.getRuntimeDisplayInfo(runtime);
         this._pickerEntry.label = displayInfo.label;
         this._pickerEntry.detail = displayInfo.description;
-        console.log("[DynamicControllerManager] Updated picker entry label to:", displayInfo.label);
-        
+        console.log(
+          "[DynamicControllerManager] Updated picker entry label to:",
+          displayInfo.label
+        );
+
         // Force notebook to recognize the controller by creating a temporary execution
         const notebookEditor = vscode.window.activeNotebookEditor;
         if (notebookEditor && notebookEditor.notebook === notebook) {
-          console.log("[DynamicControllerManager] Found active notebook editor");
-          
+          console.log(
+            "[DynamicControllerManager] Found active notebook editor"
+          );
+
           try {
             // Create a dummy cell execution to force VS Code to recognize the controller
             const cells = notebook.getCells();
             if (cells.length > 0) {
-              console.log("[DynamicControllerManager] Creating association via dummy execution");
+              console.log(
+                "[DynamicControllerManager] Creating association via dummy execution"
+              );
               const firstCell = cells[0];
-              const dummyExecution = runtimeController.createNotebookCellExecution(firstCell);
+              const dummyExecution =
+                runtimeController.createNotebookCellExecution(firstCell);
               dummyExecution.start(Date.now());
-              await new Promise(resolve => setTimeout(resolve, 50));
+              await new Promise((resolve) => setTimeout(resolve, 50));
               dummyExecution.end(true, Date.now());
               console.log("[DynamicControllerManager] Association completed");
             }
           } catch (error) {
-            console.log("[DynamicControllerManager] Failed to create association:", error);
+            console.log(
+              "[DynamicControllerManager] Failed to create association:",
+              error
+            );
           }
         }
-        
+
         // Show confirmation after a short delay to let VS Code process the changes
         setTimeout(() => {
-          console.log("[DynamicControllerManager] Runtime controller should now be selected");
+          console.log(
+            "[DynamicControllerManager] Runtime controller should now be selected"
+          );
           vscode.window.showInformationMessage(
-            `Runtime "${runtime.givenName || runtime.given_name}" is now active`,
+            `Runtime "${
+              runtime.given_name || runtime.given_name
+            }" is now active`,
             { modal: false }
           );
         }, 100);
@@ -242,16 +292,19 @@ export class DynamicControllerManager implements vscode.Disposable {
    */
   private async createRuntimeController(runtime: Runtime): Promise<void> {
     const controllerId = this.getRuntimeControllerId(runtime);
-    
+
     // Don't create duplicate controllers
     if (this._controllers.has(controllerId)) {
-      console.log("[DynamicControllerManager] Runtime controller already exists:", controllerId);
+      console.log(
+        "[DynamicControllerManager] Runtime controller already exists:",
+        controllerId
+      );
       return;
     }
 
     // Get runtime display info
     const displayInfo = this.getRuntimeDisplayInfo(runtime);
-    
+
     const controller = vscode.notebooks.createNotebookController(
       controllerId,
       "jupyter-notebook",
@@ -265,19 +318,26 @@ export class DynamicControllerManager implements vscode.Disposable {
 
     // When this runtime controller is selected, use it directly for execution
     controller.executeHandler = async (cells, notebook, ctrl) => {
-      console.log(`[DynamicControllerManager] Runtime controller ${controllerId} executing cells`);
+      console.log(
+        `[DynamicControllerManager] Runtime controller ${controllerId} executing cells`
+      );
       await this.executeCellsWithRuntime(cells, notebook, runtime);
     };
 
     // Listen for when this runtime controller is selected
     controller.onDidChangeSelectedNotebooks((e) => {
-      console.log(`[DynamicControllerManager] Runtime controller ${controllerId} selection changed:`, e);
-      
+      console.log(
+        `[DynamicControllerManager] Runtime controller ${controllerId} selection changed:`,
+        e
+      );
+
       if (e.selected) {
         // Runtime controller was selected - store as active runtime for the notebook
         const activeNotebook = vscode.window.activeNotebookEditor?.notebook;
         if (activeNotebook) {
-          console.log(`[DynamicControllerManager] Runtime controller ${displayInfo.label} selected for notebook`);
+          console.log(
+            `[DynamicControllerManager] Runtime controller ${displayInfo.label} selected for notebook`
+          );
           // Store this runtime as the active one for the notebook
           this._notebookRuntimes.set(activeNotebook.uri.toString(), runtime);
         }
@@ -286,65 +346,81 @@ export class DynamicControllerManager implements vscode.Disposable {
 
     // Handle interrupts
     controller.interruptHandler = async () => {
-      console.log(`[DynamicControllerManager] Runtime controller ${controllerId} interrupted`);
-      await this.showRuntimeSelector(vscode.window.activeNotebookEditor?.notebook!);
+      console.log(
+        `[DynamicControllerManager] Runtime controller ${controllerId} interrupted`
+      );
+      await this.showRuntimeSelector(
+        vscode.window.activeNotebookEditor?.notebook!
+      );
     };
 
     this._controllers.set(controllerId, controller);
     this._context.subscriptions.push(controller);
 
-    console.log("[DynamicControllerManager] Runtime controller created:", displayInfo.label);
+    console.log(
+      "[DynamicControllerManager] Runtime controller created:",
+      displayInfo.label
+    );
   }
 
   /**
    * Gets display information for a runtime.
    */
-  private getRuntimeDisplayInfo(runtime: Runtime): { label: string; description: string; environment: string } {
-    let environmentTitle = '';
-    let environmentName = '';
-    let givenName = '';
-    
+  private getRuntimeDisplayInfo(runtime: Runtime): {
+    label: string;
+    description: string;
+    environment: string;
+  } {
+    let environmentTitle = "";
+    let environmentName = "";
+    let givenName = "";
+
     // Extract runtime information
-    if (runtime && typeof runtime === 'object') {
-      if ('environmentName' in runtime || 'givenName' in runtime) {
-        environmentName = runtime.environmentName || runtime.environment_name || '';
-        givenName = runtime.givenName || runtime.given_name || '';
-      } else if (typeof runtime.toJSON === 'function') {
-        const data = runtime.toJSON();
-        environmentName = data.environment_name || '';
-        givenName = data.given_name || '';
-        environmentTitle = data.environment_title || '';
+    if (runtime && typeof runtime === "object") {
+      if ("environmentName" in runtime || "givenName" in runtime) {
+        environmentName =
+          runtime.environment_name || runtime.environment_name || "";
+        givenName = runtime.given_name || runtime.given_name || "";
+      } else if (typeof (runtime as any).toJSON === "function") {
+        const data = (runtime as any).toJSON();
+        environmentName = data.environment_name || "";
+        givenName = data.given_name || "";
+        environmentTitle = data.environment_title || "";
       } else {
-        environmentName = runtime.environment_name || '';
-        givenName = runtime.given_name || '';
-        environmentTitle = runtime.environment_title || '';
+        environmentName = runtime.environment_name || "";
+        givenName = runtime.given_name || "";
+        environmentTitle = runtime.environment_title || "";
       }
     }
-    
+
     // Derive environment title if not available
     if (!environmentTitle && givenName) {
-      if (givenName.includes('Python CPU')) {
-        environmentTitle = 'Python CPU Environment';
-      } else if (givenName.includes('AI')) {
-        environmentTitle = 'AI Environment';
-      } else if (givenName.endsWith(' Runtime')) {
-        environmentTitle = givenName.replace(' Runtime', ' Environment');
+      if (givenName.includes("Python CPU")) {
+        environmentTitle = "Python CPU Environment";
+      } else if (givenName.includes("AI")) {
+        environmentTitle = "AI Environment";
+      } else if (givenName.endsWith(" Runtime")) {
+        environmentTitle = givenName.replace(" Runtime", " Environment");
       } else {
         environmentTitle = givenName;
       }
     }
 
-    const label = environmentTitle && environmentName
-      ? `Datalayer: ${environmentTitle} (${environmentName})`
-      : givenName
+    const label =
+      environmentTitle && environmentName
+        ? `Datalayer: ${environmentTitle} (${environmentName})`
+        : givenName
         ? `Datalayer: ${givenName}`
-        : `Datalayer: ${runtime.pod_name || runtime.uid?.slice(0, 8) || 'Runtime'}`;
+        : `Datalayer: ${
+            runtime.pod_name || runtime.uid?.slice(0, 8) || "Runtime"
+          }`;
 
     const description = environmentTitle
       ? `Connected to ${environmentTitle}`
-      : `Connected to ${givenName || runtime.pod_name || 'runtime'}`;
+      : `Connected to ${givenName || runtime.pod_name || "runtime"}`;
 
-    const environment = environmentTitle || givenName || runtime.pod_name || 'Unknown';
+    const environment =
+      environmentTitle || givenName || runtime.pod_name || "Unknown";
 
     return { label, description, environment };
   }
@@ -364,21 +440,32 @@ export class DynamicControllerManager implements vscode.Disposable {
     notebook: vscode.NotebookDocument,
     runtime: Runtime
   ): Promise<void> {
-    console.log("[DynamicControllerManager] Executing", cells.length, "cells with runtime:", runtime.uid);
+    console.log(
+      "[DynamicControllerManager] Executing",
+      cells.length,
+      "cells with runtime:",
+      runtime.uid
+    );
 
     const notebookUri = notebook.uri.toString();
     const isWebviewNotebook = notebook.uri.scheme === "datalayer";
 
     if (isWebviewNotebook) {
       // For webview notebooks, send runtime info via message
-      console.log("[DynamicControllerManager] Routing to webview notebook (Datalayer)");
+      console.log(
+        "[DynamicControllerManager] Routing to webview notebook (Datalayer)"
+      );
       console.log("[DynamicControllerManager] Runtime being passed:", runtime);
-      console.log("[DynamicControllerManager] Runtime type:", typeof runtime, runtime?.constructor?.name);
+      console.log(
+        "[DynamicControllerManager] Runtime type:",
+        typeof runtime,
+        runtime?.constructor?.name
+      );
       await this._kernelBridge.connectWebviewNotebook(notebook.uri, runtime);
-      
+
       // Get any controller to create executions (they all work the same for webview)
       const anyController = Array.from(this._controllers.values())[0];
-      
+
       // Webview handles execution, just mark cells as successful
       for (const cell of cells) {
         const execution = anyController.createNotebookCellExecution(cell);
@@ -388,8 +475,10 @@ export class DynamicControllerManager implements vscode.Disposable {
       }
     } else {
       // For native notebooks (local files), use WebSocket connection
-      console.log("[DynamicControllerManager] Routing to native notebook (local file):");
-      
+      console.log(
+        "[DynamicControllerManager] Routing to native notebook (local file):"
+      );
+
       // Get or create kernel client for this notebook
       let kernelClient = this._activeKernels.get(notebookUri);
       if (!kernelClient) {
@@ -401,14 +490,18 @@ export class DynamicControllerManager implements vscode.Disposable {
       // Get the runtime controller to create executions
       const runtimeControllerId = this.getRuntimeControllerId(runtime);
       const runtimeController = this._controllers.get(runtimeControllerId);
-      
+
       if (!runtimeController) {
         throw new Error(`Runtime controller not found: ${runtimeControllerId}`);
       }
 
       // Execute cells
       for (const cell of cells) {
-        await this.executeCellViaWebSocket(cell, kernelClient, runtimeController);
+        await this.executeCellViaWebSocket(
+          cell,
+          kernelClient,
+          runtimeController
+        );
       }
     }
   }
@@ -423,15 +516,20 @@ export class DynamicControllerManager implements vscode.Disposable {
   ): Promise<void> {
     // Ensure controller is associated with the notebook before creating execution
     const notebook = cell.notebook;
-    
+
     // CRITICAL: Update the controller's affinity to Preferred to ensure association
     // This must be done BEFORE trying to create an execution
-    console.log("[DynamicControllerManager] Ensuring controller is associated with notebook");
-    await controller.updateNotebookAffinity(notebook, vscode.NotebookControllerAffinity.Preferred);
-    
+    console.log(
+      "[DynamicControllerManager] Ensuring controller is associated with notebook"
+    );
+    await controller.updateNotebookAffinity(
+      notebook,
+      vscode.NotebookControllerAffinity.Preferred
+    );
+
     // Give VS Code a moment to process the affinity change
-    await new Promise(resolve => setTimeout(resolve, 50));
-    
+    await new Promise((resolve) => setTimeout(resolve, 50));
+
     const execution = controller.createNotebookCellExecution(cell);
     execution.executionOrder = ++this._executionOrder;
     execution.start(Date.now());
@@ -448,23 +546,29 @@ export class DynamicControllerManager implements vscode.Disposable {
         if (output.type === "stream") {
           await execution.appendOutput(
             new vscode.NotebookCellOutput([
-              vscode.NotebookCellOutputItem.text(output.text)
+              vscode.NotebookCellOutputItem.text(output.text || ""),
             ])
           );
         } else if (output.type === "execute_result") {
           const items: vscode.NotebookCellOutputItem[] = [];
-          
+
           if (output.data["text/html"]) {
             items.push(
-              vscode.NotebookCellOutputItem.text(output.data["text/html"], "text/html")
+              vscode.NotebookCellOutputItem.text(
+                output.data["text/html"],
+                "text/html"
+              )
             );
           }
           if (output.data["text/plain"]) {
             items.push(
-              vscode.NotebookCellOutputItem.text(output.data["text/plain"], "text/plain")
+              vscode.NotebookCellOutputItem.text(
+                output.data["text/plain"],
+                "text/plain"
+              )
             );
           }
-          
+
           if (items.length > 0) {
             await execution.appendOutput(new vscode.NotebookCellOutput(items));
           }
@@ -472,10 +576,10 @@ export class DynamicControllerManager implements vscode.Disposable {
           await execution.appendOutput(
             new vscode.NotebookCellOutput([
               vscode.NotebookCellOutputItem.error({
-                name: output.ename,
-                message: output.evalue,
-                stack: output.traceback.join("\n")
-              })
+                name: output.ename || "",
+                message: output.evalue || "",
+                stack: output.traceback?.join("\n") || "",
+              }),
             ])
           );
         }
@@ -484,16 +588,16 @@ export class DynamicControllerManager implements vscode.Disposable {
       execution.end(true, Date.now());
     } catch (error) {
       console.error("[DynamicControllerManager] Execution error:", error);
-      
+
       await execution.appendOutput(
         new vscode.NotebookCellOutput([
           vscode.NotebookCellOutputItem.error({
             name: "ExecutionError",
-            message: error instanceof Error ? error.message : String(error)
-          })
+            message: error instanceof Error ? error.message : String(error),
+          }),
         ])
       );
-      
+
       execution.end(false, Date.now());
     }
   }
@@ -516,7 +620,7 @@ export class DynamicControllerManager implements vscode.Disposable {
     try {
       // Get available runtimes
       const runtimes = await (this._sdk as any).listRuntimes();
-      
+
       // Create controllers for existing runtimes that don't have controllers yet
       for (const runtime of runtimes) {
         const controllerId = this.getRuntimeControllerId(runtime);
@@ -525,26 +629,36 @@ export class DynamicControllerManager implements vscode.Disposable {
         }
       }
 
-      console.log("[DynamicControllerManager] Controllers refreshed:", this._controllers.size);
+      console.log(
+        "[DynamicControllerManager] Controllers refreshed:",
+        this._controllers.size
+      );
     } catch (error) {
-      console.error("[DynamicControllerManager] Error refreshing controllers:", error);
+      console.error(
+        "[DynamicControllerManager] Error refreshing controllers:",
+        error
+      );
     }
   }
 
   /**
    * Handles notebook open events.
    */
-  public async onDidOpenNotebook(notebook: vscode.NotebookDocument): Promise<void> {
+  public async onDidOpenNotebook(
+    notebook: vscode.NotebookDocument
+  ): Promise<void> {
     // For Jupyter notebooks, check if we have a stored runtime for this notebook
     if (notebook.notebookType === "jupyter-notebook") {
       const notebookUri = notebook.uri.toString();
       const storedRuntime = this._notebookRuntimes.get(notebookUri);
-      
+
       if (storedRuntime) {
-        console.log("[DynamicControllerManager] Restoring runtime for reopened notebook");
+        console.log(
+          "[DynamicControllerManager] Restoring runtime for reopened notebook"
+        );
         const controllerId = this.getRuntimeControllerId(storedRuntime);
         const controller = this._controllers.get(controllerId);
-        
+
         if (controller) {
           // Set this controller as preferred for the notebook
           await controller.updateNotebookAffinity(
@@ -562,18 +676,22 @@ export class DynamicControllerManager implements vscode.Disposable {
   public onDidCloseNotebook(notebook: vscode.NotebookDocument): void {
     const notebookUri = notebook.uri.toString();
     const kernelClient = this._activeKernels.get(notebookUri);
-    
+
     if (kernelClient) {
       kernelClient.dispose();
       this._activeKernels.delete(notebookUri);
-      console.log("[DynamicControllerManager] Cleaned up kernel for closed notebook");
+      console.log(
+        "[DynamicControllerManager] Cleaned up kernel for closed notebook"
+      );
     }
   }
 
   /**
    * Public method to select runtime for a specific notebook.
    */
-  public async selectRuntimeForNotebook(notebook: vscode.NotebookDocument): Promise<void> {
+  public async selectRuntimeForNotebook(
+    notebook: vscode.NotebookDocument
+  ): Promise<void> {
     console.log("[DynamicControllerManager] selectRuntimeForNotebook called");
     await this.showRuntimeSelector(notebook);
   }

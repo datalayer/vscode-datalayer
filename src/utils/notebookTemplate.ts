@@ -27,9 +27,10 @@ export function getNotebookHtml(
   extensionUri: vscode.Uri
 ): string {
   // Local path to script and css for the webview with cache busting
-  const scriptUri = webview.asWebviewUri(
-    vscode.Uri.joinPath(extensionUri, "dist", "webview.js")
-  ) + `?t=${Date.now()}`;
+  const scriptUri =
+    webview.asWebviewUri(
+      vscode.Uri.joinPath(extensionUri, "dist", "webview.js")
+    ) + `?t=${Date.now()}`;
 
   // Get the codicon CSS file from dist folder
   const codiconCssUri = webview.asWebviewUri(

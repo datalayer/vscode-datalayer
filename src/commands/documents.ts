@@ -10,7 +10,7 @@
  *
  * @see https://code.visualstudio.com/api/extension-guides/command
  * @module commands/documents
- * 
+ *
  * @remarks
  * This module registers the following commands:
  * - `datalayer.openDocument` - Opens documents with type detection and appropriate editor
@@ -217,7 +217,7 @@ export function registerDocumentCommands(
               const notebook = await (sdk as any).createNotebook({
                 spaceId: space.uid,
                 name,
-                description
+                description,
               });
 
               if (notebook) {
@@ -289,7 +289,7 @@ export function registerDocumentCommands(
               const document = await (sdk as any).createLexical({
                 spaceId: space.uid,
                 name,
-                description
+                description,
               });
 
               if (document) {
@@ -364,16 +364,19 @@ export function registerDocumentCommands(
               const docId = document.uid || document.id;
               let success = false;
 
-              if (document.type === 'notebook' || document.notebook_name_s) {
+              if (document.type === "notebook" || document.notebook_name_s) {
                 const updated = await (sdk as any).updateNotebook(docId, {
                   name: newName,
-                  description: existingDescription
+                  description: existingDescription,
                 });
                 success = !!updated;
-              } else if (document.type === 'lexical' || document.document_name_s) {
+              } else if (
+                document.type === "lexical" ||
+                document.document_name_s
+              ) {
                 const updated = await (sdk as any).updateLexical(docId, {
                   name: newName,
-                  description: existingDescription
+                  description: existingDescription,
                 });
                 success = !!updated;
               }
@@ -444,10 +447,13 @@ export function registerDocumentCommands(
               const docId = document.uid || document.id;
               let success = false;
 
-              if (document.type === 'notebook' || document.notebook_name_s) {
+              if (document.type === "notebook" || document.notebook_name_s) {
                 await (sdk as any).deleteNotebook(docId);
                 success = true;
-              } else if (document.type === 'lexical' || document.document_name_s) {
+              } else if (
+                document.type === "lexical" ||
+                document.document_name_s
+              ) {
                 await (sdk as any).deleteLexical(docId);
                 success = true;
               }

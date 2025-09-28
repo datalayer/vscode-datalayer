@@ -250,7 +250,8 @@ export const NotebookToolbar: React.FC<NotebookToolbarProps> = ({
     // Check if we have a selected runtime (works for both Datalayer and local notebooks)
     if (selectedRuntime) {
       // Show "Datalayer: {Runtime name}" to clearly indicate it's a Datalayer runtime
-      const runtimeName = selectedRuntime.name || selectedRuntime.uid || "Runtime";
+      const runtimeName =
+        selectedRuntime.name || selectedRuntime.uid || "Runtime";
       setSelectedKernel(`Datalayer: ${runtimeName}`);
 
       // Check if we have an active kernel connection to determine status
@@ -372,9 +373,9 @@ export const NotebookToolbar: React.FC<NotebookToolbarProps> = ({
     switch (kernelStatus) {
       case "idle":
       case "busy":
-        return "codicon-server-environment";  // Connected kernel icon
+        return "codicon-server-environment"; // Connected kernel icon
       case "disconnected":
-        return "codicon-server-environment";  // Same icon but will show "Select Kernel"
+        return "codicon-server-environment"; // Same icon but will show "Select Kernel"
       case "connecting":
         return "codicon-loading codicon-modifier-spin";
       default:
@@ -544,6 +545,53 @@ export const NotebookToolbar: React.FC<NotebookToolbarProps> = ({
             <span>Collaborative • Auto-saved</span>
           </div>
         )}
+
+        {/* Terminate Runtime button - only show for Datalayer runtimes */}
+        {selectedRuntime &&
+          selectedKernel !== "Select Kernel" &&
+          selectedKernel.startsWith("Datalayer:") && (
+            <button
+              onClick={() => {
+                if (messageHandler) {
+                  messageHandler.postMessage({
+                    type: "terminate-runtime",
+                    body: {
+                      runtime: selectedRuntime,
+                    },
+                  });
+                }
+              }}
+              title="Terminate Runtime"
+              style={{
+                background: "transparent",
+                border: "none",
+                color: "var(--vscode-foreground)",
+                cursor: "pointer",
+                padding: "4px",
+                borderRadius: "3px",
+                display: "flex",
+                alignItems: "center",
+                fontSize: "var(--vscode-font-size)",
+                opacity: 0.8,
+                transition: "opacity 0.1s ease, background-color 0.1s ease",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor =
+                  "var(--vscode-toolbar-hoverBackground)";
+                e.currentTarget.style.opacity = "1";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = "transparent";
+                e.currentTarget.style.opacity = "0.8";
+              }}
+            >
+              <span
+                className="codicon codicon-x"
+                style={{ fontSize: "16px" }}
+              ></span>
+            </button>
+          )}
+
         <button
           style={{
             display: "flex",

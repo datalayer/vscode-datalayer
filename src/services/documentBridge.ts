@@ -56,10 +56,7 @@ export class DocumentBridge {
   private tempDir: string;
   private activeRuntimes: Set<string> = new Set();
 
-  private constructor(
-    context?: vscode.ExtensionContext,
-    sdk?: DatalayerSDK
-  ) {
+  private constructor(context?: vscode.ExtensionContext, sdk?: DatalayerSDK) {
     if (!sdk) {
       throw new Error("SDK is required for DocumentBridge");
     }
