@@ -15,7 +15,7 @@ import * as vscode from "vscode";
 import { LexicalDocument } from "../models/lexicalDocument";
 import { DocumentBridge } from "./documentBridge";
 import { SDKAuthProvider } from "./authProvider";
-import { SDKSpacerService } from "./spacerService";
+import { getSDKInstance } from "./sdkAdapter";
 
 /**
  * Configuration for lexical document collaboration.
@@ -81,9 +81,9 @@ export class LexicalCollaborationService {
         return undefined;
       }
 
-      const spacerService = SDKSpacerService.getInstance();
+      const sdk = getSDKInstance();
       const sessionResult =
-        await spacerService.getLexicalCollaborationSessionId(
+        await (sdk as any).getLexicalCollaborationSessionId(
           metadata.document.uid
         );
 

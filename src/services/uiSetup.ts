@@ -18,7 +18,7 @@ import { RuntimeControllerManager } from "../providers/runtimeControllerManager"
 import { JupyterNotebookProvider } from "../providers/jupyterNotebookProvider";
 import { LexicalDocumentProvider } from "../providers/lexicalDocumentProvider";
 import { SDKAuthProvider } from "./authProvider";
-import { SDKRuntimeService } from "./runtimeService";
+import type { DatalayerSDK } from "../../../core/lib/index.js";
 
 /**
  * Container for all extension UI components.
@@ -41,19 +41,19 @@ export interface ExtensionUI {
  *
  * @param context - VS Code extension context
  * @param authProvider - Authentication provider instance
- * @param runtimeService - Runtime service instance
+ * @param sdk - SDK instance
  * @returns Container with all initialized UI components
  *
  * @example
  * ```typescript
- * const ui = await initializeUI(context, authProvider, runtimeService);
+ * const ui = await initializeUI(context, authProvider, sdk);
  * // UI components are registered and ready
  * ```
  */
 export async function initializeUI(
   context: vscode.ExtensionContext,
   authProvider: SDKAuthProvider,
-  runtimeService: SDKRuntimeService
+  sdk: DatalayerSDK
 ): Promise<ExtensionUI> {
   const statusBar = DatalayerStatusBar.getInstance(authProvider);
   context.subscriptions.push(statusBar);
@@ -64,7 +64,7 @@ export async function initializeUI(
   const runtimeControllerManager = new RuntimeControllerManager(
     context,
     authProvider,
-    runtimeService
+    sdk
   );
   context.subscriptions.push(runtimeControllerManager);
 

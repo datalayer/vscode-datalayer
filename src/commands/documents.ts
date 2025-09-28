@@ -22,7 +22,7 @@
  */
 
 import * as vscode from "vscode";
-import { SDKSpacerService } from "../services/spacerService";
+import { getSDKInstance } from "../services/sdkAdapter";
 import { DocumentBridge } from "../services/documentBridge";
 import { SpacesTreeProvider } from "../providers/spacesTreeProvider";
 import { Document } from "../models/spaceItem";
@@ -38,17 +38,16 @@ import {
  * and lexical documents with Datalayer platform integration.
  *
  * @param context - Extension context for command subscriptions
- * @param spacerService - Service for Datalayer spaces API interactions
  * @param documentBridge - Bridge for document lifecycle management
  * @param spacesTreeProvider - Tree provider for UI refresh operations
  *
  */
 export function registerDocumentCommands(
   context: vscode.ExtensionContext,
-  spacerService: SDKSpacerService,
   documentBridge: DocumentBridge,
   spacesTreeProvider: SpacesTreeProvider
 ): void {
+  const sdk = getSDKInstance();
   /**
    * Command: datalayer.openDocument
    * Opens Datalayer documents with type detection and appropriate editor.
@@ -215,11 +214,11 @@ export function registerDocumentCommands(
               cancellable: false,
             },
             async () => {
-              const notebook = await spacerService.createNotebook(
-                space.uid,
+              const notebook = await (sdk as any).createNotebook({
+                spaceId: space.uid,
                 name,
                 description
-              );
+              });
 
               if (notebook) {
                 vscode.window.showInformationMessage(
@@ -287,11 +286,11 @@ export function registerDocumentCommands(
               cancellable: false,
             },
             async () => {
-              const document = await spacerService.createLexicalDocument(
-                space.uid,
+              const document = await (sdk as any).createLexical({
+                spaceId: space.uid,
                 name,
                 description
-              );
+              });
 
               if (document) {
                 vscode.window.showInformationMessage(
@@ -362,11 +361,22 @@ export function registerDocumentCommands(
             },
             async () => {
               const existingDescription = document.description_t || "";
-              const success = await spacerService.updateItemName(
-                document,
-                newName,
-                existingDescription
-              );
+              const docId = document.uid || document.id;
+              let success = false;
+
+              if (document.type === 'notebook' || document.notebook_name_s) {
+                const updated = await (sdk as any).updateNotebook(docId, {
+                  name: newName,
+                  description: existingDescription
+                });
+                success = !!updated;
+              } else if (document.type === 'lexical' || document.document_name_s) {
+                const updated = await (sdk as any).updateLexical(docId, {
+                  name: newName,
+                  description: existingDescription
+                });
+                success = !!updated;
+              }
 
               if (success) {
                 vscode.window.showInformationMessage(
@@ -431,7 +441,16 @@ export function registerDocumentCommands(
               cancellable: false,
             },
             async () => {
-              const success = await spacerService.deleteItem(document.uid);
+              const docId = document.uid || document.id;
+              let success = false;
+
+              if (document.type === 'notebook' || document.notebook_name_s) {
+                await (sdk as any).deleteNotebook(docId);
+                success = true;
+              } else if (document.type === 'lexical' || document.document_name_s) {
+                await (sdk as any).deleteLexical(docId);
+                success = true;
+              }
 
               if (success) {
                 vscode.window.showInformationMessage(

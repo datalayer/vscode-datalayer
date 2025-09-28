@@ -34,7 +34,7 @@ export async function activate(
     const ui = await initializeUI(
       context,
       services.authProvider,
-      services.runtimeService
+      services.sdk
     );
 
     const updateAuthState = setupAuthStateManagement(
@@ -47,7 +47,6 @@ export async function activate(
       context,
       {
         authProvider: services.authProvider,
-        spacerService: services.spacerService,
         documentBridge: services.documentBridge,
         spacesTreeProvider: ui.spacesTreeProvider,
         runtimeControllerManager: ui.runtimeControllerManager,

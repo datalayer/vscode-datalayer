@@ -15,6 +15,7 @@ import * as vscode from "vscode";
 import {
   DatalayerSDK,
   type DatalayerSDKConfig,
+  type SDKHandlers,
 } from "../../../core/lib/index.js";
 import { DEFAULT_SERVICE_URLS } from "../../../core/lib/api/constants.js";
 
@@ -30,7 +31,6 @@ import * as spacerNotebooks from "../../../core/lib/api/spacer/notebooks.js";
 import * as spacerLexicals from "../../../core/lib/api/spacer/lexicals.js";
 
 // Explicitly import all SDK mixins to ensure they're bundled
-import { HealthMixin } from "../../../core/lib/sdk/client/mixins/HealthMixin.js";
 import { IAMMixin } from "../../../core/lib/sdk/client/mixins/IAMMixin.js";
 import { RuntimesMixin } from "../../../core/lib/sdk/client/mixins/RuntimesMixin.js";
 import { SpacerMixin } from "../../../core/lib/sdk/client/mixins/SpacerMixin.js";
@@ -52,7 +52,6 @@ const ensureModulesIncluded = () => {
     }
   );
   console.log("[SDK Adapter] Ensuring SDK mixins are bundled:", {
-    health: !!HealthMixin,
     iam: !!IAMMixin,
     runtimes: !!RuntimesMixin,
     spacer: !!SpacerMixin,
@@ -178,6 +177,40 @@ export function createVSCodeSDK(config: VSCodeSDKConfig): DatalayerSDK {
     hasStorage: true,
   });
 
+  // Define VS Code-specific handlers for logging and error handling
+  const handlers: SDKHandlers = {
+    beforeCall: (methodName: string, args: any[]) => {
+      console.log(`[SDK] Calling ${methodName}`, args.length > 0 ? args : '');
+    },
+    afterCall: (methodName: string, result: any) => {
+      // Only log non-sensitive results
+      if (methodName !== 'getToken' && methodName !== 'login') {
+        const resultInfo = Array.isArray(result) ? `(${result.length} items)` : '';
+        console.log(`[SDK] ${methodName} completed ${resultInfo}`);
+      }
+    },
+    onError: async (methodName: string, error: any) => {
+      console.error(`[SDK] ${methodName} failed:`, error);
+
+      // Show user-friendly error messages for common errors
+      if (error instanceof Error) {
+        if (error.message.includes("Not authenticated") || error.message.includes("401")) {
+          const action = await vscode.window.showErrorMessage(
+            "Authentication required. Please login to Datalayer.",
+            "Login"
+          );
+          if (action === "Login") {
+            vscode.commands.executeCommand("datalayer.login");
+          }
+        } else if (error.message.includes("Network") || error.message.includes("fetch")) {
+          vscode.window.showErrorMessage(
+            "Network error. Please check your connection and try again."
+          );
+        }
+      }
+    }
+  };
+
   const sdk = new DatalayerSDK({
     // Service URLs - now using the configured URLs
     iamRunUrl,
@@ -186,6 +219,9 @@ export function createVSCodeSDK(config: VSCodeSDKConfig): DatalayerSDK {
 
     // VS Code-specific storage
     storage: new VSCodeStorage(context),
+
+    // VS Code-specific handlers
+    handlers,
 
     // User-provided overrides
     ...sdkConfig,

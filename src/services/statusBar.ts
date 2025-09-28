@@ -36,7 +36,7 @@ import { SDKAuthProvider } from "../services/authProvider";
  *
  * @see {@link SDKAuthProvider} - for authentication management
  */
-export class DatalayerStatusBar {
+export class DatalayerStatusBar implements vscode.Disposable {
   /**
    * Singleton instance of the status bar manager.
    * @internal

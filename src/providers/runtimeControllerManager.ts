@@ -16,8 +16,6 @@
 import * as vscode from "vscode";
 import type { DatalayerSDK, Runtime } from "../../../core/lib/index.js";
 import { SDKAuthProvider } from "../services/authProvider";
-import { SDKRuntimeService } from "../services/runtimeService";
-import { SDKSpacerService } from "../services/spacerService";
 import { RuntimeController } from "./runtimeController";
 
 /**
@@ -68,8 +66,7 @@ export interface RuntimeControllerConfig {
 export class RuntimeControllerManager implements vscode.Disposable {
   private readonly _context: vscode.ExtensionContext;
   private readonly _authProvider: SDKAuthProvider;
-  private readonly _spacerService: SDKSpacerService;
-  private readonly _sdkRuntimeService: SDKRuntimeService;
+  private readonly _sdk: DatalayerSDK;
   private readonly _controllers = new Map<string, RuntimeController>();
   private _refreshTimer: NodeJS.Timeout | undefined;
   private _disposed = false;
@@ -79,17 +76,16 @@ export class RuntimeControllerManager implements vscode.Disposable {
    *
    * @param context - The extension context
    * @param authProvider - The SDK auth provider
-   * @param sdkRuntimeService - The SDK runtime service
+   * @param sdk - The Datalayer SDK instance
    */
   constructor(
     context: vscode.ExtensionContext,
     authProvider: SDKAuthProvider,
-    sdkRuntimeService: SDKRuntimeService
+    sdk: DatalayerSDK
   ) {
     this._context = context;
     this._authProvider = authProvider;
-    this._spacerService = SDKSpacerService.getInstance();
-    this._sdkRuntimeService = sdkRuntimeService;
+    this._sdk = sdk;
 
     console.log(
       "[RuntimeControllerManager] Initializing runtime controller manager"
@@ -205,7 +201,7 @@ export class RuntimeControllerManager implements vscode.Disposable {
         "[RuntimeControllerManager] ========== FETCHING RUNTIMES =========="
       );
       const startTime = Date.now();
-      const runtimes = await this._sdkRuntimeService.listRuntimes();
+      const runtimes = await (this._sdk as any).listRuntimes();
       const fetchTime = Date.now() - startTime;
 
       console.log(
@@ -398,8 +394,7 @@ export class RuntimeControllerManager implements vscode.Disposable {
       const controller = new RuntimeController(
         this._context,
         config,
-        this._spacerService,
-        this._sdkRuntimeService,
+        this._sdk,
         this._authProvider
       );
       this._controllers.set(controllerId, controller);

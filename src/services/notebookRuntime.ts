@@ -15,7 +15,7 @@ import * as vscode from "vscode";
 import type { Runtime } from "../../../core/lib/index.js";
 import { ExtensionMessage } from "../utils/messages";
 import { SDKAuthProvider } from "./authProvider";
-import { SDKRuntimeService } from "./runtimeService";
+import { getSDKInstance } from "./sdkAdapter";
 import { setRuntime } from "../utils/runtimeSelector";
 
 /**
@@ -53,7 +53,7 @@ export class NotebookRuntimeService {
   ): Promise<void> {
     try {
       const authService = SDKAuthProvider.getInstance();
-      const runtimesApi = SDKRuntimeService.getInstance();
+      const sdk = getSDKInstance();
 
       // Check if authenticated
       const authState = authService.getAuthState();
@@ -72,7 +72,7 @@ export class NotebookRuntimeService {
             cancellable: false,
           },
           async () => {
-            return await runtimesApi.listRuntimes();
+            return await (sdk as any).listRuntimes();
           }
         );
       } catch (error) {
@@ -186,7 +186,7 @@ export class NotebookRuntimeService {
               vscode.workspace.getConfiguration("datalayer.runtime");
             const creditsLimit = config.get<number>("creditsLimit", 10);
 
-            const newRuntime = await runtimesApi.createRuntime(
+            const newRuntime = await (sdk as any).createRuntime(
               creditsLimit,
               "notebook",
               `VSCode ${
@@ -201,7 +201,7 @@ export class NotebookRuntimeService {
               const maxRetries = 10;
               while (retries < maxRetries && newRuntime.podName) {
                 await new Promise((resolve) => setTimeout(resolve, 3000));
-                const updatedRuntime = await runtimesApi.getRuntime(
+                const updatedRuntime = await (sdk as any).getRuntime(
                   newRuntime.podName
                 );
                 if (updatedRuntime?.ingress && updatedRuntime?.token) {

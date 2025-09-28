@@ -14,8 +14,8 @@
 
 import * as vscode from "vscode";
 import { SpaceItem, ItemType } from "../models/spaceItem";
-import { SDKSpacerService } from "../services/spacerService";
 import { SDKAuthProvider } from "../services/authProvider";
+import { getSDKInstance } from "../services/sdkAdapter";
 
 /**
  * Tree data provider for the Datalayer Spaces view.
@@ -38,7 +38,6 @@ export class SpacesTreeProvider implements vscode.TreeDataProvider<SpaceItem> {
   > = this._onDidChangeTreeData.event;
 
   private authService: SDKAuthProvider;
-  private spacerService: SDKSpacerService;
   private spacesCache: Map<string, any[]> = new Map();
   private itemsCache: Map<string, any[]> = new Map();
 
@@ -49,14 +48,12 @@ export class SpacesTreeProvider implements vscode.TreeDataProvider<SpaceItem> {
    */
   constructor(authProvider: SDKAuthProvider) {
     this.authService = authProvider;
-    this.spacerService = SDKSpacerService.getInstance();
   }
 
   /**
    * Refreshes the entire tree view by clearing caches and firing change event.
    */
   refresh(): void {
-    console.log("[SpacesTree] Refreshing tree...");
     this.spacesCache.clear();
     this.itemsCache.clear();
     this._onDidChangeTreeData.fire();
@@ -68,7 +65,6 @@ export class SpacesTreeProvider implements vscode.TreeDataProvider<SpaceItem> {
    * @param spaceId - ID of the space to refresh
    */
   refreshSpace(spaceId: string): void {
-    console.log(`[SpacesTree] Refreshing space: ${spaceId}`);
     // Clear both the items cache and spaces cache to ensure fresh data
     this.itemsCache.delete(spaceId);
     this.spacesCache.clear(); // Clear spaces cache to get fresh items data
@@ -160,7 +156,8 @@ export class SpacesTreeProvider implements vscode.TreeDataProvider<SpaceItem> {
         // Show loading state
         this._onDidChangeTreeData.fire();
 
-        spaces = await this.spacerService.getUserSpaces();
+        const sdk = getSDKInstance();
+        spaces = await (sdk as any).getMySpaces() || [];
         this.spacesCache.set("user", spaces);
       }
 
@@ -190,7 +187,6 @@ export class SpacesTreeProvider implements vscode.TreeDataProvider<SpaceItem> {
 
       // Create tree items
       return spaces.map((space) => {
-        console.log("[SpacesTree] Creating tree item for space:", space);
         const name = space.name;
         const variant = space.variant;
         const label = variant === "default" ? `${name} (Default)` : name;
@@ -241,16 +237,24 @@ export class SpacesTreeProvider implements vscode.TreeDataProvider<SpaceItem> {
         ];
       }
 
-      console.log("[SpacesTree] Getting items for space ID:", spaceId);
-
       let items: any[] = [];
 
       if (this.itemsCache.has(spaceId)) {
         items = this.itemsCache.get(spaceId)!;
-        console.log("[SpacesTree] Using cached items:", items.length);
       } else {
-        console.log("[SpacesTree] Fetching items from API...");
-        items = await this.spacerService.getSpaceItems(spaceId);
+        const sdk = getSDKInstance();
+
+        // Get the space to access its items
+        const spaces = await (sdk as any).getMySpaces();
+        const targetSpace = spaces.find((s: any) => s.uid === spaceId);
+
+        if (targetSpace) {
+          // Get items from the space - returns Notebook, Lexical, and Cell model instances
+          items = await targetSpace.getItems() || [];
+        } else {
+          items = [];
+        }
+
         this.itemsCache.set(spaceId, items);
       }
 

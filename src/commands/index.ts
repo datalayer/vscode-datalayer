@@ -17,7 +17,6 @@ import { registerAuthCommands } from "./auth";
 import { registerDocumentCommands } from "./documents";
 import { registerRuntimeCommands } from "./runtimes";
 import { SDKAuthProvider } from "../services/authProvider";
-import { SDKSpacerService } from "../services/spacerService";
 import { DocumentBridge } from "../services/documentBridge";
 import { SpacesTreeProvider } from "../providers/spacesTreeProvider";
 import { RuntimeControllerManager } from "../providers/runtimeControllerManager";
@@ -28,7 +27,6 @@ import { RuntimeControllerManager } from "../providers/runtimeControllerManager"
  */
 export interface CommandServices {
   authProvider: SDKAuthProvider;
-  spacerService: SDKSpacerService;
   documentBridge: DocumentBridge;
   spacesTreeProvider: SpacesTreeProvider;
   runtimeControllerManager: RuntimeControllerManager;
@@ -56,7 +54,6 @@ export function registerAllCommands(
 
   registerDocumentCommands(
     context,
-    services.spacerService,
     services.documentBridge,
     services.spacesTreeProvider
   );

@@ -16,8 +16,8 @@ import * as fs from "fs";
 import * as path from "path";
 import * as os from "os";
 import { Document } from "../models/spaceItem";
-import { SDKSpacerService } from "./spacerService";
-import { SDKRuntimeService } from "./runtimeService";
+import { getSDKInstance } from "./sdkAdapter";
+import type { DatalayerSDK } from "../../../core/lib/index.js";
 import type { Runtime } from "../../../core/lib/index.js";
 import { DatalayerFileSystemProvider } from "../providers/documentsFileSystemProvider";
 
@@ -51,21 +51,19 @@ export interface DocumentMetadata {
  */
 export class DocumentBridge {
   private static instance: DocumentBridge;
-  private spacerService: SDKSpacerService;
-  private sdkRuntimeService: SDKRuntimeService;
+  private sdk: DatalayerSDK;
   private documentMetadata: Map<string, DocumentMetadata> = new Map();
   private tempDir: string;
   private activeRuntimes: Set<string> = new Set();
 
   private constructor(
     context?: vscode.ExtensionContext,
-    sdkRuntimeService?: SDKRuntimeService
+    sdk?: DatalayerSDK
   ) {
-    this.spacerService = SDKSpacerService.getInstance();
-    if (!sdkRuntimeService) {
-      throw new Error("SDKRuntimeService is required for DocumentBridge");
+    if (!sdk) {
+      throw new Error("SDK is required for DocumentBridge");
     }
-    this.sdkRuntimeService = sdkRuntimeService;
+    this.sdk = sdk;
     // Create a temp directory for Datalayer documents
     this.tempDir = path.join(os.tmpdir(), "datalayer-vscode");
     if (!fs.existsSync(this.tempDir)) {
@@ -77,15 +75,15 @@ export class DocumentBridge {
    * Gets the singleton instance of DocumentBridge.
    *
    * @param context - Extension context (required on first call)
-   * @param sdkRuntimeService - SDK runtime service (required on first call)
+   * @param sdk - SDK instance (required on first call)
    * @returns The singleton instance
    */
   static getInstance(
     context?: vscode.ExtensionContext,
-    sdkRuntimeService?: SDKRuntimeService
+    sdk?: DatalayerSDK
   ): DocumentBridge {
     if (!DocumentBridge.instance) {
-      DocumentBridge.instance = new DocumentBridge(context, sdkRuntimeService);
+      DocumentBridge.instance = new DocumentBridge(context, sdk);
     }
     return DocumentBridge.instance;
   }
@@ -184,10 +182,8 @@ export class DocumentBridge {
         }
       }
 
-      // Fetch the document content
-      const content = isNotebook
-        ? await this.spacerService.getNotebookContent(document)
-        : await this.spacerService.getDocumentContent(document);
+      // Fetch the document content - both Notebook and Lexical models have getContent() method
+      const content = await document.getContent();
 
       console.log("[DocumentBridge] Raw content fetched:", content);
       console.log("[DocumentBridge] Content type:", typeof content);
@@ -356,7 +352,8 @@ export class DocumentBridge {
 
       try {
         // Verify the runtime still exists and is running
-        const currentRuntime = await this.sdkRuntimeService.getRuntime(
+        const sdk = getSDKInstance();
+        const currentRuntime = await (sdk as any).getRuntime(
           metadata.runtime.pod_name
         );
 
@@ -399,7 +396,8 @@ export class DocumentBridge {
     }
 
     // Create or get a runtime
-    const runtime = await this.sdkRuntimeService.ensureRuntime();
+    const sdk = getSDKInstance();
+    const runtime = await (sdk as any).ensureRuntime();
 
     // Store the runtime with the document metadata
     if (runtime && metadata) {

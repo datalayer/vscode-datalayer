@@ -14,8 +14,6 @@
 import * as vscode from "vscode";
 import { createVSCodeSDK, setSDKInstance } from "./sdkAdapter";
 import { SDKAuthProvider } from "./authProvider";
-import { SDKRuntimeService } from "./runtimeService";
-import { SDKSpacerService } from "./spacerService";
 import { DocumentBridge } from "./documentBridge";
 import { DatalayerFileSystemProvider } from "../providers/documentsFileSystemProvider";
 
@@ -28,10 +26,6 @@ export interface ExtensionServices {
   sdk: any;
   /** Authentication provider service */
   authProvider: SDKAuthProvider;
-  /** Runtime management service */
-  runtimeService: SDKRuntimeService;
-  /** Space and document service */
-  spacerService: SDKSpacerService;
   /** Document bridge service */
   documentBridge: DocumentBridge;
   /** Virtual file system provider */
@@ -60,9 +54,7 @@ export async function initializeServices(
   setSDKInstance(sdk);
 
   const authProvider = SDKAuthProvider.getInstance(sdk, context);
-  const runtimeService = SDKRuntimeService.getInstance(sdk, context);
-  const spacerService = SDKSpacerService.getInstance();
-  const documentBridge = DocumentBridge.getInstance(context, runtimeService);
+  const documentBridge = DocumentBridge.getInstance(context, sdk);
   const fileSystemProvider = DatalayerFileSystemProvider.getInstance();
 
   try {
@@ -94,8 +86,6 @@ export async function initializeServices(
   return {
     sdk,
     authProvider,
-    runtimeService,
-    spacerService,
     documentBridge,
     fileSystemProvider,
   };

@@ -18,8 +18,7 @@ import { WebSocket } from "ws";
 import { v4 as uuidv4 } from "uuid";
 import type { DatalayerSDK, Runtime } from "../../../core/lib/index.js";
 import { SDKAuthProvider } from "../services/authProvider";
-import { SDKRuntimeService } from "../services/runtimeService";
-import { SDKSpacerService } from "../services/spacerService";
+import { getSDKInstance } from "../services/sdkAdapter";
 import {
   RuntimeControllerConfig,
   RuntimeControllerType,
@@ -80,8 +79,7 @@ interface KernelConnection {
 export class RuntimeController implements vscode.Disposable {
   private readonly _context: vscode.ExtensionContext;
   private readonly _controller: vscode.NotebookController;
-  private readonly _spacerService: SDKSpacerService;
-  private readonly _sdkRuntimeService: SDKRuntimeService;
+  private readonly _sdk: DatalayerSDK;
   private readonly _authProvider: SDKAuthProvider;
   private _config: RuntimeControllerConfig;
   private _activeRuntime: Runtime | undefined;
@@ -94,21 +92,18 @@ export class RuntimeController implements vscode.Disposable {
    *
    * @param context - The extension context
    * @param config - Controller configuration
-   * @param spacerService - SDK Spacer service instance
-   * @param sdkRuntimeService - SDK runtime service instance
+   * @param sdk - Datalayer SDK instance
    * @param authProvider - SDK auth provider instance
    */
   constructor(
     context: vscode.ExtensionContext,
     config: RuntimeControllerConfig,
-    spacerService: SDKSpacerService,
-    sdkRuntimeService: SDKRuntimeService,
+    sdk: DatalayerSDK,
     authProvider: SDKAuthProvider
   ) {
     this._context = context;
     this._config = config;
-    this._spacerService = spacerService;
-    this._sdkRuntimeService = sdkRuntimeService;
+    this._sdk = sdk;
     this._authProvider = authProvider;
 
     // Set initial runtime if provided
@@ -377,7 +372,7 @@ export class RuntimeController implements vscode.Disposable {
       }
 
       // Fetch available runtimes
-      const runtimes = await this._sdkRuntimeService.listRuntimes();
+      const runtimes = await (this._sdk as any).listRuntimes();
 
       // Create picker options
       interface RuntimePickerItem extends vscode.QuickPickItem {
@@ -509,7 +504,7 @@ export class RuntimeController implements vscode.Disposable {
                   : "AI Env";
               const generatedName = `VSCode Runtime ${shortId}`;
 
-              const runtime = await this._sdkRuntimeService.createRuntime(
+              const runtime = await (this._sdk as any).createRuntime(
                 creditsLimit,
                 "notebook",
                 generatedName,
@@ -615,7 +610,7 @@ export class RuntimeController implements vscode.Disposable {
         "[RuntimeController] Fetching available runtimes from API..."
       );
       const startTime = Date.now();
-      const runtimes = await this._sdkRuntimeService.listRuntimes();
+      const runtimes = await (this._sdk as any).listRuntimes();
       const fetchTime = Date.now() - startTime;
 
       console.log("[RuntimeController] API call completed in", fetchTime, "ms");
@@ -1021,7 +1016,7 @@ export class RuntimeController implements vscode.Disposable {
           });
 
           // Create the runtime
-          const runtime = await this._sdkRuntimeService.createRuntime(
+          const runtime = await (this._sdk as any).createRuntime(
             creditsLimit,
             "notebook",
             generatedName,
@@ -1222,7 +1217,7 @@ export class RuntimeController implements vscode.Disposable {
           "[RuntimeController] Verifying runtime health:",
           (this._activeRuntime as any).podName
         );
-        const currentRuntime = await this._sdkRuntimeService.getRuntime(
+        const currentRuntime = await (this._sdk as any).getRuntime(
           this._activeRuntime.uid
         );
 

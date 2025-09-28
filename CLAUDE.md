@@ -26,6 +26,7 @@ npm run dist:mac  # Builds universal macOS app
 - **Extension Context** (`src/`): Node.js environment, handles auth & server communication
 - **Webview** (`webview/`): React-based notebook editor with VS Code theme integration
 - **Message Passing**: JWT token injection between extension and webview
+- **SDK Integration**: Direct use of `@datalayer/core` SDK with handlers pattern for VS Code-specific behavior
 
 ## Key Features
 
@@ -136,16 +137,23 @@ Key commands:
 
 ```
 src/
-├── auth/           # Authentication services
-├── spaces/         # Spaces tree view & API
-├── editors/        # Custom editors (notebook, lexical)
-└── runtimes/       # Runtime management
+├── services/
+│   ├── sdkAdapter.ts      # SDK singleton with VS Code handlers
+│   ├── authProvider.ts    # Authentication management
+│   ├── serviceFactory.ts  # Service initialization
+│   └── statusBar.ts       # Status bar UI management
+├── providers/
+│   ├── spacesTreeProvider.ts       # Tree view for spaces
+│   ├── runtimeControllerManager.ts # Runtime management
+│   └── runtimeController.ts        # Individual runtime control
+├── commands/         # VS Code command implementations
+├── models/           # Data models
+└── utils/            # Utility functions
 
 webview/
 ├── theme/          # VS Code theme integration
-├── NotebookVSCode.tsx    # Main notebook component
-├── NotebookToolbar.tsx   # VS Code-style toolbar
-└── LexicalEditor.tsx     # Rich text editor
+├── notebook/       # Notebook editor components
+└── lexical/        # Lexical editor components
 ```
 
 ## Development Guidelines
@@ -154,9 +162,49 @@ webview/
 
 ```bash
 npm run lint        # ESLint
-npx tsc --noEmit   # Type checking
-npm run doc        # Documentation
+npm run type-check  # TypeScript checking
+npm run compile     # Build extension
+npm run doc         # Documentation
 ```
+
+### SDK Usage Pattern (January 2025)
+
+**IMPORTANT**: The extension now uses the Datalayer SDK directly with handlers for VS Code-specific behavior.
+
+```typescript
+// In sdkAdapter.ts - SDK configured with VS Code handlers
+const sdk = new DatalayerSDK({
+  token: authProvider.getToken(),
+  handlers: {
+    beforeCall: (methodName, args) => {
+      console.log(`[SDK] Calling ${methodName}`, args);
+    },
+    onError: async (methodName, error) => {
+      if (error.message.includes('Not authenticated')) {
+        const action = await vscode.window.showErrorMessage(
+          'Authentication required. Please login to Datalayer.',
+          'Login'
+        );
+        if (action === 'Login') {
+          vscode.commands.executeCommand('datalayer.login');
+        }
+      }
+    }
+  }
+});
+
+// Usage throughout extension - cast as any when TypeScript definitions incomplete
+const notebooks = await (sdk as any).listNotebooks();
+const runtime = await (sdk as any).ensureRuntime();
+```
+
+### Service Layer Removal
+
+**Removed Services** (January 2025):
+- ❌ `spacerService.ts` - Deleted, use SDK directly
+- ❌ `runtimeService.ts` - Deleted, use SDK directly
+
+These services were wrapping every SDK method 1:1 just for logging. Now handled by SDK handlers pattern.
 
 ### Important Notes
 
@@ -165,6 +213,8 @@ npm run doc        # Documentation
 - Use actual API field names (e.g., `ingress` not `jupyter_base_url`)
 - Maintain JSDoc comments for all exported functions
 - Use FormData for notebook/lexical creation, JSON for other endpoints
+- Cast SDK as `(sdk as any)` when TypeScript definitions are incomplete
+- All cross-cutting concerns (logging, error handling) go in SDK handlers, not wrapper services
 
 ### Notebook Cell Management
 
@@ -245,6 +295,9 @@ This approach bypasses the problematic command registry and uses the same low-le
 - ✅ Virtual file system for Datalayer documents
 - ✅ Production build CSS import fix for @primer/react-brand
 - ✅ Post-build script to remove problematic module specifiers
+- ✅ **SDK Integration with Handlers Pattern** (January 2025) - Eliminated service wrappers
+- ✅ **Clean Architecture** - Direct SDK usage with platform-specific handlers
+- ✅ **Zero Code Duplication** - No more 1:1 method wrapping
 
 ## Version
 
