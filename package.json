@@ -40,6 +40,11 @@
         "category": "Datalayer"
       },
       {
+        "command": "datalayer.selectRuntime",
+        "title": "Select Runtime",
+        "category": "Datalayer"
+      },
+      {
         "command": "datalayer.jupyter-notebook-new",
         "title": "Create New Jupyter Notebook",
         "category": "Datalayer"

@@ -149,6 +149,7 @@ src/
 │   ├── authStateManager.ts # Authentication state persistence
 │   ├── documentBridge.ts   # Document bridge between Datalayer and local files
 │   ├── documentUtils.ts    # Document manipulation utilities
+│   ├── kernelBridge.ts     # Routes kernel connections to webview/native notebooks
 │   ├── runtimeService.ts   # Runtime management service (singleton)
 │   ├── serviceInitializer.ts # Service initialization
 │   ├── spaceItem.ts        # Tree item model for spaces view
@@ -157,8 +158,9 @@ src/
 │   └── uiInitializer.ts    # UI component initialization
 ├── utils/          # Utility functions
 │   ├── dispose.ts          # Disposable pattern utilities
+│   ├── kernelSelector.ts   # Unified kernel selection UI
 │   ├── messages.ts         # Message types for webview communication
-│   ├── runtimeSelector.ts  # Runtime selection input box
+│   ├── runtimeSelector.ts  # Datalayer runtime selection dialog
 │   └── webviewSecurity.ts  # CSP nonce generation for webviews
 └── test/           # Extension tests
 
@@ -177,9 +179,10 @@ webview/
 │   ├── mapping/            # Color mapping utilities
 │   └── providers/          # Theme providers
 └── services/       # Webview services
-    ├── messageHandler.ts    # Message passing with extension
-    ├── mockServiceManager.ts # Mock for development
-    └── serviceManager.ts    # Datalayer service management
+    ├── messageHandler.ts        # Message passing with extension
+    ├── mockServiceManager.ts    # Mock for development
+    ├── mutableServiceManager.ts # Wrapper for hot-swapping ServiceManager without re-render
+    └── serviceManager.ts        # Datalayer service management
 ```
 
 ### Architecture Principles

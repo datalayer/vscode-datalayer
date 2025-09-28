@@ -14,7 +14,7 @@
 import * as vscode from "vscode";
 import { SDKAuthProvider } from "./authProvider";
 import { SpacesTreeProvider } from "../providers/spacesTreeProvider";
-import { RuntimeControllerManager } from "../providers/runtimeControllerManager";
+import { DynamicControllerManager } from "../providers/dynamicControllerManager";
 
 /**
  * Sets up authentication state synchronization with UI components.
@@ -22,19 +22,19 @@ import { RuntimeControllerManager } from "../providers/runtimeControllerManager"
  *
  * @param authProvider - Authentication provider instance
  * @param spacesTreeProvider - Spaces tree view provider
- * @param runtimeControllerManager - Runtime controller manager
+ * @param controllerManager - Dynamic controller manager
  * @returns Function to manually update authentication state
  *
  * @example
  * ```typescript
- * const updateAuth = setupAuthStateManagement(authProvider, spacesTree, runtimeManager);
+ * const updateAuth = setupAuthStateManagement(authProvider, spacesTree, platformController);
  * // Authentication state changes are handled automatically
  * ```
  */
 export function setupAuthStateManagement(
   authProvider: SDKAuthProvider,
   spacesTreeProvider: SpacesTreeProvider,
-  runtimeControllerManager: RuntimeControllerManager
+  controllerManager: DynamicControllerManager
 ): () => void {
   /**
    * Updates VS Code context variables and refreshes UI components.
@@ -49,12 +49,9 @@ export function setupAuthStateManagement(
     );
     spacesTreeProvider.refresh();
 
-    runtimeControllerManager.forceRefresh().catch((error) => {
-      console.error(
-        "[Extension] Failed to refresh runtime controllers on auth state change:",
-        error
-      );
-    });
+    // Refresh controllers on auth change
+    controllerManager.refreshControllers();
+    console.log("[Extension] Refreshed controllers due to auth state change");
   };
 
   authProvider.onAuthStateChanged(() => {

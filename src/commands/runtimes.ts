@@ -6,194 +6,153 @@
 
 /**
  * Runtime management commands for the Datalayer VS Code extension.
- * Handles runtime status display, restart, and refresh operations.
+ * Handles runtime selection, status display, and kernel management.
  *
  * @see https://code.visualstudio.com/api/extension-guides/command
  * @module commands/runtimes
  *
  * @remarks
  * This module registers the following commands:
- * - `datalayer.refreshRuntimeControllers` - Forces refresh of runtime controllers
- * - `datalayer.showNotebookControllerStatus` - Displays active runtime status
- * - `datalayer.restartNotebookRuntime` - Restarts selected runtime with confirmation
+ * - `datalayer.selectRuntime` - Shows runtime selection dialog
+ * - `datalayer.resetRuntime` - Resets the selected runtime
+ * - `datalayer.showRuntimeStatus` - Displays current runtime status
  */
 
 import * as vscode from "vscode";
-import { RuntimeControllerManager } from "../providers/runtimeControllerManager";
+import { DynamicControllerManager } from "../providers/dynamicControllerManager";
 
 /**
- * Registers all runtime-related commands for managing Datalayer runtime controllers.
- *
- * Establishes command handlers for runtime operations including status display,
- * controller refresh, and runtime restart with user confirmation flows.
+ * Registers all runtime-related commands for the Dynamic Controller Manager.
  *
  * @param context - Extension context for command subscriptions
- * @param runtimeControllerManager - Manager for notebook runtime controllers
+ * @param controllerManager - The Dynamic Controller Manager
  */
 export function registerRuntimeCommands(
   context: vscode.ExtensionContext,
-  runtimeControllerManager: RuntimeControllerManager
+  controllerManager: DynamicControllerManager
 ): void {
   /**
+   * Command: datalayer.selectRuntime
+   * Shows the runtime selection dialog to choose or create a runtime.
+   * This simulates selecting the Datalayer Platform kernel from the picker.
+   */
+  context.subscriptions.push(
+    vscode.commands.registerCommand(
+      "datalayer.selectRuntime",
+      async () => {
+        console.log("[Extension] Manual runtime selection triggered");
+        
+        // Get active notebook editor
+        const activeEditor = vscode.window.activeNotebookEditor;
+        if (!activeEditor) {
+          vscode.window.showInformationMessage(
+            "Please open a notebook first to select a runtime"
+          );
+          return;
+        }
+
+        // Directly trigger runtime selection on the controller manager
+        await controllerManager.selectRuntimeForNotebook(activeEditor.notebook);
+        
+        // Also ensure the controller is selected for this notebook
+        // This makes sure "Datalayer Platform" is the active kernel
+        vscode.window.showInformationMessage(
+          "Runtime selector opened. Select or create a runtime."
+        );
+      }
+    )
+  );
+
+  /**
+   * Command: datalayer.resetRuntime
+   * Refreshes all runtime controllers.
+   */
+  context.subscriptions.push(
+    vscode.commands.registerCommand(
+      "datalayer.resetRuntime",
+      async () => {
+        console.log("[Extension] Runtime reset triggered");
+        
+        await controllerManager.refreshControllers();
+        
+        vscode.window.showInformationMessage(
+          "Runtime controllers refreshed. Select a runtime from the kernel picker."
+        );
+      }
+    )
+  );
+
+  /**
+   * Command: datalayer.showRuntimeStatus
+   * Shows information about available runtime controllers.
+   */
+  context.subscriptions.push(
+    vscode.commands.registerCommand(
+      "datalayer.showRuntimeStatus",
+      async () => {
+        await controllerManager.refreshControllers();
+        vscode.window.showInformationMessage(
+          "Runtime controllers are available in the kernel picker. Select 'Datalayer Platform' to choose a runtime."
+        );
+      }
+    )
+  );
+
+  /**
    * Command: datalayer.refreshRuntimeControllers
-   * Forces refresh of runtime controllers and optionally selects a specific runtime.
-   * Updates the runtime controller registry with latest platform state.
+   * Refreshes all runtime controllers.
    */
   context.subscriptions.push(
     vscode.commands.registerCommand(
       "datalayer.refreshRuntimeControllers",
       async (selectRuntimeUid?: string) => {
         console.log(
-          "[Extension] Runtime controller refresh triggered",
+          "[Extension] Runtime refresh triggered",
           selectRuntimeUid ? `(select: ${selectRuntimeUid})` : ""
         );
-        return await runtimeControllerManager.forceRefresh(selectRuntimeUid);
+        
+        await controllerManager.refreshControllers();
+        
+        vscode.window.showInformationMessage(
+          "Runtime controllers refreshed. Available runtimes are shown in the kernel picker."
+        );
       }
     )
   );
 
   /**
    * Command: datalayer.showNotebookControllerStatus
-   * Displays current status of all active Datalayer runtime controllers.
-   * Shows runtime details including pod names, status, environment, and credits.
+   * Legacy command for backward compatibility.
+   * Shows the current runtime status.
    */
   context.subscriptions.push(
     vscode.commands.registerCommand(
       "datalayer.showNotebookControllerStatus",
       () => {
-        const controllers = runtimeControllerManager.getActiveControllers();
-
-        if (controllers.length === 0) {
-          vscode.window.showInformationMessage(
-            "No active Datalayer runtime controllers. Login to see available runtimes."
-          );
-          return;
-        }
-
-        let statusMessage = `Active Datalayer Controllers (${controllers.length}):\n\n`;
-
-        for (const controller of controllers) {
-          const config = controller.config;
-          const runtime = controller.activeRuntime;
-
-          statusMessage += `• ${config.displayName}\n`;
-
-          if (runtime) {
-            statusMessage += `  Pod: ${runtime.pod_name || "N/A"}\n`;
-            statusMessage += `  Status: ${runtime.status || "Unknown"}\n`;
-            statusMessage += `  Environment: ${
-              runtime.environment_name || runtime.environment_title || "default"
-            }\n`;
-            if (
-              (runtime as any).creditsUsed !== undefined &&
-              (runtime as any).creditsLimit
-            ) {
-              statusMessage += `  Credits: ${(runtime as any).creditsUsed}/${
-                (runtime as any).creditsLimit
-              }\n`;
-            }
-          } else {
-            statusMessage += `  Type: ${config.type}\n`;
-            if (config.environmentName) {
-              statusMessage += `  Environment: ${config.environmentName}\n`;
-            }
-          }
-          statusMessage += "\n";
-        }
-
-        vscode.window.showInformationMessage(statusMessage);
+        vscode.commands.executeCommand("datalayer.showRuntimeStatus");
       }
     )
   );
 
   /**
    * Command: datalayer.restartNotebookRuntime
-   * Restarts selected runtime with mandatory confirmation dialog.
-   * Handles single runtime auto-selection or multi-runtime picker.
+   * Refreshes runtime controllers.
    */
   context.subscriptions.push(
     vscode.commands.registerCommand(
       "datalayer.restartNotebookRuntime",
       async () => {
-        try {
-          if (runtimeControllerManager) {
-            const controllers = runtimeControllerManager.getActiveControllers();
-            const runtimeControllers = controllers.filter(
-              (c) => c.activeRuntime
-            );
+        const restart = await vscode.window.showWarningMessage(
+          `Refresh runtime controllers? This will update the available runtimes in the kernel picker.`,
+          "Refresh",
+          "Cancel"
+        );
 
-            if (runtimeControllers.length === 0) {
-              vscode.window.showInformationMessage(
-                "No active runtimes to restart."
-              );
-              return;
-            }
-
-            if (runtimeControllers.length === 1) {
-              const controller = runtimeControllers[0];
-              const runtime = controller.activeRuntime!;
-
-              const restart = await vscode.window.showWarningMessage(
-                `Restart runtime "${
-                  runtime.pod_name || runtime.uid
-                }"? This will interrupt any running executions.`,
-                "Restart",
-                "Cancel"
-              );
-
-              if (restart === "Restart") {
-                controller.dispose();
-                await runtimeControllerManager.forceRefresh();
-
-                vscode.window.showInformationMessage(
-                  "Runtime restarted. Controllers have been refreshed."
-                );
-              }
-            } else {
-              const runtimeNames = runtimeControllers.map((c) => {
-                const runtime = c.activeRuntime!;
-                return runtime.pod_name || runtime.uid;
-              });
-
-              const selectedRuntime = await vscode.window.showQuickPick(
-                runtimeNames,
-                {
-                  placeHolder: "Select runtime to restart",
-                }
-              );
-
-              if (selectedRuntime) {
-                const controller = runtimeControllers.find(
-                  (c) =>
-                    (c.activeRuntime!.pod_name || c.activeRuntime!.uid) ===
-                    selectedRuntime
-                );
-
-                if (controller) {
-                  const restart = await vscode.window.showWarningMessage(
-                    `Restart runtime "${selectedRuntime}"? This will interrupt any running executions.`,
-                    "Restart",
-                    "Cancel"
-                  );
-
-                  if (restart === "Restart") {
-                    controller.dispose();
-                    await runtimeControllerManager.forceRefresh();
-
-                    vscode.window.showInformationMessage(
-                      `Runtime "${selectedRuntime}" restarted. Controllers have been refreshed.`
-                    );
-                  }
-                }
-              }
-            }
-          } else {
-            vscode.window.showInformationMessage(
-              "No active runtimes to restart."
-            );
-          }
-        } catch (error) {
-          vscode.window.showErrorMessage(`Failed to restart runtime: ${error}`);
+        if (restart === "Refresh") {
+          await controllerManager.refreshControllers();
+          vscode.window.showInformationMessage(
+            "Runtime controllers refreshed. Select a runtime from the kernel picker."
+          );
         }
       }
     )

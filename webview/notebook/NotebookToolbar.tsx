@@ -247,12 +247,11 @@ export const NotebookToolbar: React.FC<NotebookToolbarProps> = ({
   }, []);
 
   useEffect(() => {
-    // For Datalayer notebooks, always show the runtime name
-    if (isDatalayerNotebook && selectedRuntime) {
-      // Format as "Datalayer: Runtime Name"
-      const runtimeName = selectedRuntime.name || "Select Runtime";
-      const displayName = `Datalayer: ${runtimeName}`;
-      setSelectedKernel(displayName);
+    // Check if we have a selected runtime (works for both Datalayer and local notebooks)
+    if (selectedRuntime) {
+      // Show "Datalayer: {Runtime name}" to clearly indicate it's a Datalayer runtime
+      const runtimeName = selectedRuntime.name || selectedRuntime.uid || "Runtime";
+      setSelectedKernel(`Datalayer: ${runtimeName}`);
 
       // Check if we have an active kernel connection to determine status
       if (notebook?.adapter?.kernel?.connection) {
@@ -263,19 +262,20 @@ export const NotebookToolbar: React.FC<NotebookToolbarProps> = ({
         setKernelStatus("connecting");
         setIsConnecting(true);
       } else {
-        setKernelStatus(selectedRuntime.status || "disconnected");
+        // Runtime is selected, so show it as idle/ready
+        setKernelStatus("idle");
         setIsConnecting(false);
       }
-    } else if (!isDatalayerNotebook && notebook?.adapter?.kernel?.connection) {
-      // For local notebooks, show kernel info
+    } else if (notebook?.adapter?.kernel?.connection) {
+      // Fallback: No selectedRuntime but we have a kernel connection
       const kernelConnection = notebook.adapter.kernel.connection;
-      const displayName = kernelConnection.name || "Unknown Kernel";
+      const displayName = kernelConnection.name || "Python";
       setSelectedKernel(displayName);
       setKernelStatus(kernelConnection.status || "idle");
       setIsConnecting(false);
     } else {
-      // Show "No Kernel" when nothing is selected
-      setSelectedKernel(isDatalayerNotebook ? "Select Runtime" : "No Kernel");
+      // Show "Select Kernel" when nothing is selected, matching native VS Code
+      setSelectedKernel("Select Kernel");
       setKernelStatus("disconnected");
       setIsConnecting(false);
     }
@@ -368,36 +368,23 @@ export const NotebookToolbar: React.FC<NotebookToolbarProps> = ({
     if (isConnecting) {
       return "codicon-loading codicon-modifier-spin";
     }
+    // Use server icon to match native VS Code notebook
     switch (kernelStatus) {
       case "idle":
-        return "codicon-circle-filled";
       case "busy":
-        return "codicon-loading codicon-modifier-spin";
+        return "codicon-server-environment";  // Connected kernel icon
       case "disconnected":
-        return "codicon-circle-slash";
+        return "codicon-server-environment";  // Same icon but will show "Select Kernel"
       case "connecting":
         return "codicon-loading codicon-modifier-spin";
       default:
-        return "codicon-circle-outline";
+        return "codicon-server-environment";
     }
   };
 
   const getKernelStatusColor = () => {
-    if (isConnecting) {
-      return "var(--vscode-terminal-ansiYellow)";
-    }
-    switch (kernelStatus) {
-      case "idle":
-        return "var(--vscode-terminal-ansiGreen)";
-      case "busy":
-        return "var(--vscode-terminal-ansiYellow)";
-      case "disconnected":
-        return "var(--vscode-errorForeground)";
-      case "connecting":
-        return "var(--vscode-terminal-ansiYellow)";
-      default:
-        return "var(--vscode-foreground)";
-    }
+    // Match native VS Code notebook - icon color is always foreground
+    return "var(--vscode-foreground)";
   };
 
   return (
@@ -450,7 +437,7 @@ export const NotebookToolbar: React.FC<NotebookToolbarProps> = ({
         >
           <span
             className="codicon codicon-add"
-            style={{ fontSize: "14px" }}
+            style={{ fontSize: "16px" }}
           ></span>
           <span>Code</span>
         </button>
@@ -481,7 +468,7 @@ export const NotebookToolbar: React.FC<NotebookToolbarProps> = ({
         >
           <span
             className="codicon codicon-add"
-            style={{ fontSize: "14px" }}
+            style={{ fontSize: "16px" }}
           ></span>
           <span>Markdown</span>
         </button>
@@ -601,9 +588,9 @@ export const NotebookToolbar: React.FC<NotebookToolbarProps> = ({
           <span
             className={`codicon ${getKernelStatusIcon()}`}
             style={{
-              fontSize: "11px",
+              fontSize: "16px",
               color: getKernelStatusColor(),
-              minWidth: "12px",
+              minWidth: "16px",
             }}
           />
           <span

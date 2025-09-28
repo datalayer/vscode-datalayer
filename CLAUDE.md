@@ -67,6 +67,17 @@ npm run dist:mac  # Builds universal macOS app
 - Health verification before reuse
 - Configurable environments (`python-cpu-env`, `ai-env`)
 
+### 🎯 Kernel Selection System
+
+- **Unified kernel picker**: Shows all available kernel sources when clicking "Select Kernel"
+- **Three kernel sources**:
+  - Datalayer Platform (connects to cloud runtimes)
+  - Python Environments (coming soon - local Python kernels)
+  - Existing Jupyter Server (connect to any running Jupyter server)
+- **Kernel Bridge**: Routes connections to appropriate handlers (webview or native)
+- **Runtime display**: Shows "Datalayer: {Runtime name}" in notebook toolbar
+- **Zero re-render**: Runtime changes use MutableServiceManager to prevent component unmount/remount
+
 ## Configuration
 
 ```json
@@ -141,19 +152,27 @@ src/
 │   ├── sdkAdapter.ts      # SDK singleton with VS Code handlers
 │   ├── authProvider.ts    # Authentication management
 │   ├── serviceFactory.ts  # Service initialization
-│   └── statusBar.ts       # Status bar UI management
+│   ├── statusBar.ts       # Status bar UI management
+│   └── kernelBridge.ts    # Routes kernel connections to webview/native
 ├── providers/
 │   ├── spacesTreeProvider.ts       # Tree view for spaces
+│   ├── jupyterNotebookProvider.ts  # Custom editor for Jupyter notebooks
 │   ├── runtimeControllerManager.ts # Runtime management
 │   └── runtimeController.ts        # Individual runtime control
 ├── commands/         # VS Code command implementations
 ├── models/           # Data models
 └── utils/            # Utility functions
+    ├── kernelSelector.ts    # Unified kernel selection UI
+    └── runtimeSelector.ts   # Datalayer runtime picker
 
 webview/
 ├── theme/          # VS Code theme integration
 ├── notebook/       # Notebook editor components
-└── lexical/        # Lexical editor components
+│   ├── NotebookEditor.tsx    # Main notebook component
+│   └── NotebookToolbar.tsx   # Toolbar with kernel display
+├── lexical/        # Lexical editor components
+└── services/
+    └── mutableServiceManager.ts  # Wrapper for hot-swapping ServiceManager
 ```
 
 ## Development Guidelines
@@ -262,6 +281,42 @@ notebookStore.insertBelow({ id: notebookId, source: "", cellType: "code" });
 
 This approach bypasses the problematic command registry and uses the same low-level actions that the working JupyterLab commands use internally.
 
+### Kernel Selection Architecture
+
+**KernelBridge Pattern**: Manages kernel connections for both webview and native notebooks:
+
+```typescript
+// Register webview when custom editor opens
+kernelBridge.registerWebview(document.uri, webviewPanel);
+
+// Connect notebook to runtime
+await kernelBridge.connectWebviewNotebook(documentUri, runtime);
+
+// Cleanup on close
+kernelBridge.unregisterWebview(document.uri);
+```
+
+**MutableServiceManager**: Prevents React re-renders when changing runtimes:
+
+```typescript
+// Create stable wrapper that doesn't change
+const mutableServiceManager = new MutableServiceManager();
+
+// Update internal service manager without triggering re-render
+mutableServiceManager.updateConnection(url, token);
+
+// Use proxy for transparent access
+const serviceManager = mutableServiceManager.createProxy();
+```
+
+**Kernel Selection Flow**:
+1. User clicks "Select Kernel" in notebook toolbar
+2. Webview posts `select-kernel` message to extension
+3. Extension shows `kernelSelector` with three options
+4. User selects kernel source (Datalayer/Python/Jupyter)
+5. KernelBridge sends `kernel-selected` message to webview
+6. Webview updates MutableServiceManager without re-rendering
+
 ## Troubleshooting
 
 ### Common Issues
@@ -277,6 +332,12 @@ This approach bypasses the problematic command registry and uses the same low-le
    - Error: `Failed to resolve module specifier "@primer/react-brand/lib/css/main.css"`
    - Fix: Run post-build script to remove problematic CSS imports from bundled JS files
    - The fix-production-bundle.js script automatically handles this during build
+9. **"No webview found" error when selecting kernel**:
+   - Cause: KernelBridge instance not shared between provider and selector
+   - Fix: Pass existing KernelBridge instance to showKernelSelector
+10. **Notebook re-renders when changing runtimes**:
+   - Cause: React key changes with runtime causing unmount/remount
+   - Fix: Remove dynamic key, use MutableServiceManager for stable reference
 
 ### Debug Commands
 
@@ -298,6 +359,9 @@ This approach bypasses the problematic command registry and uses the same low-le
 - ✅ **SDK Integration with Handlers Pattern** (January 2025) - Eliminated service wrappers
 - ✅ **Clean Architecture** - Direct SDK usage with platform-specific handlers
 - ✅ **Zero Code Duplication** - No more 1:1 method wrapping
+- ✅ **Unified Kernel Selection** (January 2025) - Single picker for all kernel sources
+- ✅ **Runtime Hot-Swapping** - Change kernels without notebook re-render
+- ✅ **Kernel Bridge Architecture** - Unified routing for webview and native notebooks
 
 ## Version
 

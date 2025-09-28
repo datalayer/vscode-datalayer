@@ -22,9 +22,12 @@ import {
   NotebookDocumentDelegate,
   NotebookEdit,
 } from "../models/notebookDocument";
-import { NotebookRuntimeService } from "../services/notebookRuntime";
 import { NotebookNetworkService } from "../services/notebookNetwork";
 import { SDKAuthProvider } from "../services/authProvider";
+import { KernelBridge } from "../services/kernelBridge";
+import { getSDKInstance } from "../services/sdkAdapter";
+import { selectDatalayerRuntime } from "../utils/runtimeSelector";
+import { showKernelSelector } from "../utils/kernelSelector";
 import type { ExtensionMessage } from "../utils/messages";
 
 /**
@@ -37,8 +40,8 @@ export class JupyterNotebookProvider
 {
   private static newNotebookFileId = 1;
 
-  private readonly _runtimeService = NotebookRuntimeService.getInstance();
   private readonly _networkService = new NotebookNetworkService();
+  private readonly _kernelBridge: KernelBridge;
 
   /**
    * Registers the notebook editor provider and commands.
@@ -98,6 +101,9 @@ export class JupyterNotebookProvider
    */
   constructor(context: vscode.ExtensionContext) {
     this._context = context;
+    const sdk = getSDKInstance();
+    const authProvider = SDKAuthProvider.getInstance();
+    this._kernelBridge = new KernelBridge(sdk, authProvider);
   }
 
   /**
@@ -186,6 +192,9 @@ export class JupyterNotebookProvider
   ): Promise<void> {
     // Add the webview to our internal set of active webviews
     this.webviews.add(document.uri, webviewPanel);
+    
+    // Register webview with kernel bridge for kernel communication
+    this._kernelBridge.registerWebview(document.uri, webviewPanel);
 
     // Setup initial content for the webview
     webviewPanel.webview.options = {
@@ -210,6 +219,9 @@ export class JupyterNotebookProvider
 
     webviewPanel.onDidDispose(() => {
       themeChangeDisposable.dispose();
+      // Unregister from kernel bridge
+      this._kernelBridge.unregisterWebview(document.uri);
+      // WebviewCollection automatically removes the entry when disposed
     });
 
     // Wait for the webview to be properly ready before we init
@@ -429,21 +441,29 @@ export class JupyterNotebookProvider
     document: NotebookDocument,
     message: ExtensionMessage
   ) {
+    console.log("[JupyterNotebookProvider] Received message from webview:", message.type);
+
     switch (message.type) {
       case "ready":
         // Handle in resolveCustomEditor
         return;
-      case "select-runtime": {
-        const isDatalayerNotebook = message.body?.isDatalayerNotebook;
-        if (isDatalayerNotebook) {
-          this._runtimeService.handleRuntimeSelection(webview, message);
-        } else {
-          // For local notebooks, show choice between Datalayer runtimes and Jupyter server
-          this._runtimeService.handleLocalNotebookRuntimeSelection(
-            webview,
-            message
-          );
-        }
+      case "select-runtime":
+      case "select-kernel": {
+        console.log("[JupyterNotebookProvider] Received select-kernel message from webview");
+
+        // Show the kernel selector with available options
+        const sdk = getSDKInstance();
+        const authProvider = SDKAuthProvider.getInstance();
+
+        // Pass the document URI and kernel bridge so the kernel can be connected
+        showKernelSelector(sdk, authProvider, this._kernelBridge, document.uri).then(() => {
+          console.log("[JupyterNotebookProvider] Kernel selection completed");
+        }).catch((error) => {
+          console.error("[JupyterNotebookProvider] Kernel selection failed:", error);
+          // Fallback to Datalayer runtime selector
+          this.showDatalayerRuntimeSelector(document);
+        });
+
         return;
       }
 
@@ -538,6 +558,30 @@ export class JupyterNotebookProvider
       }
     }
     console.warn(`Unknown message ${message.type}.`, message);
+  }
+
+  /**
+   * Shows the Datalayer runtime selector dialog.
+   * Helper method to avoid code duplication.
+   *
+   * @param document - The notebook document
+   */
+  private showDatalayerRuntimeSelector(document: NotebookDocument): void {
+    const sdk = getSDKInstance();
+    const authProvider = SDKAuthProvider.getInstance();
+
+    selectDatalayerRuntime(sdk, authProvider).then(async (runtime) => {
+      console.log("[JupyterNotebookProvider] selectDatalayerRuntime promise resolved with:", runtime);
+      if (runtime) {
+        console.log("[JupyterNotebookProvider] Runtime selected:", runtime);
+
+        // Send selected runtime to webview via kernel bridge
+        await this._kernelBridge.connectWebviewNotebook(document.uri, runtime);
+      }
+    }).catch((error) => {
+      console.error("[JupyterNotebookProvider] Failed to select runtime:", error);
+      vscode.window.showErrorMessage(`Failed to select runtime: ${error}`);
+    });
   }
 }
 

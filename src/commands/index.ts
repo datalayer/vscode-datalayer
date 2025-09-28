@@ -19,7 +19,7 @@ import { registerRuntimeCommands } from "./runtimes";
 import { SDKAuthProvider } from "../services/authProvider";
 import { DocumentBridge } from "../services/documentBridge";
 import { SpacesTreeProvider } from "../providers/spacesTreeProvider";
-import { RuntimeControllerManager } from "../providers/runtimeControllerManager";
+import { DynamicControllerManager } from "../providers/dynamicControllerManager";
 
 /**
  * Services required for command registration.
@@ -29,7 +29,7 @@ export interface CommandServices {
   authProvider: SDKAuthProvider;
   documentBridge: DocumentBridge;
   spacesTreeProvider: SpacesTreeProvider;
-  runtimeControllerManager: RuntimeControllerManager;
+  controllerManager: DynamicControllerManager;
 }
 
 /**
@@ -58,5 +58,5 @@ export function registerAllCommands(
     services.spacesTreeProvider
   );
 
-  registerRuntimeCommands(context, services.runtimeControllerManager);
+  registerRuntimeCommands(context, services.controllerManager);
 }

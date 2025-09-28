@@ -14,10 +14,11 @@
 import * as vscode from "vscode";
 import { DatalayerStatusBar } from "./statusBar";
 import { SpacesTreeProvider } from "../providers/spacesTreeProvider";
-import { RuntimeControllerManager } from "../providers/runtimeControllerManager";
+import { DynamicControllerManager } from "../providers/dynamicControllerManager";
 import { JupyterNotebookProvider } from "../providers/jupyterNotebookProvider";
 import { LexicalDocumentProvider } from "../providers/lexicalDocumentProvider";
 import { SDKAuthProvider } from "./authProvider";
+import { EnvironmentCache } from "./environmentCache";
 import type { DatalayerSDK } from "../../../core/lib/index.js";
 
 /**
@@ -31,8 +32,8 @@ export interface ExtensionUI {
   spacesTreeProvider: SpacesTreeProvider;
   /** VS Code tree view for spaces */
   treeView: vscode.TreeView<any>;
-  /** Runtime controller manager */
-  runtimeControllerManager: RuntimeControllerManager;
+  /** Dynamic controller manager for multiple runtimes */
+  controllerManager: DynamicControllerManager;
 }
 
 /**
@@ -61,22 +62,21 @@ export async function initializeUI(
   context.subscriptions.push(JupyterNotebookProvider.register(context));
   context.subscriptions.push(LexicalDocumentProvider.register(context));
 
-  const runtimeControllerManager = new RuntimeControllerManager(
-    context,
-    authProvider,
-    sdk
-  );
-  context.subscriptions.push(runtimeControllerManager);
-
+  // Initialize environment cache on startup
   try {
-    await runtimeControllerManager.initialize();
-    console.log("[Extension] Runtime controller manager initialized");
+    const environments = await EnvironmentCache.getInstance().getEnvironments(sdk);
+    console.log("[Extension] Cached", environments.length, "environments on startup");
   } catch (error) {
-    console.error(
-      "[Extension] Failed to initialize runtime controller manager:",
-      error
-    );
+    console.error("[Extension] Failed to cache environments:", error);
   }
+
+  // Create the dynamic controller manager
+  const controllerManager = new DynamicControllerManager(
+    context,
+    sdk,
+    authProvider
+  );
+  console.log("[Extension] Dynamic controller manager created");
 
   const spacesTreeProvider = new SpacesTreeProvider(authProvider);
   const treeView = vscode.window.createTreeView("datalayerSpaces", {
@@ -89,6 +89,6 @@ export async function initializeUI(
     statusBar,
     spacesTreeProvider,
     treeView,
-    runtimeControllerManager,
+    controllerManager,
   };
 }

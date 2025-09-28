@@ -33,6 +33,7 @@ The extension now features **complete VS Code theme integration** for a native d
 - **Lexical Editor**: Rich text editor with full formatting support for `.lexical` documents
 - **Datalayer Authentication**: Token-based authentication with automatic GitHub profile enrichment
 - **Server Connectivity**: Connect to Jupyter servers or Datalayer cloud platform
+- **Unified Kernel Selection**: Single picker interface for all kernel sources (Datalayer, Python, Jupyter servers)
 - **Real-time Execution**: Run code cells with live output and error display
 - **IPyWidgets Support**: Full interactive widget support
 - **Status Bar Integration**: View connection status and user profile
@@ -54,12 +55,15 @@ The extension provides a VS Code-native toolbar for notebook operations:
 - **🗑️ Clear Outputs**: Clear all cell outputs
 - **🔄 Restart Kernel**: Restart the Jupyter kernel
 - **⏹️ Interrupt Kernel**: Stop executing cells
+- **🎯 Select Kernel**: Choose from Datalayer Platform, Python environments, or existing Jupyter servers
 
 ### Kernel Status Indicator
 
 - **🟢 Green**: Kernel idle and ready
 - **🟡 Yellow**: Kernel busy executing
 - **🔴 Red**: Kernel disconnected or error
+
+The toolbar displays "Datalayer: {Runtime name}" when connected to a Datalayer runtime, making it easy to identify which runtime is currently active.
 
 ## Spaces Tree View
 
