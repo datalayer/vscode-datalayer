@@ -15,6 +15,8 @@ import * as vscode from "vscode";
 import { SDKAuthProvider } from "./authProvider";
 import { SpacesTreeProvider } from "../providers/spacesTreeProvider";
 import { SmartDynamicControllerManager } from "../providers/smartDynamicControllerManager";
+import { EnvironmentCache } from "./environmentCache";
+import { getSDKInstance } from "./sdkAdapter";
 
 /**
  * Sets up authentication state synchronization with UI components.
@@ -53,8 +55,21 @@ export function setupAuthStateManagement(
     controllerManager.refreshControllers();
   };
 
-  authProvider.onAuthStateChanged(() => {
+  authProvider.onAuthStateChanged((authState) => {
     updateAuthState();
+
+    // Handle EnvironmentCache based on authentication state
+    const envCache = EnvironmentCache.getInstance();
+    if (authState.isAuthenticated) {
+      // User logged in - refresh environment cache
+      const sdk = getSDKInstance();
+      envCache.onUserLogin(sdk).catch(() => {
+        // Silently handle cache refresh errors
+      });
+    } else {
+      // User logged out - clear environment cache
+      envCache.onUserLogout();
+    }
   });
 
   const initialAuthState = authProvider.getAuthState();

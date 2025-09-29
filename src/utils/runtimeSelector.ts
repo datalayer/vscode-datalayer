@@ -66,7 +66,7 @@ export async function selectDatalayerRuntime(
 
         // Get cached environments
         const environments =
-          await EnvironmentCache.getInstance().getEnvironments(sdk);
+          await EnvironmentCache.getInstance().getEnvironments(sdk, authProvider);
 
         // Return the loaded data
         return { runtimes, environments };

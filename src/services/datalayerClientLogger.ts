@@ -1,0 +1,375 @@
+/*
+ * Copyright (c) 2021-2025 Datalayer, Inc.
+ *
+ * MIT License
+ */
+
+/**
+ * Enhanced DatalayerClient operation tracking and logging.
+ * Provides comprehensive SDK operation monitoring with correlation IDs and smart error handling.
+ *
+ * @module services/datalayerClientLogger
+ */
+
+import * as vscode from "vscode";
+import type { SDKHandlers } from "../../../core/lib/client";
+import { ServiceLoggers } from "./loggers";
+import { promptAndLogin } from "../utils/authDialog";
+
+interface OperationContext {
+  operationId: string;
+  method: string;
+  timestamp: string;
+  args: any[];
+}
+
+interface OperationData {
+  startTime: number;
+  context: OperationContext;
+}
+
+/**
+ * Enhanced tracking and logging for DatalayerClient SDK operations.
+ * Provides operation correlation, timing, error categorization, and user-friendly handling.
+ */
+export class DatalayerClientOperationTracker {
+  private static operations = new Map<string, OperationData>();
+
+  /**
+   * Create enhanced SDK handlers with comprehensive logging and error handling.
+   *
+   * @returns SDKHandlers with beforeCall, afterCall, and onError implementations
+   */
+  static createEnhancedSDKHandlers(): SDKHandlers {
+    return {
+      beforeCall: (methodName: string, args: any[]) => {
+        const operationId = `${methodName}_${Date.now()}_${Math.random()
+          .toString(36)
+          .substr(2, 9)}`;
+        const context: OperationContext = {
+          operationId,
+          method: methodName,
+          timestamp: new Date().toISOString(),
+          args: DatalayerClientOperationTracker.sanitizeArgs(args),
+        };
+
+        // Store operation for correlation
+        DatalayerClientOperationTracker.operations.set(operationId, {
+          startTime: performance.now(),
+          context,
+        });
+
+        // Log to appropriate channel based on method
+        const logger =
+          DatalayerClientOperationTracker.getLoggerForMethod(methodName);
+        logger.debug(`DatalayerClient Call Started: ${methodName}`, context);
+      },
+
+      afterCall: (methodName: string, result: any) => {
+        // Find the most recent operation for this method
+        const operation =
+          DatalayerClientOperationTracker.findOperation(methodName);
+        if (!operation) {
+          return;
+        }
+
+        const duration = performance.now() - operation.startTime;
+        const logger =
+          DatalayerClientOperationTracker.getLoggerForMethod(methodName);
+
+        logger.info(`DatalayerClient Call Success: ${methodName}`, {
+          ...operation.context,
+          duration: `${duration.toFixed(2)}ms`,
+          success: true,
+          resultSummary:
+            DatalayerClientOperationTracker.summarizeResult(result),
+        });
+
+        // Clean up
+        DatalayerClientOperationTracker.operations.delete(
+          operation.context.operationId
+        );
+      },
+
+      onError: async (methodName: string, error: any) => {
+        const operation =
+          DatalayerClientOperationTracker.findOperation(methodName);
+        const duration = operation
+          ? performance.now() - operation.startTime
+          : 0;
+        const logger =
+          DatalayerClientOperationTracker.getLoggerForMethod(methodName);
+
+        logger.error(
+          `DatalayerClient Call Failed: ${methodName}`,
+          error as Error,
+          {
+            ...(operation?.context || {}),
+            duration: `${duration.toFixed(2)}ms`,
+            success: false,
+            errorDetails: {
+              name: error?.name,
+              message: error?.message,
+              status: error?.status || error?.code,
+              isNetworkError:
+                DatalayerClientOperationTracker.isNetworkError(error),
+            },
+          }
+        );
+
+        // Clean up
+        if (operation) {
+          DatalayerClientOperationTracker.operations.delete(
+            operation.context.operationId
+          );
+        }
+
+        // Handle specific error types with user-friendly actions
+        await DatalayerClientOperationTracker.handleSDKError(
+          methodName,
+          error,
+          logger
+        );
+      },
+    };
+  }
+
+  /**
+   * Route SDK method to appropriate logger based on method name.
+   */
+  private static getLoggerForMethod(methodName: string) {
+    // Authentication methods
+    if (
+      methodName.includes("whoami") ||
+      methodName.includes("login") ||
+      methodName.includes("logout") ||
+      methodName.includes("getCredits")
+    ) {
+      return ServiceLoggers.datalayerClientAuth;
+    }
+
+    // Runtime management methods
+    if (
+      methodName.includes("Runtime") ||
+      methodName.includes("Environment") ||
+      methodName.includes("Snapshot") ||
+      methodName.includes("ensureRuntime") ||
+      methodName.includes("createRuntime")
+    ) {
+      return ServiceLoggers.datalayerClientRuntime;
+    }
+
+    // Spacer/document methods
+    if (
+      methodName.includes("Space") ||
+      methodName.includes("Notebook") ||
+      methodName.includes("Lexical") ||
+      methodName.includes("Item") ||
+      methodName.includes("getSpaces") ||
+      methodName.includes("createNotebook")
+    ) {
+      return ServiceLoggers.datalayerClientSpacer;
+    }
+
+    // Network/health methods
+    if (
+      methodName.includes("Health") ||
+      methodName.includes("fetch") ||
+      methodName.includes("request") ||
+      methodName.includes("check")
+    ) {
+      return ServiceLoggers.datalayerClientNetwork;
+    }
+
+    // Default to main DatalayerClient logger
+    return ServiceLoggers.datalayerClient;
+  }
+
+  /**
+   * Find the most recent operation for a given method name.
+   */
+  private static findOperation(methodName: string): OperationData | undefined {
+    const operations = Array.from(
+      DatalayerClientOperationTracker.operations.values()
+    );
+    return operations.reverse().find((op) => op.context.method === methodName);
+  }
+
+  /**
+   * Sanitize arguments to remove sensitive data before logging.
+   */
+  private static sanitizeArgs(args: any[]): any[] {
+    return args.map((arg) => {
+      if (typeof arg === "string") {
+        // Redact potential tokens
+        if (
+          arg.startsWith("eyJ") ||
+          arg.includes("Bearer") ||
+          arg.length > 50
+        ) {
+          return "[TOKEN_REDACTED]";
+        }
+      }
+      if (typeof arg === "object" && arg) {
+        const sanitized = { ...arg };
+        // Redact common sensitive fields
+        ["token", "password", "secret", "key", "authorization"].forEach(
+          (field) => {
+            if (field in sanitized) {
+              sanitized[field] = "[REDACTED]";
+            }
+          }
+        );
+        return sanitized;
+      }
+      return arg;
+    });
+  }
+
+  /**
+   * Create a summary of the result for logging without exposing sensitive data.
+   */
+  private static summarizeResult(result: any): string {
+    if (!result) {
+      return "null/undefined";
+    }
+    if (Array.isArray(result)) {
+      return `array[${result.length}]`;
+    }
+    if (typeof result === "object") {
+      const keys = Object.keys(result);
+      return `object{${keys.slice(0, 3).join(", ")}${
+        keys.length > 3 ? "..." : ""
+      }}`;
+    }
+    return typeof result;
+  }
+
+  /**
+   * Check if an error is network-related.
+   */
+  private static isNetworkError(error: any): boolean {
+    if (!error) {
+      return false;
+    }
+    const message = error.message?.toLowerCase() || "";
+    return (
+      message.includes("fetch") ||
+      message.includes("network") ||
+      message.includes("timeout") ||
+      message.includes("connection") ||
+      message.includes("enotfound") ||
+      message.includes("econnrefused") ||
+      error.code === "NETWORK_ERROR"
+    );
+  }
+
+  /**
+   * Handle SDK errors with smart categorization and user-friendly responses.
+   */
+  private static async handleSDKError(
+    methodName: string,
+    error: any,
+    logger: any
+  ): Promise<void> {
+    const errorMessage = error?.message || "Unknown error";
+
+    // Authentication errors - don't show error immediately, let auth system handle
+    if (
+      errorMessage.includes("Not authenticated") ||
+      errorMessage.includes("401") ||
+      errorMessage.includes("Unauthorized") ||
+      errorMessage.includes("Invalid token")
+    ) {
+      logger.info("Authentication required, will be handled by auth system");
+      await promptAndLogin("DatalayerClient Operation");
+      return;
+    }
+
+    // Network errors - show user-friendly message with retry option
+    if (DatalayerClientOperationTracker.isNetworkError(error)) {
+      logger.warn("Network connectivity issue detected");
+      vscode.window
+        .showErrorMessage(
+          "Network error. Please check your connection and try again.",
+          "Retry"
+        )
+        .then((selection) => {
+          if (selection === "Retry") {
+            logger.info("User requested retry after network error");
+            // Could trigger retry logic here if implemented
+          }
+        });
+      return;
+    }
+
+    // Rate limiting
+    if (
+      error?.status === 429 ||
+      errorMessage.includes("rate limit") ||
+      errorMessage.includes("Too Many Requests")
+    ) {
+      logger.warn("Rate limit encountered");
+      vscode.window.showWarningMessage(
+        "Too many requests. Please wait a moment before trying again."
+      );
+      return;
+    }
+
+    // Service unavailable - show informative message
+    if (
+      error?.status >= 500 ||
+      errorMessage.includes("Service Unavailable") ||
+      errorMessage.includes("Internal Server Error")
+    ) {
+      logger.error("Service appears to be down");
+      vscode.window.showErrorMessage(
+        "Datalayer service is temporarily unavailable. Please try again later."
+      );
+      return;
+    }
+
+    // Client errors (4xx) - usually configuration or request issues
+    if (error?.status >= 400 && error?.status < 500) {
+      logger.warn(`Client error encountered: ${error.status}`);
+      // Don't show to user unless it's a user-initiated action
+      return;
+    }
+
+    // Generic error - only log, don't show to user unless it's critical
+    logger.debug("Generic SDK error handled", {
+      method: methodName,
+      error: errorMessage,
+    });
+  }
+
+  /**
+   * Get current operation statistics for debugging.
+   */
+  static getOperationStats(): {
+    activeOperations: number;
+    operationsByMethod: Record<string, number>;
+  } {
+    const operations = Array.from(
+      DatalayerClientOperationTracker.operations.values()
+    );
+    const operationsByMethod: Record<string, number> = {};
+
+    operations.forEach((op) => {
+      operationsByMethod[op.context.method] =
+        (operationsByMethod[op.context.method] || 0) + 1;
+    });
+
+    return {
+      activeOperations: operations.length,
+      operationsByMethod,
+    };
+  }
+
+  /**
+   * Clear all tracked operations (useful for cleanup).
+   */
+  static clearOperations(): void {
+    DatalayerClientOperationTracker.operations.clear();
+  }
+}

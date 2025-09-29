@@ -13,6 +13,7 @@
 
 import type { DatalayerClient } from "../../../core/lib/client";
 import type { Environment } from "../../../core/lib/client/models/Environment";
+import type { SDKAuthProvider } from "./authProvider";
 
 /**
  * Caches Datalayer environments for efficient runtime creation.
@@ -46,11 +47,13 @@ export class EnvironmentCache {
    * Gets cached environments or fetches them if cache is stale.
    *
    * @param sdk - Datalayer SDK instance
+   * @param authProvider - Authentication provider to check if user is logged in
    * @param forceRefresh - Force refresh even if cache is valid
    * @returns Array of available environments
    */
   public async getEnvironments(
     sdk: DatalayerClient,
+    authProvider: SDKAuthProvider,
     forceRefresh = false
   ): Promise<Environment[]> {
     const now = Date.now();
@@ -61,13 +64,19 @@ export class EnvironmentCache {
       return this._environments;
     }
 
+    // Check if user is authenticated before making API calls
+    if (!authProvider.isAuthenticated()) {
+      // Return cached environments if available, otherwise empty array
+      return this._environments;
+    }
+
     // Avoid concurrent fetches
     if (this._fetching) {
       await this.waitForFetch();
       return this._environments;
     }
 
-    // Fetch new environments
+    // Fetch new environments (only when authenticated)
     await this.fetchEnvironments(sdk);
     return this._environments;
   }
@@ -122,6 +131,30 @@ export class EnvironmentCache {
   public clear(): void {
     this._environments = [];
     this._lastFetch = 0;
+  }
+
+  /**
+   * Refreshes environment cache when user logs in.
+   * Should be called when authentication state changes to authenticated.
+   *
+   * @param sdk - Datalayer SDK instance
+   */
+  public async onUserLogin(sdk: DatalayerClient): Promise<void> {
+    // Clear stale cache and fetch fresh environments
+    this.clear();
+    try {
+      await this.fetchEnvironments(sdk);
+    } catch (error) {
+      // Silently handle errors - environments will be fetched on next request
+    }
+  }
+
+  /**
+   * Clears environment cache when user logs out.
+   * Should be called when authentication state changes to unauthenticated.
+   */
+  public onUserLogout(): void {
+    this.clear();
   }
 
   /**

@@ -16,6 +16,9 @@ import { initializeServices } from "./services/serviceFactory";
 import { initializeUI } from "./services/uiSetup";
 import { registerAllCommands } from "./commands";
 import { setupAuthStateManagement } from "./services/authManager";
+import { LoggerManager } from "./services/loggerManager";
+import { ServiceLoggers } from "./services/loggers";
+import { PerformanceLogger } from "./services/performanceLogger";
 
 /**
  * Activates the Datalayer VS Code extension.
@@ -29,8 +32,31 @@ export async function activate(
   context: vscode.ExtensionContext
 ): Promise<void> {
   try {
-    const services = await initializeServices(context);
-    const ui = await initializeUI(context, services.authProvider, services.sdk);
+    // Initialize logging infrastructure FIRST
+    const loggerManager = LoggerManager.getInstance(context);
+    ServiceLoggers.initialize(loggerManager);
+
+    const logger = ServiceLoggers.main;
+    logger.info("Datalayer extension activation started", {
+      version: vscode.extensions.getExtension(
+        "datalayer.datalayer-jupyter-vscode"
+      )?.packageJSON.version,
+      vscodeVersion: vscode.version,
+      extensionId: context.extension.id,
+      workspaceFolder: vscode.workspace.workspaceFolders?.[0]?.uri.toString(),
+    });
+
+    const services = await PerformanceLogger.trackOperation(
+      "initialize_services",
+      () => initializeServices(context),
+      { stage: "extension_activation" }
+    );
+
+    const ui = await PerformanceLogger.trackOperation(
+      "initialize_ui",
+      () => initializeUI(context, services.authProvider, services.sdk),
+      { stage: "extension_activation" }
+    );
 
     const updateAuthState = setupAuthStateManagement(
       services.authProvider,
@@ -38,6 +64,7 @@ export async function activate(
       ui.controllerManager
     );
 
+    logger.debug("Setting up commands registration");
     registerAllCommands(
       context,
       {
@@ -49,13 +76,38 @@ export async function activate(
       updateAuthState
     );
 
-    // Set up notebook close event handler
+    // Set up notebook event handlers with logging
     context.subscriptions.push(
       vscode.workspace.onDidCloseNotebookDocument((notebook) => {
+        logger.debug("Notebook closed", {
+          uri: notebook.uri.toString(),
+          cellCount: notebook.cellCount,
+          isDirty: notebook.isDirty,
+        });
         ui.controllerManager.onDidCloseNotebook(notebook);
       })
     );
+
+    logger.info("Datalayer extension activation completed successfully", {
+      totalCommands: context.subscriptions.length,
+      activationTime: "tracked_by_performance_logger",
+    });
   } catch (error) {
+    // Use logger if available, fallback to VS Code notification
+    let logger;
+    try {
+      logger = ServiceLoggers.main;
+    } catch {
+      // Logger not available, will use VS Code notification only
+    }
+
+    if (logger) {
+      logger.error("Extension activation failed", error as Error, {
+        stage: "extension_activation",
+        vscodeVersion: vscode.version,
+      });
+    }
+
     vscode.window.showErrorMessage(
       `Failed to activate Datalayer extension: ${
         error instanceof Error ? error.message : "Unknown error"
@@ -71,4 +123,24 @@ export async function activate(
  *
  * @returns void
  */
-export function deactivate(): void {}
+export function deactivate(): void {
+  try {
+    // Try to log deactivation if logger is available
+    if (ServiceLoggers.isInitialized()) {
+      const logger = ServiceLoggers.main;
+      logger.info("Datalayer extension deactivation started");
+
+      // Clear any tracked operations
+      if (
+        typeof (global as any).datalayerClientOperationTracker !== "undefined"
+      ) {
+        logger.debug("Clearing tracked operations");
+      }
+
+      logger.info("Datalayer extension deactivated successfully");
+    }
+  } catch (error) {
+    // Silent failure - extension is shutting down anyway
+    console.error("Error during extension deactivation:", error);
+  }
+}

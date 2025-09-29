@@ -18,6 +18,8 @@ import type {
   SDKHandlers,
 } from "../../../core/lib/client";
 import { promptAndLogin } from "../utils/authDialog";
+import { ServiceLoggers } from "./loggers";
+import { DatalayerClientOperationTracker } from "./datalayerClientLogger";
 
 /**
  * Platform storage interface compatible with the SDK.
@@ -41,13 +43,27 @@ interface PlatformStorage {
  * ```
  */
 export class VSCodeStorage implements PlatformStorage {
+  private get logger() {
+    return ServiceLoggers.datalayerClient;
+  }
+
   constructor(private context: vscode.ExtensionContext) {}
 
   async get(key: string): Promise<string | null> {
     try {
       const value = await this.context.secrets.get(key);
+      const hasValue = value && value.length > 0;
+      this.logger.debug("Storage get operation", {
+        key,
+        hasValue,
+        valueLength: value ? value.length : 0,
+      });
       return value || null;
     } catch (error) {
+      this.logger.warn("Storage get failed", {
+        key,
+        error: (error as Error).message,
+      });
       return null;
     }
   }
@@ -55,7 +71,13 @@ export class VSCodeStorage implements PlatformStorage {
   async set(key: string, value: string): Promise<void> {
     try {
       await this.context.secrets.store(key, value);
+      this.logger.debug("Storage set operation", {
+        key,
+        valueLength: value.length,
+        isToken: key.includes("token") || value.includes("Bearer"),
+      });
     } catch (error) {
+      this.logger.error("Storage set failed", error as Error, { key });
       throw error;
     }
   }
@@ -63,19 +85,29 @@ export class VSCodeStorage implements PlatformStorage {
   async remove(key: string): Promise<void> {
     try {
       await this.context.secrets.delete(key);
+      this.logger.debug("Storage remove operation", { key });
     } catch (error) {
+      this.logger.warn("Storage remove failed", {
+        key,
+        error: (error as Error).message,
+      });
       // Silently handle secret deletion errors
     }
   }
 
   async clear(): Promise<void> {
+    this.logger.debug(
+      "Storage clear operation (no-op - VS Code SecretStorage doesn't support clear all)"
+    );
     // VS Code SecretStorage doesn't have a clear-all method
     // We'll need to track keys individually if needed
   }
 
   async has(key: string): Promise<boolean> {
     const value = await this.get(key);
-    return value !== null;
+    const exists = value !== null;
+    this.logger.debug("Storage has operation", { key, exists });
+    return exists;
   }
 }
 
@@ -111,6 +143,7 @@ export interface VSCodeSDKConfig extends Partial<DatalayerClientConfig> {
  */
 export function createVSCodeSDK(config: VSCodeSDKConfig): DatalayerClient {
   const { context, ...sdkConfig } = config;
+  const logger = ServiceLoggers.datalayerClient;
 
   // Get configuration from VS Code settings
   const vsCodeConfig = vscode.workspace.getConfiguration("datalayer");
@@ -122,33 +155,13 @@ export function createVSCodeSDK(config: VSCodeSDKConfig): DatalayerClient {
     vsCodeConfig.get<string>("runtimesRunUrl") ?? serverUrl;
   const spacerRunUrl = vsCodeConfig.get<string>("spacerRunUrl") ?? serverUrl;
 
-  // Define VS Code-specific handlers for logging and error handling
-  const handlers: SDKHandlers = {
-    beforeCall: (methodName: string, args: any[]) => {
-      // Silently handle before call
-    },
-    afterCall: (methodName: string, result: any) => {
-      // Silently handle after call
-    },
-    onError: async (methodName: string, error: any) => {
-      // Show user-friendly error messages for common errors
-      if (error instanceof Error) {
-        if (
-          error.message.includes("Not authenticated") ||
-          error.message.includes("401")
-        ) {
-          await promptAndLogin("SDK Operation");
-        } else if (
-          error.message.includes("Network") ||
-          error.message.includes("fetch")
-        ) {
-          vscode.window.showErrorMessage(
-            "Network error. Please check your connection and try again."
-          );
-        }
-      }
-    },
-  };
+  logger.info("Initializing DatalayerClient SDK", {
+    iamRunUrl,
+    runtimesRunUrl,
+    spacerRunUrl,
+    hasStorage: true,
+    contextId: context.extension.id,
+  });
 
   const sdk = new DatalayerClient({
     // Service URLs - now using the configured URLs
@@ -159,13 +172,14 @@ export function createVSCodeSDK(config: VSCodeSDKConfig): DatalayerClient {
     // VS Code-specific storage
     storage: new VSCodeStorage(context),
 
-    // VS Code-specific handlers
-    handlers,
+    // Enhanced handlers with comprehensive logging
+    handlers: DatalayerClientOperationTracker.createEnhancedSDKHandlers(),
 
     // User-provided overrides
     ...sdkConfig,
   } as any);
 
+  logger.info("DatalayerClient SDK initialized successfully");
   return sdk;
 }
 

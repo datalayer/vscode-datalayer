@@ -187,7 +187,7 @@ export class NotebookRuntimeService {
             // Fetch environments to get the actual burning rate
             const { EnvironmentCache } = await import("./environmentCache");
             const envCache = EnvironmentCache.getInstance();
-            const environments = await envCache.getEnvironments(sdk as any);
+            const environments = await envCache.getEnvironments(sdk as any, authService);
 
             // Find the selected environment
             const selectedEnv = environments.find(
@@ -195,6 +195,9 @@ export class NotebookRuntimeService {
             );
 
             if (!selectedEnv) {
+              if (environments.length === 0 && !authService.isAuthenticated()) {
+                throw new Error(`Please login to access environments. Environment ${environment} not found.`);
+              }
               throw new Error(`Environment ${environment} not found`);
             }
 

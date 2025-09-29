@@ -62,11 +62,14 @@ export async function initializeUI(
   context.subscriptions.push(JupyterNotebookProvider.register(context));
   context.subscriptions.push(LexicalDocumentProvider.register(context));
 
-  // Initialize environment cache on startup
+  // Initialize environment cache only if authenticated
   try {
-    const environments = await EnvironmentCache.getInstance().getEnvironments(
-      sdk
-    );
+    if (authProvider.isAuthenticated()) {
+      const environments = await EnvironmentCache.getInstance().getEnvironments(
+        sdk,
+        authProvider
+      );
+    }
   } catch (error) {
     // Silently handle environment caching errors
   }

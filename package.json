@@ -257,6 +257,45 @@
           "type": "boolean",
           "default": true,
           "description": "Show runtime details like credits and environment in controller names"
+        },
+        "datalayer.logging.level": {
+          "type": "string",
+          "enum": [
+            "trace",
+            "debug",
+            "info",
+            "warn",
+            "error"
+          ],
+          "enumDescriptions": [
+            "Most verbose - includes all debug information and operation traces",
+            "Verbose - includes detailed debugging information for troubleshooting",
+            "Standard - includes important events and status updates",
+            "Important - includes warnings and potential issues",
+            "Critical - includes only errors and critical failures"
+          ],
+          "default": "info",
+          "description": "Controls the minimum log level for extension logging output"
+        },
+        "datalayer.logging.includeTimestamps": {
+          "type": "boolean",
+          "default": true,
+          "description": "Include timestamps in log messages for better debugging"
+        },
+        "datalayer.logging.includeContext": {
+          "type": "boolean",
+          "default": true,
+          "description": "Include additional context information (operation IDs, request details) in logs"
+        },
+        "datalayer.logging.enableSDKLogging": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable comprehensive logging for DatalayerClient SDK operations and API calls"
+        },
+        "datalayer.logging.enablePerformanceMonitoring": {
+          "type": "boolean",
+          "default": false,
+          "description": "Enable performance monitoring with timing and memory usage tracking (may impact performance)"
         }
       }
     },
