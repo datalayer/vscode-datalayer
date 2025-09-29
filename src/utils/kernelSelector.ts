@@ -13,7 +13,7 @@
 
 import * as vscode from "vscode";
 import { selectDatalayerRuntime, setRuntime } from "./runtimeSelector";
-import type { DatalayerSDK } from "../../../core/lib/sdk/client";
+import type { DatalayerClient } from "../../../core/lib/client";
 import { SDKAuthProvider } from "../services/authProvider";
 import { KernelBridge } from "../services/kernelBridge";
 
@@ -35,7 +35,7 @@ interface KernelOption {
  * @returns Promise that resolves when selection is complete
  */
 export async function showKernelSelector(
-  sdk: DatalayerSDK,
+  sdk: DatalayerClient,
   authProvider: SDKAuthProvider,
   kernelBridge: KernelBridge,
   documentUri?: vscode.Uri

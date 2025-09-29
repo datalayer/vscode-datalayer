@@ -13,7 +13,7 @@ import React, { useState, useEffect, useContext } from "react";
 import useNotebookStore from "@datalayer/jupyter-react/lib/components/notebook/NotebookState";
 import { MessageHandlerContext } from "../services/messageHandler";
 import { NotebookActions } from "@jupyterlab/notebook";
-import type { RuntimeJSON } from "../../../core/lib/sdk/client/models/Runtime";
+import type { RuntimeJSON } from "../../../core/lib/client/models/Runtime";
 
 /**
  * Props for the NotebookToolbar component

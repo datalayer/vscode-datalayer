@@ -6,14 +6,14 @@
 
 /**
  * SDK-based authentication provider for VS Code.
- * Provides authentication state management and event notifications using the DatalayerSDK.
+ * Provides authentication state management and event notifications using the DatalayerClient.
  *
  * @module services/authProvider
  */
 
 import * as vscode from "vscode";
-import type { DatalayerSDK } from "../../../core/lib/sdk/client";
-import type { User } from "../../../core/lib/sdk/client/models/User";
+import type { DatalayerClient } from "../../../core/lib/client";
+import type { User } from "../../../core/lib/client/models/User";
 
 /**
  * Authentication state for VS Code context.
@@ -48,19 +48,19 @@ export class SDKAuthProvider {
   readonly onAuthStateChanged = this._onAuthStateChanged.event;
 
   private constructor(
-    private sdk: DatalayerSDK,
+    private sdk: DatalayerClient,
     private context: vscode.ExtensionContext
   ) {}
 
   /**
    * Gets or creates the singleton instance.
    *
-   * @param sdk - DatalayerSDK instance (required for initial creation)
+   * @param sdk - DatalayerClient instance (required for initial creation)
    * @param context - VS Code extension context (required for initial creation)
    * @returns The singleton SDKAuthProvider instance
    */
   static getInstance(
-    sdk?: DatalayerSDK,
+    sdk?: DatalayerClient,
     context?: vscode.ExtensionContext
   ): SDKAuthProvider {
     if (!SDKAuthProvider.instance) {

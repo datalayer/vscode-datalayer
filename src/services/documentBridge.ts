@@ -17,8 +17,8 @@ import * as path from "path";
 import * as os from "os";
 import { Document } from "../models/spaceItem";
 import { getSDKInstance } from "./sdkAdapter";
-import type { DatalayerSDK } from "../../../core/lib/sdk/client";
-import type { Runtime } from "../../../core/lib/sdk/client/models/Runtime";
+import type { DatalayerClient } from "../../../core/lib/client";
+import type { Runtime } from "../../../core/lib/client/models/Runtime";
 import { DatalayerFileSystemProvider } from "../providers/documentsFileSystemProvider";
 import { detectDocumentType } from "../utils/documentUtils";
 
@@ -52,12 +52,12 @@ export interface DocumentMetadata {
  */
 export class DocumentBridge {
   private static instance: DocumentBridge;
-  private sdk: DatalayerSDK;
+  private sdk: DatalayerClient;
   private documentMetadata: Map<string, DocumentMetadata> = new Map();
   private tempDir: string;
   private activeRuntimes: Set<string> = new Set();
 
-  private constructor(context?: vscode.ExtensionContext, sdk?: DatalayerSDK) {
+  private constructor(context?: vscode.ExtensionContext, sdk?: DatalayerClient) {
     if (!sdk) {
       throw new Error("SDK is required for DocumentBridge");
     }
@@ -78,7 +78,7 @@ export class DocumentBridge {
    */
   static getInstance(
     context?: vscode.ExtensionContext,
-    sdk?: DatalayerSDK
+    sdk?: DatalayerClient
   ): DocumentBridge {
     if (!DocumentBridge.instance) {
       DocumentBridge.instance = new DocumentBridge(context, sdk);

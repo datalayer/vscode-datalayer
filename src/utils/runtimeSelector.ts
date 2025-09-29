@@ -12,9 +12,9 @@
  */
 
 import * as vscode from "vscode";
-import type { DatalayerSDK } from "../../../core/lib/sdk/client";
-import type { Runtime } from "../../../core/lib/sdk/client/models/Runtime";
-import type { Environment } from "../../../core/lib/sdk/client/models/Environment";
+import type { DatalayerClient } from "../../../core/lib/client";
+import type { Runtime } from "../../../core/lib/client/models/Runtime";
+import type { Environment } from "../../../core/lib/client/models/Environment";
 import { SDKAuthProvider } from "../services/authProvider";
 import { EnvironmentCache } from "../services/environmentCache";
 import { promptAndLogin } from "./authDialog";
@@ -36,7 +36,7 @@ interface RuntimeQuickPickItem extends vscode.QuickPickItem {
  * @returns Selected or created runtime, or undefined if cancelled
  */
 export async function selectDatalayerRuntime(
-  sdk: DatalayerSDK,
+  sdk: DatalayerClient,
   authProvider: SDKAuthProvider
 ): Promise<Runtime | undefined> {
   // Check authentication first
@@ -234,7 +234,7 @@ export async function selectDatalayerRuntime(
  * @returns Created runtime or undefined if failed
  */
 async function createRuntime(
-  sdk: DatalayerSDK,
+  sdk: DatalayerClient,
   environment: Environment
 ): Promise<Runtime | undefined> {
   // Prompt for runtime name (human-readable)

@@ -19,7 +19,7 @@ import { JupyterNotebookProvider } from "../providers/jupyterNotebookProvider";
 import { LexicalDocumentProvider } from "../providers/lexicalDocumentProvider";
 import { SDKAuthProvider } from "./authProvider";
 import { EnvironmentCache } from "./environmentCache";
-import type { DatalayerSDK } from "../../../core/lib/sdk/client";
+import type { DatalayerClient } from "../../../core/lib/client";
 
 /**
  * Container for all extension UI components.
@@ -54,7 +54,7 @@ export interface ExtensionUI {
 export async function initializeUI(
   context: vscode.ExtensionContext,
   authProvider: SDKAuthProvider,
-  sdk: DatalayerSDK
+  sdk: DatalayerClient
 ): Promise<ExtensionUI> {
   const statusBar = DatalayerStatusBar.getInstance(authProvider);
   context.subscriptions.push(statusBar);

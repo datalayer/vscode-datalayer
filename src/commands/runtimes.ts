@@ -28,7 +28,7 @@ import {
   CommonConfirmations,
 } from "../utils/confirmationDialog";
 
-import type { Runtime } from "../../../core/lib/sdk/client/models/Runtime";
+import type { Runtime } from "../../../core/lib/client/models/Runtime";
 
 interface RuntimeQuickPickItem extends vscode.QuickPickItem {
   runtime: Runtime;

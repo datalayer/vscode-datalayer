@@ -13,11 +13,11 @@
 
 import { WebSocket } from "ws";
 import { v4 as uuidv4 } from "uuid";
-import type { DatalayerSDK } from "../../../core/lib/sdk/client";
+import type { DatalayerClient } from "../../../core/lib/client";
 import type {
   Runtime,
   RuntimeJSON,
-} from "../../../core/lib/sdk/client/models/Runtime";
+} from "../../../core/lib/client/models/Runtime";
 
 /**
  * Jupyter message structure according to the protocol.
@@ -87,7 +87,7 @@ export class WebSocketKernelClient {
    */
   constructor(
     runtime: Runtime | RuntimeJSON,
-    private readonly _sdk: DatalayerSDK
+    private readonly _sdk: DatalayerClient
   ) {
     this._sessionId = uuidv4();
 

@@ -12,9 +12,9 @@
  */
 
 import * as vscode from "vscode";
-import type { DatalayerSDK } from "../../../core/lib/sdk/client";
-import type { Runtime } from "../../../core/lib/sdk/client/models/Runtime";
-import type { RuntimeJSON } from "../../../core/lib/sdk/client/models/Runtime";
+import type { DatalayerClient } from "../../../core/lib/client";
+import type { Runtime } from "../../../core/lib/client/models/Runtime";
+import type { RuntimeJSON } from "../../../core/lib/client/models/Runtime";
 import { SDKAuthProvider } from "./authProvider";
 import { WebviewCollection } from "../utils/webviewCollection";
 
@@ -51,7 +51,7 @@ export class KernelBridge implements vscode.Disposable {
    * @param authProvider - Authentication provider
    */
   constructor(
-    private readonly _sdk: DatalayerSDK,
+    private readonly _sdk: DatalayerClient,
     private readonly _authProvider: SDKAuthProvider
   ) {}
 

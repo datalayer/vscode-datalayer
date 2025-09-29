@@ -12,11 +12,11 @@
  */
 
 import * as vscode from "vscode";
-import { DatalayerSDK } from "../../../core/lib/sdk/client";
+import { DatalayerClient } from "../../../core/lib/client";
 import type {
-  DatalayerSDKConfig,
+  DatalayerClientConfig,
   SDKHandlers,
-} from "../../../core/lib/sdk/client";
+} from "../../../core/lib/client";
 import { promptAndLogin } from "../utils/authDialog";
 
 /**
@@ -82,16 +82,16 @@ export class VSCodeStorage implements PlatformStorage {
 /**
  * Configuration options for the VS Code SDK.
  */
-export interface VSCodeSDKConfig extends Partial<DatalayerSDKConfig> {
+export interface VSCodeSDKConfig extends Partial<DatalayerClientConfig> {
   /** VS Code extension context */
   context: vscode.ExtensionContext;
 }
 
 /**
- * Create a DatalayerSDK instance configured for VS Code.
+ * Create a DatalayerClient instance configured for VS Code.
  *
  * @param config - Configuration options including VS Code context
- * @returns Configured DatalayerSDK instance
+ * @returns Configured DatalayerClient instance
  *
  * @example
  * ```typescript
@@ -109,7 +109,7 @@ export interface VSCodeSDKConfig extends Partial<DatalayerSDKConfig> {
  * }
  * ```
  */
-export function createVSCodeSDK(config: VSCodeSDKConfig): DatalayerSDK {
+export function createVSCodeSDK(config: VSCodeSDKConfig): DatalayerClient {
   const { context, ...sdkConfig } = config;
 
   // Get configuration from VS Code settings
@@ -150,7 +150,7 @@ export function createVSCodeSDK(config: VSCodeSDKConfig): DatalayerSDK {
     },
   };
 
-  const sdk = new DatalayerSDK({
+  const sdk = new DatalayerClient({
     // Service URLs - now using the configured URLs
     iamRunUrl,
     runtimesRunUrl,
@@ -224,7 +224,7 @@ export function getNotebookConfig() {
  * Global SDK instance for the extension.
  * This is initialized in the extension activation and used throughout.
  */
-let globalSDKInstance: DatalayerSDK | undefined;
+let globalSDKInstance: DatalayerClient | undefined;
 
 /**
  * Sets the global SDK instance.
@@ -232,7 +232,7 @@ let globalSDKInstance: DatalayerSDK | undefined;
  *
  * @param sdk - The SDK instance to set globally
  */
-export function setSDKInstance(sdk: DatalayerSDK): void {
+export function setSDKInstance(sdk: DatalayerClient): void {
   globalSDKInstance = sdk;
 }
 
@@ -242,7 +242,7 @@ export function setSDKInstance(sdk: DatalayerSDK): void {
  * @returns The global SDK instance
  * @throws Error if SDK is not initialized
  */
-export function getSDKInstance(): DatalayerSDK {
+export function getSDKInstance(): DatalayerClient {
   if (!globalSDKInstance) {
     throw new Error("SDK not initialized. Call setSDKInstance first.");
   }

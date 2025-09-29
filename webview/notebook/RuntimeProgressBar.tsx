@@ -13,7 +13,7 @@
 
 import React, { useState, useEffect, useMemo, useContext } from "react";
 import { MessageHandlerContext } from "../services/messageHandler";
-import type { RuntimeJSON } from "../../../core/lib/sdk/client/models/Runtime";
+import type { RuntimeJSON } from "../../../core/lib/client/models/Runtime";
 
 interface RuntimeProgressBarProps {
   runtime: RuntimeJSON | undefined;

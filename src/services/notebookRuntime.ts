@@ -12,7 +12,7 @@
  */
 
 import * as vscode from "vscode";
-import type { Runtime } from "../../../core/lib/sdk/client/models/Runtime";
+import type { Runtime } from "../../../core/lib/client/models/Runtime";
 import { ExtensionMessage } from "../utils/messages";
 import { SDKAuthProvider } from "./authProvider";
 import { getSDKInstance } from "./sdkAdapter";

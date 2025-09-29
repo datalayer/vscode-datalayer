@@ -12,8 +12,8 @@
  */
 
 import * as vscode from "vscode";
-import type { DatalayerSDK } from "../../../core/lib/sdk/client";
-import type { Runtime } from "../../../core/lib/sdk/client/models/Runtime";
+import type { DatalayerClient } from "../../../core/lib/client";
+import type { Runtime } from "../../../core/lib/client/models/Runtime";
 import { SDKAuthProvider } from "../services/authProvider";
 import { selectDatalayerRuntime } from "../utils/runtimeSelector";
 import { WebSocketKernelClient } from "../kernel/websocketKernelClient";
@@ -25,7 +25,7 @@ import { promptAndLogin } from "../utils/authDialog";
  */
 export class SmartDynamicControllerManager implements vscode.Disposable {
   private readonly _context: vscode.ExtensionContext;
-  private readonly _sdk: DatalayerSDK;
+  private readonly _sdk: DatalayerClient;
   private readonly _authProvider: SDKAuthProvider;
   private readonly _kernelBridge: KernelBridge;
   private readonly _controllers = new Map<string, vscode.NotebookController>();
@@ -37,7 +37,7 @@ export class SmartDynamicControllerManager implements vscode.Disposable {
 
   constructor(
     context: vscode.ExtensionContext,
-    sdk: DatalayerSDK,
+    sdk: DatalayerClient,
     authProvider: SDKAuthProvider
   ) {
     this._context = context;

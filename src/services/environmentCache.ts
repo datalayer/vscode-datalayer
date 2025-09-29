@@ -11,8 +11,8 @@
  * @module services/environmentCache
  */
 
-import type { DatalayerSDK } from "../../../core/lib/sdk/client";
-import type { Environment } from "../../../core/lib/sdk/client/models/Environment";
+import type { DatalayerClient } from "../../../core/lib/client";
+import type { Environment } from "../../../core/lib/client/models/Environment";
 
 /**
  * Caches Datalayer environments for efficient runtime creation.
@@ -50,7 +50,7 @@ export class EnvironmentCache {
    * @returns Array of available environments
    */
   public async getEnvironments(
-    sdk: DatalayerSDK,
+    sdk: DatalayerClient,
     forceRefresh = false
   ): Promise<Environment[]> {
     const now = Date.now();
@@ -77,7 +77,7 @@ export class EnvironmentCache {
    *
    * @param sdk - Datalayer SDK instance
    */
-  private async fetchEnvironments(sdk: DatalayerSDK): Promise<void> {
+  private async fetchEnvironments(sdk: DatalayerClient): Promise<void> {
     this._fetching = true;
 
     try {

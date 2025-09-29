@@ -192,7 +192,7 @@ npm run doc         # Documentation
 
 ```typescript
 // In sdkAdapter.ts - SDK configured with VS Code handlers
-const sdk = new DatalayerSDK({
+const sdk = new DatalayerClient({
   token: authProvider.getToken(),
   handlers: {
     beforeCall: (methodName, args) => {

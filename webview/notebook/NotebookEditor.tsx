@@ -43,7 +43,7 @@ import { MutableServiceManager } from "../services/mutableServiceManager";
 import { EnhancedJupyterReactTheme } from "../theme";
 // Import the custom VS Code-style toolbar
 import { NotebookToolbar } from "./NotebookToolbar";
-import type { RuntimeJSON } from "../../../core/lib/sdk/client/models/Runtime";
+import type { RuntimeJSON } from "../../../core/lib/client/models/Runtime";
 
 // Extended interface for runtime with credits information
 interface RuntimeWithCredits extends RuntimeJSON {

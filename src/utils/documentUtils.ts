@@ -11,7 +11,7 @@
  */
 
 import type { Document } from "../models/spaceItem";
-import { ItemTypes } from "../../../core/lib/sdk/client/constants";
+import { ItemTypes } from "../../../core/lib/client/constants";
 
 /**
  * Document type detection results.

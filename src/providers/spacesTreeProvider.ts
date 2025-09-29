@@ -16,7 +16,7 @@ import * as vscode from "vscode";
 import { SpaceItem, ItemType } from "../models/spaceItem";
 import { SDKAuthProvider } from "../services/authProvider";
 import { getSDKInstance } from "../services/sdkAdapter";
-import { ItemTypes } from "../../../core/lib/sdk/client/constants";
+import { ItemTypes } from "../../../core/lib/client/constants";
 
 /**
  * Tree data provider for the Datalayer Spaces view.
