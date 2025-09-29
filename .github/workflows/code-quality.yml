@@ -30,19 +30,74 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
+      - name: Setup directory structure
+        run: mkdir -p datalayer
+
+      - name: Checkout VS Code extension repository
+        uses: actions/checkout@v5
+        with:
+          path: datalayer/vscode-datalayer
+
+      - name: Checkout core repository
+        uses: actions/checkout@v5
+        with:
+          repository: goanpeca/core
+          ref: enh/sdk-updates
+          path: datalayer/core
+
+      - name: Debug directory structure
+        run: |
+          echo "=== Current working directory ==="
+          pwd
+          echo "=== Directory structure ==="
+          find datalayer -type d -maxdepth 3 || true
+          echo "=== Core repository contents ==="
+          ls -la datalayer/core/ || echo "Core directory not found"
+          echo "=== Looking for lib directory ==="
+          find datalayer/core -name "lib" -type d || echo "No lib directory found"
+          echo "=== Looking for built SDK files ==="
+          find datalayer/core -path "*/lib/sdk*" -type f | head -10 || echo "No built SDK files found"
+        shell: bash
+
+      - name: Skip core repository postinstall scripts
+        working-directory: datalayer/core
+        run: |
+          # Remove package.json scripts that might cause issues in CI
+          if [ -f package.json ]; then
+            echo "Found package.json in core, removing problematic scripts"
+            # Create backup and remove postinstall/prepare scripts
+            cp package.json package.json.backup
+            # Use node to safely remove scripts without breaking JSON
+            node -e "const pkg = require('./package.json'); delete pkg.scripts?.postinstall; delete pkg.scripts?.prepare; require('fs').writeFileSync('package.json', JSON.stringify(pkg, null, 2));"
+          fi
+        shell: bash
+
+      - name: Install core repository dependencies and build
+        working-directory: datalayer/core
+        run: |
+          echo "Installing core dependencies..."
+          npm install --ignore-scripts
+          echo "Building core SDK lib (required for VS Code extension)..."
+          npm run build:lib
+          echo "Building core full with increased memory..."
+          export NODE_OPTIONS="--max-old-space-size=8192"
+          npm run build
+          echo "Core build completed successfully!"
+        shell: bash
 
       - name: Setup Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v5
         with:
           node-version: "20"
 
       - name: Install dependencies
+        working-directory: datalayer/vscode-datalayer
         run: npm install
 
       - name: Check formatting
+        working-directory: datalayer/vscode-datalayer
         run: npm run format
 
       - name: Run linting
+        working-directory: datalayer/vscode-datalayer
         run: npm run lint
