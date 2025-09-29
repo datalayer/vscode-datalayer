@@ -13,18 +13,7 @@ import React, { useState, useEffect, useContext } from "react";
 import useNotebookStore from "@datalayer/jupyter-react/lib/components/notebook/NotebookState";
 import { MessageHandlerContext } from "../services/messageHandler";
 import { NotebookActions } from "@jupyterlab/notebook";
-
-/** Runtime information for Datalayer notebooks */
-interface RuntimeInfo {
-  uid: string;
-  name: string;
-  status?: string;
-  url?: string;
-  token?: string;
-  environment?: string;
-  creditsUsed?: number;
-  creditsLimit?: number;
-}
+import type { RuntimeJSON } from "@datalayer/core/lib/sdk/client/models/Runtime";
 
 /**
  * Props for the NotebookToolbar component
@@ -36,7 +25,7 @@ interface NotebookToolbarProps {
   /** Whether this is a Datalayer cloud notebook */
   isDatalayerNotebook?: boolean;
   /** Selected runtime information for Datalayer notebooks */
-  selectedRuntime?: RuntimeInfo;
+  selectedRuntime?: RuntimeJSON;
 }
 
 /**
@@ -249,9 +238,28 @@ export const NotebookToolbar: React.FC<NotebookToolbarProps> = ({
   useEffect(() => {
     // Check if we have a selected runtime (works for both Datalayer and local notebooks)
     if (selectedRuntime) {
+      console.log(
+        "[NotebookToolbar] Received runtime data:",
+        JSON.stringify(selectedRuntime, null, 2)
+      );
+
       // Show "Datalayer: {Runtime name}" to clearly indicate it's a Datalayer runtime
+      // Use givenName first, then fallback to environmentTitle, then environmentName, then UID
       const runtimeName =
-        selectedRuntime.name || selectedRuntime.uid || "Runtime";
+        selectedRuntime.givenName ||
+        selectedRuntime.environmentTitle ||
+        selectedRuntime.environmentName ||
+        selectedRuntime.uid ||
+        "Runtime";
+
+      console.log("[NotebookToolbar] Runtime name resolution:", {
+        givenName: selectedRuntime.givenName,
+        environmentTitle: selectedRuntime.environmentTitle,
+        environmentName: selectedRuntime.environmentName,
+        uid: selectedRuntime.uid,
+        finalName: runtimeName,
+      });
+
       setSelectedKernel(`Datalayer: ${runtimeName}`);
 
       // Check if we have an active kernel connection to determine status
@@ -259,7 +267,7 @@ export const NotebookToolbar: React.FC<NotebookToolbarProps> = ({
         const kernelConnection = notebook.adapter.kernel.connection;
         setKernelStatus(kernelConnection.status || "idle");
         setIsConnecting(false);
-      } else if (selectedRuntime.status === "connecting") {
+      } else if (selectedRuntime.state === "starting") {
         setKernelStatus("connecting");
         setIsConnecting(true);
       } else {

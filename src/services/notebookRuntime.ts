@@ -17,6 +17,7 @@ import { ExtensionMessage } from "../utils/messages";
 import { SDKAuthProvider } from "./authProvider";
 import { getSDKInstance } from "./sdkAdapter";
 import { setRuntime } from "../utils/runtimeSelector";
+import { showAuthenticationError } from "../utils/authDialog";
 
 /**
  * Singleton service for notebook runtime selection and management.
@@ -58,7 +59,7 @@ export class NotebookRuntimeService {
       // Check if authenticated
       const authState = authService.getAuthState();
       if (!authState.isAuthenticated) {
-        vscode.window.showErrorMessage("Please login to Datalayer first");
+        showAuthenticationError("Notebook Runtime");
         return;
       }
 
@@ -107,20 +108,19 @@ export class NotebookRuntimeService {
       if (runtimes && runtimes.length > 0) {
         runtimes.forEach((runtime) => {
           const statusIcon =
-            runtime.status === "running" || runtime.status === "ready"
-              ? "$(vm-active)"
-              : "$(vm-outline)";
-          const creditsUsed = (runtime as any).credits_used || 0;
-          const creditsLimit =
-            (runtime as any).credits_limit || runtime.credits || 10;
+            runtime.state === "running" ? "$(vm-active)" : "$(vm-outline)";
+          const creditsUsed = (runtime as any).credits_used ?? 0;
+          const creditsLimit = (runtime as any).credits_limit ?? 10;
 
           const item: any = {
             label: `${statusIcon} ${
-              runtime.given_name || runtime.podName || "Runtime"
+              runtime.givenName ?? runtime.podName ?? "Runtime"
             }`,
-            description: `${runtime.status} • ${creditsUsed}/${creditsLimit} credits`,
+            description: `${
+              runtime.state ?? "unknown"
+            } • ${creditsUsed}/${creditsLimit} credits`,
             detail: `Environment: ${
-              runtime.environment_name || "python-cpu-env"
+              runtime.environmentName ?? "python-cpu-env"
             }`,
           };
           item.runtime = runtime;
@@ -184,16 +184,35 @@ export class NotebookRuntimeService {
           async () => {
             const config =
               vscode.workspace.getConfiguration("datalayer.runtime");
-            const creditsLimit = config.get<number>("creditsLimit", 10);
+            const defaultMinutes = config.get<number>("defaultMinutes", 10);
 
-            const newRuntime = await (sdk as any).createRuntime(
-              creditsLimit,
-              "notebook",
-              `VSCode ${
+            // Fetch environments to get the actual burning rate
+            const { EnvironmentCache } = await import("./environmentCache");
+            const envCache = EnvironmentCache.getInstance();
+            const environments = await envCache.getEnvironments(sdk as any);
+
+            // Find the selected environment
+            const selectedEnv = environments.find(
+              (env: any) => env.name === environment
+            );
+
+            if (!selectedEnv) {
+              throw new Error(`Environment ${environment} not found`);
+            }
+
+            // Calculate credits from minutes using SDK utility
+            const creditsLimit = (sdk as any).calculateCreditsRequired(
+              defaultMinutes,
+              selectedEnv.burningRate
+            );
+
+            const newRuntime = await (sdk as any).createRuntime({
+              given_name: `VSCode ${
                 selectedAny.action === "create-ai" ? "AI" : "CPU"
               } Runtime`,
-              environment
-            );
+              environment_name: environment,
+              credits_limit: creditsLimit,
+            });
 
             if (newRuntime) {
               // Wait for runtime to be ready
@@ -295,7 +314,7 @@ export class NotebookRuntimeService {
 
   /**
    * Sends runtime information to the webview.
-   * Formats runtime data for webview consumption.
+   * Uses the Runtime model's stable toJSON() interface.
    *
    * @param webview - Target webview panel
    * @param runtime - Runtime instance to send
@@ -304,17 +323,13 @@ export class NotebookRuntimeService {
     webview: vscode.WebviewPanel,
     runtime: Runtime
   ): void {
+    const runtimeData = runtime.toJSON();
+    console.log(
+      "[NotebookRuntime] Sending runtime to webview:",
+      JSON.stringify(runtimeData, null, 2)
+    );
     this.postMessage(webview, "runtime-selected", {
-      runtime: {
-        uid: runtime.uid,
-        name: runtime.given_name || runtime.podName,
-        status: runtime.status,
-        url: runtime.ingress,
-        token: runtime.token,
-        environment: runtime.environment_name,
-        creditsUsed: (runtime as any).credits_used || 0,
-        creditsLimit: (runtime as any).credits_limit || runtime.credits || 10,
-      },
+      runtime: runtimeData,
     });
   }
 

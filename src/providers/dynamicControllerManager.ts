@@ -18,6 +18,7 @@ import { SDKAuthProvider } from "../services/authProvider";
 import { selectDatalayerRuntime } from "../utils/runtimeSelector";
 import { WebSocketKernelClient } from "../kernel/websocketKernelClient";
 import { KernelBridge } from "../services/kernelBridge";
+import { promptAndLogin } from "../utils/authDialog";
 
 /**
  * Manages multiple dynamic notebook controllers for Datalayer runtimes.
@@ -33,7 +34,6 @@ export class DynamicControllerManager implements vscode.Disposable {
   private readonly _notebookRuntimes = new Map<string, Runtime>();
   private _executionOrder = 0;
   private _disposed = false;
-  private _pickerEntry: any;
 
   /**
    * Creates a new DynamicControllerManager.
@@ -152,13 +152,7 @@ export class DynamicControllerManager implements vscode.Disposable {
       console.log(
         "[DynamicControllerManager] User not authenticated, showing login prompt"
       );
-      const action = await vscode.window.showErrorMessage(
-        "Authentication required. Please login to Datalayer.",
-        "Login"
-      );
-      if (action === "Login") {
-        await vscode.commands.executeCommand("datalayer.login");
-      }
+      await promptAndLogin("Datalayer Platform");
       return undefined;
     }
 
@@ -171,8 +165,8 @@ export class DynamicControllerManager implements vscode.Disposable {
       runtime
         ? {
             uid: runtime.uid,
-            givenName: runtime.given_name || runtime.given_name,
-            podName: runtime.podName || runtime.pod_name,
+            givenName: runtime.givenName,
+            podName: runtime.podName,
           }
         : "undefined"
     );
@@ -224,46 +218,34 @@ export class DynamicControllerManager implements vscode.Disposable {
           "[DynamicControllerManager] Ensuring controller is properly associated"
         );
 
-        // Wait a moment for affinity changes to be processed
-        await new Promise((resolve) => setTimeout(resolve, 100));
+        // Wait longer for affinity changes to be processed
+        await new Promise((resolve) => setTimeout(resolve, 300));
 
-        // Update the picker entry label to show the selected runtime
-        const displayInfo = this.getRuntimeDisplayInfo(runtime);
-        this._pickerEntry.label = displayInfo.label;
-        this._pickerEntry.detail = displayInfo.description;
         console.log(
-          "[DynamicControllerManager] Updated picker entry label to:",
-          displayInfo.label
+          "[DynamicControllerManager] Controller affinity updated - VS Code should now recognize the controller"
         );
 
-        // Force notebook to recognize the controller by creating a temporary execution
-        const notebookEditor = vscode.window.activeNotebookEditor;
-        if (notebookEditor && notebookEditor.notebook === notebook) {
+        // Force VS Code to recognize the controller by refreshing the notebook document
+        try {
           console.log(
-            "[DynamicControllerManager] Found active notebook editor"
+            "[DynamicControllerManager] Attempting to refresh notebook controller recognition"
           );
 
-          try {
-            // Create a dummy cell execution to force VS Code to recognize the controller
-            const cells = notebook.getCells();
-            if (cells.length > 0) {
-              console.log(
-                "[DynamicControllerManager] Creating association via dummy execution"
-              );
-              const firstCell = cells[0];
-              const dummyExecution =
-                runtimeController.createNotebookCellExecution(firstCell);
-              dummyExecution.start(Date.now());
-              await new Promise((resolve) => setTimeout(resolve, 50));
-              dummyExecution.end(true, Date.now());
-              console.log("[DynamicControllerManager] Association completed");
-            }
-          } catch (error) {
+          // Try to get the notebook document and force VS Code to re-evaluate controllers
+          const notebookDocument = vscode.workspace.notebookDocuments.find(
+            (doc) => doc.uri.toString() === notebook.uri.toString()
+          );
+
+          if (notebookDocument) {
             console.log(
-              "[DynamicControllerManager] Failed to create association:",
-              error
+              "[DynamicControllerManager] Found notebook document, controller should now be recognized"
             );
           }
+        } catch (error) {
+          console.log(
+            "[DynamicControllerManager] Error refreshing controller recognition:",
+            error
+          );
         }
 
         // Show confirmation after a short delay to let VS Code process the changes
@@ -272,9 +254,7 @@ export class DynamicControllerManager implements vscode.Disposable {
             "[DynamicControllerManager] Runtime controller should now be selected"
           );
           vscode.window.showInformationMessage(
-            `Runtime "${
-              runtime.given_name || runtime.given_name
-            }" is now active`,
+            `Runtime "${runtime.givenName}" is now active`,
             { modal: false }
           );
         }, 100);
@@ -375,22 +355,12 @@ export class DynamicControllerManager implements vscode.Disposable {
     let environmentName = "";
     let givenName = "";
 
-    // Extract runtime information
-    if (runtime && typeof runtime === "object") {
-      if ("environmentName" in runtime || "givenName" in runtime) {
-        environmentName =
-          runtime.environment_name || runtime.environment_name || "";
-        givenName = runtime.given_name || runtime.given_name || "";
-      } else if (typeof (runtime as any).toJSON === "function") {
-        const data = (runtime as any).toJSON();
-        environmentName = data.environment_name || "";
-        givenName = data.given_name || "";
-        environmentTitle = data.environment_title || "";
-      } else {
-        environmentName = runtime.environment_name || "";
-        givenName = runtime.given_name || "";
-        environmentTitle = runtime.environment_title || "";
-      }
+    // Extract runtime information using SDK interface
+    if (runtime && typeof (runtime as any).toJSON === "function") {
+      const data = (runtime as any).toJSON();
+      environmentName = data.environmentName;
+      givenName = data.givenName;
+      environmentTitle = data.environmentTitle;
     }
 
     // Derive environment title if not available
@@ -411,16 +381,17 @@ export class DynamicControllerManager implements vscode.Disposable {
         ? `Datalayer: ${environmentTitle} (${environmentName})`
         : givenName
         ? `Datalayer: ${givenName}`
-        : `Datalayer: ${
-            runtime.pod_name || runtime.uid?.slice(0, 8) || "Runtime"
-          }`;
+        : `Datalayer: ${runtime.podName}`;
 
     const description = environmentTitle
       ? `Connected to ${environmentTitle}`
-      : `Connected to ${givenName || runtime.pod_name || "runtime"}`;
+      : `Connected to ${givenName ? givenName : runtime.podName}`;
 
-    const environment =
-      environmentTitle || givenName || runtime.pod_name || "Unknown";
+    const environment = environmentTitle
+      ? environmentTitle
+      : givenName
+      ? givenName
+      : runtime.podName;
 
     return { label, description, environment };
   }
@@ -429,7 +400,7 @@ export class DynamicControllerManager implements vscode.Disposable {
    * Gets a consistent controller ID for a runtime.
    */
   private getRuntimeControllerId(runtime: Runtime): string {
-    return `datalayer-runtime-${runtime.uid || runtime.pod_name}`;
+    return `datalayer-runtime-${runtime.uid}`;
   }
 
   /**
@@ -517,20 +488,42 @@ export class DynamicControllerManager implements vscode.Disposable {
     // Ensure controller is associated with the notebook before creating execution
     const notebook = cell.notebook;
 
-    // CRITICAL: Update the controller's affinity to Preferred to ensure association
-    // This must be done BEFORE trying to create an execution
+    // Try to create execution directly - the controller should already be associated
+    // by the showRuntimeSelector method
     console.log(
-      "[DynamicControllerManager] Ensuring controller is associated with notebook"
-    );
-    await controller.updateNotebookAffinity(
-      notebook,
-      vscode.NotebookControllerAffinity.Preferred
+      "[DynamicControllerManager] Creating cell execution with controller:",
+      controller.id
     );
 
-    // Give VS Code a moment to process the affinity change
-    await new Promise((resolve) => setTimeout(resolve, 50));
+    // Instead of trying to force execution through this controller,
+    // let VS Code handle it by using the built-in execution mechanism
+    console.log(
+      "[DynamicControllerManager] Delegating execution to VS Code's native mechanism"
+    );
+
+    // Execute the cell using VS Code's command instead of forcing through our controller
+    try {
+      await vscode.commands.executeCommand("notebook.cell.execute", {
+        ranges: [{ start: cell.index, end: cell.index + 1 }],
+        document: notebook.uri,
+      });
+
+      console.log(
+        "[DynamicControllerManager] Cell execution delegated to VS Code successfully"
+      );
+      return; // Exit early since VS Code is handling the execution
+    } catch (error) {
+      console.log(
+        "[DynamicControllerManager] VS Code execution failed, falling back to direct controller execution:",
+        error
+      );
+    }
+
+    // Fallback: try to create execution directly with a simple delay
+    await new Promise((resolve) => setTimeout(resolve, 1000));
 
     const execution = controller.createNotebookCellExecution(cell);
+
     execution.executionOrder = ++this._executionOrder;
     execution.start(Date.now());
 
@@ -546,7 +539,7 @@ export class DynamicControllerManager implements vscode.Disposable {
         if (output.type === "stream") {
           await execution.appendOutput(
             new vscode.NotebookCellOutput([
-              vscode.NotebookCellOutputItem.text(output.text || ""),
+              vscode.NotebookCellOutputItem.text(output.text ?? ""),
             ])
           );
         } else if (output.type === "execute_result") {
@@ -576,9 +569,9 @@ export class DynamicControllerManager implements vscode.Disposable {
           await execution.appendOutput(
             new vscode.NotebookCellOutput([
               vscode.NotebookCellOutputItem.error({
-                name: output.ename || "",
-                message: output.evalue || "",
-                stack: output.traceback?.join("\n") || "",
+                name: output.ename ?? "Error",
+                message: output.evalue ?? "Unknown error",
+                stack: output.traceback?.join("\n") ?? "",
               }),
             ])
           );

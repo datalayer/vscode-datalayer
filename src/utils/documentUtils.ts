@@ -11,6 +11,7 @@
  */
 
 import type { Document } from "../models/spaceItem";
+import { ItemTypes } from "../../../core/lib/sdk/client/constants";
 
 /**
  * Document type detection results.
@@ -19,35 +20,31 @@ export interface DocumentTypeInfo {
   isNotebook: boolean;
   isLexical: boolean;
   isCell: boolean;
-  type: "notebook" | "lexical" | "cell" | "unknown";
+  type: string; // Uses ItemTypes constants
 }
 
 /**
  * Detects document type using consistent logic across the extension.
- * Matches the filtering logic used in the spaces tree provider.
+ * Works with SDK model instances that have a 'type' property.
  *
- * @param document - The document to analyze
+ * @param document - The document to analyze (SDK model instance)
  * @returns Document type information with boolean flags and type string
  */
 export function detectDocumentType(document: Document): DocumentTypeInfo {
-  const isNotebook =
-    document.type_s === "notebook" || document.notebook_extension_s === "ipynb";
+  // SDK models have a 'type' property that returns the ItemTypes constant
+  const docType = document.type;
 
-  const isLexical =
-    document.document_format_s === "lexical" ||
-    document.document_extension_s === "lexical" ||
-    (document.type_s === "document" &&
-      document.document_format_s === "lexical");
+  const isNotebook = docType === ItemTypes.NOTEBOOK;
+  const isLexical = docType === ItemTypes.LEXICAL;
+  const isCell = docType === ItemTypes.CELL;
 
-  const isCell = document.type_s === "cell";
-
-  let type: "notebook" | "lexical" | "cell" | "unknown" = "unknown";
+  let type: string = ItemTypes.UNKNOWN;
   if (isNotebook) {
-    type = "notebook";
+    type = ItemTypes.NOTEBOOK;
   } else if (isLexical) {
-    type = "lexical";
+    type = ItemTypes.LEXICAL;
   } else if (isCell) {
-    type = "cell";
+    type = ItemTypes.CELL;
   }
 
   return {
@@ -62,7 +59,7 @@ export function detectDocumentType(document: Document): DocumentTypeInfo {
  * Gets display name for a document using consistent logic.
  * Automatically adds appropriate file extensions if missing.
  *
- * @param document - The document to get display name for
+ * @param document - The document to get display name for (SDK model instance)
  * @param typeInfo - Document type info (detected if not provided)
  * @returns Display name with appropriate extension
  */
@@ -74,11 +71,8 @@ export function getDocumentDisplayName(
     typeInfo = detectDocumentType(document);
   }
 
-  const baseName =
-    document.name_t ||
-    document.notebook_name_s ||
-    document.document_name_s ||
-    "Untitled";
+  // SDK models have a 'name' property
+  const baseName = document.name;
 
   if (typeInfo.isNotebook) {
     return baseName.endsWith(".ipynb") ? baseName : `${baseName}.ipynb`;

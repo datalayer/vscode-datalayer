@@ -147,12 +147,9 @@ export class DatalayerStatusBar implements vscode.Disposable {
       this.statusBarItem.text = "$(menu) Datalayer: Not Connected";
       this.statusBarItem.tooltip = "Click to login";
       this.statusBarItem.command = "datalayer.login";
-      this.statusBarItem.color = new vscode.ThemeColor(
-        "statusBarItem.warningForeground"
-      );
-      this.statusBarItem.backgroundColor = new vscode.ThemeColor(
-        "statusBarItem.warningBackground"
-      );
+      // Keep colors consistent - no special warning colors
+      this.statusBarItem.color = undefined;
+      this.statusBarItem.backgroundColor = undefined;
     }
   }
 

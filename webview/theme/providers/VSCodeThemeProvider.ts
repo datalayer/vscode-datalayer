@@ -30,11 +30,6 @@ export class VSCodeThemeProvider extends BaseThemeProvider {
     super("vscode-theme", "VS Code Theme", "vscode");
     this._colorMode = colorMode;
 
-    console.log(
-      "[VSCodeThemeProvider] Initializing with color mode:",
-      colorMode
-    );
-
     // Expose the provider globally for the patch to access
     if (typeof window !== "undefined") {
       (window as any).__vscodeThemeProvider = this;
@@ -220,14 +215,6 @@ export class VSCodeThemeProvider extends BaseThemeProvider {
         this._vscodeColors.set(varName, value.trim());
       }
     });
-
-    // Log what we found for debugging
-    console.log("[VSCodeThemeProvider] Detected VS Code colors:", {
-      count: this._vscodeColors.size,
-      sample: Array.from(this._vscodeColors.entries()).slice(0, 5),
-      editorBg: this._vscodeColors.get("--vscode-editor-background"),
-      editorFg: this._vscodeColors.get("--vscode-editor-foreground"),
-    });
   }
 
   /**
@@ -249,9 +236,6 @@ export class VSCodeThemeProvider extends BaseThemeProvider {
         oldSize !== this._vscodeColors.size ||
         this.detectColorModeChange()
       ) {
-        console.log(
-          "[VSCodeThemeProvider] Theme change detected via MutationObserver"
-        );
         this.notifyListeners();
       }
     });
@@ -274,7 +258,6 @@ export class VSCodeThemeProvider extends BaseThemeProvider {
    * Force refresh the theme
    */
   public refresh(): void {
-    console.log("[VSCodeThemeProvider] Force refresh triggered");
     this.detectVSCodeColors();
     this.detectColorModeChange();
     // Force syntax color extraction after a delay to ensure Monaco has loaded
@@ -451,7 +434,6 @@ export class VSCodeThemeProvider extends BaseThemeProvider {
       }
     });
 
-    console.log("[VSCodeThemeProvider] Extracted syntax colors:", syntaxColors);
     return syntaxColors;
   }
   /**
@@ -1207,16 +1189,6 @@ export class VSCodeThemeProvider extends BaseThemeProvider {
     );
     rules.push(
       `.cm-editor .cm-paren { color: ${colors.operator} !important; }`
-    );
-
-    console.log(
-      "[VSCodeThemeProvider] Generated CodeMirror CSS with base color:",
-      baseTextColor
-    );
-    console.log(
-      "[VSCodeThemeProvider] Generated CodeMirror CSS for",
-      isDark ? "dark" : "light",
-      "theme"
     );
 
     return rules.join("\n");

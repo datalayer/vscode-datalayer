@@ -13,7 +13,11 @@
 
 import { WebSocket } from "ws";
 import { v4 as uuidv4 } from "uuid";
-import type { DatalayerSDK, Runtime } from "../../../core/lib/index.js";
+import type {
+  DatalayerSDK,
+  Runtime,
+  RuntimeJSON,
+} from "../../../core/lib/index.js";
 
 /**
  * Jupyter message structure according to the protocol.
@@ -65,7 +69,7 @@ export class WebSocketKernelClient {
   private _kernelId: string | undefined;
   private _connected = false;
   private _connecting = false;
-  private _runtime: Runtime;
+  private _runtime: RuntimeJSON;
   private _pendingRequests = new Map<
     string,
     {
@@ -81,7 +85,10 @@ export class WebSocketKernelClient {
    * @param runtime - The Datalayer runtime to connect to
    * @param sdk - Datalayer SDK instance
    */
-  constructor(runtime: Runtime, private readonly _sdk: DatalayerSDK) {
+  constructor(
+    runtime: Runtime | RuntimeJSON,
+    private readonly _sdk: DatalayerSDK
+  ) {
     this._sessionId = uuidv4();
     console.log(
       "[WebSocketKernelClient] Created with session:",
@@ -90,57 +97,28 @@ export class WebSocketKernelClient {
 
     // Extract runtime data from Runtime model or plain object
     if (runtime && typeof runtime === "object") {
-      // Check if it's a Runtime model with properties
-      if ("uid" in runtime && typeof runtime.uid !== "undefined") {
+      // Check if it's a Runtime model with toJSON method
+      if (typeof (runtime as any).toJSON === "function") {
         console.log(
-          "[WebSocketKernelClient] Runtime is a model with properties"
+          "[WebSocketKernelClient] Runtime is an SDK model - using toJSON()"
         );
-        // It's a Runtime model with getters - access properties directly
-        this._runtime = {
-          uid: runtime.uid,
-          pod_name: (runtime as any).podName || runtime.pod_name || "",
-          given_name: (runtime as any).givenName || runtime.given_name || "",
-          environment_name:
-            (runtime as any).environmentName || runtime.environment_name || "",
-          // Try ingress first, then jupyterUrl as fallback
-          ingress:
-            runtime.ingress ||
-            (runtime as any).jupyterUrl ||
-            runtime.jupyter_url ||
-            "",
-          // Try token first, then jupyterToken as fallback
-          token:
-            runtime.token ||
-            (runtime as any).jupyterToken ||
-            runtime.jupyter_token ||
-            "",
-          burning_rate: runtime.burning_rate || 0,
-        } as Runtime;
-
-        console.log("[WebSocketKernelClient] Extracted from model:", {
-          uid: this._runtime.uid,
-          ingress: this._runtime.ingress,
-          token: this._runtime.token ? "***" : undefined,
-          given_name: this._runtime.given_name,
-        });
-      } else if (typeof (runtime as any).toJSON === "function") {
-        console.log("[WebSocketKernelClient] Runtime has toJSON method");
-        this._runtime = (runtime as any).toJSON();
+        // It's a Runtime model - use toJSON to get stable interface
+        this._runtime = (runtime as Runtime).toJSON();
       } else {
-        console.log("[WebSocketKernelClient] Runtime is a plain object");
-        // It's already plain data
-        this._runtime = runtime;
+        console.log("[WebSocketKernelClient] Runtime is already JSON data");
+        // It's already RuntimeJSON data
+        this._runtime = runtime as RuntimeJSON;
       }
     } else {
-      // Fallback
-      this._runtime = runtime;
+      // Fallback - should not happen
+      throw new Error("Invalid runtime object provided");
     }
 
     console.log("[WebSocketKernelClient] Runtime data:", {
       uid: this._runtime.uid,
       ingress: this._runtime.ingress,
       token: this._runtime.token ? "***" : undefined,
-      given_name: this._runtime.given_name,
+      givenName: this._runtime.givenName,
     });
   }
 
@@ -158,20 +136,25 @@ export class WebSocketKernelClient {
     this._connecting = true;
 
     try {
-      // Check for connection info - runtime might have different field names
-      const ingressUrl = this._runtime.ingress || this._runtime.jupyter_url;
-      const token = this._runtime.token || this._runtime.jupyter_token;
+      // Check for connection info from SDK
+      const ingressUrl = this._runtime.ingress;
+      const token = this._runtime.token;
 
-      if (!ingressUrl || !token) {
-        console.error("[WebSocketKernelClient] Runtime object:", this._runtime);
-        throw new Error(
-          `Runtime missing connection info. Has ingress: ${!!ingressUrl}, Has token: ${!!token}`
+      if (!ingressUrl) {
+        console.error(
+          "[WebSocketKernelClient] Runtime missing ingress URL:",
+          this._runtime
         );
+        throw new Error("Runtime missing ingress URL from SDK");
       }
 
-      // Update runtime object with normalized fields
-      this._runtime.ingress = ingressUrl;
-      this._runtime.token = token;
+      if (!token) {
+        console.error(
+          "[WebSocketKernelClient] Runtime missing token:",
+          this._runtime
+        );
+        throw new Error("Runtime missing token from SDK");
+      }
 
       // First, get or create a kernel
       await this.ensureKernel();

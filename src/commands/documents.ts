@@ -30,6 +30,11 @@ import {
   detectDocumentType,
   getDocumentDisplayName,
 } from "../utils/documentUtils";
+import {
+  showTwoStepConfirmation,
+  CommonConfirmations,
+} from "../utils/confirmationDialog";
+import { ItemTypes } from "../../../core/lib/sdk/client/constants";
 
 /**
  * Registers all document-related VS Code commands for the Datalayer extension.
@@ -68,10 +73,10 @@ export function registerDocumentCommands(
           if (documentOrItem.data && documentOrItem.data.document) {
             document = documentOrItem.data.document;
             spaceName =
-              documentOrItem.data.spaceName || spaceName || "Unknown Space";
+              documentOrItem.data.spaceName ?? spaceName ?? "Unknown Space";
           } else {
             document = documentOrItem;
-            spaceName = spaceName || "Unknown Space";
+            spaceName = spaceName ?? "Unknown Space";
           }
 
           const docName = getDocumentDisplayName(document);
@@ -99,7 +104,7 @@ export function registerDocumentCommands(
 
                 console.log(
                   "[Datalayer] Opening notebook with collaboration - document ID:",
-                  document.uid || document.id
+                  document.uid ?? document.id
                 );
 
                 progress.report({
@@ -332,11 +337,8 @@ export function registerDocumentCommands(
           }
 
           const document = item.data.document;
-          const currentName =
-            document.name_t ||
-            document.notebook_name_s ||
-            document.document_name_s ||
-            "Untitled";
+          // SDK models have a 'name' property
+          const currentName = document.name;
 
           const newName = await vscode.window.showInputBox({
             prompt: "Enter new name",
@@ -360,34 +362,25 @@ export function registerDocumentCommands(
               cancellable: false,
             },
             async () => {
-              const existingDescription = document.description_t || "";
-              const docId = document.uid || document.id;
-              let success = false;
+              // The document is already an SDK model instance with an update method
+              try {
+                // Call the update method directly on the model instance
+                // Both Notebook and Lexical models have an update method
+                const existingDescription = document.description;
+                await document.update(newName, existingDescription);
 
-              if (document.type === "notebook" || document.notebook_name_s) {
-                const updated = await (sdk as any).updateNotebook(docId, {
-                  name: newName,
-                  description: existingDescription,
-                });
-                success = !!updated;
-              } else if (
-                document.type === "lexical" ||
-                document.document_name_s
-              ) {
-                const updated = await (sdk as any).updateLexical(docId, {
-                  name: newName,
-                  description: existingDescription,
-                });
-                success = !!updated;
-              }
-
-              if (success) {
                 vscode.window.showInformationMessage(
                   `Successfully renamed to "${newName}"`
                 );
                 spacesTreeProvider.refresh();
-              } else {
-                throw new Error("Failed to rename item");
+              } catch (updateError) {
+                throw new Error(
+                  `Failed to rename item: ${
+                    updateError instanceof Error
+                      ? updateError.message
+                      : "Unknown error"
+                  }`
+                );
               }
             }
           );
@@ -421,19 +414,14 @@ export function registerDocumentCommands(
           }
 
           const document = item.data.document;
-          const itemName =
-            document.name_t ||
-            document.notebook_name_s ||
-            document.document_name_s ||
-            "Untitled";
+          // SDK models have a 'name' property
+          const itemName = document.name;
 
-          const confirmation = await vscode.window.showWarningMessage(
-            `Are you sure you want to delete "${itemName}"?`,
-            "Delete",
-            "Cancel"
+          const confirmed = await showTwoStepConfirmation(
+            CommonConfirmations.deleteDocument(itemName)
           );
 
-          if (confirmation !== "Delete") {
+          if (!confirmed) {
             return;
           }
 
@@ -444,27 +432,23 @@ export function registerDocumentCommands(
               cancellable: false,
             },
             async () => {
-              const docId = document.uid || document.id;
-              let success = false;
+              // The document is already an SDK model instance with a delete method
+              try {
+                // Call the delete method directly on the model instance
+                await document.delete();
 
-              if (document.type === "notebook" || document.notebook_name_s) {
-                await (sdk as any).deleteNotebook(docId);
-                success = true;
-              } else if (
-                document.type === "lexical" ||
-                document.document_name_s
-              ) {
-                await (sdk as any).deleteLexical(docId);
-                success = true;
-              }
-
-              if (success) {
                 vscode.window.showInformationMessage(
                   `Successfully deleted "${itemName}"`
                 );
                 spacesTreeProvider.refresh();
-              } else {
-                throw new Error("Failed to delete item");
+              } catch (deleteError) {
+                throw new Error(
+                  `Failed to delete item: ${
+                    deleteError instanceof Error
+                      ? deleteError.message
+                      : "Unknown error"
+                  }`
+                );
               }
             }
           );

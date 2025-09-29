@@ -14,7 +14,7 @@
 import * as vscode from "vscode";
 import { DatalayerStatusBar } from "./statusBar";
 import { SpacesTreeProvider } from "../providers/spacesTreeProvider";
-import { DynamicControllerManager } from "../providers/dynamicControllerManager";
+import { SmartDynamicControllerManager } from "../providers/smartDynamicControllerManager";
 import { JupyterNotebookProvider } from "../providers/jupyterNotebookProvider";
 import { LexicalDocumentProvider } from "../providers/lexicalDocumentProvider";
 import { SDKAuthProvider } from "./authProvider";
@@ -32,8 +32,8 @@ export interface ExtensionUI {
   spacesTreeProvider: SpacesTreeProvider;
   /** VS Code tree view for spaces */
   treeView: vscode.TreeView<any>;
-  /** Dynamic controller manager for multiple runtimes */
-  controllerManager: DynamicControllerManager;
+  /** Smart dynamic controller manager for runtime selection and switching */
+  controllerManager: SmartDynamicControllerManager;
 }
 
 /**
@@ -76,13 +76,13 @@ export async function initializeUI(
     console.error("[Extension] Failed to cache environments:", error);
   }
 
-  // Create the dynamic controller manager
-  const controllerManager = new DynamicControllerManager(
+  // Create the smart dynamic controller manager
+  const controllerManager = new SmartDynamicControllerManager(
     context,
     sdk,
     authProvider
   );
-  console.log("[Extension] Dynamic controller manager created");
+  console.log("[Extension] Smart dynamic controller manager created");
 
   const spacesTreeProvider = new SpacesTreeProvider(authProvider);
   const treeView = vscode.window.createTreeView("datalayerSpaces", {

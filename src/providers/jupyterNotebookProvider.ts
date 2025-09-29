@@ -28,6 +28,10 @@ import { KernelBridge } from "../services/kernelBridge";
 import { getSDKInstance } from "../services/sdkAdapter";
 import { selectDatalayerRuntime } from "../utils/runtimeSelector";
 import { showKernelSelector } from "../utils/kernelSelector";
+import {
+  showTwoStepConfirmation,
+  CommonConfirmations,
+} from "../utils/confirmationDialog";
 import type { ExtensionMessage } from "../utils/messages";
 
 /**
@@ -287,7 +291,7 @@ export class JupyterNotebookProvider
               );
             } else {
               // Fallback: try to extract document ID from the filename
-              const filename = document.uri.path.split("/").pop() || "";
+              const filename = document.uri.path.split("/").pop() ?? "";
               const match = filename.match(/_([a-zA-Z0-9-]+)\.ipynb$/);
               documentId = match ? match[1] : undefined;
 
@@ -491,60 +495,59 @@ export class JupyterNotebookProvider
         }
 
         // Show confirmation dialog
-        vscode.window
-          .showWarningMessage(
-            `Terminate runtime "${
-              runtime.name || runtime.uid
-            }"? This will stop all running notebooks using this runtime.`,
-            { modal: true },
-            "Terminate"
-          )
-          .then(async (selection) => {
-            if (selection === "Terminate") {
-              try {
-                const sdk = getSDKInstance();
+        const runtimeName =
+          runtime.givenName ||
+          runtime.environmentTitle ||
+          runtime.environmentName ||
+          runtime.uid;
+        const confirmed = await showTwoStepConfirmation(
+          CommonConfirmations.terminateRuntime(runtimeName)
+        );
 
-                // Delete the runtime via SDK - MUST use pod_name, not uid!
-                const podName =
-                  runtime.pod_name || runtime.podName || runtime.uid;
-                console.log(
-                  "[JupyterNotebookProvider] Deleting runtime with pod_name:",
-                  podName
-                );
-                console.log(
-                  "[JupyterNotebookProvider] Runtime object for context:",
-                  JSON.stringify(runtime, null, 2)
-                );
+        if (confirmed) {
+          try {
+            const sdk = getSDKInstance();
 
-                const result = await (sdk as any).deleteRuntime(podName);
-                console.log(
-                  "[JupyterNotebookProvider] deleteRuntime API result:",
-                  result
-                );
+            // Delete the runtime via SDK - MUST use pod_name, not uid!
+            // If podName is missing, construct it from uid (format: runtime-{uid})
+            const podName = runtime.podName ?? `runtime-${runtime.uid}`;
+            console.log(
+              "[JupyterNotebookProvider] Deleting runtime with pod_name:",
+              podName
+            );
+            console.log(
+              "[JupyterNotebookProvider] Runtime object for context:",
+              JSON.stringify(runtime, null, 2)
+            );
 
-                // Notify user of success
-                vscode.window.showInformationMessage(
-                  `Runtime "${
-                    runtime.name || runtime.uid
-                  }" terminated successfully.`
-                );
+            const result = await (sdk as any).deleteRuntime(podName);
+            console.log(
+              "[JupyterNotebookProvider] deleteRuntime API result:",
+              result
+            );
 
-                // Clear the kernel selection in the webview
-                await webview.webview.postMessage({
-                  type: "runtime-terminated",
-                  runtime: null,
-                });
-              } catch (error: any) {
-                console.error(
-                  "[JupyterNotebookProvider] Failed to terminate runtime:",
-                  error
-                );
-                vscode.window.showErrorMessage(
-                  `Failed to terminate runtime: ${error.message || error}`
-                );
-              }
-            }
-          });
+            // Notify user of success
+            vscode.window.showInformationMessage(
+              `Runtime "${
+                runtime.name || runtime.uid
+              }" terminated successfully.`
+            );
+
+            // Clear the kernel selection in the webview
+            await webview.webview.postMessage({
+              type: "runtime-terminated",
+              runtime: null,
+            });
+          } catch (error: any) {
+            console.error(
+              "[JupyterNotebookProvider] Failed to terminate runtime:",
+              error
+            );
+            vscode.window.showErrorMessage(
+              `Failed to terminate runtime: ${error.message || error}`
+            );
+          }
+        }
         return;
       }
 
@@ -641,6 +644,11 @@ export class JupyterNotebookProvider
         console.log(
           "[JupyterNotebookProvider] Received runtime-expired message from webview"
         );
+        console.log(
+          "[JupyterNotebookProvider] Runtime expiration message body:",
+          JSON.stringify(message.body, null, 2)
+        );
+
         const runtime = message.body?.runtime;
         if (!runtime) {
           console.error(
@@ -648,17 +656,40 @@ export class JupyterNotebookProvider
           );
           return;
         }
-        // Show notification that runtime expired
-        vscode.window.showWarningMessage(
-          `Runtime "${
-            runtime.name || runtime.uid
-          }" has expired. Switching back to mock service manager.`
+
+        const runtimeName =
+          runtime.name ||
+          runtime.givenName ||
+          runtime.givenName ||
+          runtime.uid ||
+          "Unknown";
+        console.log(
+          `[JupyterNotebookProvider] Processing expiration for runtime: ${runtimeName}`
         );
+
+        // Show notification that runtime expired
+        const notificationPromise = vscode.window.showWarningMessage(
+          `Runtime "${runtimeName}" has expired. Notebook switched to offline mode.`
+        );
+        console.log(
+          "[JupyterNotebookProvider] Expiration notification displayed"
+        );
+
         // Clear the kernel selection in the webview (same as terminate-runtime)
-        await webview.webview.postMessage({
+        const postMessagePromise = webview.webview.postMessage({
           type: "runtime-terminated", // Reuse the same message type for cleanup
           runtime: null,
         });
+        console.log(
+          "[JupyterNotebookProvider] Sent runtime-terminated message to webview"
+        );
+
+        // Wait for both operations
+        await Promise.all([notificationPromise, postMessagePromise]);
+        console.log(
+          "[JupyterNotebookProvider] Runtime expiration handling completed"
+        );
+
         return;
       }
     }

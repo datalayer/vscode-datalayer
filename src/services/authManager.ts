@@ -14,7 +14,7 @@
 import * as vscode from "vscode";
 import { SDKAuthProvider } from "./authProvider";
 import { SpacesTreeProvider } from "../providers/spacesTreeProvider";
-import { DynamicControllerManager } from "../providers/dynamicControllerManager";
+import { SmartDynamicControllerManager } from "../providers/smartDynamicControllerManager";
 
 /**
  * Sets up authentication state synchronization with UI components.
@@ -34,7 +34,7 @@ import { DynamicControllerManager } from "../providers/dynamicControllerManager"
 export function setupAuthStateManagement(
   authProvider: SDKAuthProvider,
   spacesTreeProvider: SpacesTreeProvider,
-  controllerManager: DynamicControllerManager
+  controllerManager: SmartDynamicControllerManager
 ): () => void {
   /**
    * Updates VS Code context variables and refreshes UI components.

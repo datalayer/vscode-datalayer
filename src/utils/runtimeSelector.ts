@@ -19,6 +19,7 @@ import type {
 } from "../../../core/lib/index.js";
 import { SDKAuthProvider } from "../services/authProvider";
 import { EnvironmentCache } from "../services/environmentCache";
+import { promptAndLogin } from "./authDialog";
 
 /**
  * QuickPick item for runtime selection.
@@ -42,8 +43,11 @@ export async function selectDatalayerRuntime(
 ): Promise<Runtime | undefined> {
   // Check authentication first
   if (!authProvider.isAuthenticated()) {
-    vscode.window.showErrorMessage("Please login to Datalayer first");
-    return undefined;
+    await promptAndLogin("Runtime Selection");
+    // Check again after login attempt
+    if (!authProvider.isAuthenticated()) {
+      return undefined;
+    }
   }
 
   // Load runtimes and environments with progress
@@ -74,7 +78,7 @@ export async function selectDatalayerRuntime(
           if (isModel) {
             const data = firstRuntime.toJSON();
             console.log(
-              "[RuntimeSelector] First runtime data from toJSON():",
+              "[RuntimeSelector] First runtime data from toJSON() (camelCase):",
               data
             );
           } else {
@@ -98,9 +102,9 @@ export async function selectDatalayerRuntime(
         environments.forEach((env, index) => {
           console.log(`[RuntimeSelector] Environment ${index}:`, {
             name: env.name,
-            title: (env as any).title || env.name,
+            title: (env as any).title ?? env.name,
             description: (env as any).description,
-            uid: (env as any).uid || env.name,
+            uid: (env as any).uid ?? env.name,
           });
         });
 
@@ -126,25 +130,18 @@ export async function selectDatalayerRuntime(
 
   // Add existing runtimes (include all runtimes, not just "running" or "ready")
   // The SDK returns Runtime models now, not plain objects
-  // Sort runtimes by most recent first
-  const validRuntimes = runtimes.sort((a: any, b: any) => {
-    const getStartTime = (runtime: any) => {
-      let runtimeData: any;
-      if (runtime && typeof runtime === "object") {
-        if ("startedAt" in runtime) {
-          return runtime.startedAt ? new Date(runtime.startedAt).getTime() : 0;
-        } else if (typeof runtime.toJSON === "function") {
-          runtimeData = runtime.toJSON();
-          return runtimeData?.started_at
-            ? new Date(runtimeData.started_at).getTime()
-            : 0;
-        } else {
-          return runtime.started_at
-            ? new Date(runtime.started_at).getTime()
-            : 0;
-        }
+  // Sort runtimes by most recent first using SDK getter
+  const validRuntimes = runtimes.sort((a: Runtime, b: Runtime) => {
+    const getStartTime = (runtime: Runtime) => {
+      try {
+        return runtime.startedAt ? runtime.startedAt.getTime() : 0;
+      } catch (error) {
+        console.warn(
+          "[RuntimeSelector] Could not get startedAt for runtime:",
+          error
+        );
+        return 0;
       }
-      return 0;
     };
 
     return getStartTime(b) - getStartTime(a); // Most recent first
@@ -152,90 +149,53 @@ export async function selectDatalayerRuntime(
 
   if (validRuntimes.length > 0) {
     for (const runtime of validRuntimes) {
-      // The SDK returns Runtime models with properties
-      // Try to get data through model properties first
-      let runtimeData: any;
+      // Use the stable SDK interface instead of manual field extraction
+      const runtimeData = runtime.toJSON();
+      console.log("[RuntimeSelector] Runtime data from toJSON():", runtimeData);
 
-      // Check if it's a Runtime model with properties
-      if (runtime && typeof runtime === "object") {
-        // Try accessing model properties directly
-        if (
-          "givenName" in runtime ||
-          "podName" in runtime ||
-          "uid" in runtime
-        ) {
-          // It's a Runtime model with getters
-          runtimeData = {
-            given_name: runtime.givenName || runtime.given_name,
-            pod_name: runtime.podName || runtime.pod_name,
-            uid: runtime.uid,
-            environment_name:
-              runtime.environmentName || runtime.environment_name,
-            environment_title: runtime.environment_title,
-            status: runtime.state || runtime.status || "ready",
-            started_at: runtime.startedAt || runtime.started_at,
-            ingress:
-              runtime.jupyterUrl || runtime.ingress || runtime.jupyter_url,
-            token:
-              runtime.jupyterToken || runtime.token || runtime.jupyter_token,
-          };
-        } else if (typeof runtime.toJSON === "function") {
-          // It has a toJSON method, use it
-          runtimeData = runtime.toJSON();
-        } else {
-          // It's a plain object
-          runtimeData = runtime;
-        }
-      } else {
-        // Fallback to treating as plain object
-        runtimeData = runtime;
-      }
-
-      // Prefer given_name over everything else, show it prominently
+      // Use SDK interface fields directly
       const displayName =
-        runtimeData.given_name ||
-        runtimeData.pod_name ||
-        (runtimeData.uid
-          ? `Runtime ${runtimeData.uid.slice(0, 8)}`
-          : "Unknown Runtime");
-
-      // Show the environment title if available, otherwise fall back to name
-      // The environment_title should match what we show in create options
+        runtimeData.givenName ??
+        runtimeData.podName ??
+        `Runtime ${runtimeData.uid.slice(0, 8)}`;
       const env =
-        runtimeData.environment_title ||
-        runtimeData.environment_name ||
+        runtimeData.environmentTitle ??
+        runtimeData.environmentName ??
         "unknown";
-      const status = runtimeData.status || runtimeData.state || "ready";
+      const status = runtimeData.state ?? "ready";
 
-      // Format start time if available
+      // Format start time using Runtime model getter
       let timeInfo = "";
-      if (runtimeData.started_at) {
-        // Convert Unix timestamp (in seconds) to milliseconds for Date constructor
-        const timestamp =
-          typeof runtimeData.started_at === "number"
-            ? runtimeData.started_at * 1000 // Unix timestamp in seconds
-            : new Date(runtimeData.started_at).getTime(); // ISO string
+      try {
+        const startTime = runtime.startedAt;
+        if (startTime) {
+          const now = new Date();
+          const diffMs = now.getTime() - startTime.getTime();
+          const diffMins = Math.floor(diffMs / 60000);
+          const diffHours = Math.floor(diffMins / 60);
+          const diffDays = Math.floor(diffHours / 24);
 
-        const startTime = new Date(timestamp);
-        const now = new Date();
-        const diffMs = now.getTime() - startTime.getTime();
-        const diffMins = Math.floor(diffMs / 60000);
-        const diffHours = Math.floor(diffMins / 60);
-        const diffDays = Math.floor(diffHours / 24);
-
-        if (diffDays > 0) {
-          timeInfo = ` • Started ${diffDays} day${diffDays > 1 ? "s" : ""} ago`;
-        } else if (diffHours > 0) {
-          timeInfo = ` • Started ${diffHours} hour${
-            diffHours > 1 ? "s" : ""
-          } ago`;
-        } else if (diffMins > 0) {
-          timeInfo = ` • Started ${diffMins} minute${
-            diffMins > 1 ? "s" : ""
-          } ago`;
-        } else {
-          timeInfo = ` • Just started`;
+          if (diffDays > 0) {
+            timeInfo = ` • Started ${diffDays} day${
+              diffDays > 1 ? "s" : ""
+            } ago`;
+          } else if (diffHours > 0) {
+            timeInfo = ` • Started ${diffHours} hour${
+              diffHours > 1 ? "s" : ""
+            } ago`;
+          } else if (diffMins > 0) {
+            timeInfo = ` • Started ${diffMins} minute${
+              diffMins > 1 ? "s" : ""
+            } ago`;
+          } else {
+            timeInfo = ` • Just started`;
+          }
         }
+      } catch (error) {
+        console.warn(
+          "[RuntimeSelector] Could not get start time for runtime:",
+          error
+        );
       }
 
       // Add status indicator icon
@@ -271,7 +231,7 @@ export async function selectDatalayerRuntime(
     // Use the title from the environment to create a descriptive label
     // e.g., "AI Environment" -> "Create new AI Environment Runtime"
     // e.g., "Python CPU" -> "Create new Python CPU Runtime"
-    const envTitle = env.title || env.name || "Unknown";
+    const envTitle = env.title ?? env.name ?? "Unknown";
     const createLabel = `$(add) Create new ${envTitle} Runtime`;
 
     console.log("[RuntimeSelector] Adding create option:", {
@@ -283,7 +243,7 @@ export async function selectDatalayerRuntime(
     items.push({
       label: createLabel,
       description: env.name,
-      detail: env.description || `Create a new ${envTitle} runtime`,
+      detail: env.description ?? `Create a new ${envTitle} runtime`,
       action: "create",
       environment: env,
     });
@@ -344,42 +304,21 @@ export async function selectDatalayerRuntime(
   console.log("[RuntimeSelector] Processing selection...");
   if (selected.runtime) {
     console.log("[RuntimeSelector] User selected existing runtime");
-    // Existing runtime selected
+    // Use the Runtime object directly - no need for manual field extraction
     const runtime = selected.runtime;
+    const runtimeData = runtime.toJSON();
 
-    // Get UID and other properties from Runtime model
-    let uid, givenName, ingress, token;
-    if ("uid" in runtime && typeof runtime.uid !== "undefined") {
-      // Runtime model with properties
-      uid = runtime.uid;
-      givenName = (runtime as any).givenName || runtime.given_name;
-      ingress =
-        (runtime as any).jupyterUrl || runtime.ingress || runtime.jupyter_url;
-      token =
-        (runtime as any).jupyterToken || runtime.token || runtime.jupyter_token;
-    } else if (typeof (runtime as any).toJSON === "function") {
-      // Has toJSON method
-      const data = (runtime as any).toJSON();
-      uid = data.uid;
-      givenName = data.given_name;
-      ingress = data.ingress || data.jupyter_url;
-      token = data.token || data.jupyter_token;
-    } else {
-      // Plain object
-      uid = runtime.uid;
-      givenName = runtime.given_name;
-      ingress = runtime.ingress || runtime.jupyter_url;
-      token = runtime.token || runtime.jupyter_token;
-    }
-
-    console.log("[RuntimeSelector] Selected existing runtime:", uid);
+    console.log(
+      "[RuntimeSelector] Selected existing runtime:",
+      runtimeData.uid
+    );
     console.log("[RuntimeSelector] Selected runtime details:", {
-      uid: uid,
-      given_name: givenName,
-      ingress: ingress,
-      token: token,
+      uid: runtimeData.uid,
+      givenName: runtimeData.givenName,
+      ingress: runtimeData.jupyterUrl ?? runtimeData.ingress,
+      token: runtimeData.jupyterToken ? "***hidden***" : undefined,
     });
-    return selected.runtime;
+    return runtime;
   } else if (selected.action === "create" && selected.environment) {
     // Create new runtime
     console.log(
@@ -419,9 +358,9 @@ async function createRuntime(
   // Prompt for runtime name (human-readable)
   console.log("[RuntimeSelector] Showing input box for runtime name...");
   const name = await vscode.window.showInputBox({
-    title: `Create ${environment.title || environment.name} Runtime`,
+    title: `Create ${environment.title ?? environment.name} Runtime`,
     prompt: "Enter a friendly name for the new runtime",
-    placeHolder: `My ${environment.title || environment.name} Runtime`,
+    placeHolder: `My ${environment.title ?? environment.name} Runtime`,
     validateInput: (value) => {
       console.log(
         "[RuntimeSelector] Input validation called with value:",
@@ -443,21 +382,92 @@ async function createRuntime(
     return undefined;
   }
 
-  // Get default credits limit from settings
-  const defaultCreditsLimit = vscode.workspace
-    .getConfiguration("datalayer.runtime")
-    .get<number>("creditsLimit", 10);
+  // Try to fetch user's available credits
+  let availableCredits: number | undefined;
+  let netAvailableCredits: number | undefined;
+  let maxMinutes: number | undefined;
+  let hasActiveRuntimes = false;
 
-  // Prompt for credits limit
-  console.log("[RuntimeSelector] Showing input box for credits limit...");
-  const creditsInput = await vscode.window.showInputBox({
-    title: `Set Credits Limit for "${name}"`,
-    prompt: "Enter the maximum credits this runtime can consume",
-    placeHolder: `Credits limit (default: ${defaultCreditsLimit})`,
-    value: defaultCreditsLimit.toString(), // Pre-populate with default value
+  try {
+    console.log("[RuntimeSelector] Fetching user's available credits...");
+    const credits = await (sdk as any).getCredits();
+
+    // Use net available credits (accounts for existing reservations)
+    availableCredits = credits.available;
+    netAvailableCredits = credits.netAvailable;
+    hasActiveRuntimes = credits.hasActiveRuntimes;
+
+    // Check if environment has burning rate (use camelCase from SDK model)
+    if (!environment.burningRate) {
+      console.error(
+        "[RuntimeSelector] Environment missing burningRate:",
+        environment
+      );
+      throw new Error(
+        `Environment "${environment.name}" is missing the burningRate property from the API. ` +
+          `This is required to calculate runtime credits. Please contact support.`
+      );
+    }
+
+    // Calculate max minutes based on net available credits using SDK utility
+    maxMinutes = (sdk as any).calculateMaxRuntimeMinutes(
+      credits.netAvailable,
+      environment.burningRate
+    );
+
+    // Enforce 24-hour maximum (1440 minutes)
+    if (maxMinutes !== undefined) {
+      maxMinutes = Math.min(maxMinutes, 1440);
+    } else {
+      maxMinutes = 1440;
+    }
+
+    console.log("[RuntimeSelector] User has:", {
+      totalCredits: availableCredits,
+      netCredits: netAvailableCredits,
+      activeRuntimes: hasActiveRuntimes,
+      maxMinutes: maxMinutes,
+      environment: environment.name,
+    });
+  } catch (error) {
+    console.warn("[RuntimeSelector] Failed to fetch credits:", error);
+    // If credits API fails, still enforce 24-hour maximum
+    maxMinutes = 1440;
+  }
+
+  // Get default runtime duration from settings (in minutes)
+  const defaultMinutes = vscode.workspace
+    .getConfiguration("datalayer.runtime")
+    .get<number>("defaultMinutes", 10);
+  const suggestedMinutes = maxMinutes
+    ? Math.min(defaultMinutes, maxMinutes)
+    : defaultMinutes;
+
+  // Build the prompt message
+  let promptMessage = "Enter the runtime duration in minutes (max 24 hours)";
+  if (netAvailableCredits !== undefined && maxMinutes !== undefined) {
+    const reservedInfo = hasActiveRuntimes
+      ? " (after existing reservations)"
+      : "";
+    promptMessage = `You have ${netAvailableCredits.toFixed(
+      1
+    )} credits available${reservedInfo}. Max ${maxMinutes} minutes for ${
+      environment.name
+    }`;
+  }
+
+  // Prompt for runtime duration in minutes
+  console.log("[RuntimeSelector] Showing input box for runtime duration...");
+  const minutesInput = await vscode.window.showInputBox({
+    title: `Set Runtime Duration for "${name}"`,
+    prompt: promptMessage,
+    placeHolder: maxMinutes
+      ? `Minutes (max: ${maxMinutes})`
+      : `Minutes (max: 1440)`,
+    value: suggestedMinutes.toString(), // Pre-populate with suggested value
     validateInput: (value) => {
       console.log(
-        "[RuntimeSelector] Credits validation called with value:",
+        "[RuntimeSelector] Minutes validation called with value:",
         value
       );
       if (!value || value.trim().length === 0) {
@@ -465,30 +475,62 @@ async function createRuntime(
       }
       const num = Number(value);
       if (isNaN(num) || num <= 0) {
-        return "Credits limit must be a positive number";
+        return "Duration must be a positive number";
       }
-      if (num > 1000) {
-        return "Credits limit cannot exceed 1000";
+
+      // Enforce 24-hour maximum
+      if (num > 1440) {
+        return "Maximum runtime duration is 24 hours (1440 minutes)";
+      }
+
+      // Check against credits-based maximum
+      if (maxMinutes && num > maxMinutes) {
+        if (netAvailableCredits !== undefined) {
+          return `Maximum duration is ${maxMinutes} minutes with your available credits (${netAvailableCredits.toFixed(
+            1
+          )} credits)`;
+        } else {
+          return `Maximum duration is ${maxMinutes} minutes`;
+        }
       }
       return undefined;
     },
   });
 
-  console.log("[RuntimeSelector] Credits input box returned:", creditsInput);
+  console.log("[RuntimeSelector] Minutes input box returned:", minutesInput);
 
-  // If user cancelled the credits dialog, we should still proceed with default
-  // Only cancel if they cancelled the name dialog
-  let creditsLimit: number;
-  if (creditsInput === undefined) {
-    // User pressed ESC - ask if they want to use default or cancel
+  // Calculate credits limit from minutes
+  let minutes: number;
+  if (minutesInput === undefined) {
+    // User pressed ESC - use suggested default
     console.log(
-      "[RuntimeSelector] User cancelled credits input, using default"
+      "[RuntimeSelector] User cancelled minutes input, using default"
     );
-    creditsLimit = defaultCreditsLimit;
+    minutes = suggestedMinutes;
   } else {
-    creditsLimit = creditsInput ? Number(creditsInput) : defaultCreditsLimit;
+    minutes = minutesInput ? Number(minutesInput) : suggestedMinutes;
   }
-  console.log("[RuntimeSelector] Using credits limit:", creditsLimit);
+
+  // Check if environment has burning rate (use camelCase from SDK model)
+  if (!environment.burningRate) {
+    console.error(
+      "[RuntimeSelector] Environment missing burningRate:",
+      environment
+    );
+    throw new Error(
+      `Environment "${environment.name}" is missing the burningRate property from the API. ` +
+        `This is required to calculate runtime credits. Please contact support.`
+    );
+  }
+
+  // Calculate credits needed based on burning rate using SDK utility
+  const creditsLimit = (sdk as any).calculateCreditsRequired(
+    minutes,
+    environment.burningRate
+  );
+
+  console.log("[RuntimeSelector] Using runtime duration:", minutes, "minutes");
+  console.log("[RuntimeSelector] Calculated credits limit:", creditsLimit);
 
   // Create runtime with progress
   return vscode.window.withProgress(
@@ -551,7 +593,7 @@ async function createRuntime(
           // Check if runtime has connection info
           if (
             readyRuntime &&
-            (readyRuntime.ingress || readyRuntime.jupyter_base_url)
+            (readyRuntime.ingress ?? readyRuntime.jupyter_base_url)
           ) {
             console.log(
               "[RuntimeSelector] Runtime ready with connection info:",

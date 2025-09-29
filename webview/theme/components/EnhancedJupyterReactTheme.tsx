@@ -221,10 +221,6 @@ export function EnhancedJupyterReactTheme({
   // Update color mode when prop changes (e.g., from VS Code theme changes)
   useEffect(() => {
     if (initialColorMode !== colorMode && initialColorMode !== "auto") {
-      console.log(
-        "[EnhancedJupyterReactTheme] Color mode prop changed:",
-        initialColorMode
-      );
       setColorMode(initialColorMode);
     }
   }, [initialColorMode]);
@@ -247,11 +243,9 @@ export function EnhancedJupyterReactTheme({
         providerType === "vscode" ||
         (providerType === "auto" && detectVSCodeEnvironment())
       ) {
-        console.log("[EnhancedJupyterReactTheme] Using VS Code theme provider");
         provider = new VSCodeThemeProvider(colorMode);
       } else {
         // For now, fall back to no provider (use default JupyterReactTheme behavior)
-        console.log("[EnhancedJupyterReactTheme] Using default theme behavior");
         return;
       }
 
@@ -261,7 +255,6 @@ export function EnhancedJupyterReactTheme({
 
         // Subscribe to theme changes
         disposable = provider.subscribeToChanges(() => {
-          console.log("[EnhancedJupyterReactTheme] Theme provider changed");
           updateTheme(provider);
         });
 
@@ -279,12 +272,6 @@ export function EnhancedJupyterReactTheme({
       setPrimerTheme(primerMapping);
       setCssVariables(variables);
       setColorMode(provider.getColorMode());
-
-      console.log("[EnhancedJupyterReactTheme] Theme updated:", {
-        theme: theme.name,
-        colorMode: provider.getColorMode(),
-        variableCount: Object.keys(variables).length,
-      });
     };
 
     initializeProvider();
@@ -302,10 +289,6 @@ export function EnhancedJupyterReactTheme({
   // Force refresh when color mode changes
   useEffect(() => {
     if (themeProvider && themeProvider.id === "vscode-theme") {
-      console.log(
-        "[EnhancedJupyterReactTheme] Triggering VS Code provider refresh for color mode:",
-        colorMode
-      );
       (themeProvider as any).refresh?.();
     }
   }, [colorMode, themeProvider]);
@@ -313,7 +296,6 @@ export function EnhancedJupyterReactTheme({
   // Update color mode when it changes externally
   useEffect(() => {
     if (themeProvider && themeProvider.getColorMode() !== colorMode) {
-      console.log("[EnhancedJupyterReactTheme] Syncing color mode:", colorMode);
       // If the provider supports setting color mode, do it here
       // For now, we'll just update our local state
     }

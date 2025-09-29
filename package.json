@@ -41,7 +41,7 @@
       },
       {
         "command": "datalayer.selectRuntime",
-        "title": "Select Runtime",
+        "title": "Select/Switch Runtime",
         "category": "Datalayer"
       },
       {
@@ -223,11 +223,12 @@
           ],
           "description": "Default runtime environment for notebooks"
         },
-        "datalayer.runtime.creditsLimit": {
+        "datalayer.runtime.defaultMinutes": {
           "type": "number",
           "default": 10,
           "minimum": 1,
-          "description": "Default credits limit for new runtimes"
+          "maximum": 1440,
+          "description": "Default runtime duration in minutes (max 24 hours)"
         },
         "datalayer.notebook.enableKernelPicker": {
           "type": "boolean",

@@ -13,25 +13,26 @@
 
 import * as vscode from "vscode";
 import type { DatalayerSDK, Runtime } from "../../../core/lib/index.js";
+import type { RuntimeJSON } from "../../../core/lib/sdk/client/models/Runtime";
 import { SDKAuthProvider } from "./authProvider";
 import { WebviewCollection } from "../utils/webviewCollection";
+
+/**
+ * Extended runtime interface for webview communication.
+ * Includes additional time fields needed for progress calculations.
+ */
+interface ExtendedRuntimeJSON extends RuntimeJSON {
+  // Time fields for progress calculations (Unix timestamps)
+  startedAt?: number | string;
+  expiredAt?: number | string;
+}
 
 /**
  * Message sent to webview for kernel selection.
  */
 interface KernelSelectionMessage {
   type: "kernel-selected";
-  runtime: {
-    uid: string;
-    name: string;
-    url: string; // Changed from 'ingress' to 'url' for LocalNotebook compatibility
-    token: string;
-    status: string;
-    environment_name?: string;
-    started_at?: string;
-    expires_at?: string;
-    credits?: number;
-  };
+  runtime: ExtendedRuntimeJSON;
 }
 
 /**
@@ -117,238 +118,73 @@ export class KernelBridge implements vscode.Disposable {
       runtime?.constructor?.name
     );
 
-    // First, serialize the runtime if it's a model object
-    let runtimeData: any;
+    // Use runtime.toJSON() to get the stable interface
+    console.log(
+      "[KernelBridge] Using runtime.toJSON() to get standardized data"
+    );
 
-    // Log what type of runtime object we have
-    console.log("[KernelBridge] Runtime object type check:", {
-      hasToJSON: typeof (runtime as any).toJSON === "function",
-      isObject: typeof runtime === "object",
-      constructor: runtime?.constructor?.name,
-      hasUID: "uid" in runtime,
-      hasGivenName: "givenName" in (runtime as any),
-      hasIngress: "ingress" in (runtime as any),
-      hasJupyterUrl: "jupyterUrl" in (runtime as any),
-      hasToken: "token" in (runtime as any),
-      hasJupyterToken: "jupyterToken" in (runtime as any),
-    });
-
-    // Check if runtime is a model with toJSON method
+    let runtimeData: RuntimeJSON;
     if (runtime && typeof (runtime as any).toJSON === "function") {
-      console.log("[KernelBridge] Runtime is a model, calling toJSON()");
-      const jsonResult = (runtime as any).toJSON();
-      console.log("[KernelBridge] toJSON() result:", jsonResult);
-
-      // If toJSON returns empty object, extract fields directly from the model
-      if (!jsonResult || Object.keys(jsonResult).length === 0) {
-        console.log(
-          "[KernelBridge] toJSON() returned empty, extracting fields directly from model"
-        );
-        // Fall through to direct extraction
-      } else {
-        runtimeData = jsonResult;
-      }
-    }
-
-    // If we don't have runtimeData yet, extract fields directly
-    if (!runtimeData || Object.keys(runtimeData).length === 0) {
+      runtimeData = (runtime as any).toJSON();
       console.log(
-        "[KernelBridge] Extracting fields directly from runtime object"
+        "[KernelBridge] Got runtime data from toJSON():",
+        runtimeData
       );
-
-      // Check if runtime has _data property (SDK model pattern)
-      const dataField = (runtime as any)._data;
-      if (dataField) {
-        console.log(
-          "[KernelBridge] Found _data field on runtime model:",
-          Object.keys(dataField)
-        );
-
-        // Try to use _data directly if other methods failed
-        if (dataField.ingress && dataField.token) {
-          runtimeData = {
-            uid: dataField.uid,
-            given_name: dataField.given_name,
-            pod_name: dataField.pod_name,
-            ingress: dataField.ingress,
-            token: dataField.token,
-            status: dataField.status || dataField.state || "ready",
-            environment_name: dataField.environment_name,
-            started_at: dataField.started_at || dataField.created_at,
-            expires_at:
-              dataField.expired_at || dataField.expires_at || dataField.expiry,
-            credits: dataField.credits || dataField.burning_rate,
-          };
-          console.log(
-            "[KernelBridge] Extracted runtime data from _data field with timing:",
-            {
-              started_at: runtimeData.started_at,
-              expires_at: runtimeData.expires_at,
-              credits: runtimeData.credits,
-            }
-          );
-        }
-      }
-
-      // If still no data, try getters
-      if (!runtimeData) {
-        console.log(
-          "[KernelBridge] Runtime enumerable properties:",
-          Object.keys(runtime)
-        );
-
-        // Try various field access patterns - check for model getters and direct properties
-        const uid = runtime.uid || (runtime as any)["uid"];
-        const givenName =
-          (runtime as any).givenName ||
-          (runtime as any).given_name ||
-          (runtime as any)["given_name"];
-        const podName =
-          (runtime as any).podName ||
-          (runtime as any).pod_name ||
-          (runtime as any)["pod_name"];
-
-        // For URL, try multiple property names
-        const ingressUrl =
-          (runtime as any).jupyterUrl ||
-          (runtime as any).jupyter_url ||
-          (runtime as any).ingress ||
-          (runtime as any)["jupyterUrl"] ||
-          (runtime as any)["jupyter_url"] ||
-          (runtime as any)["ingress"];
-
-        // For token, try multiple property names
-        const authToken =
-          (runtime as any).jupyterToken ||
-          (runtime as any).jupyter_token ||
-          (runtime as any).token ||
-          (runtime as any)["jupyterToken"] ||
-          (runtime as any)["jupyter_token"] ||
-          (runtime as any)["token"];
-
-        const status =
-          (runtime as any).state ||
-          (runtime as any).status ||
-          (runtime as any)["status"] ||
-          (runtime as any)["state"] ||
-          "ready";
-        const environmentName =
-          (runtime as any).environmentName ||
-          (runtime as any).environment_name ||
-          (runtime as any)["environment_name"] ||
-          (runtime as any)["environmentName"];
-
-        // Try to get timing fields with various naming conventions
-        const startedAt =
-          (runtime as any).startedAt ||
-          (runtime as any).started_at ||
-          (runtime as any)["startedAt"] ||
-          (runtime as any)["started_at"] ||
-          (runtime as any).created_at ||
-          (runtime as any).createdAt ||
-          (runtime as any)["created_at"] ||
-          (runtime as any)["createdAt"];
-
-        const expiresAt =
-          (runtime as any).expiresAt ||
-          (runtime as any).expires_at ||
-          (runtime as any)["expiresAt"] ||
-          (runtime as any)["expires_at"] ||
-          (runtime as any).expired_at ||
-          (runtime as any)["expired_at"] ||
-          (runtime as any).expiry ||
-          (runtime as any)["expiry"];
-
-        const credits =
-          (runtime as any).credits ||
-          (runtime as any).burningRate ||
-          (runtime as any).burning_rate ||
-          (runtime as any)["credits"] ||
-          (runtime as any)["burningRate"] ||
-          (runtime as any)["burning_rate"];
-
-        runtimeData = {
-          uid: uid,
-          given_name: givenName,
-          pod_name: podName,
-          ingress: ingressUrl,
-          token: authToken,
-          status: status,
-          environment_name: environmentName,
-          started_at: startedAt,
-          expires_at: expiresAt,
-          credits: credits,
-        };
-
-        console.log("[KernelBridge] Extracted runtime data from getters:", {
-          uid: uid,
-          given_name: givenName,
-          pod_name: podName,
-          ingress: ingressUrl ? "***hidden***" : undefined,
-          token: authToken ? "***hidden***" : undefined,
-          status: status,
-          environment_name: environmentName,
-          started_at: startedAt,
-          expires_at: expiresAt,
-          credits: credits,
-        });
-      }
+    } else {
+      throw new Error("Runtime object does not have toJSON() method");
     }
 
-    // Ensure we have required fields before sending
-    const ingressUrl =
-      runtimeData.ingress ||
-      runtimeData.jupyter_url ||
-      runtimeData.jupyter_base_url;
-    const authToken = runtimeData.token || runtimeData.jupyter_token;
+    // Get additional time fields from Runtime model getters (not in RuntimeJSON interface)
+    let startedAt: Date | undefined;
+    let expiredAt: Date | undefined;
+
+    try {
+      if (typeof (runtime as any).startedAt !== "undefined") {
+        startedAt = (runtime as any).startedAt;
+      }
+      if (typeof (runtime as any).expiredAt !== "undefined") {
+        expiredAt = (runtime as any).expiredAt;
+      }
+      console.log("[KernelBridge] Got time fields from Runtime getters:", {
+        startedAt: startedAt?.toISOString(),
+        expiredAt: expiredAt?.toISOString(),
+      });
+    } catch (error) {
+      console.warn(
+        "[KernelBridge] Could not get time fields from Runtime getters:",
+        error
+      );
+    }
+
+    // Use the primary field names from the runtime API
+    const ingressUrl = runtimeData.ingress;
+    const authToken = runtimeData.token;
 
     if (!ingressUrl || !authToken) {
       console.error("[KernelBridge] Runtime missing required fields:", {
         hasIngress: !!ingressUrl,
         hasToken: !!authToken,
+        availableFields: Object.keys(runtimeData),
         runtimeData: runtimeData,
       });
       throw new Error("Runtime is missing ingress URL or token");
     }
 
-    // Send runtime information to webview
-    // Map field names for compatibility with LocalNotebook component
+    // Create message with extended runtime data
     const message: KernelSelectionMessage = {
       type: "kernel-selected",
       runtime: {
-        uid: runtimeData.uid || "unknown",
-        name:
-          runtimeData.given_name ||
-          runtimeData.pod_name ||
-          runtimeData.uid ||
-          "Jupyter Runtime",
-        url: ingressUrl, // LocalNotebook expects 'url', not 'ingress'
-        token: authToken,
-        status: runtimeData.status || runtimeData.state || "ready",
-        environment_name: runtimeData.environment_name,
-        started_at:
-          runtimeData.started_at ||
-          runtimeData.startedAt ||
-          runtimeData.created_at,
-        expires_at:
-          runtimeData.expires_at ||
-          runtimeData.expired_at ||
-          runtimeData.expiresAt,
-        credits: runtimeData.credits || runtimeData.burning_rate,
+        ...runtimeData, // Spread the standardized RuntimeJSON data
+        // Add time fields for progress bar calculations
+        startedAt: startedAt ? startedAt.getTime() / 1000 : undefined, // Unix timestamp in seconds
+        expiredAt: expiredAt ? expiredAt.getTime() / 1000 : undefined, // Unix timestamp in seconds
       },
     };
 
-    console.log("[KernelBridge v2] Sending runtime to webview:", {
-      uid: message.runtime.uid,
-      name: message.runtime.name,
-      url: message.runtime.url,
-      hasToken: !!message.runtime.token,
-      status: message.runtime.status,
-      started_at: message.runtime.started_at,
-      expires_at: message.runtime.expires_at,
-      credits: message.runtime.credits,
-      environment_name: message.runtime.environment_name,
-    });
+    console.log(
+      "[KernelBridge v2] Sending runtime to webview:",
+      message.runtime
+    );
 
     // Post message to webview
     await targetWebview.webview.postMessage(message);

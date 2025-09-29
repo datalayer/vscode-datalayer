@@ -13,6 +13,7 @@
 
 import * as vscode from "vscode";
 import * as path from "path";
+import { ItemTypes } from "../../../core/lib/sdk/client/constants";
 
 /**
  * Type alias for any SDK document model (Notebook or Lexical).
@@ -174,7 +175,7 @@ export class SpaceItem extends vscode.TreeItem {
     const name = this.data.document.name;
 
     // Check if it's a lexical document
-    if (type === "lexical") {
+    if (type === ItemTypes.LEXICAL) {
       return new vscode.ThemeIcon("file-text");
     }
 

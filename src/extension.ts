@@ -63,7 +63,6 @@ export async function activate(
     );
 
     // Set up notebook close event handler
-    outputChannel.appendLine("Setting up notebook event handlers...");
     context.subscriptions.push(
       vscode.workspace.onDidCloseNotebookDocument((notebook) => {
         ui.controllerManager.onDidCloseNotebook(notebook);

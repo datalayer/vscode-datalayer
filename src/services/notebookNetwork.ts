@@ -79,7 +79,7 @@ export class NotebookNetworkService {
     if (wsURL.searchParams.has("token")) {
       wsURL.searchParams.set("token", "xxxxx");
     }
-    const protocol = body.protocol || undefined;
+    const protocol = body.protocol ?? undefined;
     console.debug(
       `Opening websocket to ${wsURL.toString()} with protocol '${protocol}'.`
     );
@@ -110,7 +110,8 @@ export class NotebookNetworkService {
     };
     ws.onerror = (event) => {
       console.debug(`Error on ${wsURL.toString()}:`, event);
-      const { error, message } = event;
+      const error = (event as any).error;
+      const message = (event as any).message ?? "WebSocket error occurred";
       this.postMessage(webview, "websocket-error", { error, message }, id);
     };
   }

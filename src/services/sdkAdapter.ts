@@ -17,46 +17,7 @@ import {
   type DatalayerSDKConfig,
   type SDKHandlers,
 } from "../../../core/lib/index.js";
-import { DEFAULT_SERVICE_URLS } from "../../../core/lib/api/constants.js";
-
-// Explicitly import all API modules to ensure they're bundled
-import * as spacerAPI from "../../../core/lib/api/spacer/index.js";
-import * as iamAPI from "../../../core/lib/api/iam/index.js";
-import * as runtimesAPI from "../../../core/lib/api/runtimes/index.js";
-
-// Import individual spacer API modules that Space model depends on
-import * as spacerItems from "../../../core/lib/api/spacer/items.js";
-import * as spacerUsers from "../../../core/lib/api/spacer/users.js";
-import * as spacerNotebooks from "../../../core/lib/api/spacer/notebooks.js";
-import * as spacerLexicals from "../../../core/lib/api/spacer/lexicals.js";
-
-// Explicitly import all SDK mixins to ensure they're bundled
-import { IAMMixin } from "../../../core/lib/sdk/client/mixins/IAMMixin.js";
-import { RuntimesMixin } from "../../../core/lib/sdk/client/mixins/RuntimesMixin.js";
-import { SpacerMixin } from "../../../core/lib/sdk/client/mixins/SpacerMixin.js";
-
-// Force webpack to include these modules by referencing them
-const ensureModulesIncluded = () => {
-  console.log("[SDK Adapter] Ensuring API modules are bundled:", {
-    spacer: !!spacerAPI,
-    iam: !!iamAPI,
-    runtimes: !!runtimesAPI,
-  });
-  console.log(
-    "[SDK Adapter] Ensuring individual spacer API modules are bundled:",
-    {
-      items: !!spacerItems,
-      users: !!spacerUsers,
-      notebooks: !!spacerNotebooks,
-      lexicals: !!spacerLexicals,
-    }
-  );
-  console.log("[SDK Adapter] Ensuring SDK mixins are bundled:", {
-    iam: !!IAMMixin,
-    runtimes: !!RuntimesMixin,
-    spacer: !!SpacerMixin,
-  });
-};
+import { promptAndLogin } from "../utils/authDialog";
 
 /**
  * Platform storage interface compatible with the SDK.
@@ -156,19 +117,15 @@ export interface VSCodeSDKConfig extends Partial<DatalayerSDKConfig> {
 export function createVSCodeSDK(config: VSCodeSDKConfig): DatalayerSDK {
   const { context, ...sdkConfig } = config;
 
-  // Ensure all API modules are properly bundled
-  ensureModulesIncluded();
-
   // Get configuration from VS Code settings
   const vsCodeConfig = vscode.workspace.getConfiguration("datalayer");
 
   // Get individual service URLs with fallback to defaults
-  const iamRunUrl =
-    vsCodeConfig.get<string>("iamRunUrl") || DEFAULT_SERVICE_URLS.IAM;
+  const serverUrl = getServerUrl();
+  const iamRunUrl = vsCodeConfig.get<string>("iamRunUrl") ?? serverUrl;
   const runtimesRunUrl =
-    vsCodeConfig.get<string>("runtimesRunUrl") || DEFAULT_SERVICE_URLS.RUNTIMES;
-  const spacerRunUrl =
-    vsCodeConfig.get<string>("spacerRunUrl") || DEFAULT_SERVICE_URLS.SPACER;
+    vsCodeConfig.get<string>("runtimesRunUrl") ?? serverUrl;
+  const spacerRunUrl = vsCodeConfig.get<string>("spacerRunUrl") ?? serverUrl;
 
   console.log("[SDK Adapter] Creating SDK with config:", {
     iamRunUrl,
@@ -200,13 +157,7 @@ export function createVSCodeSDK(config: VSCodeSDKConfig): DatalayerSDK {
           error.message.includes("Not authenticated") ||
           error.message.includes("401")
         ) {
-          const action = await vscode.window.showErrorMessage(
-            "Authentication required. Please login to Datalayer.",
-            "Login"
-          );
-          if (action === "Login") {
-            vscode.commands.executeCommand("datalayer.login");
-          }
+          await promptAndLogin("SDK Operation");
         } else if (
           error.message.includes("Network") ||
           error.message.includes("fetch")
@@ -235,41 +186,7 @@ export function createVSCodeSDK(config: VSCodeSDKConfig): DatalayerSDK {
     ...sdkConfig,
   } as any);
 
-  // Debug: Check what methods are available on the created SDK
   console.log("[SDK Adapter] Created SDK instance");
-  console.log("[SDK Adapter] SDK properties:", Object.getOwnPropertyNames(sdk));
-  console.log("[SDK Adapter] SDK has getToken:", typeof (sdk as any).getToken);
-  console.log(
-    "[SDK Adapter] SDK has getIamRunUrl:",
-    typeof (sdk as any).getIamRunUrl
-  );
-  console.log("[SDK Adapter] SDK has whoami:", typeof (sdk as any).whoami);
-  console.log(
-    "[SDK Adapter] SDK prototype:",
-    Object.getOwnPropertyNames(Object.getPrototypeOf(sdk))
-  );
-  console.log("[SDK Adapter] Has whoami:", typeof (sdk as any).whoami);
-  console.log("[SDK Adapter] Has login:", typeof (sdk as any).login);
-  console.log("[SDK Adapter] Has logout:", typeof (sdk as any).logout);
-  console.log(
-    "[SDK Adapter] Has createRuntime:",
-    typeof (sdk as any).createRuntime
-  );
-  console.log("[SDK Adapter] whoami in SDK:", "whoami" in sdk);
-  console.log("[SDK Adapter] SDK constructor name:", sdk.constructor.name);
-
-  // Log the constructor chain
-  let proto = Object.getPrototypeOf(sdk);
-  let level = 0;
-  while (proto && level < 10) {
-    console.log(
-      `[SDK Adapter] Prototype level ${level}:`,
-      proto.constructor.name,
-      Object.getOwnPropertyNames(proto).slice(0, 10)
-    );
-    proto = Object.getPrototypeOf(proto);
-    level++;
-  }
 
   return sdk;
 }
@@ -297,14 +214,14 @@ export function getWebSocketUrl(): string {
 /**
  * Gets runtime configuration from VS Code settings.
  *
- * @returns Runtime configuration with environment and credits
+ * @returns Runtime configuration with environment and default minutes
  */
 export function getRuntimeConfig() {
   const config = vscode.workspace.getConfiguration("datalayer.runtime");
 
   return {
     environment: config.get<string>("environment") || "python-cpu-env",
-    creditsLimit: config.get<number>("creditsLimit") || 10,
+    defaultMinutes: config.get<number>("defaultMinutes") || 10,
   };
 }
 

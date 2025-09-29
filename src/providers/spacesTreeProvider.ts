@@ -16,6 +16,7 @@ import * as vscode from "vscode";
 import { SpaceItem, ItemType } from "../models/spaceItem";
 import { SDKAuthProvider } from "../services/authProvider";
 import { getSDKInstance } from "../services/sdkAdapter";
+import { ItemTypes } from "../../../core/lib/sdk/client/constants";
 
 /**
  * Tree data provider for the Datalayer Spaces view.
@@ -157,7 +158,7 @@ export class SpacesTreeProvider implements vscode.TreeDataProvider<SpaceItem> {
         this._onDidChangeTreeData.fire();
 
         const sdk = getSDKInstance();
-        spaces = (await (sdk as any).getMySpaces()) || [];
+        spaces = (await (sdk as any).getMySpaces()) ?? [];
         this.spacesCache.set("user", spaces);
       }
 
@@ -250,7 +251,7 @@ export class SpacesTreeProvider implements vscode.TreeDataProvider<SpaceItem> {
 
         if (targetSpace) {
           // Get items from the space - returns Notebook, Lexical, and Cell model instances
-          items = (await targetSpace.getItems()) || [];
+          items = (await targetSpace.getItems()) ?? [];
         } else {
           items = [];
         }
@@ -276,9 +277,40 @@ export class SpacesTreeProvider implements vscode.TreeDataProvider<SpaceItem> {
 
       for (const item of items) {
         const itemType = item.type;
-        const itemName = item.name;
+        let itemName = item.name;
 
-        if (itemType === "notebook") {
+        // Debug logging
+        console.log("[SpacesTree] Processing item:", {
+          name: itemName,
+          type: itemType,
+          typeFromGetter:
+            typeof item.type === "function"
+              ? "ERROR: type is a function!"
+              : item.type,
+          hasTypeGetter: "type" in item,
+          typeMatches: {
+            notebook: itemType === ItemTypes.NOTEBOOK,
+            lexical: itemType === ItemTypes.LEXICAL,
+            actualType: itemType,
+            expectedNotebook: ItemTypes.NOTEBOOK,
+            expectedLexical: ItemTypes.LEXICAL,
+          },
+          className: item.constructor?.name,
+          extension: item.extension,
+          extensionData: {
+            notebook_extension_s: (item as any)._data?.notebook_extension_s,
+            document_extension_s: (item as any)._data?.document_extension_s,
+          },
+          itemObject: item,
+        });
+
+        // Only show notebooks and lexicals
+        if (itemType === ItemTypes.NOTEBOOK) {
+          // Use the model's extension getter
+          const extension = item.extension;
+          if (!itemName.endsWith(extension)) {
+            itemName = `${itemName}${extension}`;
+          }
           result.push(
             new SpaceItem(itemName, vscode.TreeItemCollapsibleState.None, {
               type: ItemType.NOTEBOOK,
@@ -286,7 +318,12 @@ export class SpacesTreeProvider implements vscode.TreeDataProvider<SpaceItem> {
               spaceName: spaceName,
             })
           );
-        } else if (itemType === "lexical") {
+        } else if (itemType === ItemTypes.LEXICAL) {
+          // Use the model's extension getter
+          const extension = item.extension;
+          if (!itemName.endsWith(extension)) {
+            itemName = `${itemName}${extension}`;
+          }
           result.push(
             new SpaceItem(itemName, vscode.TreeItemCollapsibleState.None, {
               type: ItemType.DOCUMENT,
@@ -294,28 +331,18 @@ export class SpacesTreeProvider implements vscode.TreeDataProvider<SpaceItem> {
               spaceName: spaceName,
             })
           );
-        } else if (itemType === "cell") {
-          result.push(
-            new SpaceItem(itemName, vscode.TreeItemCollapsibleState.None, {
-              type: ItemType.CELL,
-              document: item,
-              spaceName: spaceName,
-            })
-          );
-        } else {
-          // Skip unknown types
-          console.warn("[SpacesTree] Unknown item type:", itemType, item);
         }
+        // Skip cells and other types - don't add them to the tree
       }
 
       if (result.length === 0 && items.length > 0) {
         return [
           new SpaceItem(
-            "No notebooks, lexical documents, or cells found",
+            "No notebooks or lexical documents found",
             vscode.TreeItemCollapsibleState.None,
             {
               type: ItemType.ERROR,
-              error: "This space contains other document types",
+              error: "This space may contain other document types",
             }
           ),
         ];

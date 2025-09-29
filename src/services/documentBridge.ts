@@ -20,6 +20,7 @@ import { getSDKInstance } from "./sdkAdapter";
 import type { DatalayerSDK } from "../../../core/lib/index.js";
 import type { Runtime } from "../../../core/lib/index.js";
 import { DatalayerFileSystemProvider } from "../providers/documentsFileSystemProvider";
+import { detectDocumentType } from "../utils/documentUtils";
 
 /**
  * Metadata for a downloaded document.
@@ -45,7 +46,7 @@ export interface DocumentMetadata {
  *
  * @example
  * ```typescript
- * const bridge = DocumentBridge.getInstance(context, runtimeService);
+ * const bridge = DocumentBridge.getInstance(context);
  * const uri = await bridge.openDocument(document, spaceId, spaceName);
  * ```
  */
@@ -99,23 +100,19 @@ export class DocumentBridge {
     spaceId?: string,
     spaceName?: string
   ): Promise<vscode.Uri> {
-    const docName =
-      document.name_t ||
-      document.notebook_name_s ||
-      document.document_name_s ||
-      "Untitled";
-    const isNotebook =
-      document.type_s === "notebook" ||
-      document.notebook_extension_s === "ipynb";
+    // Use SDK model properties directly
+    const docName = document.name;
+    const typeInfo = detectDocumentType(document);
+    const { isNotebook, isLexical } = typeInfo;
 
     try {
       // Create a clean filename without UID visible
-      const extension = isNotebook ? ".ipynb" : ".lexical";
+      const extension = isNotebook ? ".ipynb" : isLexical ? ".lexical" : "";
       const cleanName = docName.replace(/\.[^/.]+$/, "");
 
       // Create a subdirectory using the space name for better organization
       // Sanitize the space name to be filesystem-friendly
-      const safeSpaceName = (spaceName || "Untitled Space")
+      const safeSpaceName = (spaceName ?? "Untitled Space")
         .replace(/[<>:"/\\|?*]/g, "_") // Replace invalid filesystem characters
         .trim();
 
@@ -341,17 +338,17 @@ export class DocumentBridge {
     const metadata = this.documentMetadata.get(documentId);
 
     // Check if we have a cached runtime, but verify it's still running
-    if (metadata?.runtime?.pod_name) {
+    if (metadata?.runtime?.podName) {
       console.log(
         "[DocumentBridge] Checking if cached runtime is still active:",
-        metadata.runtime.pod_name
+        metadata.runtime.podName
       );
 
       try {
         // Verify the runtime still exists and is running
         const sdk = getSDKInstance();
         const currentRuntime = await (sdk as any).getRuntime(
-          metadata.runtime.pod_name
+          metadata.runtime.podName
         );
 
         if (
@@ -402,8 +399,8 @@ export class DocumentBridge {
       this.documentMetadata.set(documentId, metadata);
 
       // Track active runtimes
-      if (runtime.pod_name) {
-        this.activeRuntimes.add(runtime.pod_name);
+      if (runtime.podName) {
+        this.activeRuntimes.add(runtime.podName);
       }
     }
 

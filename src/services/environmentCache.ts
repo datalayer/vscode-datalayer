@@ -88,11 +88,11 @@ export class EnvironmentCache {
     this._fetching = true;
 
     try {
-      // Call SDK to list environments
+      // Call SDK to list environments - returns Environment model instances
       const environments = await (sdk as any).listEnvironments();
 
-      // Filter and process environments
-      this._environments = this.processEnvironments(environments);
+      // SDK returns Environment model instances, store them directly
+      this._environments = environments;
       this._lastFetch = Date.now();
 
       console.log(
@@ -106,126 +106,13 @@ export class EnvironmentCache {
       // On error, keep existing cache but mark as stale
       this._lastFetch = 0;
 
-      // If no cached environments, provide defaults
+      // If no cached environments, return empty array
       if (this._environments.length === 0) {
-        this._environments = this.getDefaultEnvironments();
+        this._environments = [];
       }
     } finally {
       this._fetching = false;
     }
-  }
-
-  /**
-   * Processes raw environment data from API.
-   *
-   * @param environments - Raw environment data
-   * @returns Processed environments
-   */
-  private processEnvironments(environments: any[]): Environment[] {
-    if (!Array.isArray(environments)) {
-      console.warn(
-        "[EnvironmentCache] Invalid environments response, using defaults"
-      );
-      return this.getDefaultEnvironments();
-    }
-
-    // Filter and map environments
-    return environments
-      .filter((env) => env && env.name)
-      .map(
-        (env) =>
-          ({
-            uid: env.uid || env.name,
-            name: env.name,
-            title: env.title || this.formatEnvironmentTitle(env.name),
-            description:
-              env.description || this.getEnvironmentDescription(env.name),
-            ...env,
-          } as Environment)
-      )
-      .sort((a, b) => {
-        // Sort with common environments first
-        const priority = ["python-cpu-env", "ai-env", "python-gpu-env"];
-        const aIndex = priority.indexOf(a.name || "");
-        const bIndex = priority.indexOf(b.name || "");
-
-        if (aIndex !== -1 && bIndex !== -1) {
-          return aIndex - bIndex;
-        }
-        if (aIndex !== -1) {
-          return -1;
-        }
-        if (bIndex !== -1) {
-          return 1;
-        }
-
-        return (a.name || "").localeCompare(b.name || "");
-      });
-  }
-
-  /**
-   * Formats environment name into a readable title.
-   *
-   * @param name - Environment name
-   * @returns Formatted title
-   */
-  private formatEnvironmentTitle(name: string): string {
-    return name
-      .replace(/-env$/, "")
-      .replace(/-/g, " ")
-      .replace(/\b\w/g, (c) => c.toUpperCase())
-      .replace(/Cpu/g, "CPU")
-      .replace(/Gpu/g, "GPU")
-      .replace(/Ai/g, "AI");
-  }
-
-  /**
-   * Gets a description for an environment based on its name.
-   *
-   * @param name - Environment name
-   * @returns Environment description
-   */
-  private getEnvironmentDescription(name: string): string {
-    const descriptions: { [key: string]: string } = {
-      "python-cpu-env": "Standard Python environment with CPU support",
-      "python-gpu-env": "Python environment with GPU acceleration",
-      "ai-env": "AI/ML environment with popular frameworks",
-      "data-science-env": "Data science environment with analytics tools",
-      "r-env": "R statistical computing environment",
-      "julia-env": "Julia scientific computing environment",
-    };
-
-    return (
-      descriptions[name] || `${this.formatEnvironmentTitle(name)} environment`
-    );
-  }
-
-  /**
-   * Provides default environments when API is unavailable.
-   *
-   * @returns Default environment list
-   */
-  private getDefaultEnvironments(): Environment[] {
-    return [
-      {
-        uid: "python-cpu-env",
-        name: "python-cpu-env",
-        title: "Python CPU",
-        description: "Standard Python environment with CPU support",
-        dockerImage: "",
-        language: "python",
-        burning_rate: 0,
-      } as Environment,
-      {
-        uid: "ai-env",
-        name: "ai-env",
-        title: "AI Environment",
-        description: "AI/ML environment with popular frameworks",
-        dockerImage: "",
-        language: "python",
-        burning_rate: 0,
-      } as Environment,
-    ];
   }
 
   /**

@@ -70,7 +70,7 @@ export async function showKernelSelector(
         if (serverUrl) {
           try {
             const parsedURL = new URL(serverUrl);
-            const token = parsedURL.searchParams.get("token") || "";
+            const token = parsedURL.searchParams.get("token") ?? "";
             parsedURL.search = "";
             const baseUrl = parsedURL.toString();
 
