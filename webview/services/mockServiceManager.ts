@@ -273,8 +273,5 @@ export function createMockServiceManager(): ServiceManager.IManager {
     } as any,
   } as unknown as ServiceManager.IManager;
 
-  console.log(
-    "[MockServiceManager] Created mock service manager for Datalayer notebooks"
-  );
   return mockServiceManager;
 }

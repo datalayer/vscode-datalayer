@@ -60,8 +60,19 @@ export class DatalayerFileSystemProvider implements vscode.FileSystemProvider {
    * @returns The created virtual URI with datalayer:// scheme
    */
   registerMapping(virtualPath: string, realPath: string): vscode.Uri {
+    // Sanitize the virtual path to ensure it doesn't contain URI-illegal characters
+    // Replace characters that are problematic in URIs
+    const sanitizedPath = virtualPath
+      .replace(/:/g, "-") // Replace colons with dashes
+      .replace(/[<>"\|?*]/g, "_") // Replace other illegal characters
+      .replace(/\/\/+/g, "/"); // Remove duplicate slashes
+
     // Create a virtual URI with the datalayer scheme
-    const virtualUri = vscode.Uri.parse(`datalayer:/${virtualPath}`);
+    // Use vscode.Uri.from to properly construct the URI with scheme and path
+    const virtualUri = vscode.Uri.from({
+      scheme: "datalayer",
+      path: "/" + sanitizedPath,
+    });
     const key = virtualUri.toString();
 
     this.virtualToReal.set(key, realPath);
@@ -174,30 +185,15 @@ export class DatalayerFileSystemProvider implements vscode.FileSystemProvider {
    */
   readFile(uri: vscode.Uri): Uint8Array {
     const realPath = this.getRealPath(uri);
-    console.log(
-      "[DatalayerFS] Reading virtual file:",
-      uri.toString(),
-      "-> real path:",
-      realPath
-    );
 
     if (!realPath) {
-      console.error(
-        "[DatalayerFS] No real path found for virtual URI:",
-        uri.toString()
-      );
       throw vscode.FileSystemError.FileNotFound(uri);
     }
 
     if (!fs.existsSync(realPath)) {
-      console.error("[DatalayerFS] Real file does not exist:", realPath);
       throw vscode.FileSystemError.FileNotFound(uri);
     }
 
-    console.log(
-      "[DatalayerFS] Successfully reading file, size:",
-      fs.statSync(realPath).size
-    );
     return new Uint8Array(fs.readFileSync(realPath));
   }
 

@@ -12,7 +12,8 @@
  */
 
 import * as vscode from "vscode";
-import type { DatalayerSDK, Runtime } from "../../../core/lib/index.js";
+import type { DatalayerSDK } from "../../../core/lib/sdk/client";
+import type { Runtime } from "../../../core/lib/sdk/client/models/Runtime";
 import type { RuntimeJSON } from "../../../core/lib/sdk/client/models/Runtime";
 import { SDKAuthProvider } from "./authProvider";
 import { WebviewCollection } from "../utils/webviewCollection";
@@ -52,9 +53,7 @@ export class KernelBridge implements vscode.Disposable {
   constructor(
     private readonly _sdk: DatalayerSDK,
     private readonly _authProvider: SDKAuthProvider
-  ) {
-    console.log("[KernelBridge] Bridge created");
-  }
+  ) {}
 
   /**
    * Registers a webview panel for kernel communication.
@@ -65,7 +64,6 @@ export class KernelBridge implements vscode.Disposable {
   public registerWebview(uri: vscode.Uri, webview: vscode.WebviewPanel): void {
     const key = uri.toString();
     this._webviews.set(key, webview);
-    console.log("[KernelBridge] Registered webview for:", key);
   }
 
   /**
@@ -76,7 +74,6 @@ export class KernelBridge implements vscode.Disposable {
   public unregisterWebview(uri: vscode.Uri): void {
     const key = uri.toString();
     this._webviews.delete(key);
-    console.log("[KernelBridge] Unregistered webview for:", key);
   }
 
   /**
@@ -97,7 +94,6 @@ export class KernelBridge implements vscode.Disposable {
       // Try to find webview by searching active panels
       const allWebviews = this.findWebviewsForUri(uri);
       if (allWebviews.length === 0) {
-        console.error("[KernelBridge] No webview found for:", key);
         throw new Error("No webview found for notebook");
       }
       // Use first matching webview
@@ -111,25 +107,12 @@ export class KernelBridge implements vscode.Disposable {
     }
 
     // Don't log the full runtime object as it might not serialize well
-    // Just log that we received it
-    console.log(
-      "[KernelBridge] Received runtime object of type:",
-      typeof runtime,
-      runtime?.constructor?.name
-    );
 
     // Use runtime.toJSON() to get the stable interface
-    console.log(
-      "[KernelBridge] Using runtime.toJSON() to get standardized data"
-    );
 
     let runtimeData: RuntimeJSON;
     if (runtime && typeof (runtime as any).toJSON === "function") {
       runtimeData = (runtime as any).toJSON();
-      console.log(
-        "[KernelBridge] Got runtime data from toJSON():",
-        runtimeData
-      );
     } else {
       throw new Error("Runtime object does not have toJSON() method");
     }
@@ -145,15 +128,9 @@ export class KernelBridge implements vscode.Disposable {
       if (typeof (runtime as any).expiredAt !== "undefined") {
         expiredAt = (runtime as any).expiredAt;
       }
-      console.log("[KernelBridge] Got time fields from Runtime getters:", {
-        startedAt: startedAt?.toISOString(),
-        expiredAt: expiredAt?.toISOString(),
-      });
+      // Got time fields from Runtime getters
     } catch (error) {
-      console.warn(
-        "[KernelBridge] Could not get time fields from Runtime getters:",
-        error
-      );
+      // Could not get time fields from Runtime getters
     }
 
     // Use the primary field names from the runtime API
@@ -161,12 +138,6 @@ export class KernelBridge implements vscode.Disposable {
     const authToken = runtimeData.token;
 
     if (!ingressUrl || !authToken) {
-      console.error("[KernelBridge] Runtime missing required fields:", {
-        hasIngress: !!ingressUrl,
-        hasToken: !!authToken,
-        availableFields: Object.keys(runtimeData),
-        runtimeData: runtimeData,
-      });
       throw new Error("Runtime is missing ingress URL or token");
     }
 
@@ -180,11 +151,6 @@ export class KernelBridge implements vscode.Disposable {
         expiredAt: expiredAt ? expiredAt.getTime() / 1000 : undefined, // Unix timestamp in seconds
       },
     };
-
-    console.log(
-      "[KernelBridge v2] Sending runtime to webview:",
-      message.runtime
-    );
 
     // Post message to webview
     await targetWebview.webview.postMessage(message);
@@ -238,11 +204,6 @@ export class KernelBridge implements vscode.Disposable {
     // We need to track them when they're created
     // For now, return empty array and rely on registration
 
-    console.log(
-      "[KernelBridge] Searching for webviews for URI:",
-      uri.toString()
-    );
-
     // The webview should have been registered when created
     // If not found, it means the webview wasn't properly registered
 
@@ -270,7 +231,6 @@ export class KernelBridge implements vscode.Disposable {
           type: "kernel-status",
           status,
         });
-        console.log("[KernelBridge] Sent kernel status to webview:", status);
       }
     }
     // Native notebooks handle status through NotebookController
@@ -297,11 +257,9 @@ export class KernelBridge implements vscode.Disposable {
           type: "kernel-command",
           command,
         });
-        console.log("[KernelBridge] Sent kernel command to webview:", command);
       }
     } else {
       // For native notebooks, the controller handles this
-      console.log("[KernelBridge] Native notebook kernel command:", command);
     }
   }
 
@@ -317,7 +275,6 @@ export class KernelBridge implements vscode.Disposable {
     if (notebookType === "webview") {
       // For webview notebooks, we'd need to request info from webview
       // This would require a request-response pattern
-      console.log("[KernelBridge] Kernel info requested for webview notebook");
       return undefined;
     } else {
       // For native notebooks, get from active controller
@@ -344,7 +301,5 @@ export class KernelBridge implements vscode.Disposable {
 
     this._disposed = true;
     this._webviews.clear();
-
-    console.log("[KernelBridge] Bridge disposed");
   }
 }

@@ -102,11 +102,6 @@ export function registerDocumentCommands(
                   spaceName
                 );
 
-                console.log(
-                  "[Datalayer] Opening notebook with collaboration - document ID:",
-                  document.uid ?? document.id
-                );
-
                 progress.report({
                   increment: 75,
                   message: "Opening notebook editor...",
@@ -164,7 +159,6 @@ export function registerDocumentCommands(
             );
           }
         } catch (error) {
-          console.error("[Datalayer] Error opening document:", error);
           vscode.window.showErrorMessage(
             `Failed to open document: ${
               error instanceof Error ? error.message : "Unknown error"
@@ -236,7 +230,6 @@ export function registerDocumentCommands(
             }
           );
         } catch (error) {
-          console.error("[Datalayer] Error creating notebook:", error);
           vscode.window.showErrorMessage(
             `Failed to create notebook: ${
               error instanceof Error ? error.message : "Unknown error"
@@ -308,7 +301,6 @@ export function registerDocumentCommands(
             }
           );
         } catch (error) {
-          console.error("[Datalayer] Error creating lexical document:", error);
           vscode.window.showErrorMessage(
             `Failed to create lexical document: ${
               error instanceof Error ? error.message : "Unknown error"
@@ -385,7 +377,6 @@ export function registerDocumentCommands(
             }
           );
         } catch (error) {
-          console.error("[Datalayer] Error renaming item:", error);
           vscode.window.showErrorMessage(
             `Failed to rename item: ${
               error instanceof Error ? error.message : "Unknown error"
@@ -453,7 +444,6 @@ export function registerDocumentCommands(
             }
           );
         } catch (error) {
-          console.error("[Datalayer] Error deleting item:", error);
           vscode.window.showErrorMessage(
             `Failed to delete item: ${
               error instanceof Error ? error.message : "Unknown error"

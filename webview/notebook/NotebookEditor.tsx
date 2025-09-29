@@ -28,7 +28,7 @@ import {
   useJupyterReactStore,
   CellSidebarExtension,
 } from "@datalayer/jupyter-react";
-import { DatalayerCollaborationProvider } from "@datalayer/core/lib/collaboration";
+import { DatalayerCollaborationProvider } from "../../../core/lib/collaboration";
 import {
   MessageHandlerContext,
   type ExtensionMessage,
@@ -43,14 +43,10 @@ import { MutableServiceManager } from "../services/mutableServiceManager";
 import { EnhancedJupyterReactTheme } from "../theme";
 // Import the custom VS Code-style toolbar
 import { NotebookToolbar } from "./NotebookToolbar";
+import type { RuntimeJSON } from "../../../core/lib/sdk/client/models/Runtime";
 
-interface RuntimeInfo {
-  uid: string;
-  name: string;
-  status?: string;
-  url?: string;
-  token?: string;
-  environment?: string;
+// Extended interface for runtime with credits information
+interface RuntimeWithCredits extends RuntimeJSON {
   creditsUsed?: number;
   creditsLimit?: number;
 }
@@ -62,8 +58,8 @@ interface NotebookVSCodeInnerProps {
   serverUrl?: string;
   token?: string;
   isInitialized: boolean;
-  selectedRuntime?: RuntimeInfo;
-  onRuntimeSelected?: (runtime: RuntimeInfo) => void;
+  selectedRuntime?: RuntimeWithCredits;
+  onRuntimeSelected?: (runtime: RuntimeWithCredits) => void;
   notebookId: string;
 }
 
@@ -91,10 +87,6 @@ function NotebookVSCodeInner({
   // Create collaboration provider for Datalayer notebooks
   const collaborationProvider = useMemo(() => {
     if (isDatalayerNotebook && serverUrl && token && documentId) {
-      console.log(
-        "[NotebookVSCode] Creating Datalayer collaboration provider for document:",
-        documentId
-      );
       // Create Datalayer-specific collaboration provider
       // Cast to ICollaborationProvider to handle @jupyter/ydoc version mismatch
       return new DatalayerCollaborationProvider({
@@ -108,9 +100,6 @@ function NotebookVSCodeInner({
   // Use a stable MutableServiceManager to avoid re-renders
   const mutableServiceManager = useMemo(() => {
     if (isDatalayerNotebook) {
-      console.log(
-        "[NotebookVSCode] Creating mutable service manager for Datalayer notebook"
-      );
       return new MutableServiceManager();
     }
     return undefined;
@@ -125,15 +114,10 @@ function NotebookVSCodeInner({
   useEffect(() => {
     if (!mutableServiceManager) return;
 
-    if (selectedRuntime?.url && selectedRuntime?.token) {
-      console.log(
-        "[NotebookVSCode] Runtime selected, updating service manager connection:",
-        selectedRuntime.name,
-        selectedRuntime.url
-      );
+    if (selectedRuntime?.ingress && selectedRuntime?.token) {
       // Update the internal service manager without changing the wrapper
       mutableServiceManager.updateConnection(
-        selectedRuntime.url,
+        selectedRuntime.ingress,
         selectedRuntime.token
       );
 
@@ -158,13 +142,8 @@ function NotebookVSCodeInner({
       if (stored) {
         try {
           const runtime = JSON.parse(stored);
-          console.log(
-            "[NotebookVSCode] Restoring runtime from sessionStorage:",
-            runtime
-          );
           onRuntimeSelected?.(runtime);
         } catch (e) {
-          console.error("[NotebookVSCode] Failed to parse stored runtime:", e);
           sessionStorage.removeItem(key);
         }
       }
@@ -178,9 +157,6 @@ function NotebookVSCodeInner({
 
       // Only track changes for local notebooks
       if (!isDatalayerNotebook && notebookModel) {
-        console.log(
-          "[NotebookVSCode] Setting up notebook model for local notebook"
-        );
         currentNotebookModel.current = notebookModel;
 
         // Disconnect any previous listeners
@@ -190,9 +166,6 @@ function NotebookVSCodeInner({
             if (currentNotebookModel.current?.stateChanged) {
               currentNotebookModel.current.stateChanged.disconnect(
                 contentChangeHandler.current
-              );
-              console.log(
-                "[NotebookVSCode] Disconnected previous stateChanged listener"
               );
             }
           } catch (e) {
@@ -214,48 +187,24 @@ function NotebookVSCodeInner({
               const notebookData = notebookModel.toJSON();
               const bytes = saveToBytes(notebookData);
 
-              console.log(
-                "[NotebookVSCode] Sending content change to extension, size:",
-                bytes.length
-              );
-
               // Notify the extension about the change
               messageHandler.postMessage({
                 type: "notebook-content-changed",
                 body: { content: bytes },
               });
               lastSavedContent.current = bytes;
-            } catch (error) {
-              console.error(
-                "[NotebookVSCode] Error processing content change:",
-                error
-              );
-            }
+            } catch (error) {}
           };
 
           // Store and connect the handler
           contentChangeHandler.current = handleContentChange;
           notebookModel.contentChanged.connect(handleContentChange);
           connectedSignal = true;
-          console.log(
-            "[NotebookVSCode] Successfully connected to contentChanged signal"
-          );
         }
 
         // Also try stateChanged as a fallback
         if (notebookModel.stateChanged && !connectedSignal) {
-          console.log(
-            "[NotebookVSCode] Connecting to stateChanged signal as fallback"
-          );
-
           const handleStateChange = (sender: any, args: any) => {
-            console.log("[NotebookVSCode] State changed signal received", {
-              isDirty: notebookModel.dirty,
-              changeType: args?.name,
-              oldValue: args?.oldValue,
-              newValue: args?.newValue,
-            });
-
             // For any state change, check if content might have changed
             try {
               const notebookData = notebookModel.toJSON();
@@ -267,65 +216,36 @@ function NotebookVSCodeInner({
                 bytes.length !== lastSavedContent.current.length ||
                 !bytes.every((v, i) => v === lastSavedContent.current![i])
               ) {
-                console.log(
-                  "[NotebookVSCode] Content has changed, notifying extension"
-                );
                 messageHandler.postMessage({
                   type: "notebook-content-changed",
                   body: { content: bytes },
                 });
                 lastSavedContent.current = bytes;
               }
-            } catch (error) {
-              console.error(
-                "[NotebookVSCode] Error processing state change:",
-                error
-              );
-            }
+            } catch (error) {}
           };
 
           contentChangeHandler.current = handleStateChange;
           notebookModel.stateChanged.connect(handleStateChange);
           connectedSignal = true;
-          console.log(
-            "[NotebookVSCode] Connected to stateChanged signal as fallback"
-          );
 
           // Store initial content and check initial dirty state
           try {
             const initialData = notebookModel.toJSON();
             const initialBytes = saveToBytes(initialData);
             lastSavedContent.current = initialBytes;
-            console.log("[NotebookVSCode] Initial state:", {
-              contentSize: initialBytes.length,
-              isDirty: notebookModel.dirty,
-            });
 
             // If notebook is already dirty on load, notify extension
             if (notebookModel.dirty) {
-              console.log(
-                "[NotebookVSCode] Notebook is dirty on load, notifying extension"
-              );
               messageHandler.postMessage({
                 type: "notebook-content-changed",
                 body: { content: initialBytes },
               });
             }
-          } catch (error) {
-            console.error(
-              "[NotebookVSCode] Error storing initial content:",
-              error
-            );
-          }
+          } catch (error) {}
         } else {
-          console.warn(
-            "[NotebookVSCode] Notebook model does not have stateChanged signal"
-          );
         }
       } else if (isDatalayerNotebook) {
-        console.log(
-          "[NotebookVSCode] Skipping change tracking for Datalayer notebook"
-        );
       }
     },
     [isDatalayerNotebook, messageHandler]
@@ -336,10 +256,6 @@ function NotebookVSCodeInner({
     if (!isDatalayerNotebook) {
       const handleMessage = (message: ExtensionMessage) => {
         if (message.type === "getFileData") {
-          console.log(
-            "[NotebookVSCode] Extension requested file data for save, requestId:",
-            message.requestId
-          );
           // Get the current notebook content
           let bytes: Uint8Array;
 
@@ -347,23 +263,12 @@ function NotebookVSCodeInner({
             try {
               const notebookData = currentNotebookModel.current.toJSON();
               bytes = saveToBytes(notebookData);
-              console.log(
-                "[NotebookVSCode] Got current notebook data, size:",
-                bytes.length
-              );
             } catch (error) {
-              console.error(
-                "[NotebookVSCode] Error getting notebook data:",
-                error
-              );
               // Fallback to original nbformat
               bytes = saveToBytes(nbformat);
             }
           } else {
             // Fallback to original nbformat if model not available yet
-            console.log(
-              "[NotebookVSCode] No model available, using original nbformat"
-            );
             bytes = saveToBytes(nbformat);
           }
 
@@ -376,31 +281,20 @@ function NotebookVSCodeInner({
             requestId: message.requestId,
             body: arrayData,
           });
-          console.log(
-            "[NotebookVSCode] Sent notebook data to extension, array length:",
-            arrayData.length
-          );
 
           // Mark the notebook as clean after save
           if (
             currentNotebookModel.current &&
             currentNotebookModel.current.dirty
           ) {
-            console.log(
-              "[NotebookVSCode] Marking notebook as clean after save"
-            );
             currentNotebookModel.current.dirty = false;
           }
         } else if (message.type === "saved") {
           // Handle saved notification from extension
-          console.log("[NotebookVSCode] Notebook saved successfully");
           if (
             currentNotebookModel.current &&
             currentNotebookModel.current.dirty
           ) {
-            console.log(
-              "[NotebookVSCode] Marking notebook as clean after successful save"
-            );
             currentNotebookModel.current.dirty = false;
           }
         }
@@ -417,9 +311,6 @@ function NotebookVSCodeInner({
       const handleKeyDown = (e: KeyboardEvent) => {
         if ((e.metaKey || e.ctrlKey) && e.key === "s") {
           e.preventDefault();
-          console.log(
-            "[NotebookEditor] Save shortcut blocked - notebook auto-saves via collaboration"
-          );
           // TODO: Could show a toast notification here
         }
       };
@@ -474,14 +365,6 @@ function NotebookVSCodeInner({
   // Following the Notebook2Collaborative pattern
   // For Datalayer notebooks: use collaboration only (no path prop)
   // For local notebooks: use service manager with kernel support
-  console.log(
-    "[NotebookVSCodeInner] Render check - isInitialized:",
-    isInitialized,
-    "nbformat:",
-    nbformat,
-    "isDatalayerNotebook:",
-    isDatalayerNotebook
-  );
   if (!isInitialized || !nbformat) {
     return (
       <Box
@@ -623,20 +506,8 @@ function LocalNotebook({
   selectedRuntime,
   notebookId,
 }: any) {
-  console.log("🚀🚀🚀 NOTEBOOK LOADED - THIS IS NEW CODE 🚀🚀🚀");
-  console.log(
-    "[LocalNotebook] Component rendered with selectedRuntime:",
-    selectedRuntime
-  );
-
   // Create service manager from selected runtime if available
   const serviceManager = useMemo(() => {
-    console.log("🔧🔧🔧 SERVICE MANAGER CREATION 🔧🔧🔧");
-    console.log(
-      "[LocalNotebook] useMemo executing with selectedRuntime:",
-      selectedRuntime
-    );
-
     // Check for both 'url' and 'ingress' fields for compatibility
     const kernelUrl = selectedRuntime?.url || selectedRuntime?.ingress;
     const kernelToken = selectedRuntime?.token;
@@ -646,14 +517,6 @@ function LocalNotebook({
       const url = kernelUrl || selectedRuntime.ingress;
       const token = kernelToken || selectedRuntime.token;
 
-      console.log("✅✅✅ CREATING REAL SERVICE MANAGER ✅✅✅", {
-        url: url,
-        token: token ? "***hidden***" : undefined,
-        hasUrl: !!url,
-        hasToken: !!token,
-        runtime: selectedRuntime,
-      });
-
       // Force creation even if token might be undefined
       if (url) {
         return createServiceManager(url, token || "");
@@ -661,9 +524,6 @@ function LocalNotebook({
     }
 
     // Use mock service manager by default (no auto-start kernel)
-    console.log(
-      "❌❌❌ USING MOCK SERVICE MANAGER (no kernel selected) ❌❌❌"
-    );
     return createMockServiceManager();
   }, [selectedRuntime]);
 
@@ -720,7 +580,7 @@ function LocalNotebook({
   const isDatalayerRuntime =
     selectedRuntime &&
     !selectedRuntime.uid?.startsWith("jupyter-") &&
-    selectedRuntime.environment_name !== "jupyter";
+    selectedRuntime.environmentName !== "jupyter";
 
   return (
     <div style={{ height: "100vh", display: "flex", flexDirection: "column" }}>
@@ -837,7 +697,7 @@ function NotebookVSCodeWithJupyter(): JSX.Element {
   const [token, setToken] = useState<string | undefined>();
   const [notebookId, setNotebookId] = useState<string>("local-notebook"); // Default fallback
   const [selectedRuntime, setSelectedRuntime] = useState<
-    RuntimeInfo | undefined
+    RuntimeWithCredits | undefined
   >();
 
   // Signal ready immediately when component mounts
@@ -883,13 +743,11 @@ function NotebookVSCodeWithJupyter(): JSX.Element {
       if (type === "init") {
         // Handle theme
         if (body.theme) {
-          console.log("[NotebookVSCode] Setting initial theme:", body.theme);
           setTheme(body.theme);
           // The colormode will be synced via the useEffect
         }
 
         // Handle notebook data
-        console.log("[NotebookVSCode] Processing init message");
 
         if (body.isDatalayerNotebook) {
           setIsDatalayerNotebook(true);
@@ -897,46 +755,30 @@ function NotebookVSCodeWithJupyter(): JSX.Element {
 
         if (body.documentId) {
           setDocumentId(body.documentId);
-          console.log("[NotebookVSCode] Got document ID:", body.documentId);
         }
 
         if (body.serverUrl) {
           setServerUrl(body.serverUrl);
-          console.log("[NotebookVSCode] Got server URL:", body.serverUrl);
         }
 
         if (body.notebookId) {
           setNotebookId(body.notebookId);
-          console.log("[NotebookVSCode] Got notebook ID:", body.notebookId);
         }
 
         if (body.token) {
           setToken(body.token);
-          console.log("[NotebookVSCode] Got authentication token");
         }
 
         if (body.untitled) {
-          console.log(
-            "[NotebookVSCode] Setting empty nbformat for untitled notebook"
-          );
           setNbformat({} as any);
         } else {
           const loadedNbformat = loadFromBytes(body.value);
-          console.log("[NotebookVSCode] Loaded nbformat:", loadedNbformat);
           setNbformat(loadedNbformat);
         }
 
         setIsInitialized(true);
-        console.log("[NotebookVSCode] Initialization complete");
       } else if (type === "theme-change" && body.theme) {
-        console.log(
-          "[NotebookVSCode] Theme change detected. Current:",
-          theme,
-          "New:",
-          body.theme
-        );
         if (body.theme !== theme) {
-          console.log("[NotebookVSCode] Applying theme change to:", body.theme);
           setTheme(body.theme);
           // The colormode will be synced via the useEffect
         }
@@ -944,19 +786,10 @@ function NotebookVSCodeWithJupyter(): JSX.Element {
         // Handle both message formats: { body: { runtime } } and { runtime }
         const runtime = body?.runtime || message.runtime;
         if (runtime) {
-          console.log("[NotebookVSCode] Runtime/kernel selected:", runtime);
           setSelectedRuntime(runtime);
-          // Force a re-render by also updating a dummy state if needed
-          console.log(
-            "[NotebookVSCode] Updated selectedRuntime state to:",
-            runtime
-          );
         }
       } else if (type === "runtime-terminated") {
         // Runtime was terminated, clear runtime selection
-        console.log(
-          "[NotebookVSCode] Runtime terminated, clearing runtime selection"
-        );
         // Add a small delay to allow current notebook widget to dispose properly
         // before triggering the reset to mock service manager
         setTimeout(() => {
@@ -964,17 +797,17 @@ function NotebookVSCodeWithJupyter(): JSX.Element {
         }, 100);
       } else if (type === "set-runtime" && body.baseUrl) {
         // Handle runtime selection for local notebooks
-        console.log(
-          "[NotebookVSCode] Setting runtime for local notebook:",
-          body.baseUrl
-        );
         // Create a runtime info object from the URL
-        const runtimeInfo: RuntimeInfo = {
+        const runtimeInfo: RuntimeWithCredits = {
           uid: "local-runtime",
-          name: "Jupyter Server",
-          url: body.baseUrl,
+          givenName: "Jupyter Server",
+          ingress: body.baseUrl,
           token: body.token || "",
-          status: "ready",
+          state: "running",
+          // Required fields from RuntimeJSON
+          podName: "local",
+          environmentName: "jupyter",
+          burningRate: 0,
         };
         setSelectedRuntime(runtimeInfo);
       }
@@ -989,7 +822,6 @@ function NotebookVSCodeWithJupyter(): JSX.Element {
 
   // Sync colormode with theme changes
   useEffect(() => {
-    console.log("[NotebookVSCode] Syncing colormode with theme:", theme);
     setColormode(theme);
   }, [theme, setColormode]);
 
@@ -1057,21 +889,8 @@ window.debugNotebook = function () {
     }
   });
 
-  console.log("Dark elements found:", results);
-  results.forEach((r) => {
-    console.log(
-      `${r.tag}#${r.id || "no-id"}.${r.classes || "no-class"} = ${
-        r.backgroundColor
-      }`
-    );
-  });
   return results;
 };
-
-// Log that the debug function is available
-console.log(
-  "[NotebookVSCode] Debug function installed on window.debugNotebook"
-);
 
 document.addEventListener("DOMContentLoaded", () => {
   const root = createRoot(

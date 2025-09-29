@@ -219,10 +219,8 @@ export function applyVSCodeThemeToEditors(
             extensions: [...(cmView.state.extensions || []), theme],
           }),
         });
-
-        console.log("[CodeMirror Theme] Applied VS Code theme to editor");
       } catch (error) {
-        console.error("[CodeMirror Theme] Failed to apply theme:", error);
+        // Silently handle theme application errors
       }
     } else {
       // Don't log warnings for elements that might not be initialized yet

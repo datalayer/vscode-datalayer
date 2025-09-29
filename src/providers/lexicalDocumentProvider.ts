@@ -214,9 +214,6 @@ export class LexicalDocumentProvider
 
       const contentArray = Array.from(document.documentData);
 
-      console.log("[LexicalEditor] Sending initial content to webview");
-      console.log("[LexicalEditor] Content length:", contentArray.length);
-
       // Setup collaboration for Datalayer documents
       let collaborationConfig: LexicalCollaborationConfig | undefined;
       if (isFromDatalayer) {

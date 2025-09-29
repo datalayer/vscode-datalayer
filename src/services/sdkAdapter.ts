@@ -12,11 +12,11 @@
  */
 
 import * as vscode from "vscode";
-import {
-  DatalayerSDK,
-  type DatalayerSDKConfig,
-  type SDKHandlers,
-} from "../../../core/lib/index.js";
+import { DatalayerSDK } from "../../../core/lib/sdk/client";
+import type {
+  DatalayerSDKConfig,
+  SDKHandlers,
+} from "../../../core/lib/sdk/client";
 import { promptAndLogin } from "../utils/authDialog";
 
 /**
@@ -48,7 +48,6 @@ export class VSCodeStorage implements PlatformStorage {
       const value = await this.context.secrets.get(key);
       return value || null;
     } catch (error) {
-      console.warn(`Failed to get secret ${key}:`, error);
       return null;
     }
   }
@@ -57,7 +56,6 @@ export class VSCodeStorage implements PlatformStorage {
     try {
       await this.context.secrets.store(key, value);
     } catch (error) {
-      console.error(`Failed to store secret ${key}:`, error);
       throw error;
     }
   }
@@ -66,16 +64,13 @@ export class VSCodeStorage implements PlatformStorage {
     try {
       await this.context.secrets.delete(key);
     } catch (error) {
-      console.warn(`Failed to delete secret ${key}:`, error);
+      // Silently handle secret deletion errors
     }
   }
 
   async clear(): Promise<void> {
     // VS Code SecretStorage doesn't have a clear-all method
     // We'll need to track keys individually if needed
-    console.warn(
-      "VSCodeStorage.clear() not fully implemented - VS Code SecretStorage has no clear-all method"
-    );
   }
 
   async has(key: string): Promise<boolean> {
@@ -127,30 +122,15 @@ export function createVSCodeSDK(config: VSCodeSDKConfig): DatalayerSDK {
     vsCodeConfig.get<string>("runtimesRunUrl") ?? serverUrl;
   const spacerRunUrl = vsCodeConfig.get<string>("spacerRunUrl") ?? serverUrl;
 
-  console.log("[SDK Adapter] Creating SDK with config:", {
-    iamRunUrl,
-    runtimesRunUrl,
-    spacerRunUrl,
-    hasStorage: true,
-  });
-
   // Define VS Code-specific handlers for logging and error handling
   const handlers: SDKHandlers = {
     beforeCall: (methodName: string, args: any[]) => {
-      console.log(`[SDK] Calling ${methodName}`, args.length > 0 ? args : "");
+      // Silently handle before call
     },
     afterCall: (methodName: string, result: any) => {
-      // Only log non-sensitive results
-      if (methodName !== "getToken" && methodName !== "login") {
-        const resultInfo = Array.isArray(result)
-          ? `(${result.length} items)`
-          : "";
-        console.log(`[SDK] ${methodName} completed ${resultInfo}`);
-      }
+      // Silently handle after call
     },
     onError: async (methodName: string, error: any) => {
-      console.error(`[SDK] ${methodName} failed:`, error);
-
       // Show user-friendly error messages for common errors
       if (error instanceof Error) {
         if (
@@ -185,8 +165,6 @@ export function createVSCodeSDK(config: VSCodeSDKConfig): DatalayerSDK {
     // User-provided overrides
     ...sdkConfig,
   } as any);
-
-  console.log("[SDK Adapter] Created SDK instance");
 
   return sdk;
 }
@@ -256,7 +234,6 @@ let globalSDKInstance: DatalayerSDK | undefined;
  */
 export function setSDKInstance(sdk: DatalayerSDK): void {
   globalSDKInstance = sdk;
-  console.log("[SDK Adapter] Global SDK instance set");
 }
 
 /**

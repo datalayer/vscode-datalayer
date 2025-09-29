@@ -28,8 +28,10 @@ import {
   CommonConfirmations,
 } from "../utils/confirmationDialog";
 
+import type { Runtime } from "../../../core/lib/sdk/client/models/Runtime";
+
 interface RuntimeQuickPickItem extends vscode.QuickPickItem {
-  runtime: any;
+  runtime: Runtime;
 }
 
 /**
@@ -51,8 +53,6 @@ export function registerRuntimeCommands(
    */
   context.subscriptions.push(
     vscode.commands.registerCommand("datalayer.selectRuntime", async () => {
-      console.log("[Extension] Manual runtime selection triggered");
-
       // Get active notebook editor
       const activeEditor = vscode.window.activeNotebookEditor;
       if (!activeEditor) {
@@ -79,8 +79,6 @@ export function registerRuntimeCommands(
    */
   context.subscriptions.push(
     vscode.commands.registerCommand("datalayer.resetRuntime", async () => {
-      console.log("[Extension] Runtime reset triggered");
-
       await controllerManager.refreshControllers();
 
       vscode.window.showInformationMessage(
@@ -110,11 +108,6 @@ export function registerRuntimeCommands(
     vscode.commands.registerCommand(
       "datalayer.refreshRuntimeControllers",
       async (selectRuntimeUid?: string) => {
-        console.log(
-          "[Extension] Runtime refresh triggered",
-          selectRuntimeUid ? `(select: ${selectRuntimeUid})` : ""
-        );
-
         await controllerManager.refreshControllers();
 
         vscode.window.showInformationMessage(
@@ -179,24 +172,7 @@ export function registerRuntimeCommands(
             return;
           }
 
-          // List available SDK methods for debugging
-          console.log("[DEBUG] SDK instance type:", typeof sdk);
-          console.log(
-            "[DEBUG] SDK methods:",
-            Object.getOwnPropertyNames(Object.getPrototypeOf(sdk))
-          );
-          console.log(
-            "[DEBUG] SDK static methods:",
-            Object.getOwnPropertyNames(sdk.constructor)
-          );
-
-          // Test listRuntimes first
-          console.log("[DEBUG] Testing listRuntimes...");
           const runtimes = await (sdk as any).listRuntimes();
-          console.log(
-            "[DEBUG] listRuntimes result:",
-            JSON.stringify(runtimes, null, 2)
-          );
 
           if (!runtimes || runtimes.length === 0) {
             vscode.window.showInformationMessage(
@@ -211,31 +187,18 @@ export function registerRuntimeCommands(
           if (!podName) {
             throw new Error("Runtime missing podName from SDK");
           }
-          console.log("[DEBUG] Attempting to terminate runtime:", {
-            runtime_name: runtime.givenName,
-            pod_name: podName,
-            uid: runtime.uid,
-            full_runtime: runtime,
-          });
 
           vscode.window.showInformationMessage(
             `Debug: Terminating runtime "${runtime.givenName}". Check console for details.`
           );
 
           const result = await (sdk as any).deleteRuntime(podName);
-          console.log("[DEBUG] deleteRuntime success result:", result);
           vscode.window.showInformationMessage(
             `Debug: Runtime terminated successfully. Result: ${JSON.stringify(
               result
             )}`
           );
         } catch (error: any) {
-          console.error("[DEBUG] Runtime termination error:", error);
-          console.error("[DEBUG] Error stack:", error.stack);
-          console.error("[DEBUG] Error message:", error.message);
-          console.error("[DEBUG] Error type:", typeof error);
-          console.error("[DEBUG] Error properties:", Object.keys(error));
-
           vscode.window.showErrorMessage(
             `Debug: Runtime termination failed. Error: ${error.message}. Check console for full details.`
           );
@@ -313,7 +276,6 @@ export function registerRuntimeCommands(
           }
         }
       } catch (error: any) {
-        console.error("[RuntimeCommands] Failed to terminate runtime:", error);
         vscode.window.showErrorMessage(
           `Failed to terminate runtime: ${error.message}`
         );
@@ -345,41 +307,8 @@ async function terminateRuntime(sdk: any, runtime: any): Promise<void> {
         if (!podName) {
           throw new Error("Runtime missing podName from SDK");
         }
-        console.log(
-          "[RuntimeCommands] Deleting runtime with pod_name:",
-          podName
-        );
-        console.log(
-          "[RuntimeCommands] Runtime object for context:",
-          JSON.stringify(runtime, null, 2)
-        );
-
-        console.log(
-          "[RuntimeCommands] About to call SDK deleteRuntime with podName:",
-          podName
-        );
-        console.log("[RuntimeCommands] SDK instance type:", typeof sdk);
-        console.log(
-          "[RuntimeCommands] SDK deleteRuntime method exists:",
-          typeof (sdk as any).deleteRuntime
-        );
 
         const result = await (sdk as any).deleteRuntime(podName);
-        console.log("[RuntimeCommands] deleteRuntime API result:", result);
-        console.log(
-          "[RuntimeCommands] deleteRuntime result type:",
-          typeof result
-        );
-
-        // Also try to list runtimes after deletion to verify
-        console.log(
-          "[RuntimeCommands] Verifying deletion by listing runtimes..."
-        );
-        const afterDeletion = await (sdk as any).listRuntimes();
-        console.log(
-          "[RuntimeCommands] Runtimes after deletion:",
-          afterDeletion
-        );
       }
     );
 
@@ -388,7 +317,6 @@ async function terminateRuntime(sdk: any, runtime: any): Promise<void> {
       `Runtime "${name}" terminated successfully.`
     );
   } catch (error: any) {
-    console.error("[RuntimeCommands] Failed to terminate runtime:", error);
     vscode.window.showErrorMessage(
       `Failed to terminate runtime "${name}": ${error.message}`
     );

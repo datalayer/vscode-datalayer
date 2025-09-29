@@ -197,7 +197,6 @@ export class SpacesTreeProvider implements vscode.TreeDataProvider<SpaceItem> {
         });
       });
     } catch (error) {
-      console.error("[SpacesTree] Error fetching spaces:", error);
       return [
         new SpaceItem(
           "Failed to load spaces",
@@ -222,10 +221,6 @@ export class SpacesTreeProvider implements vscode.TreeDataProvider<SpaceItem> {
       const spaceId = space.uid;
 
       if (!spaceId) {
-        console.error(
-          "[SpacesTree] No valid space ID found in space object:",
-          space
-        );
         return [
           new SpaceItem(
             "Unable to load items - invalid space ID",
@@ -279,31 +274,6 @@ export class SpacesTreeProvider implements vscode.TreeDataProvider<SpaceItem> {
         const itemType = item.type;
         let itemName = item.name;
 
-        // Debug logging
-        console.log("[SpacesTree] Processing item:", {
-          name: itemName,
-          type: itemType,
-          typeFromGetter:
-            typeof item.type === "function"
-              ? "ERROR: type is a function!"
-              : item.type,
-          hasTypeGetter: "type" in item,
-          typeMatches: {
-            notebook: itemType === ItemTypes.NOTEBOOK,
-            lexical: itemType === ItemTypes.LEXICAL,
-            actualType: itemType,
-            expectedNotebook: ItemTypes.NOTEBOOK,
-            expectedLexical: ItemTypes.LEXICAL,
-          },
-          className: item.constructor?.name,
-          extension: item.extension,
-          extensionData: {
-            notebook_extension_s: (item as any)._data?.notebook_extension_s,
-            document_extension_s: (item as any)._data?.document_extension_s,
-          },
-          itemObject: item,
-        });
-
         // Only show notebooks and lexicals
         if (itemType === ItemTypes.NOTEBOOK) {
           // Use the model's extension getter
@@ -350,7 +320,6 @@ export class SpacesTreeProvider implements vscode.TreeDataProvider<SpaceItem> {
 
       return result;
     } catch (error) {
-      console.error("[SpacesTree] Error fetching space items:", error);
       return [
         new SpaceItem(
           "Failed to load documents",

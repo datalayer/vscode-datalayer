@@ -13,11 +13,11 @@
 
 import { WebSocket } from "ws";
 import { v4 as uuidv4 } from "uuid";
+import type { DatalayerSDK } from "../../../core/lib/sdk/client";
 import type {
-  DatalayerSDK,
   Runtime,
   RuntimeJSON,
-} from "../../../core/lib/index.js";
+} from "../../../core/lib/sdk/client/models/Runtime";
 
 /**
  * Jupyter message structure according to the protocol.
@@ -90,22 +90,14 @@ export class WebSocketKernelClient {
     private readonly _sdk: DatalayerSDK
   ) {
     this._sessionId = uuidv4();
-    console.log(
-      "[WebSocketKernelClient] Created with session:",
-      this._sessionId
-    );
 
     // Extract runtime data from Runtime model or plain object
     if (runtime && typeof runtime === "object") {
       // Check if it's a Runtime model with toJSON method
       if (typeof (runtime as any).toJSON === "function") {
-        console.log(
-          "[WebSocketKernelClient] Runtime is an SDK model - using toJSON()"
-        );
         // It's a Runtime model - use toJSON to get stable interface
         this._runtime = (runtime as Runtime).toJSON();
       } else {
-        console.log("[WebSocketKernelClient] Runtime is already JSON data");
         // It's already RuntimeJSON data
         this._runtime = runtime as RuntimeJSON;
       }
@@ -113,13 +105,6 @@ export class WebSocketKernelClient {
       // Fallback - should not happen
       throw new Error("Invalid runtime object provided");
     }
-
-    console.log("[WebSocketKernelClient] Runtime data:", {
-      uid: this._runtime.uid,
-      ingress: this._runtime.ingress,
-      token: this._runtime.token ? "***" : undefined,
-      givenName: this._runtime.givenName,
-    });
   }
 
   /**
@@ -129,7 +114,6 @@ export class WebSocketKernelClient {
    */
   public async connect(): Promise<void> {
     if (this._connected || this._connecting) {
-      console.log("[WebSocketKernelClient] Already connected or connecting");
       return;
     }
 
@@ -141,18 +125,10 @@ export class WebSocketKernelClient {
       const token = this._runtime.token;
 
       if (!ingressUrl) {
-        console.error(
-          "[WebSocketKernelClient] Runtime missing ingress URL:",
-          this._runtime
-        );
         throw new Error("Runtime missing ingress URL from SDK");
       }
 
       if (!token) {
-        console.error(
-          "[WebSocketKernelClient] Runtime missing token:",
-          this._runtime
-        );
         throw new Error("Runtime missing token from SDK");
       }
 
@@ -161,7 +137,6 @@ export class WebSocketKernelClient {
 
       // Construct WebSocket URL
       const wsUrl = this.getWebSocketUrl();
-      console.log("[WebSocketKernelClient] Connecting to:", wsUrl);
 
       // Create WebSocket connection
       this._ws = new WebSocket(wsUrl, {
@@ -202,10 +177,8 @@ export class WebSocketKernelClient {
 
       this._connected = true;
       this._connecting = false;
-      console.log("[WebSocketKernelClient] Connected successfully");
     } catch (error) {
       this._connecting = false;
-      console.error("[WebSocketKernelClient] Connection failed:", error);
       throw error;
     }
   }
@@ -229,10 +202,6 @@ export class WebSocketKernelClient {
         const kernels = (await listResponse.json()) as any[];
         if (kernels.length > 0) {
           this._kernelId = kernels[0].id;
-          console.log(
-            "[WebSocketKernelClient] Using existing kernel:",
-            this._kernelId
-          );
           return;
         }
       }
@@ -252,14 +221,12 @@ export class WebSocketKernelClient {
       if (createResponse.ok) {
         const kernel: any = await createResponse.json();
         this._kernelId = kernel.id;
-        console.log("[WebSocketKernelClient] Created kernel:", this._kernelId);
       } else {
         throw new Error(
           `Failed to create kernel: ${createResponse.statusText}`
         );
       }
     } catch (error) {
-      console.error("[WebSocketKernelClient] Failed to ensure kernel:", error);
       throw error;
     }
   }
@@ -279,8 +246,6 @@ export class WebSocketKernelClient {
    * Handles WebSocket open event.
    */
   private onOpen(): void {
-    console.log("[WebSocketKernelClient] WebSocket opened");
-
     // Send kernel info request to verify connection
     const msg = this.createMessage("kernel_info_request", {});
     this.sendMessage(msg);
@@ -300,11 +265,6 @@ export class WebSocketKernelClient {
       ) {
         return;
       }
-
-      console.log(
-        "[WebSocketKernelClient] Received message:",
-        msg.header.msg_type
-      );
 
       // Find pending request
       const parentId = msg.parent_header?.msg_id;
@@ -357,17 +317,13 @@ export class WebSocketKernelClient {
           pending.resolve({ outputs: pending.outputs, success });
           break;
       }
-    } catch (error) {
-      console.error("[WebSocketKernelClient] Error processing message:", error);
-    }
+    } catch (error) {}
   }
 
   /**
    * Handles WebSocket error event.
    */
   private onError(error: Error): void {
-    console.error("[WebSocketKernelClient] WebSocket error:", error);
-
     // Reject all pending requests
     for (const [id, pending] of this._pendingRequests) {
       pending.reject(error);
@@ -379,7 +335,6 @@ export class WebSocketKernelClient {
    * Handles WebSocket close event.
    */
   private onClose(): void {
-    console.log("[WebSocketKernelClient] WebSocket closed");
     this._connected = false;
 
     // Reject all pending requests
@@ -467,10 +422,6 @@ export class WebSocketKernelClient {
 
       try {
         this.sendMessage(msg);
-        console.log(
-          "[WebSocketKernelClient] Sent execute request:",
-          msg.header.msg_id
-        );
       } catch (error) {
         clearTimeout(timeout);
         this._pendingRequests.delete(msg.header.msg_id);
@@ -502,14 +453,7 @@ export class WebSocketKernelClient {
       if (!response.ok) {
         throw new Error(`Failed to interrupt kernel: ${response.statusText}`);
       }
-
-      console.log("[WebSocketKernelClient] Kernel interrupted");
-    } catch (error) {
-      console.error(
-        "[WebSocketKernelClient] Failed to interrupt kernel:",
-        error
-      );
-    }
+    } catch (error) {}
   }
 
   /**
@@ -536,22 +480,16 @@ export class WebSocketKernelClient {
         throw new Error(`Failed to restart kernel: ${response.statusText}`);
       }
 
-      console.log("[WebSocketKernelClient] Kernel restarted");
-
       // Reconnect WebSocket
       this.dispose();
       await this.connect();
-    } catch (error) {
-      console.error("[WebSocketKernelClient] Failed to restart kernel:", error);
-    }
+    } catch (error) {}
   }
 
   /**
    * Disposes of the client and closes connections.
    */
   public dispose(): void {
-    console.log("[WebSocketKernelClient] Disposing");
-
     // Clear pending requests
     for (const [id, pending] of this._pendingRequests) {
       pending.reject(new Error("Client disposed"));

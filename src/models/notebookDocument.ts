@@ -243,9 +243,6 @@ export class NotebookDocument
   makeEdit(edit: NotebookEdit) {
     // Skip dirty state tracking for collaborative Datalayer notebooks
     if (this.uri.scheme === "datalayer") {
-      console.log(
-        "[NotebookDocument] Skipping edit tracking for collaborative Datalayer notebook"
-      );
       return;
     }
 
@@ -300,9 +297,6 @@ export class NotebookDocument
    */
   async save(cancellation: vscode.CancellationToken): Promise<void> {
     if (this.uri.scheme === "datalayer") {
-      console.log(
-        "[NotebookDocument] Save called on collaborative notebook - no-op"
-      );
       return;
     }
 
@@ -327,9 +321,6 @@ export class NotebookDocument
   ): Promise<void> {
     if (this.uri.scheme === "datalayer") {
       if (targetResource.toString() === this.uri.toString()) {
-        console.log(
-          "[NotebookDocument] SaveAs to same location for collaborative notebook - no-op"
-        );
         return;
       }
       // Export current content for different location
@@ -353,7 +344,6 @@ export class NotebookDocument
       this._savedEdits = Array.from(this._edits);
       this._edits = [];
     } catch (error) {
-      console.error("[NotebookDocument] Error saving document:", error);
       throw error;
     }
   }

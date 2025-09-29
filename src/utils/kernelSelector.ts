@@ -13,7 +13,7 @@
 
 import * as vscode from "vscode";
 import { selectDatalayerRuntime, setRuntime } from "./runtimeSelector";
-import type { DatalayerSDK } from "../../../core/lib/index.js";
+import type { DatalayerSDK } from "../../../core/lib/sdk/client";
 import { SDKAuthProvider } from "../services/authProvider";
 import { KernelBridge } from "../services/kernelBridge";
 
@@ -46,7 +46,6 @@ export async function showKernelSelector(
       action: async () => {
         const runtime = await selectDatalayerRuntime(sdk, authProvider);
         if (runtime) {
-          console.log("[KernelSelector] Datalayer runtime selected:", runtime);
           // If we have a document URI, connect it to the runtime
           if (documentUri) {
             await kernelBridge.connectWebviewNotebook(documentUri, runtime);
@@ -74,8 +73,6 @@ export async function showKernelSelector(
             parsedURL.search = "";
             const baseUrl = parsedURL.toString();
 
-            console.log("[KernelSelector] Jupyter server selected:", baseUrl);
-
             // Create a runtime-like object for the Jupyter server
             const jupyterRuntime: any = {
               uid: `jupyter-${Date.now()}`,
@@ -101,10 +98,6 @@ export async function showKernelSelector(
               `Connected to Jupyter server at ${baseUrl}`
             );
           } catch (error) {
-            console.error(
-              "[KernelSelector] Failed to connect to Jupyter server:",
-              error
-            );
             vscode.window.showErrorMessage(
               `Failed to connect to Jupyter server: ${error}`
             );

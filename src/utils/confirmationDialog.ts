@@ -113,15 +113,12 @@ export async function showTwoStepConfirmation(
   const message = `${capitalizedAction} "${itemName}"? This will: ${consequencesList}`;
 
   // Use error message for delete actions to get red/danger button styling
-  const messageFunction = action === "delete"
-    ? vscode.window.showErrorMessage
-    : vscode.window.showWarningMessage;
+  const messageFunction =
+    action === "delete"
+      ? vscode.window.showErrorMessage
+      : vscode.window.showWarningMessage;
 
-  const selection = await messageFunction(
-    message,
-    actionButton,
-    "Cancel"
-  );
+  const selection = await messageFunction(message, actionButton, "Cancel");
 
   return selection === actionButton;
 }

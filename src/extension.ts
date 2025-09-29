@@ -28,29 +28,16 @@ import { setupAuthStateManagement } from "./services/authManager";
 export async function activate(
   context: vscode.ExtensionContext
 ): Promise<void> {
-  console.log("[Extension] ===== DATALAYER EXTENSION ACTIVATING =====");
-
-  // Create output channel for logging
-  const outputChannel = vscode.window.createOutputChannel("Datalayer");
-  outputChannel.appendLine("Datalayer Extension Starting...");
-  outputChannel.show();
-
   try {
-    outputChannel.appendLine("Initializing services...");
     const services = await initializeServices(context);
-
-    outputChannel.appendLine("Initializing UI...");
     const ui = await initializeUI(context, services.authProvider, services.sdk);
-    outputChannel.appendLine("UI initialized");
 
-    outputChannel.appendLine("Setting up auth state management...");
     const updateAuthState = setupAuthStateManagement(
       services.authProvider,
       ui.spacesTreeProvider,
       ui.controllerManager
     );
 
-    outputChannel.appendLine("Registering commands...");
     registerAllCommands(
       context,
       {
@@ -68,13 +55,7 @@ export async function activate(
         ui.controllerManager.onDidCloseNotebook(notebook);
       })
     );
-
-    console.log(
-      "[Extension] Datalayer VS Code extension activated successfully"
-    );
-    outputChannel.appendLine("✅ Extension activated successfully!");
   } catch (error) {
-    console.error("[Extension] Failed to activate extension:", error);
     vscode.window.showErrorMessage(
       `Failed to activate Datalayer extension: ${
         error instanceof Error ? error.message : "Unknown error"
@@ -90,6 +71,4 @@ export async function activate(
  *
  * @returns void
  */
-export function deactivate(): void {
-  console.log("[Extension] Datalayer VS Code extension deactivated");
-}
+export function deactivate(): void {}

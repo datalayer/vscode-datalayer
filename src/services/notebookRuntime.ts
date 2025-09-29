@@ -12,7 +12,7 @@
  */
 
 import * as vscode from "vscode";
-import type { Runtime } from "../../../core/lib/index.js";
+import type { Runtime } from "../../../core/lib/sdk/client/models/Runtime";
 import { ExtensionMessage } from "../utils/messages";
 import { SDKAuthProvider } from "./authProvider";
 import { getSDKInstance } from "./sdkAdapter";
@@ -77,8 +77,6 @@ export class NotebookRuntimeService {
           }
         );
       } catch (error) {
-        console.error("[NotebookRuntime] Error loading runtimes:", error);
-
         // Check if it's a token expiration error
         const errorMessage =
           error instanceof Error ? error.message : String(error);
@@ -243,7 +241,6 @@ export class NotebookRuntimeService {
         );
       }
     } catch (error) {
-      console.error("[NotebookRuntime] Error in runtime selection:", error);
       vscode.window.showErrorMessage(`Failed to select runtime: ${error}`);
     }
   }
@@ -307,7 +304,7 @@ export class NotebookRuntimeService {
           }
         })
         .catch((reason: any) => {
-          console.error("Failed to get a server URL:", reason);
+          // Silently handle server URL errors
         });
     }
   }
@@ -324,10 +321,6 @@ export class NotebookRuntimeService {
     runtime: Runtime
   ): void {
     const runtimeData = runtime.toJSON();
-    console.log(
-      "[NotebookRuntime] Sending runtime to webview:",
-      JSON.stringify(runtimeData, null, 2)
-    );
     this.postMessage(webview, "runtime-selected", {
       runtime: runtimeData,
     });

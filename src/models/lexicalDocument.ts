@@ -130,15 +130,12 @@ export class LexicalDocument
 
     if (metadata?.localPath && fs.existsSync(metadata.localPath)) {
       const fileContent = fs.readFileSync(metadata.localPath);
-      console.log("[LexicalDocument] Reading file from:", metadata.localPath);
-      console.log("[LexicalDocument] File size:", fileContent.length);
       return new Uint8Array(fileContent);
     }
 
     try {
       return new Uint8Array(await vscode.workspace.fs.readFile(uri));
     } catch (error) {
-      console.error("[LexicalDocument] Failed to read Datalayer file:", error);
       return LexicalDocument.getEmptyContent();
     }
   }

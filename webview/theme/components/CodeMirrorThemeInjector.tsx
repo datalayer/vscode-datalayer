@@ -109,11 +109,6 @@ export function CodeMirrorThemeInjector({
           : "rgba(0, 0, 0, 0.02)",
       };
 
-      console.log(
-        "[CodeMirrorThemeInjector] Prepared theme colors:",
-        themeColors
-      );
-
       // We don't need to apply the theme dynamically anymore
       // The CSS injection from VSCodeThemeProvider.getCodeMirrorCSS() handles it
     };

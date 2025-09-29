@@ -19,7 +19,7 @@ import { JupyterNotebookProvider } from "../providers/jupyterNotebookProvider";
 import { LexicalDocumentProvider } from "../providers/lexicalDocumentProvider";
 import { SDKAuthProvider } from "./authProvider";
 import { EnvironmentCache } from "./environmentCache";
-import type { DatalayerSDK } from "../../../core/lib/index.js";
+import type { DatalayerSDK } from "../../../core/lib/sdk/client";
 
 /**
  * Container for all extension UI components.
@@ -67,13 +67,8 @@ export async function initializeUI(
     const environments = await EnvironmentCache.getInstance().getEnvironments(
       sdk
     );
-    console.log(
-      "[Extension] Cached",
-      environments.length,
-      "environments on startup"
-    );
   } catch (error) {
-    console.error("[Extension] Failed to cache environments:", error);
+    // Silently handle environment caching errors
   }
 
   // Create the smart dynamic controller manager
@@ -82,7 +77,6 @@ export async function initializeUI(
     sdk,
     authProvider
   );
-  console.log("[Extension] Smart dynamic controller manager created");
 
   const spacesTreeProvider = new SpacesTreeProvider(authProvider);
   const treeView = vscode.window.createTreeView("datalayerSpaces", {

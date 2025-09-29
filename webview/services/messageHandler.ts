@@ -75,12 +75,6 @@ export class MessageHandler {
    * @param message Message to send
    */
   postMessage(message: ExtensionMessage) {
-    console.log("[MessageHandler] Sending message to extension:", {
-      type: message.type,
-      hasBody: !!message.body,
-      bodyKeys: message.body ? Object.keys(message.body) : undefined,
-      id: message.id,
-    });
     vscode.postMessage(message);
   }
 
@@ -142,7 +136,7 @@ export class MessageHandler {
       try {
         handler(message);
       } catch (reason) {
-        console.error("Failed to handle message: ", reason);
+        // Silently handle message handler errors
       }
     }
   }

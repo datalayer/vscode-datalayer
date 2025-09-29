@@ -246,7 +246,6 @@ export class UniversalColorMapper {
   mapColor(semanticName: string, provider: ThemeProviderType): string {
     const mapping = this.mappings[semanticName];
     if (!mapping) {
-      console.warn(`No mapping found for semantic color: ${semanticName}`);
       return semanticName;
     }
 

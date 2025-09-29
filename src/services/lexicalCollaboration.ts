@@ -112,10 +112,7 @@ export class LexicalCollaborationService {
         userColor: "#" + Math.floor(Math.random() * 16777215).toString(16),
       };
     } catch (error) {
-      console.error(
-        "[LexicalCollaboration] Failed to setup collaboration:",
-        error
-      );
+      // Failed to setup collaboration - return undefined
       return undefined;
     }
   }

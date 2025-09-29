@@ -17,8 +17,8 @@ import * as path from "path";
 import * as os from "os";
 import { Document } from "../models/spaceItem";
 import { getSDKInstance } from "./sdkAdapter";
-import type { DatalayerSDK } from "../../../core/lib/index.js";
-import type { Runtime } from "../../../core/lib/index.js";
+import type { DatalayerSDK } from "../../../core/lib/sdk/client";
+import type { Runtime } from "../../../core/lib/sdk/client/models/Runtime";
 import { DatalayerFileSystemProvider } from "../providers/documentsFileSystemProvider";
 import { detectDocumentType } from "../utils/documentUtils";
 
@@ -138,11 +138,6 @@ export class DocumentBridge {
       if (this.documentMetadata.has(document.uid)) {
         const metadata = this.documentMetadata.get(document.uid)!;
         if (fs.existsSync(metadata.localPath)) {
-          console.log(
-            "[DocumentBridge] Document already cached:",
-            metadata.localPath
-          );
-
           // Return the virtual URI, not the real file path
           const fileSystemProvider = DatalayerFileSystemProvider.getInstance();
           const existingVirtualUri = fileSystemProvider.getVirtualUri(
@@ -150,16 +145,21 @@ export class DocumentBridge {
           );
 
           if (existingVirtualUri) {
-            console.log(
-              "[DocumentBridge] Returning existing virtual URI:",
-              existingVirtualUri.toString()
-            );
             return existingVirtualUri;
           } else {
             // If for some reason the virtual mapping is lost, recreate it
             const cleanName = docName.replace(/\.[^/.]+$/, "");
-            const virtualPath = metadata.spaceName
-              ? `${metadata.spaceName}/${cleanName}${extension}`
+
+            // Sanitize space name for URI compatibility
+            const sanitizedSpaceName = metadata.spaceName
+              ? metadata.spaceName
+                  .replace(/:/g, "-")
+                  .replace(/[<>"\\|?*]/g, "_")
+                  .trim()
+              : null;
+
+            const virtualPath = sanitizedSpaceName
+              ? `${sanitizedSpaceName}/${cleanName}${extension}`
               : `${cleanName}${extension}`;
 
             const virtualUri = fileSystemProvider.registerMapping(
@@ -167,10 +167,6 @@ export class DocumentBridge {
               metadata.localPath
             );
 
-            console.log(
-              "[DocumentBridge] Recreated virtual URI for cached file:",
-              virtualUri.toString()
-            );
             return virtualUri;
           }
         }
@@ -179,15 +175,7 @@ export class DocumentBridge {
       // Fetch the document content - both Notebook and Lexical models have getContent() method
       const content = await document.getContent();
 
-      console.log("[DocumentBridge] Raw content fetched:", content);
-      console.log("[DocumentBridge] Content type:", typeof content);
-      if (typeof content === "object") {
-        console.log("[DocumentBridge] Content keys:", Object.keys(content));
-        console.log(
-          "[DocumentBridge] Content stringified preview:",
-          JSON.stringify(content).substring(0, 500)
-        );
-      }
+      // Process the fetched content
 
       // Write to local file
       if (typeof content === "string") {
@@ -219,13 +207,19 @@ export class DocumentBridge {
       };
       this.documentMetadata.set(document.uid, metadata);
 
-      console.log("[DocumentBridge] Document downloaded to:", localPath);
-      console.log("[DocumentBridge] File exists:", fs.existsSync(localPath));
-      console.log("[DocumentBridge] File size:", fs.statSync(localPath).size);
+      // Document downloaded successfully
 
       // Create a virtual URI that shows clean path structure
-      const virtualPath = spaceName
-        ? `${spaceName}/${cleanName}${extension}`
+      // Sanitize space name for URI compatibility (remove characters that cause URI errors)
+      const sanitizedSpaceName = spaceName
+        ? spaceName
+            .replace(/:/g, "-") // Replace colons with dashes (colons are illegal in URI paths)
+            .replace(/[<>"\\|?*]/g, "_") // Replace other problematic characters
+            .trim()
+        : null;
+
+      const virtualPath = sanitizedSpaceName
+        ? `${sanitizedSpaceName}/${cleanName}${extension}`
         : `${cleanName}${extension}`;
 
       // Register the mapping with the file system provider
@@ -235,14 +229,10 @@ export class DocumentBridge {
         localPath
       );
 
-      console.log(
-        "[DocumentBridge] Virtual URI created:",
-        virtualUri.toString()
-      );
+      // Virtual URI created successfully
 
       return virtualUri;
     } catch (error) {
-      console.error("[DocumentBridge] Error opening document:", error);
       throw error;
     }
   }
@@ -321,9 +311,7 @@ export class DocumentBridge {
       try {
         fs.unlinkSync(metadata.localPath);
         this.documentMetadata.delete(documentId);
-      } catch (error) {
-        console.error("[DocumentBridge] Error clearing document:", error);
-      }
+      } catch (error) {}
     }
   }
 
@@ -339,11 +327,6 @@ export class DocumentBridge {
 
     // Check if we have a cached runtime, but verify it's still running
     if (metadata?.runtime?.podName) {
-      console.log(
-        "[DocumentBridge] Checking if cached runtime is still active:",
-        metadata.runtime.podName
-      );
-
       try {
         // Verify the runtime still exists and is running
         const sdk = getSDKInstance();
@@ -358,29 +341,17 @@ export class DocumentBridge {
           currentRuntime.ingress &&
           currentRuntime.token
         ) {
-          console.log(
-            "[DocumentBridge] Cached runtime is still active:",
-            currentRuntime.pod_name
-          );
-
           // Update the cached runtime with fresh data
           metadata.runtime = currentRuntime;
           this.documentMetadata.set(documentId, metadata);
 
           return currentRuntime;
         } else {
-          console.log(
-            "[DocumentBridge] Cached runtime is no longer active or missing URLs, will create new one"
-          );
           // Clear the invalid cached runtime
           metadata.runtime = undefined;
           this.documentMetadata.set(documentId, metadata);
         }
       } catch (error) {
-        console.warn(
-          "[DocumentBridge] Failed to verify cached runtime, will create new one:",
-          error
-        );
         // Clear the invalid cached runtime
         if (metadata) {
           metadata.runtime = undefined;
@@ -432,19 +403,11 @@ export class DocumentBridge {
           if (files.length === 0) {
             fs.rmdirSync(dirPath);
           }
-        } catch (error) {
-          console.error("[DocumentBridge] Error cleaning up file:", error);
-        }
+        } catch (error) {}
       }
     }
 
     // Log active runtimes (they should be cleaned up by the platform automatically)
-    if (this.activeRuntimes.size > 0) {
-      console.log(
-        "[DocumentBridge] Active runtimes at shutdown:",
-        Array.from(this.activeRuntimes)
-      );
-    }
 
     this.documentMetadata.clear();
     this.activeRuntimes.clear();

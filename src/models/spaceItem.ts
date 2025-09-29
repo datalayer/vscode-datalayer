@@ -14,16 +14,14 @@
 import * as vscode from "vscode";
 import * as path from "path";
 import { ItemTypes } from "../../../core/lib/sdk/client/constants";
+import type { Space } from "../../../core/lib/sdk/client/models/Space";
+import type { Notebook } from "../../../core/lib/sdk/client/models/Notebook";
+import type { Lexical } from "../../../core/lib/sdk/client/models/Lexical";
 
 /**
  * Type alias for any SDK document model (Notebook or Lexical).
  */
-export type Document = any;
-
-/**
- * Type alias for any SDK space model.
- */
-export type Space = any;
+export type Document = Notebook | Lexical;
 
 /**
  * Types of items that can appear in the spaces tree.
@@ -55,9 +53,9 @@ export interface SpaceItemData {
   /** Type of the tree item */
   type: ItemType;
   /** SDK Space model instance (for SPACE type) */
-  space?: any; // SDK Space model
+  space?: Space;
   /** SDK Notebook or Lexical model instance (for NOTEBOOK/DOCUMENT types) */
-  document?: any; // SDK Notebook or Lexical model
+  document?: Document;
   /** Error message (for ERROR type) */
   error?: string;
   /** Username of the authenticated user */

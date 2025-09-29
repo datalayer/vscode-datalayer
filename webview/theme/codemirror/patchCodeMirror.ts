@@ -139,9 +139,6 @@ export function patchCodeMirrorForVSCode(): void {
   const originalRegistry = win.EditorExtensionRegistry;
 
   if (!originalRegistry) {
-    console.warn(
-      "[patchCodeMirror] EditorExtensionRegistry not found on window"
-    );
     // We'll try a different approach - patch after the notebook is created
     patchAfterNotebookCreation();
     return;
@@ -170,9 +167,6 @@ export function patchCodeMirrorForVSCode(): void {
         };
 
         originalAddExtension.call(this, immutableExtension);
-        console.log(
-          "[patchCodeMirror] Added VS Code syntax highlighting extension"
-        );
       }
     }
   };
@@ -240,13 +234,7 @@ function patchExistingEditor(editorElement: HTMLElement): void {
         extensions: [...(view.state.extensions || []), syntaxExtension],
       }),
     });
-
-    console.log(
-      "[patchCodeMirror] Patched existing editor with VS Code syntax highlighting"
-    );
-  } catch (error) {
-    console.error("[patchCodeMirror] Failed to patch editor:", error);
-  }
+  } catch (error) {}
 }
 
 /**

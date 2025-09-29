@@ -51,11 +51,9 @@ export function setupAuthStateManagement(
 
     // Refresh controllers on auth change
     controllerManager.refreshControllers();
-    console.log("[Extension] Refreshed controllers due to auth state change");
   };
 
   authProvider.onAuthStateChanged(() => {
-    console.log("[Extension] Auth state changed, updating UI...");
     updateAuthState();
   });
 

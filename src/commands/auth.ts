@@ -44,9 +44,7 @@ export function registerAuthCommands(
       try {
         await authProvider.login();
         updateAuthState();
-      } catch (error) {
-        console.error("[Extension] Login failed:", error);
-      }
+      } catch (error) {}
     })
   );
 
@@ -60,9 +58,7 @@ export function registerAuthCommands(
       try {
         await authProvider.logout();
         updateAuthState();
-      } catch (error) {
-        console.error("[Extension] Logout failed:", error);
-      }
+      } catch (error) {}
     })
   );
 

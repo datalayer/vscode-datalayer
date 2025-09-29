@@ -363,7 +363,7 @@ export class VSCodeThemeProvider extends BaseThemeProvider {
    * @example
    * ```typescript
    * const colors = provider.extractSyntaxColors();
-   * console.log(colors.get('keyword')); // '#C586C0' for dark themes
+   * const keywordColor = colors.get('keyword'); // '#C586C0' for dark themes
    * ```
    */
   public extractSyntaxColors(): Map<string, string> {

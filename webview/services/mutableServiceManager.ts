@@ -57,17 +57,10 @@ export class MutableServiceManager {
           try {
             (this._serviceManager as any).dispose();
           } catch (error) {
-            console.warn(
-              "[MutableServiceManager] Error during delayed disposal:",
-              error
-            );
+            // Error during delayed disposal
           }
         }, 50);
       } catch (error) {
-        console.warn(
-          "[MutableServiceManager] Error disposing old service manager:",
-          error
-        );
         // Continue with connection update anyway
       }
     }
@@ -104,17 +97,10 @@ export class MutableServiceManager {
           try {
             (this._serviceManager as any).dispose();
           } catch (error) {
-            console.warn(
-              "[MutableServiceManager] Error during delayed disposal:",
-              error
-            );
+            // Error during delayed disposal
           }
         }, 50);
       } catch (error) {
-        console.warn(
-          "[MutableServiceManager] Error disposing old service manager:",
-          error
-        );
         // Continue with reset anyway
       }
     }

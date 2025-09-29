@@ -69,7 +69,7 @@ const getVSCodeAPI = () => {
     (window as any).vscode = api;
     return api;
   } catch (error) {
-    console.error("Failed to acquire VS Code API:", error);
+    // Failed to acquire VS Code API
     return null;
   }
 };
@@ -191,7 +191,7 @@ function LexicalWebview() {
 
   const handleSave = useCallback((newContent: string) => {
     if (!vscode) {
-      console.error("VS Code API not available");
+      // VS Code API not available
       return;
     }
     // Save to VS Code state
@@ -207,7 +207,7 @@ function LexicalWebview() {
   const handleContentChange = useCallback(
     (newContent: string) => {
       if (!vscode) {
-        console.error("VS Code API not available");
+        // VS Code API not available
         return;
       }
       // Update local state

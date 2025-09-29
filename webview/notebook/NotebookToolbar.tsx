@@ -13,7 +13,7 @@ import React, { useState, useEffect, useContext } from "react";
 import useNotebookStore from "@datalayer/jupyter-react/lib/components/notebook/NotebookState";
 import { MessageHandlerContext } from "../services/messageHandler";
 import { NotebookActions } from "@jupyterlab/notebook";
-import type { RuntimeJSON } from "@datalayer/core/lib/sdk/client/models/Runtime";
+import type { RuntimeJSON } from "../../../core/lib/sdk/client/models/Runtime";
 
 /**
  * Props for the NotebookToolbar component
@@ -238,11 +238,6 @@ export const NotebookToolbar: React.FC<NotebookToolbarProps> = ({
   useEffect(() => {
     // Check if we have a selected runtime (works for both Datalayer and local notebooks)
     if (selectedRuntime) {
-      console.log(
-        "[NotebookToolbar] Received runtime data:",
-        JSON.stringify(selectedRuntime, null, 2)
-      );
-
       // Show "Datalayer: {Runtime name}" to clearly indicate it's a Datalayer runtime
       // Use givenName first, then fallback to environmentTitle, then environmentName, then UID
       const runtimeName =
@@ -251,14 +246,6 @@ export const NotebookToolbar: React.FC<NotebookToolbarProps> = ({
         selectedRuntime.environmentName ||
         selectedRuntime.uid ||
         "Runtime";
-
-      console.log("[NotebookToolbar] Runtime name resolution:", {
-        givenName: selectedRuntime.givenName,
-        environmentTitle: selectedRuntime.environmentTitle,
-        environmentName: selectedRuntime.environmentName,
-        uid: selectedRuntime.uid,
-        finalName: runtimeName,
-      });
 
       setSelectedKernel(`Datalayer: ${runtimeName}`);
 
@@ -304,9 +291,7 @@ export const NotebookToolbar: React.FC<NotebookToolbarProps> = ({
         // Fallback to the store method
         notebookStore.runAll(notebookId);
       }
-    } catch (error) {
-      console.error("[NotebookToolbar] Error running all cells:", error);
-    }
+    } catch (error) {}
   };
 
   const handleAddCodeCell = () => {
@@ -335,9 +320,7 @@ export const NotebookToolbar: React.FC<NotebookToolbarProps> = ({
           activeCellId: null,
         });
       }
-    } catch (error) {
-      console.error("[NotebookToolbar] Error adding code cell:", error);
-    }
+    } catch (error) {}
   };
 
   const handleAddMarkdownCell = () => {
@@ -356,9 +339,7 @@ export const NotebookToolbar: React.FC<NotebookToolbarProps> = ({
           source: "",
         });
       }
-    } catch (error) {
-      console.error("[NotebookToolbar] Error adding markdown cell:", error);
-    }
+    } catch (error) {}
   };
 
   const handleSelectRuntime = () => {

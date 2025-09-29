@@ -60,10 +60,7 @@ export async function initializeServices(
   try {
     await authProvider.initialize();
   } catch (error) {
-    console.log(
-      "[Extension] No existing authentication found:",
-      error instanceof Error ? error.message : String(error)
-    );
+    // Silently handle authentication initialization errors
   }
 
   context.subscriptions.push(

@@ -80,9 +80,6 @@ export class NotebookNetworkService {
       wsURL.searchParams.set("token", "xxxxx");
     }
     const protocol = body.protocol ?? undefined;
-    console.debug(
-      `Opening websocket to ${wsURL.toString()} with protocol '${protocol}'.`
-    );
     const ws = new WebSocket(body.origin, protocol);
     this._websockets.set(id!, ws);
     webview.onDidDispose(() => {
@@ -90,16 +87,13 @@ export class NotebookNetworkService {
       ws.close();
     });
     ws.onopen = (event) => {
-      console.log(`Websocket to ${body.origin} opened.`);
       this.postMessage(webview, "websocket-open", {}, id);
     };
     ws.onmessage = (event) => {
       const { data } = event;
-      console.debug(`Message on ${wsURL.toString()}:`, { data });
       this.postMessage(webview, "websocket-message", { data }, id);
     };
     ws.onclose = (event) => {
-      console.log(`Websocket to ${wsURL.toString()} closed.`);
       const { code, reason, wasClean } = event;
       this.postMessage(
         webview,
@@ -109,7 +103,6 @@ export class NotebookNetworkService {
       );
     };
     ws.onerror = (event) => {
-      console.debug(`Error on ${wsURL.toString()}:`, event);
       const error = (event as any).error;
       const message = (event as any).message ?? "WebSocket error occurred";
       this.postMessage(webview, "websocket-error", { error, message }, id);
@@ -122,14 +115,9 @@ export class NotebookNetworkService {
    * @param message - Extension message containing data to send
    */
   sendWebsocketMessage(message: ExtensionMessage): void {
-    console.log(`Sending websocket message from ${message.id}.`, message.body);
     const { id } = message;
     const ws = this._websockets.get(id ?? "");
     if (!ws) {
-      console.error(
-        "Failed to send websocket message from editor with no matching websocket.",
-        message
-      );
       return;
     }
     ws.send(message.body.data);

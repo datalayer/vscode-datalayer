@@ -285,10 +285,6 @@ export class JupyterNotebookProvider
 
             if (metadata && metadata.document.uid) {
               documentId = metadata.document.uid;
-              console.log(
-                "[NotebookEditor] Got document ID from metadata:",
-                documentId
-              );
             } else {
               // Fallback: try to extract document ID from the filename
               const filename = document.uri.path.split("/").pop() ?? "";
@@ -296,10 +292,6 @@ export class JupyterNotebookProvider
               documentId = match ? match[1] : undefined;
 
               if (documentId) {
-                console.log(
-                  "[NotebookEditor] Got document ID from filename fallback:",
-                  documentId
-                );
               }
             }
           }
@@ -445,35 +437,20 @@ export class JupyterNotebookProvider
     document: NotebookDocument,
     message: ExtensionMessage
   ) {
-    console.log(
-      "[JupyterNotebookProvider] Received message from webview:",
-      message.type
-    );
-
     switch (message.type) {
       case "ready":
         // Handle in resolveCustomEditor
         return;
       case "select-runtime":
       case "select-kernel": {
-        console.log(
-          "[JupyterNotebookProvider] Received select-kernel message from webview"
-        );
-
         // Show the kernel selector with available options
         const sdk = getSDKInstance();
         const authProvider = SDKAuthProvider.getInstance();
 
         // Pass the document URI and kernel bridge so the kernel can be connected
         showKernelSelector(sdk, authProvider, this._kernelBridge, document.uri)
-          .then(() => {
-            console.log("[JupyterNotebookProvider] Kernel selection completed");
-          })
+          .then(() => {})
           .catch((error) => {
-            console.error(
-              "[JupyterNotebookProvider] Kernel selection failed:",
-              error
-            );
             // Fallback to Datalayer runtime selector
             this.showDatalayerRuntimeSelector(document);
           });
@@ -482,15 +459,8 @@ export class JupyterNotebookProvider
       }
 
       case "terminate-runtime": {
-        console.log(
-          "[JupyterNotebookProvider] Received terminate-runtime message from webview"
-        );
-
         const runtime = message.body?.runtime;
         if (!runtime) {
-          console.error(
-            "[JupyterNotebookProvider] No runtime provided for termination"
-          );
           return;
         }
 
@@ -511,20 +481,8 @@ export class JupyterNotebookProvider
             // Delete the runtime via SDK - MUST use pod_name, not uid!
             // If podName is missing, construct it from uid (format: runtime-{uid})
             const podName = runtime.podName ?? `runtime-${runtime.uid}`;
-            console.log(
-              "[JupyterNotebookProvider] Deleting runtime with pod_name:",
-              podName
-            );
-            console.log(
-              "[JupyterNotebookProvider] Runtime object for context:",
-              JSON.stringify(runtime, null, 2)
-            );
 
             const result = await (sdk as any).deleteRuntime(podName);
-            console.log(
-              "[JupyterNotebookProvider] deleteRuntime API result:",
-              result
-            );
 
             // Notify user of success
             vscode.window.showInformationMessage(
@@ -539,10 +497,6 @@ export class JupyterNotebookProvider
               runtime: null,
             });
           } catch (error: any) {
-            console.error(
-              "[JupyterNotebookProvider] Failed to terminate runtime:",
-              error
-            );
             vscode.window.showErrorMessage(
               `Failed to terminate runtime: ${error.message || error}`
             );
@@ -562,10 +516,6 @@ export class JupyterNotebookProvider
           callback(message.body);
           this._callbacks.delete(message.requestId!);
         } else {
-          console.warn(
-            "[NotebookEditor] No callback found for requestId:",
-            message.requestId
-          );
         }
         return;
       }
@@ -588,19 +538,8 @@ export class JupyterNotebookProvider
       case "notebook-content-changed": {
         // Only track changes for local notebooks, not Datalayer space notebooks
         const isDatalayerNotebook = document.uri.scheme === "datalayer";
-        console.log("[NotebookEditor] notebook-content-changed received", {
-          isDatalayerNotebook,
-          scheme: document.uri.scheme,
-          hasContent: !!message.body?.content,
-          contentType: message.body?.content?.constructor?.name,
-          contentLength: message.body?.content?.length,
-        });
 
         if (!isDatalayerNotebook) {
-          console.log(
-            "[NotebookEditor] Processing content change for local notebook"
-          );
-
           // Ensure content is a Uint8Array
           let content: Uint8Array;
           if (message.body.content instanceof Uint8Array) {
@@ -609,51 +548,25 @@ export class JupyterNotebookProvider
             // Convert array to Uint8Array if needed
             content = new Uint8Array(message.body.content);
           } else {
-            console.error(
-              "[NotebookEditor] Invalid content type:",
-              typeof message.body.content
-            );
             return;
           }
 
-          console.log(
-            "[NotebookEditor] Making edit with content size:",
-            content.length
-          );
           document.makeEdit({
             type: "content-update",
             content: content,
           });
-          console.log(
-            "[NotebookEditor] Edit made, document should be marked dirty"
-          );
         } else {
-          console.log(
-            "[NotebookEditor] Skipping content change for Datalayer notebook"
-          );
         }
         return;
       }
 
       // This case should not happen as getFileData is handled differently
       case "getFileData": {
-        console.warn("[NotebookEditor] Unexpected getFileData message");
         return;
       }
       case "runtime-expired": {
-        console.log(
-          "[JupyterNotebookProvider] Received runtime-expired message from webview"
-        );
-        console.log(
-          "[JupyterNotebookProvider] Runtime expiration message body:",
-          JSON.stringify(message.body, null, 2)
-        );
-
         const runtime = message.body?.runtime;
         if (!runtime) {
-          console.error(
-            "[JupyterNotebookProvider] No runtime provided for expiration handling"
-          );
           return;
         }
 
@@ -663,16 +576,10 @@ export class JupyterNotebookProvider
           runtime.givenName ||
           runtime.uid ||
           "Unknown";
-        console.log(
-          `[JupyterNotebookProvider] Processing expiration for runtime: ${runtimeName}`
-        );
 
         // Show notification that runtime expired
         const notificationPromise = vscode.window.showWarningMessage(
           `Runtime "${runtimeName}" has expired. Notebook switched to offline mode.`
-        );
-        console.log(
-          "[JupyterNotebookProvider] Expiration notification displayed"
         );
 
         // Clear the kernel selection in the webview (same as terminate-runtime)
@@ -680,20 +587,13 @@ export class JupyterNotebookProvider
           type: "runtime-terminated", // Reuse the same message type for cleanup
           runtime: null,
         });
-        console.log(
-          "[JupyterNotebookProvider] Sent runtime-terminated message to webview"
-        );
 
         // Wait for both operations
         await Promise.all([notificationPromise, postMessagePromise]);
-        console.log(
-          "[JupyterNotebookProvider] Runtime expiration handling completed"
-        );
 
         return;
       }
     }
-    console.warn(`Unknown message ${message.type}.`, message);
   }
 
   /**
@@ -708,13 +608,7 @@ export class JupyterNotebookProvider
 
     selectDatalayerRuntime(sdk, authProvider)
       .then(async (runtime) => {
-        console.log(
-          "[JupyterNotebookProvider] selectDatalayerRuntime promise resolved with:",
-          runtime
-        );
         if (runtime) {
-          console.log("[JupyterNotebookProvider] Runtime selected:", runtime);
-
           // Send selected runtime to webview via kernel bridge
           await this._kernelBridge.connectWebviewNotebook(
             document.uri,
@@ -723,10 +617,6 @@ export class JupyterNotebookProvider
         }
       })
       .catch((error) => {
-        console.error(
-          "[JupyterNotebookProvider] Failed to select runtime:",
-          error
-        );
         vscode.window.showErrorMessage(`Failed to select runtime: ${error}`);
       });
   }

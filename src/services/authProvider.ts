@@ -12,7 +12,8 @@
  */
 
 import * as vscode from "vscode";
-import type { DatalayerSDK, User } from "../../../core/lib/index.js";
+import type { DatalayerSDK } from "../../../core/lib/sdk/client";
+import type { User } from "../../../core/lib/sdk/client/models/User";
 
 /**
  * Authentication state for VS Code context.
@@ -32,7 +33,7 @@ export interface VSCodeAuthState {
  * const authProvider = SDKAuthProvider.getInstance(sdk, context);
  * await authProvider.initialize();
  * authProvider.onAuthStateChanged.event((state) => {
- *   console.log('Auth state changed:', state.isAuthenticated);
+ *   // Auth state changed
  * });
  * ```
  */
@@ -96,7 +97,6 @@ export class SDKAuthProvider {
         error: null,
       };
       this._onAuthStateChanged.fire(this._authState);
-      console.log("[SDK Auth] Successfully initialized with existing token");
     } catch (error) {
       this._authState = {
         isAuthenticated: false,
@@ -107,7 +107,6 @@ export class SDKAuthProvider {
             : "Unknown authentication error",
       };
       this._onAuthStateChanged.fire(this._authState);
-      console.log("[SDK Auth] No valid authentication found");
     }
   }
 
@@ -116,48 +115,17 @@ export class SDKAuthProvider {
    * Updates authentication state based on the result.
    */
   async login(): Promise<void> {
-    console.log("[SDK Auth] Login command triggered");
-
     const token = await this.promptForToken();
     if (!token) {
-      console.log("[SDK Auth] No token provided, cancelling login");
       return;
     }
 
     try {
-      // Debug: Check what methods are available on the SDK
-      console.log(
-        "[SDK Auth] Available SDK methods:",
-        Object.getOwnPropertyNames(this.sdk)
-      );
-      console.log(
-        "[SDK Auth] SDK prototype methods:",
-        Object.getOwnPropertyNames(Object.getPrototypeOf(this.sdk))
-      );
-      console.log(
-        "[SDK Auth] Has whoami method:",
-        typeof (this.sdk as any).whoami
-      );
-      console.log(
-        "[SDK Auth] Has updateToken method:",
-        typeof (this.sdk as any).updateToken
-      );
-
-      // Try to see if methods are on the instance directly
-      console.log("[SDK Auth] SDK instance type:", this.sdk.constructor.name);
-      console.log(
-        "[SDK Auth] SDK has property 'whoami':",
-        "whoami" in this.sdk
-      );
-
       // Update SDK with new token
-      console.log("[SDK Auth] Updating SDK token");
       await (this.sdk as any).updateToken(token);
 
       // Verify the token by getting user info
-      console.log("[SDK Auth] Calling whoami to verify token");
       const user = await (this.sdk as any).whoami();
-      console.log("[SDK Auth] User received:", user);
 
       this._authState = {
         isAuthenticated: true,
@@ -171,8 +139,6 @@ export class SDKAuthProvider {
       await vscode.window.showInformationMessage(
         `Successfully logged in as ${displayName}`
       );
-
-      console.log("[SDK Auth] Login completed successfully");
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : "Unknown login error";
@@ -185,7 +151,6 @@ export class SDKAuthProvider {
 
       await vscode.window.showErrorMessage(`Login failed: ${errorMessage}`);
 
-      console.error("[SDK Auth] Login failed:", error);
       throw error;
     }
   }
@@ -208,9 +173,7 @@ export class SDKAuthProvider {
       this._onAuthStateChanged.fire(this._authState);
 
       await vscode.window.showInformationMessage("Successfully logged out");
-      console.log("[SDK Auth] Logout completed successfully");
     } catch (error) {
-      console.error("[SDK Auth] Logout failed:", error);
       // Even if logout fails, clear local state
       this._authState = {
         isAuthenticated: false,

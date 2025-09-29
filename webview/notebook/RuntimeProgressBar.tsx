@@ -13,7 +13,7 @@
 
 import React, { useState, useEffect, useMemo, useContext } from "react";
 import { MessageHandlerContext } from "../services/messageHandler";
-import type { RuntimeJSON } from "@datalayer/core/lib/sdk/client/models/Runtime";
+import type { RuntimeJSON } from "../../../core/lib/sdk/client/models/Runtime";
 
 interface RuntimeProgressBarProps {
   runtime: RuntimeJSON | undefined;
@@ -38,24 +38,9 @@ export function RuntimeProgressBar({
       return { initialSeconds: 0, totalSeconds: 3600 };
     }
 
-    console.log(
-      "[RuntimeProgressBar] Processing runtime data for progress calculation"
-    );
-    console.log(
-      "[RuntimeProgressBar] Runtime object:",
-      JSON.stringify(runtime, null, 2)
-    );
-
     // If we have expires_at and started_at, calculate both remaining and total
     if (runtime.expires_at && runtime.started_at) {
       const now = Date.now();
-      const nowUTC = new Date().toISOString();
-
-      console.log("[RuntimeProgressBar] Time calculations:");
-      console.log("  - Current time (UTC):", nowUTC);
-      console.log("  - Current time (timestamp):", now);
-      console.log("  - Raw started_at:", runtime.started_at);
-      console.log("  - Raw expires_at:", runtime.expires_at);
 
       // Parse Unix timestamps (in seconds, potentially as strings)
       const expiresAt =
@@ -70,39 +55,10 @@ export function RuntimeProgressBar({
           ? parseFloat(runtime.started_at) * 1000 // Unix timestamp in seconds
           : new Date(runtime.started_at).getTime();
 
-      console.log("  - Parsed started_at (timestamp):", startedAt);
-      console.log(
-        "  - Parsed started_at (UTC):",
-        new Date(startedAt).toISOString()
-      );
-      console.log("  - Parsed expires_at (timestamp):", expiresAt);
-      console.log(
-        "  - Parsed expires_at (UTC):",
-        new Date(expiresAt).toISOString()
-      );
-
       // Total duration from start to expiry
       const totalDuration = Math.floor((expiresAt - startedAt) / 1000);
       // Time remaining from now to expiry
       const remaining = Math.max(0, Math.floor((expiresAt - now) / 1000));
-
-      console.log("  - Total duration (seconds):", totalDuration);
-      console.log(
-        "  - Total duration (minutes):",
-        Math.round((totalDuration / 60) * 100) / 100
-      );
-      console.log("  - Time remaining (seconds):", remaining);
-      console.log(
-        "  - Time remaining (minutes):",
-        Math.round((remaining / 60) * 100) / 100
-      );
-      console.log("  - Time elapsed (seconds):", totalDuration - remaining);
-      console.log(
-        "  - Time elapsed (minutes):",
-        Math.round(((totalDuration - remaining) / 60) * 100) / 100
-      );
-
-      console.log("[RuntimeProgressBar] Time calculation completed");
 
       return { initialSeconds: remaining, totalSeconds: totalDuration };
     }
@@ -137,9 +93,6 @@ export function RuntimeProgressBar({
   // Set up countdown timer
   useEffect(() => {
     if (!runtime || !isDatalayerRuntime || initialSeconds <= 0) {
-      console.log(
-        "[RuntimeProgressBar] No runtime or expired, setting progress to 100%"
-      );
       setPercentage(100); // When no time left, bar is full
       return;
     }
@@ -148,12 +101,6 @@ export function RuntimeProgressBar({
     const elapsedSeconds = totalSeconds - initialSeconds;
     const initialPercentage =
       totalSeconds > 0 ? (elapsedSeconds / totalSeconds) * 100 : 0;
-
-    console.log("[RuntimeProgressBar] Progress bar initialization:");
-    console.log("  - Initial seconds remaining:", initialSeconds);
-    console.log("  - Total seconds:", totalSeconds);
-    console.log("  - Elapsed seconds:", elapsedSeconds);
-    console.log("  - Initial percentage:", initialPercentage);
 
     setPercentage(Math.max(0, Math.min(100, initialPercentage)));
 
@@ -166,31 +113,9 @@ export function RuntimeProgressBar({
       const elapsed = totalSeconds - currentSeconds;
       const pct = totalSeconds > 0 ? (elapsed / totalSeconds) * 100 : 100;
 
-      // Debug every 10 seconds to see progress
-      if (currentSeconds % 10 === 0) {
-        console.log("[RuntimeProgressBar] Progress update:");
-        console.log("  - Current seconds remaining:", currentSeconds);
-        console.log("  - Elapsed seconds:", elapsed);
-        console.log("  - Percentage:", pct);
-        console.log(
-          "  - Time remaining (MM:SS):",
-          Math.floor(currentSeconds / 60) +
-            ":" +
-            (currentSeconds % 60).toString().padStart(2, "0")
-        );
-      }
-
       setPercentage(Math.max(0, Math.min(100, pct)));
 
       if (currentSeconds === 0 && !isExpired) {
-        console.log(
-          "[RuntimeProgressBar] Runtime expired! Sending runtime-expired message"
-        );
-        console.log(
-          "[RuntimeProgressBar] Runtime object:",
-          JSON.stringify(runtime, null, 2)
-        );
-
         setIsExpired(true);
 
         // Post message to extension that runtime expired
@@ -199,18 +124,7 @@ export function RuntimeProgressBar({
             type: "runtime-expired",
             body: { runtime: runtime }, // Make sure runtime is in body like other messages
           };
-          console.log(
-            "[RuntimeProgressBar] Sending runtime-expired message:",
-            expiredMessage
-          );
           messageHandler.postMessage(expiredMessage);
-          console.log(
-            "[RuntimeProgressBar] Runtime-expired message sent successfully via MessageHandler"
-          );
-        } else {
-          console.error(
-            "[RuntimeProgressBar] MessageHandler not available for runtime expiration message"
-          );
         }
         clearInterval(interval);
       }

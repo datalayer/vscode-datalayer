@@ -104,7 +104,7 @@ export abstract class BaseThemeProvider implements IThemeProvider {
       try {
         listener();
       } catch (error) {
-        console.error("Error notifying theme listener:", error);
+        // Silently handle theme listener errors
       }
     });
   }
