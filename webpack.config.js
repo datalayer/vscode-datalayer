@@ -92,31 +92,31 @@ const webviewConfig = {
     alias: {
       "@codemirror/state": path.resolve(
         __dirname,
-        "./node_modules/@codemirror/state"
+        "./node_modules/@codemirror/state",
       ),
       "@codemirror/view": path.resolve(
         __dirname,
-        "./node_modules/@codemirror/view"
+        "./node_modules/@codemirror/view",
       ),
       "@codemirror/language": path.resolve(
         __dirname,
-        "./node_modules/@codemirror/language"
+        "./node_modules/@codemirror/language",
       ),
       "@codemirror/commands": path.resolve(
         __dirname,
-        "./node_modules/@codemirror/commands"
+        "./node_modules/@codemirror/commands",
       ),
       "@codemirror/search": path.resolve(
         __dirname,
-        "./node_modules/@codemirror/search"
+        "./node_modules/@codemirror/search",
       ),
       "@codemirror/autocomplete": path.resolve(
         __dirname,
-        "./node_modules/@codemirror/autocomplete"
+        "./node_modules/@codemirror/autocomplete",
       ),
       "@codemirror/lint": path.resolve(
         __dirname,
-        "./node_modules/@codemirror/lint"
+        "./node_modules/@codemirror/lint",
       ),
       // Also deduplicate yjs to prevent synchronization issues
       yjs: path.resolve(__dirname, "./node_modules/yjs"),
@@ -285,6 +285,37 @@ const lexicalWebviewConfig = {
         test: /\.wasm$/,
         type: "webassembly/async",
       },
+      // Rule for pyodide kernel wheel files
+      {
+        test: /\.whl$/,
+        type: "asset/resource",
+        generator: {
+          filename: "pypi/[name][ext]",
+        },
+      },
+      // Rule for other pyodide kernel resources
+      {
+        test: /pypi\/.*/,
+        type: "asset/resource",
+        generator: {
+          filename: "pypi/[name][ext][query]",
+        },
+      },
+      {
+        test: /pyodide-kernel-extension\/schema\/.*/,
+        type: "asset/resource",
+        generator: {
+          filename: "schema/[name][ext][query]",
+        },
+      },
+      // Ship the JupyterLite service worker.
+      {
+        resourceQuery: /text/,
+        type: "asset/resource",
+        generator: {
+          filename: "[name][ext]",
+        },
+      },
     ],
   },
   resolve: {
@@ -298,31 +329,31 @@ const lexicalWebviewConfig = {
     alias: {
       "@codemirror/state": path.resolve(
         __dirname,
-        "./node_modules/@codemirror/state"
+        "./node_modules/@codemirror/state",
       ),
       "@codemirror/view": path.resolve(
         __dirname,
-        "./node_modules/@codemirror/view"
+        "./node_modules/@codemirror/view",
       ),
       "@codemirror/language": path.resolve(
         __dirname,
-        "./node_modules/@codemirror/language"
+        "./node_modules/@codemirror/language",
       ),
       "@codemirror/commands": path.resolve(
         __dirname,
-        "./node_modules/@codemirror/commands"
+        "./node_modules/@codemirror/commands",
       ),
       "@codemirror/search": path.resolve(
         __dirname,
-        "./node_modules/@codemirror/search"
+        "./node_modules/@codemirror/search",
       ),
       "@codemirror/autocomplete": path.resolve(
         __dirname,
-        "./node_modules/@codemirror/autocomplete"
+        "./node_modules/@codemirror/autocomplete",
       ),
       "@codemirror/lint": path.resolve(
         __dirname,
-        "./node_modules/@codemirror/lint"
+        "./node_modules/@codemirror/lint",
       ),
       // Also deduplicate yjs to prevent synchronization issues
       yjs: path.resolve(__dirname, "./node_modules/yjs"),

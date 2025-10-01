@@ -110,7 +110,7 @@ export class NotebookDocument
   static async create(
     uri: vscode.Uri,
     backupId: string | undefined,
-    delegate: NotebookDocumentDelegate
+    delegate: NotebookDocumentDelegate,
   ): Promise<NotebookDocument> {
     const dataFile =
       typeof backupId === "string" ? vscode.Uri.parse(backupId) : uri;
@@ -142,7 +142,7 @@ export class NotebookDocument
   private readonly _delegate: NotebookDocumentDelegate;
 
   private readonly _onDidDispose = this._register(
-    new vscode.EventEmitter<void>()
+    new vscode.EventEmitter<void>(),
   );
   public readonly onDidDispose = this._onDidDispose.event;
 
@@ -150,7 +150,7 @@ export class NotebookDocument
     new vscode.EventEmitter<{
       readonly content?: Uint8Array;
       readonly edits: readonly NotebookEdit[];
-    }>()
+    }>(),
   );
   public readonly onDidChangeContent = this._onDidChangeDocument.event;
 
@@ -159,7 +159,7 @@ export class NotebookDocument
       readonly label: string;
       undo(): void;
       redo(): void;
-    }>()
+    }>(),
   );
   public readonly onDidChange = this._onDidChange.event;
 
@@ -173,7 +173,7 @@ export class NotebookDocument
   private constructor(
     uri: vscode.Uri,
     initialContent: Uint8Array,
-    delegate: NotebookDocumentDelegate
+    delegate: NotebookDocumentDelegate,
   ) {
     super();
     this._uri = uri;
@@ -317,7 +317,7 @@ export class NotebookDocument
    */
   async saveAs(
     targetResource: vscode.Uri,
-    cancellation: vscode.CancellationToken
+    cancellation: vscode.CancellationToken,
   ): Promise<void> {
     if (this.uri.scheme === "datalayer") {
       if (targetResource.toString() === this.uri.toString()) {
@@ -378,7 +378,7 @@ export class NotebookDocument
    */
   async backup(
     destination: vscode.Uri,
-    cancellation: vscode.CancellationToken
+    cancellation: vscode.CancellationToken,
   ): Promise<vscode.CustomDocumentBackup> {
     await this.saveAs(destination, cancellation);
 

@@ -109,7 +109,7 @@ function CSSVariableInjector({
   useEffect(() => {
     // Create or update style element for variables
     let styleEl = document.getElementById(
-      "enhanced-theme-variables"
+      "enhanced-theme-variables",
     ) as HTMLStyleElement;
     if (!styleEl) {
       styleEl = document.createElement("style");
@@ -209,10 +209,10 @@ export function EnhancedJupyterReactTheme({
   children,
 }: IEnhancedJupyterReactThemeProps): JSX.Element {
   const [themeProvider, setThemeProvider] = useState<IThemeProvider | null>(
-    null
+    null,
   );
   const [currentTheme, setCurrentTheme] = useState<IThemeDefinition | null>(
-    null
+    null,
   );
   const [colorMode, setColorMode] = useState<ColorMode>(initialColorMode);
   const [primerTheme, setPrimerTheme] = useState<any>(null);
@@ -310,7 +310,7 @@ export function EnhancedJupyterReactTheme({
       setProvider: setThemeProvider,
       setColorMode,
     }),
-    [themeProvider, currentTheme, colorMode]
+    [themeProvider, currentTheme, colorMode],
   );
 
   // Render with appropriate theme

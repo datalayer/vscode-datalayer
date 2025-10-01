@@ -30,7 +30,7 @@ import * as vscode from "vscode";
  * ```
  */
 export async function showAuthenticationDialog(
-  source?: string
+  source?: string,
 ): Promise<boolean> {
   const message = source
     ? `Connect to Datalayer to use ${source.toLowerCase()}`
@@ -39,7 +39,7 @@ export async function showAuthenticationDialog(
   const action = await vscode.window.showInformationMessage(
     message,
     "Login",
-    "Cancel"
+    "Cancel",
   );
 
   return action === "Login";

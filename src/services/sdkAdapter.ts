@@ -97,7 +97,7 @@ export class VSCodeStorage implements PlatformStorage {
 
   async clear(): Promise<void> {
     this.logger.debug(
-      "Storage clear operation (no-op - VS Code SecretStorage doesn't support clear all)"
+      "Storage clear operation (no-op - VS Code SecretStorage doesn't support clear all)",
     );
     // VS Code SecretStorage doesn't have a clear-all method
     // We'll need to track keys individually if needed

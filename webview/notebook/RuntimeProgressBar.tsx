@@ -38,22 +38,11 @@ export function RuntimeProgressBar({
       return { initialSeconds: 0, totalSeconds: 3600 };
     }
 
-    // If we have expires_at and started_at, calculate both remaining and total
-    if (runtime.expires_at && runtime.started_at) {
+    // RuntimeJSON provides startedAt and expiredAt as ISO 8601 strings
+    if (runtime.expiredAt && runtime.startedAt) {
       const now = Date.now();
-
-      // Parse Unix timestamps (in seconds, potentially as strings)
-      const expiresAt =
-        typeof runtime.expires_at === "string" &&
-        !runtime.expires_at.includes("-")
-          ? parseFloat(runtime.expires_at) * 1000 // Unix timestamp in seconds
-          : new Date(runtime.expires_at).getTime();
-
-      const startedAt =
-        typeof runtime.started_at === "string" &&
-        !runtime.started_at.includes("-")
-          ? parseFloat(runtime.started_at) * 1000 // Unix timestamp in seconds
-          : new Date(runtime.started_at).getTime();
+      const expiresAt = new Date(runtime.expiredAt).getTime();
+      const startedAt = new Date(runtime.startedAt).getTime();
 
       // Total duration from start to expiry
       const totalDuration = Math.floor((expiresAt - startedAt) / 1000);
@@ -63,23 +52,15 @@ export function RuntimeProgressBar({
       return { initialSeconds: remaining, totalSeconds: totalDuration };
     }
 
-    // Fallback: If only started_at is available, assume 10 credits default runtime
-    if (runtime.started_at) {
+    // Fallback: If only startedAt is available, assume 10 credits default runtime
+    if (runtime.startedAt) {
       const now = Date.now();
-
-      // Parse Unix timestamp
-      const startedAt =
-        typeof runtime.started_at === "string" &&
-        !runtime.started_at.includes("-")
-          ? parseFloat(runtime.started_at) * 1000 // Unix timestamp in seconds
-          : new Date(runtime.started_at).getTime();
+      const startedAt = new Date(runtime.startedAt).getTime();
 
       // Default runtime: 10 credits = 60 minutes = 3600 seconds
       const defaultTotalSeconds = 10 * 360;
       const elapsed = Math.floor((now - startedAt) / 1000);
       const remaining = Math.max(0, defaultTotalSeconds - elapsed);
-
-      // Fallback calculation using started_at timestamp
 
       return { initialSeconds: remaining, totalSeconds: defaultTotalSeconds };
     }

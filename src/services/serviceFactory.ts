@@ -48,7 +48,7 @@ export interface ExtensionServices {
  * ```
  */
 export async function initializeServices(
-  context: vscode.ExtensionContext
+  context: vscode.ExtensionContext,
 ): Promise<ExtensionServices> {
   const sdk = createVSCodeSDK({ context });
   setSDKInstance(sdk);
@@ -70,8 +70,8 @@ export async function initializeServices(
       {
         isCaseSensitive: true,
         isReadonly: false,
-      }
-    )
+      },
+    ),
   );
 
   context.subscriptions.push({

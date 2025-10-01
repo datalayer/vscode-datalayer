@@ -59,7 +59,7 @@ export class DocumentBridge {
 
   private constructor(
     context?: vscode.ExtensionContext,
-    sdk?: DatalayerClient
+    sdk?: DatalayerClient,
   ) {
     if (!sdk) {
       throw new Error("SDK is required for DocumentBridge");
@@ -81,7 +81,7 @@ export class DocumentBridge {
    */
   static getInstance(
     context?: vscode.ExtensionContext,
-    sdk?: DatalayerClient
+    sdk?: DatalayerClient,
   ): DocumentBridge {
     if (!DocumentBridge.instance) {
       DocumentBridge.instance = new DocumentBridge(context, sdk);
@@ -101,7 +101,7 @@ export class DocumentBridge {
   async openDocument(
     document: Document,
     spaceId?: string,
-    spaceName?: string
+    spaceName?: string,
   ): Promise<vscode.Uri> {
     // Use SDK model properties directly
     const docName = document.name;
@@ -144,7 +144,7 @@ export class DocumentBridge {
           // Return the virtual URI, not the real file path
           const fileSystemProvider = DatalayerFileSystemProvider.getInstance();
           const existingVirtualUri = fileSystemProvider.getVirtualUri(
-            metadata.localPath
+            metadata.localPath,
           );
 
           if (existingVirtualUri) {
@@ -167,7 +167,7 @@ export class DocumentBridge {
 
             const virtualUri = fileSystemProvider.registerMapping(
               virtualPath,
-              metadata.localPath
+              metadata.localPath,
             );
 
             return virtualUri;
@@ -175,16 +175,80 @@ export class DocumentBridge {
         }
       }
 
-      // Fetch the document content - both Notebook and Lexical models have getContent() method
-      const content = await document.getContent();
-
-      // Process the fetched content
-
-      // Write to local file
-      if (typeof content === "string") {
-        fs.writeFileSync(localPath, content);
+      // For Datalayer notebooks and lexical documents, create an empty file - content will come via collaboration
+      // For local documents, we need to fetch the content
+      if (isNotebook) {
+        // Datalayer notebook - create empty notebook structure
+        // Content will be synced via Y.js collaboration provider
+        const emptyNotebook = {
+          cells: [],
+          metadata: {},
+          nbformat: 4,
+          nbformat_minor: 5,
+        };
+        fs.writeFileSync(localPath, JSON.stringify(emptyNotebook, null, 2));
+      } else if (isLexical) {
+        // Datalayer lexical document - create empty lexical structure
+        // Content will be synced via Loro collaboration provider
+        const emptyLexical = {
+          root: {
+            children: [
+              {
+                children: [],
+                direction: null,
+                format: "",
+                indent: 0,
+                type: "paragraph",
+                version: 1,
+              },
+            ],
+            direction: null,
+            format: "",
+            indent: 0,
+            type: "root",
+            version: 1,
+          },
+        };
+        fs.writeFileSync(localPath, JSON.stringify(emptyLexical, null, 2));
       } else {
-        fs.writeFileSync(localPath, JSON.stringify(content, null, 2));
+        // Other document types - fetch content
+        let content;
+        let retries = 3;
+        let lastError;
+
+        while (retries > 0) {
+          try {
+            content = await document.getContent();
+            if (content !== undefined && content !== null) {
+              break; // Success, exit retry loop
+            }
+          } catch (error) {
+            lastError = error;
+          }
+
+          retries--;
+          if (retries > 0) {
+            // Wait 1 second before retrying
+            await new Promise((resolve) => setTimeout(resolve, 1000));
+          }
+        }
+
+        // Process the fetched content
+        if (content === undefined || content === null) {
+          throw (
+            lastError ||
+            new Error(
+              `Failed to fetch content for document ${document.uid}: content is ${content}`,
+            )
+          );
+        }
+
+        // Write to local file
+        if (typeof content === "string") {
+          fs.writeFileSync(localPath, content);
+        } else {
+          fs.writeFileSync(localPath, JSON.stringify(content, null, 2));
+        }
       }
 
       // Verify the file was written successfully and wait a bit for filesystem
@@ -229,7 +293,7 @@ export class DocumentBridge {
       const fileSystemProvider = DatalayerFileSystemProvider.getInstance();
       const virtualUri = fileSystemProvider.registerMapping(
         virtualPath,
-        localPath
+        localPath,
       );
 
       // Virtual URI created successfully
@@ -333,17 +397,9 @@ export class DocumentBridge {
       try {
         // Verify the runtime still exists and is running
         const sdk = getSDKInstance();
-        const currentRuntime = await (sdk as any).getRuntime(
-          metadata.runtime.podName
-        );
+        const currentRuntime = await sdk.getRuntime(metadata.runtime.podName);
 
-        if (
-          currentRuntime &&
-          (currentRuntime.status === "running" ||
-            currentRuntime.status === "ready") &&
-          currentRuntime.ingress &&
-          currentRuntime.token
-        ) {
+        if (currentRuntime && currentRuntime.ingress && currentRuntime.token) {
           // Update the cached runtime with fresh data
           metadata.runtime = currentRuntime;
           this.documentMetadata.set(documentId, metadata);
@@ -365,7 +421,7 @@ export class DocumentBridge {
 
     // Create or get a runtime
     const sdk = getSDKInstance();
-    const runtime = await (sdk as any).ensureRuntime();
+    const runtime = await sdk.ensureRuntime();
 
     // Store the runtime with the document metadata
     if (runtime && metadata) {

@@ -36,7 +36,7 @@ import { getSDKInstance } from "./sdkAdapter";
 export function setupAuthStateManagement(
   authProvider: SDKAuthProvider,
   spacesTreeProvider: SpacesTreeProvider,
-  controllerManager: SmartDynamicControllerManager
+  controllerManager: SmartDynamicControllerManager,
 ): () => void {
   /**
    * Updates VS Code context variables and refreshes UI components.
@@ -47,7 +47,7 @@ export function setupAuthStateManagement(
     vscode.commands.executeCommand(
       "setContext",
       "datalayer.authenticated",
-      authState.isAuthenticated
+      authState.isAuthenticated,
     );
     spacesTreeProvider.refresh();
 
@@ -76,7 +76,7 @@ export function setupAuthStateManagement(
   vscode.commands.executeCommand(
     "setContext",
     "datalayer.authenticated",
-    initialAuthState.isAuthenticated
+    initialAuthState.isAuthenticated,
   );
 
   return updateAuthState;

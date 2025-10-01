@@ -53,7 +53,7 @@ export class SDKAuthProvider {
 
   private constructor(
     private sdk: DatalayerClient,
-    private context: vscode.ExtensionContext
+    private context: vscode.ExtensionContext,
   ) {
     this.logger.debug("SDKAuthProvider instance created", {
       contextId: context.extension.id,
@@ -70,12 +70,12 @@ export class SDKAuthProvider {
    */
   static getInstance(
     sdk?: DatalayerClient,
-    context?: vscode.ExtensionContext
+    context?: vscode.ExtensionContext,
   ): SDKAuthProvider {
     if (!SDKAuthProvider.instance) {
       if (!sdk || !context) {
         throw new Error(
-          "SDK and context are required to create initial SDKAuthProvider instance"
+          "SDK and context are required to create initial SDKAuthProvider instance",
         );
       }
       SDKAuthProvider.instance = new SDKAuthProvider(sdk, context);
@@ -100,7 +100,7 @@ export class SDKAuthProvider {
     this.logger.info("Initializing authentication state");
 
     // Check if token exists before attempting verification
-    const hasToken = !!(this.sdk as any).getToken();
+    const hasToken = !!this.sdk.getToken();
 
     if (!hasToken) {
       this.logger.debug("No stored authentication token found");
@@ -116,8 +116,8 @@ export class SDKAuthProvider {
     try {
       const user = await this.logger.timeAsync(
         "whoami_verification",
-        () => (this.sdk as any).whoami(),
-        { operation: "verify_stored_token" }
+        () => this.sdk.whoami(),
+        { operation: "verify_stored_token" },
       );
 
       this._authState = {
@@ -127,8 +127,8 @@ export class SDKAuthProvider {
       };
 
       this.logger.info("Authentication verified", {
-        userId: (user as any).uid,
-        displayName: (user as any).getDisplayName(),
+        userId: user.uid,
+        displayName: user.displayName,
         hasToken: true,
       });
 
@@ -171,16 +171,14 @@ export class SDKAuthProvider {
     });
 
     try {
-      await this.logger.timeAsync(
-        "sdk_login",
-        () => (this.sdk as any).updateToken(token),
-        { operation: "update_token" }
-      );
+      await this.logger.timeAsync("sdk_login", () => this.sdk.setToken(token), {
+        operation: "set_token",
+      });
 
       const user = await this.logger.timeAsync(
         "user_verification",
-        () => (this.sdk as any).whoami(),
-        { operation: "verify_new_token" }
+        () => this.sdk.whoami(),
+        { operation: "verify_new_token" },
       );
 
       this._authState = {
@@ -190,16 +188,16 @@ export class SDKAuthProvider {
       };
 
       this.logger.info("Login successful", {
-        userId: (user as any).uid,
-        displayName: (user as any).getDisplayName(),
-        userEmail: (user as any).email || "not_available",
+        userId: user.uid,
+        displayName: user.displayName,
+        userEmail: user.email || "not_available",
       });
 
       this._onAuthStateChanged.fire(this._authState);
 
-      const displayName = (user as any).getDisplayName();
+      const displayName = user.displayName;
       await vscode.window.showInformationMessage(
-        `Successfully logged in as ${displayName}`
+        `Successfully logged in as ${displayName}`,
       );
     } catch (error) {
       const errorMessage =
@@ -228,15 +226,13 @@ export class SDKAuthProvider {
   async logout(): Promise<void> {
     this.logger.info("Starting logout process", {
       wasAuthenticated: this._authState.isAuthenticated,
-      userId: this._authState.user ? (this._authState.user as any).uid : null,
+      userId: this._authState.user ? this._authState.user.uid : null,
     });
 
     try {
-      await this.logger.timeAsync(
-        "sdk_logout",
-        () => (this.sdk as any).logout(),
-        { operation: "clear_server_session" }
-      );
+      await this.logger.timeAsync("sdk_logout", () => this.sdk.logout(), {
+        operation: "clear_server_session",
+      });
 
       this._authState = {
         isAuthenticated: false,
@@ -253,7 +249,7 @@ export class SDKAuthProvider {
         error as Error,
         {
           operation: "logout_process",
-        }
+        },
       );
 
       // Even if logout fails, clear local state
@@ -264,7 +260,7 @@ export class SDKAuthProvider {
       };
 
       this.logger.info(
-        "Local authentication state cleared despite server error"
+        "Local authentication state cleared despite server error",
       );
       this._onAuthStateChanged.fire(this._authState);
     }
@@ -281,7 +277,7 @@ export class SDKAuthProvider {
       const user = state.user;
       const items: string[] = ["Logout"];
 
-      const displayName = (user as any).getDisplayName();
+      const displayName = user.displayName;
       const selected = await vscode.window.showQuickPick(items, {
         title: "Datalayer Authentication Status",
         placeHolder: `Connected as ${displayName}`,
@@ -341,6 +337,6 @@ export class SDKAuthProvider {
    * Get authentication token from SDK.
    */
   getToken(): string {
-    return (this.sdk as any).getToken();
+    return this.sdk.getToken() || "";
   }
 }

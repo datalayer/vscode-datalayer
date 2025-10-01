@@ -51,7 +51,7 @@ export class LoggerManager {
         if (e.affectsConfiguration("datalayer.logging")) {
           this.updateConfig();
         }
-      })
+      }),
     );
   }
 
@@ -81,7 +81,7 @@ export class LoggerManager {
     if (!this.channels.has(channelName)) {
       const channel = vscode.window.createOutputChannel(
         `Datalayer ${channelName}`,
-        { log: true }
+        { log: true },
       );
       this.channels.set(channelName, channel);
       this.context.subscriptions.push(channel);
@@ -90,7 +90,7 @@ export class LoggerManager {
     return new Logger(
       this.channels.get(channelName)!,
       channelName,
-      this.config
+      this.config,
     );
   }
 
@@ -143,7 +143,7 @@ export class Logger {
   constructor(
     private channel: vscode.LogOutputChannel,
     private channelName: string,
-    private config: LoggerConfig
+    private config: LoggerConfig,
   ) {}
 
   /**
@@ -203,7 +203,7 @@ export class Logger {
   async timeAsync<T>(
     operation: string,
     fn: () => Promise<T>,
-    context?: Record<string, any>
+    context?: Record<string, any>,
   ): Promise<T> {
     const startTime = Date.now();
     this.debug(`Starting: ${operation}`, context);
@@ -218,7 +218,7 @@ export class Logger {
       this.error(
         `Failed: ${operation} (${duration}ms)`,
         error as Error,
-        context
+        context,
       );
       throw error;
     }
@@ -230,7 +230,7 @@ export class Logger {
   private log(
     level: LogLevel,
     message: string,
-    context?: Record<string, any>
+    context?: Record<string, any>,
   ): void {
     if (level < this.config.level) {
       return;

@@ -91,7 +91,7 @@ export class SpaceItem extends vscode.TreeItem {
     public readonly label: string,
     public readonly collapsibleState: vscode.TreeItemCollapsibleState,
     public readonly data: SpaceItemData,
-    public readonly parent?: SpaceItem
+    public readonly parent?: SpaceItem,
   ) {
     super(label, collapsibleState);
     this.tooltip = this.getTooltip();

@@ -803,6 +803,7 @@ function NotebookVSCodeWithJupyter(): JSX.Element {
           givenName: "Jupyter Server",
           ingress: body.baseUrl,
           token: body.token || "",
+          state: "running",
           // Required fields from RuntimeJSON
           podName: "local",
           environmentName: "jupyter",

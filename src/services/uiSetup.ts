@@ -54,7 +54,7 @@ export interface ExtensionUI {
 export async function initializeUI(
   context: vscode.ExtensionContext,
   authProvider: SDKAuthProvider,
-  sdk: DatalayerClient
+  sdk: DatalayerClient,
 ): Promise<ExtensionUI> {
   const statusBar = DatalayerStatusBar.getInstance(authProvider);
   context.subscriptions.push(statusBar);
@@ -67,7 +67,7 @@ export async function initializeUI(
     if (authProvider.isAuthenticated()) {
       const environments = await EnvironmentCache.getInstance().getEnvironments(
         sdk,
-        authProvider
+        authProvider,
       );
     }
   } catch (error) {
@@ -78,7 +78,7 @@ export async function initializeUI(
   const controllerManager = new SmartDynamicControllerManager(
     context,
     sdk,
-    authProvider
+    authProvider,
   );
 
   const spacesTreeProvider = new SpacesTreeProvider(authProvider);

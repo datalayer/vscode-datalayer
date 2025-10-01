@@ -305,3 +305,150 @@
 .loro-cursor-label:hover {
   opacity: 0.9;
 }
+
+/* Jupyter ComponentPicker Menu Styles - VS Code themed */
+/* Main container for the slash menu */
+.typeahead-popover,
+.component-picker-menu {
+  position: fixed !important;
+  background-color: var(--vscode-quickInput-background) !important;
+  border: 1px solid
+    var(
+      --vscode-quickInput-border,
+      var(--vscode-widget-border, var(--vscode-panel-border))
+    ) !important;
+  border-radius: 4px !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4) !important;
+  max-height: 400px !important;
+  min-width: 250px !important;
+  overflow-y: auto !important;
+  padding: 4px !important;
+  z-index: 10000 !important;
+  font-family: var(--vscode-font-family) !important;
+}
+
+/* Menu items */
+.typeahead-popover ul,
+.component-picker-menu ul {
+  list-style: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+.typeahead-popover li,
+.component-picker-menu li,
+.component-picker-menu-item {
+  padding: 8px 12px !important;
+  cursor: pointer !important;
+  border-radius: 3px !important;
+  margin: 2px 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  color: var(--vscode-quickInput-foreground) !important;
+  background-color: transparent !important;
+  font-family: var(--vscode-font-family) !important;
+  font-size: 13px !important;
+  transition: background-color 0.1s ease !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+/* Hover and selected states */
+.typeahead-popover li:hover,
+.component-picker-menu li:hover,
+.component-picker-menu-item:hover,
+.typeahead-popover li.selected,
+.component-picker-menu li.selected,
+.component-picker-menu-item.selected {
+  background-color: var(--vscode-list-hoverBackground) !important;
+  color: var(
+    --vscode-list-hoverForeground,
+    var(--vscode-quickInput-foreground)
+  ) !important;
+}
+
+.typeahead-popover li.selected,
+.component-picker-menu li.selected,
+.component-picker-menu-item.selected {
+  background-color: var(--vscode-list-activeSelectionBackground) !important;
+  color: var(--vscode-list-activeSelectionForeground) !important;
+}
+
+/* Icon styling */
+.component-picker-menu-item-icon,
+.typeahead-popover .icon {
+  width: 18px !important;
+  height: 18px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-size: 14px !important;
+  opacity: 0.8 !important;
+  flex-shrink: 0 !important;
+}
+
+/* Text content */
+.component-picker-menu-item-text,
+.typeahead-popover .text {
+  flex: 1 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 2px !important;
+  min-width: 0 !important;
+}
+
+.component-picker-menu-item-title,
+.typeahead-popover .title {
+  font-weight: 500 !important;
+  color: var(--vscode-quickInput-foreground) !important;
+}
+
+.component-picker-menu-item-description,
+.typeahead-popover .description {
+  font-size: 11px !important;
+  opacity: 0.7 !important;
+  color: var(--vscode-descriptionForeground) !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+/* Jupyter cell styles - VS Code themed */
+.jupyter-input-node,
+.jupyter-output-node {
+  margin: 12px 0 !important;
+  border-radius: 4px !important;
+  border: 1px solid var(--vscode-panel-border) !important;
+  background-color: var(--vscode-editor-background) !important;
+}
+
+.jupyter-input-node {
+  padding: 8px !important;
+}
+
+.jupyter-output-node {
+  padding: 8px !important;
+  background-color: var(--vscode-textCodeBlock-background) !important;
+}
+
+/* Draggable block styles */
+.draggable-block-menu {
+  opacity: 0 !important;
+  transition: opacity 0.2s !important;
+}
+
+.draggable-block-menu:hover,
+.draggable-block-menu.active {
+  opacity: 1 !important;
+}
+
+.draggable-block-target-line {
+  background-color: var(--vscode-focusBorder) !important;
+  height: 2px !important;
+  position: absolute !important;
+  left: 0 !important;
+  right: 0 !important;
+  pointer-events: none !important;
+}

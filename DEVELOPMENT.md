@@ -188,7 +188,6 @@ webview/
 ### Architecture Principles
 
 1. **Separation of Concerns**:
-
    - **Providers** implement VS Code APIs (TreeDataProvider, CustomTextEditorProvider, etc.)
    - **Services** handle business logic and external API communication
    - **Commands** are thin handlers that delegate to services

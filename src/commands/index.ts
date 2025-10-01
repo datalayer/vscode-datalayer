@@ -48,14 +48,14 @@ export interface CommandServices {
 export function registerAllCommands(
   context: vscode.ExtensionContext,
   services: CommandServices,
-  updateAuthState: () => void
+  updateAuthState: () => void,
 ): void {
   registerAuthCommands(context, services.authProvider, updateAuthState);
 
   registerDocumentCommands(
     context,
     services.documentBridge,
-    services.spacesTreeProvider
+    services.spacesTreeProvider,
   );
 
   registerRuntimeCommands(context, services.controllerManager);

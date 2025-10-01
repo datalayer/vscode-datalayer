@@ -38,7 +38,7 @@ export async function showKernelSelector(
   sdk: DatalayerClient,
   authProvider: SDKAuthProvider,
   kernelBridge: KernelBridge,
-  documentUri?: vscode.Uri
+  documentUri?: vscode.Uri,
 ): Promise<void> {
   const options: KernelOption[] = [
     {
@@ -57,7 +57,7 @@ export async function showKernelSelector(
       label: "Python Environments... (coming soon)",
       action: async () => {
         vscode.window.showInformationMessage(
-          "Local Python kernel support is coming soon. For now, please use Datalayer Platform or open the notebook directly in VS Code."
+          "Local Python kernel support is coming soon. For now, please use Datalayer Platform or open the notebook directly in VS Code.",
         );
       },
     },
@@ -90,16 +90,16 @@ export async function showKernelSelector(
             if (documentUri) {
               await kernelBridge.connectWebviewNotebook(
                 documentUri,
-                jupyterRuntime
+                jupyterRuntime,
               );
             }
 
             vscode.window.showInformationMessage(
-              `Connected to Jupyter server at ${baseUrl}`
+              `Connected to Jupyter server at ${baseUrl}`,
             );
           } catch (error) {
             vscode.window.showErrorMessage(
-              `Failed to connect to Jupyter server: ${error}`
+              `Failed to connect to Jupyter server: ${error}`,
             );
           }
         }

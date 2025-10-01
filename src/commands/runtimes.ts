@@ -42,22 +42,62 @@ interface RuntimeQuickPickItem extends vscode.QuickPickItem {
  */
 export function registerRuntimeCommands(
   context: vscode.ExtensionContext,
-  controllerManager: SmartDynamicControllerManager
+  controllerManager: SmartDynamicControllerManager,
 ): void {
   const sdk = getSDKInstance();
   const authProvider = SDKAuthProvider.getInstance();
   /**
    * Command: datalayer.selectRuntime
    * Shows the runtime selection dialog to choose or create a runtime.
-   * This simulates selecting the Datalayer Platform kernel from the picker.
+   * Works for both notebooks and lexical editors.
    */
   context.subscriptions.push(
     vscode.commands.registerCommand("datalayer.selectRuntime", async () => {
       // Get active notebook editor
       const activeEditor = vscode.window.activeNotebookEditor;
       if (!activeEditor) {
+        // If no notebook, check for lexical editor
+        if (vscode.window.tabGroups.activeTabGroup.activeTab) {
+          const activeTab = vscode.window.tabGroups.activeTabGroup.activeTab;
+          const input = activeTab.input;
+
+          // Check if it's a custom editor (lexical)
+          if (
+            input &&
+            typeof input === "object" &&
+            input !== null &&
+            "viewType" in input &&
+            (input as any).viewType === "datalayer.lexical-editor"
+          ) {
+            // Show runtime selector for lexical editor
+            const { selectDatalayerRuntime } = await import(
+              "../utils/runtimeSelector"
+            );
+            const selectedRuntime = await selectDatalayerRuntime(
+              sdk,
+              authProvider,
+            );
+
+            if (selectedRuntime) {
+              // Convert Runtime model to JSON for serialization
+              const runtimeJSON = selectedRuntime.toJSON();
+
+              // Fire event that lexical provider can listen to
+              vscode.commands.executeCommand(
+                "datalayer.internal.runtimeSelected",
+                runtimeJSON,
+              );
+
+              vscode.window.showInformationMessage(
+                `Selected runtime: ${selectedRuntime.givenName || selectedRuntime.uid}`,
+              );
+            }
+            return;
+          }
+        }
+
         vscode.window.showInformationMessage(
-          "Please open a notebook first to select a runtime"
+          "Please open a notebook or lexical editor first to select a runtime",
         );
         return;
       }
@@ -68,9 +108,9 @@ export function registerRuntimeCommands(
       // Also ensure the controller is selected for this notebook
       // This makes sure "Datalayer Platform" is the active kernel
       vscode.window.showInformationMessage(
-        "Runtime selector opened. Select or create a runtime."
+        "Runtime selector opened. Select or create a runtime.",
       );
-    })
+    }),
   );
 
   /**
@@ -82,9 +122,9 @@ export function registerRuntimeCommands(
       await controllerManager.refreshControllers();
 
       vscode.window.showInformationMessage(
-        "Runtime controllers refreshed. Select a runtime from the kernel picker."
+        "Runtime controllers refreshed. Select a runtime from the kernel picker.",
       );
-    })
+    }),
   );
 
   /**
@@ -95,9 +135,9 @@ export function registerRuntimeCommands(
     vscode.commands.registerCommand("datalayer.showRuntimeStatus", async () => {
       await controllerManager.refreshControllers();
       vscode.window.showInformationMessage(
-        "Runtime controllers are available in the kernel picker. Select 'Datalayer Platform' to choose a runtime."
+        "Runtime controllers are available in the kernel picker. Select 'Datalayer Platform' to choose a runtime.",
       );
-    })
+    }),
   );
 
   /**
@@ -111,10 +151,10 @@ export function registerRuntimeCommands(
         await controllerManager.refreshControllers();
 
         vscode.window.showInformationMessage(
-          "Runtime controllers refreshed. Available runtimes are shown in the kernel picker."
+          "Runtime controllers refreshed. Available runtimes are shown in the kernel picker.",
         );
-      }
-    )
+      },
+    ),
   );
 
   /**
@@ -127,8 +167,8 @@ export function registerRuntimeCommands(
       "datalayer.showNotebookControllerStatus",
       () => {
         vscode.commands.executeCommand("datalayer.showRuntimeStatus");
-      }
-    )
+      },
+    ),
   );
 
   /**
@@ -140,17 +180,17 @@ export function registerRuntimeCommands(
       "datalayer.restartNotebookRuntime",
       async () => {
         const restart = await showSimpleConfirmation(
-          CommonConfirmations.refreshRuntimes()
+          CommonConfirmations.refreshRuntimes(),
         );
 
         if (restart) {
           await controllerManager.refreshControllers();
           vscode.window.showInformationMessage(
-            "Runtime controllers refreshed. Select a runtime from the kernel picker."
+            "Runtime controllers refreshed. Select a runtime from the kernel picker.",
           );
         }
-      }
-    )
+      },
+    ),
   );
 
   /**
@@ -167,16 +207,16 @@ export function registerRuntimeCommands(
           const authState = authProvider.getAuthState();
           if (!authState.isAuthenticated) {
             vscode.window.showErrorMessage(
-              "Please login first to debug runtime termination"
+              "Please login first to debug runtime termination",
             );
             return;
           }
 
-          const runtimes = await (sdk as any).listRuntimes();
+          const runtimes = await sdk.listRuntimes();
 
           if (!runtimes || runtimes.length === 0) {
             vscode.window.showInformationMessage(
-              "No runtimes found for debugging"
+              "No runtimes found for debugging",
             );
             return;
           }
@@ -189,22 +229,22 @@ export function registerRuntimeCommands(
           }
 
           vscode.window.showInformationMessage(
-            `Debug: Terminating runtime "${runtime.givenName}". Check console for details.`
+            `Debug: Terminating runtime "${runtime.givenName}". Check console for details.`,
           );
 
-          const result = await (sdk as any).deleteRuntime(podName);
+          const result = await sdk.deleteRuntime(podName);
           vscode.window.showInformationMessage(
             `Debug: Runtime terminated successfully. Result: ${JSON.stringify(
-              result
-            )}`
+              result,
+            )}`,
           );
         } catch (error: any) {
           vscode.window.showErrorMessage(
-            `Debug: Runtime termination failed. Error: ${error.message}. Check console for full details.`
+            `Debug: Runtime termination failed. Error: ${error.message}. Check console for full details.`,
           );
         }
-      }
-    )
+      },
+    ),
   );
 
   /**
@@ -219,13 +259,13 @@ export function registerRuntimeCommands(
         const authState = authProvider.getAuthState();
         if (!authState.isAuthenticated) {
           vscode.window.showErrorMessage(
-            "You must be logged in to manage runtimes. Please run 'Datalayer: Login' first."
+            "You must be logged in to manage runtimes. Please run 'Datalayer: Login' first.",
           );
           return;
         }
 
         // Get list of active runtimes
-        const runtimes = await (sdk as any).listRuntimes();
+        const runtimes = await sdk.listRuntimes();
 
         if (!runtimes || runtimes.length === 0) {
           vscode.window.showInformationMessage("No active runtimes found.");
@@ -238,7 +278,7 @@ export function registerRuntimeCommands(
           const name = runtime.givenName;
 
           const confirmed = await showTwoStepConfirmation(
-            CommonConfirmations.terminateRuntime(name)
+            CommonConfirmations.terminateRuntime(name),
           );
 
           if (confirmed) {
@@ -268,7 +308,7 @@ export function registerRuntimeCommands(
 
         if (selected) {
           const confirmed = await showTwoStepConfirmation(
-            CommonConfirmations.terminateRuntime(selected.label)
+            CommonConfirmations.terminateRuntime(selected.label),
           );
 
           if (confirmed) {
@@ -277,10 +317,10 @@ export function registerRuntimeCommands(
         }
       } catch (error: any) {
         vscode.window.showErrorMessage(
-          `Failed to terminate runtime: ${error.message}`
+          `Failed to terminate runtime: ${error.message}`,
         );
       }
-    })
+    }),
   );
 }
 
@@ -308,17 +348,17 @@ async function terminateRuntime(sdk: any, runtime: any): Promise<void> {
           throw new Error("Runtime missing podName from SDK");
         }
 
-        const result = await (sdk as any).deleteRuntime(podName);
-      }
+        const result = await sdk.deleteRuntime(podName);
+      },
     );
 
     // Show success message
     vscode.window.showInformationMessage(
-      `Runtime "${name}" terminated successfully.`
+      `Runtime "${name}" terminated successfully.`,
     );
   } catch (error: any) {
     vscode.window.showErrorMessage(
-      `Failed to terminate runtime "${name}": ${error.message}`
+      `Failed to terminate runtime "${name}": ${error.message}`,
     );
   }
 }

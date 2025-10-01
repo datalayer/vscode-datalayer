@@ -50,32 +50,45 @@ export class LexicalDocumentProvider
       const workspaceFolders = vscode.workspace.workspaceFolders;
       if (!workspaceFolders) {
         vscode.window.showErrorMessage(
-          "Creating new Datalayer Lexical documents currently requires opening a workspace"
+          "Creating new Datalayer Lexical documents currently requires opening a workspace",
         );
         return;
       }
 
       const uri = vscode.Uri.joinPath(
         workspaceFolders[0].uri,
-        `new-${Date.now()}.lexical`
+        `new-${Date.now()}.lexical`,
       ).with({ scheme: "untitled" });
 
       vscode.commands.executeCommand(
         "vscode.openWith",
         uri,
-        LexicalDocumentProvider.viewType
+        LexicalDocumentProvider.viewType,
       );
     });
 
+    // Create provider instance
+    const provider = new LexicalDocumentProvider(context);
+
+    // Register internal command for broadcasting runtime selection
+    context.subscriptions.push(
+      vscode.commands.registerCommand(
+        "datalayer.internal.runtimeSelected",
+        (runtime: any) => {
+          provider.broadcastRuntimeSelected(runtime);
+        },
+      ),
+    );
+
     return vscode.window.registerCustomEditorProvider(
       LexicalDocumentProvider.viewType,
-      new LexicalDocumentProvider(context),
+      provider,
       {
         webviewOptions: {
           retainContextWhenHidden: true,
         },
         supportsMultipleEditorsPerDocument: false,
-      }
+      },
     );
   }
 
@@ -110,7 +123,7 @@ export class LexicalDocumentProvider
   async openCustomDocument(
     uri: vscode.Uri,
     openContext: { backupId?: string },
-    _token: vscode.CancellationToken
+    _token: vscode.CancellationToken,
   ): Promise<LexicalDocument> {
     const document: LexicalDocument = await LexicalDocument.create(
       uri,
@@ -118,7 +131,7 @@ export class LexicalDocumentProvider
       {
         getFileData: async () => {
           const webviewsForDocument = Array.from(this.webviews.values()).filter(
-            (entry) => entry.resource === uri.toString()
+            (entry) => entry.resource === uri.toString(),
           );
           if (webviewsForDocument.length !== 1) {
             throw new Error("Expected exactly one webview for document");
@@ -129,7 +142,7 @@ export class LexicalDocumentProvider
           >(panel, "getFileData", {});
           return new Uint8Array(response ?? []);
         },
-      }
+      },
     );
 
     const listeners: vscode.Disposable[] = [];
@@ -142,7 +155,7 @@ export class LexicalDocumentProvider
           undo: () => {},
           redo: () => {},
         });
-      })
+      }),
     );
 
     listeners.push(
@@ -154,7 +167,7 @@ export class LexicalDocumentProvider
             });
           }
         }
-      })
+      }),
     );
 
     document.onDidDispose(() => disposeAll(listeners));
@@ -173,7 +186,7 @@ export class LexicalDocumentProvider
   async resolveCustomEditor(
     document: LexicalDocument,
     webviewPanel: vscode.WebviewPanel,
-    _token: vscode.CancellationToken
+    _token: vscode.CancellationToken,
   ): Promise<void> {
     this.webviews.set(document.uri.toString(), {
       resource: document.uri.toString(),
@@ -193,7 +206,15 @@ export class LexicalDocumentProvider
       if (e.type === "ready" && !webviewReady) {
         webviewReady = true;
         // Send content when webview signals it's ready
-        sendInitialContent();
+        sendInitialContent().catch((error) => {
+          console.error(
+            "[LexicalDocumentProvider] Error sending initial content:",
+            error,
+          );
+          vscode.window.showErrorMessage(
+            `Failed to initialize Lexical editor: ${error.message}`,
+          );
+        });
       } else {
         this.onMessage(document, e);
       }
@@ -217,10 +238,18 @@ export class LexicalDocumentProvider
       // Setup collaboration for Datalayer documents
       let collaborationConfig: LexicalCollaborationConfig | undefined;
       if (isFromDatalayer) {
-        const collaborationService = LexicalCollaborationService.getInstance();
-        collaborationConfig = await collaborationService.setupCollaboration(
-          document
-        );
+        try {
+          const collaborationService =
+            LexicalCollaborationService.getInstance();
+          collaborationConfig =
+            await collaborationService.setupCollaboration(document);
+        } catch (error) {
+          console.error(
+            "[LexicalDocumentProvider] Collaboration setup failed:",
+            error,
+          );
+          // Don't block editor loading if collaboration fails
+        }
       }
 
       webviewPanel.webview.postMessage({
@@ -247,7 +276,7 @@ export class LexicalDocumentProvider
    */
   public saveCustomDocument(
     document: LexicalDocument,
-    cancellation: vscode.CancellationToken
+    cancellation: vscode.CancellationToken,
   ): Thenable<void> {
     return document.save(cancellation);
   }
@@ -263,7 +292,7 @@ export class LexicalDocumentProvider
   public saveCustomDocumentAs(
     document: LexicalDocument,
     destination: vscode.Uri,
-    cancellation: vscode.CancellationToken
+    cancellation: vscode.CancellationToken,
   ): Thenable<void> {
     return document.saveAs(destination, cancellation);
   }
@@ -277,7 +306,7 @@ export class LexicalDocumentProvider
    */
   public revertCustomDocument(
     document: LexicalDocument,
-    cancellation: vscode.CancellationToken
+    cancellation: vscode.CancellationToken,
   ): Thenable<void> {
     return document.revert(cancellation);
   }
@@ -293,7 +322,7 @@ export class LexicalDocumentProvider
   public backupCustomDocument(
     document: LexicalDocument,
     context: vscode.CustomDocumentBackupContext,
-    cancellation: vscode.CancellationToken
+    cancellation: vscode.CancellationToken,
   ): Thenable<vscode.CustomDocumentBackup> {
     return document.backup(context.destination, cancellation);
   }
@@ -309,23 +338,12 @@ export class LexicalDocumentProvider
       vscode.Uri.joinPath(
         this._context.extensionUri,
         "dist",
-        "lexicalWebview.js"
-      )
-    );
-    const styleUri = webview.asWebviewUri(
-      vscode.Uri.joinPath(
-        this._context.extensionUri,
-        "webview",
-        "LexicalEditor.css"
-      )
-    );
-    // Get the codicon CSS file from dist folder
-    const codiconCssUri = webview.asWebviewUri(
-      vscode.Uri.joinPath(this._context.extensionUri, "dist", "codicon.css")
+        "lexicalWebview.js",
+      ),
     );
     // Get base URI for loading additional resources like WASM
     const distUri = webview.asWebviewUri(
-      vscode.Uri.joinPath(this._context.extensionUri, "dist")
+      vscode.Uri.joinPath(this._context.extensionUri, "dist"),
     );
     const nonce = getNonce();
 
@@ -337,8 +355,6 @@ export class LexicalDocumentProvider
         <base href="${distUri}/">
         <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src ${webview.cspSource} blob:; style-src ${webview.cspSource} 'unsafe-inline'; font-src ${webview.cspSource}; script-src 'nonce-${nonce}' 'wasm-unsafe-eval' 'unsafe-eval'; connect-src ${webview.cspSource} https: wss: ws: data:; worker-src ${webview.cspSource} blob:;">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <link href="${styleUri}" rel="stylesheet">
-        <link href="${codiconCssUri}" rel="stylesheet">
         <title>Datalayer Lexical Editor</title>
         <script nonce="${nonce}">
           // Set webpack public path for dynamic imports and WASM loading
@@ -366,11 +382,11 @@ export class LexicalDocumentProvider
   private postMessageWithResponse<R = unknown>(
     panel: vscode.WebviewPanel,
     type: string,
-    body: any
+    body: any,
   ): Promise<R> {
     const requestId = this._requestId++;
     const p = new Promise<R>((resolve) =>
-      this._callbacks.set(requestId, resolve)
+      this._callbacks.set(requestId, resolve),
     );
     panel.webview.postMessage({ type, requestId, body });
     return p;
@@ -386,7 +402,7 @@ export class LexicalDocumentProvider
   private postMessage(
     panel: vscode.WebviewPanel,
     type: string,
-    body: any
+    body: any,
   ): void {
     panel.webview.postMessage({ type, body });
   }
@@ -397,7 +413,7 @@ export class LexicalDocumentProvider
    * @param document - Associated document
    * @param message - Received message
    */
-  private onMessage(document: LexicalDocument, message: any) {
+  private async onMessage(document: LexicalDocument, message: any) {
     // Check if this document is from Datalayer spaces
     const isFromDatalayer = document.uri.scheme === "datalayer";
 
@@ -425,6 +441,78 @@ export class LexicalDocumentProvider
         // Handled in the message listener above
         return;
       }
+      case "select-runtime": {
+        // Show runtime selector for all lexical documents (both local and Datalayer)
+        vscode.commands.executeCommand("datalayer.selectRuntime");
+        return;
+      }
+      case "terminate-runtime": {
+        const runtime = message.body?.runtime;
+        if (!runtime) {
+          return;
+        }
+
+        // Import confirmation utilities
+        const { showTwoStepConfirmation, CommonConfirmations } = await import(
+          "../utils/confirmationDialog"
+        );
+        const { getSDKInstance } = await import("../services/sdkAdapter");
+
+        // Show confirmation dialog
+        const runtimeName =
+          runtime.givenName ||
+          runtime.environmentTitle ||
+          runtime.environmentName ||
+          runtime.uid;
+        const confirmed = await showTwoStepConfirmation(
+          CommonConfirmations.terminateRuntime(runtimeName),
+        );
+
+        if (confirmed) {
+          try {
+            const sdk = getSDKInstance();
+
+            // Delete the runtime via SDK - MUST use pod_name, not uid!
+            // If podName is missing, construct it from uid (format: runtime-{uid})
+            const podName = runtime.podName ?? `runtime-${runtime.uid}`;
+
+            await sdk.deleteRuntime(podName);
+
+            // Notify user of success
+            vscode.window.showInformationMessage(
+              `Runtime "${runtimeName}" terminated successfully.`,
+            );
+
+            // Clear the kernel selection in the webview
+            const webviewEntry = this.webviews.get(document.uri.toString());
+            if (webviewEntry) {
+              await webviewEntry.webviewPanel.webview.postMessage({
+                type: "runtime-terminated",
+                runtime: null,
+              });
+            }
+          } catch (error: any) {
+            vscode.window.showErrorMessage(
+              `Failed to terminate runtime: ${error.message || error}`,
+            );
+          }
+        }
+        return;
+      }
+    }
+  }
+
+  /**
+   * Broadcasts runtime selection to all active lexical webviews.
+   *
+   * @param runtime - Selected runtime to broadcast
+   */
+  public broadcastRuntimeSelected(runtime: any): void {
+    for (const entry of this.webviews.values()) {
+      entry.webviewPanel.webview.postMessage({
+        type: "runtime-selected",
+        body: { runtime },
+      });
     }
   }
 }

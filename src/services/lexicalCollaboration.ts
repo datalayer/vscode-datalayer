@@ -59,7 +59,7 @@ export class LexicalCollaborationService {
    * @returns Collaboration configuration or undefined if setup fails
    */
   async setupCollaboration(
-    document: LexicalDocument
+    document: LexicalDocument,
   ): Promise<LexicalCollaborationConfig | undefined> {
     if (document.uri.scheme !== "datalayer") {
       return undefined;
@@ -81,35 +81,28 @@ export class LexicalCollaborationService {
         return undefined;
       }
 
-      const sdk = getSDKInstance();
-      const sessionResult = await (sdk as any).getLexicalCollaborationSessionId(
-        metadata.document.uid
-      );
-
-      if (!sessionResult.success || !sessionResult.sessionId) {
-        return undefined;
-      }
-
-      const user = authState.user as any;
-      const username = user?.githubLogin
-        ? `@${user.githubLogin}`
-        : user?.name || user?.email || "Anonymous";
-
+      // Build websocket URL directly using document UID (no session needed)
+      // Similar to Desktop app: `${configuration.spacerRunUrl.replace(/^http/, 'ws')}/api/spacer/v1/lexical/ws/${id}`
       const config = vscode.workspace.getConfiguration("datalayer");
-      const spacerWsUrl = config.get<string>(
-        "spacerWsUrl",
-        "wss://prod1.datalayer.run"
+      const spacerUrl = config.get<string>(
+        "spacerUrl",
+        "https://prod1.datalayer.run",
       );
 
-      const websocketUrl = `${spacerWsUrl}/api/spacer/v1/lexical/ws/${sessionResult.sessionId}?token=${token}`;
+      // Convert http(s) to ws(s)
+      const websocketUrl = `${spacerUrl.replace(/^http/, "ws")}/api/spacer/v1/lexical/ws/${metadata.document.uid}`;
+
+      const user = authState.user;
+      const username =
+        user?.displayName || user?.handle || user?.email || "Anonymous";
 
       return {
         enabled: true,
         websocketUrl,
         documentId: metadata.document.uid,
-        sessionId: sessionResult.sessionId,
+        sessionId: metadata.document.uid, // Use UID as session ID
         username,
-        userColor: "#" + Math.floor(Math.random() * 16777215).toString(16),
+        userColor: this.generateUserColor(),
       };
     } catch (error) {
       // Failed to setup collaboration - return undefined

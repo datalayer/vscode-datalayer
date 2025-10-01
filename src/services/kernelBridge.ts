@@ -22,10 +22,11 @@ import { WebviewCollection } from "../utils/webviewCollection";
  * Extended runtime interface for webview communication.
  * Includes additional time fields needed for progress calculations.
  */
-interface ExtendedRuntimeJSON extends RuntimeJSON {
-  // Time fields for progress calculations (Unix timestamps)
-  startedAt?: number | string;
-  expiredAt?: number | string;
+interface ExtendedRuntimeJSON
+  extends Omit<RuntimeJSON, "startedAt" | "expiredAt"> {
+  // Time fields for progress calculations (Unix timestamps or ISO strings)
+  startedAt: number | string;
+  expiredAt: number | string;
 }
 
 /**
@@ -52,7 +53,7 @@ export class KernelBridge implements vscode.Disposable {
    */
   constructor(
     private readonly _sdk: DatalayerClient,
-    private readonly _authProvider: SDKAuthProvider
+    private readonly _authProvider: SDKAuthProvider,
   ) {}
 
   /**
@@ -85,7 +86,7 @@ export class KernelBridge implements vscode.Disposable {
    */
   public async connectWebviewNotebook(
     uri: vscode.Uri,
-    runtime: Runtime
+    runtime: Runtime,
   ): Promise<void> {
     const key = uri.toString();
     const webview = this._webviews.get(key);
@@ -111,26 +112,10 @@ export class KernelBridge implements vscode.Disposable {
     // Use runtime.toJSON() to get the stable interface
 
     let runtimeData: RuntimeJSON;
-    if (runtime && typeof (runtime as any).toJSON === "function") {
-      runtimeData = (runtime as any).toJSON();
+    if (runtime && typeof runtime.toJSON === "function") {
+      runtimeData = runtime.toJSON();
     } else {
       throw new Error("Runtime object does not have toJSON() method");
-    }
-
-    // Get additional time fields from Runtime model getters (not in RuntimeJSON interface)
-    let startedAt: Date | undefined;
-    let expiredAt: Date | undefined;
-
-    try {
-      if (typeof (runtime as any).startedAt !== "undefined") {
-        startedAt = (runtime as any).startedAt;
-      }
-      if (typeof (runtime as any).expiredAt !== "undefined") {
-        expiredAt = (runtime as any).expiredAt;
-      }
-      // Got time fields from Runtime getters
-    } catch (error) {
-      // Could not get time fields from Runtime getters
     }
 
     // Use the primary field names from the runtime API
@@ -144,12 +129,7 @@ export class KernelBridge implements vscode.Disposable {
     // Create message with extended runtime data
     const message: KernelSelectionMessage = {
       type: "kernel-selected",
-      runtime: {
-        ...runtimeData, // Spread the standardized RuntimeJSON data
-        // Add time fields for progress bar calculations
-        startedAt: startedAt ? startedAt.getTime() / 1000 : undefined, // Unix timestamp in seconds
-        expiredAt: expiredAt ? expiredAt.getTime() / 1000 : undefined, // Unix timestamp in seconds
-      },
+      runtime: runtimeData, // Use standardized RuntimeJSON data as-is (already has ISO 8601 strings)
     };
 
     // Post message to webview
@@ -180,7 +160,7 @@ export class KernelBridge implements vscode.Disposable {
 
     if (
       customEditors.some(
-        (tab) => (tab.input as any).viewType === "datalayer.jupyter-notebook"
+        (tab) => (tab.input as any).viewType === "datalayer.jupyter-notebook",
       )
     ) {
       return "webview";
@@ -218,7 +198,7 @@ export class KernelBridge implements vscode.Disposable {
    */
   public async sendKernelStatus(
     uri: vscode.Uri,
-    status: "idle" | "busy" | "starting" | "restarting" | "dead"
+    status: "idle" | "busy" | "starting" | "restarting" | "dead",
   ): Promise<void> {
     const notebookType = this.detectNotebookType(uri);
 
@@ -244,7 +224,7 @@ export class KernelBridge implements vscode.Disposable {
    */
   public async handleKernelCommand(
     uri: vscode.Uri,
-    command: "interrupt" | "restart" | "shutdown"
+    command: "interrupt" | "restart" | "shutdown",
   ): Promise<void> {
     const notebookType = this.detectNotebookType(uri);
 
@@ -279,7 +259,7 @@ export class KernelBridge implements vscode.Disposable {
     } else {
       // For native notebooks, get from active controller
       const notebook = vscode.workspace.notebookDocuments.find(
-        (doc) => doc.uri.toString() === uri.toString()
+        (doc) => doc.uri.toString() === uri.toString(),
       );
 
       if (notebook) {

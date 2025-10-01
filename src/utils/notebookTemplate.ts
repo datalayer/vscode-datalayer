@@ -24,17 +24,17 @@ import { getNonce } from "./webviewSecurity";
  */
 export function getNotebookHtml(
   webview: vscode.Webview,
-  extensionUri: vscode.Uri
+  extensionUri: vscode.Uri,
 ): string {
   // Local path to script and css for the webview with cache busting
   const scriptUri =
     webview.asWebviewUri(
-      vscode.Uri.joinPath(extensionUri, "dist", "webview.js")
+      vscode.Uri.joinPath(extensionUri, "dist", "webview.js"),
     ) + `?t=${Date.now()}`;
 
   // Get the codicon CSS file from dist folder
   const codiconCssUri = webview.asWebviewUri(
-    vscode.Uri.joinPath(extensionUri, "dist", "codicon.css")
+    vscode.Uri.joinPath(extensionUri, "dist", "codicon.css"),
   );
 
   // Use a nonce to whitelist which scripts can be run

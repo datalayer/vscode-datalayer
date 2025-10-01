@@ -38,7 +38,7 @@ export class NotebookNetworkService {
    */
   forwardRequest(
     message: ExtensionMessage,
-    webview: vscode.WebviewPanel
+    webview: vscode.WebviewPanel,
   ): void {
     const { body, id } = message;
     fetch(body.url, {
@@ -48,7 +48,7 @@ export class NotebookNetworkService {
     }).then(async (reply: any) => {
       const headers: Record<string, string> = [...reply.headers].reduce(
         (agg, pair) => ({ ...agg, [pair[0]]: pair[1] }),
-        {}
+        {},
       );
       const rawBody =
         body.method !== "DELETE" ? await reply.arrayBuffer() : undefined;
@@ -61,7 +61,7 @@ export class NotebookNetworkService {
           status: reply.status,
           statusText: reply.statusText,
         },
-        id
+        id,
       );
     });
   }
@@ -79,8 +79,37 @@ export class NotebookNetworkService {
     if (wsURL.searchParams.has("token")) {
       wsURL.searchParams.set("token", "xxxxx");
     }
-    const protocol = body.protocol ?? undefined;
-    const ws = new WebSocket(body.origin, protocol);
+
+    // Validate and sanitize the protocol
+    let protocol: string | string[] | undefined = body.protocol;
+
+    // WebSocket protocol must be a valid token (alphanumeric, hyphen, dot, underscore)
+    // If protocol is invalid or empty, don't pass it
+    if (protocol) {
+      if (Array.isArray(protocol)) {
+        // Filter out invalid protocols
+        const validProtocols = protocol.filter(
+          (p) =>
+            typeof p === "string" &&
+            p.length > 0 &&
+            /^[a-zA-Z0-9._-]+$/.test(p),
+        );
+        protocol = validProtocols.length > 0 ? validProtocols : undefined;
+      } else if (typeof protocol === "string") {
+        // Check if it's a valid protocol token (empty strings are invalid)
+        if (protocol.length === 0 || !/^[a-zA-Z0-9._-]+$/.test(protocol)) {
+          protocol = undefined;
+        }
+      } else {
+        protocol = undefined;
+      }
+    }
+
+    // Only pass protocol if it's defined and not empty
+    // Node.js WebSocket rejects empty string protocols
+    const ws = protocol
+      ? new WebSocket(body.origin, protocol)
+      : new WebSocket(body.origin);
     this._websockets.set(id!, ws);
     webview.onDidDispose(() => {
       this._websockets.delete(id!);
@@ -99,7 +128,7 @@ export class NotebookNetworkService {
         webview,
         "websocket-close",
         { code, reason, wasClean },
-        id
+        id,
       );
     };
     ws.onerror = (event) => {
@@ -145,7 +174,7 @@ export class NotebookNetworkService {
     panel: vscode.WebviewPanel,
     type: string,
     body: any,
-    id?: string
+    id?: string,
   ): void {
     panel.webview.postMessage({ type, body, id });
   }

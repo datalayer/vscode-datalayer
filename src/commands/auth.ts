@@ -32,7 +32,7 @@ import { SDKAuthProvider } from "../services/authProvider";
 export function registerAuthCommands(
   context: vscode.ExtensionContext,
   authProvider: SDKAuthProvider,
-  updateAuthState: () => void
+  updateAuthState: () => void,
 ): void {
   /**
    * Command: datalayer.login
@@ -45,7 +45,7 @@ export function registerAuthCommands(
         await authProvider.login();
         updateAuthState();
       } catch (error) {}
-    })
+    }),
   );
 
   /**
@@ -59,7 +59,7 @@ export function registerAuthCommands(
         await authProvider.logout();
         updateAuthState();
       } catch (error) {}
-    })
+    }),
   );
 
   /**
@@ -70,6 +70,6 @@ export function registerAuthCommands(
   context.subscriptions.push(
     vscode.commands.registerCommand("datalayer.showAuthStatus", async () => {
       await authProvider.showAuthStatus();
-    })
+    }),
   );
 }

@@ -55,7 +55,7 @@ export interface VSCodeThemeColors {
  */
 export function createVSCodeTheme(
   colors: VSCodeThemeColors,
-  isDark: boolean = true
+  isDark: boolean = true,
 ): Extension {
   // Create the editor theme
   const theme = EditorView.theme(
@@ -104,7 +104,7 @@ export function createVSCodeTheme(
         padding: "0 3px 0 5px",
       },
     },
-    { dark: isDark }
+    { dark: isDark },
   );
 
   // Create the syntax highlighting style
@@ -193,7 +193,7 @@ export function createVSCodeTheme(
  */
 export function applyVSCodeThemeToEditors(
   colors: VSCodeThemeColors,
-  isDark: boolean = true
+  isDark: boolean = true,
 ): void {
   // Find all CodeMirror instances
   const editors = document.querySelectorAll(".cm-editor");

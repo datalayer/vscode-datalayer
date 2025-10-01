@@ -10,9 +10,9 @@
  */
 
 import React, { useState, useEffect, useContext } from "react";
-import useNotebookStore from "@datalayer/jupyter-react/lib/components/notebook/NotebookState";
-import { MessageHandlerContext } from "../services/messageHandler";
+import { notebookStore2 } from "@datalayer/jupyter-react";
 import { NotebookActions } from "@jupyterlab/notebook";
+import { MessageHandlerContext } from "../services/messageHandler";
 import type { RuntimeJSON } from "../../../core/lib/client/models/Runtime";
 
 /**
@@ -36,102 +36,26 @@ export const NotebookToolbar: React.FC<NotebookToolbarProps> = ({
   isDatalayerNotebook = false,
   selectedRuntime,
 }) => {
-  const notebookStore = useNotebookStore();
-  const [notebook, setNotebook] = useState<any>(null);
-  const [notebookWidget, setNotebookWidget] = useState<any>(null);
   const messageHandler = useContext(MessageHandlerContext);
   const [selectedKernel, setSelectedKernel] = useState<string>("No Kernel");
   const [kernelStatus, setKernelStatus] = useState<string>("disconnected");
   const [isConnecting, setIsConnecting] = useState<boolean>(false);
   const [isScrolled, setIsScrolled] = useState<boolean>(false);
+  const [notebook, setNotebook] = useState<any>(null);
 
-  // Attempt to find notebook widget through various approaches
+  // Monitor notebook state from notebookStore2
   useEffect(() => {
-    let attemptCount = 0;
-    const maxAttempts = 20; // 2 seconds max
+    if (!notebookId) return;
 
-    const findNotebookWidget = () => {
-      attemptCount++;
-
-      // Try multiple approaches to find the notebook
-      const approaches = [
-        // 1. Look for Lumino NotebookPanel widget by ID
-        () => {
-          const container = document.getElementById(notebookId);
-          if (container) {
-            const notebookPanel = container.querySelector(".jp-NotebookPanel");
-            if (notebookPanel && (notebookPanel as any).lumino_widget) {
-              return (notebookPanel as any).lumino_widget;
-            }
-          }
-          return null;
-        },
-
-        // 2. Look for any NotebookPanel in DOM
-        () => {
-          const notebookPanels = document.querySelectorAll(".jp-NotebookPanel");
-          for (const panel of notebookPanels) {
-            if ((panel as any).lumino_widget) {
-              return (panel as any).lumino_widget;
-            }
-          }
-          return null;
-        },
-
-        // 3. Check global window for notebook references
-        () => {
-          const debugNotebook = (window as any).debugNotebook;
-          if (debugNotebook) {
-            return debugNotebook;
-          }
-          return null;
-        },
-
-        // 4. Look for notebook widget through different DOM patterns
-        () => {
-          const notebook = document.querySelector(".jp-Notebook");
-          if (notebook && (notebook as any).lumino_widget) {
-            return (notebook as any).lumino_widget;
-          }
-          // Try parent element
-          if (
-            notebook &&
-            notebook.parentElement &&
-            (notebook.parentElement as any).lumino_widget
-          ) {
-            return (notebook.parentElement as any).lumino_widget;
-          }
-          return null;
-        },
-
-        // 5. Try notebook store as fallback
-        () => {
-          const storeNotebook = notebookStore.selectNotebook(notebookId);
-          return storeNotebook;
-        },
-      ];
-
-      for (const approach of approaches) {
-        const result = approach();
-        if (
-          result &&
-          result !== null &&
-          result !== undefined &&
-          !Array.isArray(result)
-        ) {
-          setNotebookWidget(result);
-          setNotebook(result);
-          return;
-        }
+    const unsubscribe = notebookStore2.subscribe((state) => {
+      const notebook = state.notebooks.get(notebookId);
+      if (notebook) {
+        setNotebook(notebook);
       }
+    });
 
-      if (attemptCount < maxAttempts) {
-        setTimeout(findNotebookWidget, 100);
-      }
-    };
-
-    findNotebookWidget();
-  }, [notebookId, notebookStore]);
+    return () => unsubscribe();
+  }, [notebookId]);
 
   // Add pulse animation styles for collaborative indicator
   React.useEffect(() => {
@@ -192,7 +116,7 @@ export const NotebookToolbar: React.FC<NotebookToolbarProps> = ({
 
       // Try to find notebook container and add listener
       const notebook = document.querySelector(
-        ".jp-Notebook, .jp-WindowedPanel, #notebook-editor"
+        ".jp-Notebook, .jp-WindowedPanel, #notebook-editor",
       );
       if (notebook) {
         notebook.addEventListener("scroll", scrollListener);
@@ -209,7 +133,7 @@ export const NotebookToolbar: React.FC<NotebookToolbarProps> = ({
     // Use MutationObserver to wait for notebook to be ready
     observer = new MutationObserver(() => {
       const notebook = document.querySelector(
-        ".jp-Notebook, .jp-WindowedPanel"
+        ".jp-Notebook, .jp-WindowedPanel",
       );
       if (notebook) {
         setupScrollDetection();
@@ -254,9 +178,6 @@ export const NotebookToolbar: React.FC<NotebookToolbarProps> = ({
         const kernelConnection = notebook.adapter.kernel.connection;
         setKernelStatus(kernelConnection.status || "idle");
         setIsConnecting(false);
-      } else if (selectedRuntime.state === "starting") {
-        setKernelStatus("connecting");
-        setIsConnecting(true);
       } else {
         // Runtime is selected, so show it as idle/ready
         setKernelStatus("idle");
@@ -277,69 +198,29 @@ export const NotebookToolbar: React.FC<NotebookToolbarProps> = ({
     }
   }, [notebook, isDatalayerNotebook, selectedRuntime]);
 
-  const handleRunAll = () => {
-    try {
-      // Use the widget we found directly
-      const widget = notebookWidget?.content || notebookWidget;
-      const sessionContext =
-        notebookWidget?.sessionContext ||
-        notebookWidget?.context?.sessionContext;
-
-      if (widget && sessionContext) {
-        NotebookActions.runAll(widget, sessionContext);
-      } else {
-        // Fallback to the store method
-        notebookStore.runAll(notebookId);
-      }
-    } catch (error) {}
-  };
-
-  const handleAddCodeCell = () => {
-    // Try to find widget one more time if we don't have it
-    if (!notebookWidget) {
-      const container = document.getElementById(notebookId);
-      const notebookPanel = container?.querySelector(".jp-NotebookPanel");
-      if (notebookPanel && (notebookPanel as any).lumino_widget) {
-        const immediateWidget = (notebookPanel as any).lumino_widget;
-        setNotebookWidget(immediateWidget);
-      }
+  const handleRunAll = (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (notebookId) {
+      notebookStore2.getState().runAll(notebookId);
     }
-
-    try {
-      // Use the widget we found directly
-      const widget = notebookWidget?.content || notebookWidget;
-
-      if (widget) {
-        NotebookActions.insertBelow(widget);
-        NotebookActions.changeCellType(widget, "code");
-      } else {
-        // Fallback to store method
-        notebookStore.insertBelow({
-          notebookId: notebookId,
-          cellType: "code",
-          activeCellId: null,
-        });
-      }
-    } catch (error) {}
   };
 
-  const handleAddMarkdownCell = () => {
-    try {
-      // Use the widget we found directly
-      const widget = notebookWidget?.content || notebookWidget;
+  const handleAddCodeCell = (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (notebookId && notebook?.adapter?.panel?.content) {
+      // Use NotebookActions to insert a code cell below
+      NotebookActions.insertBelow(notebook.adapter.panel.content);
+      NotebookActions.changeCellType(notebook.adapter.panel.content, "code");
+    }
+  };
 
-      if (widget) {
-        NotebookActions.insertBelow(widget);
-        NotebookActions.changeCellType(widget, "markdown");
-      } else {
-        // Fallback to store method
-        notebookStore.insertBelow({
-          id: notebookId,
-          cellType: "markdown" as any,
-          source: "",
-        });
-      }
-    } catch (error) {}
+  const handleAddMarkdownCell = (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (notebookId && notebook?.adapter?.panel?.content) {
+      // Use NotebookActions to insert a markdown cell below
+      NotebookActions.insertBelow(notebook.adapter.panel.content);
+      NotebookActions.changeCellType(notebook.adapter.panel.content, "markdown");
+    }
   };
 
   const handleSelectRuntime = () => {
@@ -609,8 +490,8 @@ export const NotebookToolbar: React.FC<NotebookToolbarProps> = ({
             notebook?.adapter?.kernel
               ? `Connected to ${selectedKernel}`
               : isDatalayerNotebook
-              ? "Select Datalayer Runtime"
-              : "Select Kernel"
+                ? "Select Datalayer Runtime"
+                : "Select Kernel"
           }
           onMouseEnter={(e) => {
             if (kernelStatus === "disconnected" || !notebook?.adapter?.kernel) {

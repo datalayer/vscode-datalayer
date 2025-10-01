@@ -71,7 +71,7 @@ export class LexicalDocument
   static async create(
     uri: vscode.Uri,
     backupId: string | undefined,
-    delegate: LexicalDocumentDelegate
+    delegate: LexicalDocumentDelegate,
   ): Promise<LexicalDocument> {
     const dataFile =
       typeof backupId === "string" ? vscode.Uri.parse(backupId) : uri;
@@ -161,19 +161,19 @@ export class LexicalDocument
   private _isCollaborative: boolean = false;
 
   private readonly _onDidDispose = this._register(
-    new vscode.EventEmitter<void>()
+    new vscode.EventEmitter<void>(),
   );
   public readonly onDidDispose = this._onDidDispose.event;
 
   private readonly _onDidChangeDocument = this._register(
     new vscode.EventEmitter<{
       readonly content?: Uint8Array;
-    }>()
+    }>(),
   );
   public readonly onDidChangeContent = this._onDidChangeDocument.event;
 
   private readonly _onDidChange = this._register(
-    new vscode.EventEmitter<void>()
+    new vscode.EventEmitter<void>(),
   );
   public readonly onDidChange = this._onDidChange.event;
 
@@ -187,7 +187,7 @@ export class LexicalDocument
   private constructor(
     uri: vscode.Uri,
     initialContent: Uint8Array,
-    delegate: LexicalDocumentDelegate
+    delegate: LexicalDocumentDelegate,
   ) {
     super();
     this._uri = uri;
@@ -291,7 +291,7 @@ export class LexicalDocument
    */
   async saveAs(
     targetResource: vscode.Uri,
-    cancellation: vscode.CancellationToken
+    cancellation: vscode.CancellationToken,
   ): Promise<void> {
     const fileData = await this._delegate.getFileData();
     if (cancellation.isCancellationRequested) {
@@ -329,7 +329,7 @@ export class LexicalDocument
    */
   async backup(
     destination: vscode.Uri,
-    cancellation: vscode.CancellationToken
+    cancellation: vscode.CancellationToken,
   ): Promise<vscode.CustomDocumentBackup> {
     await this.saveAs(destination, cancellation);
     return {

@@ -73,7 +73,7 @@ export class DatalayerStatusBar implements vscode.Disposable {
     // Create status bar item with right alignment and high priority
     this.statusBarItem = vscode.window.createStatusBarItem(
       vscode.StatusBarAlignment.Right,
-      100
+      100,
     );
 
     this.updateStatus();
@@ -109,7 +109,7 @@ export class DatalayerStatusBar implements vscode.Disposable {
     if (!DatalayerStatusBar.instance) {
       if (!authProvider) {
         throw new Error(
-          "AuthProvider is required when creating DatalayerStatusBar for the first time"
+          "AuthProvider is required when creating DatalayerStatusBar for the first time",
         );
       }
       DatalayerStatusBar.instance = new DatalayerStatusBar(authProvider);
@@ -134,10 +134,8 @@ export class DatalayerStatusBar implements vscode.Disposable {
     const authState = this.authProvider.getAuthState();
 
     if (authState.isAuthenticated && authState.user) {
-      const user = authState.user as any;
-      const displayName = user.githubLogin
-        ? `@${user.githubLogin}`
-        : user.email;
+      const user = authState.user;
+      const displayName = user.displayName || user.email;
       this.statusBarItem.text = `$(menu) Datalayer`;
       this.statusBarItem.tooltip = `Connected as ${displayName}`;
       this.statusBarItem.command = "datalayer.showAuthStatus";

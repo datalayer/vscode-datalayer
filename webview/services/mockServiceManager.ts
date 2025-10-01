@@ -87,13 +87,13 @@ export function createMockServiceManager(): ServiceManager.IManager {
       refreshRunning: () => Promise.resolve(),
       startNew: async () => {
         throw new Error(
-          "To enable running cells, you must select a kernel. Cell execution is not yet available for Datalayer notebooks."
+          "To enable running cells, you must select a kernel. Cell execution is not yet available for Datalayer notebooks.",
         );
       },
       findById: () => undefined,
       connectTo: () => {
         throw new Error(
-          "To enable running cells, you must select a kernel. Cell execution is not yet available for Datalayer notebooks."
+          "To enable running cells, you must select a kernel. Cell execution is not yet available for Datalayer notebooks.",
         );
       },
       shutdown: () => Promise.resolve(),
@@ -113,14 +113,14 @@ export function createMockServiceManager(): ServiceManager.IManager {
       refreshRunning: () => Promise.resolve(),
       startNew: async () => {
         throw new Error(
-          "To enable running cells, you must select a kernel. Cell execution is not yet available for Datalayer notebooks."
+          "To enable running cells, you must select a kernel. Cell execution is not yet available for Datalayer notebooks.",
         );
       },
       findById: () => undefined,
       findByPath: () => undefined,
       connectTo: () => {
         throw new Error(
-          "To enable running cells, you must select a kernel. Cell execution is not yet available for Datalayer notebooks."
+          "To enable running cells, you must select a kernel. Cell execution is not yet available for Datalayer notebooks.",
         );
       },
       shutdown: () => Promise.resolve(),

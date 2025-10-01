@@ -11,7 +11,7 @@
  * and markdown shortcuts. Includes optional toolbar and automatic saving functionality.
  */
 
-import React, { useCallback, useEffect, useRef } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { $getRoot, $createParagraphNode, EditorState } from "lexical";
 import { LexicalComposer } from "@lexical/react/LexicalComposer";
 import { RichTextPlugin } from "@lexical/react/LexicalRichTextPlugin";
@@ -29,7 +29,17 @@ import { CodeNode, CodeHighlightNode } from "@lexical/code";
 import { LinkNode, AutoLinkNode } from "@lexical/link";
 import { ListPlugin } from "@lexical/react/LexicalListPlugin";
 import { LinkPlugin } from "@lexical/react/LexicalLinkPlugin";
+import { useJupyter } from "@datalayer/jupyter-react";
+import {
+  JupyterInputNode,
+  JupyterInputHighlightNode,
+  JupyterOutputNode,
+  ComponentPickerMenuPlugin,
+  JupyterInputOutputPlugin,
+  DraggableBlockPlugin,
+} from "@datalayer/jupyter-lexical";
 import { LexicalToolbar } from "./LexicalToolbar";
+import type { RuntimeJSON } from "../../../core/lib/client/models/Runtime";
 import {
   createWebsocketProvider,
   LoroCollaborationPlugin,
@@ -60,6 +70,8 @@ interface CollaborationConfig {
  * @property {boolean} [showToolbar=true] - Whether to show the formatting toolbar
  * @property {boolean} [editable=true] - Whether the editor should be editable or read-only
  * @property {CollaborationConfig} [collaboration] - Collaboration configuration
+ * @property {RuntimeJSON} [selectedRuntime] - Selected runtime information for execution
+ * @property {boolean} [showRuntimeSelector=false] - Whether to show runtime selector in toolbar
  * @hidden
  */
 interface LexicalEditorProps {
@@ -70,6 +82,8 @@ interface LexicalEditorProps {
   showToolbar?: boolean;
   editable?: boolean;
   collaboration?: CollaborationConfig;
+  selectedRuntime?: RuntimeJSON;
+  showRuntimeSelector?: boolean;
 }
 
 /**
@@ -109,49 +123,60 @@ function SavePlugin({ onSave }: { onSave?: (content: string) => void }) {
  * Parses JSON content and sets it as the editor state on first render.
  * Falls back to an empty paragraph if parsing fails.
  * Importantly, this does NOT add the initial load to the undo history.
+ * SKIPS loading if collaboration is enabled (content comes from collaboration provider).
  *
  * @hidden
  * @param {object} props - Plugin properties
  * @param {string} [props.content] - JSON string representing the initial editor state
+ * @param {boolean} [props.skipLoad] - Skip loading content (for collaborative mode)
  * @returns {null} This is a React effect-only component
  */
-function LoadContentPlugin({ content }: { content?: string }) {
+function LoadContentPlugin({
+  content,
+  skipLoad,
+}: {
+  content?: string;
+  skipLoad?: boolean;
+}) {
   const [editor] = useLexicalComposerContext();
   const isFirstRender = useRef(true);
 
   useEffect(() => {
-    if (content && isFirstRender.current) {
-      isFirstRender.current = false;
-      try {
-        // First try to parse as JSON to validate format
-        const parsed = JSON.parse(content);
-
-        // Check if it's a valid Lexical editor state
-        if (parsed && typeof parsed === "object" && parsed.root) {
-          const editorState = editor.parseEditorState(content);
-          // Use setEditorState with skipHistoryPush option to avoid adding to undo stack
-          editor.setEditorState(editorState, {
-            tag: "history-merge",
-          });
-        } else {
-          throw new Error("Invalid Lexical editor state format");
-        }
-      } catch (error) {
-        // Create a default empty state if parsing fails
-        editor.update(
-          () => {
-            const root = $getRoot();
-            root.clear();
-            const paragraph = $createParagraphNode();
-            root.append(paragraph);
-          },
-          {
-            tag: "history-merge",
-          }
-        );
-      }
+    // Skip loading if collaboration is enabled - content will come from collaboration provider
+    if (skipLoad || !content || !isFirstRender.current) {
+      return;
     }
-  }, [content, editor]);
+
+    isFirstRender.current = false;
+    try {
+      // First try to parse as JSON to validate format
+      const parsed = JSON.parse(content);
+
+      // Check if it's a valid Lexical editor state
+      if (parsed && typeof parsed === "object" && parsed.root) {
+        const editorState = editor.parseEditorState(content);
+        // Use setEditorState with skipHistoryPush option to avoid adding to undo stack
+        editor.setEditorState(editorState, {
+          tag: "history-merge",
+        });
+      } else {
+        throw new Error("Invalid Lexical editor state format");
+      }
+    } catch (error) {
+      // Create a default empty state if parsing fails
+      editor.update(
+        () => {
+          const root = $getRoot();
+          root.clear();
+          const paragraph = $createParagraphNode();
+          root.append(paragraph);
+        },
+        {
+          tag: "history-merge",
+        },
+      );
+    }
+  }, [content, editor, skipLoad]);
 
   return null;
 }
@@ -183,9 +208,56 @@ export function LexicalEditor({
   showToolbar = true,
   editable = true,
   collaboration,
+  selectedRuntime,
+  showRuntimeSelector = false,
 }: LexicalEditorProps) {
   // Debug logging to understand content flow
   React.useEffect(() => {}, [initialContent, collaboration]);
+  const { defaultKernel, serviceManager } = useJupyter();
+  const [localKernel, setLocalKernel] = React.useState<any>(null);
+
+  // Create kernel connection when runtime is selected
+  React.useEffect(() => {
+    if (selectedRuntime && serviceManager && !defaultKernel) {
+      console.log("Creating kernel for runtime:", selectedRuntime);
+
+      // Start a new kernel
+      serviceManager.kernels
+        .startNew({ name: "python" })
+        .then((kernel) => {
+          console.log("Kernel started:", kernel);
+          setLocalKernel(kernel);
+        })
+        .catch((error) => {
+          console.error("Failed to start kernel:", error);
+        });
+    }
+
+    // Cleanup kernel on unmount or runtime change
+    return () => {
+      if (localKernel && !selectedRuntime) {
+        console.log("Shutting down kernel");
+        localKernel.shutdown().catch((err: any) => {
+          console.error("Failed to shutdown kernel:", err);
+        });
+        setLocalKernel(null);
+      }
+    };
+  }, [selectedRuntime, serviceManager, defaultKernel, localKernel]);
+
+  console.log("LexicalEditor - defaultKernel:", defaultKernel);
+  console.log("LexicalEditor - selectedRuntime:", selectedRuntime);
+  console.log("LexicalEditor - localKernel:", localKernel);
+
+  const [floatingAnchorElem, setFloatingAnchorElem] =
+    useState<HTMLDivElement | null>(null);
+
+  const onRef = (_floatingAnchorElem: HTMLDivElement) => {
+    if (_floatingAnchorElem !== null) {
+      setFloatingAnchorElem(_floatingAnchorElem);
+    }
+  };
+
   const editorConfig = {
     namespace: "VSCodeLexicalEditor",
     editable,
@@ -198,6 +270,9 @@ export function LexicalEditor({
       CodeHighlightNode,
       LinkNode,
       AutoLinkNode,
+      JupyterInputNode,
+      JupyterInputHighlightNode,
+      JupyterOutputNode,
     ],
     theme: {
       root: "lexical-editor-root",
@@ -238,12 +313,18 @@ export function LexicalEditor({
 
   const handleChange = useCallback(
     (editorState: EditorState) => {
-      const jsonString = JSON.stringify(editorState);
-      if (onContentChange) {
-        onContentChange(jsonString);
+      try {
+        const jsonString = JSON.stringify(editorState);
+        if (onContentChange) {
+          onContentChange(jsonString);
+        }
+      } catch (error) {
+        // Ignore serialization errors (e.g., JupyterOutputNode without kernel)
+        // This can happen in collaborative mode without a connected kernel
+        console.debug("Editor state serialization skipped:", error);
       }
     },
-    [onContentChange]
+    [onContentChange],
   );
 
   return (
@@ -259,7 +340,13 @@ export function LexicalEditor({
               backgroundColor: "var(--vscode-editor-background)",
             }}
           >
-            {showToolbar && <LexicalToolbar disabled={!editable} />}
+            {showToolbar && (
+              <LexicalToolbar
+                disabled={!editable}
+                selectedRuntime={selectedRuntime}
+                showRuntimeSelector={showRuntimeSelector}
+              />
+            )}
             {collaboration?.enabled && (
               <div
                 style={{
@@ -330,7 +417,7 @@ export function LexicalEditor({
             )}
           </div>
         )}
-        <div className="lexical-editor-inner">
+        <div className="lexical-editor-inner" ref={onRef}>
           <RichTextPlugin
             contentEditable={
               <ContentEditable
@@ -347,12 +434,20 @@ export function LexicalEditor({
           <LinkPlugin />
           <MarkdownShortcutPlugin transformers={TRANSFORMERS} />
           <SavePlugin onSave={editable ? onSave : undefined} />
-          <LoadContentPlugin content={initialContent} />
+          <LoadContentPlugin
+            content={initialContent}
+            skipLoad={collaboration?.enabled}
+          />
+          <ComponentPickerMenuPlugin kernel={defaultKernel} />
+          <JupyterInputOutputPlugin kernel={defaultKernel} />
+          {floatingAnchorElem && (
+            <DraggableBlockPlugin anchorElem={floatingAnchorElem} />
+          )}
           {collaboration?.enabled &&
             collaboration.websocketUrl &&
             collaboration.documentId && (
               <LoroCollaborationPlugin
-                id={collaboration.sessionId || collaboration.documentId}
+                id={collaboration.documentId}
                 shouldBootstrap
                 providerFactory={createWebsocketProvider}
                 websocketUrl={collaboration.websocketUrl}

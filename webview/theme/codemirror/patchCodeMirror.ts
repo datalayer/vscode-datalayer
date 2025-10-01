@@ -35,7 +35,7 @@ interface VSCodeColors {
  * Create a CodeMirror HighlightStyle from VS Code colors
  */
 export function createVSCodeHighlightStyle(
-  colors: VSCodeColors
+  colors: VSCodeColors,
 ): HighlightStyle {
   return HighlightStyle.define([
     // Keywords (if, for, def, class, return, etc.)
@@ -272,7 +272,7 @@ function getVSCodeColors(): VSCodeColors | null {
   // Fallback to extracting from CSS variables
   const getColor = (cssVar: string, fallback: string) => {
     const value = getComputedStyle(document.documentElement).getPropertyValue(
-      cssVar
+      cssVar,
     );
     return value?.trim() || fallback;
   };
@@ -284,51 +284,51 @@ function getVSCodeColors(): VSCodeColors | null {
   return {
     keyword: getColor(
       "--vscode-debugTokenExpression-name",
-      isDark ? "#C586C0" : "#0000FF"
+      isDark ? "#C586C0" : "#0000FF",
     ),
     string: getColor(
       "--vscode-debugTokenExpression-string",
-      isDark ? "#CE9178" : "#A31515"
+      isDark ? "#CE9178" : "#A31515",
     ),
     comment: getColor(
       "--vscode-editor-foreground",
-      isDark ? "#6A9955" : "#008000"
+      isDark ? "#6A9955" : "#008000",
     ),
     function: getColor(
       "--vscode-debugTokenExpression-value",
-      isDark ? "#DCDCAA" : "#795E26"
+      isDark ? "#DCDCAA" : "#795E26",
     ),
     number: getColor(
       "--vscode-debugTokenExpression-number",
-      isDark ? "#B5CEA8" : "#098658"
+      isDark ? "#B5CEA8" : "#098658",
     ),
     variable: getColor(
       "--vscode-debugTokenExpression-name",
-      isDark ? "#9CDCFE" : "#001080"
+      isDark ? "#9CDCFE" : "#001080",
     ),
     type: getColor(
       "--vscode-debugTokenExpression-type",
-      isDark ? "#4EC9B0" : "#267F99"
+      isDark ? "#4EC9B0" : "#267F99",
     ),
     constant: getColor(
       "--vscode-symbolIcon-constantForeground",
-      isDark ? "#569CD6" : "#0070C1"
+      isDark ? "#569CD6" : "#0070C1",
     ),
     operator: getColor(
       "--vscode-editor-foreground",
-      isDark ? "#D4D4D4" : "#000000"
+      isDark ? "#D4D4D4" : "#000000",
     ),
     bracket: getColor(
       "--vscode-editor-foreground",
-      isDark ? "#D4D4D4" : "#000000"
+      isDark ? "#D4D4D4" : "#000000",
     ),
     meta: getColor(
       "--vscode-debugTokenExpression-name",
-      isDark ? "#C586C0" : "#0000FF"
+      isDark ? "#C586C0" : "#0000FF",
     ),
     property: getColor(
       "--vscode-debugTokenExpression-name",
-      isDark ? "#9CDCFE" : "#001080"
+      isDark ? "#9CDCFE" : "#001080",
     ),
   };
 }

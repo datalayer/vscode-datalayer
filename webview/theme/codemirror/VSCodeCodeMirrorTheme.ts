@@ -130,7 +130,7 @@ const themeColors: Record<string, VSCodeColors> = {
  */
 export function createVSCodeTheme(
   colors?: VSCodeColors,
-  isDark = true
+  isDark = true,
 ): Extension {
   // Use provided colors or defaults
   const c = colors || (isDark ? themeColors["dark+"] : themeColors.light);
@@ -167,7 +167,7 @@ export function createVSCodeTheme(
         color: c.foreground || "#d4d4d4",
       },
     },
-    { dark: isDark }
+    { dark: isDark },
   );
 
   // Create syntax highlighting styles

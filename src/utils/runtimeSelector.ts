@@ -37,7 +37,7 @@ interface RuntimeQuickPickItem extends vscode.QuickPickItem {
  */
 export async function selectDatalayerRuntime(
   sdk: DatalayerClient,
-  authProvider: SDKAuthProvider
+  authProvider: SDKAuthProvider,
 ): Promise<Runtime | undefined> {
   // Check authentication first
   if (!authProvider.isAuthenticated()) {
@@ -62,11 +62,14 @@ export async function selectDatalayerRuntime(
       }
       try {
         // Fetch existing runtimes
-        const runtimes = await (sdk as any).listRuntimes();
+        const runtimes = await sdk.listRuntimes();
 
         // Get cached environments
         const environments =
-          await EnvironmentCache.getInstance().getEnvironments(sdk, authProvider);
+          await EnvironmentCache.getInstance().getEnvironments(
+            sdk,
+            authProvider,
+          );
 
         // Return the loaded data
         return { runtimes, environments };
@@ -74,7 +77,7 @@ export async function selectDatalayerRuntime(
         vscode.window.showErrorMessage(`Failed to load runtimes: ${error}`);
         return null;
       }
-    }
+    },
   );
 
   // Check if loading was cancelled or failed
@@ -116,7 +119,7 @@ export async function selectDatalayerRuntime(
         runtimeData.environmentTitle ??
         runtimeData.environmentName ??
         "unknown";
-      const status = runtimeData.state ?? "ready";
+      const status = "ready";
 
       // Format start time using Runtime model getter
       let timeInfo = "";
@@ -149,13 +152,8 @@ export async function selectDatalayerRuntime(
         // Silently handle time formatting errors
       }
 
-      // Add status indicator icon
-      const statusIcon =
-        status === "running"
-          ? "$(play)"
-          : status === "stopped"
-          ? "$(stop)"
-          : "$(clock)";
+      // Add status indicator icon - all listed runtimes are assumed to be ready/running
+      const statusIcon = "$(play)";
 
       items.push({
         label: `${statusIcon} ${displayName}`,
@@ -195,7 +193,7 @@ export async function selectDatalayerRuntime(
     (items.length === 1 && items[0].kind === vscode.QuickPickItemKind.Separator)
   ) {
     vscode.window.showInformationMessage(
-      "No runtimes or environments available"
+      "No runtimes or environments available",
     );
     return undefined;
   }
@@ -235,7 +233,7 @@ export async function selectDatalayerRuntime(
  */
 async function createRuntime(
   sdk: DatalayerClient,
-  environment: Environment
+  environment: Environment,
 ): Promise<Runtime | undefined> {
   // Prompt for runtime name (human-readable)
   const name = await vscode.window.showInputBox({
@@ -262,7 +260,7 @@ async function createRuntime(
   let hasActiveRuntimes = false;
 
   try {
-    const credits = await (sdk as any).getCredits();
+    const credits = await sdk.getCredits();
 
     // Use net available credits (accounts for existing reservations)
     availableCredits = credits.available;
@@ -273,14 +271,14 @@ async function createRuntime(
     if (!environment.burningRate) {
       throw new Error(
         `Environment "${environment.name}" is missing the burningRate property from the API. ` +
-          `This is required to calculate runtime credits. Please contact support.`
+          `This is required to calculate runtime credits. Please contact support.`,
       );
     }
 
     // Calculate max minutes based on net available credits using SDK utility
-    maxMinutes = (sdk as any).calculateMaxRuntimeMinutes(
+    maxMinutes = sdk.calculateMaxRuntimeMinutes(
       credits.netAvailable,
-      environment.burningRate
+      environment.burningRate,
     );
 
     // Enforce 24-hour maximum (1440 minutes)
@@ -309,7 +307,7 @@ async function createRuntime(
       ? " (after existing reservations)"
       : "";
     promptMessage = `You have ${netAvailableCredits.toFixed(
-      1
+      1,
     )} credits available${reservedInfo}. Max ${maxMinutes} minutes for ${
       environment.name
     }`;
@@ -341,7 +339,7 @@ async function createRuntime(
       if (maxMinutes && num > maxMinutes) {
         if (netAvailableCredits !== undefined) {
           return `Maximum duration is ${maxMinutes} minutes with your available credits (${netAvailableCredits.toFixed(
-            1
+            1,
           )} credits)`;
         } else {
           return `Maximum duration is ${maxMinutes} minutes`;
@@ -364,14 +362,14 @@ async function createRuntime(
   if (!environment.burningRate) {
     throw new Error(
       `Environment "${environment.name}" is missing the burningRate property from the API. ` +
-        `This is required to calculate runtime credits. Please contact support.`
+        `This is required to calculate runtime credits. Please contact support.`,
     );
   }
 
   // Calculate credits needed based on burning rate using SDK utility
-  const creditsLimit = (sdk as any).calculateCreditsRequired(
+  const creditsLimit = sdk.calculateCreditsRequired(
     minutes,
-    environment.burningRate
+    environment.burningRate,
   );
 
   // Create runtime with progress
@@ -391,15 +389,16 @@ async function createRuntime(
         // Create the runtime
 
         // Check if SDK has createRuntime method
-        if (typeof (sdk as any).createRuntime !== "function") {
+        if (typeof sdk.createRuntime !== "function") {
           throw new Error("SDK does not have createRuntime method");
         }
 
-        const runtime = await (sdk as any).createRuntime({
-          given_name: name,
-          environment_name: environment.name,
-          credits_limit: creditsLimit,
-        });
+        const runtime = await sdk.createRuntime(
+          environment.name,
+          "notebook",
+          name,
+          creditsLimit,
+        );
 
         progress.report({
           increment: 25,
@@ -420,14 +419,11 @@ async function createRuntime(
           await new Promise((resolve) => setTimeout(resolve, 1000));
 
           // Fetch the updated runtime list
-          const runtimes = await (sdk as any).listRuntimes();
+          const runtimes = await sdk.listRuntimes();
           readyRuntime = runtimes.find((r: Runtime) => r.uid === runtime.uid);
 
           // Check if runtime has connection info
-          if (
-            readyRuntime &&
-            (readyRuntime.ingress ?? readyRuntime.jupyter_base_url)
-          ) {
+          if (readyRuntime && readyRuntime.ingress) {
             break;
           }
 
@@ -446,21 +442,21 @@ async function createRuntime(
 
         if (readyRuntime) {
           vscode.window.showInformationMessage(
-            `Runtime "${name}" created and ready!`
+            `Runtime "${name}" created and ready!`,
           );
           return readyRuntime;
         }
 
         // If we still don't have connection info, return what we have
         vscode.window.showInformationMessage(
-          `Runtime "${name}" created but still initializing`
+          `Runtime "${name}" created but still initializing`,
         );
         return runtime;
       } catch (error) {
         vscode.window.showErrorMessage(`Failed to create runtime: ${error}`);
         return undefined;
       }
-    }
+    },
   );
 }
 

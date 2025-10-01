@@ -50,7 +50,7 @@ export class NotebookRuntimeService {
    */
   async handleRuntimeSelection(
     webview: vscode.WebviewPanel,
-    message: ExtensionMessage
+    message: ExtensionMessage,
   ): Promise<void> {
     try {
       const authService = SDKAuthProvider.getInstance();
@@ -73,8 +73,8 @@ export class NotebookRuntimeService {
             cancellable: false,
           },
           async () => {
-            return await (sdk as any).listRuntimes();
-          }
+            return await sdk.listRuntimes();
+          },
         );
       } catch (error) {
         // Check if it's a token expiration error
@@ -84,7 +84,7 @@ export class NotebookRuntimeService {
           vscode.window
             .showErrorMessage(
               "Authentication expired. Please logout and login again.",
-              "Logout"
+              "Logout",
             )
             .then((selection) => {
               if (selection === "Logout") {
@@ -93,7 +93,7 @@ export class NotebookRuntimeService {
             });
         } else {
           vscode.window.showErrorMessage(
-            `Failed to load runtimes: ${errorMessage}`
+            `Failed to load runtimes: ${errorMessage}`,
           );
         }
         return;
@@ -105,18 +105,18 @@ export class NotebookRuntimeService {
       // Add existing runtimes
       if (runtimes && runtimes.length > 0) {
         runtimes.forEach((runtime) => {
-          const statusIcon =
-            runtime.state === "running" ? "$(vm-active)" : "$(vm-outline)";
+          const statusIcon = "$(vm-active)";
+          // credits_used is not a formal API field, handle defensively
           const creditsUsed = (runtime as any).credits_used ?? 0;
-          const creditsLimit = (runtime as any).credits_limit ?? 10;
+          const creditsLimit = (runtime as any).creditsLimit ?? 10;
+          const creditsInfo =
+            creditsLimit > 0 ? ` • ${creditsUsed}/${creditsLimit} credits` : "";
 
           const item: any = {
             label: `${statusIcon} ${
               runtime.givenName ?? runtime.podName ?? "Runtime"
             }`,
-            description: `${
-              runtime.state ?? "unknown"
-            } • ${creditsUsed}/${creditsLimit} credits`,
+            description: `running${creditsInfo}`,
             detail: `Environment: ${
               runtime.environmentName ?? "python-cpu-env"
             }`,
@@ -187,33 +187,39 @@ export class NotebookRuntimeService {
             // Fetch environments to get the actual burning rate
             const { EnvironmentCache } = await import("./environmentCache");
             const envCache = EnvironmentCache.getInstance();
-            const environments = await envCache.getEnvironments(sdk as any, authService);
+            const environments = await envCache.getEnvironments(
+              sdk as any,
+              authService,
+            );
 
             // Find the selected environment
             const selectedEnv = environments.find(
-              (env: any) => env.name === environment
+              (env: any) => env.name === environment,
             );
 
             if (!selectedEnv) {
               if (environments.length === 0 && !authService.isAuthenticated()) {
-                throw new Error(`Please login to access environments. Environment ${environment} not found.`);
+                throw new Error(
+                  `Please login to access environments. Environment ${environment} not found.`,
+                );
               }
               throw new Error(`Environment ${environment} not found`);
             }
 
             // Calculate credits from minutes using SDK utility
-            const creditsLimit = (sdk as any).calculateCreditsRequired(
+            const creditsLimit = sdk.calculateCreditsRequired(
               defaultMinutes,
-              selectedEnv.burningRate
+              selectedEnv.burningRate,
             );
 
-            const newRuntime = await (sdk as any).createRuntime({
-              given_name: `VSCode ${
+            const newRuntime = await sdk.createRuntime(
+              environment,
+              "notebook",
+              `VSCode ${
                 selectedAny.action === "create-ai" ? "AI" : "CPU"
               } Runtime`,
-              environment_name: environment,
-              credits_limit: creditsLimit,
-            });
+              creditsLimit,
+            );
 
             if (newRuntime) {
               // Wait for runtime to be ready
@@ -221,13 +227,11 @@ export class NotebookRuntimeService {
               const maxRetries = 10;
               while (retries < maxRetries && newRuntime.podName) {
                 await new Promise((resolve) => setTimeout(resolve, 3000));
-                const updatedRuntime = await (sdk as any).getRuntime(
-                  newRuntime.podName
-                );
+                const updatedRuntime = await sdk.getRuntime(newRuntime.podName);
                 if (updatedRuntime?.ingress && updatedRuntime?.token) {
                   this.sendRuntimeToWebview(webview, updatedRuntime);
                   vscode.window.showInformationMessage(
-                    "Runtime created successfully"
+                    "Runtime created successfully",
                   );
                   return;
                 }
@@ -237,10 +241,10 @@ export class NotebookRuntimeService {
               // Use whatever we have if not fully ready
               this.sendRuntimeToWebview(webview, newRuntime);
               vscode.window.showWarningMessage(
-                "Runtime created but may not be fully ready"
+                "Runtime created but may not be fully ready",
               );
             }
-          }
+          },
         );
       }
     } catch (error) {
@@ -257,7 +261,7 @@ export class NotebookRuntimeService {
    */
   async handleLocalNotebookRuntimeSelection(
     webview: vscode.WebviewPanel,
-    message: ExtensionMessage
+    message: ExtensionMessage,
   ): Promise<void> {
     // Show quick pick with options
     const items: vscode.QuickPickItem[] = [
@@ -302,7 +306,7 @@ export class NotebookRuntimeService {
                 baseUrl,
                 token,
               },
-              message.id
+              message.id,
             );
           }
         })
@@ -321,7 +325,7 @@ export class NotebookRuntimeService {
    */
   private sendRuntimeToWebview(
     webview: vscode.WebviewPanel,
-    runtime: Runtime
+    runtime: Runtime,
   ): void {
     const runtimeData = runtime.toJSON();
     this.postMessage(webview, "runtime-selected", {
@@ -341,7 +345,7 @@ export class NotebookRuntimeService {
     panel: vscode.WebviewPanel,
     type: string,
     body: any,
-    id?: string
+    id?: string,
   ): void {
     panel.webview.postMessage({ type, body, id });
   }

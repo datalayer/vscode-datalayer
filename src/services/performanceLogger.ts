@@ -42,7 +42,7 @@ export class PerformanceLogger {
   static async trackOperation<T>(
     operationName: string,
     operation: () => Promise<T>,
-    context?: Record<string, any>
+    context?: Record<string, any>,
   ): Promise<T> {
     const startTime = performance.now();
     const startMemory = PerformanceLogger.getMemorySnapshot();
@@ -64,7 +64,7 @@ export class PerformanceLogger {
         duration: `${duration.toFixed(2)}ms`,
         memoryDelta: PerformanceLogger.calculateMemoryDelta(
           startMemory,
-          endMemory
+          endMemory,
         ),
         performanceCategory: PerformanceLogger.categorizePerformance(duration),
         ...context,
@@ -94,7 +94,7 @@ export class PerformanceLogger {
           duration: `${duration.toFixed(2)}ms`,
           failurePoint: "execution",
           ...context,
-        }
+        },
       );
 
       throw error;
@@ -113,7 +113,7 @@ export class PerformanceLogger {
   static trackSync<T>(
     operationName: string,
     operation: () => T,
-    context?: Record<string, any>
+    context?: Record<string, any>,
   ): T {
     const startTime = performance.now();
     const startMemory = PerformanceLogger.getMemorySnapshot();
@@ -135,7 +135,7 @@ export class PerformanceLogger {
         duration: `${duration.toFixed(2)}ms`,
         memoryDelta: PerformanceLogger.calculateMemoryDelta(
           startMemory,
-          endMemory
+          endMemory,
         ),
         performanceCategory: PerformanceLogger.categorizePerformance(duration),
         ...context,
@@ -154,7 +154,7 @@ export class PerformanceLogger {
           duration: `${duration.toFixed(2)}ms`,
           failurePoint: "execution",
           ...context,
-        }
+        },
       );
 
       throw error;
@@ -181,7 +181,7 @@ export class PerformanceLogger {
    */
   static createTimer(
     operationName: string,
-    context?: Record<string, any>
+    context?: Record<string, any>,
   ): PerformanceTimer {
     return new PerformanceTimer(operationName, this.logger, context);
   }
@@ -204,7 +204,7 @@ export class PerformanceLogger {
    */
   private static calculateMemoryDelta(
     start: MemorySnapshot,
-    end: MemorySnapshot
+    end: MemorySnapshot,
   ): MemoryDelta {
     return {
       heapUsed: PerformanceLogger.formatBytes(end.heapUsed - start.heapUsed),
@@ -261,7 +261,7 @@ export class PerformanceTimer {
   constructor(
     private operationName: string,
     private logger: any,
-    private context?: Record<string, any>
+    private context?: Record<string, any>,
   ) {}
 
   /**
@@ -350,7 +350,7 @@ export class PerformanceTimer {
 
   private calculateMemoryDelta(
     start: MemorySnapshot,
-    end: MemorySnapshot
+    end: MemorySnapshot,
   ): MemoryDelta {
     return {
       heapUsed: this.formatBytes(end.heapUsed - start.heapUsed),

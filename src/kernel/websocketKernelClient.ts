@@ -87,16 +87,16 @@ export class WebSocketKernelClient {
    */
   constructor(
     runtime: Runtime | RuntimeJSON,
-    private readonly _sdk: DatalayerClient
+    private readonly _sdk: DatalayerClient,
   ) {
     this._sessionId = uuidv4();
 
     // Extract runtime data from Runtime model or plain object
     if (runtime && typeof runtime === "object") {
       // Check if it's a Runtime model with toJSON method
-      if (typeof (runtime as any).toJSON === "function") {
+      if ("toJSON" in runtime && typeof runtime.toJSON === "function") {
         // It's a Runtime model - use toJSON to get stable interface
-        this._runtime = (runtime as Runtime).toJSON();
+        this._runtime = runtime.toJSON();
       } else {
         // It's already RuntimeJSON data
         this._runtime = runtime as RuntimeJSON;
@@ -223,7 +223,7 @@ export class WebSocketKernelClient {
         this._kernelId = kernel.id;
       } else {
         throw new Error(
-          `Failed to create kernel: ${createResponse.statusText}`
+          `Failed to create kernel: ${createResponse.statusText}`,
         );
       }
     } catch (error) {
@@ -413,7 +413,7 @@ export class WebSocketKernelClient {
 
       // Update resolve to clear timeout
       const originalResolve = this._pendingRequests.get(
-        msg.header.msg_id
+        msg.header.msg_id,
       )!.resolve;
       this._pendingRequests.get(msg.header.msg_id)!.resolve = (result) => {
         clearTimeout(timeout);
@@ -447,7 +447,7 @@ export class WebSocketKernelClient {
           headers: {
             Authorization: `Bearer ${this._runtime.token}`,
           },
-        }
+        },
       );
 
       if (!response.ok) {
@@ -473,7 +473,7 @@ export class WebSocketKernelClient {
           headers: {
             Authorization: `Bearer ${this._runtime.token}`,
           },
-        }
+        },
       );
 
       if (!response.ok) {

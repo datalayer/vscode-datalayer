@@ -73,15 +73,15 @@ export function ThemedLoader({ message = "Loading..." }: ThemedLoaderProps) {
     setColors({
       background: getVSCodeColor(
         "--vscode-editor-background",
-        isDark ? "#1e1e1e" : "#ffffff"
+        isDark ? "#1e1e1e" : "#ffffff",
       ),
       foreground: getVSCodeColor(
         "--vscode-editor-foreground",
-        isDark ? "#cccccc" : "#333333"
+        isDark ? "#cccccc" : "#333333",
       ),
       border: getVSCodeColor(
         "--vscode-focusBorder",
-        isDark ? "#007acc" : "#0078d4"
+        isDark ? "#007acc" : "#0078d4",
       ),
     });
   }, []);

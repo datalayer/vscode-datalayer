@@ -50,7 +50,7 @@ import { ItemTypes } from "../../../core/lib/client/constants";
 export function registerDocumentCommands(
   context: vscode.ExtensionContext,
   documentBridge: DocumentBridge,
-  spacesTreeProvider: SpacesTreeProvider
+  spacesTreeProvider: SpacesTreeProvider,
 ): void {
   const sdk = getSDKInstance();
   /**
@@ -99,7 +99,7 @@ export function registerDocumentCommands(
                 const uri = await documentBridge.openDocument(
                   document,
                   undefined,
-                  spaceName
+                  spaceName,
                 );
 
                 progress.report({
@@ -110,11 +110,11 @@ export function registerDocumentCommands(
                 await vscode.commands.executeCommand(
                   "vscode.openWith",
                   uri,
-                  "datalayer.jupyter-notebook"
+                  "datalayer.jupyter-notebook",
                 );
 
                 progress.report({ increment: 100, message: "Done!" });
-              }
+              },
             );
           } else if (isLexical) {
             vscode.window.withProgress(
@@ -132,7 +132,7 @@ export function registerDocumentCommands(
                 const uri = await documentBridge.openDocument(
                   document,
                   undefined,
-                  spaceName
+                  spaceName,
                 );
 
                 progress.report({
@@ -143,30 +143,30 @@ export function registerDocumentCommands(
                 await vscode.commands.executeCommand(
                   "vscode.openWith",
                   uri,
-                  "datalayer.lexical-editor"
+                  "datalayer.lexical-editor",
                 );
 
                 progress.report({ increment: 100, message: "Done!" });
-              }
+              },
             );
           } else if (isCell) {
             vscode.window.showInformationMessage(
-              `Cell viewer coming soon: ${docName}`
+              `Cell viewer coming soon: ${docName}`,
             );
           } else {
             vscode.window.showInformationMessage(
-              `Document type not supported: ${typeInfo.type} (${docName})`
+              `Document type not supported: ${typeInfo.type} (${docName})`,
             );
           }
         } catch (error) {
           vscode.window.showErrorMessage(
             `Failed to open document: ${
               error instanceof Error ? error.message : "Unknown error"
-            }`
+            }`,
           );
         }
-      }
-    )
+      },
+    ),
   );
 
   /**
@@ -213,31 +213,31 @@ export function registerDocumentCommands(
               cancellable: false,
             },
             async () => {
-              const notebook = await (sdk as any).createNotebook({
-                spaceId: space.uid,
+              const notebook = await sdk.createNotebook(
+                space.uid,
                 name,
-                description,
-              });
+                description || "",
+              );
 
               if (notebook) {
                 vscode.window.showInformationMessage(
-                  `Successfully created notebook "${name}"`
+                  `Successfully created notebook "${name}"`,
                 );
                 spacesTreeProvider.refreshSpace(space.uid);
               } else {
                 throw new Error("Failed to create notebook");
               }
-            }
+            },
           );
         } catch (error) {
           vscode.window.showErrorMessage(
             `Failed to create notebook: ${
               error instanceof Error ? error.message : "Unknown error"
-            }`
+            }`,
           );
         }
-      }
-    )
+      },
+    ),
   );
 
   /**
@@ -284,31 +284,31 @@ export function registerDocumentCommands(
               cancellable: false,
             },
             async () => {
-              const document = await (sdk as any).createLexical({
-                spaceId: space.uid,
+              const document = await sdk.createLexical(
+                space.uid,
                 name,
-                description,
-              });
+                description || "",
+              );
 
               if (document) {
                 vscode.window.showInformationMessage(
-                  `Successfully created lexical document "${name}"`
+                  `Successfully created lexical document "${name}"`,
                 );
                 spacesTreeProvider.refreshSpace(space.uid);
               } else {
                 throw new Error("Failed to create lexical document");
               }
-            }
+            },
           );
         } catch (error) {
           vscode.window.showErrorMessage(
             `Failed to create lexical document: ${
               error instanceof Error ? error.message : "Unknown error"
-            }`
+            }`,
           );
         }
-      }
-    )
+      },
+    ),
   );
 
   /**
@@ -323,7 +323,7 @@ export function registerDocumentCommands(
         try {
           if (!item?.data?.document) {
             vscode.window.showErrorMessage(
-              "Please select a document to rename"
+              "Please select a document to rename",
             );
             return;
           }
@@ -362,7 +362,7 @@ export function registerDocumentCommands(
                 await document.update(newName, existingDescription);
 
                 vscode.window.showInformationMessage(
-                  `Successfully renamed to "${newName}"`
+                  `Successfully renamed to "${newName}"`,
                 );
                 spacesTreeProvider.refresh();
               } catch (updateError) {
@@ -371,20 +371,20 @@ export function registerDocumentCommands(
                     updateError instanceof Error
                       ? updateError.message
                       : "Unknown error"
-                  }`
+                  }`,
                 );
               }
-            }
+            },
           );
         } catch (error) {
           vscode.window.showErrorMessage(
             `Failed to rename item: ${
               error instanceof Error ? error.message : "Unknown error"
-            }`
+            }`,
           );
         }
-      }
-    )
+      },
+    ),
   );
 
   /**
@@ -399,7 +399,7 @@ export function registerDocumentCommands(
         try {
           if (!item?.data?.document) {
             vscode.window.showErrorMessage(
-              "Please select a document to delete"
+              "Please select a document to delete",
             );
             return;
           }
@@ -409,7 +409,7 @@ export function registerDocumentCommands(
           const itemName = document.name;
 
           const confirmed = await showTwoStepConfirmation(
-            CommonConfirmations.deleteDocument(itemName)
+            CommonConfirmations.deleteDocument(itemName),
           );
 
           if (!confirmed) {
@@ -429,7 +429,7 @@ export function registerDocumentCommands(
                 await document.delete();
 
                 vscode.window.showInformationMessage(
-                  `Successfully deleted "${itemName}"`
+                  `Successfully deleted "${itemName}"`,
                 );
                 spacesTreeProvider.refresh();
               } catch (deleteError) {
@@ -438,20 +438,20 @@ export function registerDocumentCommands(
                     deleteError instanceof Error
                       ? deleteError.message
                       : "Unknown error"
-                  }`
+                  }`,
                 );
               }
-            }
+            },
           );
         } catch (error) {
           vscode.window.showErrorMessage(
             `Failed to delete item: ${
               error instanceof Error ? error.message : "Unknown error"
-            }`
+            }`,
           );
         }
-      }
-    )
+      },
+    ),
   );
 
   /**
@@ -461,6 +461,6 @@ export function registerDocumentCommands(
   context.subscriptions.push(
     vscode.commands.registerCommand("datalayer.refreshSpaces", () => {
       spacesTreeProvider.refresh();
-    })
+    }),
   );
 }

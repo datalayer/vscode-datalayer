@@ -7,18 +7,15 @@ This folder contains an extensible theme system that supports multiple theme pro
 ### Core Components
 
 1. **Theme Providers** (`providers/`)
-
    - `BaseThemeProvider`: Abstract base class for all theme providers
    - `VSCodeThemeProvider`: Extracts and maps VS Code theme colors
    - Future: `JupyterLabThemeProvider`, `CustomThemeProvider`
 
 2. **Color Mapping** (`mapping/`)
-
    - `UniversalColorMapper`: Maps semantic colors between different theme systems
    - Provides unified color abstraction layer
 
 3. **Components** (`components/`)
-
    - `EnhancedJupyterReactTheme`: Enhanced theme wrapper component
    - Supports auto-detection of environment
 

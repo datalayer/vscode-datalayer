@@ -101,16 +101,27 @@ export class SpacesTreeProvider implements vscode.TreeDataProvider<SpaceItem> {
             {
               type: ItemType.ERROR,
               error: "Click to login to Datalayer",
-            }
+            },
           ),
         ];
       }
 
       // Get username or GitHub login for display
-      const user = authState.user as any;
-      const displayName = user.githubLogin
-        ? `@${user.githubLogin}`
-        : user.email;
+      const user = authState.user;
+      if (!user) {
+        return [
+          new SpaceItem(
+            "Authentication error - please try again",
+            vscode.TreeItemCollapsibleState.None,
+            {
+              type: ItemType.ERROR,
+              error: "User information not available",
+            },
+          ),
+        ];
+      }
+
+      const displayName = user.displayName || user.email;
 
       return [
         new SpaceItem(
@@ -119,8 +130,7 @@ export class SpacesTreeProvider implements vscode.TreeDataProvider<SpaceItem> {
           {
             type: ItemType.ROOT,
             username: displayName,
-            githubLogin: user.githubLogin,
-          }
+          },
         ),
       ];
     }
@@ -158,7 +168,7 @@ export class SpacesTreeProvider implements vscode.TreeDataProvider<SpaceItem> {
         this._onDidChangeTreeData.fire();
 
         const sdk = getSDKInstance();
-        spaces = (await (sdk as any).getMySpaces()) ?? [];
+        spaces = (await sdk.getMySpaces()) ?? [];
         this.spacesCache.set("user", spaces);
       }
 
@@ -170,7 +180,7 @@ export class SpacesTreeProvider implements vscode.TreeDataProvider<SpaceItem> {
             {
               type: ItemType.ERROR,
               error: "No spaces available",
-            }
+            },
           ),
         ];
       }
@@ -204,7 +214,7 @@ export class SpacesTreeProvider implements vscode.TreeDataProvider<SpaceItem> {
           {
             type: ItemType.ERROR,
             error: error instanceof Error ? error.message : "Unknown error",
-          }
+          },
         ),
       ];
     }
@@ -228,7 +238,7 @@ export class SpacesTreeProvider implements vscode.TreeDataProvider<SpaceItem> {
             {
               type: ItemType.ERROR,
               error: "Space ID is missing",
-            }
+            },
           ),
         ];
       }
@@ -241,7 +251,7 @@ export class SpacesTreeProvider implements vscode.TreeDataProvider<SpaceItem> {
         const sdk = getSDKInstance();
 
         // Get the space to access its items
-        const spaces = await (sdk as any).getMySpaces();
+        const spaces = await sdk.getMySpaces();
         const targetSpace = spaces.find((s: any) => s.uid === spaceId);
 
         if (targetSpace) {
@@ -262,7 +272,7 @@ export class SpacesTreeProvider implements vscode.TreeDataProvider<SpaceItem> {
             {
               type: ItemType.ERROR,
               error: "This space is empty",
-            }
+            },
           ),
         ];
       }
@@ -286,7 +296,7 @@ export class SpacesTreeProvider implements vscode.TreeDataProvider<SpaceItem> {
               type: ItemType.NOTEBOOK,
               document: item,
               spaceName: spaceName,
-            })
+            }),
           );
         } else if (itemType === ItemTypes.LEXICAL) {
           // Use the model's extension getter
@@ -299,7 +309,7 @@ export class SpacesTreeProvider implements vscode.TreeDataProvider<SpaceItem> {
               type: ItemType.DOCUMENT,
               document: item,
               spaceName: spaceName,
-            })
+            }),
           );
         }
         // Skip cells and other types - don't add them to the tree
@@ -313,7 +323,7 @@ export class SpacesTreeProvider implements vscode.TreeDataProvider<SpaceItem> {
             {
               type: ItemType.ERROR,
               error: "This space may contain other document types",
-            }
+            },
           ),
         ];
       }
@@ -327,7 +337,7 @@ export class SpacesTreeProvider implements vscode.TreeDataProvider<SpaceItem> {
           {
             type: ItemType.ERROR,
             error: error instanceof Error ? error.message : "Unknown error",
-          }
+          },
         ),
       ];
     }

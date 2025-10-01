@@ -290,7 +290,7 @@ export class VSCodeThemeProvider extends BaseThemeProvider {
    * Parse color string to RGB
    */
   private parseColor(
-    color: string
+    color: string,
   ): { r: number; g: number; b: number } | null {
     // Handle hex colors
     if (color.startsWith("#")) {
@@ -448,7 +448,7 @@ export class VSCodeThemeProvider extends BaseThemeProvider {
     }
     // Try to get it from computed styles as a fallback
     const computed = getComputedStyle(
-      document.documentElement
+      document.documentElement,
     ).getPropertyValue(varName);
     if (computed && computed.trim()) {
       return computed.trim();
@@ -464,94 +464,94 @@ export class VSCodeThemeProvider extends BaseThemeProvider {
     return {
       "background.primary": this.getVSCodeColor(
         "--vscode-editor-background",
-        "#ffffff"
+        "#ffffff",
       ),
       "background.secondary": this.getVSCodeColor(
         "--vscode-sideBar-background",
-        "#f6f8fa"
+        "#f6f8fa",
       ),
       "background.tertiary": this.getVSCodeColor(
         "--vscode-panel-background",
-        "#f6f8fa"
+        "#f6f8fa",
       ),
       "background.overlay": this.getVSCodeColor(
         "--vscode-dropdown-background",
-        "#ffffff"
+        "#ffffff",
       ),
 
       "text.primary": this.getVSCodeColor(
         "--vscode-editor-foreground",
-        "#24292e"
+        "#24292e",
       ),
       "text.secondary": this.getVSCodeColor(
         "--vscode-descriptionForeground",
-        "#586069"
+        "#586069",
       ),
       "text.disabled": this.getVSCodeColor(
         "--vscode-disabledForeground",
-        "#6a737d"
+        "#6a737d",
       ),
       "text.link": this.getVSCodeColor(
         "--vscode-textLink-foreground",
-        "#0366d6"
+        "#0366d6",
       ),
 
       "border.default": this.getVSCodeColor("--vscode-panel-border", "#e1e4e8"),
       "border.muted": this.getVSCodeColor(
         "--vscode-editorWidget-border",
-        "#e1e4e8"
+        "#e1e4e8",
       ),
       "border.subtle": this.getVSCodeColor("--vscode-widget-border", "#d1d5da"),
 
       "status.error": this.getVSCodeColor(
         "--vscode-errorForeground",
-        "#cb2431"
+        "#cb2431",
       ),
       "status.warning": this.getVSCodeColor(
         "--vscode-editorWarning-foreground",
-        "#f9c513"
+        "#f9c513",
       ),
       "status.success": this.getVSCodeColor(
         "--vscode-terminal-ansiGreen",
-        "#28a745"
+        "#28a745",
       ),
       "status.info": this.getVSCodeColor(
         "--vscode-terminal-ansiBlue",
-        "#0366d6"
+        "#0366d6",
       ),
 
       "interactive.hover": this.getVSCodeColor(
         "--vscode-list-hoverBackground",
-        "#f6f8fa"
+        "#f6f8fa",
       ),
       "interactive.active": this.getVSCodeColor(
         "--vscode-list-activeSelectionBackground",
-        "#e1e4e8"
+        "#e1e4e8",
       ),
       "interactive.focus": this.getVSCodeColor(
         "--vscode-focusBorder",
-        "#0366d6"
+        "#0366d6",
       ),
 
       "editor.background": this.getVSCodeColor(
         "--vscode-editor-background",
-        "#ffffff"
+        "#ffffff",
       ),
       "editor.foreground": this.getVSCodeColor(
         "--vscode-editor-foreground",
-        "#24292e"
+        "#24292e",
       ),
       "editor.selectionBackground": this.getVSCodeColor(
         "--vscode-editor-selectionBackground",
-        "#add6ff"
+        "#add6ff",
       ),
       "editor.lineHighlight": this.getVSCodeColor(
         "--vscode-editor-lineHighlightBackground",
-        "#f6f8fa"
+        "#f6f8fa",
       ),
       "editor.cursor": this.getVSCodeColor(
         "--vscode-editorCursor-foreground",
-        "#24292e"
+        "#24292e",
       ),
     };
   }
@@ -587,15 +587,15 @@ export class VSCodeThemeProvider extends BaseThemeProvider {
     // Typography
     variables["--jp-ui-font-family"] = this.getVSCodeColor(
       "--vscode-editor-font-family",
-      "sans-serif"
+      "sans-serif",
     );
     variables["--jp-code-font-family"] = this.getVSCodeColor(
       "--vscode-editor-font-family",
-      "monospace"
+      "monospace",
     );
     variables["--jp-ui-font-size1"] = this.getVSCodeColor(
       "--vscode-editor-font-size",
-      "13px"
+      "13px",
     );
 
     // Extract syntax highlighting colors from VS Code
@@ -733,7 +733,7 @@ export class VSCodeThemeProvider extends BaseThemeProvider {
       colors["border.default"] || "#e0e0e0";
     variables["--jp-cell-editor-active-background"] = this.getVSCodeColor(
       "--vscode-editor-lineHighlightBackground",
-      "#f0f0f0"
+      "#f0f0f0",
     );
 
     // Code cell specific
@@ -744,25 +744,25 @@ export class VSCodeThemeProvider extends BaseThemeProvider {
     // Notebook cell styling - match VS Code notebook appearance
     const notebookBg = this.getVSCodeColor(
       "--vscode-notebook-editorBackground",
-      colors["background.primary"] || "#ffffff"
+      colors["background.primary"] || "#ffffff",
     );
     const cellBg = this.getVSCodeColor(
       "--vscode-notebook-cellEditorBackground",
-      colors["editor.background"] || "#ffffff"
+      colors["editor.background"] || "#ffffff",
     );
 
     // Extract the actual notebook border colors from VS Code
     // VS Code uses the focusedEditorBorder for active cells, which often matches the theme accent color
     let cellBorder = this.getVSCodeColor(
       "--vscode-notebook-cellBorderColor",
-      ""
+      "",
     );
     const focusedCellBorder = this.getVSCodeColor(
       "--vscode-notebook-focusedEditorBorder",
       this.getVSCodeColor(
         "--vscode-focusBorder",
-        colors["interactive.focus"] || "#0366d6"
-      )
+        colors["interactive.focus"] || "#0366d6",
+      ),
     );
 
     // For the red theme, the border should be red - use the focused border as the main border
@@ -770,7 +770,7 @@ export class VSCodeThemeProvider extends BaseThemeProvider {
       // Try to get the focus border color which usually matches the theme
       cellBorder = this.getVSCodeColor(
         "--vscode-notebook-focusedCellBorder",
-        ""
+        "",
       );
       if (!cellBorder || cellBorder === "transparent" || cellBorder === "") {
         // Use the focus border as the cell border for themed appearance
@@ -780,15 +780,15 @@ export class VSCodeThemeProvider extends BaseThemeProvider {
 
     const selectedCellBg = this.getVSCodeColor(
       "--vscode-notebook-selectedCellBackground",
-      "rgba(0, 0, 0, 0.04)"
+      "rgba(0, 0, 0, 0.04)",
     );
     const cellHoverBg = this.getVSCodeColor(
       "--vscode-notebook-cellHoverBackground",
-      "rgba(0, 0, 0, 0.02)"
+      "rgba(0, 0, 0, 0.02)",
     );
     const inactiveCellBorder = this.getVSCodeColor(
       "--vscode-notebook-inactiveSelectedCellBorder",
-      cellBorder
+      cellBorder,
     );
 
     // Apply notebook-specific colors
@@ -804,7 +804,7 @@ export class VSCodeThemeProvider extends BaseThemeProvider {
       // Dark theme adjustments
       variables["--jp-cell-editor-background"] = this.getVSCodeColor(
         "--vscode-notebook-cellEditorBackground",
-        this.getVSCodeColor("--vscode-editor-background", "#1e1e1e")
+        this.getVSCodeColor("--vscode-editor-background", "#1e1e1e"),
       );
       variables["--jp-layout-color2"] = this.lightenDarkenColor(notebookBg, 10); // Slightly lighter
       variables["--jp-layout-color3"] = this.lightenDarkenColor(notebookBg, 20); // Even lighter
@@ -812,12 +812,12 @@ export class VSCodeThemeProvider extends BaseThemeProvider {
       // Light theme adjustments
       variables["--jp-cell-editor-background"] = this.getVSCodeColor(
         "--vscode-notebook-cellEditorBackground",
-        this.getVSCodeColor("--vscode-editor-background", "#ffffff")
+        this.getVSCodeColor("--vscode-editor-background", "#ffffff"),
       );
       variables["--jp-layout-color2"] = this.lightenDarkenColor(notebookBg, -5); // Slightly darker
       variables["--jp-layout-color3"] = this.lightenDarkenColor(
         notebookBg,
-        -10
+        -10,
       ); // Even darker
     }
 
@@ -851,7 +851,7 @@ export class VSCodeThemeProvider extends BaseThemeProvider {
     // Output area colors
     variables["--jp-output-area-background"] = this.getVSCodeColor(
       "--vscode-notebook-outputContainerBackgroundColor",
-      colors["background.primary"] || "#ffffff"
+      colors["background.primary"] || "#ffffff",
     );
 
     // Cell collapse button and other interactive elements - use theme accent color
@@ -859,8 +859,8 @@ export class VSCodeThemeProvider extends BaseThemeProvider {
       "--vscode-button-background",
       this.getVSCodeColor(
         "--vscode-focusBorder",
-        colors["interactive.focus"] || "#0366d6"
-      )
+        colors["interactive.focus"] || "#0366d6",
+      ),
     );
 
     // For Monokai, use the characteristic yellow/green color for buttons
@@ -897,7 +897,7 @@ export class VSCodeThemeProvider extends BaseThemeProvider {
     variables["--jp-ui-button-color"] = buttonColor;
     variables["--jp-ui-button-hover-color"] = this.lightenDarkenColor(
       buttonColor,
-      10
+      10,
     );
 
     return variables;
@@ -1083,7 +1083,7 @@ export class VSCodeThemeProvider extends BaseThemeProvider {
     // First, ensure base text color is set
     const baseTextColor = this.getVSCodeColor(
       "--vscode-editor-foreground",
-      isDark ? "#D4D4D4" : "#000000"
+      isDark ? "#D4D4D4" : "#000000",
     );
 
     // CodeMirror 6 uses class names with unicode prefixes (ͼ)
@@ -1100,7 +1100,7 @@ export class VSCodeThemeProvider extends BaseThemeProvider {
     // Keywords (if, for, def, class, etc.)
     rules.push(`.cm-editor .ͼ2 { color: ${colors.keyword} !important; }`);
     rules.push(
-      `.cm-editor .cm-keyword { color: ${colors.keyword} !important; }`
+      `.cm-editor .cm-keyword { color: ${colors.keyword} !important; }`,
     );
 
     // Strings
@@ -1110,14 +1110,14 @@ export class VSCodeThemeProvider extends BaseThemeProvider {
     // Comments
     rules.push(`.cm-editor .ͼ3 { color: ${colors.comment} !important; }`);
     rules.push(
-      `.cm-editor .cm-comment { color: ${colors.comment} !important; }`
+      `.cm-editor .cm-comment { color: ${colors.comment} !important; }`,
     );
 
     // Functions and definitions
     rules.push(`.cm-editor .ͼ6 { color: ${colors.function} !important; }`);
     rules.push(`.cm-editor .cm-def { color: ${colors.function} !important; }`);
     rules.push(
-      `.cm-editor .cm-function { color: ${colors.function} !important; }`
+      `.cm-editor .cm-function { color: ${colors.function} !important; }`,
     );
 
     // Numbers
@@ -1127,10 +1127,10 @@ export class VSCodeThemeProvider extends BaseThemeProvider {
     // Variables
     rules.push(`.cm-editor .ͼ7 { color: ${colors.variable} !important; }`);
     rules.push(
-      `.cm-editor .cm-variable { color: ${colors.variable} !important; }`
+      `.cm-editor .cm-variable { color: ${colors.variable} !important; }`,
     );
     rules.push(
-      `.cm-editor .cm-variable-2 { color: ${colors.variable} !important; }`
+      `.cm-editor .cm-variable-2 { color: ${colors.variable} !important; }`,
     );
 
     // Types
@@ -1142,7 +1142,7 @@ export class VSCodeThemeProvider extends BaseThemeProvider {
     rules.push(`.cm-editor .ͼ9 { color: ${colors.constant} !important; }`);
     rules.push(`.cm-editor .cm-atom { color: ${colors.constant} !important; }`);
     rules.push(
-      `.cm-editor .cm-builtin { color: ${colors.constant} !important; }`
+      `.cm-editor .cm-builtin { color: ${colors.constant} !important; }`,
     );
     rules.push(`.cm-editor .cm-bool { color: ${colors.constant} !important; }`);
     rules.push(`.cm-editor .cm-null { color: ${colors.constant} !important; }`);
@@ -1150,45 +1150,45 @@ export class VSCodeThemeProvider extends BaseThemeProvider {
     // Operators
     rules.push(`.cm-editor .ͼ1 { color: ${colors.operator} !important; }`);
     rules.push(
-      `.cm-editor .cm-operator { color: ${colors.operator} !important; }`
+      `.cm-editor .cm-operator { color: ${colors.operator} !important; }`,
     );
     rules.push(
-      `.cm-editor .cm-punctuation { color: ${colors.operator} !important; }`
+      `.cm-editor .cm-punctuation { color: ${colors.operator} !important; }`,
     );
 
     // Properties and attributes
     rules.push(
-      `.cm-editor .cm-property { color: ${colors.function} !important; }`
+      `.cm-editor .cm-property { color: ${colors.function} !important; }`,
     );
     rules.push(
-      `.cm-editor .cm-propertyName { color: ${colors.variable} !important; }`
+      `.cm-editor .cm-propertyName { color: ${colors.variable} !important; }`,
     );
     rules.push(
-      `.cm-editor .cm-attribute { color: ${colors.variable} !important; }`
+      `.cm-editor .cm-attribute { color: ${colors.variable} !important; }`,
     );
     rules.push(
-      `.cm-editor .cm-attributeName { color: ${colors.variable} !important; }`
+      `.cm-editor .cm-attributeName { color: ${colors.variable} !important; }`,
     );
 
     // Additional language-specific mappings
     rules.push(`.cm-editor .cm-meta { color: ${colors.keyword} !important; }`);
     rules.push(
-      `.cm-editor .cm-qualifier { color: ${colors.type} !important; }`
+      `.cm-editor .cm-qualifier { color: ${colors.type} !important; }`,
     );
     rules.push(`.cm-editor .cm-tag { color: ${colors.function} !important; }`);
     rules.push(
-      `.cm-editor .cm-tagName { color: ${colors.function} !important; }`
+      `.cm-editor .cm-tagName { color: ${colors.function} !important; }`,
     );
 
     // Brackets and delimiters
     rules.push(
-      `.cm-editor .cm-bracket { color: ${colors.operator} !important; }`
+      `.cm-editor .cm-bracket { color: ${colors.operator} !important; }`,
     );
     rules.push(
-      `.cm-editor .cm-brace { color: ${colors.operator} !important; }`
+      `.cm-editor .cm-brace { color: ${colors.operator} !important; }`,
     );
     rules.push(
-      `.cm-editor .cm-paren { color: ${colors.operator} !important; }`
+      `.cm-editor .cm-paren { color: ${colors.operator} !important; }`,
     );
 
     return rules.join("\n");
@@ -1246,7 +1246,7 @@ export class VSCodeThemeProvider extends BaseThemeProvider {
       fonts: {
         normal: this.getVSCodeColor(
           "--vscode-editor-font-family",
-          "sans-serif"
+          "sans-serif",
         ),
         mono: this.getVSCodeColor("--vscode-editor-font-family", "monospace"),
       },

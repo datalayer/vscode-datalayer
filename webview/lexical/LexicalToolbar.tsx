@@ -11,7 +11,7 @@
  * Automatically syncs with the current editor selection state.
  */
 
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState, useContext } from "react";
 import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext";
 import {
   $getSelection,
@@ -24,6 +24,8 @@ import {
   CAN_REDO_COMMAND,
   COMMAND_PRIORITY_CRITICAL,
 } from "lexical";
+import { MessageHandlerContext } from "../services/messageHandler";
+import type { RuntimeJSON } from "../../../core/lib/client/models/Runtime";
 import {
   $isHeadingNode,
   $createHeadingNode,
@@ -146,10 +148,14 @@ function Divider() {
  *
  * @interface LexicalToolbarProps
  * @property {boolean} [disabled=false] - Whether all toolbar buttons should be disabled
+ * @property {RuntimeJSON} [selectedRuntime] - Selected runtime information for Datalayer documents
+ * @property {boolean} [showRuntimeSelector=false] - Whether to show the runtime selector button
  * @hidden
  */
 interface LexicalToolbarProps {
   disabled?: boolean;
+  selectedRuntime?: RuntimeJSON;
+  showRuntimeSelector?: boolean;
 }
 
 /**
@@ -170,8 +176,13 @@ interface LexicalToolbarProps {
  * </LexicalComposer>
  * ```
  */
-export function LexicalToolbar({ disabled = false }: LexicalToolbarProps = {}) {
+export function LexicalToolbar({
+  disabled = false,
+  selectedRuntime,
+  showRuntimeSelector = false,
+}: LexicalToolbarProps = {}) {
   const [editor] = useLexicalComposerContext();
+  const messageHandler = useContext(MessageHandlerContext);
   const [isBold, setIsBold] = useState(false);
   const [isItalic, setIsItalic] = useState(false);
   const [isUnderline, setIsUnderline] = useState(false);
@@ -180,6 +191,8 @@ export function LexicalToolbar({ disabled = false }: LexicalToolbarProps = {}) {
   const [canUndo, setCanUndo] = useState(false);
   const [canRedo, setCanRedo] = useState(false);
   const [blockType, setBlockType] = useState("paragraph");
+  const [selectedKernel, setSelectedKernel] = useState<string>("Select Kernel");
+  const [kernelStatus, setKernelStatus] = useState<string>("disconnected");
 
   const updateToolbar = useCallback(() => {
     const selection = $getSelection();
@@ -228,7 +241,7 @@ export function LexicalToolbar({ disabled = false }: LexicalToolbarProps = {}) {
         setCanUndo(payload);
         return false;
       },
-      COMMAND_PRIORITY_CRITICAL
+      COMMAND_PRIORITY_CRITICAL,
     );
   }, [editor]);
 
@@ -239,7 +252,7 @@ export function LexicalToolbar({ disabled = false }: LexicalToolbarProps = {}) {
         setCanRedo(payload);
         return false;
       },
-      COMMAND_PRIORITY_CRITICAL
+      COMMAND_PRIORITY_CRITICAL,
     );
   }, [editor]);
 
@@ -285,7 +298,7 @@ export function LexicalToolbar({ disabled = false }: LexicalToolbarProps = {}) {
           // If already this heading type, convert to paragraph
           const paragraph = element.replace(
             $createHeadingNode("h1").replace($createHeadingNode("h1")),
-            true
+            true,
           );
         } else {
           // Convert to heading
@@ -316,6 +329,52 @@ export function LexicalToolbar({ disabled = false }: LexicalToolbarProps = {}) {
     editor.dispatchCommand(FORMAT_ELEMENT_COMMAND, "right");
   };
 
+  // Update kernel display based on selected runtime
+  useEffect(() => {
+    if (selectedRuntime) {
+      const runtimeName =
+        selectedRuntime.givenName ||
+        selectedRuntime.environmentTitle ||
+        selectedRuntime.environmentName ||
+        selectedRuntime.uid ||
+        "Runtime";
+      setSelectedKernel(`Datalayer: ${runtimeName}`);
+      setKernelStatus("idle");
+    } else {
+      setSelectedKernel("Select Kernel");
+      setKernelStatus("disconnected");
+    }
+  }, [selectedRuntime]);
+
+  const handleSelectRuntime = () => {
+    if (messageHandler) {
+      messageHandler.postMessage({
+        type: "select-runtime",
+        body: {
+          isDatalayerNotebook: true,
+        },
+      });
+    }
+  };
+
+  const handleTerminateRuntime = () => {
+    if (messageHandler && selectedRuntime) {
+      messageHandler.postMessage({
+        type: "terminate-runtime",
+        body: {
+          runtime: selectedRuntime,
+        },
+      });
+    }
+  };
+
+  const getKernelStatusIcon = () => {
+    if (kernelStatus === "connecting") {
+      return "codicon-loading codicon-modifier-spin";
+    }
+    return "codicon-server-environment";
+  };
+
   return (
     <div
       style={{
@@ -323,9 +382,9 @@ export function LexicalToolbar({ disabled = false }: LexicalToolbarProps = {}) {
         alignItems: "center",
         padding: "8px",
         backgroundColor: "var(--vscode-editor-background)",
-        flexWrap: "wrap",
         gap: "4px",
         opacity: disabled ? 0.5 : 1,
+        width: "100%",
       }}
     >
       <ToolbarButton
@@ -333,14 +392,14 @@ export function LexicalToolbar({ disabled = false }: LexicalToolbarProps = {}) {
         disabled={disabled || !canUndo}
         title="Undo (Cmd/Ctrl+Z)"
       >
-        ↶
+        <span className="codicon codicon-discard" />
       </ToolbarButton>
       <ToolbarButton
         onClick={redo}
         disabled={disabled || !canRedo}
         title="Redo (Cmd/Ctrl+Shift+Z)"
       >
-        ↷
+        <span className="codicon codicon-redo" />
       </ToolbarButton>
 
       <Divider />
@@ -351,7 +410,7 @@ export function LexicalToolbar({ disabled = false }: LexicalToolbarProps = {}) {
         disabled={disabled}
         title="Bold (Cmd/Ctrl+B)"
       >
-        <strong>B</strong>
+        <span className="codicon codicon-bold" />
       </ToolbarButton>
       <ToolbarButton
         onClick={formatItalic}
@@ -359,7 +418,7 @@ export function LexicalToolbar({ disabled = false }: LexicalToolbarProps = {}) {
         disabled={disabled}
         title="Italic (Cmd/Ctrl+I)"
       >
-        <em>I</em>
+        <span className="codicon codicon-italic" />
       </ToolbarButton>
       <ToolbarButton
         onClick={formatUnderline}
@@ -367,7 +426,7 @@ export function LexicalToolbar({ disabled = false }: LexicalToolbarProps = {}) {
         disabled={disabled}
         title="Underline (Cmd/Ctrl+U)"
       >
-        <u>U</u>
+        <span className="codicon codicon-symbol-color" />
       </ToolbarButton>
       <ToolbarButton
         onClick={formatStrikethrough}
@@ -375,7 +434,7 @@ export function LexicalToolbar({ disabled = false }: LexicalToolbarProps = {}) {
         disabled={disabled}
         title="Strikethrough"
       >
-        <s>S</s>
+        <span className="codicon codicon-text-strikethrough" />
       </ToolbarButton>
       <ToolbarButton
         onClick={formatCode}
@@ -383,7 +442,7 @@ export function LexicalToolbar({ disabled = false }: LexicalToolbarProps = {}) {
         disabled={disabled}
         title="Inline Code"
       >
-        {"</>"}
+        <span className="codicon codicon-code" />
       </ToolbarButton>
 
       <Divider />
@@ -394,7 +453,7 @@ export function LexicalToolbar({ disabled = false }: LexicalToolbarProps = {}) {
         disabled={disabled}
         title="Heading 1"
       >
-        H1
+        <span className="codicon codicon-symbol-text" />
       </ToolbarButton>
       <ToolbarButton
         onClick={() => formatHeading("h2")}
@@ -402,7 +461,7 @@ export function LexicalToolbar({ disabled = false }: LexicalToolbarProps = {}) {
         disabled={disabled}
         title="Heading 2"
       >
-        H2
+        <span className="codicon codicon-symbol-string" />
       </ToolbarButton>
       <ToolbarButton
         onClick={() => formatHeading("h3")}
@@ -410,7 +469,7 @@ export function LexicalToolbar({ disabled = false }: LexicalToolbarProps = {}) {
         disabled={disabled}
         title="Heading 3"
       >
-        H3
+        <span className="codicon codicon-symbol-keyword" />
       </ToolbarButton>
 
       <Divider />
@@ -421,7 +480,7 @@ export function LexicalToolbar({ disabled = false }: LexicalToolbarProps = {}) {
         disabled={disabled}
         title="Bullet List"
       >
-        •
+        <span className="codicon codicon-list-unordered" />
       </ToolbarButton>
       <ToolbarButton
         onClick={insertNumberedList}
@@ -429,7 +488,7 @@ export function LexicalToolbar({ disabled = false }: LexicalToolbarProps = {}) {
         disabled={disabled}
         title="Numbered List"
       >
-        1.
+        <span className="codicon codicon-list-ordered" />
       </ToolbarButton>
 
       <Divider />
@@ -439,22 +498,138 @@ export function LexicalToolbar({ disabled = false }: LexicalToolbarProps = {}) {
         disabled={disabled}
         title="Align Left"
       >
-        ◀
+        <span className="codicon codicon-arrow-small-left" />
       </ToolbarButton>
       <ToolbarButton
         onClick={formatAlignCenter}
         disabled={disabled}
         title="Align Center"
       >
-        ◼
+        <span className="codicon codicon-chrome-minimize" />
       </ToolbarButton>
       <ToolbarButton
         onClick={formatAlignRight}
         disabled={disabled}
         title="Align Right"
       >
-        ▶
+        <span className="codicon codicon-arrow-small-right" />
       </ToolbarButton>
+
+      {/* Runtime selector - shown on the right side if enabled */}
+      {showRuntimeSelector && (
+        <>
+          <div style={{ flex: 1 }} />
+
+          {/* Terminate Runtime button - only show when runtime is connected */}
+          {selectedRuntime &&
+            selectedKernel !== "Select Kernel" &&
+            selectedKernel.startsWith("Datalayer:") && (
+              <>
+                <button
+                  onClick={handleTerminateRuntime}
+                  disabled={disabled}
+                  title="Terminate Runtime"
+                  style={{
+                    padding: "4px",
+                    margin: "0 2px",
+                    backgroundColor: "transparent",
+                    border: "1px solid transparent",
+                    borderRadius: "3px",
+                    cursor: disabled ? "not-allowed" : "pointer",
+                    opacity: disabled ? 0.5 : 0.8,
+                    fontSize: "14px",
+                    fontFamily: "var(--vscode-editor-font-family)",
+                    color: "var(--vscode-foreground)",
+                    transition: "all 0.2s",
+                    display: "flex",
+                    alignItems: "center",
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!disabled) {
+                      (e.target as HTMLButtonElement).style.backgroundColor =
+                        "var(--vscode-toolbar-hoverBackground)";
+                      (e.target as HTMLButtonElement).style.opacity = "1";
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!disabled) {
+                      (e.target as HTMLButtonElement).style.backgroundColor =
+                        "transparent";
+                      (e.target as HTMLButtonElement).style.opacity = "0.8";
+                    }
+                  }}
+                >
+                  <span
+                    className="codicon codicon-x"
+                    style={{ fontSize: "16px" }}
+                  />
+                </button>
+                <Divider />
+              </>
+            )}
+
+          <button
+            onClick={
+              kernelStatus === "disconnected" ? handleSelectRuntime : undefined
+            }
+            disabled={disabled}
+            title={
+              kernelStatus === "disconnected"
+                ? "Select Datalayer Runtime"
+                : `Connected to ${selectedKernel}`
+            }
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "6px",
+              padding: "4px 8px",
+              margin: "0 8px 0 2px",
+              backgroundColor: "transparent",
+              border: "1px solid transparent",
+              borderRadius: "3px",
+              cursor:
+                kernelStatus === "disconnected" && !disabled
+                  ? "pointer"
+                  : "default",
+              opacity: disabled ? 0.5 : 1,
+              fontSize: "13px",
+              fontFamily: "var(--vscode-editor-font-family)",
+              color: "var(--vscode-foreground)",
+              minWidth: "140px",
+              transition: "all 0.2s",
+            }}
+            onMouseEnter={(e) => {
+              if (!disabled && kernelStatus === "disconnected") {
+                (e.target as HTMLButtonElement).style.backgroundColor =
+                  "var(--vscode-toolbar-hoverBackground)";
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (!disabled) {
+                (e.target as HTMLButtonElement).style.backgroundColor =
+                  "transparent";
+              }
+            }}
+          >
+            <span
+              className={`codicon ${getKernelStatusIcon()}`}
+              style={{
+                fontSize: "16px",
+                minWidth: "16px",
+              }}
+            />
+            <span
+              style={{
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap",
+              }}
+            >
+              {selectedKernel}
+            </span>
+          </button>
+        </>
+      )}
     </div>
   );
 }

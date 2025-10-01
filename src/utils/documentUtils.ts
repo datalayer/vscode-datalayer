@@ -65,7 +65,7 @@ export function detectDocumentType(document: Document): DocumentTypeInfo {
  */
 export function getDocumentDisplayName(
   document: Document,
-  typeInfo?: DocumentTypeInfo
+  typeInfo?: DocumentTypeInfo,
 ): string {
   if (!typeInfo) {
     typeInfo = detectDocumentType(document);

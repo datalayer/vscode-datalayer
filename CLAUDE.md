@@ -202,7 +202,7 @@ const sdk = new DatalayerClient({
       if (error.message.includes("Not authenticated")) {
         const action = await vscode.window.showErrorMessage(
           "Authentication required. Please login to Datalayer.",
-          "Login"
+          "Login",
         );
         if (action === "Login") {
           vscode.commands.executeCommand("datalayer.login");
@@ -212,9 +212,9 @@ const sdk = new DatalayerClient({
   },
 });
 
-// Usage throughout extension - cast as any when TypeScript definitions incomplete
-const notebooks = await(sdk as any).listNotebooks();
-const runtime = await(sdk as any).ensureRuntime();
+// Usage throughout extension - no casts needed anymore
+const notebooks = await sdk.listNotebooks();
+const runtime = await sdk.ensureRuntime();
 ```
 
 ### Service Layer Removal
@@ -233,8 +233,8 @@ These services were wrapping every SDK method 1:1 just for logging. Now handled 
 - Use actual API field names (e.g., `ingress` not `jupyter_base_url`)
 - Maintain JSDoc comments for all exported functions
 - Use FormData for notebook/lexical creation, JSON for other endpoints
-- Cast SDK as `(sdk as any)` when TypeScript definitions are incomplete
 - All cross-cutting concerns (logging, error handling) go in SDK handlers, not wrapper services
+- SDK interface is now complete - no type casts needed
 
 ### Notebook Cell Management
 

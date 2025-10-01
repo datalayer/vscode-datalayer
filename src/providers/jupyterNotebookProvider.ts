@@ -58,20 +58,20 @@ export class JupyterNotebookProvider
       const workspaceFolders = vscode.workspace.workspaceFolders;
       if (!workspaceFolders) {
         vscode.window.showErrorMessage(
-          "Creating new Datalayer notebook files currently requires opening a workspace"
+          "Creating new Datalayer notebook files currently requires opening a workspace",
         );
         return;
       }
 
       const uri = vscode.Uri.joinPath(
         workspaceFolders[0].uri,
-        `new-${JupyterNotebookProvider.newNotebookFileId++}.ipynb`
+        `new-${JupyterNotebookProvider.newNotebookFileId++}.ipynb`,
       ).with({ scheme: "untitled" });
 
       vscode.commands.executeCommand(
         "vscode.openWith",
         uri,
-        JupyterNotebookProvider.viewType
+        JupyterNotebookProvider.viewType,
       );
     });
 
@@ -83,7 +83,7 @@ export class JupyterNotebookProvider
           retainContextWhenHidden: true,
         },
         supportsMultipleEditorsPerDocument: false,
-      }
+      },
     );
   }
 
@@ -121,7 +121,7 @@ export class JupyterNotebookProvider
   async openCustomDocument(
     uri: vscode.Uri,
     openContext: { backupId?: string },
-    _token: vscode.CancellationToken
+    _token: vscode.CancellationToken,
   ): Promise<NotebookDocument> {
     const document: NotebookDocument = await NotebookDocument.create(
       uri,
@@ -129,7 +129,7 @@ export class JupyterNotebookProvider
       {
         getFileData: async () => {
           const webviewsForDocument = Array.from(
-            this.webviews.get(document.uri)
+            this.webviews.get(document.uri),
           );
           if (!webviewsForDocument.length) {
             throw new Error("Could not find webview to save for");
@@ -138,11 +138,11 @@ export class JupyterNotebookProvider
           const response = await this.postMessageWithResponse<number[]>(
             panel,
             "getFileData",
-            {}
+            {},
           );
           return new Uint8Array(response);
         },
-      }
+      },
     );
 
     const listeners: vscode.Disposable[] = [];
@@ -155,8 +155,8 @@ export class JupyterNotebookProvider
             document,
             ...e,
           });
-        }
-      )
+        },
+      ),
     );
 
     listeners.push(
@@ -172,8 +172,8 @@ export class JupyterNotebookProvider
               content: e.content,
             });
           }
-        }
-      )
+        },
+      ),
     );
 
     document.onDidDispose(() => disposeAll(listeners));
@@ -192,7 +192,7 @@ export class JupyterNotebookProvider
   async resolveCustomEditor(
     document: NotebookDocument,
     webviewPanel: vscode.WebviewPanel,
-    _token: vscode.CancellationToken
+    _token: vscode.CancellationToken,
   ): Promise<void> {
     // Add the webview to our internal set of active webviews
     this.webviews.add(document.uri, webviewPanel);
@@ -207,7 +207,7 @@ export class JupyterNotebookProvider
     webviewPanel.webview.html = this.getHtmlForWebview(webviewPanel.webview);
 
     webviewPanel.webview.onDidReceiveMessage((e) =>
-      this.onMessage(webviewPanel, document, e)
+      this.onMessage(webviewPanel, document, e),
     );
 
     // Listen for theme changes
@@ -218,7 +218,7 @@ export class JupyterNotebookProvider
             ? "dark"
             : "light";
         this.postMessage(webviewPanel, "theme-change", { theme });
-      }
+      },
     );
 
     webviewPanel.onDidDispose(() => {
@@ -250,7 +250,7 @@ export class JupyterNotebookProvider
           });
         } else {
           const editable = vscode.workspace.fs.isWritableFileSystem(
-            document.uri.scheme
+            document.uri.scheme,
           );
 
           // Check if this is a Datalayer notebook (from spaces)
@@ -266,7 +266,7 @@ export class JupyterNotebookProvider
             const config = vscode.workspace.getConfiguration("datalayer");
             serverUrl = config.get<string>(
               "serverUrl",
-              "https://prod1.datalayer.run"
+              "https://prod1.datalayer.run",
             );
 
             // Get the authentication token
@@ -326,7 +326,7 @@ export class JupyterNotebookProvider
    */
   public saveCustomDocument(
     document: NotebookDocument,
-    cancellation: vscode.CancellationToken
+    cancellation: vscode.CancellationToken,
   ): Thenable<void> {
     return document.save(cancellation);
   }
@@ -342,7 +342,7 @@ export class JupyterNotebookProvider
   public saveCustomDocumentAs(
     document: NotebookDocument,
     destination: vscode.Uri,
-    cancellation: vscode.CancellationToken
+    cancellation: vscode.CancellationToken,
   ): Thenable<void> {
     return document.saveAs(destination, cancellation);
   }
@@ -356,7 +356,7 @@ export class JupyterNotebookProvider
    */
   public revertCustomDocument(
     document: NotebookDocument,
-    cancellation: vscode.CancellationToken
+    cancellation: vscode.CancellationToken,
   ): Thenable<void> {
     return document.revert(cancellation);
   }
@@ -372,7 +372,7 @@ export class JupyterNotebookProvider
   public backupCustomDocument(
     document: NotebookDocument,
     context: vscode.CustomDocumentBackupContext,
-    cancellation: vscode.CancellationToken
+    cancellation: vscode.CancellationToken,
   ): Thenable<vscode.CustomDocumentBackup> {
     return document.backup(context.destination, cancellation);
   }
@@ -398,11 +398,11 @@ export class JupyterNotebookProvider
   private postMessageWithResponse<R = unknown>(
     panel: vscode.WebviewPanel,
     type: string,
-    body: any
+    body: any,
   ): Promise<R> {
     const requestId = (this._requestId++).toString();
     const p = new Promise<R>((resolve) =>
-      this._callbacks.set(requestId, resolve)
+      this._callbacks.set(requestId, resolve),
     );
     panel.webview.postMessage({ type, requestId, body });
     return p;
@@ -420,7 +420,7 @@ export class JupyterNotebookProvider
     panel: vscode.WebviewPanel,
     type: string,
     body: any,
-    id?: string
+    id?: string,
   ): void {
     panel.webview.postMessage({ type, body, id });
   }
@@ -435,7 +435,7 @@ export class JupyterNotebookProvider
   private async onMessage(
     webview: vscode.WebviewPanel,
     document: NotebookDocument,
-    message: ExtensionMessage
+    message: ExtensionMessage,
   ) {
     switch (message.type) {
       case "ready":
@@ -471,7 +471,7 @@ export class JupyterNotebookProvider
           runtime.environmentName ||
           runtime.uid;
         const confirmed = await showTwoStepConfirmation(
-          CommonConfirmations.terminateRuntime(runtimeName)
+          CommonConfirmations.terminateRuntime(runtimeName),
         );
 
         if (confirmed) {
@@ -482,13 +482,11 @@ export class JupyterNotebookProvider
             // If podName is missing, construct it from uid (format: runtime-{uid})
             const podName = runtime.podName ?? `runtime-${runtime.uid}`;
 
-            const result = await (sdk as any).deleteRuntime(podName);
+            const result = await sdk.deleteRuntime(podName);
 
             // Notify user of success
             vscode.window.showInformationMessage(
-              `Runtime "${
-                runtime.name || runtime.uid
-              }" terminated successfully.`
+              `Runtime "${runtimeName}" terminated successfully.`,
             );
 
             // Clear the kernel selection in the webview
@@ -498,7 +496,7 @@ export class JupyterNotebookProvider
             });
           } catch (error: any) {
             vscode.window.showErrorMessage(
-              `Failed to terminate runtime: ${error.message || error}`
+              `Failed to terminate runtime: ${error.message || error}`,
             );
           }
         }
@@ -579,7 +577,7 @@ export class JupyterNotebookProvider
 
         // Show notification that runtime expired
         const notificationPromise = vscode.window.showWarningMessage(
-          `Runtime "${runtimeName}" has expired. Notebook switched to offline mode.`
+          `Runtime "${runtimeName}" has expired. Notebook switched to offline mode.`,
         );
 
         // Clear the kernel selection in the webview (same as terminate-runtime)
@@ -612,7 +610,7 @@ export class JupyterNotebookProvider
           // Send selected runtime to webview via kernel bridge
           await this._kernelBridge.connectWebviewNotebook(
             document.uri,
-            runtime
+            runtime,
           );
         }
       })

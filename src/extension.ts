@@ -29,7 +29,7 @@ import { PerformanceLogger } from "./services/performanceLogger";
  * @returns Promise that resolves when activation is complete
  */
 export async function activate(
-  context: vscode.ExtensionContext
+  context: vscode.ExtensionContext,
 ): Promise<void> {
   try {
     // Initialize logging infrastructure FIRST
@@ -39,7 +39,7 @@ export async function activate(
     const logger = ServiceLoggers.main;
     logger.info("Datalayer extension activation started", {
       version: vscode.extensions.getExtension(
-        "datalayer.datalayer-jupyter-vscode"
+        "datalayer.datalayer-jupyter-vscode",
       )?.packageJSON.version,
       vscodeVersion: vscode.version,
       extensionId: context.extension.id,
@@ -49,19 +49,19 @@ export async function activate(
     const services = await PerformanceLogger.trackOperation(
       "initialize_services",
       () => initializeServices(context),
-      { stage: "extension_activation" }
+      { stage: "extension_activation" },
     );
 
     const ui = await PerformanceLogger.trackOperation(
       "initialize_ui",
       () => initializeUI(context, services.authProvider, services.sdk),
-      { stage: "extension_activation" }
+      { stage: "extension_activation" },
     );
 
     const updateAuthState = setupAuthStateManagement(
       services.authProvider,
       ui.spacesTreeProvider,
-      ui.controllerManager
+      ui.controllerManager,
     );
 
     logger.debug("Setting up commands registration");
@@ -73,7 +73,7 @@ export async function activate(
         spacesTreeProvider: ui.spacesTreeProvider,
         controllerManager: ui.controllerManager,
       },
-      updateAuthState
+      updateAuthState,
     );
 
     // Set up notebook event handlers with logging
@@ -85,7 +85,7 @@ export async function activate(
           isDirty: notebook.isDirty,
         });
         ui.controllerManager.onDidCloseNotebook(notebook);
-      })
+      }),
     );
 
     logger.info("Datalayer extension activation completed successfully", {
@@ -111,7 +111,7 @@ export async function activate(
     vscode.window.showErrorMessage(
       `Failed to activate Datalayer extension: ${
         error instanceof Error ? error.message : "Unknown error"
-      }`
+      }`,
     );
   }
 }

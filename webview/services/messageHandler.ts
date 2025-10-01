@@ -19,6 +19,16 @@ declare let acquireVsCodeApi: any;
 const vscode = acquireVsCodeApi();
 
 /**
+ * VS Code API singleton instance.
+ * Use this to access postMessage, getState, and setState methods.
+ *
+ * @remarks
+ * This is the only place where acquireVsCodeApi() is called.
+ * All other code should import this instance instead of calling acquireVsCodeApi() again.
+ */
+export const vsCodeAPI = vscode;
+
+/**
  * Extension message
  */
 export type ExtensionMessage = {
@@ -151,5 +161,5 @@ export class MessageHandler {
  * Singleton {@link MessageHandler} instance as React context.
  */
 export const MessageHandlerContext = createContext<MessageHandler>(
-  MessageHandler.instance
+  MessageHandler.instance,
 );

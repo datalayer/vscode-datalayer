@@ -207,7 +207,7 @@ export class DatalayerFileSystemProvider implements vscode.FileSystemProvider {
   writeFile(
     uri: vscode.Uri,
     content: Uint8Array,
-    options: { create: boolean; overwrite: boolean }
+    options: { create: boolean; overwrite: boolean },
   ): void {
     const realPath = this.getRealPath(uri);
     if (!realPath) {
@@ -269,7 +269,7 @@ export class DatalayerFileSystemProvider implements vscode.FileSystemProvider {
   rename(
     oldUri: vscode.Uri,
     newUri: vscode.Uri,
-    options: { overwrite: boolean }
+    options: { overwrite: boolean },
   ): void {
     const oldRealPath = this.getRealPath(oldUri);
     const newRealPath = this.getRealPath(newUri);

@@ -54,7 +54,7 @@ export class EnvironmentCache {
   public async getEnvironments(
     sdk: DatalayerClient,
     authProvider: SDKAuthProvider,
-    forceRefresh = false
+    forceRefresh = false,
   ): Promise<Environment[]> {
     const now = Date.now();
     const cacheValid = now - this._lastFetch < this._cacheTimeout;
@@ -91,7 +91,7 @@ export class EnvironmentCache {
 
     try {
       // Call SDK to list environments - returns Environment model instances
-      const environments = await (sdk as any).listEnvironments();
+      const environments = await sdk.listEnvironments();
 
       // SDK returns Environment model instances, store them directly
       this._environments = environments;

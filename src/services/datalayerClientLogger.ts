@@ -87,7 +87,7 @@ export class DatalayerClientOperationTracker {
 
         // Clean up
         DatalayerClientOperationTracker.operations.delete(
-          operation.context.operationId
+          operation.context.operationId,
         );
       },
 
@@ -114,13 +114,13 @@ export class DatalayerClientOperationTracker {
               isNetworkError:
                 DatalayerClientOperationTracker.isNetworkError(error),
             },
-          }
+          },
         );
 
         // Clean up
         if (operation) {
           DatalayerClientOperationTracker.operations.delete(
-            operation.context.operationId
+            operation.context.operationId,
           );
         }
 
@@ -128,7 +128,7 @@ export class DatalayerClientOperationTracker {
         await DatalayerClientOperationTracker.handleSDKError(
           methodName,
           error,
-          logger
+          logger,
         );
       },
     };
@@ -190,7 +190,7 @@ export class DatalayerClientOperationTracker {
    */
   private static findOperation(methodName: string): OperationData | undefined {
     const operations = Array.from(
-      DatalayerClientOperationTracker.operations.values()
+      DatalayerClientOperationTracker.operations.values(),
     );
     return operations.reverse().find((op) => op.context.method === methodName);
   }
@@ -218,7 +218,7 @@ export class DatalayerClientOperationTracker {
             if (field in sanitized) {
               sanitized[field] = "[REDACTED]";
             }
-          }
+          },
         );
         return sanitized;
       }
@@ -270,7 +270,7 @@ export class DatalayerClientOperationTracker {
   private static async handleSDKError(
     methodName: string,
     error: any,
-    logger: any
+    logger: any,
   ): Promise<void> {
     const errorMessage = error?.message || "Unknown error";
 
@@ -292,7 +292,7 @@ export class DatalayerClientOperationTracker {
       vscode.window
         .showErrorMessage(
           "Network error. Please check your connection and try again.",
-          "Retry"
+          "Retry",
         )
         .then((selection) => {
           if (selection === "Retry") {
@@ -311,7 +311,7 @@ export class DatalayerClientOperationTracker {
     ) {
       logger.warn("Rate limit encountered");
       vscode.window.showWarningMessage(
-        "Too many requests. Please wait a moment before trying again."
+        "Too many requests. Please wait a moment before trying again.",
       );
       return;
     }
@@ -324,7 +324,7 @@ export class DatalayerClientOperationTracker {
     ) {
       logger.error("Service appears to be down");
       vscode.window.showErrorMessage(
-        "Datalayer service is temporarily unavailable. Please try again later."
+        "Datalayer service is temporarily unavailable. Please try again later.",
       );
       return;
     }
@@ -351,7 +351,7 @@ export class DatalayerClientOperationTracker {
     operationsByMethod: Record<string, number>;
   } {
     const operations = Array.from(
-      DatalayerClientOperationTracker.operations.values()
+      DatalayerClientOperationTracker.operations.values(),
     );
     const operationsByMethod: Record<string, number> = {};
 

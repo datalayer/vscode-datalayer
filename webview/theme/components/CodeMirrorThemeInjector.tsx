@@ -38,20 +38,20 @@ export function CodeMirrorThemeInjector({
       // Get VS Code background color
       const vscodeBackground =
         document.documentElement.style.getPropertyValue(
-          "--vscode-editor-background"
+          "--vscode-editor-background",
         ) ||
         getComputedStyle(document.documentElement).getPropertyValue(
-          "--vscode-editor-background"
+          "--vscode-editor-background",
         ) ||
         (isDark ? "#1e1e1e" : "#ffffff");
 
       // Get VS Code foreground color
       const vscodeForeground =
         document.documentElement.style.getPropertyValue(
-          "--vscode-editor-foreground"
+          "--vscode-editor-foreground",
         ) ||
         getComputedStyle(document.documentElement).getPropertyValue(
-          "--vscode-editor-foreground"
+          "--vscode-editor-foreground",
         ) ||
         (isDark ? "#D4D4D4" : "#000000");
 

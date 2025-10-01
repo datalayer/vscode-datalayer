@@ -59,7 +59,7 @@ export interface TwoStepConfirmationConfig {
  * ```
  */
 export async function showSimpleConfirmation(
-  config: SimpleConfirmationConfig
+  config: SimpleConfirmationConfig,
 ): Promise<boolean> {
   const {
     message,
@@ -74,7 +74,7 @@ export async function showSimpleConfirmation(
     message,
     options,
     actionButton,
-    cancelButton
+    cancelButton,
   );
 
   return action === actionButton;
@@ -103,7 +103,7 @@ export async function showSimpleConfirmation(
  * ```
  */
 export async function showTwoStepConfirmation(
-  config: TwoStepConfirmationConfig
+  config: TwoStepConfirmationConfig,
 ): Promise<boolean> {
   const { itemName, action, consequences, actionButton } = config;
 
@@ -143,12 +143,12 @@ export async function showTwoStepConfirmation(
 export async function showInfoConfirmation(
   message: string,
   actionButton: string,
-  cancelButton: string = "Cancel"
+  cancelButton: string = "Cancel",
 ): Promise<boolean> {
   const action = await vscode.window.showInformationMessage(
     message,
     actionButton,
-    cancelButton
+    cancelButton,
   );
 
   return action === actionButton;

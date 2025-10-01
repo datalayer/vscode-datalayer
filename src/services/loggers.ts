@@ -43,7 +43,7 @@ export class ServiceLoggers {
   private static ensureInitialized(): void {
     if (!ServiceLoggers.loggerManager) {
       throw new Error(
-        "ServiceLoggers not initialized. Call ServiceLoggers.initialize(loggerManager) first during extension activation."
+        "ServiceLoggers not initialized. Call ServiceLoggers.initialize(loggerManager) first during extension activation.",
       );
     }
   }

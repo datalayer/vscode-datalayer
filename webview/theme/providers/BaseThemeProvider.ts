@@ -40,7 +40,7 @@ export abstract class BaseThemeProvider implements IThemeProvider {
     public readonly id: string,
     public readonly name: string,
     /** Type of theme provider */
-    protected readonly providerType: ThemeProviderType
+    protected readonly providerType: ThemeProviderType,
   ) {}
 
   /**
