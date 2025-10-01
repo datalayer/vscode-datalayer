@@ -219,7 +219,10 @@ export const NotebookToolbar: React.FC<NotebookToolbarProps> = ({
     if (notebookId && notebook?.adapter?.panel?.content) {
       // Use NotebookActions to insert a markdown cell below
       NotebookActions.insertBelow(notebook.adapter.panel.content);
-      NotebookActions.changeCellType(notebook.adapter.panel.content, "markdown");
+      NotebookActions.changeCellType(
+        notebook.adapter.panel.content,
+        "markdown",
+      );
     }
   };
 

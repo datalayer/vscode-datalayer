@@ -201,6 +201,8 @@ Alternatively, install from a `.vsix` file:
 - **🛠️ Development Guide**: [DEVELOPMENT.md](./DEVELOPMENT.md) - Setup, debugging, and architecture
 - **🤝 Contributing**: [CONTRIBUTING.md](./CONTRIBUTING.md) - How to contribute and code standards
 - **🚀 Release Process**: [RELEASE.md](./RELEASE.md) - Release workflow and roadmap
+- **📦 Release Guide**: [.github/RELEASE_QUICK_START.md](./.github/RELEASE_QUICK_START.md) - Quick start for creating releases
+- **📋 Release Details**: [.github/RELEASE_PROCESS.md](./.github/RELEASE_PROCESS.md) - Complete release documentation
 - **📚 API Documentation**: [https://vscode-datalayer.netlify.app](https://vscode-datalayer.netlify.app) - Complete TypeScript API docs
 
 ## License

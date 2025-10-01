@@ -5,7 +5,18 @@
     "lib": ["ES2022"],
     "sourceMap": true,
     "rootDir": ".",
-    "strict": true /* enable all strict type-checking options */
+    "strict": true /* enable all strict type-checking options */,
+    "baseUrl": ".",
+    "paths": {
+      "@/services/*": ["src/services/*"],
+      "@/providers/*": ["src/providers/*"],
+      "@/commands/*": ["src/commands/*"],
+      "@/utils/*": ["src/utils/*"],
+      "@/models/*": ["src/models/*"],
+      "@/kernel/*": ["src/kernel/*"],
+      "@/test/*": ["src/test/*"],
+      "@core/*": ["../core/lib/*"]
+    }
     /* Additional Checks */
     // "noImplicitReturns": true, /* Report error when not all code paths in function return a value. */
     // "noFallthroughCasesInSwitch": true, /* Report errors for fallthrough cases in switch statement. */

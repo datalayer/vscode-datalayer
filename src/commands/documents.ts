@@ -22,8 +22,8 @@
  */
 
 import * as vscode from "vscode";
-import { getSDKInstance } from "../services/sdkAdapter";
-import { DocumentBridge } from "../services/documentBridge";
+import { getServiceContainer } from "../extension";
+import { DocumentBridge } from "../services/notebook/documentBridge";
 import { SpacesTreeProvider } from "../providers/spacesTreeProvider";
 import { Document } from "../models/spaceItem";
 import {
@@ -33,7 +33,7 @@ import {
 import {
   showTwoStepConfirmation,
   CommonConfirmations,
-} from "../utils/confirmationDialog";
+} from "../ui/dialogs/confirmationDialog";
 import { ItemTypes } from "../../../core/lib/client/constants";
 
 /**
@@ -52,7 +52,7 @@ export function registerDocumentCommands(
   documentBridge: DocumentBridge,
   spacesTreeProvider: SpacesTreeProvider,
 ): void {
-  const sdk = getSDKInstance();
+  const sdk = getServiceContainer().sdk;
   /**
    * Command: datalayer.openDocument
    * Opens Datalayer documents with type detection and appropriate editor.

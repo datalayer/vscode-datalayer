@@ -12,11 +12,11 @@
  */
 
 import * as vscode from "vscode";
-import type { DatalayerClient } from "../../../core/lib/client";
-import type { Runtime } from "../../../core/lib/client/models/Runtime";
-import type { RuntimeJSON } from "../../../core/lib/client/models/Runtime";
-import { SDKAuthProvider } from "./authProvider";
-import { WebviewCollection } from "../utils/webviewCollection";
+import type { DatalayerClient } from "../../../../core/lib/client";
+import type { Runtime } from "../../../../core/lib/client/models/Runtime";
+import type { RuntimeJSON } from "../../../../core/lib/client/models/Runtime";
+import { SDKAuthProvider } from "../core/authProvider";
+import { WebviewCollection } from "../../utils/webviewCollection";
 
 /**
  * Extended runtime interface for webview communication.

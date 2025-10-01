@@ -15,7 +15,7 @@
  */
 
 import * as vscode from "vscode";
-import { SDKAuthProvider } from "../services/authProvider";
+import { SDKAuthProvider } from "../core/authProvider";
 
 /**
  * Manages the Datalayer status bar item.

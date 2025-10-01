@@ -19,14 +19,13 @@
  */
 
 import * as vscode from "vscode";
-import { getSDKInstance } from "../services/sdkAdapter";
-import { SDKAuthProvider } from "../services/authProvider";
+import { getServiceContainer } from "../extension";
 import { SmartDynamicControllerManager } from "../providers/smartDynamicControllerManager";
 import {
   showTwoStepConfirmation,
   showSimpleConfirmation,
   CommonConfirmations,
-} from "../utils/confirmationDialog";
+} from "../ui/dialogs/confirmationDialog";
 
 import type { Runtime } from "../../../core/lib/client/models/Runtime";
 
@@ -44,8 +43,9 @@ export function registerRuntimeCommands(
   context: vscode.ExtensionContext,
   controllerManager: SmartDynamicControllerManager,
 ): void {
-  const sdk = getSDKInstance();
-  const authProvider = SDKAuthProvider.getInstance();
+  const container = getServiceContainer();
+  const sdk = container.sdk;
+  const authProvider = container.authProvider;
   /**
    * Command: datalayer.selectRuntime
    * Shows the runtime selection dialog to choose or create a runtime.
@@ -71,7 +71,7 @@ export function registerRuntimeCommands(
           ) {
             // Show runtime selector for lexical editor
             const { selectDatalayerRuntime } = await import(
-              "../utils/runtimeSelector"
+              "../ui/dialogs/runtimeSelector"
             );
             const selectedRuntime = await selectDatalayerRuntime(
               sdk,

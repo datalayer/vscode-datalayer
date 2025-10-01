@@ -12,10 +12,9 @@
  */
 
 import * as vscode from "vscode";
-import { LexicalDocument } from "../models/lexicalDocument";
+import { LexicalDocument } from "../../models/lexicalDocument";
 import { DocumentBridge } from "./documentBridge";
-import { SDKAuthProvider } from "./authProvider";
-import { getSDKInstance } from "./sdkAdapter";
+import { getServiceContainer } from "../../extension";
 
 /**
  * Configuration for lexical document collaboration.
@@ -66,7 +65,7 @@ export class LexicalCollaborationService {
     }
 
     try {
-      const authService = SDKAuthProvider.getInstance();
+      const authService = getServiceContainer().authProvider;
       const authState = authService.getAuthState();
       const token = authService.getToken();
 

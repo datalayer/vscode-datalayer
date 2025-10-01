@@ -11,9 +11,9 @@
  * @module services/environmentCache
  */
 
-import type { DatalayerClient } from "../../../core/lib/client";
-import type { Environment } from "../../../core/lib/client/models/Environment";
-import type { SDKAuthProvider } from "./authProvider";
+import type { DatalayerClient } from "../../../../core/lib/client";
+import type { Environment } from "../../../../core/lib/client/models/Environment";
+import type { IAuthProvider } from "../interfaces/IAuthProvider";
 
 /**
  * Caches Datalayer environments for efficient runtime creation.
@@ -53,7 +53,7 @@ export class EnvironmentCache {
    */
   public async getEnvironments(
     sdk: DatalayerClient,
-    authProvider: SDKAuthProvider,
+    authProvider: IAuthProvider,
     forceRefresh = false,
   ): Promise<Environment[]> {
     const now = Date.now();
@@ -66,7 +66,9 @@ export class EnvironmentCache {
 
     // Check if user is authenticated before making API calls
     if (!authProvider.isAuthenticated()) {
-      // Return cached environments if available, otherwise empty array
+      // Return cached environments if available from previous session
+      // This allows UI to show available environments before user logs in
+      // Will be empty array if user has never logged in or cache was cleared
       return this._environments;
     }
 

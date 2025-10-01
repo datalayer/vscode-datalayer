@@ -13,9 +13,9 @@
 
 import * as vscode from "vscode";
 import { selectDatalayerRuntime, setRuntime } from "./runtimeSelector";
-import type { DatalayerClient } from "../../../core/lib/client";
-import { SDKAuthProvider } from "../services/authProvider";
-import { KernelBridge } from "../services/kernelBridge";
+import type { DatalayerClient } from "../../../../core/lib/client";
+import { SDKAuthProvider } from "../../services/core/authProvider";
+import { KernelBridge } from "../../services/notebook/kernelBridge";
 
 interface KernelOption {
   label: string;

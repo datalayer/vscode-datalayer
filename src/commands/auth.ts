@@ -19,7 +19,7 @@
  */
 
 import * as vscode from "vscode";
-import { SDKAuthProvider } from "../services/authProvider";
+import { SDKAuthProvider } from "../services/core/authProvider";
 
 /**
  * Registers all authentication-related commands.

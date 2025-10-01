@@ -15,12 +15,12 @@ import * as vscode from "vscode";
 import * as fs from "fs";
 import * as path from "path";
 import * as os from "os";
-import { Document } from "../models/spaceItem";
-import { getSDKInstance } from "./sdkAdapter";
-import type { DatalayerClient } from "../../../core/lib/client";
-import type { Runtime } from "../../../core/lib/client/models/Runtime";
-import { DatalayerFileSystemProvider } from "../providers/documentsFileSystemProvider";
-import { detectDocumentType } from "../utils/documentUtils";
+import { Document } from "../../models/spaceItem";
+import { getServiceContainer } from "../../extension";
+import type { DatalayerClient } from "../../../../core/lib/client";
+import type { Runtime } from "../../../../core/lib/client/models/Runtime";
+import { DatalayerFileSystemProvider } from "../../providers/documentsFileSystemProvider";
+import { detectDocumentType } from "../../utils/documentUtils";
 
 /**
  * Metadata for a downloaded document.
@@ -396,7 +396,7 @@ export class DocumentBridge {
     if (metadata?.runtime?.podName) {
       try {
         // Verify the runtime still exists and is running
-        const sdk = getSDKInstance();
+        const sdk = getServiceContainer().sdk;
         const currentRuntime = await sdk.getRuntime(metadata.runtime.podName);
 
         if (currentRuntime && currentRuntime.ingress && currentRuntime.token) {
@@ -420,7 +420,7 @@ export class DocumentBridge {
     }
 
     // Create or get a runtime
-    const sdk = getSDKInstance();
+    const sdk = getServiceContainer().sdk;
     const runtime = await sdk.ensureRuntime();
 
     // Store the runtime with the document metadata

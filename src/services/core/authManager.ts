@@ -13,10 +13,10 @@
 
 import * as vscode from "vscode";
 import { SDKAuthProvider } from "./authProvider";
-import { SpacesTreeProvider } from "../providers/spacesTreeProvider";
-import { SmartDynamicControllerManager } from "../providers/smartDynamicControllerManager";
-import { EnvironmentCache } from "./environmentCache";
-import { getSDKInstance } from "./sdkAdapter";
+import { SpacesTreeProvider } from "../../providers/spacesTreeProvider";
+import { SmartDynamicControllerManager } from "../../providers/smartDynamicControllerManager";
+import { EnvironmentCache } from "../cache/environmentCache";
+import { getServiceContainer } from "../../extension";
 
 /**
  * Sets up authentication state synchronization with UI components.
@@ -62,7 +62,7 @@ export function setupAuthStateManagement(
     const envCache = EnvironmentCache.getInstance();
     if (authState.isAuthenticated) {
       // User logged in - refresh environment cache
-      const sdk = getSDKInstance();
+      const sdk = getServiceContainer().sdk;
       envCache.onUserLogin(sdk).catch(() => {
         // Silently handle cache refresh errors
       });

@@ -12,9 +12,9 @@
  */
 
 import * as vscode from "vscode";
-import type { SDKHandlers } from "../../../core/lib/client";
+import type { SDKHandlers } from "../../../../core/lib/client";
 import { ServiceLoggers } from "./loggers";
-import { promptAndLogin } from "../utils/authDialog";
+import { promptAndLogin } from "../../ui/dialogs/authDialog";
 
 interface OperationContext {
   operationId: string;
@@ -136,8 +136,21 @@ export class DatalayerClientOperationTracker {
 
   /**
    * Route SDK method to appropriate logger based on method name.
+   * Returns a no-op logger if ServiceLoggers is not yet initialized.
    */
   private static getLoggerForMethod(methodName: string) {
+    // If ServiceLoggers not initialized, return no-op logger
+    if (!ServiceLoggers.isInitialized()) {
+      return {
+        trace: () => {},
+        debug: () => {},
+        info: () => {},
+        warn: () => {},
+        error: () => {},
+        timeAsync: async <T>(op: string, fn: () => Promise<T>) => fn(),
+      };
+    }
+
     // Authentication methods
     if (
       methodName.includes("whoami") ||

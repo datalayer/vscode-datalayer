@@ -14,8 +14,8 @@
 
 import * as vscode from "vscode";
 import { SpaceItem, ItemType } from "../models/spaceItem";
-import { SDKAuthProvider } from "../services/authProvider";
-import { getSDKInstance } from "../services/sdkAdapter";
+import { SDKAuthProvider } from "../services/core/authProvider";
+import { getServiceContainer } from "../extension";
 import { ItemTypes } from "../../../core/lib/client/constants";
 
 /**
@@ -167,7 +167,7 @@ export class SpacesTreeProvider implements vscode.TreeDataProvider<SpaceItem> {
         // Show loading state
         this._onDidChangeTreeData.fire();
 
-        const sdk = getSDKInstance();
+        const sdk = getServiceContainer().sdk;
         spaces = (await sdk.getMySpaces()) ?? [];
         this.spacesCache.set("user", spaces);
       }
@@ -248,7 +248,7 @@ export class SpacesTreeProvider implements vscode.TreeDataProvider<SpaceItem> {
       if (this.itemsCache.has(spaceId)) {
         items = this.itemsCache.get(spaceId)!;
       } else {
-        const sdk = getSDKInstance();
+        const sdk = getServiceContainer().sdk;
 
         // Get the space to access its items
         const spaces = await sdk.getMySpaces();

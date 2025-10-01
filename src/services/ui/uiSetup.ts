@@ -13,13 +13,13 @@
 
 import * as vscode from "vscode";
 import { DatalayerStatusBar } from "./statusBar";
-import { SpacesTreeProvider } from "../providers/spacesTreeProvider";
-import { SmartDynamicControllerManager } from "../providers/smartDynamicControllerManager";
-import { JupyterNotebookProvider } from "../providers/jupyterNotebookProvider";
-import { LexicalDocumentProvider } from "../providers/lexicalDocumentProvider";
-import { SDKAuthProvider } from "./authProvider";
-import { EnvironmentCache } from "./environmentCache";
-import type { DatalayerClient } from "../../../core/lib/client";
+import { SpacesTreeProvider } from "../../providers/spacesTreeProvider";
+import { SmartDynamicControllerManager } from "../../providers/smartDynamicControllerManager";
+import { JupyterNotebookProvider } from "../../providers/jupyterNotebookProvider";
+import { LexicalDocumentProvider } from "../../providers/lexicalDocumentProvider";
+import { SDKAuthProvider } from "../core/authProvider";
+import { EnvironmentCache } from "../cache/environmentCache";
+import type { DatalayerClient } from "../../../../core/lib/client";
 
 /**
  * Container for all extension UI components.

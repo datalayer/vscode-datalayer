@@ -320,16 +320,15 @@ function LexicalWebview() {
     );
   }
 
-  const jupyterUrl = selectedRuntime?.ingress || "";
-  const jupyterToken = selectedRuntime?.token || "";
-
   console.log("Rendering Jupyter with:");
   console.log("  - startDefaultKernel:", !!selectedRuntime);
-  console.log("  - jupyterServerUrl:", jupyterUrl);
-  console.log("  - jupyterServerToken:", jupyterToken ? "present" : "missing");
   console.log(
     "  - serviceManager baseUrl:",
     serviceManager?.serverSettings?.baseUrl,
+  );
+  console.log(
+    "  - serviceManager token:",
+    serviceManager?.serverSettings?.token ? "present" : "missing",
   );
 
   return (
@@ -338,8 +337,6 @@ function LexicalWebview() {
       serviceManager={serviceManager as any}
       startDefaultKernel={!!selectedRuntime}
       defaultKernelName="python"
-      jupyterServerUrl={jupyterUrl}
-      jupyterServerToken={jupyterToken}
     >
       <LexicalWebviewInner
         selectedRuntime={selectedRuntime}

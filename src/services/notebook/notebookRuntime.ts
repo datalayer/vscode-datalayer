@@ -12,12 +12,11 @@
  */
 
 import * as vscode from "vscode";
-import type { Runtime } from "../../../core/lib/client/models/Runtime";
-import { ExtensionMessage } from "../utils/messages";
-import { SDKAuthProvider } from "./authProvider";
-import { getSDKInstance } from "./sdkAdapter";
-import { setRuntime } from "../utils/runtimeSelector";
-import { showAuthenticationError } from "../utils/authDialog";
+import type { Runtime } from "../../../../core/lib/client/models/Runtime";
+import { ExtensionMessage } from "../../types/vscode/messages";
+import { getServiceContainer } from "../../extension";
+import { setRuntime } from "../../ui/dialogs/runtimeSelector";
+import { showAuthenticationError } from "../../ui/dialogs/authDialog";
 
 /**
  * Singleton service for notebook runtime selection and management.
@@ -53,8 +52,8 @@ export class NotebookRuntimeService {
     message: ExtensionMessage,
   ): Promise<void> {
     try {
-      const authService = SDKAuthProvider.getInstance();
-      const sdk = getSDKInstance();
+      const authService = getServiceContainer().authProvider;
+      const sdk = getServiceContainer().sdk;
 
       // Check if authenticated
       const authState = authService.getAuthState();
@@ -185,7 +184,9 @@ export class NotebookRuntimeService {
             const defaultMinutes = config.get<number>("defaultMinutes", 10);
 
             // Fetch environments to get the actual burning rate
-            const { EnvironmentCache } = await import("./environmentCache");
+            const { EnvironmentCache } = await import(
+              "../cache/environmentCache"
+            );
             const envCache = EnvironmentCache.getInstance();
             const environments = await envCache.getEnvironments(
               sdk as any,

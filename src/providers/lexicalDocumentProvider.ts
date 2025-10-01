@@ -23,7 +23,7 @@ import {
 import {
   LexicalCollaborationService,
   LexicalCollaborationConfig,
-} from "../services/lexicalCollaboration";
+} from "../services/notebook/lexicalCollaboration";
 
 /**
  * Custom editor provider for Lexical documents.
@@ -353,7 +353,20 @@ export class LexicalDocumentProvider
       <head>
         <meta charset="UTF-8">
         <base href="${distUri}/">
-        <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src ${webview.cspSource} blob:; style-src ${webview.cspSource} 'unsafe-inline'; font-src ${webview.cspSource}; script-src 'nonce-${nonce}' 'wasm-unsafe-eval' 'unsafe-eval'; connect-src ${webview.cspSource} https: wss: ws: data:; worker-src ${webview.cspSource} blob:;">
+        <!--
+        Content Security Policy for Lexical Editor:
+        - default-src 'none': Deny all by default for security
+        - img-src: Allow images from extension and blob URLs
+        - style-src: Allow styles from extension and inline styles (required for Lexical editor)
+        - font-src: Allow fonts from extension
+        - script-src: Require nonce for scripts, allow WASM execution (loro-crdt CRDT library)
+        - connect-src: Allow secure connections for collaboration (WebSocket) and API calls
+        - worker-src: Allow web workers from extension and blob URLs (required for Y.js collaboration)
+
+        Note: 'wasm-unsafe-eval' is required for loro-crdt WASM CRDT library
+        Note: 'unsafe-eval' may be required for some Lexical/React features
+        -->
+        <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src ${webview.cspSource} blob: data:; style-src ${webview.cspSource} 'unsafe-inline'; font-src ${webview.cspSource}; script-src 'nonce-${nonce}' 'wasm-unsafe-eval'; connect-src ${webview.cspSource} https: wss:; worker-src ${webview.cspSource} blob:;">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Datalayer Lexical Editor</title>
         <script nonce="${nonce}">
@@ -454,9 +467,9 @@ export class LexicalDocumentProvider
 
         // Import confirmation utilities
         const { showTwoStepConfirmation, CommonConfirmations } = await import(
-          "../utils/confirmationDialog"
+          "../ui/dialogs/confirmationDialog"
         );
-        const { getSDKInstance } = await import("../services/sdkAdapter");
+        const { getServiceContainer } = await import("../extension");
 
         // Show confirmation dialog
         const runtimeName =
@@ -470,7 +483,7 @@ export class LexicalDocumentProvider
 
         if (confirmed) {
           try {
-            const sdk = getSDKInstance();
+            const sdk = getServiceContainer().sdk;
 
             // Delete the runtime via SDK - MUST use pod_name, not uid!
             // If podName is missing, construct it from uid (format: runtime-{uid})

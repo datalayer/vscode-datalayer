@@ -12,18 +12,15 @@
  */
 
 import * as vscode from "vscode";
-import type { DatalayerClient } from "../../../core/lib/client";
-import type { User } from "../../../core/lib/client/models/User";
-import { ServiceLoggers } from "./loggers";
-
-/**
- * Authentication state for VS Code context.
- */
-export interface VSCodeAuthState {
-  isAuthenticated: boolean;
-  user: User | null;
-  error: string | null;
-}
+import type { DatalayerClient } from "../../../../core/lib/client";
+import type { User } from "../../../../core/lib/client/models/User";
+import type { ILogger } from "../interfaces/ILogger";
+import type {
+  IAuthProvider,
+  VSCodeAuthState,
+} from "../interfaces/IAuthProvider";
+import { BaseService } from "./baseService";
+import { AuthenticationError } from "../../types/errors";
 
 /**
  * SDK-based authentication provider for VS Code.
@@ -31,18 +28,14 @@ export interface VSCodeAuthState {
  *
  * @example
  * ```typescript
- * const authProvider = SDKAuthProvider.getInstance(sdk, context);
+ * const authProvider = new SDKAuthProvider(sdk, context, logger);
  * await authProvider.initialize();
- * authProvider.onAuthStateChanged.event((state) => {
+ * authProvider.onAuthStateChanged((state) => {
  *   // Auth state changed
  * });
  * ```
  */
-export class SDKAuthProvider {
-  private static instance: SDKAuthProvider;
-  private get logger() {
-    return ServiceLoggers.auth;
-  }
+export class SDKAuthProvider extends BaseService implements IAuthProvider {
   private _authState: VSCodeAuthState = {
     isAuthenticated: false,
     user: null,
@@ -51,36 +44,16 @@ export class SDKAuthProvider {
   private _onAuthStateChanged = new vscode.EventEmitter<VSCodeAuthState>();
   readonly onAuthStateChanged = this._onAuthStateChanged.event;
 
-  private constructor(
+  constructor(
     private sdk: DatalayerClient,
     private context: vscode.ExtensionContext,
+    logger: ILogger,
   ) {
+    super("SDKAuthProvider", logger);
     this.logger.debug("SDKAuthProvider instance created", {
       contextId: context.extension.id,
       hasSDK: !!sdk,
     });
-  }
-
-  /**
-   * Gets or creates the singleton instance.
-   *
-   * @param sdk - DatalayerClient instance (required for initial creation)
-   * @param context - VS Code extension context (required for initial creation)
-   * @returns The singleton SDKAuthProvider instance
-   */
-  static getInstance(
-    sdk?: DatalayerClient,
-    context?: vscode.ExtensionContext,
-  ): SDKAuthProvider {
-    if (!SDKAuthProvider.instance) {
-      if (!sdk || !context) {
-        throw new Error(
-          "SDK and context are required to create initial SDKAuthProvider instance",
-        );
-      }
-      SDKAuthProvider.instance = new SDKAuthProvider(sdk, context);
-    }
-    return SDKAuthProvider.instance;
   }
 
   /**
@@ -93,12 +66,10 @@ export class SDKAuthProvider {
   }
 
   /**
-   * Initializes authentication state from stored token.
-   * Attempts to verify existing authentication with the platform.
+   * Implementation of BaseService lifecycle initialization.
+   * Verifies existing authentication with the platform.
    */
-  async initialize(): Promise<void> {
-    this.logger.info("Initializing authentication state");
-
+  protected async onInitialize(): Promise<void> {
     // Check if token exists before attempting verification
     const hasToken = !!this.sdk.getToken();
 
@@ -150,6 +121,19 @@ export class SDKAuthProvider {
 
       this._onAuthStateChanged.fire(this._authState);
     }
+  }
+
+  /**
+   * Implementation of BaseService lifecycle disposal.
+   * Cleans up event emitters and auth state.
+   */
+  protected async onDispose(): Promise<void> {
+    this._onAuthStateChanged.dispose();
+    this._authState = {
+      isAuthenticated: false,
+      user: null,
+      error: null,
+    };
   }
 
   /**

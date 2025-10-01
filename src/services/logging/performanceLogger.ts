@@ -18,6 +18,17 @@ import { ServiceLoggers } from "./loggers";
  */
 export class PerformanceLogger {
   private static get logger() {
+    // Return no-op logger if ServiceLoggers not initialized yet
+    if (!ServiceLoggers.isInitialized()) {
+      return {
+        trace: () => {},
+        debug: () => {},
+        info: () => {},
+        warn: () => {},
+        error: () => {},
+        timeAsync: async <T>(op: string, fn: () => Promise<T>) => fn(),
+      };
+    }
     return ServiceLoggers.main;
   }
 

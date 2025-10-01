@@ -1,0 +1,171 @@
+/*
+ * Copyright (c) 2021-2025 Datalayer, Inc.
+ *
+ * MIT License
+ */
+
+/**
+ * Tests for document utility functions.
+ * Validates document type detection and display name formatting.
+ */
+
+import * as assert from 'assert';
+import { detectDocumentType, getDocumentDisplayName } from '../../utils/documentUtils';
+import { ItemTypes } from '../../../../core/lib/client/constants';
+
+suite('Document Utils Tests', () => {
+  suite('detectDocumentType', () => {
+    test('detects notebook type', () => {
+      const document = {
+        type: ItemTypes.NOTEBOOK,
+        name: 'test.ipynb'
+      } as any;
+
+      const result = detectDocumentType(document);
+
+      assert.strictEqual(result.isNotebook, true);
+      assert.strictEqual(result.isLexical, false);
+      assert.strictEqual(result.isCell, false);
+      assert.strictEqual(result.type, ItemTypes.NOTEBOOK);
+    });
+
+    test('detects lexical type', () => {
+      const document = {
+        type: ItemTypes.LEXICAL,
+        name: 'test.lexical'
+      } as any;
+
+      const result = detectDocumentType(document);
+
+      assert.strictEqual(result.isNotebook, false);
+      assert.strictEqual(result.isLexical, true);
+      assert.strictEqual(result.isCell, false);
+      assert.strictEqual(result.type, ItemTypes.LEXICAL);
+    });
+
+    test('detects cell type', () => {
+      const document = {
+        type: ItemTypes.CELL,
+        name: 'test-cell'
+      } as any;
+
+      const result = detectDocumentType(document);
+
+      assert.strictEqual(result.isNotebook, false);
+      assert.strictEqual(result.isLexical, false);
+      assert.strictEqual(result.isCell, true);
+      assert.strictEqual(result.type, ItemTypes.CELL);
+    });
+
+    test('handles unknown type', () => {
+      const document = {
+        type: 'unknown',
+        name: 'test'
+      } as any;
+
+      const result = detectDocumentType(document);
+
+      assert.strictEqual(result.isNotebook, false);
+      assert.strictEqual(result.isLexical, false);
+      assert.strictEqual(result.isCell, false);
+      assert.strictEqual(result.type, ItemTypes.UNKNOWN);
+    });
+  });
+
+  suite('getDocumentDisplayName', () => {
+    test('adds .ipynb extension to notebooks', () => {
+      const document = {
+        type: ItemTypes.NOTEBOOK,
+        name: 'my-notebook'
+      } as any;
+
+      const result = getDocumentDisplayName(document);
+
+      assert.strictEqual(result, 'my-notebook.ipynb');
+    });
+
+    test('keeps existing .ipynb extension', () => {
+      const document = {
+        type: ItemTypes.NOTEBOOK,
+        name: 'my-notebook.ipynb'
+      } as any;
+
+      const result = getDocumentDisplayName(document);
+
+      assert.strictEqual(result, 'my-notebook.ipynb');
+    });
+
+    test('adds .lexical extension to lexical documents', () => {
+      const document = {
+        type: ItemTypes.LEXICAL,
+        name: 'my-document'
+      } as any;
+
+      const result = getDocumentDisplayName(document);
+
+      assert.strictEqual(result, 'my-document.lexical');
+    });
+
+    test('keeps existing .lexical extension', () => {
+      const document = {
+        type: ItemTypes.LEXICAL,
+        name: 'my-document.lexical'
+      } as any;
+
+      const result = getDocumentDisplayName(document);
+
+      assert.strictEqual(result, 'my-document.lexical');
+    });
+
+    test('returns name unchanged for other types', () => {
+      const document = {
+        type: ItemTypes.CELL,
+        name: 'my-cell'
+      } as any;
+
+      const result = getDocumentDisplayName(document);
+
+      assert.strictEqual(result, 'my-cell');
+    });
+
+    test('uses provided typeInfo', () => {
+      const document = {
+        name: 'test'
+      } as any;
+
+      const typeInfo = {
+        isNotebook: true,
+        isLexical: false,
+        isCell: false,
+        type: ItemTypes.NOTEBOOK
+      };
+
+      const result = getDocumentDisplayName(document, typeInfo);
+
+      assert.strictEqual(result, 'test.ipynb');
+    });
+
+    test('handles names with multiple dots', () => {
+      const document = {
+        type: ItemTypes.NOTEBOOK,
+        name: 'my.notebook.file'
+      } as any;
+
+      const result = getDocumentDisplayName(document);
+
+      assert.strictEqual(result, 'my.notebook.file.ipynb');
+    });
+
+    test('case sensitive extension check', () => {
+      const document = {
+        type: ItemTypes.NOTEBOOK,
+        name: 'notebook.IPYNB'
+      } as any;
+
+      const result = getDocumentDisplayName(document);
+
+      // Should add extension since case doesn't match
+      assert.strictEqual(result, 'notebook.IPYNB.ipynb');
+    });
+  });
+});

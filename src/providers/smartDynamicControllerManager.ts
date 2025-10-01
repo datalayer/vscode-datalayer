@@ -14,11 +14,11 @@
 import * as vscode from "vscode";
 import type { DatalayerClient } from "../../../core/lib/client";
 import type { Runtime } from "../../../core/lib/client/models/Runtime";
-import { SDKAuthProvider } from "../services/authProvider";
-import { selectDatalayerRuntime } from "../utils/runtimeSelector";
-import { WebSocketKernelClient } from "../kernel/websocketKernelClient";
-import { KernelBridge } from "../services/kernelBridge";
-import { promptAndLogin } from "../utils/authDialog";
+import { SDKAuthProvider } from "../services/core/authProvider";
+import { selectDatalayerRuntime } from "../ui/dialogs/runtimeSelector";
+import { WebSocketKernelClient } from "../kernel/clients/websocketKernelClient";
+import { KernelBridge } from "../services/notebook/kernelBridge";
+import { promptAndLogin } from "../ui/dialogs/authDialog";
 
 /**
  * Manages notebook controllers with a main selector and runtime-specific controllers.

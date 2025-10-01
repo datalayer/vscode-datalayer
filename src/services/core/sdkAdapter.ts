@@ -12,14 +12,14 @@
  */
 
 import * as vscode from "vscode";
-import { DatalayerClient } from "../../../core/lib/client";
+import { DatalayerClient } from "../../../../core/lib/client";
 import type {
   DatalayerClientConfig,
   SDKHandlers,
-} from "../../../core/lib/client";
-import { promptAndLogin } from "../utils/authDialog";
-import { ServiceLoggers } from "./loggers";
-import { DatalayerClientOperationTracker } from "./datalayerClientLogger";
+} from "../../../../core/lib/client";
+import { promptAndLogin } from "../../ui/dialogs/authDialog";
+import { ServiceLoggers } from "../logging/loggers";
+import { DatalayerClientOperationTracker } from "../logging/datalayerClientLogger";
 
 /**
  * Platform storage interface compatible with the SDK.
@@ -44,7 +44,10 @@ interface PlatformStorage {
  */
 export class VSCodeStorage implements PlatformStorage {
   private get logger() {
-    return ServiceLoggers.datalayerClient;
+    // Return logger only if ServiceLoggers is initialized
+    return ServiceLoggers.isInitialized()
+      ? ServiceLoggers.datalayerClient
+      : null;
   }
 
   constructor(private context: vscode.ExtensionContext) {}
@@ -53,14 +56,14 @@ export class VSCodeStorage implements PlatformStorage {
     try {
       const value = await this.context.secrets.get(key);
       const hasValue = value && value.length > 0;
-      this.logger.debug("Storage get operation", {
+      this.logger?.debug("Storage get operation", {
         key,
         hasValue,
         valueLength: value ? value.length : 0,
       });
       return value || null;
     } catch (error) {
-      this.logger.warn("Storage get failed", {
+      this.logger?.warn("Storage get failed", {
         key,
         error: (error as Error).message,
       });
@@ -71,13 +74,13 @@ export class VSCodeStorage implements PlatformStorage {
   async set(key: string, value: string): Promise<void> {
     try {
       await this.context.secrets.store(key, value);
-      this.logger.debug("Storage set operation", {
+      this.logger?.debug("Storage set operation", {
         key,
         valueLength: value.length,
         isToken: key.includes("token") || value.includes("Bearer"),
       });
     } catch (error) {
-      this.logger.error("Storage set failed", error as Error, { key });
+      this.logger?.error("Storage set failed", error as Error, { key });
       throw error;
     }
   }
@@ -85,9 +88,9 @@ export class VSCodeStorage implements PlatformStorage {
   async remove(key: string): Promise<void> {
     try {
       await this.context.secrets.delete(key);
-      this.logger.debug("Storage remove operation", { key });
+      this.logger?.debug("Storage remove operation", { key });
     } catch (error) {
-      this.logger.warn("Storage remove failed", {
+      this.logger?.warn("Storage remove failed", {
         key,
         error: (error as Error).message,
       });
@@ -96,7 +99,7 @@ export class VSCodeStorage implements PlatformStorage {
   }
 
   async clear(): Promise<void> {
-    this.logger.debug(
+    this.logger?.debug(
       "Storage clear operation (no-op - VS Code SecretStorage doesn't support clear all)",
     );
     // VS Code SecretStorage doesn't have a clear-all method
@@ -106,7 +109,7 @@ export class VSCodeStorage implements PlatformStorage {
   async has(key: string): Promise<boolean> {
     const value = await this.get(key);
     const exists = value !== null;
-    this.logger.debug("Storage has operation", { key, exists });
+    this.logger?.debug("Storage has operation", { key, exists });
     return exists;
   }
 }
@@ -143,7 +146,6 @@ export interface VSCodeSDKConfig extends Partial<DatalayerClientConfig> {
  */
 export function createVSCodeSDK(config: VSCodeSDKConfig): DatalayerClient {
   const { context, ...sdkConfig } = config;
-  const logger = ServiceLoggers.datalayerClient;
 
   // Get configuration from VS Code settings
   const vsCodeConfig = vscode.workspace.getConfiguration("datalayer");
@@ -155,13 +157,17 @@ export function createVSCodeSDK(config: VSCodeSDKConfig): DatalayerClient {
     vsCodeConfig.get<string>("runtimesRunUrl") ?? serverUrl;
   const spacerRunUrl = vsCodeConfig.get<string>("spacerRunUrl") ?? serverUrl;
 
-  logger.info("Initializing DatalayerClient SDK", {
-    iamRunUrl,
-    runtimesRunUrl,
-    spacerRunUrl,
-    hasStorage: true,
-    contextId: context.extension.id,
-  });
+  // Only log if ServiceLoggers is initialized (avoid initialization order issues)
+  if (ServiceLoggers.isInitialized()) {
+    const logger = ServiceLoggers.datalayerClient;
+    logger.info("Initializing DatalayerClient SDK", {
+      iamRunUrl,
+      runtimesRunUrl,
+      spacerRunUrl,
+      hasStorage: true,
+      contextId: context.extension.id,
+    });
+  }
 
   const sdk = new DatalayerClient({
     // Service URLs - now using the configured URLs
@@ -179,7 +185,11 @@ export function createVSCodeSDK(config: VSCodeSDKConfig): DatalayerClient {
     ...sdkConfig,
   } as any);
 
-  logger.info("DatalayerClient SDK initialized successfully");
+  if (ServiceLoggers.isInitialized()) {
+    ServiceLoggers.datalayerClient.info(
+      "DatalayerClient SDK initialized successfully",
+    );
+  }
   return sdk;
 }
 

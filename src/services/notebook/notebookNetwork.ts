@@ -12,7 +12,7 @@
  */
 
 import * as vscode from "vscode";
-import { ExtensionMessage } from "../utils/messages";
+import { ExtensionMessage } from "../../types/vscode/messages";
 
 /**
  * Handles network communications between webview and Jupyter servers.

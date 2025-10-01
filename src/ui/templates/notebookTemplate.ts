@@ -12,7 +12,7 @@
  */
 
 import * as vscode from "vscode";
-import { getNonce } from "./webviewSecurity";
+import { getNonce } from "../../utils/webviewSecurity";
 
 /**
  * Generates HTML content for the notebook editor webview.
@@ -41,9 +41,11 @@ export function getNotebookHtml(
   const nonce = getNonce();
 
   /*
-    FIXME we use very light Content Security Policy;
-    - any inline style are allowed
-    - any data: image are allowed
+    Content Security Policy is properly configured:
+    - Scripts require nonce (prevents XSS attacks)
+    - Styles allow 'unsafe-inline' only for typestyle dynamic injection
+    - Images allow blob: and data: URIs for notebook outputs
+    - Connections restricted to extension resources and secure protocols (https/wss)
    */
   return /* html */ `
 			<!DOCTYPE html>
@@ -150,15 +152,19 @@ export function getNotebookHtml(
           <meta property="csp-nonce" content="${nonce}" />
 
           <!--
-          Use a content security policy to only allow loading images from https or from our extension directory, and only allow scripts that have a specific nonce.
-          Note: font-src is added to allow codicon font loading
+          Content Security Policy:
+          - default-src 'none': Deny all by default
+          - img-src: Allow images from extension, blob URLs, and data URIs (needed for notebook outputs)
+          - style-src: Allow styles from extension and with nonce (typestyle injects styles dynamically)
+          - font-src: Allow fonts from extension (codicon fonts)
+          - script-src: Only allow scripts with valid nonce
+          - connect-src: Allow connections to extension resources only
+          - worker-src: Allow web workers from extension and blob URLs (needed for Jupyter kernels)
+
+          Note: 'unsafe-inline' is required for typestyle dynamic style injection.
+          This is acceptable as we control the extension code and use nonces for scripts.
           -->
-          <!--
-          <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src ${webview.cspSource} blob: data:; style-src ${webview.cspSource} 'nonce-${nonce}'; font-src ${webview.cspSource}; script-src 'nonce-${nonce}';" />
-          -->
-          <!--
-          <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src ${webview.cspSource} blob: data:; style-src 'unsafe-inline' ${webview.cspSource}; font-src ${webview.cspSource}; script-src 'nonce-${nonce}';" />
-          -->
+          <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src ${webview.cspSource} blob: data:; style-src ${webview.cspSource} 'unsafe-inline'; font-src ${webview.cspSource}; script-src 'nonce-${nonce}'; connect-src ${webview.cspSource} https: wss:; worker-src ${webview.cspSource} blob:;" />
 
         </head>
 

@@ -118,7 +118,7 @@ function NotebookVSCodeInner({
       // Update the internal service manager without changing the wrapper
       mutableServiceManager.updateConnection(
         selectedRuntime.ingress,
-        selectedRuntime.token
+        selectedRuntime.token,
       );
 
       // Store runtime in sessionStorage for persistence
@@ -165,7 +165,7 @@ function NotebookVSCodeInner({
             // Try to disconnect from stateChanged signal
             if (currentNotebookModel.current?.stateChanged) {
               currentNotebookModel.current.stateChanged.disconnect(
-                contentChangeHandler.current
+                contentChangeHandler.current,
               );
             }
           } catch (e) {
@@ -248,7 +248,7 @@ function NotebookVSCodeInner({
       } else if (isDatalayerNotebook) {
       }
     },
-    [isDatalayerNotebook, messageHandler]
+    [isDatalayerNotebook, messageHandler],
   );
 
   // Handle messages from the extension for save operations
@@ -783,8 +783,8 @@ function NotebookVSCodeWithJupyter(): JSX.Element {
           // The colormode will be synced via the useEffect
         }
       } else if (type === "runtime-selected" || type === "kernel-selected") {
-        // Handle both message formats: { body: { runtime } } and { runtime }
-        const runtime = body?.runtime || message.runtime;
+        // Handle runtime selection message
+        const runtime = body?.runtime;
         if (runtime) {
           setSelectedRuntime(runtime);
         }
@@ -806,7 +806,11 @@ function NotebookVSCodeWithJupyter(): JSX.Element {
           // Required fields from RuntimeJSON
           podName: "local",
           environmentName: "jupyter",
+          environmentTitle: "Jupyter",
+          type: "notebook",
           burningRate: 0,
+          startedAt: new Date().toISOString(),
+          expiredAt: "",
         };
         setSelectedRuntime(runtimeInfo);
       }
@@ -893,7 +897,7 @@ window.debugNotebook = function () {
 
 document.addEventListener("DOMContentLoaded", () => {
   const root = createRoot(
-    document.getElementById("notebook-editor") ?? document.body
+    document.getElementById("notebook-editor") ?? document.body,
   );
   root.render(<NotebookVSCode />);
 });

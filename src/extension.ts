@@ -12,18 +12,34 @@
  */
 
 import * as vscode from "vscode";
-import { initializeServices } from "./services/serviceFactory";
-import { initializeUI } from "./services/uiSetup";
+import { ServiceContainer } from "./services/core/serviceContainer";
+import { initializeUI } from "./services/ui/uiSetup";
 import { registerAllCommands } from "./commands";
-import { setupAuthStateManagement } from "./services/authManager";
-import { LoggerManager } from "./services/loggerManager";
-import { ServiceLoggers } from "./services/loggers";
-import { PerformanceLogger } from "./services/performanceLogger";
+import { setupAuthStateManagement } from "./services/core/authManager";
+import { ServiceLoggers } from "./services/logging/loggers";
+import { PerformanceLogger } from "./services/logging/performanceLogger";
+import type { SDKAuthProvider } from "./services/core/authProvider";
+
+// Global service container instance
+let services: ServiceContainer | undefined;
+
+/**
+ * Get the global service container instance.
+ * @throws Error if called before extension activation
+ */
+export function getServiceContainer(): ServiceContainer {
+  if (!services) {
+    throw new Error(
+      "Service container not initialized. Ensure extension is activated.",
+    );
+  }
+  return services;
+}
 
 /**
  * Activates the Datalayer VS Code extension.
  * This function is called when the extension is activated by VS Code.
- * It orchestrates the initialization of all components using modular services.
+ * It orchestrates the initialization of all components using the service container.
  *
  * @param context - The extension context provided by VS Code
  * @returns Promise that resolves when activation is complete
@@ -32,11 +48,14 @@ export async function activate(
   context: vscode.ExtensionContext,
 ): Promise<void> {
   try {
-    // Initialize logging infrastructure FIRST
-    const loggerManager = LoggerManager.getInstance(context);
-    ServiceLoggers.initialize(loggerManager);
+    // Create and initialize service container
+    services = new ServiceContainer(context);
 
-    const logger = ServiceLoggers.main;
+    // Initialize services (this also initializes logging)
+    await services.initialize();
+
+    // Now logger is available
+    const logger = services.logger;
     logger.info("Datalayer extension activation started", {
       version: vscode.extensions.getExtension(
         "datalayer.datalayer-jupyter-vscode",
@@ -46,20 +65,20 @@ export async function activate(
       workspaceFolder: vscode.workspace.workspaceFolders?.[0]?.uri.toString(),
     });
 
-    const services = await PerformanceLogger.trackOperation(
-      "initialize_services",
-      () => initializeServices(context),
-      { stage: "extension_activation" },
-    );
-
+    // Initialize UI with performance tracking (now that logger is available)
     const ui = await PerformanceLogger.trackOperation(
       "initialize_ui",
-      () => initializeUI(context, services.authProvider, services.sdk),
+      () =>
+        initializeUI(
+          context,
+          services!.authProvider as SDKAuthProvider,
+          services!.sdk,
+        ),
       { stage: "extension_activation" },
     );
 
     const updateAuthState = setupAuthStateManagement(
-      services.authProvider,
+      services.authProvider as SDKAuthProvider,
       ui.spacesTreeProvider,
       ui.controllerManager,
     );
@@ -68,8 +87,8 @@ export async function activate(
     registerAllCommands(
       context,
       {
-        authProvider: services.authProvider,
-        documentBridge: services.documentBridge,
+        authProvider: services.authProvider as SDKAuthProvider,
+        documentBridge: services.documentBridge as any, // Cast needed until DocumentBridge is fully migrated
         spacesTreeProvider: ui.spacesTreeProvider,
         controllerManager: ui.controllerManager,
       },
@@ -88,6 +107,13 @@ export async function activate(
       }),
     );
 
+    // Register disposal
+    context.subscriptions.push({
+      dispose: async () => {
+        await services?.dispose();
+      },
+    });
+
     logger.info("Datalayer extension activation completed successfully", {
       totalCommands: context.subscriptions.length,
       activationTime: "tracked_by_performance_logger",
@@ -96,7 +122,7 @@ export async function activate(
     // Use logger if available, fallback to VS Code notification
     let logger;
     try {
-      logger = ServiceLoggers.main;
+      logger = services?.logger || ServiceLoggers.main;
     } catch {
       // Logger not available, will use VS Code notification only
     }
@@ -120,14 +146,12 @@ export async function activate(
  * Deactivates the extension and cleans up resources.
  * This function is called when the extension is deactivated or VS Code is closing.
  * All disposables are automatically cleaned up through the context.subscriptions array.
- *
- * @returns void
  */
-export function deactivate(): void {
+export async function deactivate(): Promise<void> {
   try {
     // Try to log deactivation if logger is available
-    if (ServiceLoggers.isInitialized()) {
-      const logger = ServiceLoggers.main;
+    if (services?.logger) {
+      const logger = services.logger;
       logger.info("Datalayer extension deactivation started");
 
       // Clear any tracked operations
@@ -136,8 +160,13 @@ export function deactivate(): void {
       ) {
         logger.debug("Clearing tracked operations");
       }
+    }
 
-      logger.info("Datalayer extension deactivated successfully");
+    // Dispose service container
+    await services?.dispose();
+
+    if (services?.logger) {
+      services.logger.info("Datalayer extension deactivated successfully");
     }
   } catch (error) {
     // Silent failure - extension is shutting down anyway

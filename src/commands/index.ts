@@ -16,8 +16,8 @@ import * as vscode from "vscode";
 import { registerAuthCommands } from "./auth";
 import { registerDocumentCommands } from "./documents";
 import { registerRuntimeCommands } from "./runtimes";
-import { SDKAuthProvider } from "../services/authProvider";
-import { DocumentBridge } from "../services/documentBridge";
+import { SDKAuthProvider } from "../services/core/authProvider";
+import { DocumentBridge } from "../services/notebook/documentBridge";
 import { SpacesTreeProvider } from "../providers/spacesTreeProvider";
 import { SmartDynamicControllerManager } from "../providers/smartDynamicControllerManager";
 

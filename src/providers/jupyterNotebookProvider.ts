@@ -15,24 +15,24 @@
 
 import * as vscode from "vscode";
 import { disposeAll } from "../utils/dispose";
-import { getNotebookHtml } from "../utils/notebookTemplate";
+import { getNotebookHtml } from "../ui/templates/notebookTemplate";
 import { WebviewCollection } from "../utils/webviewCollection";
 import {
   NotebookDocument,
   NotebookDocumentDelegate,
   NotebookEdit,
 } from "../models/notebookDocument";
-import { NotebookNetworkService } from "../services/notebookNetwork";
-import { SDKAuthProvider } from "../services/authProvider";
-import { KernelBridge } from "../services/kernelBridge";
-import { getSDKInstance } from "../services/sdkAdapter";
-import { selectDatalayerRuntime } from "../utils/runtimeSelector";
-import { showKernelSelector } from "../utils/kernelSelector";
+import { NotebookNetworkService } from "../services/notebook/notebookNetwork";
+import { SDKAuthProvider } from "../services/core/authProvider";
+import { KernelBridge } from "../services/notebook/kernelBridge";
+import { getServiceContainer } from "../extension";
+import { selectDatalayerRuntime } from "../ui/dialogs/runtimeSelector";
+import { showKernelSelector } from "../ui/dialogs/kernelSelector";
 import {
   showTwoStepConfirmation,
   CommonConfirmations,
-} from "../utils/confirmationDialog";
-import type { ExtensionMessage } from "../utils/messages";
+} from "../ui/dialogs/confirmationDialog";
+import type { ExtensionMessage } from "../types/vscode/messages";
 
 /**
  * Custom editor provider for Jupyter notebooks with dual-mode support.
@@ -105,8 +105,8 @@ export class JupyterNotebookProvider
    */
   constructor(context: vscode.ExtensionContext) {
     this._context = context;
-    const sdk = getSDKInstance();
-    const authProvider = SDKAuthProvider.getInstance();
+    const sdk = getServiceContainer().sdk;
+    const authProvider = getServiceContainer().authProvider as SDKAuthProvider;
     this._kernelBridge = new KernelBridge(sdk, authProvider);
   }
 
@@ -270,7 +270,7 @@ export class JupyterNotebookProvider
             );
 
             // Get the authentication token
-            const authService = SDKAuthProvider.getInstance();
+            const authService = getServiceContainer().authProvider;
             const authToken = authService.getToken();
             if (authToken) {
               token = authToken;
@@ -278,7 +278,7 @@ export class JupyterNotebookProvider
 
             // First try to get metadata from document bridge
             const { DocumentBridge } = await import(
-              "../services/documentBridge"
+              "../services/notebook/documentBridge"
             );
             const documentBridge = DocumentBridge.getInstance();
             const metadata = documentBridge.getDocumentMetadata(document.uri);
@@ -444,8 +444,9 @@ export class JupyterNotebookProvider
       case "select-runtime":
       case "select-kernel": {
         // Show the kernel selector with available options
-        const sdk = getSDKInstance();
-        const authProvider = SDKAuthProvider.getInstance();
+        const sdk = getServiceContainer().sdk;
+        const authProvider = getServiceContainer()
+          .authProvider as SDKAuthProvider;
 
         // Pass the document URI and kernel bridge so the kernel can be connected
         showKernelSelector(sdk, authProvider, this._kernelBridge, document.uri)
@@ -476,7 +477,7 @@ export class JupyterNotebookProvider
 
         if (confirmed) {
           try {
-            const sdk = getSDKInstance();
+            const sdk = getServiceContainer().sdk;
 
             // Delete the runtime via SDK - MUST use pod_name, not uid!
             // If podName is missing, construct it from uid (format: runtime-{uid})
@@ -601,8 +602,8 @@ export class JupyterNotebookProvider
    * @param document - The notebook document
    */
   private showDatalayerRuntimeSelector(document: NotebookDocument): void {
-    const sdk = getSDKInstance();
-    const authProvider = SDKAuthProvider.getInstance();
+    const sdk = getServiceContainer().sdk;
+    const authProvider = getServiceContainer().authProvider as SDKAuthProvider;
 
     selectDatalayerRuntime(sdk, authProvider)
       .then(async (runtime) => {
