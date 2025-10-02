@@ -60,7 +60,7 @@ export function registerDocumentCommands(
   context.subscriptions.push(
     vscode.commands.registerCommand(
       "datalayer.openDocument",
-      async (documentOrItem: any, spaceName?: string) => {
+      async (documentOrItem: unknown, spaceName?: string) => {
         try {
           if (!documentOrItem) {
             vscode.window.showErrorMessage("No document selected");
@@ -69,12 +69,17 @@ export function registerDocumentCommands(
 
           let document: Document;
 
-          if (documentOrItem.data && documentOrItem.data.document) {
-            document = documentOrItem.data.document;
+          // Type guard for tree item with data property
+          const itemWithData = documentOrItem as {
+            data?: { document?: Document; spaceName?: string };
+          };
+
+          if (itemWithData.data && itemWithData.data.document) {
+            document = itemWithData.data.document;
             spaceName =
-              documentOrItem.data.spaceName ?? spaceName ?? "Unknown Space";
+              itemWithData.data.spaceName ?? spaceName ?? "Unknown Space";
           } else {
-            document = documentOrItem;
+            document = documentOrItem as Document;
             spaceName = spaceName ?? "Unknown Space";
           }
 
@@ -318,16 +323,20 @@ export function registerDocumentCommands(
   context.subscriptions.push(
     vscode.commands.registerCommand(
       "datalayer.renameItem",
-      async (item: any) => {
+      async (item: unknown) => {
         try {
-          if (!item?.data?.document) {
+          const itemWithData = item as {
+            data?: { document?: Document };
+          };
+
+          if (!itemWithData.data?.document) {
             vscode.window.showErrorMessage(
               "Please select a document to rename",
             );
             return;
           }
 
-          const document = item.data.document;
+          const document = itemWithData.data.document;
           // SDK models have a 'name' property
           const currentName = document.name;
 
@@ -394,16 +403,20 @@ export function registerDocumentCommands(
   context.subscriptions.push(
     vscode.commands.registerCommand(
       "datalayer.deleteItem",
-      async (item: any) => {
+      async (item: unknown) => {
         try {
-          if (!item?.data?.document) {
+          const itemWithData = item as {
+            data?: { document?: Document };
+          };
+
+          if (!itemWithData.data?.document) {
             vscode.window.showErrorMessage(
               "Please select a document to delete",
             );
             return;
           }
 
-          const document = item.data.document;
+          const document = itemWithData.data.document;
           // SDK models have a 'name' property
           const itemName = document.name;
 

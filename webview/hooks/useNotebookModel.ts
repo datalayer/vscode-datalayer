@@ -18,6 +18,20 @@ export interface UseNotebookModelOptions {
   messageHandler: MessageHandler;
 }
 
+// Type for JupyterLab notebook model with signals
+interface INotebookModel {
+  stateChanged?: {
+    connect: (handler: (sender: unknown, args: unknown) => void) => void;
+    disconnect: (handler: (sender: unknown, args: unknown) => void) => void;
+  };
+  contentChanged?: {
+    connect: (handler: () => void) => void;
+    disconnect: (handler: () => void) => void;
+  };
+  toJSON: () => unknown;
+  dirty?: boolean;
+}
+
 /**
  * Hook to manage notebook model state and change tracking.
  *
@@ -33,10 +47,10 @@ export function useNotebookModel({
   isDatalayerNotebook,
   messageHandler,
 }: UseNotebookModelOptions) {
-  const currentNotebookModel = useRef<any>(null);
+  const currentNotebookModel = useRef<unknown>(null);
   const lastSavedContent = useRef<Uint8Array | null>(null);
   const contentChangeHandler = useRef<
-    ((sender: any, args: any) => void) | null
+    ((sender: unknown, args: unknown) => void) | null
   >(null);
 
   /**
@@ -44,16 +58,18 @@ export function useNotebookModel({
    * Sets up signal listeners for content changes (local notebooks only).
    */
   const handleNotebookModelChanged = useCallback(
-    (notebookModel: any) => {
+    (notebookModel: unknown) => {
       // Only track changes for local notebooks (not Datalayer notebooks)
       if (!isDatalayerNotebook && notebookModel) {
-        currentNotebookModel.current = notebookModel;
+        const model = notebookModel as INotebookModel;
+        currentNotebookModel.current = model;
 
         // Disconnect any previous listeners
         if (contentChangeHandler.current) {
           try {
-            if (currentNotebookModel.current?.stateChanged) {
-              currentNotebookModel.current.stateChanged.disconnect(
+            const currentModel = currentNotebookModel.current as INotebookModel;
+            if (currentModel?.stateChanged) {
+              currentModel.stateChanged.disconnect(
                 contentChangeHandler.current,
               );
             }
@@ -65,14 +81,14 @@ export function useNotebookModel({
         // Try contentChanged signal first (more direct for content changes)
         let connectedSignal = false;
 
-        if (notebookModel.contentChanged) {
+        if (model.contentChanged) {
           const handleContentChange = () => {
             try {
-              const notebookData = notebookModel.toJSON();
+              const notebookData = model.toJSON();
               const bytes = saveToBytes(notebookData);
 
               // Notify the extension about the change
-              messageHandler.postMessage({
+              messageHandler.send({
                 type: "notebook-content-changed",
                 body: { content: bytes },
               });
@@ -83,15 +99,15 @@ export function useNotebookModel({
           };
 
           contentChangeHandler.current = handleContentChange;
-          notebookModel.contentChanged.connect(handleContentChange);
+          model.contentChanged.connect(handleContentChange);
           connectedSignal = true;
         }
 
         // Fallback to stateChanged signal
-        if (notebookModel.stateChanged && !connectedSignal) {
-          const handleStateChange = (_sender: any, _args: any) => {
+        if (model.stateChanged && !connectedSignal) {
+          const handleStateChange = (_sender: unknown, _args: unknown) => {
             try {
-              const notebookData = notebookModel.toJSON();
+              const notebookData = model.toJSON();
               const bytes = saveToBytes(notebookData);
 
               // Only send if content actually changed
@@ -100,7 +116,7 @@ export function useNotebookModel({
                 bytes.length !== lastSavedContent.current.length ||
                 !bytes.every((v, i) => v === lastSavedContent.current![i])
               ) {
-                messageHandler.postMessage({
+                messageHandler.send({
                   type: "notebook-content-changed",
                   body: { content: bytes },
                 });
@@ -112,18 +128,18 @@ export function useNotebookModel({
           };
 
           contentChangeHandler.current = handleStateChange;
-          notebookModel.stateChanged.connect(handleStateChange);
+          model.stateChanged.connect(handleStateChange);
           connectedSignal = true;
 
           // Store initial content and check initial dirty state
           try {
-            const initialData = notebookModel.toJSON();
+            const initialData = model.toJSON();
             const initialBytes = saveToBytes(initialData);
             lastSavedContent.current = initialBytes;
 
             // If notebook is already dirty on load, notify extension
-            if (notebookModel.dirty) {
-              messageHandler.postMessage({
+            if (model.dirty) {
+              messageHandler.send({
                 type: "notebook-content-changed",
                 body: { content: initialBytes },
               });
@@ -140,26 +156,31 @@ export function useNotebookModel({
   /**
    * Get current notebook data for save operations
    */
-  const getNotebookData = useCallback((fallbackNbformat?: any): Uint8Array => {
-    if (currentNotebookModel.current) {
-      try {
-        const notebookData = currentNotebookModel.current.toJSON();
-        return saveToBytes(notebookData);
-      } catch (error) {
-        // Fallback to original nbformat
-        return saveToBytes(fallbackNbformat || {});
+  const getNotebookData = useCallback(
+    (fallbackNbformat?: unknown): Uint8Array => {
+      if (currentNotebookModel.current) {
+        try {
+          const model = currentNotebookModel.current as INotebookModel;
+          const notebookData = model.toJSON();
+          return saveToBytes(notebookData);
+        } catch (error) {
+          // Fallback to original nbformat
+          return saveToBytes(fallbackNbformat || {});
+        }
       }
-    }
-    // Fallback if model not available yet
-    return saveToBytes(fallbackNbformat || {});
-  }, []);
+      // Fallback if model not available yet
+      return saveToBytes(fallbackNbformat || {});
+    },
+    [],
+  );
 
   /**
    * Mark notebook as clean (after save)
    */
   const markClean = useCallback(() => {
-    if (currentNotebookModel.current && currentNotebookModel.current.dirty) {
-      currentNotebookModel.current.dirty = false;
+    const model = currentNotebookModel.current as INotebookModel;
+    if (model && model.dirty) {
+      model.dirty = false;
     }
   }, []);
 

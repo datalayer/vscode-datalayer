@@ -1,76 +1,75 @@
 /*
- * Copyright (c) 2021-2023 Datalayer, Inc.
+ * Copyright (c) 2021-2025 Datalayer, Inc.
  *
  * MIT License
  */
 
 /**
- * @module messageHandler
- * Message handling service for webview-extension communication.
- * Manages bidirectional message passing between the webview and VS Code extension.
+ * Type-safe message handler for webview-extension communication.
+ * Provides async/await request/response pattern and discriminated union types.
+ *
+ * @module services/messageHandler
  */
 
-import { PromiseDelegate } from "@lumino/coreutils";
 import { createContext } from "react";
+export type {
+  ExtensionMessage,
+  ExtensionToWebviewMessage,
+  WebviewToExtensionMessage,
+} from "../types/messages";
 
-declare let acquireVsCodeApi: any;
+declare let acquireVsCodeApi: () => {
+  postMessage: (message: unknown) => void;
+  getState: () => unknown;
+  setState: (state: unknown) => void;
+};
 
-// Get access to the VS Code API from within the webview context. !!! this can only be called once.
+/**
+ * VS Code API singleton - can only be called once
+ */
 const vscode = acquireVsCodeApi();
 
 /**
  * VS Code API singleton instance.
  * Use this to access postMessage, getState, and setState methods.
- *
- * @remarks
- * This is the only place where acquireVsCodeApi() is called.
- * All other code should import this instance instead of calling acquireVsCodeApi() again.
  */
 export const vsCodeAPI = vscode;
 
 /**
- * Extension message
+ * Disposable object with dispose method
  */
-export type ExtensionMessage = {
-  /**
-   * Message type.
-   */
-  type: string;
-  /**
-   * Message body.
-   */
-  body?: any;
-  /**
-   * Request reply error.
-   */
-  error?: any;
-  /**
-   * Message owner ID.
-   *
-   * For a HTTP request this is a request ID, for a websocket message
-   * it is the client ID.
-   */
-  id?: string;
-  /**
-   * Request ID for matching responses to requests.
-   */
-  requestId?: string;
-};
+export interface Disposable {
+  dispose(): void;
+}
 
 /**
- * Handle message from and to the extension
+ * Pending request with promise resolver/rejector
+ */
+export interface PendingRequest<T = unknown> {
+  resolve: (value: T) => void;
+  reject: (error: Error) => void;
+  timeout: ReturnType<typeof setTimeout>;
+}
+
+/**
+ * Type-safe message handler with async/await support.
+ * Handles bidirectional communication between webview and extension.
  */
 export class MessageHandler {
   /** Counter for generating unique callback IDs */
   private _callbackCount = 0;
+
   /** Map of callback ID to message handler functions */
-  private _messageCallbacks: Map<number, (message: ExtensionMessage) => void> =
-    new Map();
+  private _messageCallbacks = new Map<number, (message: unknown) => void>();
+
   /** Counter for generating unique request IDs */
   private static _requestCount = 0;
-  /** Map of pending request IDs to promise delegates */
-  private _pendingReplies: Map<string, PromiseDelegate<ExtensionMessage>> =
-    new Map();
+
+  /** Map of pending request IDs to promise resolvers */
+  private _pendingRequests = new Map<string, PendingRequest>();
+
+  /** Default timeout for requests (30 seconds) */
+  private _defaultTimeout = 30000;
 
   /**
    * Creates a new MessageHandler instance
@@ -80,85 +79,129 @@ export class MessageHandler {
   }
 
   /**
-   * Send message to the extension.
+   * Send a message to the extension (fire and forget).
    *
-   * @param message Message to send
+   * @param message - Message to send
    */
-  postMessage(message: ExtensionMessage) {
+  send<T = unknown>(message: T): void {
     vscode.postMessage(message);
   }
 
   /**
-   * Send a request to the extension.
+   * Send a request to the extension and wait for response.
    *
-   * @param message Request
-   * @returns Reply
+   * @param message - Request message
+   * @param timeout - Request timeout in milliseconds (default: 30000)
+   * @returns Promise resolving to response message
    */
-  async postRequest(message: ExtensionMessage): Promise<ExtensionMessage> {
-    const requestId = "request-" + (MessageHandler._requestCount++).toString();
-    const promise = new PromiseDelegate<ExtensionMessage>();
-    this._pendingReplies.set(requestId, promise);
-    message.id = requestId;
-    this.postMessage(message);
-    return promise.promise;
-  }
+  async request<TRequest = unknown, TResponse = unknown>(
+    message: TRequest,
+    timeout = this._defaultTimeout,
+  ): Promise<TResponse> {
+    return new Promise<TResponse>((resolve, reject) => {
+      const requestId = `req-${MessageHandler._requestCount++}`;
 
-  /**
-   * Register a callback on incoming messages.
-   *
-   * Note:
-   * The callback won't be called when the message is a reply to a request.
-   *
-   * @param handler Incoming message handler
-   * @returns Object with dispose method to unregister the handler
-   */
-  registerCallback(handler: (message: ExtensionMessage) => void): {
-    /** Unregister the callback handler */
-    dispose: () => void;
-  } {
-    const index = this._callbackCount++;
-    this._messageCallbacks.set(index, handler);
-    return Object.freeze({
-      /**
-       * Dispose the callback handler
-       */
-      dispose: () => {
-        this._messageCallbacks.delete(index);
-      },
+      // Set timeout for request
+      const timeoutHandle = setTimeout(() => {
+        this._pendingRequests.delete(requestId);
+        reject(
+          new Error(`Request timed out after ${timeout}ms (id: ${requestId})`),
+        );
+      }, timeout);
+
+      // Store pending request
+      this._pendingRequests.set(requestId, {
+        resolve: resolve as (value: unknown) => void,
+        reject,
+        timeout: timeoutHandle,
+      });
+
+      // Send request with ID
+      vscode.postMessage({
+        ...message,
+        requestId,
+      });
     });
   }
 
-  private _handleMessage(event: MessageEvent<ExtensionMessage>): void {
+  /**
+   * Register a callback for all incoming messages.
+   *
+   * @param handler - Message handler function
+   * @returns Disposable to unregister the handler
+   */
+  on(handler: (message: unknown) => void): Disposable {
+    const id = this._callbackCount++;
+    this._messageCallbacks.set(id, handler);
+
+    return {
+      dispose: () => {
+        this._messageCallbacks.delete(id);
+      },
+    };
+  }
+
+  /**
+   * Handle incoming messages from the extension
+   */
+  private _handleMessage(event: MessageEvent): void {
     const message = event.data;
-    if (message.id) {
-      const pendingReply = this._pendingReplies.get(message.id);
-      if (pendingReply) {
+
+    // Check if this is a response to a pending request
+    if (message.requestId || message.id) {
+      const requestId = message.requestId || message.id;
+      const pending = this._pendingRequests.get(requestId);
+
+      if (pending) {
+        clearTimeout(pending.timeout);
+        this._pendingRequests.delete(requestId);
+
         if (message.error) {
-          pendingReply?.reject(message.error);
+          pending.reject(new Error(message.error));
         } else {
-          pendingReply?.resolve(message);
+          pending.resolve(message.body || message);
         }
         return;
       }
     }
 
+    // Broadcast to all registered callbacks
     for (const handler of this._messageCallbacks.values()) {
       try {
         handler(message);
-      } catch (reason) {
-        // Silently handle message handler errors
+      } catch (error) {
+        console.error("Error in message handler:", error);
       }
     }
   }
 
   /**
-   * Static singleton instance of {@link MessageHandler}.
+   * Clear all pending requests (useful for cleanup)
+   */
+  clearPendingRequests(): void {
+    for (const [_id, pending] of this._pendingRequests.entries()) {
+      clearTimeout(pending.timeout);
+      pending.reject(new Error("Request cancelled"));
+    }
+    this._pendingRequests.clear();
+  }
+
+  /**
+   * Dispose the message handler and cleanup resources.
+   */
+  dispose(): void {
+    this.clearPendingRequests();
+    this._messageCallbacks.clear();
+  }
+
+  /**
+   * Singleton instance of MessageHandler
    */
   static instance = new MessageHandler();
 }
 
 /**
- * Singleton {@link MessageHandler} instance as React context.
+ * React context for MessageHandler
  */
 export const MessageHandlerContext = createContext<MessageHandler>(
   MessageHandler.instance,

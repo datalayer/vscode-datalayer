@@ -293,19 +293,20 @@ export class SmartDynamicControllerManager implements vscode.Disposable {
             ]),
           );
         } else if (output.type === "execute_result") {
+          const outputData = output.data as Record<string, string>;
           const items: vscode.NotebookCellOutputItem[] = [];
-          if (output.data["text/html"]) {
+          if (outputData["text/html"]) {
             items.push(
               vscode.NotebookCellOutputItem.text(
-                output.data["text/html"],
+                outputData["text/html"],
                 "text/html",
               ),
             );
           }
-          if (output.data["text/plain"]) {
+          if (outputData["text/plain"]) {
             items.push(
               vscode.NotebookCellOutputItem.text(
-                output.data["text/plain"],
+                outputData["text/plain"],
                 "text/plain",
               ),
             );

@@ -16,14 +16,14 @@ import type { SDKHandlers } from "../../../../core/lib/client";
 import { ServiceLoggers } from "./loggers";
 import { promptAndLogin } from "../../ui/dialogs/authDialog";
 
-interface OperationContext {
+export interface OperationContext {
   operationId: string;
   method: string;
   timestamp: string;
-  args: any[];
+  args: unknown[];
 }
 
-interface OperationData {
+export interface OperationData {
   startTime: number;
   context: OperationContext;
 }
@@ -42,7 +42,7 @@ export class DatalayerClientOperationTracker {
    */
   static createEnhancedSDKHandlers(): SDKHandlers {
     return {
-      beforeCall: (methodName: string, args: any[]) => {
+      beforeCall: (methodName: string, args: unknown[]) => {
         const operationId = `${methodName}_${Date.now()}_${Math.random()
           .toString(36)
           .substr(2, 9)}`;
@@ -62,10 +62,13 @@ export class DatalayerClientOperationTracker {
         // Log to appropriate channel based on method
         const logger =
           DatalayerClientOperationTracker.getLoggerForMethod(methodName);
-        logger.debug(`DatalayerClient Call Started: ${methodName}`, context);
+        logger.debug(
+          `DatalayerClient Call Started: ${methodName}`,
+          context as unknown as Record<string, unknown>,
+        );
       },
 
-      afterCall: (methodName: string, result: any) => {
+      afterCall: (methodName: string, result: unknown) => {
         // Find the most recent operation for this method
         const operation =
           DatalayerClientOperationTracker.findOperation(methodName);
@@ -91,7 +94,7 @@ export class DatalayerClientOperationTracker {
         );
       },
 
-      onError: async (methodName: string, error: any) => {
+      onError: async (methodName: string, error: unknown) => {
         const operation =
           DatalayerClientOperationTracker.findOperation(methodName);
         const duration = operation
@@ -100,6 +103,12 @@ export class DatalayerClientOperationTracker {
         const logger =
           DatalayerClientOperationTracker.getLoggerForMethod(methodName);
 
+        const errorObj = error as {
+          name?: string;
+          message?: string;
+          status?: number;
+          code?: string;
+        };
         logger.error(
           `DatalayerClient Call Failed: ${methodName}`,
           error as Error,
@@ -108,9 +117,9 @@ export class DatalayerClientOperationTracker {
             duration: `${duration.toFixed(2)}ms`,
             success: false,
             errorDetails: {
-              name: error?.name,
-              message: error?.message,
-              status: error?.status || error?.code,
+              name: errorObj?.name,
+              message: errorObj?.message,
+              status: errorObj?.status || errorObj?.code,
               isNetworkError:
                 DatalayerClientOperationTracker.isNetworkError(error),
             },
@@ -211,7 +220,7 @@ export class DatalayerClientOperationTracker {
   /**
    * Sanitize arguments to remove sensitive data before logging.
    */
-  private static sanitizeArgs(args: any[]): any[] {
+  private static sanitizeArgs(args: unknown[]): unknown[] {
     return args.map((arg) => {
       if (typeof arg === "string") {
         // Redact potential tokens
@@ -224,7 +233,7 @@ export class DatalayerClientOperationTracker {
         }
       }
       if (typeof arg === "object" && arg) {
-        const sanitized = { ...arg };
+        const sanitized: Record<string, unknown> = { ...arg };
         // Redact common sensitive fields
         ["token", "password", "secret", "key", "authorization"].forEach(
           (field) => {
@@ -242,7 +251,7 @@ export class DatalayerClientOperationTracker {
   /**
    * Create a summary of the result for logging without exposing sensitive data.
    */
-  private static summarizeResult(result: any): string {
+  private static summarizeResult(result: unknown): string {
     if (!result) {
       return "null/undefined";
     }
@@ -261,11 +270,12 @@ export class DatalayerClientOperationTracker {
   /**
    * Check if an error is network-related.
    */
-  private static isNetworkError(error: any): boolean {
+  private static isNetworkError(error: unknown): boolean {
     if (!error) {
       return false;
     }
-    const message = error.message?.toLowerCase() || "";
+    const errorObj = error as { message?: string; code?: string };
+    const message = errorObj.message?.toLowerCase() || "";
     return (
       message.includes("fetch") ||
       message.includes("network") ||
@@ -273,7 +283,7 @@ export class DatalayerClientOperationTracker {
       message.includes("connection") ||
       message.includes("enotfound") ||
       message.includes("econnrefused") ||
-      error.code === "NETWORK_ERROR"
+      errorObj.code === "NETWORK_ERROR"
     );
   }
 
@@ -282,10 +292,16 @@ export class DatalayerClientOperationTracker {
    */
   private static async handleSDKError(
     methodName: string,
-    error: any,
-    logger: any,
+    error: unknown,
+    logger: {
+      info: (msg: string) => void;
+      warn: (msg: string, context?: Record<string, unknown>) => void;
+      error: (msg: string) => void;
+      debug: (msg: string, context?: Record<string, unknown>) => void;
+    },
   ): Promise<void> {
-    const errorMessage = error?.message || "Unknown error";
+    const errorObj = error as { message?: string; status?: number };
+    const errorMessage = errorObj?.message || "Unknown error";
 
     // Authentication errors - don't show error immediately, let auth system handle
     if (
@@ -318,7 +334,7 @@ export class DatalayerClientOperationTracker {
 
     // Rate limiting
     if (
-      error?.status === 429 ||
+      errorObj?.status === 429 ||
       errorMessage.includes("rate limit") ||
       errorMessage.includes("Too Many Requests")
     ) {
@@ -331,7 +347,7 @@ export class DatalayerClientOperationTracker {
 
     // Service unavailable - show informative message
     if (
-      error?.status >= 500 ||
+      (errorObj?.status !== undefined && errorObj.status >= 500) ||
       errorMessage.includes("Service Unavailable") ||
       errorMessage.includes("Internal Server Error")
     ) {
@@ -343,8 +359,12 @@ export class DatalayerClientOperationTracker {
     }
 
     // Client errors (4xx) - usually configuration or request issues
-    if (error?.status >= 400 && error?.status < 500) {
-      logger.warn(`Client error encountered: ${error.status}`);
+    if (
+      errorObj?.status !== undefined &&
+      errorObj.status >= 400 &&
+      errorObj.status < 500
+    ) {
+      logger.warn(`Client error encountered: ${errorObj.status}`);
       // Don't show to user unless it's a user-initiated action
       return;
     }

@@ -25,7 +25,9 @@ suite("ServiceLoggers Tests", () => {
 
   teardown(() => {
     // Reset static state
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (ServiceLoggers as any).loggerManager = undefined;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (LoggerManager as any)._instance = undefined;
   });
 
@@ -35,11 +37,13 @@ suite("ServiceLoggers Tests", () => {
     });
 
     test("isInitialized returns false before initialization", () => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (ServiceLoggers as any).loggerManager = undefined;
       assert.strictEqual(ServiceLoggers.isInitialized(), false);
     });
 
     test("throws error when accessing logger before initialization", () => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (ServiceLoggers as any).loggerManager = undefined;
 
       assert.throws(

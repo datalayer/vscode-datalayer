@@ -41,17 +41,23 @@ export class NotebookNetworkService {
     webview: vscode.WebviewPanel,
   ): void {
     const { body, id } = message;
-    fetch(body.url, {
-      body: body.body,
-      headers: body.headers,
-      method: body.method,
-    }).then(async (reply: any) => {
+    const requestBody = body as {
+      url: string;
+      body?: string | ArrayBuffer | Blob | FormData;
+      headers?: Record<string, string>;
+      method: string;
+    };
+    fetch(requestBody.url, {
+      body: requestBody.body,
+      headers: requestBody.headers,
+      method: requestBody.method,
+    }).then(async (reply: Response) => {
       const headers: Record<string, string> = [...reply.headers].reduce(
         (agg, pair) => ({ ...agg, [pair[0]]: pair[1] }),
         {},
       );
       const rawBody =
-        body.method !== "DELETE" ? await reply.arrayBuffer() : undefined;
+        requestBody.method !== "DELETE" ? await reply.arrayBuffer() : undefined;
       this.postMessage(
         webview,
         "http-response",
@@ -75,13 +81,17 @@ export class NotebookNetworkService {
    */
   openWebsocket(message: ExtensionMessage, webview: vscode.WebviewPanel): void {
     const { body, id } = message;
-    const wsURL = new URL(body.origin);
+    const wsBody = body as {
+      origin: string;
+      protocol?: string | string[];
+    };
+    const wsURL = new URL(wsBody.origin);
     if (wsURL.searchParams.has("token")) {
       wsURL.searchParams.set("token", "xxxxx");
     }
 
     // Validate and sanitize the protocol
-    let protocol: string | string[] | undefined = body.protocol;
+    let protocol: string | string[] | undefined = wsBody.protocol;
 
     // WebSocket protocol must be a valid token (alphanumeric, hyphen, dot, underscore)
     // If protocol is invalid or empty, don't pass it
@@ -108,8 +118,8 @@ export class NotebookNetworkService {
     // Only pass protocol if it's defined and not empty
     // Node.js WebSocket rejects empty string protocols
     const ws = protocol
-      ? new WebSocket(body.origin, protocol)
-      : new WebSocket(body.origin);
+      ? new WebSocket(wsBody.origin, protocol)
+      : new WebSocket(wsBody.origin);
     this._websockets.set(id!, ws);
     webview.onDidDispose(() => {
       this._websockets.delete(id!);
@@ -132,8 +142,9 @@ export class NotebookNetworkService {
       );
     };
     ws.onerror = (event) => {
-      const error = (event as any).error;
-      const message = (event as any).message ?? "WebSocket error occurred";
+      const errorEvent = event as Event & { error?: Error; message?: string };
+      const error = errorEvent.error;
+      const message = errorEvent.message ?? "WebSocket error occurred";
       this.postMessage(webview, "websocket-error", { error, message }, id);
     };
   }
@@ -144,12 +155,15 @@ export class NotebookNetworkService {
    * @param message - Extension message containing data to send
    */
   sendWebsocketMessage(message: ExtensionMessage): void {
-    const { id } = message;
+    const { id, body } = message;
     const ws = this._websockets.get(id ?? "");
     if (!ws) {
       return;
     }
-    ws.send(message.body.data);
+    const wsData = body as {
+      data: string | ArrayBufferLike | Blob | ArrayBufferView;
+    };
+    ws.send(wsData.data);
   }
 
   /**
@@ -173,7 +187,7 @@ export class NotebookNetworkService {
   private postMessage(
     panel: vscode.WebviewPanel,
     type: string,
-    body: any,
+    body: unknown,
     id?: string,
   ): void {
     panel.webview.postMessage({ type, body, id });

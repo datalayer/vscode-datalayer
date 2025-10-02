@@ -27,8 +27,8 @@ export class DatalayerError extends Error {
   constructor(
     message: string,
     public readonly code: string,
-    public readonly cause?: Error,
-    public readonly context?: Record<string, any>,
+    public override readonly cause?: Error,
+    public readonly context?: Record<string, unknown>,
   ) {
     super(message);
     this.name = "DatalayerError";
@@ -44,7 +44,11 @@ export class DatalayerError extends Error {
  * Error thrown when authentication fails or is required.
  */
 export class AuthenticationError extends DatalayerError {
-  constructor(message: string, cause?: Error, context?: Record<string, any>) {
+  constructor(
+    message: string,
+    cause?: Error,
+    context?: Record<string, unknown>,
+  ) {
     super(message, "AUTH_ERROR", cause, context);
     this.name = "AuthenticationError";
   }
@@ -54,7 +58,11 @@ export class AuthenticationError extends DatalayerError {
  * Error thrown when network operations fail.
  */
 export class NetworkError extends DatalayerError {
-  constructor(message: string, cause?: Error, context?: Record<string, any>) {
+  constructor(
+    message: string,
+    cause?: Error,
+    context?: Record<string, unknown>,
+  ) {
     super(message, "NETWORK_ERROR", cause, context);
     this.name = "NetworkError";
   }
@@ -68,7 +76,7 @@ export class NotebookError extends DatalayerError {
     message: string,
     cause?: Error,
     notebookId?: string,
-    context?: Record<string, any>,
+    context?: Record<string, unknown>,
   ) {
     super(message, "NOTEBOOK_ERROR", cause, {
       ...context,
@@ -86,7 +94,7 @@ export class RuntimeError extends DatalayerError {
     message: string,
     cause?: Error,
     runtimeId?: string,
-    context?: Record<string, any>,
+    context?: Record<string, unknown>,
   ) {
     super(message, "RUNTIME_ERROR", cause, {
       ...context,
@@ -104,7 +112,7 @@ export class DocumentError extends DatalayerError {
     message: string,
     cause?: Error,
     documentId?: string,
-    context?: Record<string, any>,
+    context?: Record<string, unknown>,
   ) {
     super(message, "DOCUMENT_ERROR", cause, {
       ...context,
@@ -121,7 +129,7 @@ export interface ErrorInfo {
   code: string;
   message: string;
   cause?: Error;
-  context?: Record<string, any>;
+  context?: Record<string, unknown>;
 }
 
 /**

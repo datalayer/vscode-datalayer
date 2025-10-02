@@ -23,14 +23,20 @@ import "./LexicalEditor.css";
 
 // Configure webpack public path for WASM loading
 declare let __webpack_public_path__: string;
+declare global {
+  interface Window {
+    __webpack_public_path__?: string;
+  }
+}
+
 if (
   typeof __webpack_public_path__ !== "undefined" &&
-  !(window as any).__webpack_public_path__
+  !window.__webpack_public_path__
 ) {
   const baseUri = document.querySelector("base")?.getAttribute("href");
   if (baseUri) {
     __webpack_public_path__ = baseUri;
-    (window as any).__webpack_public_path__ = baseUri;
+    window.__webpack_public_path__ = baseUri;
   }
 }
 
@@ -104,7 +110,8 @@ function LexicalWebviewInner({
           break;
         }
         case "getFileData": {
-          const currentContent = vscode.getState()?.content || content;
+          const state = vscode.getState() as { content?: string };
+          const currentContent = state?.content || content;
           const encoder = new TextEncoder();
           const encoded = encoder.encode(currentContent);
           vscode.postMessage({
@@ -130,7 +137,7 @@ function LexicalWebviewInner({
     window.addEventListener("message", messageHandler);
 
     // Check if we have saved state
-    const savedState = vscode.getState();
+    const savedState = vscode.getState() as { content?: string };
     if (savedState?.content) {
       setContent(savedState.content);
       setIsReady(true);
@@ -236,7 +243,8 @@ function LexicalWebview() {
   // No key prop = no forced remount! State is preserved.
   return (
     <Jupyter
-      serviceManager={serviceManager as any}
+      // @ts-ignore - Type mismatch between @jupyterlab/services versions
+      serviceManager={serviceManager}
       startDefaultKernel={!!selectedRuntime}
       defaultKernelName="python"
     >

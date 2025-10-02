@@ -22,8 +22,10 @@ class MockDisposable {
 
 // Test implementation of abstract Disposable class
 class TestDisposable extends Disposable {
-  public registerSpy<T extends { dispose(): void }>(value: T): T {
-    return this._register(value as any);
+  public registerSpy<T extends { dispose(): void }>(
+    value: T,
+  ): T & { dispose(): void } {
+    return this._register(value as T & { dispose(): void });
   }
 
   public get isDisposedPublic(): boolean {
@@ -39,7 +41,7 @@ suite("Dispose Utils Tests", () => {
       const mock3 = new MockDisposable();
       const disposables = [mock1, mock2, mock3];
 
-      disposeAll(disposables as any);
+      disposeAll(disposables as { dispose(): void }[]);
 
       assert.strictEqual(mock1.disposed, true);
       assert.strictEqual(mock2.disposed, true);
@@ -49,13 +51,13 @@ suite("Dispose Utils Tests", () => {
     test("empties the disposables array", () => {
       const disposables = [new MockDisposable(), new MockDisposable()];
 
-      disposeAll(disposables as any);
+      disposeAll(disposables as { dispose(): void }[]);
 
       assert.strictEqual(disposables.length, 0);
     });
 
     test("handles empty array", () => {
-      const disposables: any[] = [];
+      const disposables: { dispose(): void }[] = [];
 
       // Should not throw
       disposeAll(disposables);
@@ -67,7 +69,7 @@ suite("Dispose Utils Tests", () => {
       const disposables = [new MockDisposable(), null, new MockDisposable()];
 
       // Should not throw
-      disposeAll(disposables as any);
+      disposeAll(disposables as { dispose(): void }[]);
 
       assert.strictEqual(disposables.length, 0);
     });
@@ -80,7 +82,7 @@ suite("Dispose Utils Tests", () => {
         { dispose: () => callOrder.push(3) },
       ];
 
-      disposeAll(disposables as any);
+      disposeAll(disposables as { dispose(): void }[]);
 
       // Should be disposed in reverse order (3, 2, 1)
       assert.deepStrictEqual(callOrder, [3, 2, 1]);

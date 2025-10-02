@@ -19,7 +19,7 @@ import type { RuntimeJSON } from "../../../core/lib/client/models/Runtime";
  * Props for the NotebookToolbar component
  * @hidden
  */
-interface NotebookToolbarProps {
+export interface NotebookToolbarProps {
   /** ID of the notebook */
   notebookId: string;
   /** Whether this is a Datalayer cloud notebook */
@@ -45,7 +45,7 @@ export const NotebookToolbar: React.FC<NotebookToolbarProps> = ({
 
   // Monitor notebook state from notebookStore2
   useEffect(() => {
-    if (!notebookId) return;
+    if (!notebookId) return undefined;
 
     const unsubscribe = notebookStore2.subscribe((state) => {
       const notebook = state.notebooks.get(notebookId);
@@ -82,6 +82,7 @@ export const NotebookToolbar: React.FC<NotebookToolbarProps> = ({
         document.head.removeChild(style);
       };
     }
+    return undefined;
   }, [isDatalayerNotebook]);
 
   // Add scroll detection for shadow effect
@@ -229,7 +230,7 @@ export const NotebookToolbar: React.FC<NotebookToolbarProps> = ({
   const handleSelectRuntime = () => {
     if (messageHandler) {
       // Send message to extension to show runtime selection dialog
-      messageHandler.postMessage({
+      messageHandler.send({
         type: "select-runtime",
         body: {
           isDatalayerNotebook: isDatalayerNotebook,
@@ -426,7 +427,7 @@ export const NotebookToolbar: React.FC<NotebookToolbarProps> = ({
             <button
               onClick={() => {
                 if (messageHandler) {
-                  messageHandler.postMessage({
+                  messageHandler.send({
                     type: "terminate-runtime",
                     body: {
                       runtime: selectedRuntime,

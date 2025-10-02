@@ -45,12 +45,12 @@ export type ExtensionMessage = {
    * Message payload.
    * Contains the actual data being transmitted (document content, edits, etc.)
    */
-  body?: any;
+  body?: unknown;
   /**
    * Error information if the message represents an error response.
    * Used when responding to a request that failed.
    */
-  error?: any;
+  error?: unknown;
   /**
    * Message owner/context identifier.
    * - For HTTP requests: request ID

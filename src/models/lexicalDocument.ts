@@ -250,7 +250,7 @@ export class LexicalDocument
    *
    * @param _edit - The edit operation (currently unused)
    */
-  makeEdit(_edit: any) {
+  makeEdit(_edit: unknown) {
     if (!this._isCollaborative) {
       this._isDirty = true;
     }

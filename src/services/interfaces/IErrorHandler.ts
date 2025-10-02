@@ -24,7 +24,7 @@ export interface ErrorHandlerOptions {
   /** Actionable items to present to user */
   actionable?: Array<{ title: string; action: () => void | Promise<void> }>;
   /** Additional context for debugging */
-  context?: Record<string, any>;
+  context?: Record<string, unknown>;
 }
 
 /**

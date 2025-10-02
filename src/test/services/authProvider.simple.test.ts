@@ -14,15 +14,17 @@ import * as vscode from "vscode";
 import { SDKAuthProvider } from "../../services/core/authProvider";
 import { LoggerManager } from "../../services/logging/loggerManager";
 import { ServiceLoggers } from "../../services/logging/loggers";
+import type { DatalayerClient } from "../../../../core/lib/client";
 import {
   createMockExtensionContext,
   createMockSDK,
+  createMockLogger,
 } from "../utils/mockFactory";
 
 suite("SDKAuthProvider Simple Tests", () => {
   let mockContext: vscode.ExtensionContext;
   let mockSDK: ReturnType<typeof createMockSDK>;
-  let originalShowInformationMessage: any;
+  let originalShowInformationMessage: typeof vscode.window.showInformationMessage;
 
   setup(() => {
     mockContext = createMockExtensionContext();
@@ -33,19 +35,23 @@ suite("SDKAuthProvider Simple Tests", () => {
     ServiceLoggers.initialize(loggerManager);
 
     // Reset singleton for each test
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (SDKAuthProvider as any).instance = undefined;
 
     // Mock vscode.window.showInformationMessage to prevent UI dialogs in tests
     originalShowInformationMessage = vscode.window.showInformationMessage;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (vscode.window as any).showInformationMessage = () => Promise.resolve();
   });
 
   teardown(() => {
     // Clean up singleton
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (SDKAuthProvider as any).instance = undefined;
 
     // Restore original vscode.window.showInformationMessage
     if (originalShowInformationMessage) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (vscode.window as any).showInformationMessage =
         originalShowInformationMessage;
     }
@@ -63,14 +69,14 @@ suite("SDKAuthProvider Simple Tests", () => {
       };
 
       const instance1 = new SDKAuthProvider(
-        mockSDK as any,
+        mockSDK as unknown as DatalayerClient,
         mockContext,
-        mockLogger as any,
+        mockLogger,
       );
       const instance2 = new SDKAuthProvider(
-        mockSDK as any,
+        mockSDK as unknown as DatalayerClient,
         mockContext,
-        mockLogger as any,
+        mockLogger,
       );
 
       assert.notStrictEqual(
@@ -81,19 +87,12 @@ suite("SDKAuthProvider Simple Tests", () => {
     });
 
     test("getAuthState returns initial unauthenticated state", () => {
-      const mockLogger = {
-        trace: () => {},
-        debug: () => {},
-        info: () => {},
-        warn: () => {},
-        error: () => {},
-        timeAsync: async <T>(_op: string, fn: () => Promise<T>) => fn(),
-      };
+      const mockLogger = createMockLogger();
 
       const authProvider = new SDKAuthProvider(
-        mockSDK as any,
+        mockSDK as unknown as DatalayerClient,
         mockContext,
-        mockLogger as any,
+        mockLogger,
       );
 
       const state = authProvider.getAuthState();
@@ -104,19 +103,12 @@ suite("SDKAuthProvider Simple Tests", () => {
     });
 
     test("getAuthState returns copy of state", () => {
-      const mockLogger = {
-        trace: () => {},
-        debug: () => {},
-        info: () => {},
-        warn: () => {},
-        error: () => {},
-        timeAsync: async <T>(_op: string, fn: () => Promise<T>) => fn(),
-      };
+      const mockLogger = createMockLogger();
 
       const authProvider = new SDKAuthProvider(
-        mockSDK as any,
+        mockSDK as unknown as DatalayerClient,
         mockContext,
-        mockLogger as any,
+        mockLogger,
       );
 
       const state1 = authProvider.getAuthState();
@@ -131,19 +123,12 @@ suite("SDKAuthProvider Simple Tests", () => {
 
   suite("State with No Token", () => {
     test("initialize() without stored token returns unauthenticated", async () => {
-      const mockLogger = {
-        trace: () => {},
-        debug: () => {},
-        info: () => {},
-        warn: () => {},
-        error: () => {},
-        timeAsync: async <T>(_op: string, fn: () => Promise<T>) => fn(),
-      };
+      const mockLogger = createMockLogger();
 
       const authProvider = new SDKAuthProvider(
-        mockSDK as any,
+        mockSDK as unknown as DatalayerClient,
         mockContext,
-        mockLogger as any,
+        mockLogger,
       );
 
       // Mock SDK to return no token
@@ -159,19 +144,12 @@ suite("SDKAuthProvider Simple Tests", () => {
 
   suite("Logout", () => {
     test("logout() sets state to unauthenticated", async () => {
-      const mockLogger = {
-        trace: () => {},
-        debug: () => {},
-        info: () => {},
-        warn: () => {},
-        error: () => {},
-        timeAsync: async <T>(_op: string, fn: () => Promise<T>) => fn(),
-      };
+      const mockLogger = createMockLogger();
 
       const authProvider = new SDKAuthProvider(
-        mockSDK as any,
+        mockSDK as unknown as DatalayerClient,
         mockContext,
-        mockLogger as any,
+        mockLogger,
       );
 
       await authProvider.logout();
@@ -182,19 +160,12 @@ suite("SDKAuthProvider Simple Tests", () => {
     });
 
     test("logout() calls SDK.logout", async () => {
-      const mockLogger = {
-        trace: () => {},
-        debug: () => {},
-        info: () => {},
-        warn: () => {},
-        error: () => {},
-        timeAsync: async <T>(_op: string, fn: () => Promise<T>) => fn(),
-      };
+      const mockLogger = createMockLogger();
 
       const authProvider = new SDKAuthProvider(
-        mockSDK as any,
+        mockSDK as unknown as DatalayerClient,
         mockContext,
-        mockLogger as any,
+        mockLogger,
       );
 
       await authProvider.logout();

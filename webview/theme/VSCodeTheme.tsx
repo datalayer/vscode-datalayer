@@ -149,13 +149,6 @@ export function VSCodeTheme({
   children,
 }: VSCodeThemeProps) {
   // Create minimal Primer theme config
-  const _primerTheme = useMemo(
-    () => ({
-      colorMode,
-      // Let Primer use defaults, we override with CSS
-    }),
-    [colorMode],
-  );
 
   return (
     <>

@@ -14,6 +14,7 @@
 import * as vscode from "vscode";
 import { selectDatalayerRuntime, setRuntime } from "./runtimeSelector";
 import type { DatalayerClient } from "../../../../core/lib/client";
+import type { Runtime } from "../../../../core/lib/client/models/Runtime";
 import { SDKAuthProvider } from "../../services/core/authProvider";
 import { KernelBridge } from "../../services/notebook/kernelBridge";
 
@@ -74,7 +75,7 @@ export async function showKernelSelector(
             const baseUrl = parsedURL.toString();
 
             // Create a runtime-like object for the Jupyter server
-            const jupyterRuntime: any = {
+            const jupyterRuntime: Record<string, unknown> = {
               uid: `jupyter-${Date.now()}`,
               given_name: "Jupyter Server",
               name: "Jupyter Server",
@@ -90,7 +91,7 @@ export async function showKernelSelector(
             if (documentUri) {
               await kernelBridge.connectWebviewNotebook(
                 documentUri,
-                jupyterRuntime,
+                jupyterRuntime as unknown as Runtime,
               );
             }
 

@@ -14,6 +14,26 @@
 import React, { useCallback, useEffect, useState, useContext } from "react";
 import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext";
 import { $isCodeNode } from "@lexical/code";
+import {
+  $getSelection,
+  $isRangeSelection,
+  CAN_REDO_COMMAND,
+  CAN_UNDO_COMMAND,
+  COMMAND_PRIORITY_CRITICAL,
+  FORMAT_TEXT_COMMAND,
+  UNDO_COMMAND,
+  REDO_COMMAND,
+  FORMAT_ELEMENT_COMMAND,
+} from "lexical";
+import { $isHeadingNode } from "@lexical/rich-text";
+import { $createHeadingNode } from "@lexical/rich-text";
+import {
+  INSERT_ORDERED_LIST_COMMAND,
+  INSERT_UNORDERED_LIST_COMMAND,
+} from "@lexical/list";
+import { $isListNode } from "@lexical/list";
+import type { RuntimeJSON } from "../../../core/lib/client/models/Runtime";
+import { MessageHandlerContext } from "../services/messageHandler";
 
 /**
  * Properties for individual toolbar buttons.
@@ -122,7 +142,7 @@ function Divider() {
  * @property {boolean} [showRuntimeSelector=false] - Whether to show the runtime selector button
  * @hidden
  */
-interface LexicalToolbarProps {
+export interface LexicalToolbarProps {
   disabled?: boolean;
   selectedRuntime?: RuntimeJSON;
   showRuntimeSelector?: boolean;
@@ -318,7 +338,7 @@ export function LexicalToolbar({
 
   const handleSelectRuntime = () => {
     if (messageHandler) {
-      messageHandler.postMessage({
+      messageHandler.send({
         type: "select-runtime",
         body: {
           isDatalayerNotebook: true,
@@ -329,7 +349,7 @@ export function LexicalToolbar({
 
   const handleTerminateRuntime = () => {
     if (messageHandler && selectedRuntime) {
-      messageHandler.postMessage({
+      messageHandler.send({
         type: "terminate-runtime",
         body: {
           runtime: selectedRuntime,

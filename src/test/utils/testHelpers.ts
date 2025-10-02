@@ -17,14 +17,14 @@ import * as assert from "assert";
  * Asserts that a promise rejects with a specific error message.
  */
 export async function assertRejects(
-  fn: () => Promise<any>,
+  fn: () => Promise<unknown>,
   expectedMessage?: string | RegExp,
 ): Promise<void> {
   try {
     await fn();
     assert.fail("Expected promise to reject, but it resolved");
-  } catch (error: any) {
-    if (expectedMessage) {
+  } catch (error: unknown) {
+    if (expectedMessage && error instanceof Error) {
       if (typeof expectedMessage === "string") {
         assert.ok(
           error.message.includes(expectedMessage),
@@ -46,9 +46,10 @@ export async function assertRejects(
 export async function assertResolves<T>(fn: () => Promise<T>): Promise<T> {
   try {
     return await fn();
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : String(error);
     assert.fail(
-      `Expected promise to resolve, but it rejected with: ${error.message}`,
+      `Expected promise to resolve, but it rejected with: ${message}`,
     );
   }
 }
@@ -110,9 +111,9 @@ export function sleep(ms: number): Promise<void> {
  */
 export class EventCapture<T> {
   private events: T[] = [];
-  private disposable: any;
+  private disposable: { dispose(): void } | undefined;
 
-  constructor(event: any) {
+  constructor(event: (callback: (e: T) => void) => { dispose(): void }) {
     this.disposable = event((e: T) => {
       this.events.push(e);
     });
@@ -149,7 +150,7 @@ export function assertDeepEqual<T>(
 ): void {
   try {
     assert.deepStrictEqual(actual, expected, message);
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Expected:", JSON.stringify(expected, null, 2));
     console.error("Actual:", JSON.stringify(actual, null, 2));
     throw error;
@@ -192,7 +193,7 @@ export function randomString(length: number = 10): string {
 /**
  * Generates a mock JWT token for testing.
  */
-export function generateMockJWT(payload: any = {}): string {
+export function generateMockJWT(payload: Record<string, unknown> = {}): string {
   const header = { alg: "HS256", typ: "JWT" };
   const defaultPayload = {
     sub: "test-user",
@@ -251,8 +252,8 @@ export async function retry<T>(
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     try {
       return await fn();
-    } catch (error: any) {
-      lastError = error;
+    } catch (error: unknown) {
+      lastError = error instanceof Error ? error : new Error(String(error));
       if (attempt < maxAttempts) {
         await sleep(delay);
       }

@@ -117,7 +117,7 @@ export class ServiceContainer implements IServiceContainer {
 
   get logger(): ILogger {
     if (!this._logger) {
-      this._logger = this.loggerManager.createLogger("ServiceContainer");
+      this._logger = this.loggerManager.createLogger("Service Container");
     }
     return this._logger;
   }

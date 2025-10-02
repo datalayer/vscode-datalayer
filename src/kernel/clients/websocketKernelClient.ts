@@ -22,7 +22,7 @@ import type {
 /**
  * Jupyter message structure according to the protocol.
  */
-interface JupyterMessage {
+export interface JupyterMessage {
   header: {
     msg_id: string;
     msg_type: string;
@@ -31,10 +31,10 @@ interface JupyterMessage {
     date: string;
     version: string;
   };
-  parent_header: any;
-  metadata: any;
-  content: any;
-  buffers?: any[];
+  parent_header: unknown;
+  metadata: unknown;
+  content: unknown;
+  buffers?: unknown[];
   channel?: string;
 }
 
@@ -53,7 +53,7 @@ export interface ExecutionOutput {
   type: "stream" | "execute_result" | "display_data" | "error";
   name?: string; // For stream outputs (stdout/stderr)
   text?: string; // For stream outputs
-  data?: any; // For execute_result/display_data
+  data?: unknown; // For execute_result/display_data
   ename?: string; // For errors
   evalue?: string; // For errors
   traceback?: string[]; // For errors
@@ -83,7 +83,7 @@ export class WebSocketKernelClient {
    * Creates a new WebSocketKernelClient.
    *
    * @param runtime - The Datalayer runtime to connect to
-   * @param sdk - Datalayer SDK instance
+   * @param _sdk - Datalayer SDK instance (used in runtime connection methods)
    */
   constructor(
     runtime: Runtime | RuntimeJSON,
@@ -200,7 +200,7 @@ export class WebSocketKernelClient {
       });
 
       if (listResponse.ok) {
-        const kernels = (await listResponse.json()) as any[];
+        const kernels = (await listResponse.json()) as Array<{ id: string }>;
         if (kernels.length > 0) {
           this._kernelId = kernels[0].id;
           return;
@@ -220,7 +220,7 @@ export class WebSocketKernelClient {
       });
 
       if (createResponse.ok) {
-        const kernel: any = await createResponse.json();
+        const kernel = (await createResponse.json()) as { id: string };
         this._kernelId = kernel.id;
       } else {
         throw new Error(
@@ -255,9 +255,10 @@ export class WebSocketKernelClient {
   /**
    * Handles WebSocket message event.
    */
-  private onMessage(data: any): void {
+  private onMessage(data: unknown): void {
     try {
-      const msg: JupyterMessage = JSON.parse(data.toString());
+      const dataStr = data as { toString(): string };
+      const msg: JupyterMessage = JSON.parse(dataStr.toString());
 
       // Skip kernel info replies and status messages
       if (
@@ -268,7 +269,8 @@ export class WebSocketKernelClient {
       }
 
       // Find pending request
-      const parentId = msg.parent_header?.msg_id;
+      const parentHeader = msg.parent_header as { msg_id?: string };
+      const parentId = parentHeader?.msg_id;
       if (!parentId) {
         return;
       }
@@ -279,41 +281,43 @@ export class WebSocketKernelClient {
       }
 
       // Process message based on type
+      const content = msg.content as Record<string, unknown>;
+
       switch (msg.header.msg_type) {
         case "stream":
           pending.outputs.push({
             type: "stream",
-            name: msg.content.name,
-            text: msg.content.text,
+            name: content.name as string,
+            text: content.text as string,
           });
           break;
 
         case "execute_result":
           pending.outputs.push({
             type: "execute_result",
-            data: msg.content.data,
+            data: content.data,
           });
           break;
 
         case "display_data":
           pending.outputs.push({
             type: "display_data",
-            data: msg.content.data,
+            data: content.data,
           });
           break;
 
         case "error":
           pending.outputs.push({
             type: "error",
-            ename: msg.content.ename,
-            evalue: msg.content.evalue,
-            traceback: msg.content.traceback,
+            ename: content.ename as string,
+            evalue: content.evalue as string,
+            traceback: content.traceback as string[],
           });
           break;
 
         case "execute_reply":
           // Execution complete
-          const success = msg.content.status === "ok";
+          const success = content.status === "ok";
           this._pendingRequests.delete(parentId);
           pending.resolve({ outputs: pending.outputs, success });
           break;
@@ -348,7 +352,7 @@ export class WebSocketKernelClient {
   /**
    * Creates a Jupyter message.
    */
-  private createMessage(msgType: string, content: any): JupyterMessage {
+  private createMessage(msgType: string, content: unknown): JupyterMessage {
     const msgId = uuidv4();
 
     return {

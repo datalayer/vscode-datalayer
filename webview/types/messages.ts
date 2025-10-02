@@ -95,7 +95,10 @@ export type ExtensionToWebviewMessage =
   | RuntimeTerminatedMessage
   | SetRuntimeMessage
   | GetFileDataRequestMessage
-  | SavedMessage;
+  | SavedMessage
+  | WebSocketProxyMessage
+  | WebSocketOpenMessage
+  | WebSocketCloseMessage;
 
 /**
  * Webview → Extension Messages
@@ -145,9 +148,28 @@ export interface TerminateRuntimeRequestMessage {
 /** WebSocket message to proxy */
 export interface WebSocketProxyMessage {
   type: "websocket-message";
+  id: string;
   body: {
-    message: any;
-    clientId: string;
+    data: unknown;
+  };
+}
+
+/** WebSocket open message */
+export interface WebSocketOpenMessage {
+  type: "websocket-open";
+  id: string;
+  body: {
+    origin: string;
+    protocol?: string;
+  };
+}
+
+/** WebSocket close message */
+export interface WebSocketCloseMessage {
+  type: "websocket-close";
+  id: string;
+  body: {
+    origin: string;
   };
 }
 
@@ -170,6 +192,8 @@ export type WebviewToExtensionMessage =
   | SelectRuntimeRequestMessage
   | SelectKernelRequestMessage
   | TerminateRuntimeRequestMessage
+  | WebSocketOpenMessage
+  | WebSocketCloseMessage
   | WebSocketProxyMessage
   | WebviewErrorMessage;
 
@@ -195,6 +219,9 @@ export function isExtensionToWebviewMessage(
     "set-runtime",
     "getFileData",
     "saved",
+    "websocket-message",
+    "websocket-open",
+    "websocket-close",
   ]);
   return extensionTypes.has(message.type);
 }
@@ -212,6 +239,8 @@ export function isWebviewToExtensionMessage(
     "select-runtime",
     "select-kernel",
     "terminate-runtime",
+    "websocket-open",
+    "websocket-close",
     "websocket-message",
     "error",
   ]);
@@ -305,12 +334,10 @@ export const createMessage = {
     body: { runtimeId },
   }),
 
-  websocketMessage: (
-    message: any,
-    clientId: string,
-  ): WebSocketProxyMessage => ({
+  websocketMessage: (id: string, data: unknown): WebSocketProxyMessage => ({
     type: "websocket-message",
-    body: { message, clientId },
+    id,
+    body: { data },
   }),
 
   error: (message: string, stack?: string): WebviewErrorMessage => ({

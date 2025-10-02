@@ -40,7 +40,7 @@ async function fetch(
     (agg, pair) => ({ ...agg, [pair[0]]: pair[1] }),
     {},
   );
-  const reply = await MessageHandler.instance.postRequest({
+  const reply = await MessageHandler.instance.request({
     type: "http-request",
     body: {
       method: r.method,
@@ -50,7 +50,13 @@ async function fetch(
     },
   });
   {
-    const { headers, body, status, statusText } = reply.body ?? {};
+    const replyData = reply as {
+      headers?: HeadersInit;
+      body?: BodyInit;
+      status?: number;
+      statusText?: string;
+    };
+    const { headers, body, status, statusText } = replyData ?? {};
     return new Response(body, { headers, status, statusText });
   }
 }
@@ -79,9 +85,10 @@ export function createServiceManager(
       init: {
         cache: "no-store",
         credentials: "same-origin",
-      } as any,
+      } satisfies RequestInit,
       token, // This is the runtime-specific token, not the JWT auth token
-      WebSocket: WebSocket as any,
+      // @ts-ignore - Type mismatch between browser WebSocket and library expectations
+      WebSocket: WebSocket,
       wsUrl: baseUrl.replace(/^http/, "ws"),
     },
   });
@@ -108,7 +115,7 @@ interface IEventConfiguration {
   /** Event type string */
   type: string;
   /** Target element for the event */
-  target?: any;
+  target?: EventTarget;
 }
 
 /**
@@ -133,9 +140,18 @@ function createEvent(config: IEventConfiguration) {
   const { type, target } = config;
   const eventObject = new Event(type);
   if (target) {
-    (eventObject as any).target = target;
-    (eventObject as any).srcElement = target;
-    (eventObject as any).currentTarget = target;
+    Object.defineProperty(eventObject, "target", {
+      writable: false,
+      value: target,
+    });
+    Object.defineProperty(eventObject, "srcElement", {
+      writable: false,
+      value: target,
+    });
+    Object.defineProperty(eventObject, "currentTarget", {
+      writable: false,
+      value: target,
+    });
   }
   return eventObject;
 }
@@ -168,7 +184,7 @@ function lengthInUtf8Bytes(str: string): number {
   return str.length + (m ? m.length : 0);
 }
 
-function normalizeSendData(data) {
+function normalizeSendData(data: unknown) {
   // FIXME this does not work -> JupyterLab fails to serialize the data
   // when the protocol is v1.kernel.websocket.jupyter.org
   if (
@@ -194,10 +210,13 @@ function protocolVerification(protocols?: string | string[]): string[] {
   }
   const uniq = protocols
     .map((p) => ({ count: 1, protocol: p }))
-    .reduce((a, b) => {
-      a[b.protocol] = (a[b.protocol] || 0) + b.count;
-      return a;
-    }, {});
+    .reduce(
+      (a, b) => {
+        a[b.protocol] = (a[b.protocol] || 0) + b.count;
+        return a;
+      },
+      {} as Record<string, number>,
+    );
   const duplicates = Object.keys(uniq).filter((a) => uniq[a] > 1);
   if (duplicates.length > 0) {
     throw new SyntaxError(
@@ -246,7 +265,8 @@ function urlVerification(url: string | URL) {
  */
 class EventTarget {
   /** Map of event type to listener functions */
-  protected listeners: Map<string, Set<(...args: any[]) => void>> = new Map();
+  protected listeners: Map<string, Set<(...args: unknown[]) => void>> =
+    new Map();
 
   /*
    * Ties a listener function to an event type which can later be invoked via the
@@ -258,7 +278,7 @@ class EventTarget {
    */
   addEventListener(
     type: string,
-    listener: (...args: any[]) => void /* , useCapture */,
+    listener: (...args: unknown[]) => void /* , useCapture */,
   ) {
     if (typeof listener === "function") {
       if (!this.listeners.has(type)) {
@@ -278,7 +298,7 @@ class EventTarget {
    */
   removeEventListener(
     type: string,
-    listener: (...args: any[]) => void /* , useCapture */,
+    listener: (...args: unknown[]) => void /* , useCapture */,
   ) {
     this.listeners.get(type)?.delete(listener);
   }
@@ -289,7 +309,7 @@ class EventTarget {
    *
    * @param {object} event - event object which will be passed to all listeners of the event.type property
    */
-  dispatchEvent(event: Event, ...customArguments) {
+  dispatchEvent(event: Event, ...customArguments: unknown[]) {
     const eventName = event.type;
     const listeners = this.listeners.get(eventName);
     if (!listeners) {
@@ -335,8 +355,8 @@ class WebSocket extends EventTarget {
     this.protocol = validProtocols[0] || "";
     this.binaryType = "blob";
     this._readyState = WebSocket.CONNECTING;
-    this._disposable = MessageHandler.instance.registerCallback(
-      this._onExtensionMessage.bind(this),
+    this._disposable = MessageHandler.instance.on(
+      this._onExtensionMessage.bind(this) as (message: unknown) => void,
     );
     this._open();
   }
@@ -360,9 +380,9 @@ class WebSocket extends EventTarget {
   /** URL of the WebSocket endpoint */
   readonly url: string;
   /** Amount of buffered data waiting to be sent */
-  readonly bufferedAmount: number;
+  readonly bufferedAmount: number = 0;
   /** Extensions in use */
-  readonly extensions: string;
+  readonly extensions: string = "";
   /** Subprotocol in use */
   readonly protocol: string;
   /** Binary data type for received messages */
@@ -372,38 +392,46 @@ class WebSocket extends EventTarget {
     return this._readyState;
   }
 
-  get onopen() {
-    return this.listeners.get("open") as any;
+  get onopen(): ((this: WebSocket, ev: Event) => unknown) | null {
+    return (this.listeners.get("open") ?? null) as unknown as
+      | ((this: WebSocket, ev: Event) => unknown)
+      | null;
   }
 
-  get onmessage() {
-    return this.listeners.get("message") as any;
+  get onmessage(): ((this: WebSocket, ev: MessageEvent) => unknown) | null {
+    return (this.listeners.get("message") ?? null) as unknown as
+      | ((this: WebSocket, ev: MessageEvent) => unknown)
+      | null;
   }
 
-  get onclose() {
-    return this.listeners.get("close") as any;
+  get onclose(): ((this: WebSocket, ev: CloseEvent) => unknown) | null {
+    return (this.listeners.get("close") ?? null) as unknown as
+      | ((this: WebSocket, ev: CloseEvent) => unknown)
+      | null;
   }
 
-  get onerror() {
-    return this.listeners.get("error") as any;
+  get onerror(): ((this: WebSocket, ev: Event) => unknown) | null {
+    return (this.listeners.get("error") ?? null) as unknown as
+      | ((this: WebSocket, ev: Event) => unknown)
+      | null;
   }
 
-  set onopen(listener: (...args: any[]) => void) {
+  set onopen(listener: (...args: unknown[]) => void) {
     this.listeners.delete("open");
     this.addEventListener("open", listener);
   }
 
-  set onmessage(listener: (...args: any[]) => void) {
+  set onmessage(listener: (...args: unknown[]) => void) {
     this.listeners.delete("message");
     this.addEventListener("message", listener);
   }
 
-  set onclose(listener: (...args: any[]) => void) {
+  set onclose(listener: (...args: unknown[]) => void) {
     this.listeners.delete("close");
     this.addEventListener("close", listener);
   }
 
-  set onerror(listener: (...args: any[]) => void) {
+  set onerror(listener: (...args: unknown[]) => void) {
     this.listeners.delete("error");
     this.addEventListener("error", listener);
   }
@@ -446,7 +474,7 @@ class WebSocket extends EventTarget {
       reason,
     });
     setTimeout(() => {
-      MessageHandler.instance.postMessage({
+      MessageHandler.instance.send({
         type: "websocket-close",
         id: this.clientId,
         body: {
@@ -465,7 +493,7 @@ class WebSocket extends EventTarget {
     });
   }
 
-  send(data) {
+  send(data: unknown) {
     if (
       this.readyState === WebSocket.CLOSING ||
       this.readyState === WebSocket.CLOSED
@@ -474,7 +502,7 @@ class WebSocket extends EventTarget {
     }
 
     // TODO: handle bufferedAmount
-    MessageHandler.instance.postMessage({
+    MessageHandler.instance.send({
       type: "websocket-message",
       id: this.clientId,
       body: {
@@ -485,7 +513,14 @@ class WebSocket extends EventTarget {
   }
 
   private _onExtensionMessage(message: ExtensionMessage): boolean {
-    const { type, body, id } = message;
+    const { type } = message;
+
+    // Only process WebSocket messages (messages with id field)
+    if (!("id" in message)) {
+      return false;
+    }
+
+    const { id } = message;
     if (id === this.clientId) {
       switch (type) {
         case "websocket-message":
@@ -494,8 +529,14 @@ class WebSocket extends EventTarget {
           // A part of the fix probably lies in the need to convert the binaryType
           // to 'arraybuffer' for kernel websocket (in the extension side!!):
           // https://github.com/jupyterlab/jupyterlab/blob/85c82eba1caa7e28a0d818c0840e13756c1b1256/packages/services/src/kernel/default.ts#L1468
-          if (body.data.type === "Buffer" && body.data.data) {
-            body.data = new ArrayBuffer(body.data.data);
+          const { body } = message;
+          const bodyData = body as {
+            data?: { type?: string; data?: number[] };
+          };
+          if (bodyData.data?.type === "Buffer" && bodyData.data?.data) {
+            (bodyData.data as unknown) = new ArrayBuffer(
+              bodyData.data.data.length,
+            );
           }
           this.dispatchEvent(new MessageEvent("message", body));
           break;
@@ -513,7 +554,7 @@ class WebSocket extends EventTarget {
   }
 
   private _open(): void {
-    MessageHandler.instance.postMessage({
+    MessageHandler.instance.send({
       type: "websocket-open",
       id: this.clientId,
       body: {

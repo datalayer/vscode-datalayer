@@ -11,7 +11,7 @@
  * allowing the notebook UI to function in read-only or demonstration modes.
  */
 
-import type { ServiceManager } from "@jupyterlab/services";
+import type { ServiceManager, ServerConnection } from "@jupyterlab/services";
 
 /**
  * Creates a mock service manager that provides the JupyterLab service interfaces
@@ -259,18 +259,21 @@ export function createMockServiceManager(): ServiceManager.IManager {
     },
 
     // Server settings
-    serverSettings: {
-      baseUrl: "",
-      appUrl: "",
-      wsUrl: "",
-      token: "",
-      appendToken: false,
-      init: {},
-      fetch: globalThis.fetch.bind(globalThis),
-      Headers: Headers,
-      Request: Request,
-      WebSocket: WebSocket,
-    } as any,
+    serverSettings: (() => {
+      const settings: Partial<ServerConnection.ISettings> = {
+        baseUrl: "",
+        appUrl: "",
+        wsUrl: "",
+        token: "",
+        appendToken: false,
+        init: {} satisfies RequestInit,
+        fetch: globalThis.fetch.bind(globalThis),
+        Headers: Headers,
+        Request: Request,
+        WebSocket: WebSocket,
+      };
+      return settings;
+    })(),
   } as unknown as ServiceManager.IManager;
 
   return mockServiceManager;

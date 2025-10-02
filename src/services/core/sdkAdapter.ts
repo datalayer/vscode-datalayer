@@ -20,7 +20,7 @@ import { DatalayerClientOperationTracker } from "../logging/datalayerClientLogge
 /**
  * Platform storage interface compatible with the SDK.
  */
-interface PlatformStorage {
+export interface PlatformStorage {
   get(key: string): Promise<string | null>;
   set(key: string, value: string): Promise<void>;
   remove(key: string): Promise<void>;
@@ -179,7 +179,7 @@ export function createVSCodeSDK(config: VSCodeSDKConfig): DatalayerClient {
 
     // User-provided overrides
     ...sdkConfig,
-  } as any);
+  } as DatalayerClientConfig);
 
   if (ServiceLoggers.isInitialized()) {
     ServiceLoggers.datalayerClient.info(

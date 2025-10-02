@@ -16,6 +16,26 @@ import { createServiceManager } from "./serviceManager";
 import { createMockServiceManager } from "./mockServiceManager";
 
 /**
+ * Type guard to check if service manager has a dispose method
+ */
+function hasDispose(
+  sm: ServiceManager.IManager,
+): sm is ServiceManager.IManager & { dispose: () => void } {
+  return typeof (sm as { dispose?: () => void }).dispose === "function";
+}
+
+/**
+ * Type guard to check if service manager is a mock
+ */
+function isMockServiceManager(
+  sm: ServiceManager.IManager,
+): sm is ServiceManager.IManager & { __isMockServiceManager: boolean } {
+  return (
+    (sm as { __isMockServiceManager?: boolean }).__isMockServiceManager === true
+  );
+}
+
+/**
  * Mutable service manager wrapper that maintains a stable reference
  * while allowing the underlying service manager to be swapped.
  */
@@ -46,16 +66,14 @@ export class MutableServiceManager {
     // Updating connection
 
     // Dispose the old service manager if it has a dispose method
-    if (
-      this._serviceManager &&
-      typeof (this._serviceManager as any).dispose === "function"
-    ) {
+    if (this._serviceManager && hasDispose(this._serviceManager)) {
       // Disposing old service manager
+      const oldSm = this._serviceManager;
       try {
         // Add a small delay to allow any pending operations to complete
         setTimeout(() => {
           try {
-            (this._serviceManager as any).dispose();
+            oldSm.dispose();
           } catch (error) {
             // Error during delayed disposal
           }
@@ -79,23 +97,20 @@ export class MutableServiceManager {
     // Resetting to mock service manager
 
     // Check if we're already using mock - if so, no need to change
-    const currentIsMock = (this._serviceManager as any).__isMockServiceManager;
-    if (currentIsMock) {
+    if (isMockServiceManager(this._serviceManager)) {
       // Already using mock service manager
       return;
     }
 
     // Dispose the old service manager if it has a dispose method and it's not mock
-    if (
-      this._serviceManager &&
-      typeof (this._serviceManager as any).dispose === "function"
-    ) {
+    if (this._serviceManager && hasDispose(this._serviceManager)) {
       // Disposing old service manager
+      const oldSm = this._serviceManager;
       try {
         // Add a small delay to allow any pending operations to complete
         setTimeout(() => {
           try {
-            (this._serviceManager as any).dispose();
+            oldSm.dispose();
           } catch (error) {
             // Error during delayed disposal
           }
@@ -136,12 +151,18 @@ export class MutableServiceManager {
   createProxy(): ServiceManager.IManager {
     return new Proxy({} as ServiceManager.IManager, {
       get: (_target, prop) => {
-        const current = this._serviceManager;
-        return (current as any)[prop];
+        const current = this._serviceManager as unknown as Record<
+          PropertyKey,
+          unknown
+        >;
+        return current[prop];
       },
       set: (_target, prop, value) => {
-        const current = this._serviceManager;
-        (current as any)[prop] = value;
+        const current = this._serviceManager as unknown as Record<
+          PropertyKey,
+          unknown
+        >;
+        current[prop] = value;
         return true;
       },
       has: (_target, prop) => {

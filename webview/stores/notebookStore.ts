@@ -26,7 +26,7 @@ export interface RuntimeWithCredits extends RuntimeJSON {
  */
 export interface NotebookState {
   // Document state
-  nbformat: any;
+  nbformat: unknown;
   isDatalayerNotebook: boolean;
   documentId?: string;
   serverUrl?: string;
@@ -41,7 +41,7 @@ export interface NotebookState {
   theme: "light" | "dark";
 
   // Actions
-  setNbformat: (nbformat: any) => void;
+  setNbformat: (nbformat: unknown) => void;
   setIsDatalayerNotebook: (isDatalayer: boolean) => void;
   setDocumentId: (id: string) => void;
   setServerUrl: (url: string) => void;

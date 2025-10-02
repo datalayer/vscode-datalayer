@@ -71,7 +71,7 @@ export class LexicalDocumentProvider
     context.subscriptions.push(
       vscode.commands.registerCommand(
         "datalayer.internal.runtimeSelected",
-        (runtime: any) => {
+        (runtime: unknown) => {
           provider.broadcastRuntimeSelected(runtime);
         },
       ),
@@ -379,7 +379,7 @@ export class LexicalDocumentProvider
   }
 
   private _requestId = 1;
-  private readonly _callbacks = new Map<number, (response: any) => void>();
+  private readonly _callbacks = new Map<number, (response: unknown) => void>();
 
   /**
    * Posts a message to webview and waits for response.
@@ -392,11 +392,11 @@ export class LexicalDocumentProvider
   private postMessageWithResponse<R = unknown>(
     panel: vscode.WebviewPanel,
     type: string,
-    body: any,
+    body: unknown,
   ): Promise<R> {
     const requestId = this._requestId++;
     const p = new Promise<R>((resolve) =>
-      this._callbacks.set(requestId, resolve),
+      this._callbacks.set(requestId, resolve as (response: unknown) => void),
     );
     panel.webview.postMessage({ type, requestId, body });
     return p;
@@ -412,7 +412,7 @@ export class LexicalDocumentProvider
   private postMessage(
     panel: vscode.WebviewPanel,
     type: string,
-    body: any,
+    body: unknown,
   ): void {
     panel.webview.postMessage({ type, body });
   }
@@ -423,14 +423,19 @@ export class LexicalDocumentProvider
    * @param document - Associated document
    * @param message - Received message
    */
-  private async onMessage(document: LexicalDocument, message: any) {
+  private async onMessage(document: LexicalDocument, message: unknown) {
     // Check if this document is from Datalayer spaces
     const isFromDatalayer = document.uri.scheme === "datalayer";
+    const msg = message as {
+      type?: string;
+      requestId?: number;
+      body?: unknown;
+    };
 
-    switch (message.type) {
+    switch (msg.type) {
       case "response": {
-        const callback = this._callbacks.get(message.requestId);
-        callback?.(message.body);
+        const callback = this._callbacks.get(msg.requestId!);
+        callback?.(msg.body);
         return;
       }
       case "contentChanged": {
@@ -457,8 +462,15 @@ export class LexicalDocumentProvider
         return;
       }
       case "terminate-runtime": {
-        const runtime = message.body?.runtime;
-        if (!runtime) {
+        const messageBody = msg.body as { runtime?: unknown };
+        const runtimeObj = messageBody?.runtime as {
+          givenName?: string;
+          environmentTitle?: string;
+          environmentName?: string;
+          uid?: string;
+          podName?: string;
+        };
+        if (!runtimeObj) {
           return;
         }
 
@@ -470,10 +482,11 @@ export class LexicalDocumentProvider
 
         // Show confirmation dialog
         const runtimeName =
-          runtime.givenName ||
-          runtime.environmentTitle ||
-          runtime.environmentName ||
-          runtime.uid;
+          runtimeObj.givenName ||
+          runtimeObj.environmentTitle ||
+          runtimeObj.environmentName ||
+          runtimeObj.uid ||
+          "Unknown";
         const confirmed = await showTwoStepConfirmation(
           CommonConfirmations.terminateRuntime(runtimeName),
         );
@@ -484,7 +497,7 @@ export class LexicalDocumentProvider
 
             // Delete the runtime via SDK - MUST use pod_name, not uid!
             // If podName is missing, construct it from uid (format: runtime-{uid})
-            const podName = runtime.podName ?? `runtime-${runtime.uid}`;
+            const podName = runtimeObj.podName ?? `runtime-${runtimeObj.uid}`;
 
             await sdk.deleteRuntime(podName);
 
@@ -519,7 +532,7 @@ export class LexicalDocumentProvider
    *
    * @param runtime - Selected runtime to broadcast
    */
-  public broadcastRuntimeSelected(runtime: any): void {
+  public broadcastRuntimeSelected(runtime: unknown): void {
     for (const entry of this.webviews.values()) {
       entry.webviewPanel.webview.postMessage({
         type: "runtime-selected",

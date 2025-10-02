@@ -14,9 +14,12 @@ import { EnvironmentCache } from "../../services/cache/environmentCache";
 import { SDKAuthProvider } from "../../services/core/authProvider";
 import { LoggerManager } from "../../services/logging/loggerManager";
 import { ServiceLoggers } from "../../services/logging/loggers";
+import type { DatalayerClient } from "../../../../core/lib/client";
+import type { User } from "../../../../core/lib/client/models/User";
 import {
   createMockSDK,
   createMockExtensionContext,
+  createMockLogger,
 } from "../utils/mockFactory";
 import { sleep as _sleep } from "../utils/testHelpers";
 
@@ -24,10 +27,10 @@ suite("EnvironmentCache Tests", () => {
   let cache: EnvironmentCache;
   let mockSDK: ReturnType<typeof createMockSDK>;
   let authProvider: SDKAuthProvider;
-  let mockLogger: any;
 
   setup(() => {
     // Reset singleton
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (EnvironmentCache as any)._instance = undefined;
     cache = EnvironmentCache.getInstance();
 
@@ -40,25 +43,21 @@ suite("EnvironmentCache Tests", () => {
     ServiceLoggers.initialize(loggerManager);
 
     // Create mock logger for dependency injection
-    mockLogger = {
-      trace: () => {},
-      debug: () => {},
-      info: () => {},
-      warn: () => {},
-      error: () => {},
-      timeAsync: async <T>(_op: string, fn: () => Promise<T>) => fn(),
-    };
+    const mockLogger = createMockLogger();
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (SDKAuthProvider as any).instance = undefined;
     authProvider = new SDKAuthProvider(
-      mockSDK as any,
+      mockSDK as unknown as DatalayerClient,
       context,
-      mockLogger as any,
+      mockLogger,
     );
   });
 
   teardown(() => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (EnvironmentCache as any)._instance = undefined;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (SDKAuthProvider as any).instance = undefined;
   });
 
@@ -81,7 +80,7 @@ suite("EnvironmentCache Tests", () => {
       };
 
       const environments = await cache.getEnvironments(
-        mockSDK as any,
+        mockSDK as unknown as DatalayerClient,
         authProvider,
       );
 
@@ -94,7 +93,7 @@ suite("EnvironmentCache Tests", () => {
       // Mock authenticated
       authProvider["_authState"] = {
         isAuthenticated: true,
-        user: { uid: "test-user" } as any,
+        user: { uid: "test-user" } as unknown as User,
         error: null,
       };
 
@@ -103,10 +102,10 @@ suite("EnvironmentCache Tests", () => {
         { name: "ai-env", displayName: "AI" },
       ];
 
-      mockSDK.listEnvironments.mockResolvedValue(mockEnvironments as any);
+      mockSDK.listEnvironments.mockResolvedValue(mockEnvironments as unknown);
 
       const environments = await cache.getEnvironments(
-        mockSDK as any,
+        mockSDK as unknown as DatalayerClient,
         authProvider,
       );
 
@@ -118,23 +117,26 @@ suite("EnvironmentCache Tests", () => {
     test("returns cached environments on second call", async () => {
       authProvider["_authState"] = {
         isAuthenticated: true,
-        user: { uid: "test-user" } as any,
+        user: { uid: "test-user" } as unknown as User,
         error: null,
       };
 
       const mockEnvironments = [{ name: "python-env", displayName: "Python" }];
 
-      mockSDK.listEnvironments.mockResolvedValue(mockEnvironments as any);
+      mockSDK.listEnvironments.mockResolvedValue(mockEnvironments as unknown);
 
       // First call - fetches
-      await cache.getEnvironments(mockSDK as any, authProvider);
+      await cache.getEnvironments(
+        mockSDK as unknown as DatalayerClient,
+        authProvider,
+      );
 
       // Reset call count
       mockSDK.listEnvironments.reset();
 
       // Second call - should use cache
       const environments = await cache.getEnvironments(
-        mockSDK as any,
+        mockSDK as unknown as DatalayerClient,
         authProvider,
       );
 
@@ -146,16 +148,19 @@ suite("EnvironmentCache Tests", () => {
     test("forceRefresh bypasses cache", async () => {
       authProvider["_authState"] = {
         isAuthenticated: true,
-        user: { uid: "test-user" } as any,
+        user: { uid: "test-user" } as unknown as User,
         error: null,
       };
 
       const mockEnvironments = [{ name: "python-env", displayName: "Python" }];
 
-      mockSDK.listEnvironments.mockResolvedValue(mockEnvironments as any);
+      mockSDK.listEnvironments.mockResolvedValue(mockEnvironments as unknown);
 
       // First call
-      await cache.getEnvironments(mockSDK as any, authProvider);
+      await cache.getEnvironments(
+        mockSDK as unknown as DatalayerClient,
+        authProvider,
+      );
 
       // Reset and change mock data
       mockSDK.listEnvironments.reset();
@@ -163,11 +168,13 @@ suite("EnvironmentCache Tests", () => {
         { name: "python-env", displayName: "Python" },
         { name: "ai-env", displayName: "AI" },
       ];
-      mockSDK.listEnvironments.mockResolvedValue(newMockEnvironments as any);
+      mockSDK.listEnvironments.mockResolvedValue(
+        newMockEnvironments as unknown,
+      );
 
       // Force refresh
       const environments = await cache.getEnvironments(
-        mockSDK as any,
+        mockSDK as unknown as DatalayerClient,
         authProvider,
         true, // forceRefresh
       );
@@ -181,14 +188,14 @@ suite("EnvironmentCache Tests", () => {
     test("handles SDK errors gracefully", async () => {
       authProvider["_authState"] = {
         isAuthenticated: true,
-        user: { uid: "test-user" } as any,
+        user: { uid: "test-user" } as unknown as User,
         error: null,
       };
 
       mockSDK.listEnvironments.mockRejectedValue(new Error("Network error"));
 
       const environments = await cache.getEnvironments(
-        mockSDK as any,
+        mockSDK as unknown as DatalayerClient,
         authProvider,
       );
 

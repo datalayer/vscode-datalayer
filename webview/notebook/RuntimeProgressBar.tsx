@@ -15,7 +15,7 @@ import React, { useState, useEffect, useMemo, useContext } from "react";
 import { MessageHandlerContext } from "../services/messageHandler";
 import type { RuntimeJSON } from "../../../core/lib/client/models/Runtime";
 
-interface RuntimeProgressBarProps {
+export interface RuntimeProgressBarProps {
   runtime: RuntimeJSON | undefined;
   isDatalayerRuntime: boolean;
 }
@@ -75,7 +75,7 @@ export function RuntimeProgressBar({
   useEffect(() => {
     if (!runtime || !isDatalayerRuntime || initialSeconds <= 0) {
       setPercentage(100); // When no time left, bar is full
-      return;
+      return undefined;
     }
 
     // Calculate initial percentage (how much time has been used)
@@ -105,7 +105,7 @@ export function RuntimeProgressBar({
             type: "runtime-expired",
             body: { runtime: runtime }, // Make sure runtime is in body like other messages
           };
-          messageHandler.postMessage(expiredMessage);
+          messageHandler.send(expiredMessage);
         }
         clearInterval(interval);
       }

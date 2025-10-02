@@ -53,7 +53,7 @@ export class PerformanceLogger {
   static async trackOperation<T>(
     operationName: string,
     operation: () => Promise<T>,
-    context?: Record<string, any>,
+    context?: Record<string, unknown>,
   ): Promise<T> {
     const startTime = performance.now();
     const startMemory = PerformanceLogger.getMemorySnapshot();
@@ -124,7 +124,7 @@ export class PerformanceLogger {
   static trackSync<T>(
     operationName: string,
     operation: () => T,
-    context?: Record<string, any>,
+    context?: Record<string, unknown>,
   ): T {
     const startTime = performance.now();
     const startMemory = PerformanceLogger.getMemorySnapshot();
@@ -192,7 +192,7 @@ export class PerformanceLogger {
    */
   static createTimer(
     operationName: string,
-    context?: Record<string, any>,
+    context?: Record<string, unknown>,
   ): PerformanceTimer {
     return new PerformanceTimer(operationName, this.logger, context);
   }
@@ -271,8 +271,14 @@ export class PerformanceTimer {
 
   constructor(
     private operationName: string,
-    private logger: any,
-    private context?: Record<string, any>,
+    private logger: {
+      trace: (msg: string, ctx?: Record<string, unknown>) => void;
+      debug: (msg: string, ctx?: Record<string, unknown>) => void;
+      info: (msg: string, ctx?: Record<string, unknown>) => void;
+      warn: (msg: string, ctx?: Record<string, unknown>) => void;
+      error: (msg: string, err?: Error, ctx?: Record<string, unknown>) => void;
+    },
+    private context?: Record<string, unknown>,
   ) {}
 
   /**
@@ -330,10 +336,7 @@ export class PerformanceTimer {
       time: `${(cp.time - this.startTime!).toFixed(2)}ms`,
     }));
 
-    const logLevel = status === "success" ? "info" : "error";
-    const logMethod = this.logger[logLevel].bind(this.logger);
-
-    logMethod(`Performance Timer: ${this.operationName} ${status}`, {
+    const logContext = {
       operation: this.operationName,
       status,
       totalDuration: `${totalDuration.toFixed(2)}ms`,
@@ -341,7 +344,20 @@ export class PerformanceTimer {
       memoryDelta: this.calculateMemoryDelta(this.startMemory, endMemory),
       performanceCategory: this.categorizePerformance(totalDuration),
       ...this.context,
-    });
+    };
+
+    if (status === "success") {
+      this.logger.info(
+        `Performance Timer: ${this.operationName} ${status}`,
+        logContext,
+      );
+    } else {
+      this.logger.error(
+        `Performance Timer: ${this.operationName} ${status}`,
+        undefined,
+        logContext,
+      );
+    }
 
     // Reset timer
     this.startTime = undefined;
@@ -398,14 +414,14 @@ export class PerformanceTimer {
 }
 
 // Type definitions
-interface MemorySnapshot {
+export interface MemorySnapshot {
   heapUsed: number;
   heapTotal: number;
   external: number;
   rss: number;
 }
 
-interface MemoryDelta {
+export interface MemoryDelta {
   heapUsed: string;
   heapTotal: string;
   external: string;

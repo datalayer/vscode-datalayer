@@ -12,7 +12,10 @@
  */
 
 import * as vscode from "vscode";
-import type { Runtime } from "../../../../core/lib/client/models/Runtime";
+import type {
+  Runtime,
+  RuntimeJSON,
+} from "../../../../core/lib/client/models/Runtime";
 import { ExtensionMessage } from "../../types/vscode/messages";
 import { getServiceContainer } from "../../extension";
 import { setRuntime } from "../../ui/dialogs/runtimeSelector";
@@ -45,7 +48,7 @@ export class NotebookRuntimeService {
    * Shows QuickPick UI with existing runtimes and options to create new ones.
    *
    * @param webview - Target webview panel for runtime communication
-   * @param message - Extension message triggering the selection
+   * @param _message - Extension message triggering the selection
    */
   async handleRuntimeSelection(
     webview: vscode.WebviewPanel,
@@ -105,13 +108,18 @@ export class NotebookRuntimeService {
       if (runtimes && runtimes.length > 0) {
         runtimes.forEach((runtime) => {
           const statusIcon = "$(vm-active)";
+          const runtimeJSON = runtime.toJSON();
           // credits_used is not a formal API field, handle defensively
-          const creditsUsed = (runtime as any).credits_used ?? 0;
-          const creditsLimit = (runtime as any).creditsLimit ?? 10;
+          const runtimeWithCredits = runtimeJSON as RuntimeJSON & {
+            credits_used?: number;
+            creditsLimit?: number;
+          };
+          const creditsUsed = runtimeWithCredits.credits_used ?? 0;
+          const creditsLimit = runtimeWithCredits.creditsLimit ?? 10;
           const creditsInfo =
             creditsLimit > 0 ? ` • ${creditsUsed}/${creditsLimit} credits` : "";
 
-          const item: any = {
+          const item: vscode.QuickPickItem & { runtime: Runtime } = {
             label: `${statusIcon} ${
               runtime.givenName ?? runtime.podName ?? "Runtime"
             }`,
@@ -119,8 +127,8 @@ export class NotebookRuntimeService {
             detail: `Environment: ${
               runtime.environmentName ?? "python-cpu-env"
             }`,
+            runtime: runtime,
           };
-          item.runtime = runtime;
           items.push(item);
         });
 
@@ -132,20 +140,20 @@ export class NotebookRuntimeService {
       }
 
       // Add create options
-      const cpuItem: any = {
+      const cpuItem: vscode.QuickPickItem & { action: string } = {
         label: "$(add) Create CPU Runtime",
         description: "Python CPU Environment",
         detail: "Create a new runtime with CPU resources",
+        action: "create-cpu",
       };
-      cpuItem.action = "create-cpu";
       items.push(cpuItem);
 
-      const aiItem: any = {
+      const aiItem: vscode.QuickPickItem & { action: string } = {
         label: "$(add) Create AI Runtime",
         description: "Python AI Environment",
         detail: "Create a new runtime with GPU resources for AI/ML workloads",
+        action: "create-ai",
       };
-      aiItem.action = "create-ai";
       items.push(aiItem);
 
       // Show quick pick
@@ -162,15 +170,18 @@ export class NotebookRuntimeService {
       }
 
       // Handle selection
-      const selectedAny = selected as any;
-      if (selectedAny.runtime) {
+      const selectedWithData = selected as vscode.QuickPickItem & {
+        runtime?: Runtime;
+        action?: string;
+      };
+      if (selectedWithData.runtime) {
         // Use existing runtime
-        const runtime = selectedAny.runtime as Runtime;
+        const runtime = selectedWithData.runtime;
         this.sendRuntimeToWebview(webview, runtime);
-      } else if (selectedAny.action) {
+      } else if (selectedWithData.action) {
         // Create new runtime
         const environment =
-          selectedAny.action === "create-ai" ? "ai-env" : "python-cpu-env";
+          selectedWithData.action === "create-ai" ? "ai-env" : "python-cpu-env";
 
         await vscode.window.withProgress(
           {
@@ -189,14 +200,15 @@ export class NotebookRuntimeService {
             );
             const envCache = EnvironmentCache.getInstance();
             const environments = await envCache.getEnvironments(
-              sdk as any,
+              sdk,
               authService,
             );
 
             // Find the selected environment
-            const selectedEnv = environments.find(
-              (env: any) => env.name === environment,
-            );
+            const selectedEnv = environments.find((env: unknown) => {
+              const envObj = env as { name?: string };
+              return envObj.name === environment;
+            });
 
             if (!selectedEnv) {
               if (environments.length === 0 && !authService.isAuthenticated()) {
@@ -217,7 +229,7 @@ export class NotebookRuntimeService {
               environment,
               "notebook",
               `VSCode ${
-                selectedAny.action === "create-ai" ? "AI" : "CPU"
+                selectedWithData.action === "create-ai" ? "AI" : "CPU"
               } Runtime`,
               creditsLimit,
             );
@@ -345,7 +357,7 @@ export class NotebookRuntimeService {
   private postMessage(
     panel: vscode.WebviewPanel,
     type: string,
-    body: any,
+    body: unknown,
     id?: string,
   ): void {
     panel.webview.postMessage({ type, body, id });

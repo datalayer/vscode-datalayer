@@ -19,4 +19,15 @@ export default defineConfig({
     '--disable-extensions',
     '--disable-workspace-trust',
   ],
+  coverage: {
+    reporter: ['text-summary', 'html', 'lcov'],
+    output: './coverage',
+    includeAll: true,
+    include: ['out/src/**/*.js'],
+    exclude: [
+      'out/src/test/**',
+      'out/webview/**',
+      '**/node_modules/**',
+    ],
+  },
 });

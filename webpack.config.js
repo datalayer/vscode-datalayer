@@ -81,6 +81,14 @@ const webviewConfig = {
     path: path.resolve(__dirname, "dist"),
     filename: "webview.js",
   },
+  // Suppress warnings from external dependencies
+  ignoreWarnings: [
+    {
+      module: /node_modules\/@jupyterlite\/pyodide-kernel/,
+      message:
+        /Critical dependency: the request of a dependency is an expression/,
+    },
+  ],
   resolve: {
     extensions: [".ts", ".tsx", ".js", ".jsx", ".json", ".svg"],
     fallback: {
@@ -239,6 +247,14 @@ const lexicalWebviewConfig = {
   experiments: {
     asyncWebAssembly: true,
   },
+  // Suppress warnings from external dependencies (inherited from webviewConfig)
+  ignoreWarnings: [
+    {
+      module: /node_modules\/@jupyterlite\/pyodide-kernel/,
+      message:
+        /Critical dependency: the request of a dependency is an expression/,
+    },
+  ],
   module: {
     rules: [
       {

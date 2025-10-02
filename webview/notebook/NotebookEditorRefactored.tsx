@@ -11,13 +11,7 @@
  * @module notebook/NotebookEditorRefactored
  */
 
-import React, {
-  useCallback,
-  useContext,
-  useEffect,
-  useMemo,
-  useState,
-} from "react";
+import React, { useContext, useEffect, useMemo } from "react";
 import { createRoot } from "react-dom/client";
 import { Box } from "@primer/react";
 import {
@@ -31,7 +25,7 @@ import {
   MessageHandlerContext,
   type ExtensionMessage,
 } from "../services/messageHandler";
-import { loadFromBytes, saveToBytes } from "../utils";
+import { loadFromBytes } from "../utils";
 import { RuntimeProgressBar } from "./RuntimeProgressBar";
 import { NotebookToolbar } from "./NotebookToolbar";
 import { VSCodeTheme } from "../theme/VSCodeTheme";
@@ -105,7 +99,7 @@ function NotebookEditorCore(): JSX.Element {
 
   // Signal ready immediately when component mounts
   useEffect(() => {
-    messageHandler.postMessage({ type: "ready" });
+    messageHandler.send({ type: "ready" });
   }, [messageHandler]);
 
   // Handle messages from the extension
@@ -197,7 +191,7 @@ function NotebookEditorCore(): JSX.Element {
             const bytes = getNotebookData(store.nbformat);
             const arrayData = Array.from(bytes);
 
-            messageHandler.postMessage({
+            messageHandler.send({
               type: "response",
               requestId: message.requestId,
               body: arrayData,
@@ -215,7 +209,9 @@ function NotebookEditorCore(): JSX.Element {
       }
     };
 
-    const disposable = messageHandler.registerCallback(handleMessage);
+    const disposable = messageHandler.on(
+      handleMessage as (message: unknown) => void,
+    );
     return () => disposable.dispose();
   }, [messageHandler, store, selectRuntime, getNotebookData, markClean]);
 
@@ -238,6 +234,7 @@ function NotebookEditorCore(): JSX.Element {
         document.removeEventListener("keydown", handleKeyDown, true);
       };
     }
+    return undefined;
   }, [store.isDatalayerNotebook]);
 
   // Loading state
@@ -268,7 +265,7 @@ function NotebookEditorCore(): JSX.Element {
       {!store.isDatalayerNotebook && (
         <RuntimeProgressBar
           runtime={selectedRuntime}
-          isDatalayerRuntime={isDatalayerRuntime}
+          isDatalayerRuntime={isDatalayerRuntime ?? false}
         />
       )}
 
@@ -289,9 +286,11 @@ function NotebookEditorCore(): JSX.Element {
       >
         <Box className="dla-Box-Notebook" sx={notebookCellStyles}>
           <Notebook2
-            nbformat={store.nbformat}
+            // @ts-ignore - Type mismatch between different @jupyterlab versions
+            nbformat={store.nbformat || {}}
             id={store.documentId || store.notebookId}
-            serviceManager={serviceManager as any}
+            // @ts-ignore - Type mismatch between @jupyterlab/services versions
+            serviceManager={serviceManager}
             collaborationProvider={collaborationProvider}
             startDefaultKernel={!!selectedRuntime && !store.isDatalayerNotebook}
             height={notebookHeight}

@@ -35,3 +35,7 @@ docs-markdown/
 
 # TypeDoc config (can be regenerated)
 typedoc.json
+
+# Code coverage
+coverage/
+.nyc_output/

@@ -19,6 +19,7 @@ import { setupAuthStateManagement } from "./services/core/authManager";
 import { ServiceLoggers } from "./services/logging/loggers";
 import { PerformanceLogger } from "./services/logging/performanceLogger";
 import type { SDKAuthProvider } from "./services/core/authProvider";
+import { DocumentBridge } from "./services/notebook/documentBridge";
 
 // Global service container instance
 let services: ServiceContainer | undefined;
@@ -104,7 +105,7 @@ export async function activate(
       context,
       {
         authProvider: services.authProvider as SDKAuthProvider,
-        documentBridge: services.documentBridge as any, // Cast needed until DocumentBridge is fully migrated
+        documentBridge: services.documentBridge as DocumentBridge,
         spacesTreeProvider: ui.spacesTreeProvider,
         controllerManager: ui.controllerManager,
       },
@@ -175,7 +176,11 @@ export async function deactivate(): Promise<void> {
 
       // Clear any tracked operations
       if (
-        typeof (global as any).datalayerClientOperationTracker !== "undefined"
+        typeof (
+          global as typeof globalThis & {
+            datalayerClientOperationTracker?: unknown;
+          }
+        ).datalayerClientOperationTracker !== "undefined"
       ) {
         logger.debug("Clearing tracked operations");
       }

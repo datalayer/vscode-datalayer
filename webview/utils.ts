@@ -13,9 +13,9 @@
 /**
  * Loads a notebook from binary data.
  * @param {Uint8Array} raw - Raw binary data
- * @returns {any} Parsed notebook object
+ * @returns {unknown} Parsed notebook object
  */
-export function loadFromBytes(raw: Uint8Array): any {
+export function loadFromBytes(raw: Uint8Array): unknown {
   const rawContent = new TextDecoder().decode(raw);
   const parsed = JSON.parse(rawContent);
   // Inline html output to fix an issue seen in JupyterLab 4 (prior to 4.2)
@@ -33,10 +33,10 @@ export function loadFromBytes(raw: Uint8Array): any {
 
 /**
  * Saves a notebook to binary data.
- * @param {any} notebook - Notebook object
+ * @param {unknown} notebook - Notebook object
  * @returns {Uint8Array} Binary representation
  */
-export function saveToBytes(notebook: any): Uint8Array {
+export function saveToBytes(notebook: unknown): Uint8Array {
   const stringData = JSON.stringify(notebook, null, 2);
   return new TextEncoder().encode(stringData);
 }

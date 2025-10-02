@@ -74,7 +74,7 @@ interface CollaborationConfig {
  * @property {boolean} [showRuntimeSelector=false] - Whether to show runtime selector in toolbar
  * @hidden
  */
-interface LexicalEditorProps {
+export interface LexicalEditorProps {
   initialContent?: string;
   onSave?: (content: string) => void;
   onContentChange?: (content: string) => void;

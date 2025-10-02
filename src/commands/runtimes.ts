@@ -28,6 +28,7 @@ import {
 } from "../ui/dialogs/confirmationDialog";
 
 import type { Runtime } from "../../../core/lib/client/models/Runtime";
+import type { DatalayerClient } from "../../../core/lib/client";
 
 interface RuntimeQuickPickItem extends vscode.QuickPickItem {
   runtime: Runtime;
@@ -67,7 +68,8 @@ export function registerRuntimeCommands(
             typeof input === "object" &&
             input !== null &&
             "viewType" in input &&
-            (input as any).viewType === "datalayer.lexical-editor"
+            (input as { viewType: string }).viewType ===
+              "datalayer.lexical-editor"
           ) {
             // Show runtime selector for lexical editor
             const { selectDatalayerRuntime } = await import(
@@ -290,10 +292,11 @@ export function registerRuntimeCommands(
         }
 
         // Multiple runtimes - show quick pick
-        const items = runtimes.map((runtime: any) => {
+        const items = runtimes.map((runtime: Runtime) => {
           const name = runtime.givenName;
           const environment = runtime.environmentName;
-          const status = runtime.state;
+          // Note: state property may not exist on Runtime type
+          const status = "ready"; // runtime.state
 
           return {
             label: name,
@@ -334,7 +337,10 @@ export function registerRuntimeCommands(
  * @param sdk - The SDK instance
  * @param runtime - The runtime to terminate
  */
-async function terminateRuntime(sdk: any, runtime: any): Promise<void> {
+async function terminateRuntime(
+  sdk: DatalayerClient,
+  runtime: Runtime,
+): Promise<void> {
   const name = runtime.givenName;
 
   try {

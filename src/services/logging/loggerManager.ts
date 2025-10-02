@@ -193,35 +193,39 @@ export class Logger {
   /**
    * Log trace level message with optional context.
    */
-  trace(message: string, context?: Record<string, any>): void {
+  trace(message: string, context?: Record<string, unknown>): void {
     this.log(LogLevel.TRACE, message, context);
   }
 
   /**
    * Log debug level message with optional context.
    */
-  debug(message: string, context?: Record<string, any>): void {
+  debug(message: string, context?: Record<string, unknown>): void {
     this.log(LogLevel.DEBUG, message, context);
   }
 
   /**
    * Log info level message with optional context.
    */
-  info(message: string, context?: Record<string, any>): void {
+  info(message: string, context?: Record<string, unknown>): void {
     this.log(LogLevel.INFO, message, context);
   }
 
   /**
    * Log warning level message with optional context.
    */
-  warn(message: string, context?: Record<string, any>): void {
+  warn(message: string, context?: Record<string, unknown>): void {
     this.log(LogLevel.WARN, message, context);
   }
 
   /**
    * Log error level message with error object and optional context.
    */
-  error(message: string, error?: Error, context?: Record<string, any>): void {
+  error(
+    message: string,
+    error?: Error,
+    context?: Record<string, unknown>,
+  ): void {
     const fullContext = {
       ...context,
       ...(error && {
@@ -247,7 +251,7 @@ export class Logger {
   async timeAsync<T>(
     operation: string,
     fn: () => Promise<T>,
-    context?: Record<string, any>,
+    context?: Record<string, unknown>,
   ): Promise<T> {
     const startTime = Date.now();
     this.debug(`Starting: ${operation}`, context);
@@ -274,7 +278,7 @@ export class Logger {
   private log(
     level: LogLevel,
     message: string,
-    context?: Record<string, any>,
+    context?: Record<string, unknown>,
   ): void {
     if (level < this.config.level) {
       return;

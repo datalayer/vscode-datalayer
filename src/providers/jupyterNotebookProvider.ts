@@ -91,7 +91,7 @@ export class JupyterNotebookProvider
   private readonly webviews = new WebviewCollection();
 
   private _requestId = 1;
-  private readonly _callbacks = new Map<string, (response: any) => void>();
+  private readonly _callbacks = new Map<string, (response: unknown) => void>();
   private readonly _context: vscode.ExtensionContext;
 
   /**
@@ -394,11 +394,11 @@ export class JupyterNotebookProvider
   private postMessageWithResponse<R = unknown>(
     panel: vscode.WebviewPanel,
     type: string,
-    body: any,
+    body: unknown,
   ): Promise<R> {
     const requestId = (this._requestId++).toString();
     const p = new Promise<R>((resolve) =>
-      this._callbacks.set(requestId, resolve),
+      this._callbacks.set(requestId, resolve as (response: unknown) => void),
     );
     panel.webview.postMessage({ type, requestId, body });
     return p;
@@ -415,7 +415,7 @@ export class JupyterNotebookProvider
   private postMessage(
     panel: vscode.WebviewPanel,
     type: string,
-    body: any,
+    body: unknown,
     id?: string,
   ): void {
     panel.webview.postMessage({ type, body, id });
@@ -456,17 +456,25 @@ export class JupyterNotebookProvider
       }
 
       case "terminate-runtime": {
-        const runtime = message.body?.runtime;
-        if (!runtime) {
+        const messageBody = message.body as { runtime?: unknown };
+        const runtimeObj = messageBody?.runtime as {
+          givenName?: string;
+          environmentTitle?: string;
+          environmentName?: string;
+          uid?: string;
+          podName?: string;
+        };
+        if (!runtimeObj) {
           return;
         }
 
         // Show confirmation dialog
         const runtimeName =
-          runtime.givenName ||
-          runtime.environmentTitle ||
-          runtime.environmentName ||
-          runtime.uid;
+          runtimeObj.givenName ||
+          runtimeObj.environmentTitle ||
+          runtimeObj.environmentName ||
+          runtimeObj.uid ||
+          "Unknown";
         const confirmed = await showTwoStepConfirmation(
           CommonConfirmations.terminateRuntime(runtimeName),
         );
@@ -477,7 +485,7 @@ export class JupyterNotebookProvider
 
             // Delete the runtime via SDK - MUST use pod_name, not uid!
             // If podName is missing, construct it from uid (format: runtime-{uid})
-            const podName = runtime.podName ?? `runtime-${runtime.uid}`;
+            const podName = runtimeObj.podName ?? `runtime-${runtimeObj.uid}`;
 
             await sdk.deleteRuntime(podName);
 
@@ -537,13 +545,16 @@ export class JupyterNotebookProvider
         const isDatalayerNotebook = document.uri.scheme === "datalayer";
 
         if (!isDatalayerNotebook) {
+          const messageBody = message.body as {
+            content?: Uint8Array | number[];
+          };
           // Ensure content is a Uint8Array
           let content: Uint8Array;
-          if (message.body.content instanceof Uint8Array) {
-            content = message.body.content;
-          } else if (Array.isArray(message.body.content)) {
+          if (messageBody.content instanceof Uint8Array) {
+            content = messageBody.content;
+          } else if (Array.isArray(messageBody.content)) {
             // Convert array to Uint8Array if needed
-            content = new Uint8Array(message.body.content);
+            content = new Uint8Array(messageBody.content);
           } else {
             return;
           }
@@ -562,16 +573,21 @@ export class JupyterNotebookProvider
         return;
       }
       case "runtime-expired": {
-        const runtime = message.body?.runtime;
-        if (!runtime) {
+        const messageBody = message.body as { runtime?: unknown };
+        const runtimeObj = messageBody?.runtime as {
+          name?: string;
+          givenName?: string;
+          uid?: string;
+        };
+        if (!runtimeObj) {
           return;
         }
 
         const runtimeName =
-          runtime.name ||
-          runtime.givenName ||
-          runtime.givenName ||
-          runtime.uid ||
+          runtimeObj.name ||
+          runtimeObj.givenName ||
+          runtimeObj.givenName ||
+          runtimeObj.uid ||
           "Unknown";
 
         // Show notification that runtime expired

@@ -17,6 +17,9 @@ import { SpaceItem, ItemType } from "../models/spaceItem";
 import { SDKAuthProvider } from "../services/core/authProvider";
 import { getServiceContainer } from "../extension";
 import { ItemTypes } from "../../../core/lib/client/constants";
+import type { Space } from "../../../core/lib/client/models/Space";
+import type { Notebook } from "../../../core/lib/client/models/Notebook";
+import type { Lexical } from "../../../core/lib/client/models/Lexical";
 
 /**
  * Tree data provider for the Datalayer Spaces view.
@@ -39,8 +42,8 @@ export class SpacesTreeProvider implements vscode.TreeDataProvider<SpaceItem> {
   > = this._onDidChangeTreeData.event;
 
   private authService: SDKAuthProvider;
-  private spacesCache: Map<string, any[]> = new Map();
-  private itemsCache: Map<string, any[]> = new Map();
+  private spacesCache: Map<string, Space[]> = new Map();
+  private itemsCache: Map<string, (Notebook | Lexical)[]> = new Map();
 
   /**
    * Creates a new SpacesTreeProvider.
@@ -160,7 +163,7 @@ export class SpacesTreeProvider implements vscode.TreeDataProvider<SpaceItem> {
   private async getSpaces(): Promise<SpaceItem[]> {
     try {
       // Check cache first
-      let spaces: any[];
+      let spaces: Space[];
       if (this.spacesCache.has("user")) {
         spaces = this.spacesCache.get("user")!;
       } else {
@@ -226,9 +229,10 @@ export class SpacesTreeProvider implements vscode.TreeDataProvider<SpaceItem> {
    * @param space - The space object containing space metadata
    * @returns Array of SpaceItems representing documents in the space
    */
-  private async getSpaceItems(space: any): Promise<SpaceItem[]> {
+  private async getSpaceItems(space: unknown): Promise<SpaceItem[]> {
     try {
-      const spaceId = space.uid;
+      const spaceObj = space as Space;
+      const spaceId = spaceObj.uid;
 
       if (!spaceId) {
         return [
@@ -243,7 +247,7 @@ export class SpacesTreeProvider implements vscode.TreeDataProvider<SpaceItem> {
         ];
       }
 
-      let items: any[] = [];
+      let items: (Notebook | Lexical)[] = [];
 
       if (this.itemsCache.has(spaceId)) {
         items = this.itemsCache.get(spaceId)!;
@@ -252,11 +256,17 @@ export class SpacesTreeProvider implements vscode.TreeDataProvider<SpaceItem> {
 
         // Get the space to access its items
         const spaces = await sdk.getMySpaces();
-        const targetSpace = spaces.find((s: any) => s.uid === spaceId);
+        const targetSpace = spaces.find((s: Space) => s.uid === spaceId);
 
         if (targetSpace) {
           // Get items from the space - returns Notebook, Lexical, and Cell model instances
-          items = (await targetSpace.getItems()) ?? [];
+          const allItems = (await targetSpace.getItems()) ?? [];
+          // Filter to only notebooks and lexicals
+          items = allItems.filter(
+            (item): item is Notebook | Lexical =>
+              item.type === ItemTypes.NOTEBOOK ||
+              item.type === ItemTypes.LEXICAL,
+          );
         } else {
           items = [];
         }
@@ -277,37 +287,37 @@ export class SpacesTreeProvider implements vscode.TreeDataProvider<SpaceItem> {
         ];
       }
 
-      const spaceName = space.name;
+      const spaceName = spaceObj.name;
       const result: SpaceItem[] = [];
 
       for (const item of items) {
         const itemType = item.type;
-        let itemName = item.name;
+        let itemName = item.name || "";
 
         // Only show notebooks and lexicals
         if (itemType === ItemTypes.NOTEBOOK) {
           // Use the model's extension getter
-          const extension = item.extension;
+          const extension = item.extension || "";
           if (!itemName.endsWith(extension)) {
             itemName = `${itemName}${extension}`;
           }
           result.push(
             new SpaceItem(itemName, vscode.TreeItemCollapsibleState.None, {
               type: ItemType.NOTEBOOK,
-              document: item,
+              document: item, // The Notebook instance itself is the document
               spaceName: spaceName,
             }),
           );
         } else if (itemType === ItemTypes.LEXICAL) {
           // Use the model's extension getter
-          const extension = item.extension;
+          const extension = item.extension || "";
           if (!itemName.endsWith(extension)) {
             itemName = `${itemName}${extension}`;
           }
           result.push(
             new SpaceItem(itemName, vscode.TreeItemCollapsibleState.None, {
               type: ItemType.DOCUMENT,
-              document: item,
+              document: item, // The Lexical instance itself is the document
               spaceName: spaceName,
             }),
           );

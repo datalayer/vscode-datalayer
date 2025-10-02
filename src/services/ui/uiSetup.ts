@@ -31,7 +31,7 @@ export interface ExtensionUI {
   /** Tree view provider for spaces */
   spacesTreeProvider: SpacesTreeProvider;
   /** VS Code tree view for spaces */
-  treeView: vscode.TreeView<any>;
+  treeView: vscode.TreeView<unknown>;
   /** Smart dynamic controller manager for runtime selection and switching */
   controllerManager: SmartDynamicControllerManager;
 }

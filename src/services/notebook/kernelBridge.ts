@@ -47,8 +47,8 @@ export class KernelBridge implements vscode.Disposable {
   /**
    * Creates a new KernelBridge instance.
    *
-   * @param sdk - Datalayer SDK instance
-   * @param authProvider - Authentication provider
+   * @param _sdk - Datalayer SDK instance (used for runtime operations)
+   * @param _authProvider - Authentication provider (used for authentication in runtime operations)
    */
   constructor(
     // @ts-expect-error - Used for runtime operations
@@ -71,7 +71,7 @@ export class KernelBridge implements vscode.Disposable {
   /**
    * Unregisters a webview panel.
    *
-   * @param uri - Notebook URI
+   * @param _uri - Notebook URI
    */
   public unregisterWebview(_uri: vscode.Uri): void {
     const key = _uri.toString();
@@ -154,14 +154,19 @@ export class KernelBridge implements vscode.Disposable {
       .flatMap((group) => group.tabs)
       .filter((tab) => {
         if (tab.input && typeof tab.input === "object" && "uri" in tab.input) {
-          return (tab.input as any).uri?.toString() === uri.toString();
+          return (
+            (tab.input as { uri?: vscode.Uri }).uri?.toString() ===
+            uri.toString()
+          );
         }
         return false;
       });
 
     if (
       customEditors.some(
-        (tab) => (tab.input as any).viewType === "datalayer.jupyter-notebook",
+        (tab) =>
+          (tab.input as { viewType?: string }).viewType ===
+          "datalayer.jupyter-notebook",
       )
     ) {
       return "webview";
@@ -175,7 +180,7 @@ export class KernelBridge implements vscode.Disposable {
    * Finds webview panels for a given URI.
    * Searches through active tab groups.
    *
-   * @param uri - Notebook URI
+   * @param _uri - Notebook URI
    * @returns Array of matching webview panels
    */
   private findWebviewsForUri(_uri: vscode.Uri): vscode.WebviewPanel[] {
@@ -250,7 +255,7 @@ export class KernelBridge implements vscode.Disposable {
    * @param uri - Notebook URI
    * @returns Kernel information or undefined
    */
-  public async getKernelInfo(uri: vscode.Uri): Promise<any> {
+  public async getKernelInfo(uri: vscode.Uri): Promise<unknown> {
     const notebookType = this.detectNotebookType(uri);
 
     if (notebookType === "webview") {
