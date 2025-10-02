@@ -41,8 +41,8 @@ jobs:
       - name: Checkout core repository
         uses: actions/checkout@v5
         with:
-          repository: goanpeca/core
-          ref: enh/sdk-updates
+          repository: datalayer/core
+          ref: main
           path: datalayer/core
 
       - name: Setup build environment
@@ -70,8 +70,8 @@ jobs:
       - name: Checkout core repository
         uses: actions/checkout@v5
         with:
-          repository: goanpeca/core
-          ref: enh/sdk-updates
+          repository: datalayer/core
+          ref: main
           path: datalayer/core
 
       - name: Setup build environment
@@ -99,8 +99,8 @@ jobs:
       - name: Checkout core repository
         uses: actions/checkout@v5
         with:
-          repository: goanpeca/core
-          ref: enh/sdk-updates
+          repository: datalayer/core
+          ref: main
           path: datalayer/core
 
       - name: Setup build environment
