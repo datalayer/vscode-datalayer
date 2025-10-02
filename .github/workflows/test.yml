@@ -47,36 +47,12 @@ jobs:
           ref: enh/sdk-updates
           path: datalayer/core
 
-      - name: Skip core repository postinstall scripts
-        working-directory: datalayer/core
-        run: |
-          if [ -f package.json ]; then
-            echo "Found package.json in core, removing problematic scripts"
-            cp package.json package.json.backup
-            node -e "const pkg = require('./package.json'); delete pkg.scripts?.postinstall; delete pkg.scripts?.prepare; require('fs').writeFileSync('package.json', JSON.stringify(pkg, null, 2));"
-          fi
-        shell: bash
-
-      - name: Install core repository dependencies and build
-        working-directory: datalayer/core
-        run: |
-          echo "Installing core dependencies..."
-          npm install --ignore-scripts
-          echo "Building core SDK lib..."
-          npm run build:lib
-          echo "Building core with increased memory..."
-          export NODE_OPTIONS="--max-old-space-size=8192"
-          npm run build
-        shell: bash
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v5
+      - name: Setup build environment
+        uses: ./datalayer/vscode-datalayer/.github/actions/setup-environment
         with:
-          node-version: "20"
-
-      - name: Install dependencies
-        working-directory: datalayer/vscode-datalayer
-        run: npm install
+          node-version: '20'
+          os: ${{ matrix.os }}
+          skip-debug: 'true'
 
       - name: Compile tests
         working-directory: datalayer/vscode-datalayer

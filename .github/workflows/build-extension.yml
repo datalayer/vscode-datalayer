@@ -49,61 +49,12 @@ jobs:
           ref: enh/sdk-updates
           path: datalayer/core
 
-      - name: Debug directory structure
-        run: |
-          echo "=== Current working directory ==="
-          pwd
-          echo "=== Directory structure ==="
-          find datalayer -type d -maxdepth 3 || true
-          echo "=== Core repository contents ==="
-          ls -la datalayer/core/ || echo "Core directory not found"
-          echo "=== Looking for lib directory ==="
-          find datalayer/core -name "lib" -type d || echo "No lib directory found"
-          echo "=== Looking for built SDK files ==="
-          find datalayer/core -path "*/lib/sdk*" -type f | head -10 || echo "No built SDK files found"
-        shell: bash
-
-      - name: Skip core repository postinstall scripts
-        working-directory: datalayer/core
-        run: |
-          # Remove package.json scripts that might cause issues in CI
-          if [ -f package.json ]; then
-            echo "Found package.json in core, removing problematic scripts"
-            # Create backup and remove postinstall/prepare scripts
-            cp package.json package.json.backup
-            # Use node to safely remove scripts without breaking JSON
-            node -e "const pkg = require('./package.json'); delete pkg.scripts?.postinstall; delete pkg.scripts?.prepare; require('fs').writeFileSync('package.json', JSON.stringify(pkg, null, 2));"
-          fi
-        shell: bash
-
-      - name: Install core repository dependencies and build
-        working-directory: datalayer/core
-        run: |
-          echo "Installing core dependencies..."
-          npm install --ignore-scripts
-          echo "Building core SDK lib (required for VS Code extension)..."
-          npm run build:lib
-          echo "Building core full with increased memory..."
-          export NODE_OPTIONS="--max-old-space-size=8192"
-          npm run build
-          echo "Core build completed successfully!"
-        shell: bash
-
-      - name: Setup Node.js ${{ matrix.node-version }}
-        uses: actions/setup-node@v5
+      - name: Setup build environment
+        uses: ./datalayer/vscode-datalayer/.github/actions/setup-environment
         with:
           node-version: ${{ matrix.node-version }}
-
-      - name: Install dependencies
-        working-directory: datalayer/vscode-datalayer
-        run: |
-          if [ "${{ matrix.os }}" == "windows-latest" ]; then
-            echo "Installing on Windows with --force flag to bypass OS restrictions"
-            npm install --force
-          else
-            npm install
-          fi
-        shell: bash
+          os: ${{ matrix.os }}
+          skip-debug: 'false'
 
       - name: Build VS Code extension
         working-directory: datalayer/vscode-datalayer

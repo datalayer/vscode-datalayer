@@ -1,0 +1,55 @@
+name: Documentation
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "src/**"
+      - "webview/**"
+      - "typedoc.json"
+      - ".github/workflows/docs.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "src/**"
+      - "webview/**"
+      - "typedoc.json"
+      - ".github/workflows/docs.yml"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  docs:
+    name: Generate Documentation
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Setup directory structure
+        run: mkdir -p datalayer
+
+      - name: Checkout VS Code extension repository
+        uses: actions/checkout@v5
+        with:
+          path: datalayer/vscode-datalayer
+
+      - name: Checkout core repository
+        uses: actions/checkout@v5
+        with:
+          repository: goanpeca/core
+          ref: enh/sdk-updates
+          path: datalayer/core
+
+      - name: Setup build environment
+        uses: ./datalayer/vscode-datalayer/.github/actions/setup-environment
+        with:
+          skip-debug: 'true'
+
+      - name: Generate TypeDoc documentation
+        working-directory: datalayer/vscode-datalayer
+        run: npm run doc
+
+      - name: Check documentation coverage
+        working-directory: datalayer/vscode-datalayer
+        run: npm run doc:coverage
