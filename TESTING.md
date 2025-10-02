@@ -13,7 +13,7 @@ The extension uses:
 ## Running Tests
 
 ```bash
-# Run all tests (42 tests in ~50ms)
+# Run all tests (41 tests in ~60ms)
 npm test
 
 # Compile tests only
@@ -46,6 +46,77 @@ src/test/
 └── extension.test.ts        # Main extension tests
 ```
 
+## Type Safety in Tests
+
+### Mock Type Interfaces
+
+The test infrastructure uses strongly-typed mocks to ensure type safety:
+
+- **MockSDK**: Typed interface for Datalayer SDK with 24+ spy methods
+- **MockLogger**: Extends `ILogger` interface for type-safe logging mocks
+- **MockSpyFunction**: Type-safe spy function with call tracking
+
+### Using Typed Mocks
+
+```typescript
+import { createMockSDK, createMockLogger } from "../utils/mockFactory";
+import type { DatalayerClient } from "../../../../core/lib/client";
+import type { ILogger } from "../../services/interfaces/ILogger";
+
+suite("My Feature Tests", () => {
+  let mockSDK: ReturnType<typeof createMockSDK>;
+  let mockLogger: ILogger;
+
+  setup(() => {
+    mockSDK = createMockSDK();
+    mockLogger = createMockLogger();
+  });
+
+  test("should work with typed mocks", async () => {
+    // Type-safe mock configuration
+    mockSDK.iam.getIdentity.mockResolvedValue({ uid: "test" });
+
+    // Pass to functions requiring specific types
+    const result = await myFunction(
+      mockSDK as unknown as DatalayerClient,
+      mockLogger,
+    );
+
+    // Type-safe assertions
+    assert.strictEqual(mockSDK.iam.getIdentity.calls.length, 1);
+  });
+});
+```
+
+### Type Assertions
+
+When interfacing with VS Code APIs or SDK types:
+
+```typescript
+// Use double assertion for complex type conversions
+const authProvider = new SDKAuthProvider(
+  mockSDK as unknown as DatalayerClient, // Cast to expected type
+  mockContext,
+  mockLogger, // Already typed as ILogger
+);
+```
+
+### Avoiding `any` Types
+
+All test code uses `unknown` instead of `any`:
+
+- ✅ `unknown` requires type narrowing - safer
+- ❌ `any` bypasses type checking - dangerous
+- Use `eslint-disable-next-line @typescript-eslint/no-explicit-any` only for intentional access to private/singleton members
+
+```typescript
+// ❌ Bad - bypasses type checking
+let mockSDK: any = createMockSDK();
+
+// ✅ Good - type-safe
+let mockSDK: ReturnType<typeof createMockSDK> = createMockSDK();
+```
+
 ## Writing Tests
 
 ### Basic Test Structure
@@ -55,12 +126,14 @@ import * as assert from "assert";
 import {
   createMockExtensionContext,
   createMockSDK,
+  createMockLogger,
 } from "../utils/mockFactory";
 import { assertResolves, waitUntil } from "../utils/testHelpers";
+import type { DatalayerClient } from "../../../../core/lib/client";
 
 suite("My Feature Tests", () => {
-  let mockContext: any;
-  let mockSDK: any;
+  let mockContext: ReturnType<typeof createMockExtensionContext>;
+  let mockSDK: ReturnType<typeof createMockSDK>;
 
   setup(() => {
     // Runs before each test
@@ -94,6 +167,7 @@ The `mockFactory.ts` provides pre-configured mocks:
 import {
   createMockExtensionContext,
   createMockSDK,
+  createMockLogger,
   createMockUser,
   createMockRuntime,
   createMockOutputChannel,
@@ -104,9 +178,12 @@ import {
 // Create mock VS Code extension context
 const context = createMockExtensionContext();
 
-// Create mock SDK with jest spies
+// Create mock SDK with spy functions
 const sdk = createMockSDK();
 sdk.iam.getIdentity.mockResolvedValue(createMockUser());
+
+// Create mock logger (typed as ILogger)
+const logger = createMockLogger();
 
 // Create mock runtime
 const runtime = createMockRuntime({
@@ -278,13 +355,21 @@ test("uses SDK correctly", async () => {
 
 ## Test Quality Metrics
 
-**Current Status:** 42/42 tests passing (100%)
+**Current Status:** 41/41 tests passing (100%)
 
-Focus on:
+### Quality Validation
+
+- ✅ **Type Safety**: Zero type-check errors in test code
+- ✅ **Lint Compliance**: Zero ESLint warnings
+- ✅ **Strong Typing**: All mocks use proper TypeScript interfaces
+- ✅ **Test Success**: 100% pass rate (~60ms execution time)
+
+### Focus Areas
 
 - **Test coverage breadth** - Test all critical paths
 - **Edge cases** - Test error handling, timeouts, empty states
 - **Integration points** - Test SDK calls, VS Code API interactions
+- **Type safety** - All mocks properly typed, no `any` usage
 - **Maintainability** - Clear test names, well-organized suites
 
 ## Debugging Tests

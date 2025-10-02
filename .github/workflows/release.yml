@@ -34,9 +34,9 @@ jobs:
       - name: Setup build environment
         uses: ./datalayer/vscode-datalayer/.github/actions/setup-environment
         with:
-          node-version: '20'
-          os: 'ubuntu-latest'
-          skip-debug: 'true'
+          node-version: "20"
+          os: "ubuntu-latest"
+          skip-debug: "true"
 
       - name: Run type checking
         working-directory: datalayer/vscode-datalayer

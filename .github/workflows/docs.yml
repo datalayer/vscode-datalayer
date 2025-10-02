@@ -44,7 +44,7 @@ jobs:
       - name: Setup build environment
         uses: ./datalayer/vscode-datalayer/.github/actions/setup-environment
         with:
-          skip-debug: 'true'
+          skip-debug: "true"
 
       - name: Generate TypeDoc documentation
         working-directory: datalayer/vscode-datalayer

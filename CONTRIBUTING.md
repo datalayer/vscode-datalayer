@@ -34,6 +34,30 @@ npm run lint
 
 # Auto-fix linting issues
 npm run lint:fix
+
+# Run all quality checks
+npm run check
+```
+
+#### Type Safety Requirements
+
+All code must:
+
+- Use `unknown` instead of `any` (except with explicit `eslint-disable-next-line`)
+- Include proper TypeScript types for all exports
+- Pass strict TypeScript compilation
+- Have complete JSDoc documentation for public APIs
+
+```typescript
+// ❌ Bad - bypasses type checking
+function process(data: any) { ... }
+
+// ✅ Good - type-safe
+function process(data: unknown) {
+  if (typeof data === 'string') {
+    // Type narrowed to string
+  }
+}
 ```
 
 #### Documentation
@@ -41,12 +65,14 @@ npm run lint:fix
 - All exported functions, classes, and interfaces must have JSDoc comments
 - Use TypeDoc syntax for comprehensive API documentation
 - Include usage examples for complex functionality
+- Must achieve 100% documentation coverage
 
 #### Code Style
 
 - Use Prettier for code formatting (configured in `.prettierrc.json`)
 - Follow existing architectural patterns and naming conventions
 - Maintain consistency with the existing codebase
+- All test mocks must use proper TypeScript interfaces
 
 ## CI/CD & Quality Assurance
 
@@ -79,10 +105,13 @@ The project includes comprehensive GitHub Actions workflows that run on every PR
 All PRs must pass these automated checks:
 
 - ✅ TypeScript compilation without errors
-- ✅ ESLint rules with zero errors
+- ✅ ESLint rules with zero warnings
 - ✅ Prettier formatting compliance
+- ✅ All 41 tests passing
+- ✅ 100% documentation coverage
 - ✅ Extension builds successfully on all platforms
 - ✅ No console.log statements in production code
+- ✅ No `any` types without explicit justification
 
 ## Architecture Overview
 

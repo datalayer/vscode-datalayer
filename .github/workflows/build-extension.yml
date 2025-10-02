@@ -54,7 +54,7 @@ jobs:
         with:
           node-version: ${{ matrix.node-version }}
           os: ${{ matrix.os }}
-          skip-debug: 'false'
+          skip-debug: "false"
 
       - name: Build VS Code extension
         working-directory: datalayer/vscode-datalayer

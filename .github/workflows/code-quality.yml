@@ -48,7 +48,7 @@ jobs:
       - name: Setup build environment
         uses: ./datalayer/vscode-datalayer/.github/actions/setup-environment
         with:
-          skip-debug: 'true'
+          skip-debug: "true"
 
       - name: Check formatting
         working-directory: datalayer/vscode-datalayer
@@ -77,7 +77,7 @@ jobs:
       - name: Setup build environment
         uses: ./datalayer/vscode-datalayer/.github/actions/setup-environment
         with:
-          skip-debug: 'true'
+          skip-debug: "true"
 
       - name: Run linting
         working-directory: datalayer/vscode-datalayer
@@ -106,7 +106,7 @@ jobs:
       - name: Setup build environment
         uses: ./datalayer/vscode-datalayer/.github/actions/setup-environment
         with:
-          skip-debug: 'true'
+          skip-debug: "true"
 
       - name: Run type checking
         working-directory: datalayer/vscode-datalayer
