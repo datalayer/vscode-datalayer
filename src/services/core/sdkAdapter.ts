@@ -13,11 +13,7 @@
 
 import * as vscode from "vscode";
 import { DatalayerClient } from "../../../../core/lib/client";
-import type {
-  DatalayerClientConfig,
-  SDKHandlers,
-} from "../../../../core/lib/client";
-import { promptAndLogin } from "../../ui/dialogs/authDialog";
+import type { DatalayerClientConfig } from "../../../../core/lib/client";
 import { ServiceLoggers } from "../logging/loggers";
 import { DatalayerClientOperationTracker } from "../logging/datalayerClientLogger";
 

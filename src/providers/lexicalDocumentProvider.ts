@@ -16,10 +16,7 @@
 import * as vscode from "vscode";
 import { disposeAll } from "../utils/dispose";
 import { getNonce } from "../utils/webviewSecurity";
-import {
-  LexicalDocument,
-  LexicalDocumentDelegate,
-} from "../models/lexicalDocument";
+import { LexicalDocument } from "../models/lexicalDocument";
 import {
   LexicalCollaborationService,
   LexicalCollaborationConfig,
@@ -148,7 +145,7 @@ export class LexicalDocumentProvider
     const listeners: vscode.Disposable[] = [];
 
     listeners.push(
-      document.onDidChange((e) => {
+      document.onDidChange((_e) => {
         // Fire content change event
         this._onDidChangeCustomDocument.fire({
           document,
@@ -504,9 +501,11 @@ export class LexicalDocumentProvider
                 runtime: null,
               });
             }
-          } catch (error: any) {
+          } catch (error: unknown) {
+            const errorMessage =
+              error instanceof Error ? error.message : String(error);
             vscode.window.showErrorMessage(
-              `Failed to terminate runtime: ${error.message || error}`,
+              `Failed to terminate runtime: ${errorMessage}`,
             );
           }
         }

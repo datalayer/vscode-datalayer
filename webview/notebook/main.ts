@@ -11,7 +11,7 @@
  */
 
 import { setStylesTarget } from "typestyle";
-import "./NotebookEditor";
+import "./NotebookEditorRefactored";
 import { getNonce } from "../utils";
 
 // Fix to apply styled-components style should be set directly at the entry point start.

@@ -17,11 +17,7 @@ import * as vscode from "vscode";
 import { disposeAll } from "../utils/dispose";
 import { getNotebookHtml } from "../ui/templates/notebookTemplate";
 import { WebviewCollection } from "../utils/webviewCollection";
-import {
-  NotebookDocument,
-  NotebookDocumentDelegate,
-  NotebookEdit,
-} from "../models/notebookDocument";
+import { NotebookDocument, NotebookEdit } from "../models/notebookDocument";
 import { NotebookNetworkService } from "../services/notebook/notebookNetwork";
 import { SDKAuthProvider } from "../services/core/authProvider";
 import { KernelBridge } from "../services/notebook/kernelBridge";
@@ -451,7 +447,7 @@ export class JupyterNotebookProvider
         // Pass the document URI and kernel bridge so the kernel can be connected
         showKernelSelector(sdk, authProvider, this._kernelBridge, document.uri)
           .then(() => {})
-          .catch((error) => {
+          .catch((_error) => {
             // Fallback to Datalayer runtime selector
             this.showDatalayerRuntimeSelector(document);
           });
@@ -483,7 +479,7 @@ export class JupyterNotebookProvider
             // If podName is missing, construct it from uid (format: runtime-{uid})
             const podName = runtime.podName ?? `runtime-${runtime.uid}`;
 
-            const result = await sdk.deleteRuntime(podName);
+            await sdk.deleteRuntime(podName);
 
             // Notify user of success
             vscode.window.showInformationMessage(
@@ -495,9 +491,11 @@ export class JupyterNotebookProvider
               type: "runtime-terminated",
               runtime: null,
             });
-          } catch (error: any) {
+          } catch (error: unknown) {
+            const errorMessage =
+              error instanceof Error ? error.message : String(error);
             vscode.window.showErrorMessage(
-              `Failed to terminate runtime: ${error.message || error}`,
+              `Failed to terminate runtime: ${errorMessage}`,
             );
           }
         }

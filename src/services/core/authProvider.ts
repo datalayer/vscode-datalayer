@@ -20,7 +20,6 @@ import type {
   VSCodeAuthState,
 } from "../interfaces/IAuthProvider";
 import { BaseService } from "./baseService";
-import { AuthenticationError } from "../../types/errors";
 
 /**
  * SDK-based authentication provider for VS Code.
@@ -46,12 +45,13 @@ export class SDKAuthProvider extends BaseService implements IAuthProvider {
 
   constructor(
     private sdk: DatalayerClient,
-    private context: vscode.ExtensionContext,
+    // @ts-expect-error - Reserved for future authentication features
+    private _context: vscode.ExtensionContext,
     logger: ILogger,
   ) {
     super("SDKAuthProvider", logger);
     this.logger.debug("SDKAuthProvider instance created", {
-      contextId: context.extension.id,
+      contextId: _context.extension.id,
       hasSDK: !!sdk,
     });
   }

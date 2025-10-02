@@ -147,7 +147,7 @@ export function registerRuntimeCommands(
   context.subscriptions.push(
     vscode.commands.registerCommand(
       "datalayer.refreshRuntimeControllers",
-      async (selectRuntimeUid?: string) => {
+      async (_selectRuntimeUid?: string) => {
         await controllerManager.refreshControllers();
 
         vscode.window.showInformationMessage(
@@ -232,15 +232,17 @@ export function registerRuntimeCommands(
             `Debug: Terminating runtime "${runtime.givenName}". Check console for details.`,
           );
 
-          const result = await sdk.deleteRuntime(podName);
+          const _result = await sdk.deleteRuntime(podName);
           vscode.window.showInformationMessage(
             `Debug: Runtime terminated successfully. Result: ${JSON.stringify(
-              result,
+              _result,
             )}`,
           );
-        } catch (error: any) {
+        } catch (error: unknown) {
+          const errorMessage =
+            error instanceof Error ? error.message : String(error);
           vscode.window.showErrorMessage(
-            `Debug: Runtime termination failed. Error: ${error.message}. Check console for full details.`,
+            `Debug: Runtime termination failed. Error: ${errorMessage}. Check console for full details.`,
           );
         }
       },
@@ -315,9 +317,11 @@ export function registerRuntimeCommands(
             await terminateRuntime(sdk, selected.runtime);
           }
         }
-      } catch (error: any) {
+      } catch (error: unknown) {
+        const errorMessage =
+          error instanceof Error ? error.message : String(error);
         vscode.window.showErrorMessage(
-          `Failed to terminate runtime: ${error.message}`,
+          `Failed to terminate runtime: ${errorMessage}`,
         );
       }
     }),
@@ -348,7 +352,7 @@ async function terminateRuntime(sdk: any, runtime: any): Promise<void> {
           throw new Error("Runtime missing podName from SDK");
         }
 
-        const result = await sdk.deleteRuntime(podName);
+        await sdk.deleteRuntime(podName);
       },
     );
 
@@ -356,9 +360,10 @@ async function terminateRuntime(sdk: any, runtime: any): Promise<void> {
     vscode.window.showInformationMessage(
       `Runtime "${name}" terminated successfully.`,
     );
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
     vscode.window.showErrorMessage(
-      `Failed to terminate runtime "${name}": ${error.message}`,
+      `Failed to terminate runtime "${name}": ${errorMessage}`,
     );
   }
 }

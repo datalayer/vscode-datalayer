@@ -115,7 +115,7 @@ export class NotebookNetworkService {
       this._websockets.delete(id!);
       ws.close();
     });
-    ws.onopen = (event) => {
+    ws.onopen = (_event) => {
       this.postMessage(webview, "websocket-open", {}, id);
     };
     ws.onmessage = (event) => {

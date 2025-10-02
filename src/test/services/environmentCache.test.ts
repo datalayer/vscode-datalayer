@@ -18,7 +18,7 @@ import {
   createMockSDK,
   createMockExtensionContext,
 } from "../utils/mockFactory";
-import { sleep } from "../utils/testHelpers";
+import { sleep as _sleep } from "../utils/testHelpers";
 
 suite("EnvironmentCache Tests", () => {
   let cache: EnvironmentCache;
@@ -46,7 +46,7 @@ suite("EnvironmentCache Tests", () => {
       info: () => {},
       warn: () => {},
       error: () => {},
-      timeAsync: async <T>(op: string, fn: () => Promise<T>) => fn(),
+      timeAsync: async <T>(_op: string, fn: () => Promise<T>) => fn(),
     };
 
     (SDKAuthProvider as any).instance = undefined;

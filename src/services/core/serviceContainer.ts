@@ -19,7 +19,7 @@ import type { IKernelBridge } from "../interfaces/IKernelBridge";
 import type { ILogger } from "../interfaces/ILogger";
 import type { ILoggerManager } from "../interfaces/ILoggerManager";
 import type { IErrorHandler } from "../interfaces/IErrorHandler";
-import { LoggerManager, Logger } from "../logging/loggerManager";
+import { LoggerManager } from "../logging/loggerManager";
 import { ServiceLoggers } from "../logging/loggers";
 import { createVSCodeSDK } from "./sdkAdapter";
 import { SDKAuthProvider } from "./authProvider";
@@ -175,7 +175,7 @@ export class ServiceContainer implements IServiceContainer {
       this.logger.info("Initializing service container...");
 
       // Eagerly initialize SDK (needed for UI initialization)
-      const sdk = this.sdk; // Triggers SDK creation with logging available
+      void this.sdk; // Triggers SDK creation with logging available
 
       // Initialize authentication (needed for UI state)
       await this.authProvider.initialize();

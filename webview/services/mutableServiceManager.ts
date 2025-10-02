@@ -135,24 +135,24 @@ export class MutableServiceManager {
    */
   createProxy(): ServiceManager.IManager {
     return new Proxy({} as ServiceManager.IManager, {
-      get: (target, prop) => {
+      get: (_target, prop) => {
         const current = this._serviceManager;
         return (current as any)[prop];
       },
-      set: (target, prop, value) => {
+      set: (_target, prop, value) => {
         const current = this._serviceManager;
         (current as any)[prop] = value;
         return true;
       },
-      has: (target, prop) => {
+      has: (_target, prop) => {
         const current = this._serviceManager;
         return prop in current;
       },
-      ownKeys: (target) => {
+      ownKeys: (_target) => {
         const current = this._serviceManager;
         return Object.keys(current);
       },
-      getOwnPropertyDescriptor: (target, prop) => {
+      getOwnPropertyDescriptor: (_target, prop) => {
         const current = this._serviceManager;
         return Object.getOwnPropertyDescriptor(current, prop);
       },

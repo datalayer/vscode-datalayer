@@ -306,7 +306,7 @@ export function LexicalEditor({
       },
       quote: "lexical-editor-quote",
     },
-    onError(error: Error) {
+    onError(_error: Error) {
       // Silently handle Lexical errors
     },
   };
@@ -451,7 +451,7 @@ export function LexicalEditor({
                 shouldBootstrap
                 providerFactory={createWebsocketProvider}
                 websocketUrl={collaboration.websocketUrl}
-                onInitialization={(isInitialized) => {
+                onInitialization={(_isInitialized) => {
                   // Collaboration initialized
                 }}
               />

@@ -26,7 +26,7 @@ export class PerformanceLogger {
         info: () => {},
         warn: () => {},
         error: () => {},
-        timeAsync: async <T>(op: string, fn: () => Promise<T>) => fn(),
+        timeAsync: async <T>(_op: string, fn: () => Promise<T>) => fn(),
       };
     }
     return ServiceLoggers.main;

@@ -107,7 +107,7 @@ export class DatalayerFileSystemProvider implements vscode.FileSystemProvider {
    * @param uri - The URI to watch
    * @returns A disposable that stops watching when disposed
    */
-  watch(uri: vscode.Uri): vscode.Disposable {
+  watch(_uri: vscode.Uri): vscode.Disposable {
     return new vscode.Disposable(() => {});
   }
 

@@ -13,36 +13,6 @@
 
 import React, { useCallback, useEffect, useState, useContext } from "react";
 import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext";
-import {
-  $getSelection,
-  $isRangeSelection,
-  FORMAT_TEXT_COMMAND,
-  FORMAT_ELEMENT_COMMAND,
-  UNDO_COMMAND,
-  REDO_COMMAND,
-  CAN_UNDO_COMMAND,
-  CAN_REDO_COMMAND,
-  COMMAND_PRIORITY_CRITICAL,
-} from "lexical";
-import { MessageHandlerContext } from "../services/messageHandler";
-import type { RuntimeJSON } from "../../../core/lib/client/models/Runtime";
-import {
-  $isHeadingNode,
-  $createHeadingNode,
-  $createQuoteNode,
-} from "@lexical/rich-text";
-import {
-  INSERT_UNORDERED_LIST_COMMAND,
-  INSERT_ORDERED_LIST_COMMAND,
-  REMOVE_LIST_COMMAND,
-  $isListNode,
-} from "@lexical/list";
-import { $isLinkNode, TOGGLE_LINK_COMMAND } from "@lexical/link";
-import {
-  $getSelectionStyleValueForProperty,
-  $patchStyleText,
-} from "@lexical/selection";
-import { $getNearestNodeOfType } from "@lexical/utils";
 import { $isCodeNode } from "@lexical/code";
 
 /**
@@ -296,7 +266,7 @@ export function LexicalToolbar({
 
         if ($isHeadingNode(element) && element.getTag() === headingTag) {
           // If already this heading type, convert to paragraph
-          const paragraph = element.replace(
+          element.replace(
             $createHeadingNode("h1").replace($createHeadingNode("h1")),
             true,
           );

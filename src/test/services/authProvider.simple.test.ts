@@ -59,7 +59,7 @@ suite("SDKAuthProvider Simple Tests", () => {
         info: () => {},
         warn: () => {},
         error: () => {},
-        timeAsync: async <T>(op: string, fn: () => Promise<T>) => fn(),
+        timeAsync: async <T>(_op: string, fn: () => Promise<T>) => fn(),
       };
 
       const instance1 = new SDKAuthProvider(
@@ -87,7 +87,7 @@ suite("SDKAuthProvider Simple Tests", () => {
         info: () => {},
         warn: () => {},
         error: () => {},
-        timeAsync: async <T>(op: string, fn: () => Promise<T>) => fn(),
+        timeAsync: async <T>(_op: string, fn: () => Promise<T>) => fn(),
       };
 
       const authProvider = new SDKAuthProvider(
@@ -110,7 +110,7 @@ suite("SDKAuthProvider Simple Tests", () => {
         info: () => {},
         warn: () => {},
         error: () => {},
-        timeAsync: async <T>(op: string, fn: () => Promise<T>) => fn(),
+        timeAsync: async <T>(_op: string, fn: () => Promise<T>) => fn(),
       };
 
       const authProvider = new SDKAuthProvider(
@@ -137,7 +137,7 @@ suite("SDKAuthProvider Simple Tests", () => {
         info: () => {},
         warn: () => {},
         error: () => {},
-        timeAsync: async <T>(op: string, fn: () => Promise<T>) => fn(),
+        timeAsync: async <T>(_op: string, fn: () => Promise<T>) => fn(),
       };
 
       const authProvider = new SDKAuthProvider(
@@ -165,7 +165,7 @@ suite("SDKAuthProvider Simple Tests", () => {
         info: () => {},
         warn: () => {},
         error: () => {},
-        timeAsync: async <T>(op: string, fn: () => Promise<T>) => fn(),
+        timeAsync: async <T>(_op: string, fn: () => Promise<T>) => fn(),
       };
 
       const authProvider = new SDKAuthProvider(
@@ -188,7 +188,7 @@ suite("SDKAuthProvider Simple Tests", () => {
         info: () => {},
         warn: () => {},
         error: () => {},
-        timeAsync: async <T>(op: string, fn: () => Promise<T>) => fn(),
+        timeAsync: async <T>(_op: string, fn: () => Promise<T>) => fn(),
       };
 
       const authProvider = new SDKAuthProvider(

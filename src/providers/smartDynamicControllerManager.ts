@@ -519,7 +519,7 @@ export class SmartDynamicControllerManager implements vscode.Disposable {
    */
   private async _executeHandler(
     cells: vscode.NotebookCell[],
-    notebook: vscode.NotebookDocument,
+    _notebook: vscode.NotebookDocument,
     controller: vscode.NotebookController,
   ): Promise<void> {
     for (const cell of cells) {

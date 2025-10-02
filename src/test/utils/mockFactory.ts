@@ -12,9 +12,9 @@
  */
 
 import * as vscode from "vscode";
-import type { DatalayerClient } from "../../../../core/lib/client";
-import type { User } from "../../../../core/lib/client/models/User";
-import type { Runtime } from "../../../../core/lib/client/models/Runtime";
+import type { DatalayerClient as _DatalayerClient } from "../../../../core/lib/client";
+import type { User as _User } from "../../../../core/lib/client/models/User";
+import type { Runtime as _Runtime } from "../../../../core/lib/client/models/Runtime";
 
 /**
  * Creates a mock VS Code ExtensionContext for testing.
@@ -54,7 +54,7 @@ export function createMockExtensionContext(): vscode.ExtensionContext {
       update: async (key: string, value: any) => {
         globalState.set(key, value);
       },
-      setKeysForSync: (keys: readonly string[]) => {},
+      setKeysForSync: (_keys: readonly string[]) => {},
     },
 
     workspaceState: {

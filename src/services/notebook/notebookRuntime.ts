@@ -49,7 +49,7 @@ export class NotebookRuntimeService {
    */
   async handleRuntimeSelection(
     webview: vscode.WebviewPanel,
-    message: ExtensionMessage,
+    _message: ExtensionMessage,
   ): Promise<void> {
     try {
       const authService = getServiceContainer().authProvider;
@@ -311,7 +311,7 @@ export class NotebookRuntimeService {
             );
           }
         })
-        .catch((reason: any) => {
+        .catch((_reason: unknown) => {
           // Silently handle server URL errors
         });
     }

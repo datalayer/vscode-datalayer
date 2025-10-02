@@ -11,8 +11,6 @@
  * @module services/interfaces/IErrorHandler
  */
 
-import type { ILogger } from "./ILogger";
-
 /**
  * Options for error handling behavior.
  */

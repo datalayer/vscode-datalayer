@@ -34,7 +34,6 @@ import {
   showTwoStepConfirmation,
   CommonConfirmations,
 } from "../ui/dialogs/confirmationDialog";
-import { ItemTypes } from "../../../core/lib/client/constants";
 
 /**
  * Registers all document-related VS Code commands for the Datalayer extension.

@@ -350,7 +350,7 @@ export class LexicalDocument
    * Fires disposal events and calls the parent disposable cleanup.
    * Should be called when the document is no longer needed.
    */
-  dispose(): void {
+  override dispose(): void {
     this._onDidDispose.fire();
     super.dispose();
   }

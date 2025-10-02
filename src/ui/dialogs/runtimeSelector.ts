@@ -55,7 +55,7 @@ export async function selectDatalayerRuntime(
       title: "Loading Datalayer runtimes...",
       cancellable: true,
     },
-    async (progress, token) => {
+    async (_progress, token) => {
       // Check for cancellation
       if (token.isCancellationRequested) {
         return null;
@@ -254,7 +254,6 @@ async function createRuntime(
   }
 
   // Try to fetch user's available credits
-  let availableCredits: number | undefined;
   let netAvailableCredits: number | undefined;
   let maxMinutes: number | undefined;
   let hasActiveRuntimes = false;
@@ -263,7 +262,6 @@ async function createRuntime(
     const credits = await sdk.getCredits();
 
     // Use net available credits (accounts for existing reservations)
-    availableCredits = credits.available;
     netAvailableCredits = credits.netAvailable;
     hasActiveRuntimes = credits.hasActiveRuntimes;
 

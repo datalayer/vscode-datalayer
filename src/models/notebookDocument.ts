@@ -400,7 +400,7 @@ export class NotebookDocument
    * Fires disposal events and calls the parent disposable cleanup.
    * Should be called when the document is no longer needed to prevent memory leaks.
    */
-  dispose(): void {
+  override dispose(): void {
     this._onDidDispose.fire();
     super.dispose();
   }

@@ -88,8 +88,8 @@ export class SpaceItem extends vscode.TreeItem {
    * @param parent - Parent item for hierarchical navigation
    */
   constructor(
-    public readonly label: string,
-    public readonly collapsibleState: vscode.TreeItemCollapsibleState,
+    public override readonly label: string,
+    public override readonly collapsibleState: vscode.TreeItemCollapsibleState,
     public readonly data: SpaceItemData,
     public readonly parent?: SpaceItem,
   ) {

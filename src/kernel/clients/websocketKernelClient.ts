@@ -87,6 +87,7 @@ export class WebSocketKernelClient {
    */
   constructor(
     runtime: Runtime | RuntimeJSON,
+    // @ts-expect-error - Used in runtime connection methods
     private readonly _sdk: DatalayerClient,
   ) {
     this._sessionId = uuidv4();
@@ -325,7 +326,7 @@ export class WebSocketKernelClient {
    */
   private onError(error: Error): void {
     // Reject all pending requests
-    for (const [id, pending] of this._pendingRequests) {
+    for (const [_id, pending] of this._pendingRequests) {
       pending.reject(error);
     }
     this._pendingRequests.clear();
@@ -338,7 +339,7 @@ export class WebSocketKernelClient {
     this._connected = false;
 
     // Reject all pending requests
-    for (const [id, pending] of this._pendingRequests) {
+    for (const [_id, pending] of this._pendingRequests) {
       pending.reject(new Error("WebSocket connection closed"));
     }
     this._pendingRequests.clear();
@@ -491,7 +492,7 @@ export class WebSocketKernelClient {
    */
   public dispose(): void {
     // Clear pending requests
-    for (const [id, pending] of this._pendingRequests) {
+    for (const [_id, pending] of this._pendingRequests) {
       pending.reject(new Error("Client disposed"));
     }
     this._pendingRequests.clear();

@@ -65,10 +65,10 @@ export async function initializeUI(
   // Initialize environment cache only if authenticated
   try {
     if (authProvider.isAuthenticated()) {
-      const environments = await EnvironmentCache.getInstance().getEnvironments(
+      void (await EnvironmentCache.getInstance().getEnvironments(
         sdk,
         authProvider,
-      );
+      ));
     }
   } catch (error) {
     // Silently handle environment caching errors

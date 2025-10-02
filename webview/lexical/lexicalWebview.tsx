@@ -1,31 +1,23 @@
 /*
- * Copyright (c) 2021-2023 Datalayer, Inc.
+ * Copyright (c) 2021-2025 Datalayer, Inc.
  *
  * MIT License
  */
 
 /**
- * @module lexicalWebview
- * Main webview entry point for the Lexical editor in VS Code.
+ * Lexical webview component for VS Code.
+ * Uses modern React patterns with hooks and no forced remounts.
  *
- * Responsibilities:
- * - VS Code API communication
- * - Content state management
- * - Collaboration configuration
- * - Editor initialization
- *
- * @packageDocumentation
+ * @module lexical/lexicalWebview
  */
 
 import React, { useEffect, useState, useCallback } from "react";
 import ReactDOM from "react-dom/client";
 import { Jupyter } from "@datalayer/jupyter-react";
-import type { ServiceManager } from "@jupyterlab/services";
 import { LexicalEditor } from "./LexicalEditor";
 import { vsCodeAPI } from "../services/messageHandler";
-import { createServiceManager } from "../services/serviceManager";
-import { createMockServiceManager } from "../services/mockServiceManager";
 import type { RuntimeJSON } from "../../../core/lib/client/models/Runtime";
+import { useRuntimeManager } from "../hooks/useRuntimeManager";
 import "@vscode/codicons/dist/codicon.css";
 import "./LexicalEditor.css";
 
@@ -44,39 +36,23 @@ if (
 
 /**
  * VS Code API singleton - imported from messageHandler to avoid double acquisition
- * @hidden
  */
 const vscode = vsCodeAPI;
 
 /**
  * Collaboration configuration from extension
- * @interface CollaborationConfig
  */
 interface CollaborationConfig {
-  /** Whether collaboration is enabled */
   enabled: boolean;
-  /** WebSocket URL for collaboration server */
   websocketUrl?: string;
-  /** Unique document identifier */
   documentId?: string;
-  /** Collaboration session ID */
   sessionId?: string;
-  /** Current user's display name */
   username?: string;
-  /** User's cursor/selection color */
   userColor?: string;
 }
 
 /**
- * Message interface for communication with VS Code extension.
- *
- * @interface WebviewMessage
- * @property {string} type - Message type identifier
- * @property {any} [body] - Message payload
- * @property {number} [requestId] - Request ID for response tracking
- * @property {number[]} [content] - File content as byte array
- * @property {boolean} [editable] - Whether the editor is editable
- * @property {CollaborationConfig} [collaboration] - Collaboration configuration
+ * Message interface for communication with VS Code extension
  */
 interface WebviewMessage {
   type: string;
@@ -88,11 +64,7 @@ interface WebviewMessage {
 }
 
 /**
- * Inner webview component that has access to Jupyter context.
- * Manages content loading, saving, and dirty state tracking.
- *
- * @function LexicalWebviewInner
- * @returns {React.ReactElement} The Lexical editor with Jupyter integration
+ * Inner webview component that has access to Jupyter context
  */
 function LexicalWebviewInner({
   selectedRuntime,
@@ -121,7 +93,6 @@ function LexicalWebviewInner({
             const jsonString = decoder.decode(new Uint8Array(message.content));
             setContent(jsonString);
             setIsReady(true);
-            // This is the initial load from the file
             setIsInitialLoad(true);
           }
           if (message.editable !== undefined) {
@@ -133,7 +104,6 @@ function LexicalWebviewInner({
           break;
         }
         case "getFileData": {
-          // Send current content back as Uint8Array
           const currentContent = vscode.getState()?.content || content;
           const encoder = new TextEncoder();
           const encoded = encoder.encode(currentContent);
@@ -145,14 +115,12 @@ function LexicalWebviewInner({
           break;
         }
         case "runtime-selected": {
-          // Update selected runtime via callback to parent
           if (message.body?.runtime) {
             onRuntimeSelected(message.body.runtime);
           }
           break;
         }
         case "runtime-terminated": {
-          // Clear selected runtime via callback to parent
           onRuntimeSelected(undefined);
           break;
         }
@@ -173,14 +141,11 @@ function LexicalWebviewInner({
     vscode.postMessage({ type: "ready" });
 
     return () => window.removeEventListener("message", messageHandler);
-  }, [content]);
+  }, [content, onRuntimeSelected]);
 
   const handleSave = useCallback((newContent: string) => {
-    // Save to VS Code state
     vscode.setState({ content: newContent });
     setContent(newContent);
-
-    // Trigger VS Code save command
     vscode.postMessage({
       type: "save",
     });
@@ -188,21 +153,16 @@ function LexicalWebviewInner({
 
   const handleContentChange = useCallback(
     (newContent: string) => {
-      // Update local state
       setContent(newContent);
       vscode.setState({ content: newContent });
 
-      // Don't notify about changes if we're in collaborative mode
-      // as changes are handled by the collaboration plugin
       if (!collaborationConfig.enabled) {
-        // Only notify extension about content change if it's not the initial load
         if (!isInitialLoad) {
           vscode.postMessage({
             type: "contentChanged",
             content: newContent,
           });
         } else {
-          // After the first change event, it's no longer initial load
           setIsInitialLoad(false);
         }
       }
@@ -250,59 +210,12 @@ function LexicalWebviewInner({
 
 /**
  * Outer webview component that wraps the editor with Jupyter provider.
- * Manages service manager creation based on runtime selection.
- *
- * @function LexicalWebview
- * @returns {React.ReactElement} The Lexical editor wrapped with Jupyter context
+ * Uses runtime manager hook instead of manual state management.
  */
 function LexicalWebview() {
-  const [serviceManager, setServiceManager] =
-    useState<ServiceManager.IManager | null>(null);
-  const [runtimeKey, setRuntimeKey] = useState(0);
-  const [selectedRuntime, setSelectedRuntime] = useState<
-    RuntimeJSON | undefined
-  >();
-
-  // Handle runtime selection - create service manager when runtime changes
-  const handleRuntimeSelected = useCallback(
-    (runtime: RuntimeJSON | undefined) => {
-      console.log("Runtime selected in LexicalWebview:", runtime);
-
-      if (runtime) {
-        console.log("Runtime ingress:", runtime.ingress);
-        console.log("Runtime token:", runtime.token ? "present" : "missing");
-
-        // Create real service manager with runtime's ingress and token
-        const manager = createServiceManager(
-          runtime.ingress || "",
-          runtime.token || "",
-        );
-        console.log("Created service manager:", manager);
-        setServiceManager(manager);
-        setSelectedRuntime(runtime);
-        // Force remount when runtime changes
-        setRuntimeKey((prev) => {
-          console.log("Updating runtime key from", prev, "to", prev + 1);
-          return prev + 1;
-        });
-      } else {
-        console.log("Runtime cleared, switching to mock service manager");
-        // Switch to mock service manager when runtime is terminated
-        const mockManager = createMockServiceManager();
-        setServiceManager(mockManager);
-        setSelectedRuntime(undefined);
-        setRuntimeKey((prev) => prev + 1);
-      }
-    },
-    [],
-  );
-
-  useEffect(() => {
-    // Start with mock service manager
-    console.log("Initializing with mock service manager");
-    const mockManager = createMockServiceManager();
-    setServiceManager(mockManager);
-  }, []);
+  // Use the runtime manager hook - no forced remounts!
+  const { selectedRuntime, serviceManager, selectRuntime } =
+    useRuntimeManager();
 
   if (!serviceManager) {
     return (
@@ -320,27 +233,16 @@ function LexicalWebview() {
     );
   }
 
-  console.log("Rendering Jupyter with:");
-  console.log("  - startDefaultKernel:", !!selectedRuntime);
-  console.log(
-    "  - serviceManager baseUrl:",
-    serviceManager?.serverSettings?.baseUrl,
-  );
-  console.log(
-    "  - serviceManager token:",
-    serviceManager?.serverSettings?.token ? "present" : "missing",
-  );
-
+  // No key prop = no forced remount! State is preserved.
   return (
     <Jupyter
-      key={runtimeKey}
       serviceManager={serviceManager as any}
       startDefaultKernel={!!selectedRuntime}
       defaultKernelName="python"
     >
       <LexicalWebviewInner
         selectedRuntime={selectedRuntime}
-        onRuntimeSelected={handleRuntimeSelected}
+        onRuntimeSelected={selectRuntime}
       />
     </Jupyter>
   );
@@ -353,7 +255,6 @@ if (container) {
     const root = ReactDOM.createRoot(container);
     root.render(<LexicalWebview />);
   } catch (error) {
-    // Try to show an error message in the container
     container.innerHTML = `
       <div style="padding: 20px; color: var(--vscode-errorForeground); font-family: var(--vscode-editor-font-family);">
         <h3>Failed to load Lexical Editor</h3>

@@ -16,7 +16,6 @@ import type { DatalayerClient } from "../../../../core/lib/client";
 import type { Runtime } from "../../../../core/lib/client/models/Runtime";
 import type { RuntimeJSON } from "../../../../core/lib/client/models/Runtime";
 import { SDKAuthProvider } from "../core/authProvider";
-import { WebviewCollection } from "../../utils/webviewCollection";
 
 /**
  * Extended runtime interface for webview communication.
@@ -52,7 +51,9 @@ export class KernelBridge implements vscode.Disposable {
    * @param authProvider - Authentication provider
    */
   constructor(
+    // @ts-expect-error - Used for runtime operations
     private readonly _sdk: DatalayerClient,
+    // @ts-expect-error - Used for authentication in runtime operations
     private readonly _authProvider: SDKAuthProvider,
   ) {}
 
@@ -72,8 +73,8 @@ export class KernelBridge implements vscode.Disposable {
    *
    * @param uri - Notebook URI
    */
-  public unregisterWebview(uri: vscode.Uri): void {
-    const key = uri.toString();
+  public unregisterWebview(_uri: vscode.Uri): void {
+    const key = _uri.toString();
     this._webviews.delete(key);
   }
 
@@ -177,7 +178,7 @@ export class KernelBridge implements vscode.Disposable {
    * @param uri - Notebook URI
    * @returns Array of matching webview panels
    */
-  private findWebviewsForUri(uri: vscode.Uri): vscode.WebviewPanel[] {
+  private findWebviewsForUri(_uri: vscode.Uri): vscode.WebviewPanel[] {
     const panels: vscode.WebviewPanel[] = [];
 
     // This is a limitation - we can't directly access WebviewPanels
