@@ -11,14 +11,14 @@
  * @module services/loggers
  */
 
-import { LoggerManager } from "./loggerManager";
+import type { ILoggerManager } from "../interfaces/ILoggerManager";
 
 /**
  * Service-specific loggers for the Datalayer VS Code extension.
  * Provides organized access to different logging channels with clear separation.
  */
 export class ServiceLoggers {
-  private static loggerManager: LoggerManager;
+  private static loggerManager: ILoggerManager;
 
   /**
    * Initialize the service loggers with a LoggerManager instance.
@@ -26,7 +26,7 @@ export class ServiceLoggers {
    *
    * @param loggerManager - The LoggerManager instance to use
    */
-  static initialize(loggerManager: LoggerManager): void {
+  static initialize(loggerManager: ILoggerManager): void {
     ServiceLoggers.loggerManager = loggerManager;
   }
 

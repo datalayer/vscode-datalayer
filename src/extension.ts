@@ -48,11 +48,25 @@ export async function activate(
   context: vscode.ExtensionContext,
 ): Promise<void> {
   try {
+    // Create performance timer for full activation tracking
+    const activationTimer = PerformanceLogger.createTimer(
+      "extension_activation",
+      {
+        version: vscode.extensions.getExtension(
+          "datalayer.datalayer-jupyter-vscode",
+        )?.packageJSON.version,
+        vscodeVersion: vscode.version,
+      },
+    );
+    activationTimer.start();
+
     // Create and initialize service container
     services = new ServiceContainer(context);
+    activationTimer.checkpoint("service_container_created");
 
     // Initialize services (this also initializes logging)
     await services.initialize();
+    activationTimer.checkpoint("services_initialized");
 
     // Now logger is available
     const logger = services.logger;
@@ -76,12 +90,14 @@ export async function activate(
         ),
       { stage: "extension_activation" },
     );
+    activationTimer.checkpoint("ui_initialized");
 
     const updateAuthState = setupAuthStateManagement(
       services.authProvider as SDKAuthProvider,
       ui.spacesTreeProvider,
       ui.controllerManager,
     );
+    activationTimer.checkpoint("auth_state_setup");
 
     logger.debug("Setting up commands registration");
     registerAllCommands(
@@ -94,6 +110,7 @@ export async function activate(
       },
       updateAuthState,
     );
+    activationTimer.checkpoint("commands_registered");
 
     // Set up notebook event handlers with logging
     context.subscriptions.push(
@@ -114,9 +131,11 @@ export async function activate(
       },
     });
 
+    // End activation timer
+    activationTimer.end("success");
+
     logger.info("Datalayer extension activation completed successfully", {
       totalCommands: context.subscriptions.length,
-      activationTime: "tracked_by_performance_logger",
     });
   } catch (error) {
     // Use logger if available, fallback to VS Code notification

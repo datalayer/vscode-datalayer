@@ -364,9 +364,9 @@ export class LexicalDocumentProvider
         - worker-src: Allow web workers from extension and blob URLs (required for Y.js collaboration)
 
         Note: 'wasm-unsafe-eval' is required for loro-crdt WASM CRDT library
-        Note: 'unsafe-eval' may be required for some Lexical/React features
+        Note: 'unsafe-eval' is required for AJV (JSON schema validator used by Jupyter dependencies)
         -->
-        <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src ${webview.cspSource} blob: data:; style-src ${webview.cspSource} 'unsafe-inline'; font-src ${webview.cspSource}; script-src 'nonce-${nonce}' 'wasm-unsafe-eval'; connect-src ${webview.cspSource} https: wss:; worker-src ${webview.cspSource} blob:;">
+        <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src ${webview.cspSource} blob: data:; style-src ${webview.cspSource} 'unsafe-inline'; font-src ${webview.cspSource}; script-src 'nonce-${nonce}' 'wasm-unsafe-eval' 'unsafe-eval'; connect-src ${webview.cspSource} https: wss: ws: data:; worker-src ${webview.cspSource} blob:;">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Datalayer Lexical Editor</title>
         <script nonce="${nonce}">

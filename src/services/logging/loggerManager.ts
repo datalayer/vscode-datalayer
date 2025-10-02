@@ -12,26 +12,20 @@
  */
 
 import * as vscode from "vscode";
+import type {
+  ILoggerManager,
+  LoggerConfig,
+} from "../interfaces/ILoggerManager";
+import { LogLevel } from "../interfaces/ILoggerManager";
 
-export enum LogLevel {
-  TRACE = 0,
-  DEBUG = 1,
-  INFO = 2,
-  WARN = 3,
-  ERROR = 4,
-}
-
-export interface LoggerConfig {
-  level: LogLevel;
-  enableTimestamps: boolean;
-  enableContext: boolean;
-}
+// Re-export LogLevel from interface for backward compatibility
+export { LogLevel } from "../interfaces/ILoggerManager";
 
 /**
  * Central logging manager for the Datalayer VS Code extension.
  * Manages multiple log channels with different purposes.
  */
-export class LoggerManager {
+export class LoggerManager implements ILoggerManager {
   private static instance: LoggerManager;
   private channels = new Map<string, vscode.LogOutputChannel>();
   private config: LoggerConfig;
@@ -101,6 +95,55 @@ export class LoggerManager {
    */
   getConfig(): LoggerConfig {
     return { ...this.config };
+  }
+
+  /**
+   * Updates logging configuration.
+   * Affects all existing and future loggers.
+   *
+   * @param config - Partial configuration to update
+   */
+  setConfig(config: Partial<LoggerConfig>): void {
+    this.config = {
+      ...this.config,
+      ...config,
+    };
+  }
+
+  /**
+   * Shows the log output channel in VS Code.
+   *
+   * @param channelName - Optional specific channel to show. If not provided, shows main channel.
+   */
+  showChannel(channelName?: string): void {
+    if (channelName && this.channels.has(channelName)) {
+      this.channels.get(channelName)!.show();
+    } else {
+      // Show the first available channel or the main one
+      const firstChannel = this.channels.values().next().value;
+      if (firstChannel) {
+        firstChannel.show();
+      }
+    }
+  }
+
+  /**
+   * Clears all log output channels.
+   */
+  clearAll(): void {
+    for (const channel of this.channels.values()) {
+      channel.clear();
+    }
+  }
+
+  /**
+   * Disposes all loggers and cleans up resources.
+   */
+  dispose(): void {
+    for (const channel of this.channels.values()) {
+      channel.dispose();
+    }
+    this.channels.clear();
   }
 
   /**

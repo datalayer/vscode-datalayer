@@ -17,6 +17,8 @@ import type { IAuthProvider } from "../interfaces/IAuthProvider";
 import type { IDocumentBridge } from "../interfaces/IDocumentBridge";
 import type { IKernelBridge } from "../interfaces/IKernelBridge";
 import type { ILogger } from "../interfaces/ILogger";
+import type { ILoggerManager } from "../interfaces/ILoggerManager";
+import type { IErrorHandler } from "../interfaces/IErrorHandler";
 import { LoggerManager, Logger } from "../logging/loggerManager";
 import { ServiceLoggers } from "../logging/loggers";
 import { createVSCodeSDK } from "./sdkAdapter";
@@ -36,10 +38,10 @@ export interface IServiceContainer extends ILifecycle {
   readonly context: vscode.ExtensionContext;
   readonly sdk: DatalayerClient;
   readonly authProvider: IAuthProvider;
-  readonly errorHandler: ErrorHandler;
+  readonly errorHandler: IErrorHandler;
 
   // Logging services
-  readonly loggerManager: LoggerManager;
+  readonly loggerManager: ILoggerManager;
   readonly logger: ILogger;
 
   // Notebook services
@@ -71,9 +73,9 @@ export class ServiceContainer implements IServiceContainer {
   private _kernelBridge?: KernelBridge;
   private _notebookNetwork?: NotebookNetworkService;
   private _notebookRuntime?: NotebookRuntimeService;
-  private _loggerManager?: LoggerManager;
-  private _logger?: Logger;
-  private _errorHandler?: ErrorHandler;
+  private _loggerManager?: ILoggerManager;
+  private _logger?: ILogger;
+  private _errorHandler?: IErrorHandler;
 
   constructor(public readonly context: vscode.ExtensionContext) {}
 
@@ -97,7 +99,7 @@ export class ServiceContainer implements IServiceContainer {
     return this._authProvider;
   }
 
-  get errorHandler(): ErrorHandler {
+  get errorHandler(): IErrorHandler {
     if (!this._errorHandler) {
       this._errorHandler = new ErrorHandler(this.logger);
     }
@@ -106,7 +108,7 @@ export class ServiceContainer implements IServiceContainer {
 
   // Logging services
 
-  get loggerManager(): LoggerManager {
+  get loggerManager(): ILoggerManager {
     if (!this._loggerManager) {
       this._loggerManager = LoggerManager.getInstance(this.context);
     }
@@ -124,6 +126,7 @@ export class ServiceContainer implements IServiceContainer {
 
   get documentBridge(): IDocumentBridge {
     if (!this._documentBridge) {
+      this.logger.debug("Lazily initializing DocumentBridge service");
       this._documentBridge = DocumentBridge.getInstance(this.context, this.sdk);
     }
     return this._documentBridge;
@@ -131,7 +134,7 @@ export class ServiceContainer implements IServiceContainer {
 
   get kernelBridge(): IKernelBridge {
     if (!this._kernelBridge) {
-      // For now, use direct instantiation since KernelBridge doesn't use singleton
+      this.logger.debug("Lazily initializing KernelBridge service");
       this._kernelBridge = new KernelBridge(
         this.sdk,
         this.authProvider as SDKAuthProvider,
@@ -142,6 +145,7 @@ export class ServiceContainer implements IServiceContainer {
 
   get notebookNetwork(): NotebookNetworkService {
     if (!this._notebookNetwork) {
+      this.logger.debug("Lazily initializing NotebookNetwork service");
       this._notebookNetwork = new NotebookNetworkService();
     }
     return this._notebookNetwork;
@@ -149,15 +153,19 @@ export class ServiceContainer implements IServiceContainer {
 
   get notebookRuntime(): NotebookRuntimeService {
     if (!this._notebookRuntime) {
-      // NotebookRuntimeService uses singleton pattern (not yet migrated)
+      this.logger.debug("Lazily initializing NotebookRuntime service");
       this._notebookRuntime = NotebookRuntimeService.getInstance();
     }
     return this._notebookRuntime;
   }
 
   /**
-   * Initializes all services in the correct dependency order.
-   * Services are initialized lazily, so only accessed services are initialized.
+   * Initializes core services needed during extension activation.
+   * Only initializes SDK, auth, and logging - other services are lazy.
+   *
+   * Performance: This method is optimized to initialize only what's needed
+   * during extension activation. Document/kernel services are deferred until
+   * first use (typically when a command is invoked).
    */
   async initialize(): Promise<void> {
     try {
@@ -166,14 +174,26 @@ export class ServiceContainer implements IServiceContainer {
 
       this.logger.info("Initializing service container...");
 
-      // Eagerly initialize SDK (so VSCodeStorage can use ServiceLoggers)
+      // Eagerly initialize SDK (needed for UI initialization)
       const sdk = this.sdk; // Triggers SDK creation with logging available
 
-      // Initialize authentication
+      // Initialize authentication (needed for UI state)
       await this.authProvider.initialize();
 
-      // Other services will be initialized when first accessed
-      this.logger.info("Service container initialized successfully");
+      // ✨ PERFORMANCE: Document, kernel, and notebook services are NOT initialized here
+      // They will be lazily created when first accessed (typically via commands)
+      // This reduces extension activation time significantly
+
+      this.logger.info("Service container initialized successfully", {
+        initializedServices: ["LoggerManager", "Logger", "SDK", "AuthProvider"],
+        deferredServices: [
+          "DocumentBridge",
+          "KernelBridge",
+          "NotebookNetwork",
+          "NotebookRuntime",
+          "ErrorHandler",
+        ],
+      });
     } catch (error) {
       // Logger might not be available if initialization failed very early
       if (this._logger) {

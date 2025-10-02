@@ -13,29 +13,11 @@
 
 import * as vscode from "vscode";
 import type { ILogger } from "../interfaces/ILogger";
+import type {
+  IErrorHandler,
+  ErrorHandlerOptions,
+} from "../interfaces/IErrorHandler";
 import { extractErrorInfo, type ErrorInfo } from "../../types/errors";
-
-/**
- * Action that can be presented to the user for error resolution.
- */
-export interface ErrorAction {
-  /** Label shown on the action button */
-  label: string;
-  /** Action to execute when selected */
-  action: () => Promise<void>;
-}
-
-/**
- * Options for error handling behavior.
- */
-export interface ErrorHandlerOptions {
-  /** Show error to user via UI dialog (default: true) */
-  showUser?: boolean;
-  /** Log error to extension logs (default: true) */
-  logError?: boolean;
-  /** Actionable options for the user */
-  actionable?: ErrorAction[];
-}
 
 /**
  * Centralized error handler service.
@@ -50,7 +32,7 @@ export interface ErrorHandlerOptions {
  *     showUser: true,
  *     actionable: [
  *       {
- *         label: 'Retry',
+ *         title: 'Retry',
  *         action: async () => await riskyOperation()
  *       }
  *     ]
@@ -58,7 +40,7 @@ export interface ErrorHandlerOptions {
  * }
  * ```
  */
-export class ErrorHandler {
+export class ErrorHandler implements IErrorHandler {
   constructor(private logger: ILogger) {}
 
   /**
@@ -69,7 +51,13 @@ export class ErrorHandler {
    * @param options - Error handling options
    */
   async handle(error: Error, options: ErrorHandlerOptions = {}): Promise<void> {
-    const { showUser = true, logError = true, actionable = [] } = options;
+    const {
+      showUser = true,
+      logError = true,
+      severity = "error",
+      actionable = [],
+      context,
+    } = options;
 
     // Extract structured error information
     const errorInfo = extractErrorInfo(error);
@@ -77,13 +65,13 @@ export class ErrorHandler {
     // Log to extension logs
     if (logError) {
       this.logger.error(`${errorInfo.code}: ${errorInfo.message}`, error, {
-        context: errorInfo.context,
+        context: { ...errorInfo.context, ...context },
       });
     }
 
     // Show to user
     if (showUser) {
-      await this.showErrorToUser(errorInfo, actionable);
+      await this.showErrorToUser(errorInfo, severity, actionable);
     }
   }
 
@@ -92,19 +80,35 @@ export class ErrorHandler {
    */
   private async showErrorToUser(
     errorInfo: ErrorInfo,
-    actionable: ErrorAction[],
+    severity: "error" | "warning" | "info",
+    actionable: Array<{ title: string; action: () => void | Promise<void> }>,
   ): Promise<void> {
     const message = this.getUserFriendlyMessage(errorInfo);
 
     if (actionable.length > 0) {
-      const actions = actionable.map((a) => a.label);
-      const selected = await vscode.window.showErrorMessage(
-        message,
-        ...actions,
-      );
+      const actions = actionable.map((a) => a.title);
+      let selected: string | undefined;
+
+      switch (severity) {
+        case "error":
+          selected = await vscode.window.showErrorMessage(message, ...actions);
+          break;
+        case "warning":
+          selected = await vscode.window.showWarningMessage(
+            message,
+            ...actions,
+          );
+          break;
+        case "info":
+          selected = await vscode.window.showInformationMessage(
+            message,
+            ...actions,
+          );
+          break;
+      }
 
       if (selected) {
-        const action = actionable.find((a) => a.label === selected);
+        const action = actionable.find((a) => a.title === selected);
         if (action) {
           try {
             await action.action();
@@ -118,7 +122,17 @@ export class ErrorHandler {
         }
       }
     } else {
-      await vscode.window.showErrorMessage(message);
+      switch (severity) {
+        case "error":
+          await vscode.window.showErrorMessage(message);
+          break;
+        case "warning":
+          await vscode.window.showWarningMessage(message);
+          break;
+        case "info":
+          await vscode.window.showInformationMessage(message);
+          break;
+      }
     }
   }
 
@@ -150,6 +164,71 @@ export class ErrorHandler {
 
       default:
         return `An error occurred: ${errorInfo.message}`;
+    }
+  }
+
+  /**
+   * Wraps an async operation with automatic error handling.
+   * Catches errors and handles them according to options.
+   *
+   * @param operation - Async operation to wrap
+   * @param options - Error handling options
+   * @returns Operation result or undefined on error
+   */
+  async wrap<T>(
+    operation: () => Promise<T>,
+    options: ErrorHandlerOptions = {},
+  ): Promise<T | undefined> {
+    try {
+      return await operation();
+    } catch (error) {
+      await this.handle(error as Error, options);
+      return undefined;
+    }
+  }
+
+  /**
+   * Shows a user-friendly error notification.
+   *
+   * @param message - User-friendly error message
+   * @param severity - Severity level (default: "error")
+   * @param actions - Optional actions for the user
+   */
+  async showError(
+    message: string,
+    severity: "error" | "warning" | "info" = "error",
+    actions: Array<{ title: string; action: () => void | Promise<void> }> = [],
+  ): Promise<void> {
+    const actionLabels = actions.map((a) => a.title);
+
+    let selected: string | undefined;
+    switch (severity) {
+      case "error":
+        selected = await vscode.window.showErrorMessage(
+          message,
+          ...actionLabels,
+        );
+        break;
+      case "warning":
+        selected = await vscode.window.showWarningMessage(
+          message,
+          ...actionLabels,
+        );
+        break;
+      case "info":
+        selected = await vscode.window.showInformationMessage(
+          message,
+          ...actionLabels,
+        );
+        break;
+    }
+
+    // Execute selected action
+    if (selected) {
+      const action = actions.find((a) => a.title === selected);
+      if (action) {
+        await action.action();
+      }
     }
   }
 }
