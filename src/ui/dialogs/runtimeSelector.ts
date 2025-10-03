@@ -64,6 +64,32 @@ export async function selectDatalayerRuntime(
         // Fetch existing runtimes
         const runtimes = await sdk.listRuntimes();
 
+        // DEBUG: Log raw runtime data
+        console.log("[RuntimeSelector] Loaded runtimes:", runtimes.length);
+        if (runtimes.length > 0) {
+          const rawData = runtimes[0].rawData();
+          console.log(
+            "[RuntimeSelector] First runtime raw data FULL:",
+            JSON.stringify(rawData, null, 2),
+          );
+          console.log(
+            "[RuntimeSelector] First runtime raw data keys:",
+            Object.keys(rawData),
+          );
+          console.log(
+            "[RuntimeSelector] First runtime raw data.uid:",
+            rawData.uid,
+          );
+          console.log(
+            "[RuntimeSelector] First runtime toJSON:",
+            runtimes[0].toJSON(),
+          );
+          console.log(
+            "[RuntimeSelector] First runtime uid getter:",
+            runtimes[0].uid,
+          );
+        }
+
         // Get cached environments
         const environments =
           await EnvironmentCache.getInstance().getEnvironments(

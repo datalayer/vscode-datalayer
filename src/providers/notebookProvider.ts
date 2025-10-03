@@ -10,7 +10,7 @@
  * synchronization, runtime management, and webview communication.
  *
  * @see https://code.visualstudio.com/api/extension-guides/custom-editors
- * @module providers/jupyterNotebookProvider
+ * @module providers/notebookProvider
  */
 
 import * as vscode from "vscode";
@@ -18,30 +18,18 @@ import { disposeAll } from "../utils/dispose";
 import { getNotebookHtml } from "../ui/templates/notebookTemplate";
 import { WebviewCollection } from "../utils/webviewCollection";
 import { NotebookDocument, NotebookEdit } from "../models/notebookDocument";
-import { NotebookNetworkService } from "../services/notebook/notebookNetwork";
 import { SDKAuthProvider } from "../services/core/authProvider";
-import { KernelBridge } from "../services/notebook/kernelBridge";
 import { getServiceContainer } from "../extension";
 import { selectDatalayerRuntime } from "../ui/dialogs/runtimeSelector";
-import { showKernelSelector } from "../ui/dialogs/kernelSelector";
-import {
-  showTwoStepConfirmation,
-  CommonConfirmations,
-} from "../ui/dialogs/confirmationDialog";
-import type { ExtensionMessage } from "../types/vscode/messages";
+import { BaseDocumentProvider } from "./baseDocumentProvider";
 
 /**
  * Custom editor provider for Jupyter notebooks with dual-mode support.
  * Handles both local file-based notebooks and collaborative Datalayer notebooks
  * with runtime management, webview communication, and real-time synchronization.
  */
-export class JupyterNotebookProvider
-  implements vscode.CustomEditorProvider<NotebookDocument>
-{
+export class NotebookProvider extends BaseDocumentProvider<NotebookDocument> {
   private static newNotebookFileId = 1;
-
-  private readonly _networkService = new NotebookNetworkService();
-  private readonly _kernelBridge: KernelBridge;
 
   /**
    * Registers the notebook editor provider and commands.
@@ -50,37 +38,63 @@ export class JupyterNotebookProvider
    * @returns Disposable for cleanup
    */
   public static register(context: vscode.ExtensionContext): vscode.Disposable {
-    vscode.commands.registerCommand("datalayer.jupyter-notebook-new", () => {
-      const workspaceFolders = vscode.workspace.workspaceFolders;
-      if (!workspaceFolders) {
-        vscode.window.showErrorMessage(
-          "Creating new Datalayer notebook files currently requires opening a workspace",
+    const provider = new NotebookProvider(context);
+
+    const disposables: vscode.Disposable[] = [];
+
+    disposables.push(
+      vscode.commands.registerCommand("datalayer.jupyter-notebook-new", () => {
+        const workspaceFolders = vscode.workspace.workspaceFolders;
+        if (!workspaceFolders) {
+          vscode.window.showErrorMessage(
+            "Creating new Datalayer notebook files currently requires opening a workspace",
+          );
+          return;
+        }
+
+        const uri = vscode.Uri.joinPath(
+          workspaceFolders[0].uri,
+          `new-${NotebookProvider.newNotebookFileId++}.ipynb`,
+        ).with({ scheme: "untitled" });
+
+        vscode.commands.executeCommand(
+          "vscode.openWith",
+          uri,
+          NotebookProvider.viewType,
         );
-        return;
-      }
+      }),
+    );
 
-      const uri = vscode.Uri.joinPath(
-        workspaceFolders[0].uri,
-        `new-${JupyterNotebookProvider.newNotebookFileId++}.ipynb`,
-      ).with({ scheme: "untitled" });
-
-      vscode.commands.executeCommand(
-        "vscode.openWith",
-        uri,
-        JupyterNotebookProvider.viewType,
-      );
+    // Register callback for runtime termination notifications
+    import("../commands/internal").then(({ onRuntimeTerminated }) => {
+      onRuntimeTerminated(async (uri: vscode.Uri) => {
+        // Send kernel-terminated message to notebook webview
+        const panels = provider.webviews.get(uri);
+        if (panels) {
+          const panel = Array.from(panels)[0];
+          if (panel) {
+            await panel.webview.postMessage({
+              type: "kernel-terminated",
+            });
+          }
+        }
+      });
     });
 
-    return vscode.window.registerCustomEditorProvider(
-      JupyterNotebookProvider.viewType,
-      new JupyterNotebookProvider(context),
-      {
-        webviewOptions: {
-          retainContextWhenHidden: true,
+    disposables.push(
+      vscode.window.registerCustomEditorProvider(
+        NotebookProvider.viewType,
+        provider,
+        {
+          webviewOptions: {
+            retainContextWhenHidden: true,
+          },
+          supportsMultipleEditorsPerDocument: false,
         },
-        supportsMultipleEditorsPerDocument: false,
-      },
+      ),
     );
+
+    return vscode.Disposable.from(...disposables);
   }
 
   private static readonly viewType = "datalayer.jupyter-notebook";
@@ -90,20 +104,25 @@ export class JupyterNotebookProvider
    */
   private readonly webviews = new WebviewCollection();
 
-  private _requestId = 1;
-  private readonly _callbacks = new Map<string, (response: unknown) => void>();
-  private readonly _context: vscode.ExtensionContext;
-
   /**
-   * Creates a new JupyterNotebookProvider.
+   * Creates a new NotebookProvider.
    *
    * @param context - Extension context for resource access
    */
   constructor(context: vscode.ExtensionContext) {
-    this._context = context;
-    const sdk = getServiceContainer().sdk;
-    const authProvider = getServiceContainer().authProvider as SDKAuthProvider;
-    this._kernelBridge = new KernelBridge(sdk, authProvider);
+    super(context);
+
+    // Set fallback for kernel selection failures (Datalayer runtime selector)
+    this._runtimeBridge.setKernelSelectionFallback((documentUri) => {
+      const document = Array.from(
+        this.webviews.get(documentUri),
+      )[0] as unknown as {
+        document: NotebookDocument;
+      };
+      if (document?.document) {
+        this.showDatalayerRuntimeSelector(document.document);
+      }
+    });
   }
 
   /**
@@ -114,7 +133,7 @@ export class JupyterNotebookProvider
    * @param _token - Cancellation token
    * @returns Promise resolving to the notebook document
    */
-  async openCustomDocument(
+  override async openCustomDocument(
     uri: vscode.Uri,
     openContext: { backupId?: string },
     _token: vscode.CancellationToken,
@@ -185,7 +204,7 @@ export class JupyterNotebookProvider
    * @param _token - Cancellation token
    * @returns Promise that resolves when editor is ready
    */
-  async resolveCustomEditor(
+  override async resolveCustomEditor(
     document: NotebookDocument,
     webviewPanel: vscode.WebviewPanel,
     _token: vscode.CancellationToken,
@@ -194,7 +213,10 @@ export class JupyterNotebookProvider
     this.webviews.add(document.uri, webviewPanel);
 
     // Register webview with kernel bridge for kernel communication
-    this._kernelBridge.registerWebview(document.uri, webviewPanel);
+    getServiceContainer().kernelBridge.registerWebview(
+      document.uri,
+      webviewPanel,
+    );
 
     // Setup initial content for the webview
     webviewPanel.webview.options = {
@@ -220,7 +242,7 @@ export class JupyterNotebookProvider
     webviewPanel.onDidDispose(() => {
       themeChangeDisposable.dispose();
       // Unregister from kernel bridge
-      this._kernelBridge.unregisterWebview(document.uri);
+      getServiceContainer().kernelBridge.unregisterWebview(document.uri);
       // WebviewCollection automatically removes the entry when disposed
     });
 
@@ -274,10 +296,21 @@ export class JupyterNotebookProvider
 
             // First try to get metadata from document bridge
             const { DocumentBridge } = await import(
-              "../services/notebook/documentBridge"
+              "../services/bridges/documentBridge"
             );
             const documentBridge = DocumentBridge.getInstance();
             const metadata = documentBridge.getDocumentMetadata(document.uri);
+
+            console.log(
+              "[NotebookProvider] Datalayer notebook collaboration setup:",
+              {
+                hasMetadata: !!metadata,
+                documentUid: metadata?.document.uid,
+                serverUrl,
+                hasToken: !!token,
+                uriPath: document.uri.path,
+              },
+            );
 
             if (metadata && metadata.document.uid) {
               documentId = metadata.document.uid;
@@ -287,8 +320,13 @@ export class JupyterNotebookProvider
               const match = filename.match(/_([a-zA-Z0-9-]+)\.ipynb$/);
               documentId = match ? match[1] : undefined;
 
-              if (documentId) {
-              }
+              console.log(
+                "[NotebookProvider] No metadata, trying fallback extraction:",
+                {
+                  filename,
+                  extractedId: documentId,
+                },
+              );
             }
           }
 
@@ -307,12 +345,6 @@ export class JupyterNotebookProvider
     });
   }
 
-  private readonly _onDidChangeCustomDocument = new vscode.EventEmitter<
-    vscode.CustomDocumentEditEvent<NotebookDocument>
-  >();
-  public readonly onDidChangeCustomDocument =
-    this._onDidChangeCustomDocument.event;
-
   /**
    * Saves a custom document.
    *
@@ -320,7 +352,7 @@ export class JupyterNotebookProvider
    * @param cancellation - Cancellation token
    * @returns Promise that resolves when save is complete
    */
-  public saveCustomDocument(
+  public override saveCustomDocument(
     document: NotebookDocument,
     cancellation: vscode.CancellationToken,
   ): Thenable<void> {
@@ -335,7 +367,7 @@ export class JupyterNotebookProvider
    * @param cancellation - Cancellation token
    * @returns Promise that resolves when save is complete
    */
-  public saveCustomDocumentAs(
+  public override saveCustomDocumentAs(
     document: NotebookDocument,
     destination: vscode.Uri,
     cancellation: vscode.CancellationToken,
@@ -350,7 +382,7 @@ export class JupyterNotebookProvider
    * @param cancellation - Cancellation token
    * @returns Promise that resolves when revert is complete
    */
-  public revertCustomDocument(
+  public override revertCustomDocument(
     document: NotebookDocument,
     cancellation: vscode.CancellationToken,
   ): Thenable<void> {
@@ -365,7 +397,7 @@ export class JupyterNotebookProvider
    * @param cancellation - Cancellation token
    * @returns Promise resolving to backup descriptor
    */
-  public backupCustomDocument(
+  public override backupCustomDocument(
     document: NotebookDocument,
     context: vscode.CustomDocumentBackupContext,
     cancellation: vscode.CancellationToken,
@@ -384,167 +416,21 @@ export class JupyterNotebookProvider
   }
 
   /**
-   * Posts a message to webview and waits for response.
-   *
-   * @param panel - Target webview panel
-   * @param type - Message type
-   * @param body - Message body
-   * @returns Promise resolving to the response
+   * Registers notebook-specific message handlers.
+   * Overrides base class to add notebook content change handler.
    */
-  private postMessageWithResponse<R = unknown>(
-    panel: vscode.WebviewPanel,
-    type: string,
-    body: unknown,
-  ): Promise<R> {
-    const requestId = (this._requestId++).toString();
-    const p = new Promise<R>((resolve) =>
-      this._callbacks.set(requestId, resolve as (response: unknown) => void),
-    );
-    panel.webview.postMessage({ type, requestId, body });
-    return p;
-  }
+  protected override registerMessageHandlers(): void {
+    // Call base class to register common handlers
+    super.registerMessageHandlers();
 
-  /**
-   * Posts a message to webview without expecting response.
-   *
-   * @param panel - Target webview panel
-   * @param type - Message type
-   * @param body - Message body
-   * @param id - Optional message ID
-   */
-  private postMessage(
-    panel: vscode.WebviewPanel,
-    type: string,
-    body: unknown,
-    id?: string,
-  ): void {
-    panel.webview.postMessage({ type, body, id });
-  }
-
-  /**
-   * Handles messages received from the webview.
-   *
-   * @param webview - Source webview panel
-   * @param document - Associated document
-   * @param message - Received message
-   */
-  private async onMessage(
-    webview: vscode.WebviewPanel,
-    document: NotebookDocument,
-    message: ExtensionMessage,
-  ) {
-    switch (message.type) {
-      case "ready":
-        // Handle in resolveCustomEditor
-        return;
-      case "select-runtime":
-      case "select-kernel": {
-        // Show the kernel selector with available options
-        const sdk = getServiceContainer().sdk;
-        const authProvider = getServiceContainer()
-          .authProvider as SDKAuthProvider;
-
-        // Pass the document URI and kernel bridge so the kernel can be connected
-        showKernelSelector(sdk, authProvider, this._kernelBridge, document.uri)
-          .then(() => {})
-          .catch((_error) => {
-            // Fallback to Datalayer runtime selector
-            this.showDatalayerRuntimeSelector(document);
-          });
-
-        return;
-      }
-
-      case "terminate-runtime": {
-        const messageBody = message.body as { runtime?: unknown };
-        const runtimeObj = messageBody?.runtime as {
-          givenName?: string;
-          environmentTitle?: string;
-          environmentName?: string;
-          uid?: string;
-          podName?: string;
-        };
-        if (!runtimeObj) {
-          return;
-        }
-
-        // Show confirmation dialog
-        const runtimeName =
-          runtimeObj.givenName ||
-          runtimeObj.environmentTitle ||
-          runtimeObj.environmentName ||
-          runtimeObj.uid ||
-          "Unknown";
-        const confirmed = await showTwoStepConfirmation(
-          CommonConfirmations.terminateRuntime(runtimeName),
-        );
-
-        if (confirmed) {
-          try {
-            const sdk = getServiceContainer().sdk;
-
-            // Delete the runtime via SDK - MUST use pod_name, not uid!
-            // If podName is missing, construct it from uid (format: runtime-{uid})
-            const podName = runtimeObj.podName ?? `runtime-${runtimeObj.uid}`;
-
-            await sdk.deleteRuntime(podName);
-
-            // Notify user of success
-            vscode.window.showInformationMessage(
-              `Runtime "${runtimeName}" terminated successfully.`,
-            );
-
-            // Clear the kernel selection in the webview
-            await webview.webview.postMessage({
-              type: "runtime-terminated",
-              runtime: null,
-            });
-          } catch (error: unknown) {
-            const errorMessage =
-              error instanceof Error ? error.message : String(error);
-            vscode.window.showErrorMessage(
-              `Failed to terminate runtime: ${errorMessage}`,
-            );
-          }
-        }
-        return;
-      }
-
-      case "http-request": {
-        this._networkService.forwardRequest(message, webview);
-        return;
-      }
-
-      case "response": {
-        const callback = this._callbacks.get(message.requestId!);
-        if (callback) {
-          callback(message.body);
-          this._callbacks.delete(message.requestId!);
-        } else {
-        }
-        return;
-      }
-
-      case "websocket-open": {
-        this._networkService.openWebsocket(message, webview);
-        return;
-      }
-
-      case "websocket-message": {
-        this._networkService.sendWebsocketMessage(message);
-        return;
-      }
-
-      case "websocket-close": {
-        this._networkService.closeWebsocket(message);
-        return;
-      }
-
-      case "notebook-content-changed": {
+    // Handler for notebook content changes
+    this._messageRouter.registerHandler(
+      "notebook-content-changed",
+      async (message, context) => {
         // Only track changes for local notebooks, not Datalayer space notebooks
-        const isDatalayerNotebook = document.uri.scheme === "datalayer";
+        const isDatalayerNotebook = !context.isFromDatalayer;
 
-        if (!isDatalayerNotebook) {
+        if (isDatalayerNotebook) {
           const messageBody = message.body as {
             content?: Uint8Array | number[];
           };
@@ -559,54 +445,33 @@ export class JupyterNotebookProvider
             return;
           }
 
-          document.makeEdit({
-            type: "content-update",
-            content: content,
-          });
-        } else {
+          // We need the document instance - get it from webviews
+          const documentUri = vscode.Uri.parse(context.documentUri);
+          const webviewPanel = Array.from(this.webviews.get(documentUri))[0];
+          if (webviewPanel) {
+            const doc = (
+              webviewPanel as unknown as { document: NotebookDocument }
+            ).document;
+            if (doc) {
+              doc.makeEdit({
+                type: "content-update",
+                content: content,
+              });
+            }
+          }
         }
-        return;
-      }
+      },
+    );
+  }
 
-      // This case should not happen as getFileData is handled differently
-      case "getFileData": {
-        return;
-      }
-      case "runtime-expired": {
-        const messageBody = message.body as { runtime?: unknown };
-        const runtimeObj = messageBody?.runtime as {
-          name?: string;
-          givenName?: string;
-          uid?: string;
-        };
-        if (!runtimeObj) {
-          return;
-        }
-
-        const runtimeName =
-          runtimeObj.name ||
-          runtimeObj.givenName ||
-          runtimeObj.givenName ||
-          runtimeObj.uid ||
-          "Unknown";
-
-        // Show notification that runtime expired
-        const notificationPromise = vscode.window.showWarningMessage(
-          `Runtime "${runtimeName}" has expired. Notebook switched to offline mode.`,
-        );
-
-        // Clear the kernel selection in the webview (same as terminate-runtime)
-        const postMessagePromise = webview.webview.postMessage({
-          type: "runtime-terminated", // Reuse the same message type for cleanup
-          runtime: null,
-        });
-
-        // Wait for both operations
-        await Promise.all([notificationPromise, postMessagePromise]);
-
-        return;
-      }
-    }
+  /**
+   * Gets the URI for a notebook document.
+   *
+   * @param document - The notebook document
+   * @returns The document URI
+   */
+  protected override getDocumentUri(document: NotebookDocument): vscode.Uri {
+    return document.uri;
   }
 
   /**
@@ -623,7 +488,7 @@ export class JupyterNotebookProvider
       .then(async (runtime) => {
         if (runtime) {
           // Send selected runtime to webview via kernel bridge
-          await this._kernelBridge.connectWebviewNotebook(
+          await getServiceContainer().kernelBridge.connectWebviewDocument(
             document.uri,
             runtime,
           );

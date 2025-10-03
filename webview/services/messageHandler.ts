@@ -147,10 +147,24 @@ export class MessageHandler {
   private _handleMessage(event: MessageEvent): void {
     const message = event.data;
 
+    console.log("[MessageHandler] Received message:", {
+      type: message.type,
+      hasRequestId: !!message.requestId,
+      hasId: !!message.id,
+      requestId: message.requestId,
+      id: message.id,
+    });
+
     // Check if this is a response to a pending request
     if (message.requestId || message.id) {
       const requestId = message.requestId || message.id;
       const pending = this._pendingRequests.get(requestId);
+
+      console.log("[MessageHandler] Looking for pending request:", {
+        requestId,
+        found: !!pending,
+        pendingCount: this._pendingRequests.size,
+      });
 
       if (pending) {
         clearTimeout(pending.timeout);
@@ -166,6 +180,10 @@ export class MessageHandler {
     }
 
     // Broadcast to all registered callbacks
+    console.log("[MessageHandler] Broadcasting message to callbacks:", {
+      type: message.type,
+      callbackCount: this._messageCallbacks.size,
+    });
     for (const handler of this._messageCallbacks.values()) {
       try {
         handler(message);

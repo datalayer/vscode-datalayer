@@ -23,7 +23,6 @@ import { getServiceContainer } from "../extension";
 import { SmartDynamicControllerManager } from "../providers/smartDynamicControllerManager";
 import {
   showTwoStepConfirmation,
-  showSimpleConfirmation,
   CommonConfirmations,
 } from "../ui/dialogs/confirmationDialog";
 
@@ -31,7 +30,8 @@ import type { Runtime } from "../../../core/lib/client/models/Runtime";
 import type { DatalayerClient } from "../../../core/lib/client";
 
 interface RuntimeQuickPickItem extends vscode.QuickPickItem {
-  runtime: Runtime;
+  runtime?: Runtime;
+  isTerminateAll?: boolean;
 }
 
 /**
@@ -174,25 +174,155 @@ export function registerRuntimeCommands(
   );
 
   /**
-   * Command: datalayer.restartNotebookRuntime
-   * Refreshes runtime controllers.
+   * Command: datalayer.terminateRuntimes
+   * Shows QuickPick to terminate either all runtimes or a specific runtime.
+   * "Terminate All" option is placed LAST for safety (prevents accidental selection).
    */
   context.subscriptions.push(
-    vscode.commands.registerCommand(
-      "datalayer.restartNotebookRuntime",
-      async () => {
-        const restart = await showSimpleConfirmation(
-          CommonConfirmations.refreshRuntimes(),
+    vscode.commands.registerCommand("datalayer.terminateRuntimes", async () => {
+      try {
+        // Check authentication
+        const authState = authProvider.getAuthState();
+        if (!authState.isAuthenticated) {
+          vscode.window.showErrorMessage(
+            "Please login first to manage runtimes",
+          );
+          return;
+        }
+
+        // Fetch all runtimes
+        const runtimes = await sdk.listRuntimes();
+
+        if (!runtimes || runtimes.length === 0) {
+          vscode.window.showInformationMessage("No running runtimes found");
+          return;
+        }
+
+        // Helper to format time remaining
+        const formatTimeRemaining = (expiredAt: Date): string => {
+          const now = new Date();
+          const msRemaining = expiredAt.getTime() - now.getTime();
+          if (msRemaining <= 0) {
+            return "expired";
+          }
+
+          const minutes = Math.floor(msRemaining / 60000);
+          const hours = Math.floor(minutes / 60);
+
+          if (hours > 0) {
+            const remainingMinutes = minutes % 60;
+            return `${hours}h ${remainingMinutes}m left`;
+          }
+          return `${minutes}m left`;
+        };
+
+        // Create QuickPick items for individual runtimes
+        const runtimeItems: RuntimeQuickPickItem[] = runtimes.map(
+          (runtime) => ({
+            label: `$(server) ${runtime.givenName || runtime.podName}`,
+            description: `${runtime.environmentTitle || runtime.environmentName}`,
+            detail: formatTimeRemaining(runtime.expiredAt),
+            runtime, // Store runtime object for later use
+          }),
         );
 
-        if (restart) {
-          await controllerManager.refreshControllers();
-          vscode.window.showInformationMessage(
-            "Runtime controllers refreshed. Select a runtime from the kernel picker.",
+        // Add separator and "Terminate All" option at the END (safety!)
+        const allItems: RuntimeQuickPickItem[] = [
+          ...runtimeItems,
+          { label: "", kind: vscode.QuickPickItemKind.Separator },
+          {
+            label: `$(trash) Terminate All (${runtimes.length} runtime${runtimes.length !== 1 ? "s" : ""})`,
+            description: "⚠️  This will terminate all running runtimes",
+            isTerminateAll: true,
+          },
+        ];
+
+        // Show QuickPick
+        const selected = await vscode.window.showQuickPick(allItems, {
+          placeHolder: "Select runtime to terminate",
+          title: "Terminate Runtimes",
+        });
+
+        if (!selected) {
+          return;
+        } // User cancelled
+
+        // Handle "Terminate All"
+        if (selected.isTerminateAll) {
+          const confirmed = await showTwoStepConfirmation(
+            CommonConfirmations.terminateAllRuntimes(runtimes.length),
           );
+
+          if (!confirmed) {
+            return;
+          }
+
+          // Terminate all runtimes in parallel
+          const results = await Promise.allSettled(
+            runtimes.map((runtime) =>
+              sdk
+                .deleteRuntime(runtime.podName)
+                .then(() => ({ success: true, runtime }))
+                .catch((error) => ({ success: false, runtime, error })),
+            ),
+          );
+
+          // Count successes and failures
+          const successes = results.filter(
+            (r) =>
+              r.status === "fulfilled" &&
+              (r.value as { success: boolean }).success,
+          ).length;
+          const failures = results.length - successes;
+
+          if (failures === 0) {
+            vscode.window.showInformationMessage(
+              `Successfully terminated all ${runtimes.length} runtime${runtimes.length !== 1 ? "s" : ""}`,
+            );
+          } else {
+            vscode.window.showWarningMessage(
+              `Terminated ${successes} runtime${successes !== 1 ? "s" : ""}, ${failures} failed`,
+            );
+          }
+
+          // Notify all open documents that runtimes were terminated
+          await notifyAllDocuments();
+          return;
         }
-      },
-    ),
+
+        // Handle single runtime termination
+        const selectedRuntime = selected.runtime;
+        if (!selectedRuntime) {
+          return;
+        }
+
+        const runtimeName =
+          selectedRuntime.givenName || selectedRuntime.podName;
+        const confirmed = await showTwoStepConfirmation(
+          CommonConfirmations.terminateRuntime(runtimeName),
+        );
+
+        if (!confirmed) {
+          return;
+        }
+
+        // Terminate the runtime
+        await sdk.deleteRuntime(selectedRuntime.podName);
+
+        vscode.window.showInformationMessage(
+          `Runtime "${runtimeName}" terminated successfully`,
+        );
+
+        // Notify all open documents that runtime was terminated
+        await notifyAllDocuments();
+      } catch (error: unknown) {
+        const errorMessage =
+          error instanceof Error ? error.message : String(error);
+        vscode.window.showErrorMessage(
+          `Failed to terminate runtime: ${errorMessage}`,
+        );
+      }
+    }),
   );
 
   /**
@@ -247,6 +377,55 @@ export function registerRuntimeCommands(
             `Debug: Runtime termination failed. Error: ${errorMessage}. Check console for full details.`,
           );
         }
+      },
+    ),
+  );
+
+  /**
+   * Internal command: datalayer.internal.terminateRuntime
+   * Called from kernel selector to terminate a specific runtime for a document.
+   * Used by both notebooks and lexical editors.
+   */
+  context.subscriptions.push(
+    vscode.commands.registerCommand(
+      "datalayer.internal.terminateRuntime",
+      async (uri: vscode.Uri, runtime: unknown) => {
+        const runtimeObj = runtime as {
+          podName?: string;
+          givenName?: string;
+          uid?: string;
+        };
+
+        try {
+          // Terminate the runtime on the server using podName
+          if (runtimeObj.podName) {
+            await sdk.deleteRuntime(runtimeObj.podName);
+            const runtimeName = runtimeObj.givenName || runtimeObj.podName;
+            vscode.window.showInformationMessage(
+              `Runtime "${runtimeName}" terminated successfully.`,
+            );
+          } else {
+            throw new Error("Runtime podName not found");
+          }
+        } catch (error: unknown) {
+          const errorMessage =
+            error instanceof Error ? error.message : String(error);
+          vscode.window.showErrorMessage(
+            `Failed to terminate runtime: ${errorMessage}`,
+          );
+          return; // Don't clear runtime if termination failed
+        }
+
+        // Clear from centralized runtime tracking
+        const { clearConnectedRuntime } = await import("./internal");
+        clearConnectedRuntime(uri);
+
+        // Send kernel-terminated message to appropriate provider
+        // This is a fire-and-forget command to notify the UI
+        vscode.commands.executeCommand(
+          "datalayer.internal.notifyRuntimeTerminated",
+          uri,
+        );
       },
     ),
   );
@@ -311,7 +490,7 @@ export function registerRuntimeCommands(
           title: "Terminate Runtime",
         })) as RuntimeQuickPickItem | undefined;
 
-        if (selected) {
+        if (selected && selected.runtime) {
           const confirmed = await showTwoStepConfirmation(
             CommonConfirmations.terminateRuntime(selected.label),
           );
@@ -329,6 +508,39 @@ export function registerRuntimeCommands(
       }
     }),
   );
+}
+
+/**
+ * Notifies all open notebook and lexical documents that runtimes were terminated.
+ * Sends kernel-terminated message to all active webviews.
+ */
+async function notifyAllDocuments(): Promise<void> {
+  // Get all open tabs
+  const allTabs = vscode.window.tabGroups.all.flatMap((group) => group.tabs);
+
+  // Notify all custom editor documents (notebooks and lexicals)
+  for (const tab of allTabs) {
+    const input = tab.input;
+    if (
+      input &&
+      typeof input === "object" &&
+      "viewType" in input &&
+      "uri" in input
+    ) {
+      const viewType = (input as { viewType: string }).viewType;
+      // Check for both Datalayer notebook and lexical editors
+      if (
+        viewType === "datalayer.jupyter-notebook" ||
+        viewType === "datalayer.lexical-editor"
+      ) {
+        const uri = (input as { uri: vscode.Uri }).uri;
+        vscode.commands.executeCommand(
+          "datalayer.internal.notifyRuntimeTerminated",
+          uri,
+        );
+      }
+    }
+  }
 }
 
 /**
@@ -366,6 +578,9 @@ async function terminateRuntime(
     vscode.window.showInformationMessage(
       `Runtime "${name}" terminated successfully.`,
     );
+
+    // Notify all open documents that runtime was terminated
+    await notifyAllDocuments();
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : String(error);
     vscode.window.showErrorMessage(

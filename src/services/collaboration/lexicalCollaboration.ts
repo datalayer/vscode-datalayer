@@ -13,7 +13,7 @@
 
 import * as vscode from "vscode";
 import { LexicalDocument } from "../../models/lexicalDocument";
-import { DocumentBridge } from "./documentBridge";
+import { DocumentBridge } from "../bridges/documentBridge";
 import { getServiceContainer } from "../../extension";
 
 /**

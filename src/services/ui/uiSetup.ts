@@ -15,8 +15,8 @@ import * as vscode from "vscode";
 import { DatalayerStatusBar } from "./statusBar";
 import { SpacesTreeProvider } from "../../providers/spacesTreeProvider";
 import { SmartDynamicControllerManager } from "../../providers/smartDynamicControllerManager";
-import { JupyterNotebookProvider } from "../../providers/jupyterNotebookProvider";
-import { LexicalDocumentProvider } from "../../providers/lexicalDocumentProvider";
+import { NotebookProvider } from "../../providers/notebookProvider";
+import { LexicalProvider } from "../../providers/lexicalProvider";
 import { SDKAuthProvider } from "../core/authProvider";
 import { EnvironmentCache } from "../cache/environmentCache";
 import type { DatalayerClient } from "../../../../core/lib/client";
@@ -59,8 +59,8 @@ export async function initializeUI(
   const statusBar = DatalayerStatusBar.getInstance(authProvider);
   context.subscriptions.push(statusBar);
 
-  context.subscriptions.push(JupyterNotebookProvider.register(context));
-  context.subscriptions.push(LexicalDocumentProvider.register(context));
+  context.subscriptions.push(NotebookProvider.register(context));
+  context.subscriptions.push(LexicalProvider.register(context));
 
   // Initialize environment cache only if authenticated
   try {

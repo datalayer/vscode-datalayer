@@ -494,8 +494,9 @@ The documentation is automatically built and deployed on every push to the main 
 Extension settings can be configured in VS Code:
 
 - `datalayer.serverUrl` - Datalayer server URL (default: https://prod1.datalayer.run)
-- `datalayer.runtime.environment` - Default runtime environment for notebooks (`python-cpu-env` or `ai-env`, default: `python-cpu-env`)
-- `datalayer.runtime.creditsLimit` - Default credits limit for new runtimes (minimum: 1, default: 10)
+- `datalayer.runtime.defaultMinutes` - Default runtime duration in minutes (default: 10, max: 1440)
+
+**Note:** Available runtime environments are fetched dynamically from the Datalayer API and cached for performance. The extension uses `EnvironmentCache` to avoid repeated API calls. Credits are calculated automatically based on runtime duration and environment burning rate.
 
 ## Known Technical Limitations
 

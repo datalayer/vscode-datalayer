@@ -7,57 +7,92 @@
 /**
  * @module hooks/useNotebookResize
  * Shared ResizeObserver hook for notebook editor.
- * Eliminates duplicate resize logic across components.
+ * Uses notebookStore2 to trigger Lumino widget updates.
  */
 
 import { useEffect } from "react";
+import { notebookStore2 } from "@datalayer/jupyter-react";
 
 /**
- * Hook to set up ResizeObserver for notebook element.
- * Dispatches custom 'notebook-resize' event when notebook size changes.
+ * Hook to set up ResizeObserver for notebook container.
+ * Calls notebook.adapter.panel.update() when container resizes.
  *
- * This replaces duplicate code in NotebookEditor.tsx (lines 326-363 & 534-571)
+ * @param notebookId - The notebook ID to update
+ * @param containerRef - React ref to the container element
  */
-export function useNotebookResize() {
+export function useNotebookResize(
+  notebookId: string,
+  containerRef: React.RefObject<HTMLDivElement>,
+) {
   useEffect(() => {
-    let resizeObserver: ResizeObserver | null = null;
-    let retryCount = 0;
-    const maxRetries = 10;
-    let timeoutId: NodeJS.Timeout;
+    const updateHeight = () => {
+      if (containerRef.current) {
+        const rect = containerRef.current.getBoundingClientRect();
+        const newHeight = rect.height;
 
-    const setupNotebookResize = () => {
-      const notebookElement = document.querySelector(".jp-Notebook");
-      const notebookPanel = document.querySelector(".jp-NotebookPanel");
+        if (newHeight > 0) {
+          const notebookContainer = containerRef.current.querySelector(
+            "#dla-Jupyter-Notebook",
+          );
+          const notebookBox =
+            containerRef.current.querySelector(".dla-Box-Notebook");
 
-      if (notebookElement || notebookPanel) {
-        // Found notebook element, set up observer
-        resizeObserver = new ResizeObserver(() => {
-          // Use custom event that won't trigger window resize handler
-          const customResize = new CustomEvent("notebook-resize");
-          window.dispatchEvent(customResize);
-        });
+          if (notebookContainer) {
+            (notebookContainer as HTMLElement).style.height = `${newHeight}px`;
+          }
 
-        // Observe the parent element for size changes
-        if (notebookPanel && notebookPanel.parentElement) {
-          resizeObserver.observe(notebookPanel.parentElement);
-        } else if (notebookElement && notebookElement.parentElement) {
-          resizeObserver.observe(notebookElement.parentElement);
+          if (notebookBox) {
+            (notebookBox as HTMLElement).style.height = `${newHeight}px`;
+            (notebookBox as HTMLElement).style.maxHeight = `${newHeight}px`;
+          }
+
+          // Get notebook from store and update Lumino panel
+          const notebook = notebookStore2.getState().notebooks.get(notebookId);
+          if (notebook?.adapter?.panel) {
+            notebook.adapter.panel.update();
+          }
         }
-      } else if (retryCount < maxRetries) {
-        // Retry if elements not found yet
-        retryCount++;
-        timeoutId = setTimeout(setupNotebookResize, 200);
       }
     };
 
-    // Start setup after a delay to allow DOM to render
-    timeoutId = setTimeout(setupNotebookResize, 100);
+    // Initial update after delay
+    const initialTimer = setTimeout(updateHeight, 500);
+
+    let resizeObserver: ResizeObserver | null = null;
+    let debounceTimer: NodeJS.Timeout | null = null;
+
+    // Set up ResizeObserver
+    const setupObserver = setTimeout(() => {
+      if (containerRef.current) {
+        resizeObserver = new ResizeObserver((entries) => {
+          if (debounceTimer) {
+            clearTimeout(debounceTimer);
+          }
+          debounceTimer = setTimeout(() => {
+            for (const entry of entries) {
+              if (entry.contentRect.height > 0) {
+                updateHeight();
+              }
+            }
+          }, 50);
+        });
+        resizeObserver.observe(containerRef.current);
+      }
+    }, 600);
+
+    // Also listen to window resize
+    window.addEventListener("resize", updateHeight);
 
     return () => {
-      clearTimeout(timeoutId);
+      clearTimeout(initialTimer);
+      clearTimeout(setupObserver);
+      if (debounceTimer) {
+        clearTimeout(debounceTimer);
+      }
       if (resizeObserver) {
         resizeObserver.disconnect();
       }
+      window.removeEventListener("resize", updateHeight);
     };
-  }, []); // Empty dependency array - set up once on mount
+  }, [notebookId, containerRef]);
 }

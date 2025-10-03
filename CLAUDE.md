@@ -65,7 +65,7 @@ npm run dist:mac  # Builds universal macOS app
 - Automatic runtime creation and reuse
 - Credits conservation through runtime sharing
 - Health verification before reuse
-- Configurable environments (`python-cpu-env`, `ai-env`)
+- Dynamic environments loaded from API and cached (uses `EnvironmentCache`)
 
 ### 🎯 Kernel Selection System
 
@@ -83,10 +83,11 @@ npm run dist:mac  # Builds universal macOS app
 ```json
 {
   "datalayer.serverUrl": "https://prod1.datalayer.run",
-  "datalayer.runtime.environment": "python-cpu-env",
-  "datalayer.runtime.creditsLimit": 10
+  "datalayer.runtime.defaultMinutes": 10
 }
 ```
+
+**Note:** Runtime environments (e.g., Python CPU, AI Environment) are fetched dynamically from the Datalayer API and cached using `EnvironmentCache`. No hardcoded environment names. Credits are calculated automatically based on runtime duration and environment burning rate.
 
 ## API Response Handling
 
@@ -149,21 +150,30 @@ Key commands:
 ```
 src/
 ├── services/
-│   ├── sdkAdapter.ts      # SDK singleton with VS Code handlers
-│   ├── authProvider.ts    # Authentication management
-│   ├── serviceFactory.ts  # Service initialization
-│   ├── statusBar.ts       # Status bar UI management
-│   └── kernelBridge.ts    # Routes kernel connections to webview/native
+│   ├── bridges/           # ✨ Extension ↔ Webview ↔ Platform bridges
+│   │   ├── documentBridge.ts  # Downloads/opens documents from platform
+│   │   ├── kernelBridge.ts    # Routes kernel connections to webviews
+│   │   ├── networkBridge.ts   # Bridges HTTP/WebSocket for providers
+│   │   └── runtimeBridge.ts   # Runtime lifecycle operations
+│   ├── messaging/         # Message routing infrastructure
+│   │   ├── messageRouter.ts   # Centralized message dispatcher
+│   │   └── types.ts           # Messaging type definitions
+│   ├── network/           # Low-level network primitives
+│   │   └── networkProxy.ts    # HTTP/WebSocket proxy service
+│   ├── core/              # Core services (auth, SDK, error handling)
+│   ├── cache/             # Caching services (environments)
+│   ├── collaboration/     # Real-time collaboration services
+│   ├── logging/           # Logging infrastructure
+│   └── ui/                # UI components (status bar)
 ├── providers/
-│   ├── spacesTreeProvider.ts       # Tree view for spaces
-│   ├── jupyterNotebookProvider.ts  # Custom editor for Jupyter notebooks
-│   ├── runtimeControllerManager.ts # Runtime management
-│   └── runtimeController.ts        # Individual runtime control
+│   ├── baseDocumentProvider.ts     # Base class for custom editors
+│   ├── notebookProvider.ts         # Jupyter notebook custom editor
+│   ├── lexicalProvider.ts          # Lexical document custom editor
+│   ├── spacesTreeProvider.ts       # Spaces tree view provider
+│   └── smartDynamicControllerManager.ts  # Notebook controller manager
 ├── commands/         # VS Code command implementations
-├── models/           # Data models
-└── utils/            # Utility functions
-    ├── kernelSelector.ts    # Unified kernel selection UI
-    └── runtimeSelector.ts   # Datalayer runtime picker
+├── models/           # Data models (documents, spaces)
+└── ui/               # UI dialogs (kernel selector, auth, etc.)
 
 webview/
 ├── theme/          # VS Code theme integration
@@ -171,9 +181,34 @@ webview/
 │   ├── NotebookEditor.tsx    # Main notebook component
 │   └── NotebookToolbar.tsx   # Toolbar with kernel display
 ├── lexical/        # Lexical editor components
-└── services/
-    └── mutableServiceManager.ts  # Wrapper for hot-swapping ServiceManager
+│   ├── LexicalWebview.tsx    # Main lexical editor
+│   └── LexicalToolbar.tsx    # Lexical toolbar
+├── components/     # Shared UI components
+├── stores/         # Zustand state stores
+└── services/       # Webview services
+    ├── serviceManager.ts         # JupyterLab ServiceManager wrapper
+    └── mutableServiceManager.ts  # Hot-swappable ServiceManager
 ```
+
+### Service Organization Rationale
+
+**bridges/** - All "bridge" services that connect different parts of the system:
+
+- `documentBridge` - Extension ↔ Platform (downloads documents)
+- `kernelBridge` - Extension ↔ Webview (routes kernel connections)
+- `networkBridge` - Extension ↔ Webview (HTTP/WS proxy wrapper)
+- `runtimeBridge` - Extension ↔ Platform (runtime lifecycle)
+
+**messaging/** - Generic message routing infrastructure:
+
+- `messageRouter` - Centralized dispatcher for webview messages
+- `types` - Shared type definitions for messaging
+
+**network/** - Low-level network primitives:
+
+- `networkProxy` - Direct HTTP/WebSocket proxy implementation
+
+This organization provides clear separation of concerns and makes it easy to understand the data flow between extension, webview, and platform.
 
 ## Development Guidelines
 

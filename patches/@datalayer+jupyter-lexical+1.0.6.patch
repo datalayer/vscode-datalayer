@@ -1,0 +1,60 @@
+diff --git a/node_modules/@datalayer/jupyter-lexical/lib/plugins/JupyterInputOutputPlugin.js b/node_modules/@datalayer/jupyter-lexical/lib/plugins/JupyterInputOutputPlugin.js
+index fb5b7cd..5dec59a 100644
+--- a/node_modules/@datalayer/jupyter-lexical/lib/plugins/JupyterInputOutputPlugin.js
++++ b/node_modules/@datalayer/jupyter-lexical/lib/plugins/JupyterInputOutputPlugin.js
+@@ -93,31 +93,36 @@ export const JupyterInputOutputPlugin = (props) => {
+                     }, { discrete: true });
+                 }
+                 else if (mutation === 'updated') {
+-                    // Only move nodes if they're actually out of position
+-                    editor.update(() => {
+-                        const inputNode = $getNodeByKey(nodeKey);
+-                        if (inputNode && $isJupyterInputNode(inputNode)) {
+-                            const inputUuid = inputNode.getJupyterInputNodeUuid();
+-                            const outputKey = INPUT_UUID_TO_OUTPUT_KEY.get(inputUuid);
+-                            if (outputKey) {
+-                                const outputNode = $getNodeByKey(outputKey);
+-                                if (outputNode) {
+-                                    const inputNextSibling = inputNode.getNextSibling();
+-                                    // Only move if the output node is not immediately after the input node
+-                                    if (inputNextSibling !== outputNode) {
+-                                        isMovingNodes.current = true;
+-                                        try {
++                    // Skip if we're already moving nodes to prevent recursion
++                    if (isMovingNodes.current)
++                        return;
++
++                    // Set flag BEFORE calling editor.update to prevent recursion
++                    isMovingNodes.current = true;
++                    try {
++                        // Only move nodes if they're actually out of position
++                        editor.update(() => {
++                            const inputNode = $getNodeByKey(nodeKey);
++                            if (inputNode && $isJupyterInputNode(inputNode)) {
++                                const inputUuid = inputNode.getJupyterInputNodeUuid();
++                                const outputKey = INPUT_UUID_TO_OUTPUT_KEY.get(inputUuid);
++                                if (outputKey) {
++                                    const outputNode = $getNodeByKey(outputKey);
++                                    if (outputNode) {
++                                        const inputNextSibling = inputNode.getNextSibling();
++                                        // Only move if the output node is not immediately after the input node
++                                        if (inputNextSibling !== outputNode) {
+                                             outputNode.remove(false);
+                                             inputNode.insertAfter(outputNode);
+                                         }
+-                                        finally {
+-                                            isMovingNodes.current = false;
+-                                        }
+                                     }
+                                 }
+                             }
+-                        }
+-                    }, { discrete: true });
++                        }, { discrete: true });
++                    }
++                    finally {
++                        isMovingNodes.current = false;
++                    }
+                 }
+             }
+         });

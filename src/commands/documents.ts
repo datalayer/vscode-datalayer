@@ -23,7 +23,7 @@
 
 import * as vscode from "vscode";
 import { getServiceContainer } from "../extension";
-import { DocumentBridge } from "../services/notebook/documentBridge";
+import { DocumentBridge } from "../services/bridges/documentBridge";
 import { SpacesTreeProvider } from "../providers/spacesTreeProvider";
 import { Document } from "../models/spaceItem";
 import {

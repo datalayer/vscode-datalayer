@@ -35,13 +35,13 @@ export interface IKernelBridge {
   unregisterWebview(uri: vscode.Uri): void;
 
   /**
-   * Connects a webview notebook to a runtime.
+   * Connects a webview document (notebook or lexical) to a runtime.
    * Sends runtime information to the webview for ServiceManager creation.
    *
-   * @param uri - Notebook URI
+   * @param uri - Document URI
    * @param runtime - Selected runtime
    */
-  connectWebviewNotebook(uri: vscode.Uri, runtime: Runtime): Promise<void>;
+  connectWebviewDocument(uri: vscode.Uri, runtime: Runtime): Promise<void>;
 
   /**
    * Detects the type of notebook (native vs webview).
@@ -50,4 +50,18 @@ export interface IKernelBridge {
    * @returns "webview" for Datalayer notebooks, "native" for others
    */
   detectNotebookType(uri: vscode.Uri): "webview" | "native";
+
+  /**
+   * Broadcasts kernel selection to all registered webviews.
+   * Used when a runtime is selected that should apply to multiple documents.
+   *
+   * @param runtime - Selected runtime to broadcast
+   */
+  broadcastKernelSelected(runtime: Runtime): Promise<void>;
+
+  /**
+   * Broadcasts kernel termination to all registered webviews.
+   * Used when a runtime is terminated that affects multiple documents.
+   */
+  broadcastKernelTerminated(): Promise<void>;
 }

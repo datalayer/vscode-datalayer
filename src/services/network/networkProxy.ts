@@ -40,36 +40,74 @@ export class NotebookNetworkService {
     message: ExtensionMessage,
     webview: vscode.WebviewPanel,
   ): void {
-    const { body, id } = message;
+    const { body, requestId } = message;
     const requestBody = body as {
       url: string;
       body?: string | ArrayBuffer | Blob | FormData;
       headers?: Record<string, string>;
       method: string;
     };
+    console.log("[NotebookNetwork] Forwarding request:", {
+      method: requestBody.method,
+      url: requestBody.url,
+      hasBody: !!requestBody.body,
+      requestId: requestId,
+      messageKeys: Object.keys(message),
+    });
+
     fetch(requestBody.url, {
       body: requestBody.body,
       headers: requestBody.headers,
       method: requestBody.method,
-    }).then(async (reply: Response) => {
-      const headers: Record<string, string> = [...reply.headers].reduce(
-        (agg, pair) => ({ ...agg, [pair[0]]: pair[1] }),
-        {},
-      );
-      const rawBody =
-        requestBody.method !== "DELETE" ? await reply.arrayBuffer() : undefined;
-      this.postMessage(
-        webview,
-        "http-response",
-        {
-          headers,
-          body: rawBody,
+    })
+      .then(async (reply: Response) => {
+        console.log("[NotebookNetwork] Got response:", {
+          url: requestBody.url,
           status: reply.status,
           statusText: reply.statusText,
-        },
-        id,
-      );
-    });
+          requestId: requestId,
+        });
+
+        const headers: Record<string, string> = [...reply.headers].reduce(
+          (agg, pair) => ({ ...agg, [pair[0]]: pair[1] }),
+          {},
+        );
+        const rawBody =
+          requestBody.method !== "DELETE"
+            ? await reply.arrayBuffer()
+            : undefined;
+
+        console.log(
+          "[NotebookNetwork] Calling postMessage with requestId:",
+          requestId,
+        );
+        this.postMessage(
+          webview,
+          "http-response",
+          {
+            headers,
+            body: rawBody,
+            status: reply.status,
+            statusText: reply.statusText,
+          },
+          requestId,
+        );
+      })
+      .catch((error) => {
+        console.error("[NotebookNetwork] Request failed:", error);
+        // Send error response back to webview
+        this.postMessage(
+          webview,
+          "http-response",
+          {
+            headers: {},
+            body: undefined,
+            status: 500,
+            statusText: error.message || "Network request failed",
+          },
+          requestId,
+        );
+      });
   }
 
   /**
@@ -182,15 +220,28 @@ export class NotebookNetworkService {
    * @param panel - Target webview panel
    * @param type - Message type identifier
    * @param body - Message payload
-   * @param id - Optional message ID for correlation
+   * @param requestIdOrId - Optional message ID for correlation (requestId for HTTP, id for WebSocket)
    */
   private postMessage(
     panel: vscode.WebviewPanel,
     type: string,
     body: unknown,
-    id?: string,
+    requestIdOrId?: string,
   ): void {
-    panel.webview.postMessage({ type, body, id });
+    // HTTP messages use 'requestId', WebSocket messages use 'id'
+    const isWebSocketMessage = type.startsWith("websocket-");
+    const messageToSend = isWebSocketMessage
+      ? { type, body, id: requestIdOrId }
+      : { type, body, requestId: requestIdOrId };
+
+    console.log("[NotebookNetwork] postMessage:", {
+      type,
+      hasBody: !!body,
+      requestId: !isWebSocketMessage ? requestIdOrId : undefined,
+      id: isWebSocketMessage ? requestIdOrId : undefined,
+      messageKeys: Object.keys(messageToSend),
+    });
+    panel.webview.postMessage(messageToSend);
   }
 
   /**

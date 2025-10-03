@@ -30,10 +30,13 @@ interface ExtendedRuntimeJSON
 
 /**
  * Message sent to webview for kernel selection.
+ * Matches messageHandler's expected structure with body field.
  */
 interface KernelSelectionMessage {
   type: "kernel-selected";
-  runtime: ExtendedRuntimeJSON;
+  body: {
+    runtime: ExtendedRuntimeJSON;
+  };
 }
 
 /**
@@ -79,13 +82,13 @@ export class KernelBridge implements vscode.Disposable {
   }
 
   /**
-   * Connects a webview notebook to a runtime.
+   * Connects a webview document (notebook or lexical) to a runtime.
    * Sends runtime information to the webview for ServiceManager creation.
    *
-   * @param uri - Notebook URI
+   * @param uri - Document URI
    * @param runtime - Selected runtime
    */
-  public async connectWebviewNotebook(
+  public async connectWebviewDocument(
     uri: vscode.Uri,
     runtime: Runtime,
   ): Promise<void> {
@@ -96,7 +99,7 @@ export class KernelBridge implements vscode.Disposable {
       // Try to find webview by searching active panels
       const allWebviews = this.findWebviewsForUri(uri);
       if (allWebviews.length === 0) {
-        throw new Error("No webview found for notebook");
+        throw new Error("No webview found for document");
       }
       // Use first matching webview
       const webviewPanel = allWebviews[0];
@@ -105,13 +108,10 @@ export class KernelBridge implements vscode.Disposable {
 
     const targetWebview = this._webviews.get(key);
     if (!targetWebview) {
-      throw new Error("Failed to get webview panel");
+      throw new Error("Failed to get webview panel for document");
     }
 
-    // Don't log the full runtime object as it might not serialize well
-
     // Use runtime.toJSON() to get the stable interface
-
     let runtimeData: RuntimeJSON;
     if (runtime && typeof runtime.toJSON === "function") {
       runtimeData = runtime.toJSON();
@@ -127,14 +127,33 @@ export class KernelBridge implements vscode.Disposable {
       throw new Error("Runtime is missing ingress URL or token");
     }
 
-    // Create message with extended runtime data
-    const message: KernelSelectionMessage = {
+    // Fire event so providers can track the runtime
+    // This allows them to show "Terminate Runtime" option later
+    await vscode.commands.executeCommand(
+      "datalayer.internal.runtimeConnected",
+      uri,
+      runtime,
+    );
+
+    // Create message with runtime data in body (matches messageHandler expectations)
+    const message = {
       type: "kernel-selected",
-      runtime: runtimeData, // Use standardized RuntimeJSON data as-is (already has ISO 8601 strings)
+      body: {
+        runtime: runtimeData, // Use standardized RuntimeJSON data as-is (already has ISO 8601 strings)
+      },
     };
 
+    console.log("[KernelBridge] Posting kernel-selected message:", {
+      type: message.type,
+      hasBody: !!message.body,
+      hasRuntime: !!message.body.runtime,
+      runtimeKeys: Object.keys(message.body.runtime),
+      ingress: message.body.runtime.ingress,
+    });
+
     // Post message to webview
-    await targetWebview.webview.postMessage(message);
+    const result = await targetWebview.webview.postMessage(message);
+    console.log("[KernelBridge] postMessage result:", result);
   }
 
   /**
@@ -275,6 +294,48 @@ export class KernelBridge implements vscode.Disposable {
     }
 
     return undefined;
+  }
+
+  /**
+   * Broadcasts kernel selection to all registered webviews.
+   * Used when a runtime is selected that should apply to multiple documents.
+   *
+   * @param runtime - Selected runtime to broadcast
+   */
+  public async broadcastKernelSelected(runtime: Runtime): Promise<void> {
+    const runtimeData = runtime.toJSON();
+    const message: KernelSelectionMessage = {
+      type: "kernel-selected",
+      body: {
+        runtime: runtimeData,
+      },
+    };
+
+    // Send to all registered webviews
+    const promises: Thenable<boolean>[] = [];
+    for (const webview of this._webviews.values()) {
+      promises.push(webview.webview.postMessage(message));
+    }
+
+    await Promise.all(promises);
+  }
+
+  /**
+   * Broadcasts kernel termination to all registered webviews.
+   * Used when a runtime is terminated that affects multiple documents.
+   */
+  public async broadcastKernelTerminated(): Promise<void> {
+    const message = {
+      type: "kernel-terminated",
+    };
+
+    // Send to all registered webviews
+    const promises: Thenable<boolean>[] = [];
+    for (const webview of this._webviews.values()) {
+      promises.push(webview.webview.postMessage(message));
+    }
+
+    await Promise.all(promises);
   }
 
   /**

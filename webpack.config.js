@@ -236,7 +236,7 @@ const webviewConfig = {
 // Config for Lexical editor webview
 const lexicalWebviewConfig = {
   ...webviewConfig,
-  entry: "./webview/lexical/lexicalWebview.tsx",
+  entry: "./webview/lexical/main.ts",
   output: {
     path: path.resolve(__dirname, "dist"),
     filename: "lexicalWebview.js",

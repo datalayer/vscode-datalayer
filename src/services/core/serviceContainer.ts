@@ -23,10 +23,9 @@ import { LoggerManager } from "../logging/loggerManager";
 import { ServiceLoggers } from "../logging/loggers";
 import { createVSCodeSDK } from "./sdkAdapter";
 import { SDKAuthProvider } from "./authProvider";
-import { DocumentBridge } from "../notebook/documentBridge";
-import { KernelBridge } from "../notebook/kernelBridge";
-import { NotebookNetworkService } from "../notebook/notebookNetwork";
-import { NotebookRuntimeService } from "../notebook/notebookRuntime";
+import { DocumentBridge } from "../bridges/documentBridge";
+import { KernelBridge } from "../bridges/kernelBridge";
+import { NotebookNetworkService } from "../network/networkProxy";
 import { ErrorHandler } from "./errorHandler";
 import { ILifecycle } from "./baseService";
 
@@ -48,7 +47,6 @@ export interface IServiceContainer extends ILifecycle {
   readonly documentBridge: IDocumentBridge;
   readonly kernelBridge: IKernelBridge;
   readonly notebookNetwork: NotebookNetworkService;
-  readonly notebookRuntime: NotebookRuntimeService;
 }
 
 /**
@@ -72,7 +70,6 @@ export class ServiceContainer implements IServiceContainer {
   private _documentBridge?: DocumentBridge;
   private _kernelBridge?: KernelBridge;
   private _notebookNetwork?: NotebookNetworkService;
-  private _notebookRuntime?: NotebookRuntimeService;
   private _loggerManager?: ILoggerManager;
   private _logger?: ILogger;
   private _errorHandler?: IErrorHandler;
@@ -151,14 +148,6 @@ export class ServiceContainer implements IServiceContainer {
     return this._notebookNetwork;
   }
 
-  get notebookRuntime(): NotebookRuntimeService {
-    if (!this._notebookRuntime) {
-      this.logger.debug("Lazily initializing NotebookRuntime service");
-      this._notebookRuntime = NotebookRuntimeService.getInstance();
-    }
-    return this._notebookRuntime;
-  }
-
   /**
    * Initializes core services needed during extension activation.
    * Only initializes SDK, auth, and logging - other services are lazy.
@@ -190,7 +179,6 @@ export class ServiceContainer implements IServiceContainer {
           "DocumentBridge",
           "KernelBridge",
           "NotebookNetwork",
-          "NotebookRuntime",
           "ErrorHandler",
         ],
       });

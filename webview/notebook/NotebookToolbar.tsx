@@ -1,12 +1,13 @@
 /*
- * Copyright (c) 2021-2023 Datalayer, Inc.
+ * Copyright (c) 2021-2025 Datalayer, Inc.
  *
  * MIT License
  */
 
 /**
  * @module NotebookToolbar
- * VS Code-style toolbar for the Jupyter notebook
+ * VS Code-style toolbar for the Jupyter notebook.
+ * Uses shared toolbar components to maintain consistency with LexicalToolbar.
  */
 
 import React, { useState, useEffect, useContext } from "react";
@@ -15,9 +16,16 @@ import { NotebookActions } from "@jupyterlab/notebook";
 import { MessageHandlerContext } from "../services/messageHandler";
 import type { RuntimeJSON } from "../../../core/lib/client/models/Runtime";
 
+// Import shared toolbar components
+import {
+  BaseToolbar,
+  ToolbarButton,
+  KernelSelector,
+} from "../components/toolbar";
+import type { ToolbarAction } from "../components/toolbar";
+
 /**
  * Props for the NotebookToolbar component
- * @hidden
  */
 export interface NotebookToolbarProps {
   /** ID of the notebook */
@@ -29,7 +37,8 @@ export interface NotebookToolbarProps {
 }
 
 /**
- * Toolbar component for Jupyter notebook operations
+ * Toolbar component for Jupyter notebook operations.
+ * Uses shared components to ensure consistent appearance with LexicalToolbar.
  */
 export const NotebookToolbar: React.FC<NotebookToolbarProps> = ({
   notebookId,
@@ -37,9 +46,7 @@ export const NotebookToolbar: React.FC<NotebookToolbarProps> = ({
   selectedRuntime,
 }) => {
   const messageHandler = useContext(MessageHandlerContext);
-  const [selectedKernel, setSelectedKernel] = useState<string>("No Kernel");
   const [kernelStatus, setKernelStatus] = useState<string>("disconnected");
-  const [isConnecting, setIsConnecting] = useState<boolean>(false);
   const [isScrolled, setIsScrolled] = useState<boolean>(false);
   const [notebook, setNotebook] = useState<any>(null);
 
@@ -92,30 +99,24 @@ export const NotebookToolbar: React.FC<NotebookToolbarProps> = ({
 
     const setupScrollDetection = () => {
       const handleScroll = () => {
-        // Check if toolbar is not at top of viewport
         const toolbar = document.querySelector("[data-notebook-toolbar]");
         if (toolbar) {
           const rect = toolbar.getBoundingClientRect();
-          // If toolbar is pinned to top (due to sticky) but page is scrolled
           const pageScrolled =
             window.pageYOffset > 10 || document.documentElement.scrollTop > 10;
           const toolbarAtTop = rect.top <= 5;
 
-          // Show shadow when scrolled and toolbar is stuck at top
           setIsScrolled(pageScrolled && toolbarAtTop);
         }
       };
 
-      // Listen to multiple scroll events
       scrollListener = () => {
         requestAnimationFrame(handleScroll);
       };
 
-      // Add listeners to window and document
       window.addEventListener("scroll", scrollListener, true);
       document.addEventListener("scroll", scrollListener, true);
 
-      // Try to find notebook container and add listener
       const notebook = document.querySelector(
         ".jp-Notebook, .jp-WindowedPanel, #notebook-editor",
       );
@@ -127,11 +128,9 @@ export const NotebookToolbar: React.FC<NotebookToolbarProps> = ({
         }
       }
 
-      // Initial check
       handleScroll();
     };
 
-    // Use MutationObserver to wait for notebook to be ready
     observer = new MutationObserver(() => {
       const notebook = document.querySelector(
         ".jp-Notebook, .jp-WindowedPanel",
@@ -142,13 +141,11 @@ export const NotebookToolbar: React.FC<NotebookToolbarProps> = ({
       }
     });
 
-    // Start observing
     observer.observe(document.body, {
       childList: true,
       subtree: true,
     });
 
-    // Also set up immediately in case notebook is already loaded
     setupScrollDetection();
 
     return () => {
@@ -161,64 +158,36 @@ export const NotebookToolbar: React.FC<NotebookToolbarProps> = ({
   }, []);
 
   useEffect(() => {
-    // Check if we have a selected runtime (works for both Datalayer and local notebooks)
     if (selectedRuntime) {
-      // Show "Datalayer: {Runtime name}" to clearly indicate it's a Datalayer runtime
-      // Use givenName first, then fallback to environmentTitle, then environmentName, then UID
-      const runtimeName =
-        selectedRuntime.givenName ||
-        selectedRuntime.environmentTitle ||
-        selectedRuntime.environmentName ||
-        selectedRuntime.uid ||
-        "Runtime";
-
-      setSelectedKernel(`Datalayer: ${runtimeName}`);
-
-      // Check if we have an active kernel connection to determine status
       if (notebook?.adapter?.kernel?.connection) {
         const kernelConnection = notebook.adapter.kernel.connection;
         setKernelStatus(kernelConnection.status || "idle");
-        setIsConnecting(false);
       } else {
-        // Runtime is selected, so show it as idle/ready
         setKernelStatus("idle");
-        setIsConnecting(false);
       }
     } else if (notebook?.adapter?.kernel?.connection) {
-      // Fallback: No selectedRuntime but we have a kernel connection
       const kernelConnection = notebook.adapter.kernel.connection;
-      const displayName = kernelConnection.name || "Python";
-      setSelectedKernel(displayName);
       setKernelStatus(kernelConnection.status || "idle");
-      setIsConnecting(false);
     } else {
-      // Show "Select Kernel" when nothing is selected, matching native VS Code
-      setSelectedKernel("Select Kernel");
       setKernelStatus("disconnected");
-      setIsConnecting(false);
     }
   }, [notebook, isDatalayerNotebook, selectedRuntime]);
 
-  const handleRunAll = (e: React.MouseEvent) => {
-    e.preventDefault();
+  const handleRunAll = () => {
     if (notebookId) {
       notebookStore2.getState().runAll(notebookId);
     }
   };
 
-  const handleAddCodeCell = (e: React.MouseEvent) => {
-    e.preventDefault();
+  const handleAddCodeCell = () => {
     if (notebookId && notebook?.adapter?.panel?.content) {
-      // Use NotebookActions to insert a code cell below
       NotebookActions.insertBelow(notebook.adapter.panel.content);
       NotebookActions.changeCellType(notebook.adapter.panel.content, "code");
     }
   };
 
-  const handleAddMarkdownCell = (e: React.MouseEvent) => {
-    e.preventDefault();
+  const handleAddMarkdownCell = () => {
     if (notebookId && notebook?.adapter?.panel?.content) {
-      // Use NotebookActions to insert a markdown cell below
       NotebookActions.insertBelow(notebook.adapter.panel.content);
       NotebookActions.changeCellType(
         notebook.adapter.panel.content,
@@ -229,7 +198,6 @@ export const NotebookToolbar: React.FC<NotebookToolbarProps> = ({
 
   const handleSelectRuntime = () => {
     if (messageHandler) {
-      // Send message to extension to show runtime selection dialog
       messageHandler.send({
         type: "select-runtime",
         body: {
@@ -239,296 +207,108 @@ export const NotebookToolbar: React.FC<NotebookToolbarProps> = ({
     }
   };
 
-  const getKernelStatusIcon = () => {
-    if (isConnecting) {
-      return "codicon-loading codicon-modifier-spin";
-    }
-    // Use server icon to match native VS Code notebook
-    switch (kernelStatus) {
-      case "idle":
-      case "busy":
-        return "codicon-server-environment"; // Connected kernel icon
-      case "disconnected":
-        return "codicon-server-environment"; // Same icon but will show "Select Kernel"
-      case "connecting":
-        return "codicon-loading codicon-modifier-spin";
-      default:
-        return "codicon-server-environment";
-    }
-  };
+  // Define all toolbar actions with priorities
+  const actions: ToolbarAction[] = [
+    {
+      id: "code",
+      icon: "codicon codicon-add",
+      label: "Code",
+      title: "Add Code Cell",
+      onClick: handleAddCodeCell,
+      priority: 1,
+    },
+    {
+      id: "markdown",
+      icon: "codicon codicon-add",
+      label: "Markdown",
+      title: "Add Markdown Cell",
+      onClick: handleAddMarkdownCell,
+      priority: 2,
+    },
+    {
+      id: "runAll",
+      icon: "codicon codicon-run-all",
+      label: "Run All",
+      title: "Run All Cells",
+      onClick: handleRunAll,
+      priority: 3,
+    },
+  ];
 
-  const getKernelStatusColor = () => {
-    // Match native VS Code notebook - icon color is always foreground
-    return "var(--vscode-foreground)";
-  };
+  // Calculate reserved right width for overflow calculation
+  const reservedForCollaborative = isDatalayerNotebook ? 180 : 0;
+  const reservedForKernel = 200;
+  const reservedRightWidth = reservedForKernel + reservedForCollaborative;
 
   return (
     <div
       data-notebook-toolbar="true"
       style={{
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "space-between",
-        padding: "2px 8px",
-        backgroundColor: "var(--vscode-editor-background)",
-        fontSize: "var(--vscode-font-size)",
-        fontFamily: "var(--vscode-font-family)",
-        minHeight: "32px",
         position: "sticky",
         top: 0,
         zIndex: 100,
-        // Add shadow only when scrolled, no border
         boxShadow: isScrolled
           ? "0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24)"
           : "none",
         transition: "box-shadow 0.2s ease",
       }}
     >
-      {/* Left side actions */}
-      <div style={{ display: "flex", alignItems: "center", gap: "2px" }}>
-        {/* Add Code Cell button */}
-        <button
-          onClick={handleAddCodeCell}
-          title="Add Code Cell"
-          style={{
-            background: "transparent",
-            border: "none",
-            color: "var(--vscode-foreground)",
-            cursor: "pointer",
-            padding: "2px 6px",
-            borderRadius: "3px",
-            display: "flex",
-            alignItems: "center",
-            gap: "4px",
-            fontSize: "var(--vscode-font-size)",
-          }}
-          onMouseEnter={(e) =>
-            (e.currentTarget.style.backgroundColor =
-              "var(--vscode-toolbar-hoverBackground)")
-          }
-          onMouseLeave={(e) =>
-            (e.currentTarget.style.backgroundColor = "transparent")
-          }
-        >
-          <span
-            className="codicon codicon-add"
-            style={{ fontSize: "16px" }}
-          ></span>
-          <span>Code</span>
-        </button>
-
-        {/* Add Markdown Cell button */}
-        <button
-          onClick={handleAddMarkdownCell}
-          title="Add Markdown Cell"
-          style={{
-            background: "transparent",
-            border: "none",
-            color: "var(--vscode-foreground)",
-            cursor: "pointer",
-            padding: "2px 6px",
-            borderRadius: "3px",
-            display: "flex",
-            alignItems: "center",
-            gap: "4px",
-            fontSize: "var(--vscode-font-size)",
-          }}
-          onMouseEnter={(e) =>
-            (e.currentTarget.style.backgroundColor =
-              "var(--vscode-toolbar-hoverBackground)")
-          }
-          onMouseLeave={(e) =>
-            (e.currentTarget.style.backgroundColor = "transparent")
-          }
-        >
-          <span
-            className="codicon codicon-add"
-            style={{ fontSize: "16px" }}
-          ></span>
-          <span>Markdown</span>
-        </button>
-
-        {/* Divider */}
-        <div
-          style={{
-            width: "1px",
-            height: "20px",
-            backgroundColor: "var(--vscode-widget-border)",
-            margin: "0 4px",
-          }}
-        />
-
-        {/* Run All button */}
-        <button
-          onClick={handleRunAll}
-          title="Run All Cells"
-          style={{
-            background: "transparent",
-            border: "none",
-            color: "var(--vscode-foreground)",
-            cursor: "pointer",
-            padding: "2px 6px",
-            borderRadius: "3px",
-            display: "flex",
-            alignItems: "center",
-            gap: "4px",
-            fontSize: "var(--vscode-font-size)",
-          }}
-          onMouseEnter={(e) =>
-            (e.currentTarget.style.backgroundColor =
-              "var(--vscode-toolbar-hoverBackground)")
-          }
-          onMouseLeave={(e) =>
-            (e.currentTarget.style.backgroundColor = "transparent")
-          }
-        >
-          <span
-            className="codicon codicon-run-all"
-            style={{ fontSize: "16px" }}
-          ></span>
-          <span>Run All</span>
-        </button>
-      </div>
-
-      {/* Right side - Kernel selector and collaborative indicator */}
-      <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-        {/* Collaborative status indicator for Datalayer notebooks */}
-        {isDatalayerNotebook && (
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "6px",
-              padding: "0 8px",
-              backgroundColor: "transparent",
-              color: "var(--vscode-foreground)",
-              fontSize: "11px",
-              opacity: 0.8,
-            }}
-          >
-            <span
-              style={{
-                width: "8px",
-                height: "8px",
-                backgroundColor: "var(--vscode-terminal-ansiGreen)",
-                borderRadius: "50%",
-                display: "inline-block",
-                animation: "pulse 2s infinite",
-              }}
-            ></span>
-            <span>Collaborative • Auto-saved</span>
-          </div>
-        )}
-
-        {/* Terminate Runtime button - only show for Datalayer runtimes */}
-        {selectedRuntime &&
-          selectedKernel !== "Select Kernel" &&
-          selectedKernel.startsWith("Datalayer:") && (
-            <button
-              onClick={() => {
-                if (messageHandler) {
-                  messageHandler.send({
-                    type: "terminate-runtime",
-                    body: {
-                      runtime: selectedRuntime,
-                    },
-                  });
-                }
-              }}
-              title="Terminate Runtime"
-              style={{
-                background: "transparent",
-                border: "none",
-                color: "var(--vscode-foreground)",
-                cursor: "pointer",
-                padding: "4px",
-                borderRadius: "3px",
-                display: "flex",
-                alignItems: "center",
-                fontSize: "var(--vscode-font-size)",
-                opacity: 0.8,
-                transition: "opacity 0.1s ease, background-color 0.1s ease",
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor =
-                  "var(--vscode-toolbar-hoverBackground)";
-                e.currentTarget.style.opacity = "1";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = "transparent";
-                e.currentTarget.style.opacity = "0.8";
-              }}
-            >
-              <span
-                className="codicon codicon-x"
-                style={{ fontSize: "16px" }}
-              ></span>
-            </button>
-          )}
-
-        <button
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "6px",
-            padding: "2px 6px",
-            borderRadius: "3px",
-            backgroundColor: "transparent",
-            border: "none",
-            cursor:
-              kernelStatus === "disconnected" || !notebook?.adapter?.kernel
-                ? "pointer"
-                : "default",
-            color: "var(--vscode-foreground)",
-            fontSize: "var(--vscode-font-size)",
-            fontFamily: "var(--vscode-font-family)",
-            minWidth: "120px",
-            transition: "background-color 0.1s ease",
-          }}
-          onClick={
-            kernelStatus === "disconnected" || !notebook?.adapter?.kernel
-              ? handleSelectRuntime
-              : undefined
-          }
-          title={
-            notebook?.adapter?.kernel
-              ? `Connected to ${selectedKernel}`
-              : isDatalayerNotebook
-                ? "Select Datalayer Runtime"
-                : "Select Kernel"
-          }
-          onMouseEnter={(e) => {
-            if (kernelStatus === "disconnected" || !notebook?.adapter?.kernel) {
-              e.currentTarget.style.backgroundColor =
-                "var(--vscode-toolbar-hoverBackground)";
-            }
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.backgroundColor = "transparent";
-          }}
-        >
-          <span
-            className={`codicon ${getKernelStatusIcon()}`}
-            style={{
-              fontSize: "16px",
-              color: getKernelStatusColor(),
-              minWidth: "16px",
-            }}
+      <BaseToolbar
+        actions={actions}
+        renderAction={(action) => (
+          <ToolbarButton
+            icon={action.icon}
+            label={action.label}
+            onClick={action.onClick}
+            title={action.title}
+            disabled={action.disabled}
           />
-          <span
-            style={{
-              flex: 1,
-              textAlign: "left",
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-              whiteSpace: "nowrap",
-            }}
-          >
-            {selectedKernel}
-          </span>
-          {/* Never show chevron - this is not a dropdown */}
-        </button>
-      </div>
+        )}
+        estimatedButtonWidth={80}
+        reservedRightWidth={reservedRightWidth}
+        rightContent={
+          <>
+            {/* Collaborative status indicator for Datalayer notebooks */}
+            {isDatalayerNotebook && (
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "6px",
+                  padding: "0 8px",
+                  backgroundColor: "transparent",
+                  color: "var(--vscode-foreground)",
+                  fontSize: "11px",
+                  opacity: 0.8,
+                }}
+              >
+                <span
+                  style={{
+                    width: "8px",
+                    height: "8px",
+                    backgroundColor: "var(--vscode-terminal-ansiGreen)",
+                    borderRadius: "50%",
+                    display: "inline-block",
+                    animation: "pulse 2s infinite",
+                  }}
+                ></span>
+                <span>Collaborative • Auto-saved</span>
+              </div>
+            )}
+
+            <KernelSelector
+              selectedRuntime={selectedRuntime}
+              kernelStatus={
+                kernelStatus as "idle" | "busy" | "disconnected" | undefined
+              }
+              onClick={handleSelectRuntime}
+              disabled={
+                kernelStatus !== "disconnected" && !!notebook?.adapter?.kernel
+              }
+            />
+          </>
+        }
+      />
     </div>
   );
 };

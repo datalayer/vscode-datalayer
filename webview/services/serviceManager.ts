@@ -11,6 +11,11 @@
  * Implements WebSocket proxying for real-time kernel communication.
  */
 
+// CRITICAL: This file MUST be loaded for ProxiedWebSocket to work!
+console.log(
+  "🚀🚀🚀 [serviceManager.ts] MODULE LOADED - ProxiedWebSocket available! 🚀🚀🚀",
+);
+
 /**
  * Fake JupyterLab service manager that proxy the requests and websockets
  * through postMessage
@@ -40,6 +45,13 @@ async function fetch(
     (agg, pair) => ({ ...agg, [pair[0]]: pair[1] }),
     {},
   );
+
+  console.log("[ServiceManager] HTTP Request:", {
+    method: r.method,
+    url: r.url,
+    headers: Object.keys(headers),
+  });
+
   const reply = await MessageHandler.instance.request({
     type: "http-request",
     body: {
@@ -48,6 +60,11 @@ async function fetch(
       body,
       headers,
     },
+  });
+
+  console.log("[ServiceManager] HTTP Response:", {
+    url: r.url,
+    status: (reply as { status?: number })?.status,
   });
   {
     const replyData = reply as {
@@ -73,6 +90,11 @@ export function createServiceManager(
 ): ServiceManager {
   const refSettings = ServerConnection.makeSettings();
 
+  console.log("[ServiceManager] Creating with ProxiedWebSocket:", {
+    WebSocketClass: ProxiedWebSocket,
+    WebSocketName: ProxiedWebSocket.name,
+  });
+
   // The token will be appended as a query parameter by Jupyter itself
   // when appendToken is true, so we don't need it in headers
   return new ServiceManager({
@@ -88,7 +110,7 @@ export function createServiceManager(
       } satisfies RequestInit,
       token, // This is the runtime-specific token, not the JWT auth token
       // @ts-ignore - Type mismatch between browser WebSocket and library expectations
-      WebSocket: WebSocket,
+      WebSocket: ProxiedWebSocket,
       wsUrl: baseUrl.replace(/^http/, "ws"),
     },
   });
@@ -331,7 +353,7 @@ class EventTarget {
  * Implements the standard WebSocket API but communicates with the VS Code extension
  * instead of directly connecting to a server.
  */
-class WebSocket extends EventTarget {
+class ProxiedWebSocket extends EventTarget {
   /** WebSocket is connecting */
   static readonly CONNECTING = 0;
   /** WebSocket connection is open and ready */
@@ -345,8 +367,16 @@ class WebSocket extends EventTarget {
 
   constructor(url: string | URL, protocols: string | string[] = []) {
     super();
-    this.clientId = "ws-" + (WebSocket._clientCounter++).toString();
+    this.clientId = "ws-" + (ProxiedWebSocket._clientCounter++).toString();
     this.url = urlVerification(url);
+    console.log("[ProxiedWebSocket] Creating new WebSocket:", {
+      clientId: this.clientId,
+      url: this.url,
+      protocols,
+    });
+    console.log("[ProxiedWebSocket] Creation stack trace:");
+    console.trace();
+
     protocols = protocolVerification(protocols);
     // Filter out invalid protocols - must be non-empty and contain only alphanumeric, hyphen, dot, underscore
     const validProtocols = protocols.filter(
@@ -354,7 +384,7 @@ class WebSocket extends EventTarget {
     );
     this.protocol = validProtocols[0] || "";
     this.binaryType = "blob";
-    this._readyState = WebSocket.CONNECTING;
+    this._readyState = ProxiedWebSocket.CONNECTING;
     this._disposable = MessageHandler.instance.on(
       this._onExtensionMessage.bind(this) as (message: unknown) => void,
     );
@@ -494,9 +524,30 @@ class WebSocket extends EventTarget {
   }
 
   send(data: unknown) {
+    // Parse and log more details about what's being sent
+    let messageType = "unknown";
+    let msgId = "unknown";
+    try {
+      if (typeof data === "string") {
+        const parsed = JSON.parse(data);
+        messageType = parsed.header?.msg_type || "unknown";
+        msgId = parsed.header?.msg_id || "unknown";
+      }
+    } catch (e) {
+      // Not JSON, that's fine
+    }
+
+    console.log("[ProxiedWebSocket] send() called:", {
+      clientId: this.clientId,
+      readyState: this.readyState,
+      dataLength: typeof data === "string" ? data.length : "non-string",
+      messageType,
+      msgId: msgId.slice(0, 20), // Truncate for readability
+    });
+
     if (
-      this.readyState === WebSocket.CLOSING ||
-      this.readyState === WebSocket.CLOSED
+      this.readyState === ProxiedWebSocket.CLOSING ||
+      this.readyState === ProxiedWebSocket.CLOSED
     ) {
       throw new Error("WebSocket is already in CLOSING or CLOSED state");
     }

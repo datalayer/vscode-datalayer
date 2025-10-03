@@ -6,7 +6,7 @@
 
 /**
  * VS Code SDK adapter for Datalayer platform integration.
- * Provides secure storage implementation and SDK factory with VS Code configuration.
+ * Provides SDK factory with VS Code configuration.
  *
  * @module services/sdkAdapter
  */
@@ -16,99 +16,6 @@ import { DatalayerClient } from "../../../../core/lib/client";
 import type { DatalayerClientConfig } from "../../../../core/lib/client";
 import { ServiceLoggers } from "../logging/loggers";
 import { DatalayerClientOperationTracker } from "../logging/datalayerClientLogger";
-
-/**
- * Platform storage interface compatible with the SDK.
- */
-export interface PlatformStorage {
-  get(key: string): Promise<string | null>;
-  set(key: string, value: string): Promise<void>;
-  remove(key: string): Promise<void>;
-  clear(): Promise<void>;
-  has(key: string): Promise<boolean>;
-}
-
-/**
- * VS Code storage implementation using SecretStorage API.
- * Provides secure credential storage with automatic encryption and platform handling.
- *
- * @example
- * ```typescript
- * const storage = new VSCodeStorage(context);
- * await storage.set('token', 'secret-value');
- * ```
- */
-export class VSCodeStorage implements PlatformStorage {
-  private get logger() {
-    // Return logger only if ServiceLoggers is initialized
-    return ServiceLoggers.isInitialized()
-      ? ServiceLoggers.datalayerClient
-      : null;
-  }
-
-  constructor(private context: vscode.ExtensionContext) {}
-
-  async get(key: string): Promise<string | null> {
-    try {
-      const value = await this.context.secrets.get(key);
-      const hasValue = value && value.length > 0;
-      this.logger?.debug("Storage get operation", {
-        key,
-        hasValue,
-        valueLength: value ? value.length : 0,
-      });
-      return value || null;
-    } catch (error) {
-      this.logger?.warn("Storage get failed", {
-        key,
-        error: (error as Error).message,
-      });
-      return null;
-    }
-  }
-
-  async set(key: string, value: string): Promise<void> {
-    try {
-      await this.context.secrets.store(key, value);
-      this.logger?.debug("Storage set operation", {
-        key,
-        valueLength: value.length,
-        isToken: key.includes("token") || value.includes("Bearer"),
-      });
-    } catch (error) {
-      this.logger?.error("Storage set failed", error as Error, { key });
-      throw error;
-    }
-  }
-
-  async remove(key: string): Promise<void> {
-    try {
-      await this.context.secrets.delete(key);
-      this.logger?.debug("Storage remove operation", { key });
-    } catch (error) {
-      this.logger?.warn("Storage remove failed", {
-        key,
-        error: (error as Error).message,
-      });
-      // Silently handle secret deletion errors
-    }
-  }
-
-  async clear(): Promise<void> {
-    this.logger?.debug(
-      "Storage clear operation (no-op - VS Code SecretStorage doesn't support clear all)",
-    );
-    // VS Code SecretStorage doesn't have a clear-all method
-    // We'll need to track keys individually if needed
-  }
-
-  async has(key: string): Promise<boolean> {
-    const value = await this.get(key);
-    const exists = value !== null;
-    this.logger?.debug("Storage has operation", { key, exists });
-    return exists;
-  }
-}
 
 /**
  * Configuration options for the VS Code SDK.
@@ -144,14 +51,13 @@ export function createVSCodeSDK(config: VSCodeSDKConfig): DatalayerClient {
   const { context, ...sdkConfig } = config;
 
   // Get configuration from VS Code settings
-  const vsCodeConfig = vscode.workspace.getConfiguration("datalayer");
+  const vsCodeConfig = vscode.workspace.getConfiguration("datalayer.services");
 
-  // Get individual service URLs with fallback to defaults
-  const serverUrl = getServerUrl();
-  const iamRunUrl = vsCodeConfig.get<string>("iamRunUrl") ?? serverUrl;
-  const runtimesRunUrl =
-    vsCodeConfig.get<string>("runtimesRunUrl") ?? serverUrl;
-  const spacerRunUrl = vsCodeConfig.get<string>("spacerRunUrl") ?? serverUrl;
+  // Get individual service URLs with fallback to production default
+  const defaultUrl = "https://prod1.datalayer.run";
+  const iamRunUrl = vsCodeConfig.get<string>("iamUrl") ?? defaultUrl;
+  const runtimesRunUrl = vsCodeConfig.get<string>("runtimesUrl") ?? defaultUrl;
+  const spacerRunUrl = vsCodeConfig.get<string>("spacerUrl") ?? defaultUrl;
 
   // Only log if ServiceLoggers is initialized (avoid initialization order issues)
   if (ServiceLoggers.isInitialized()) {
@@ -160,7 +66,6 @@ export function createVSCodeSDK(config: VSCodeSDKConfig): DatalayerClient {
       iamRunUrl,
       runtimesRunUrl,
       spacerRunUrl,
-      hasStorage: true,
       contextId: context.extension.id,
     });
   }
@@ -170,9 +75,6 @@ export function createVSCodeSDK(config: VSCodeSDKConfig): DatalayerClient {
     iamRunUrl,
     runtimesRunUrl,
     spacerRunUrl,
-
-    // VS Code-specific storage
-    storage: new VSCodeStorage(context),
 
     // Enhanced handlers with comprehensive logging
     handlers: DatalayerClientOperationTracker.createEnhancedSDKHandlers(),
@@ -190,54 +92,13 @@ export function createVSCodeSDK(config: VSCodeSDKConfig): DatalayerClient {
 }
 
 /**
- * Gets the configured server URL from VS Code settings.
- *
- * @returns Server URL with fallback to production
- */
-export function getServerUrl(): string {
-  const config = vscode.workspace.getConfiguration("datalayer");
-  return config.get<string>("serverUrl") || "https://prod1.datalayer.run";
-}
-
-/**
  * Gets the configured WebSocket URL for collaboration.
  *
  * @returns WebSocket URL with fallback to production
  */
 export function getWebSocketUrl(): string {
-  const config = vscode.workspace.getConfiguration("datalayer");
+  const config = vscode.workspace.getConfiguration("datalayer.services");
   return config.get<string>("spacerWsUrl") || "wss://prod1.datalayer.run";
-}
-
-/**
- * Gets runtime configuration from VS Code settings.
- *
- * @returns Runtime configuration with environment and default minutes
- */
-export function getRuntimeConfig() {
-  const config = vscode.workspace.getConfiguration("datalayer.runtime");
-
-  return {
-    environment: config.get<string>("environment") || "python-cpu-env",
-    defaultMinutes: config.get<number>("defaultMinutes") || 10,
-  };
-}
-
-/**
- * Gets notebook configuration from VS Code settings.
- *
- * @returns Notebook configuration with UI and behavior options
- */
-export function getNotebookConfig() {
-  const config = vscode.workspace.getConfiguration("datalayer.notebook");
-
-  return {
-    enableKernelPicker: config.get<boolean>("enableKernelPicker") ?? true,
-    autoConnectRuntime: config.get<boolean>("autoConnectRuntime") ?? true,
-    showRuntimeStatus: config.get<boolean>("showRuntimeStatus") ?? true,
-    refreshInterval: config.get<number>("refreshInterval") || 30000,
-    showRuntimeDetails: config.get<boolean>("showRuntimeDetails") ?? true,
-  };
 }
 
 /**

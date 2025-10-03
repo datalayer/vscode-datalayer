@@ -10,7 +10,7 @@
  * for both local and Datalayer platform documents.
  *
  * @see https://code.visualstudio.com/api/extension-guides/custom-editors
- * @module providers/lexicalDocumentProvider
+ * @module providers/lexicalProvider
  */
 
 import * as vscode from "vscode";
@@ -20,7 +20,10 @@ import { LexicalDocument } from "../models/lexicalDocument";
 import {
   LexicalCollaborationService,
   LexicalCollaborationConfig,
-} from "../services/notebook/lexicalCollaboration";
+} from "../services/collaboration/lexicalCollaboration";
+import { getServiceContainer } from "../extension";
+import type { Runtime } from "../../../core/lib/client/models/Runtime";
+import { BaseDocumentProvider } from "./baseDocumentProvider";
 
 /**
  * Custom editor provider for Lexical documents.
@@ -29,13 +32,11 @@ import {
  *
  * @example
  * ```typescript
- * const provider = new LexicalDocumentProvider(context);
+ * const provider = new LexicalProvider(context);
  * // Provider is registered automatically via static register method
  * ```
  */
-export class LexicalDocumentProvider
-  implements vscode.CustomEditorProvider<LexicalDocument>
-{
+export class LexicalProvider extends BaseDocumentProvider<LexicalDocument> {
   /**
    * Registers the Lexical editor provider and commands with VS Code.
    *
@@ -60,25 +61,43 @@ export class LexicalDocumentProvider
       vscode.commands.executeCommand(
         "vscode.openWith",
         uri,
-        LexicalDocumentProvider.viewType,
+        LexicalProvider.viewType,
       );
     });
 
     // Create provider instance
-    const provider = new LexicalDocumentProvider(context);
+    const provider = new LexicalProvider(context);
+    const kernelBridge = getServiceContainer().kernelBridge;
 
-    // Register internal command for broadcasting runtime selection
+    // Register internal command for broadcasting kernel selection
     context.subscriptions.push(
       vscode.commands.registerCommand(
-        "datalayer.internal.runtimeSelected",
-        (runtime: unknown) => {
-          provider.broadcastRuntimeSelected(runtime);
+        "datalayer.internal.kernelSelected",
+        async (runtime: unknown) => {
+          // Runtime tracking is now handled by centralized commands/internal.ts
+          // via datalayer.internal.runtimeConnected command called by KernelBridge
+
+          // Broadcast using centralized KernelBridge
+          await kernelBridge.broadcastKernelSelected(runtime as Runtime);
         },
       ),
     );
 
+    // Register callback for runtime termination notifications
+    import("../commands/internal").then(({ onRuntimeTerminated }) => {
+      onRuntimeTerminated(async (uri: vscode.Uri) => {
+        // Send kernel-terminated message to lexical webview
+        const entry = provider.webviews.get(uri.toString());
+        if (entry) {
+          await entry.webviewPanel.webview.postMessage({
+            type: "kernel-terminated",
+          });
+        }
+      });
+    });
+
     return vscode.window.registerCustomEditorProvider(
-      LexicalDocumentProvider.viewType,
+      LexicalProvider.viewType,
       provider,
       {
         webviewOptions: {
@@ -103,11 +122,13 @@ export class LexicalDocumentProvider
   >();
 
   /**
-   * Creates a new LexicalDocumentProvider.
+   * Creates a new LexicalProvider.
    *
-   * @param _context - Extension context for resource access
+   * @param context - Extension context for resource access
    */
-  constructor(private readonly _context: vscode.ExtensionContext) {}
+  constructor(context: vscode.ExtensionContext) {
+    super(context);
+  }
 
   /**
    * Opens a custom document for the lexical editor.
@@ -117,7 +138,7 @@ export class LexicalDocumentProvider
    * @param _token - Cancellation token
    * @returns Promise resolving to the lexical document
    */
-  async openCustomDocument(
+  override async openCustomDocument(
     uri: vscode.Uri,
     openContext: { backupId?: string },
     _token: vscode.CancellationToken,
@@ -180,7 +201,7 @@ export class LexicalDocumentProvider
    * @param _token - Cancellation token
    * @returns Promise that resolves when editor is ready
    */
-  async resolveCustomEditor(
+  override async resolveCustomEditor(
     document: LexicalDocument,
     webviewPanel: vscode.WebviewPanel,
     _token: vscode.CancellationToken,
@@ -189,6 +210,10 @@ export class LexicalDocumentProvider
       resource: document.uri.toString(),
       webviewPanel,
     });
+
+    // Register webview with KernelBridge for unified runtime handling
+    const kernelBridge = getServiceContainer().kernelBridge;
+    kernelBridge.registerWebview(document.uri, webviewPanel);
 
     webviewPanel.webview.options = {
       enableScripts: true,
@@ -205,7 +230,7 @@ export class LexicalDocumentProvider
         // Send content when webview signals it's ready
         sendInitialContent().catch((error) => {
           console.error(
-            "[LexicalDocumentProvider] Error sending initial content:",
+            "[LexicalProvider] Error sending initial content:",
             error,
           );
           vscode.window.showErrorMessage(
@@ -213,13 +238,14 @@ export class LexicalDocumentProvider
           );
         });
       } else {
-        this.onMessage(document, e);
+        this.onMessage(webviewPanel, document, e);
       }
     });
 
     // Cleanup when panel is disposed
     webviewPanel.onDidDispose(() => {
       this.webviews.delete(document.uri.toString());
+      kernelBridge.unregisterWebview(document.uri);
     });
 
     // Function to send initial content
@@ -241,10 +267,7 @@ export class LexicalDocumentProvider
           collaborationConfig =
             await collaborationService.setupCollaboration(document);
         } catch (error) {
-          console.error(
-            "[LexicalDocumentProvider] Collaboration setup failed:",
-            error,
-          );
+          console.error("[LexicalProvider] Collaboration setup failed:", error);
           // Don't block editor loading if collaboration fails
         }
       }
@@ -258,12 +281,6 @@ export class LexicalDocumentProvider
     };
   }
 
-  private readonly _onDidChangeCustomDocument = new vscode.EventEmitter<
-    vscode.CustomDocumentEditEvent<LexicalDocument>
-  >();
-  public readonly onDidChangeCustomDocument =
-    this._onDidChangeCustomDocument.event;
-
   /**
    * Saves a custom document.
    *
@@ -271,7 +288,7 @@ export class LexicalDocumentProvider
    * @param cancellation - Cancellation token
    * @returns Promise that resolves when save is complete
    */
-  public saveCustomDocument(
+  public override saveCustomDocument(
     document: LexicalDocument,
     cancellation: vscode.CancellationToken,
   ): Thenable<void> {
@@ -286,7 +303,7 @@ export class LexicalDocumentProvider
    * @param cancellation - Cancellation token
    * @returns Promise that resolves when save is complete
    */
-  public saveCustomDocumentAs(
+  public override saveCustomDocumentAs(
     document: LexicalDocument,
     destination: vscode.Uri,
     cancellation: vscode.CancellationToken,
@@ -301,7 +318,7 @@ export class LexicalDocumentProvider
    * @param cancellation - Cancellation token
    * @returns Promise that resolves when revert is complete
    */
-  public revertCustomDocument(
+  public override revertCustomDocument(
     document: LexicalDocument,
     cancellation: vscode.CancellationToken,
   ): Thenable<void> {
@@ -316,7 +333,7 @@ export class LexicalDocumentProvider
    * @param cancellation - Cancellation token
    * @returns Promise resolving to backup descriptor
    */
-  public backupCustomDocument(
+  public override backupCustomDocument(
     document: LexicalDocument,
     context: vscode.CustomDocumentBackupContext,
     cancellation: vscode.CancellationToken,
@@ -371,173 +388,46 @@ export class LexicalDocumentProvider
           window.__webpack_public_path__ = '${distUri}/';
         </script>
       </head>
-      <body>
+      <body style="margin: 0; padding: 0; background-color: var(--vscode-editor-background); color: var(--vscode-editor-foreground);">
         <div id="root"></div>
         <script nonce="${nonce}" src="${scriptUri}"></script>
       </body>
       </html>`;
   }
 
-  private _requestId = 1;
-  private readonly _callbacks = new Map<number, (response: unknown) => void>();
-
   /**
-   * Posts a message to webview and waits for response.
-   *
-   * @param panel - Target webview panel
-   * @param type - Message type
-   * @param body - Message body
-   * @returns Promise resolving to the response
+   * Registers lexical-specific message handlers.
+   * Overrides base class to add lexical-specific handlers.
    */
-  private postMessageWithResponse<R = unknown>(
-    panel: vscode.WebviewPanel,
-    type: string,
-    body: unknown,
-  ): Promise<R> {
-    const requestId = this._requestId++;
-    const p = new Promise<R>((resolve) =>
-      this._callbacks.set(requestId, resolve as (response: unknown) => void),
+  protected override registerMessageHandlers(): void {
+    // Call base class to register common handlers
+    super.registerMessageHandlers();
+
+    // Handler for content changes
+    this._messageRouter.registerHandler(
+      "contentChanged",
+      async (_message, _context) => {
+        // TODO: Implement dirty state tracking for local files
+        // This is a limitation of the current refactoring - we need access to the document instance
+        // to call makeEdit(), but it's not available in the message context
+      },
     );
-    panel.webview.postMessage({ type, requestId, body });
-    return p;
+
+    // Handler for save command
+    this._messageRouter.registerHandler("save", async (_message, context) => {
+      if (!context.isFromDatalayer) {
+        vscode.commands.executeCommand("workbench.action.files.save");
+      }
+    });
   }
 
   /**
-   * Posts a message to webview without expecting response.
+   * Gets the URI for a lexical document.
    *
-   * @param panel - Target webview panel
-   * @param type - Message type
-   * @param body - Message body
+   * @param document - The lexical document
+   * @returns The document URI
    */
-  private postMessage(
-    panel: vscode.WebviewPanel,
-    type: string,
-    body: unknown,
-  ): void {
-    panel.webview.postMessage({ type, body });
-  }
-
-  /**
-   * Handles messages received from the webview.
-   *
-   * @param document - Associated document
-   * @param message - Received message
-   */
-  private async onMessage(document: LexicalDocument, message: unknown) {
-    // Check if this document is from Datalayer spaces
-    const isFromDatalayer = document.uri.scheme === "datalayer";
-    const msg = message as {
-      type?: string;
-      requestId?: number;
-      body?: unknown;
-    };
-
-    switch (msg.type) {
-      case "response": {
-        const callback = this._callbacks.get(msg.requestId!);
-        callback?.(msg.body);
-        return;
-      }
-      case "contentChanged": {
-        // Mark as dirty only for local files (not Datalayer)
-        if (!isFromDatalayer) {
-          document.makeEdit(message);
-        }
-        return;
-      }
-      case "save": {
-        // Handle save command (Cmd/Ctrl+S)
-        if (!isFromDatalayer) {
-          vscode.commands.executeCommand("workbench.action.files.save");
-        }
-        return;
-      }
-      case "ready": {
-        // Handled in the message listener above
-        return;
-      }
-      case "select-runtime": {
-        // Show runtime selector for all lexical documents (both local and Datalayer)
-        vscode.commands.executeCommand("datalayer.selectRuntime");
-        return;
-      }
-      case "terminate-runtime": {
-        const messageBody = msg.body as { runtime?: unknown };
-        const runtimeObj = messageBody?.runtime as {
-          givenName?: string;
-          environmentTitle?: string;
-          environmentName?: string;
-          uid?: string;
-          podName?: string;
-        };
-        if (!runtimeObj) {
-          return;
-        }
-
-        // Import confirmation utilities
-        const { showTwoStepConfirmation, CommonConfirmations } = await import(
-          "../ui/dialogs/confirmationDialog"
-        );
-        const { getServiceContainer } = await import("../extension");
-
-        // Show confirmation dialog
-        const runtimeName =
-          runtimeObj.givenName ||
-          runtimeObj.environmentTitle ||
-          runtimeObj.environmentName ||
-          runtimeObj.uid ||
-          "Unknown";
-        const confirmed = await showTwoStepConfirmation(
-          CommonConfirmations.terminateRuntime(runtimeName),
-        );
-
-        if (confirmed) {
-          try {
-            const sdk = getServiceContainer().sdk;
-
-            // Delete the runtime via SDK - MUST use pod_name, not uid!
-            // If podName is missing, construct it from uid (format: runtime-{uid})
-            const podName = runtimeObj.podName ?? `runtime-${runtimeObj.uid}`;
-
-            await sdk.deleteRuntime(podName);
-
-            // Notify user of success
-            vscode.window.showInformationMessage(
-              `Runtime "${runtimeName}" terminated successfully.`,
-            );
-
-            // Clear the kernel selection in the webview
-            const webviewEntry = this.webviews.get(document.uri.toString());
-            if (webviewEntry) {
-              await webviewEntry.webviewPanel.webview.postMessage({
-                type: "runtime-terminated",
-                runtime: null,
-              });
-            }
-          } catch (error: unknown) {
-            const errorMessage =
-              error instanceof Error ? error.message : String(error);
-            vscode.window.showErrorMessage(
-              `Failed to terminate runtime: ${errorMessage}`,
-            );
-          }
-        }
-        return;
-      }
-    }
-  }
-
-  /**
-   * Broadcasts runtime selection to all active lexical webviews.
-   *
-   * @param runtime - Selected runtime to broadcast
-   */
-  public broadcastRuntimeSelected(runtime: unknown): void {
-    for (const entry of this.webviews.values()) {
-      entry.webviewPanel.webview.postMessage({
-        type: "runtime-selected",
-        body: { runtime },
-      });
-    }
+  protected override getDocumentUri(document: LexicalDocument): vscode.Uri {
+    return document.uri;
   }
 }

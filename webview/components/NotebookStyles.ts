@@ -55,11 +55,38 @@ export const notebookCellStyles = {
     width: "100%",
   },
   "& .jp-Notebook-cellSidebar": {
-    display: "flex",
-    minWidth: "40px",
+    display: "flex !important",
+    minWidth: "40px !important",
+    backgroundColor: "var(--vscode-editor-background) !important",
   },
   "& .jp-Cell-Sidebar": {
-    display: "flex",
+    display: "flex !important",
+    backgroundColor: "var(--vscode-editor-background) !important",
+    color: "var(--vscode-editor-foreground) !important",
+  },
+  "& .jp-Cell-Sidebar button": {
+    backgroundColor: "transparent !important",
+    color: "var(--vscode-editor-foreground) !important",
+    border: "none !important",
+    cursor: "pointer !important",
+  },
+  "& .jp-Cell-Sidebar button:hover": {
+    backgroundColor: "var(--vscode-list-hoverBackground) !important",
+  },
+  // Target the positioned ReactWidget sidebar container (positioned absolutely on the right)
+  "& .jp-Cell > .lm-Widget[style*='position: absolute']": {
+    backgroundColor: "var(--vscode-editor-background) !important",
+  },
+  // Also target nested elements in the sidebar
+  "& .jp-Cell > .lm-Widget[style*='position: absolute'] *": {
+    backgroundColor: "inherit",
+  },
+  // Also target the cell sidebar container itself
+  "& .dla-CellSidebar": {
+    backgroundColor: "var(--vscode-editor-background) !important",
+  },
+  "& .datalayer-CellSidebar": {
+    backgroundColor: "var(--vscode-editor-background) !important",
   },
   ".dla-Box-Notebook": {
     position: "relative",
@@ -69,6 +96,23 @@ export const notebookCellStyles = {
   },
   "& .jp-CodeMirrorEditor": {
     cursor: "text !important",
+  },
+  // Fix for dialogs/modals - they should have proper background, not transparent
+  "& .jp-Dialog": {
+    backgroundColor: "var(--vscode-editorWidget-background) !important",
+    border: "1px solid var(--vscode-editorWidget-border) !important",
+  },
+  "& .jp-Dialog-content": {
+    backgroundColor: "var(--vscode-editorWidget-background) !important",
+    color: "var(--vscode-editorWidget-foreground) !important",
+  },
+  "& .jp-Dialog-header": {
+    backgroundColor: "var(--vscode-editorWidget-background) !important",
+    color: "var(--vscode-editorWidget-foreground) !important",
+  },
+  "& .jp-Dialog-body": {
+    backgroundColor: "var(--vscode-editorWidget-background) !important",
+    color: "var(--vscode-editor-foreground) !important",
   },
 } as const;
 

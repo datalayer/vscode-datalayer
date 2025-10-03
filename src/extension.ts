@@ -19,7 +19,8 @@ import { setupAuthStateManagement } from "./services/core/authManager";
 import { ServiceLoggers } from "./services/logging/loggers";
 import { PerformanceLogger } from "./services/logging/performanceLogger";
 import type { SDKAuthProvider } from "./services/core/authProvider";
-import { DocumentBridge } from "./services/notebook/documentBridge";
+import { DocumentBridge } from "./services/bridges/documentBridge";
+import { DatalayerFileSystemProvider } from "./providers/documentsFileSystemProvider";
 
 // Global service container instance
 let services: ServiceContainer | undefined;
@@ -68,6 +69,20 @@ export async function activate(
     // Initialize services (this also initializes logging)
     await services.initialize();
     activationTimer.checkpoint("services_initialized");
+
+    // Register file system provider for virtual datalayer:// URIs
+    const fileSystemProvider = DatalayerFileSystemProvider.getInstance();
+    context.subscriptions.push(
+      vscode.workspace.registerFileSystemProvider(
+        "datalayer",
+        fileSystemProvider,
+        {
+          isCaseSensitive: true,
+          isReadonly: false,
+        },
+      ),
+    );
+    activationTimer.checkpoint("filesystem_provider_registered");
 
     // Now logger is available
     const logger = services.logger;

@@ -17,7 +17,7 @@ import type { Runtime } from "../../../core/lib/client/models/Runtime";
 import { SDKAuthProvider } from "../services/core/authProvider";
 import { selectDatalayerRuntime } from "../ui/dialogs/runtimeSelector";
 import { WebSocketKernelClient } from "../kernel/clients/websocketKernelClient";
-import { KernelBridge } from "../services/notebook/kernelBridge";
+import { KernelBridge } from "../services/bridges/kernelBridge";
 import { promptAndLogin } from "../ui/dialogs/authDialog";
 
 /**
@@ -245,7 +245,7 @@ export class SmartDynamicControllerManager implements vscode.Disposable {
 
     if (isWebviewNotebook) {
       // Route to webview
-      await this._kernelBridge.connectWebviewNotebook(notebook.uri, runtime);
+      await this._kernelBridge.connectWebviewDocument(notebook.uri, runtime);
 
       // Mark cells as executed using the appropriate controller
       for (const cell of cells) {

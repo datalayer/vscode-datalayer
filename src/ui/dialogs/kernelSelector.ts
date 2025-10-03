@@ -16,12 +16,13 @@ import { selectDatalayerRuntime, setRuntime } from "./runtimeSelector";
 import type { DatalayerClient } from "../../../../core/lib/client";
 import type { Runtime } from "../../../../core/lib/client/models/Runtime";
 import { SDKAuthProvider } from "../../services/core/authProvider";
-import { KernelBridge } from "../../services/notebook/kernelBridge";
+import type { IKernelBridge } from "../../services/interfaces/IKernelBridge";
 
 interface KernelOption {
   label: string;
   description?: string;
   detail?: string;
+  isSeparator?: boolean;
   action: () => Promise<void>;
 }
 
@@ -33,13 +34,15 @@ interface KernelOption {
  * @param authProvider - Authentication provider
  * @param kernelBridge - Kernel bridge for connecting notebooks
  * @param documentUri - Optional document URI for context
+ * @param currentRuntime - Currently selected runtime (if any)
  * @returns Promise that resolves when selection is complete
  */
 export async function showKernelSelector(
   sdk: DatalayerClient,
   authProvider: SDKAuthProvider,
-  kernelBridge: KernelBridge,
+  kernelBridge: IKernelBridge,
   documentUri?: vscode.Uri,
+  currentRuntime?: unknown,
 ): Promise<void> {
   const options: KernelOption[] = [
     {
@@ -49,7 +52,7 @@ export async function showKernelSelector(
         if (runtime) {
           // If we have a document URI, connect it to the runtime
           if (documentUri) {
-            await kernelBridge.connectWebviewNotebook(documentUri, runtime);
+            await kernelBridge.connectWebviewDocument(documentUri, runtime);
           }
         }
       },
@@ -89,7 +92,7 @@ export async function showKernelSelector(
 
             // If we have a document URI, connect it to the Jupyter server
             if (documentUri) {
-              await kernelBridge.connectWebviewNotebook(
+              await kernelBridge.connectWebviewDocument(
                 documentUri,
                 jupyterRuntime as unknown as Runtime,
               );
@@ -108,16 +111,74 @@ export async function showKernelSelector(
     },
   ];
 
-  const items = options.map((opt) => ({
-    label: opt.label,
-    option: opt,
-  }));
+  // Add "Terminate Runtime" option if a runtime is currently selected
+  if (currentRuntime) {
+    const runtimeObj = currentRuntime as {
+      givenName?: string;
+      given_name?: string;
+      environmentTitle?: string;
+      environmentName?: string;
+      uid?: string;
+    };
+    const runtimeName =
+      runtimeObj.givenName ||
+      runtimeObj.given_name ||
+      runtimeObj.environmentTitle ||
+      runtimeObj.environmentName ||
+      runtimeObj.uid ||
+      "Runtime";
 
-  const selected = await vscode.window.showQuickPick(items, {
-    placeHolder: "Type to choose a kernel source",
+    options.push({
+      label: `$(trash) Terminate Runtime: ${runtimeName}`,
+      description: "Stop and remove the current runtime",
+      isSeparator: true, // Mark as needing separator before it
+      action: async () => {
+        // Import confirmation utilities
+        const { showTwoStepConfirmation, CommonConfirmations } = await import(
+          "./confirmationDialog"
+        );
+
+        const confirmed = await showTwoStepConfirmation(
+          CommonConfirmations.terminateRuntime(runtimeName),
+        );
+
+        if (confirmed && documentUri) {
+          // Send terminate message to the document's webview
+          vscode.commands.executeCommand(
+            "datalayer.internal.terminateRuntime",
+            documentUri,
+            currentRuntime,
+          );
+        }
+      },
+    });
+  }
+
+  const items = options.flatMap((opt, index) => {
+    const result: Array<vscode.QuickPickItem & { option?: KernelOption }> = [];
+
+    // Add separator before terminate option
+    if (opt.isSeparator && index > 0) {
+      result.push({
+        label: "",
+        kind: vscode.QuickPickItemKind.Separator,
+      });
+    }
+
+    result.push({
+      label: opt.label,
+      description: opt.description,
+      option: opt,
+    });
+
+    return result;
   });
 
-  if (selected && selected.option) {
+  const selected = await vscode.window.showQuickPick(items, {
+    placeHolder: "Select a kernel source or manage current runtime",
+  });
+
+  if (selected?.option) {
     await selected.option.action();
   }
 }

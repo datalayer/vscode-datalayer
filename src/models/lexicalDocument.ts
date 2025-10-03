@@ -15,7 +15,7 @@
 import * as vscode from "vscode";
 import * as fs from "fs";
 import { Disposable } from "../utils/dispose";
-import { DocumentBridge } from "../services/notebook/documentBridge";
+import { DocumentBridge } from "../services/bridges/documentBridge";
 
 /**
  * Delegate interface that provides document persistence capabilities.

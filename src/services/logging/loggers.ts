@@ -151,6 +151,18 @@ export class ServiceLoggers {
   // ========================================================================
 
   /**
+   * Create a custom logger with a specific channel name.
+   * Use this for new services or components that don't have a predefined logger.
+   *
+   * @param channelName - Name of the logging channel
+   * @returns Logger instance
+   */
+  static getLogger(channelName: string) {
+    ServiceLoggers.ensureInitialized();
+    return ServiceLoggers.loggerManager.createLogger(channelName);
+  }
+
+  /**
    * Get all available logger channel names.
    * Useful for debugging and configuration.
    *

@@ -5,13 +5,13 @@
  */
 
 /**
- * Refactored notebook editor component for VS Code webview.
+ * Notebook editor component for VS Code webview.
  * Uses modern React patterns with hooks and centralized state management.
  *
- * @module notebook/NotebookEditorRefactored
+ * @module notebook/NotebookEditor
  */
 
-import React, { useContext, useEffect, useMemo } from "react";
+import React, { useContext, useEffect, useMemo, useRef } from "react";
 import { createRoot } from "react-dom/client";
 import { Box } from "@primer/react";
 import {
@@ -20,13 +20,17 @@ import {
   useJupyterReactStore,
   CellSidebarExtension,
 } from "@datalayer/jupyter-react";
-import { DatalayerCollaborationProvider } from "../../../core/lib/collaboration";
+import { DatalayerCollaborationProvider } from "@datalayer/core/lib/collaboration";
 import {
   MessageHandlerContext,
   type ExtensionMessage,
 } from "../services/messageHandler";
 import { loadFromBytes } from "../utils";
-import { RuntimeProgressBar } from "./RuntimeProgressBar";
+import { initializeRequireJSStub } from "../utils/requirejsStub";
+import { RuntimeProgressBar } from "../components/RuntimeProgressBar";
+
+// Initialize RequireJS stub for ClassicWidgetManager
+initializeRequireJSStub();
 import { NotebookToolbar } from "./NotebookToolbar";
 import { VSCodeTheme } from "../theme/VSCodeTheme";
 import type { RuntimeJSON } from "../../../core/lib/client/models/Runtime";
@@ -36,7 +40,6 @@ import { useNotebookStore } from "../stores/notebookStore";
 import { useRuntimeManager } from "../hooks/useRuntimeManager";
 import { useNotebookModel } from "../hooks/useNotebookModel";
 import { useNotebookResize } from "../hooks/useNotebookResize";
-import { useWindowResize } from "../hooks/useWindowResize";
 import {
   notebookCellStyles,
   notebookHeight,
@@ -56,6 +59,7 @@ function NotebookEditorCore(): JSX.Element {
   const messageHandler = useContext(MessageHandlerContext);
   const store = useNotebookStore();
   const { setColormode } = useJupyterReactStore();
+  const containerRef = useRef<HTMLDivElement>(null);
 
   // Runtime management with hook
   const { selectedRuntime, serviceManager, selectRuntime } = useRuntimeManager(
@@ -69,26 +73,39 @@ function NotebookEditorCore(): JSX.Element {
       messageHandler,
     });
 
-  // Set up resize observers
-  useNotebookResize();
-  useWindowResize();
+  // Set up resize observer
+  const notebookId = store.documentId || store.notebookId || "";
+  useNotebookResize(notebookId, containerRef);
 
   // Create notebook extensions (sidebar)
   const extensions = useMemo(() => [new CellSidebarExtension({})], []);
 
   // Create collaboration provider for Datalayer notebooks
   const collaborationProvider = useMemo(() => {
+    console.log("[NotebookEditor] Collaboration provider check:", {
+      isDatalayerNotebook: store.isDatalayerNotebook,
+      hasServerUrl: !!store.serverUrl,
+      serverUrl: store.serverUrl,
+      hasToken: !!store.token,
+      hasDocumentId: !!store.documentId,
+      documentId: store.documentId,
+    });
+
     if (
       store.isDatalayerNotebook &&
       store.serverUrl &&
       store.token &&
       store.documentId
     ) {
+      console.log("[NotebookEditor] Creating DatalayerCollaborationProvider");
       return new DatalayerCollaborationProvider({
         runUrl: store.serverUrl,
         token: store.token,
       }) as unknown as ICollaborationProvider;
     }
+    console.log(
+      "[NotebookEditor] Not creating collaboration provider - missing requirements",
+    );
     return undefined;
   }, [
     store.isDatalayerNotebook,
@@ -105,10 +122,19 @@ function NotebookEditorCore(): JSX.Element {
   // Handle messages from the extension
   useEffect(() => {
     const handleMessage = (message: ExtensionMessage) => {
-      const { type, body } = message;
+      switch (message.type) {
+        case "init": {
+          const { body } = message;
+          console.log("[NotebookEditor] Received init message:", {
+            isDatalayerNotebook: body.isDatalayerNotebook,
+            hasDocumentId: !!body.documentId,
+            documentId: body.documentId,
+            hasServerUrl: !!body.serverUrl,
+            serverUrl: body.serverUrl,
+            hasToken: !!body.token,
+            hasNotebookId: !!body.notebookId,
+          });
 
-      switch (type) {
-        case "init":
           // Handle theme
           if (body.theme) {
             store.setTheme(body.theme);
@@ -144,29 +170,56 @@ function NotebookEditorCore(): JSX.Element {
 
           store.setIsInitialized(true);
           break;
+        }
 
-        case "theme-change":
+        case "theme-change": {
+          const { body } = message;
           if (body.theme && body.theme !== store.theme) {
             store.setTheme(body.theme);
           }
           break;
+        }
 
         case "runtime-selected":
-        case "kernel-selected":
+        case "kernel-selected": {
+          const { body } = message;
+          console.log("[NotebookEditor] Received kernel-selected message:", {
+            hasBody: !!body,
+            hasRuntime: !!body?.runtime,
+            runtime: body?.runtime,
+          });
           if (body?.runtime) {
             selectRuntime(body.runtime);
             store.setRuntime(body.runtime);
+          } else {
+            console.warn(
+              "[NotebookEditor] No runtime in kernel-selected message body",
+            );
           }
           break;
+        }
 
-        case "runtime-terminated":
+        case "kernel-terminated": // Extension sends this when runtime is terminated
+        case "runtime-terminated": // Legacy message type
+          console.log(
+            "[NotebookEditor] Runtime terminated, clearing selection",
+          );
           setTimeout(() => {
             selectRuntime(undefined);
             store.setRuntime(undefined);
           }, 100);
           break;
 
-        case "set-runtime":
+        case "runtime-expired":
+          // Runtime has expired - reset to mock service manager
+          setTimeout(() => {
+            selectRuntime(undefined);
+            store.setRuntime(undefined);
+          }, 100);
+          break;
+
+        case "set-runtime": {
+          const { body } = message;
           if (body.baseUrl) {
             const runtimeInfo: RuntimeWithCredits = {
               uid: "local-runtime",
@@ -185,8 +238,9 @@ function NotebookEditorCore(): JSX.Element {
             store.setRuntime(runtimeInfo);
           }
           break;
+        }
 
-        case "getFileData":
+        case "getFileData": {
           if (!store.isDatalayerNotebook) {
             const bytes = getNotebookData(store.nbformat);
             const arrayData = Array.from(bytes);
@@ -200,6 +254,7 @@ function NotebookEditorCore(): JSX.Element {
             markClean();
           }
           break;
+        }
 
         case "saved":
           if (!store.isDatalayerNotebook) {
@@ -246,6 +301,8 @@ function NotebookEditorCore(): JSX.Element {
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
+          backgroundColor: "var(--vscode-editor-background)",
+          color: "var(--vscode-editor-foreground)",
         }}
       >
         <div>Loading notebook...</div>
@@ -253,21 +310,31 @@ function NotebookEditorCore(): JSX.Element {
     );
   }
 
-  // Check if this is a Datalayer runtime (not a Jupyter server or local kernel)
-  const isDatalayerRuntime =
+  // Check if this is a Datalayer runtime (not a local Jupyter server)
+  // Datalayer runtimes have an ingress URL and environment name that's not "jupyter"
+  const isDatalayerRuntime = Boolean(
     selectedRuntime &&
-    !selectedRuntime.uid?.startsWith("jupyter-") &&
-    selectedRuntime.environmentName !== "jupyter";
+      selectedRuntime.ingress &&
+      selectedRuntime.environmentName &&
+      selectedRuntime.environmentName !== "jupyter",
+  );
 
   return (
-    <div style={{ height: "100vh", display: "flex", flexDirection: "column" }}>
-      {/* Runtime progress bar - only shows for Datalayer runtimes */}
-      {!store.isDatalayerNotebook && (
-        <RuntimeProgressBar
-          runtime={selectedRuntime}
-          isDatalayerRuntime={isDatalayerRuntime ?? false}
-        />
-      )}
+    <div
+      style={{
+        height: "100vh",
+        display: "flex",
+        flexDirection: "column",
+        backgroundColor: "var(--vscode-editor-background)",
+        margin: 0,
+        padding: 0,
+      }}
+    >
+      {/* Runtime progress bar - shows for all Datalayer runtimes */}
+      <RuntimeProgressBar
+        runtime={selectedRuntime}
+        isDatalayerRuntime={isDatalayerRuntime}
+      />
 
       <NotebookToolbar
         notebookId={store.documentId || store.notebookId}
@@ -276,23 +343,32 @@ function NotebookEditorCore(): JSX.Element {
       />
 
       <Box
+        ref={containerRef}
         style={{
           height: notebookHeight,
           width: "100%",
           position: "relative",
           flex: 1,
+          backgroundColor: "var(--vscode-editor-background)",
         }}
         id="dla-Jupyter-Notebook"
       >
         <Box className="dla-Box-Notebook" sx={notebookCellStyles}>
           <Notebook2
+            // Use stable key - MutableServiceManager handles runtime switching internally
+            // Remounting would lose notebook state and cause race conditions
+            key={store.documentId || store.notebookId || "notebook"}
             // @ts-ignore - Type mismatch between different @jupyterlab versions
             nbformat={store.nbformat || {}}
             id={store.documentId || store.notebookId}
             // @ts-ignore - Type mismatch between @jupyterlab/services versions
             serviceManager={serviceManager}
             collaborationProvider={collaborationProvider}
-            startDefaultKernel={!!selectedRuntime && !store.isDatalayerNotebook}
+            // Start kernel when we have a real runtime selected
+            // Collaboration and execution are orthogonal:
+            // - collaborationProvider syncs notebook content with Datalayer platform
+            // - serviceManager + kernel handles cell execution (same for local and remote)
+            startDefaultKernel={!!selectedRuntime}
             height={notebookHeight}
             cellSidebarMargin={cellSidebarMargin}
             extensions={extensions}
@@ -323,6 +399,55 @@ function NotebookEditor(): JSX.Element {
     </VSCodeTheme>
   );
 }
+
+// Add debug function to window
+declare global {
+  interface Window {
+    debugNotebook: () => any[];
+  }
+}
+
+window.debugNotebook = function () {
+  const all = document.querySelectorAll("*");
+  const results: any[] = [];
+
+  all.forEach((el: Element) => {
+    const style = getComputedStyle(el);
+    const bg = style.backgroundColor;
+
+    // Check for black or near-black backgrounds
+    if (bg && bg !== "rgba(0, 0, 0, 0)" && bg !== "transparent") {
+      const match = bg.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
+      if (match) {
+        const [_, r, g, b] = match;
+        if (parseInt(r) < 50 && parseInt(g) < 50 && parseInt(b) < 50) {
+          results.push({
+            element: el,
+            tag: el.tagName,
+            id: el.id,
+            classes: el.className,
+            backgroundColor: bg,
+            parent: el.parentElement?.tagName,
+            parentId: el.parentElement?.id,
+            parentClasses: el.parentElement?.className,
+          });
+        }
+      }
+    }
+  });
+
+  console.log("Dark elements found:", results);
+  results.forEach((r) => {
+    console.log(
+      `${r.tag}#${r.id || "no-id"}.${r.classes || "no-class"} = ${r.backgroundColor}`,
+    );
+  });
+  return results;
+};
+
+console.log(
+  "[NotebookEditor] Debug function installed on window.debugNotebook",
+);
 
 // Initialize the React app
 document.addEventListener("DOMContentLoaded", () => {

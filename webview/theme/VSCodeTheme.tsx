@@ -119,6 +119,29 @@ function VSCodeCSSInjector({ colorMode }: { colorMode: "light" | "dark" }) {
         background-color: var(--vscode-sideBar-background) !important;
         border-color: var(--vscode-panel-border) !important;
       }
+
+      /* Cell Sidebar - the sidebar that appears on the right of each cell */
+      .jp-Notebook-cellSidebar,
+      .jp-Cell-Sidebar {
+        background-color: var(--vscode-editor-background) !important;
+        color: var(--vscode-editor-foreground) !important;
+      }
+
+      /* Target all Lumino widgets - they inherit the black background otherwise */
+      .lm-Widget {
+        background: transparent !important;
+      }
+
+      /* Cell sidebar buttons */
+      .jp-Cell-Sidebar button {
+        background-color: transparent !important;
+        color: var(--vscode-editor-foreground) !important;
+        border: none !important;
+      }
+
+      .jp-Cell-Sidebar button:hover {
+        background-color: var(--vscode-list-hoverBackground) !important;
+      }
     `;
 
     return () => {

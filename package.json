@@ -1,6 +1,6 @@
 {
   "name": "datalayer-jupyter-vscode",
-  "displayName": "Datalayer Platform...",
+  "displayName": "Datalayer Platform",
   "description": "A Jupyter Notebook Editor for VS Code",
   "publisher": "Datalayer",
   "version": "0.0.3",
@@ -67,8 +67,8 @@
         "category": "Datalayer"
       },
       {
-        "command": "datalayer.restartNotebookRuntime",
-        "title": "Restart Notebook Runtime",
+        "command": "datalayer.terminateRuntimes",
+        "title": "Terminate Runtimes",
         "category": "Datalayer"
       },
       {
@@ -192,38 +192,25 @@
     "configuration": {
       "title": "Datalayer",
       "properties": {
-        "datalayer.iamRunUrl": {
+        "datalayer.services.iamUrl": {
           "type": "string",
           "default": "https://prod1.datalayer.run",
           "description": "IAM (Identity and Access Management) service URL"
         },
-        "datalayer.runtimesRunUrl": {
+        "datalayer.services.runtimesUrl": {
           "type": "string",
           "default": "https://prod1.datalayer.run",
           "description": "Runtimes service URL for computational environments"
         },
-        "datalayer.spacerRunUrl": {
+        "datalayer.services.spacerUrl": {
           "type": "string",
           "default": "https://prod1.datalayer.run",
           "description": "Spacer service URL for workspaces and collaboration"
         },
-        "datalayer.spacerWsUrl": {
+        "datalayer.services.spacerWsUrl": {
           "type": "string",
           "default": "wss://prod1.datalayer.run",
-          "description": "Datalayer spacer WebSocket URL for collaboration"
-        },
-        "datalayer.runtime.environment": {
-          "type": "string",
-          "default": "python-cpu-env",
-          "enum": [
-            "python-cpu-env",
-            "ai-env"
-          ],
-          "enumDescriptions": [
-            "Python CPU environment with standard scientific libraries",
-            "AI environment with machine learning frameworks"
-          ],
-          "description": "Default runtime environment for notebooks"
+          "description": "WebSocket URL for Spacer real-time collaboration"
         },
         "datalayer.runtime.defaultMinutes": {
           "type": "number",
@@ -231,32 +218,6 @@
           "minimum": 1,
           "maximum": 1440,
           "description": "Default runtime duration in minutes (max 24 hours)"
-        },
-        "datalayer.notebook.enableKernelPicker": {
-          "type": "boolean",
-          "default": true,
-          "description": "Enable 'Datalayer Runtime...' option in VS Code kernel picker"
-        },
-        "datalayer.notebook.autoConnectRuntime": {
-          "type": "boolean",
-          "default": true,
-          "description": "Automatically connect to Datalayer runtime when executing cells"
-        },
-        "datalayer.notebook.showRuntimeStatus": {
-          "type": "boolean",
-          "default": true,
-          "description": "Show runtime status messages during cell execution"
-        },
-        "datalayer.notebook.refreshInterval": {
-          "type": "number",
-          "default": 30000,
-          "minimum": 0,
-          "description": "How often to refresh runtime status in milliseconds (0 to disable automatic refresh)"
-        },
-        "datalayer.notebook.showRuntimeDetails": {
-          "type": "boolean",
-          "default": true,
-          "description": "Show runtime details like credits and environment in controller names"
         },
         "datalayer.logging.level": {
           "type": "string",

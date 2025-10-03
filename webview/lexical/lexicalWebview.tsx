@@ -18,44 +18,24 @@ import { LexicalEditor } from "./LexicalEditor";
 import { vsCodeAPI } from "../services/messageHandler";
 import type { RuntimeJSON } from "../../../core/lib/client/models/Runtime";
 import { useRuntimeManager } from "../hooks/useRuntimeManager";
+import {
+  useLexicalStore,
+  type CollaborationConfig,
+} from "../stores/lexicalStore";
 import "@vscode/codicons/dist/codicon.css";
+import "@datalayer/jupyter-lexical/style/index.css";
+import "prismjs/themes/prism-tomorrow.css"; // Syntax highlighting theme
+// Import Prism language grammars explicitly (webpack needs this!)
+import "prismjs/components/prism-python";
+import "prismjs/components/prism-javascript";
+import "prismjs/components/prism-markdown";
+import "prismjs/components/prism-sql";
 import "./LexicalEditor.css";
-
-// Configure webpack public path for WASM loading
-declare let __webpack_public_path__: string;
-declare global {
-  interface Window {
-    __webpack_public_path__?: string;
-  }
-}
-
-if (
-  typeof __webpack_public_path__ !== "undefined" &&
-  !window.__webpack_public_path__
-) {
-  const baseUri = document.querySelector("base")?.getAttribute("href");
-  if (baseUri) {
-    __webpack_public_path__ = baseUri;
-    window.__webpack_public_path__ = baseUri;
-  }
-}
 
 /**
  * VS Code API singleton - imported from messageHandler to avoid double acquisition
  */
 const vscode = vsCodeAPI;
-
-/**
- * Collaboration configuration from extension
- */
-interface CollaborationConfig {
-  enabled: boolean;
-  websocketUrl?: string;
-  documentId?: string;
-  sessionId?: string;
-  username?: string;
-  userColor?: string;
-}
 
 /**
  * Message interface for communication with VS Code extension
@@ -71,6 +51,7 @@ interface WebviewMessage {
 
 /**
  * Inner webview component that has access to Jupyter context
+ * Uses centralized state management via useLexicalStore
  */
 function LexicalWebviewInner({
   selectedRuntime,
@@ -79,14 +60,7 @@ function LexicalWebviewInner({
   selectedRuntime?: RuntimeJSON;
   onRuntimeSelected: (runtime: RuntimeJSON | undefined) => void;
 }) {
-  const [content, setContent] = useState<string>("");
-  const [isEditable, setIsEditable] = useState(true);
-  const [isReady, setIsReady] = useState(false);
-  const [isInitialLoad, setIsInitialLoad] = useState(true);
-  const [collaborationConfig, setCollaborationConfig] =
-    useState<CollaborationConfig>({
-      enabled: false,
-    });
+  const store = useLexicalStore();
 
   useEffect(() => {
     const messageHandler = (event: MessageEvent<WebviewMessage>) => {
@@ -97,21 +71,21 @@ function LexicalWebviewInner({
           if (message.content && message.content.length > 0) {
             const decoder = new TextDecoder();
             const jsonString = decoder.decode(new Uint8Array(message.content));
-            setContent(jsonString);
-            setIsReady(true);
-            setIsInitialLoad(true);
+            store.setContent(jsonString);
+            store.setIsReady(true);
+            store.setIsInitialLoad(true);
           }
           if (message.editable !== undefined) {
-            setIsEditable(message.editable);
+            store.setIsEditable(message.editable);
           }
           if (message.collaboration) {
-            setCollaborationConfig(message.collaboration);
+            store.setCollaborationConfig(message.collaboration);
           }
           break;
         }
         case "getFileData": {
           const state = vscode.getState() as { content?: string };
-          const currentContent = state?.content || content;
+          const currentContent = state?.content || store.content;
           const encoder = new TextEncoder();
           const encoded = encoder.encode(currentContent);
           vscode.postMessage({
@@ -121,13 +95,25 @@ function LexicalWebviewInner({
           });
           break;
         }
-        case "runtime-selected": {
-          if (message.body?.runtime) {
-            onRuntimeSelected(message.body.runtime);
+        case "kernel-selected": {
+          const body = message.body as { runtime?: RuntimeJSON } | undefined;
+          if (body?.runtime) {
+            onRuntimeSelected(body.runtime);
           }
           break;
         }
-        case "runtime-terminated": {
+        case "kernel-terminated": {
+          console.log(
+            "[LexicalWebview] Received kernel-terminated, clearing runtime",
+          );
+          onRuntimeSelected(undefined);
+          break;
+        }
+        case "runtime-expired": {
+          // Runtime has expired - reset to mock service manager
+          console.log(
+            "[LexicalWebview] Received runtime-expired from progress bar, clearing runtime",
+          );
           onRuntimeSelected(undefined);
           break;
         }
@@ -139,42 +125,48 @@ function LexicalWebviewInner({
     // Check if we have saved state
     const savedState = vscode.getState() as { content?: string };
     if (savedState?.content) {
-      setContent(savedState.content);
-      setIsReady(true);
-      setIsInitialLoad(true);
+      store.setContent(savedState.content);
+      store.setIsReady(true);
+      store.setIsInitialLoad(true);
     }
 
     // Tell the extension we're ready
     vscode.postMessage({ type: "ready" });
 
     return () => window.removeEventListener("message", messageHandler);
-  }, [content, onRuntimeSelected]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [onRuntimeSelected]); // store access doesn't need to be in deps - Zustand handles reactivity
 
-  const handleSave = useCallback((newContent: string) => {
-    vscode.setState({ content: newContent });
-    setContent(newContent);
-    vscode.postMessage({
-      type: "save",
-    });
-  }, []);
+  const handleSave = useCallback(
+    (newContent: string) => {
+      vscode.setState({ content: newContent });
+      store.setContent(newContent);
+      vscode.postMessage({
+        type: "save",
+      });
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [], // store access doesn't need to be in deps - Zustand handles reactivity
+  );
 
   const handleContentChange = useCallback(
     (newContent: string) => {
-      setContent(newContent);
+      store.setContent(newContent);
       vscode.setState({ content: newContent });
 
-      if (!collaborationConfig.enabled) {
-        if (!isInitialLoad) {
+      if (!store.collaborationConfig.enabled) {
+        if (!store.isInitialLoad) {
           vscode.postMessage({
             type: "contentChanged",
             content: newContent,
           });
         } else {
-          setIsInitialLoad(false);
+          store.setIsInitialLoad(false);
         }
       }
     },
-    [isInitialLoad, collaborationConfig.enabled],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [], // store access doesn't need to be in deps - Zustand handles reactivity
   );
 
   return (
@@ -182,19 +174,24 @@ function LexicalWebviewInner({
       style={{
         height: "100vh",
         width: "100vw",
+        maxWidth: "100vw",
         overflow: "hidden",
+        overflowX: "hidden",
         backgroundColor: "var(--vscode-editor-background)",
         color: "var(--vscode-editor-foreground)",
+        boxSizing: "border-box",
+        margin: 0,
+        padding: 0,
       }}
     >
-      {isReady ? (
+      {store.isReady ? (
         <LexicalEditor
-          initialContent={content}
+          initialContent={store.content}
           onSave={handleSave}
           onContentChange={handleContentChange}
           showToolbar={true}
-          editable={isEditable}
-          collaboration={collaborationConfig}
+          editable={store.isEditable}
+          collaboration={store.collaborationConfig}
           selectedRuntime={selectedRuntime}
           showRuntimeSelector={true}
         />
@@ -205,6 +202,7 @@ function LexicalWebviewInner({
             justifyContent: "center",
             alignItems: "center",
             height: "100vh",
+            backgroundColor: "var(--vscode-editor-background)",
             color: "var(--vscode-descriptionForeground)",
           }}
         >
@@ -223,8 +221,40 @@ function LexicalWebview() {
   // Use the runtime manager hook - no forced remounts!
   const { selectedRuntime, serviceManager, selectRuntime } =
     useRuntimeManager();
+  const [isReady, setIsReady] = useState(false);
 
-  if (!serviceManager) {
+  // NOTE: We do NOT call setJupyterServerUrl/setJupyterServerToken here!
+  // We pass a custom serviceManager to the Jupyter component, which already
+  // has the correct URL and token configured. Calling these functions would
+  // cause the library to create a second ServiceManager with native fetch/WebSocket.
+
+  // Wait for ServiceManager to be ready
+  useEffect(() => {
+    if (!serviceManager) {
+      setIsReady(false);
+      return;
+    }
+
+    // Check if ServiceManager has a ready property
+    const sm = serviceManager as unknown as { ready?: Promise<void> };
+    if (sm.ready) {
+      sm.ready
+        .then(() => {
+          console.log("[LexicalWebview] ServiceManager is ready");
+          setIsReady(true);
+        })
+        .catch((error) => {
+          console.error("[LexicalWebview] ServiceManager failed:", error);
+          // Still set as ready to allow UI to render
+          setIsReady(true);
+        });
+    } else {
+      // No ready promise, assume ready immediately
+      setIsReady(true);
+    }
+  }, [serviceManager]);
+
+  if (!serviceManager || !isReady) {
     return (
       <div
         style={{
@@ -232,6 +262,7 @@ function LexicalWebview() {
           justifyContent: "center",
           alignItems: "center",
           height: "100vh",
+          backgroundColor: "var(--vscode-editor-background)",
           color: "var(--vscode-descriptionForeground)",
         }}
       >
@@ -241,12 +272,46 @@ function LexicalWebview() {
   }
 
   // No key prop = no forced remount! State is preserved.
+  // IMPORTANT: We ALWAYS provide serviceManager (mock or real via useRuntimeManager)
+  // MUST set lite=false to tell the library to use our serviceManager
+  // Start kernel when runtime is selected (selectedRuntime exists and has ingress)
+  const shouldStartKernel = !!selectedRuntime?.ingress;
+
+  // DEBUG: Log to console immediately (not in useEffect to avoid hook order issues)
+  console.log("[LexicalWebview] Render with:", {
+    shouldStartKernel,
+    hasRuntime: !!selectedRuntime,
+    hasIngress: !!selectedRuntime?.ingress,
+    ingressUrl: selectedRuntime?.ingress,
+    hasServiceManager: !!serviceManager,
+    serviceManagerType: serviceManager?.constructor?.name,
+  });
+
+  console.log("🎯 PASSING TO JUPYTER:", {
+    startDefaultKernel: shouldStartKernel,
+    defaultKernelName: "python",
+    lite: false,
+  });
+
+  // CRITICAL: Force remount when runtime URL changes!
+  // The Jupyter React library caches config in useMemo with empty deps [],
+  // so we MUST force a full remount to reload config with new URL.
+  const jupyterKey = selectedRuntime?.ingress || "no-runtime";
+
   return (
     <Jupyter
+      key={jupyterKey}
       // @ts-ignore - Type mismatch between @jupyterlab/services versions
       serviceManager={serviceManager}
-      startDefaultKernel={!!selectedRuntime}
+      // IMPORTANT: DO NOT pass jupyterServerUrl and jupyterServerToken when using custom serviceManager!
+      // Passing these causes Jupyter React to create its OWN ServiceManager using native fetch/WebSocket,
+      // which bypasses our proxying system and causes CORS errors.
+      // The serviceManager already has the correct URL and token baked in.
+      startDefaultKernel={shouldStartKernel}
       defaultKernelName="python"
+      lite={false}
+      collaborative={false}
+      terminals={false}
     >
       <LexicalWebviewInner
         selectedRuntime={selectedRuntime}
@@ -264,7 +329,7 @@ if (container) {
     root.render(<LexicalWebview />);
   } catch (error) {
     container.innerHTML = `
-      <div style="padding: 20px; color: var(--vscode-errorForeground); font-family: var(--vscode-editor-font-family);">
+      <div style="padding: 20px; background-color: var(--vscode-editor-background); color: var(--vscode-errorForeground); font-family: var(--vscode-editor-font-family); min-height: 100vh;">
         <h3>Failed to load Lexical Editor</h3>
         <p>Error: ${error}</p>
         <p>Please try reloading the editor.</p>

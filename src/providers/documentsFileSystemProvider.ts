@@ -61,17 +61,17 @@ export class DatalayerFileSystemProvider implements vscode.FileSystemProvider {
    */
   registerMapping(virtualPath: string, realPath: string): vscode.Uri {
     // Sanitize the virtual path to ensure it doesn't contain URI-illegal characters
-    // Replace characters that are problematic in URIs
+    // Replace characters that are problematic in URIs (but keep spaces - they'll be encoded)
     const sanitizedPath = virtualPath
       .replace(/:/g, "-") // Replace colons with dashes
       .replace(/[<>"\|?*]/g, "_") // Replace other illegal characters
       .replace(/\/\/+/g, "/"); // Remove duplicate slashes
 
     // Create a virtual URI with the datalayer scheme
-    // Use vscode.Uri.from to properly construct the URI with scheme and path
-    const virtualUri = vscode.Uri.from({
+    // Use vscode.Uri.file() to create a file-like URI, then change the scheme
+    // This ensures proper encoding of spaces and special characters
+    const virtualUri = vscode.Uri.file("/" + sanitizedPath).with({
       scheme: "datalayer",
-      path: "/" + sanitizedPath,
     });
     const key = virtualUri.toString();
 

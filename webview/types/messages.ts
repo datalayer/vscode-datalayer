@@ -40,15 +40,7 @@ export interface ThemeChangeMessage {
   };
 }
 
-/** Runtime selected from UI */
-export interface RuntimeSelectedMessage {
-  type: "runtime-selected";
-  body: {
-    runtime: RuntimeJSON;
-  };
-}
-
-/** Kernel selected from UI (deprecated, use runtime-selected) */
+/** Kernel selected from UI */
 export interface KernelSelectedMessage {
   type: "kernel-selected";
   body: {
@@ -56,10 +48,27 @@ export interface KernelSelectedMessage {
   };
 }
 
-/** Runtime was terminated */
+/** Kernel was terminated */
+export interface KernelTerminatedMessage {
+  type: "kernel-terminated";
+}
+
+/** Runtime selected (legacy alias for kernel-selected) */
+export interface RuntimeSelectedMessage {
+  type: "runtime-selected";
+  body: {
+    runtime: RuntimeJSON;
+  };
+}
+
+/** Runtime terminated (legacy alias for kernel-terminated) */
 export interface RuntimeTerminatedMessage {
   type: "runtime-terminated";
-  body: Record<string, never>; // Empty object
+}
+
+/** Runtime has expired */
+export interface RuntimeExpiredMessage {
+  type: "runtime-expired";
 }
 
 /** Set runtime (from Jupyter server) */
@@ -92,13 +101,15 @@ export type ExtensionToWebviewMessage =
   | ThemeChangeMessage
   | RuntimeSelectedMessage
   | KernelSelectedMessage
+  | KernelTerminatedMessage
   | RuntimeTerminatedMessage
   | SetRuntimeMessage
   | GetFileDataRequestMessage
   | SavedMessage
   | WebSocketProxyMessage
   | WebSocketOpenMessage
-  | WebSocketCloseMessage;
+  | WebSocketCloseMessage
+  | RuntimeExpiredMessage;
 
 /**
  * Webview → Extension Messages
@@ -215,7 +226,9 @@ export function isExtensionToWebviewMessage(
     "theme-change",
     "runtime-selected",
     "kernel-selected",
+    "kernel-terminated",
     "runtime-terminated",
+    "runtime-expired",
     "set-runtime",
     "getFileData",
     "saved",
@@ -271,14 +284,13 @@ export const createMessage = {
     body: { theme },
   }),
 
-  runtimeSelected: (runtime: RuntimeJSON): RuntimeSelectedMessage => ({
-    type: "runtime-selected",
+  kernelSelected: (runtime: RuntimeJSON): KernelSelectedMessage => ({
+    type: "kernel-selected",
     body: { runtime },
   }),
 
-  runtimeTerminated: (): RuntimeTerminatedMessage => ({
-    type: "runtime-terminated",
-    body: {},
+  kernelTerminated: (): KernelTerminatedMessage => ({
+    type: "kernel-terminated",
   }),
 
   setRuntime: (baseUrl: string, token?: string): SetRuntimeMessage => ({

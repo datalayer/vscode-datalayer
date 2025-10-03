@@ -5,10 +5,11 @@
  */
 
 /**
- * Runtime progress bar component showing remaining time for Datalayer runtimes.
- * Displays as a thin colored line at the top of the notebook that depletes over time.
+ * Shared runtime progress bar component showing remaining time for Datalayer runtimes.
+ * Displays as a thin colored line at the top of the editor that depletes over time.
+ * Used in both Notebook and Lexical editors.
  *
- * @module notebook/RuntimeProgressBar
+ * @module components/RuntimeProgressBar
  */
 
 import React, { useState, useEffect, useMemo, useContext } from "react";

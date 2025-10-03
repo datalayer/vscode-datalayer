@@ -37,8 +37,10 @@ import {
   ComponentPickerMenuPlugin,
   JupyterInputOutputPlugin,
   DraggableBlockPlugin,
+  registerCodeHighlighting,
 } from "@datalayer/jupyter-lexical";
 import { LexicalToolbar } from "./LexicalToolbar";
+import { RuntimeProgressBar } from "../components/RuntimeProgressBar";
 import type { RuntimeJSON } from "../../../core/lib/client/models/Runtime";
 import {
   createWebsocketProvider,
@@ -114,6 +116,28 @@ function SavePlugin({ onSave }: { onSave?: (content: string) => void }) {
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [editor, onSave]);
+
+  return null;
+}
+
+/**
+ * Lexical plugin for Jupyter code syntax highlighting.
+ * Registers the code highlighting functionality for JupyterInputNode cells.
+ *
+ * @hidden
+ * @returns {null} This is a React effect-only component
+ */
+function CodeHighlightPlugin() {
+  const [editor] = useLexicalComposerContext();
+
+  useEffect(() => {
+    console.log("[CodeHighlightPlugin] Registering code highlighting");
+    const unregister = registerCodeHighlighting(editor);
+    console.log(
+      "[CodeHighlightPlugin] Code highlighting registered successfully",
+    );
+    return unregister;
+  }, [editor]);
 
   return null;
 }
@@ -211,43 +235,35 @@ export function LexicalEditor({
   selectedRuntime,
   showRuntimeSelector = false,
 }: LexicalEditorProps) {
-  // Debug logging to understand content flow
-  React.useEffect(() => {}, [initialContent, collaboration]);
-  const { defaultKernel, serviceManager } = useJupyter();
+  // Get ONLY the defaultKernel from Jupyter context
+  // DO NOT use serviceManager from useJupyter - we already have our MutableServiceManager!
+  const { defaultKernel } = useJupyter();
   const [localKernel, setLocalKernel] = React.useState<any>(null);
 
-  // Create kernel connection when runtime is selected
+  // DEBUG: Log kernel status
   React.useEffect(() => {
-    if (selectedRuntime && serviceManager && !defaultKernel) {
-      console.log("Creating kernel for runtime:", selectedRuntime);
+    console.log("[LexicalEditor] Kernel status:", {
+      hasDefaultKernel: !!defaultKernel,
+      hasLocalKernel: !!localKernel,
+      hasSelectedRuntime: !!selectedRuntime,
+      kernelReady: defaultKernel?.ready,
+    });
+  }, [defaultKernel, localKernel, selectedRuntime]);
 
-      // Start a new kernel
-      serviceManager.kernels
-        .startNew({ name: "python" })
-        .then((kernel) => {
-          console.log("Kernel started:", kernel);
-          setLocalKernel(kernel);
-        })
-        .catch((error) => {
-          console.error("Failed to start kernel:", error);
-        });
-    }
-
+  // Kernel management is handled by Jupyter React when we have a runtime selected
+  // We don't need to manually start kernels - the library does it for us
+  // Just clean up local kernel if we had one
+  React.useEffect(() => {
     // Cleanup kernel on unmount or runtime change
     return () => {
-      if (localKernel && !selectedRuntime) {
-        console.log("Shutting down kernel");
+      if (localKernel) {
         localKernel.shutdown().catch((err: any) => {
           console.error("Failed to shutdown kernel:", err);
         });
         setLocalKernel(null);
       }
     };
-  }, [selectedRuntime, serviceManager, defaultKernel, localKernel]);
-
-  console.log("LexicalEditor - defaultKernel:", defaultKernel);
-  console.log("LexicalEditor - selectedRuntime:", selectedRuntime);
-  console.log("LexicalEditor - localKernel:", localKernel);
+  }, [selectedRuntime, localKernel]);
 
   const [floatingAnchorElem, setFloatingAnchorElem] =
     useState<HTMLDivElement | null>(null);
@@ -257,6 +273,107 @@ export function LexicalEditor({
       setFloatingAnchorElem(_floatingAnchorElem);
     }
   };
+
+  // DEBUG: Log element positions and styles to find the gap
+  React.useEffect(() => {
+    const debugElements = () => {
+      const container = document.querySelector(".lexical-editor-container");
+      const toolbarWrapper = document.querySelector(".lexical-toolbar-wrapper");
+      const editorInner = document.querySelector(".lexical-editor-inner");
+
+      console.log("\n========== LEXICAL EDITOR DEBUG ==========");
+
+      if (container) {
+        const rect = container.getBoundingClientRect();
+        const style = window.getComputedStyle(container);
+        console.log("CONTAINER:", {
+          top: rect.top,
+          bottom: rect.bottom,
+          height: rect.height,
+          padding: style.padding,
+          margin: style.margin,
+          border: style.border,
+          backgroundColor: style.backgroundColor,
+        });
+      }
+
+      if (toolbarWrapper) {
+        const rect = toolbarWrapper.getBoundingClientRect();
+        const style = window.getComputedStyle(toolbarWrapper);
+        console.log("TOOLBAR WRAPPER:", {
+          top: rect.top,
+          bottom: rect.bottom,
+          height: rect.height,
+          padding: style.padding,
+          margin: style.margin,
+          border: style.border,
+          borderBottom: style.borderBottom,
+          backgroundColor: style.backgroundColor,
+        });
+
+        // Check parent of toolbar wrapper
+        const parent = toolbarWrapper.parentElement;
+        if (parent) {
+          const parentRect = parent.getBoundingClientRect();
+          const parentStyle = window.getComputedStyle(parent);
+          console.log("TOOLBAR WRAPPER PARENT:", {
+            tagName: parent.tagName,
+            className: parent.className,
+            top: parentRect.top,
+            bottom: parentRect.bottom,
+            padding: parentStyle.padding,
+            margin: parentStyle.margin,
+            border: parentStyle.border,
+            borderBottom: parentStyle.borderBottom,
+            backgroundColor: parentStyle.backgroundColor,
+          });
+        }
+      }
+
+      if (editorInner) {
+        const rect = editorInner.getBoundingClientRect();
+        const style = window.getComputedStyle(editorInner);
+        console.log("EDITOR INNER:", {
+          top: rect.top,
+          bottom: rect.bottom,
+          height: rect.height,
+          padding: style.padding,
+          margin: style.margin,
+          border: style.border,
+          borderTop: style.borderTop,
+          backgroundColor: style.backgroundColor,
+        });
+
+        // Calculate gap
+        if (toolbarWrapper) {
+          const toolbarRect = toolbarWrapper.getBoundingClientRect();
+          const gap = rect.top - toolbarRect.bottom;
+          console.log("GAP BETWEEN TOOLBAR AND EDITOR:", gap, "px");
+        }
+      }
+
+      // Find ALL elements at y=32 (where the line appears)
+      console.log("ELEMENTS AT Y=32 (toolbar bottom):");
+      const elementsAtLine = document.elementsFromPoint(100, 32);
+      elementsAtLine.forEach((el, idx) => {
+        const style = window.getComputedStyle(el);
+        if (idx < 10) {
+          // Only log first 10
+          console.log(`  ${idx}:`, el.tagName, el.className, {
+            border: style.border,
+            borderBottom: style.borderBottom,
+            backgroundColor: style.backgroundColor,
+          });
+        }
+      });
+
+      console.log("==========================================\n");
+    };
+
+    // Run after a short delay to ensure everything is rendered
+    const timer = setTimeout(debugElements, 500);
+    return () => clearTimeout(timer);
+  }, []);
 
   const editorConfig = {
     namespace: "VSCodeLexicalEditor",
@@ -305,6 +422,38 @@ export function LexicalEditor({
         ul: "lexical-editor-ul",
       },
       quote: "lexical-editor-quote",
+      codeHighlight: {
+        atrule: "token-atrule",
+        attr: "token-attr",
+        boolean: "token-boolean",
+        builtin: "token-builtin",
+        cdata: "token-cdata",
+        char: "token-char",
+        class: "token-class",
+        "class-name": "token-class-name",
+        comment: "token-comment",
+        constant: "token-constant",
+        deleted: "token-deleted",
+        doctype: "token-doctype",
+        entity: "token-entity",
+        function: "token-function",
+        important: "token-important",
+        inserted: "token-inserted",
+        keyword: "token-keyword",
+        namespace: "token-namespace",
+        number: "token-number",
+        operator: "token-operator",
+        prolog: "token-prolog",
+        property: "token-property",
+        punctuation: "token-punctuation",
+        regex: "token-regex",
+        selector: "token-selector",
+        string: "token-string",
+        symbol: "token-symbol",
+        tag: "token-tag",
+        url: "token-url",
+        variable: "token-variable",
+      },
     },
     onError(_error: Error) {
       // Silently handle Lexical errors
@@ -327,17 +476,31 @@ export function LexicalEditor({
     [onContentChange],
   );
 
+  // Check if this is a Datalayer runtime (has uid property)
+  const isDatalayerRuntime = !!selectedRuntime?.uid;
+
   return (
     <div className={`lexical-editor-container ${className}`}>
+      {/* Runtime progress bar */}
+      <RuntimeProgressBar
+        runtime={selectedRuntime}
+        isDatalayerRuntime={isDatalayerRuntime}
+      />
       <LexicalComposer initialConfig={editorConfig}>
         {(showToolbar || collaboration?.enabled) && (
           <div
+            className="lexical-toolbar-wrapper"
             style={{
               display: "flex",
               alignItems: "flex-start",
               justifyContent: "space-between",
-              borderBottom: "1px solid var(--vscode-panel-border)",
               backgroundColor: "var(--vscode-editor-background)",
+              width: "100%",
+              maxWidth: "100%",
+              overflow: "hidden",
+              border: "none !important",
+              outline: "none !important",
+              boxShadow: "none !important",
             }}
           >
             {showToolbar && (
@@ -438,6 +601,7 @@ export function LexicalEditor({
             content={initialContent}
             skipLoad={collaboration?.enabled}
           />
+          <CodeHighlightPlugin />
           <ComponentPickerMenuPlugin kernel={defaultKernel} />
           <JupyterInputOutputPlugin kernel={defaultKernel} />
           {floatingAnchorElem && (

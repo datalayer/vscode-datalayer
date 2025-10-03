@@ -147,15 +147,92 @@ export class MutableServiceManager {
   /**
    * Create a proxy that forwards all property access to the current service manager.
    * This allows the MutableServiceManager to be used as a drop-in replacement.
+   *
+   * IMPORTANT: For properties that are objects (like `kernels`, `sessions`, etc.),
+   * we need to return proxies as well, because SessionContext extracts these properties
+   * and holds onto them. Without proxies, SessionContext would keep references to the
+   * old mock service manager's kernels/sessions even after we swap to a real one.
    */
   createProxy(): ServiceManager.IManager {
+    // Cache for sub-proxies (kernels, sessions, etc.) to maintain object identity
+    const subProxies = new Map<string, unknown>();
+
     return new Proxy({} as ServiceManager.IManager, {
       get: (_target, prop) => {
         const current = this._serviceManager as unknown as Record<
           PropertyKey,
           unknown
         >;
-        return current[prop];
+        const value = current[prop];
+
+        // For object properties (kernels, sessions, contents, etc.), create a proxy
+        // that always forwards to the CURRENT service manager's property
+        // This ensures SessionContext always uses the current kernels manager
+        if (
+          typeof value === "object" &&
+          value !== null &&
+          typeof prop === "string" &&
+          [
+            "kernels",
+            "sessions",
+            "contents",
+            "terminals",
+            "events",
+            "settings",
+            "nbconvert",
+          ].includes(prop)
+        ) {
+          // Return cached proxy if exists to maintain object identity
+          if (subProxies.has(prop)) {
+            return subProxies.get(prop);
+          }
+
+          // Create new proxy for this property
+          const subProxy = new Proxy({} as Record<string, unknown>, {
+            get: (_subTarget, subProp) => {
+              const currentSm = this._serviceManager as unknown as Record<
+                PropertyKey,
+                unknown
+              >;
+              const currentProp = currentSm[prop] as Record<
+                PropertyKey,
+                unknown
+              >;
+              return currentProp?.[subProp];
+            },
+            set: (_subTarget, subProp, subValue) => {
+              const currentSm = this._serviceManager as unknown as Record<
+                PropertyKey,
+                unknown
+              >;
+              const currentProp = currentSm[prop] as Record<
+                PropertyKey,
+                unknown
+              >;
+              if (currentProp) {
+                currentProp[subProp] = subValue;
+              }
+              return true;
+            },
+            has: (_subTarget, subProp) => {
+              const currentSm = this._serviceManager as unknown as Record<
+                PropertyKey,
+                unknown
+              >;
+              const currentProp = currentSm[prop] as Record<
+                PropertyKey,
+                unknown
+              >;
+              return currentProp ? subProp in currentProp : false;
+            },
+          });
+
+          subProxies.set(prop, subProxy);
+          return subProxy;
+        }
+
+        // For non-object properties, just return the value directly
+        return value;
       },
       set: (_target, prop, value) => {
         const current = this._serviceManager as unknown as Record<

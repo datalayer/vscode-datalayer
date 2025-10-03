@@ -174,6 +174,22 @@ export const CommonConfirmations = {
   }),
 
   /**
+   * Terminate all runtimes confirmation.
+   */
+  terminateAllRuntimes: (count: number): TwoStepConfirmationConfig => ({
+    itemName: `all ${count} runtime${count !== 1 ? "s" : ""}`,
+    action: "terminate",
+    consequences: [
+      `Stop ${count} running runtime${count !== 1 ? "s" : ""}`,
+      "Stop all notebooks using these runtimes",
+      "Clear all runtime states",
+      "Potentially lose unsaved work across all notebooks",
+    ],
+    actionButton: "Terminate All",
+    finalActionButton: "Yes, Terminate All",
+  }),
+
+  /**
    * Document deletion confirmation.
    */
   deleteDocument: (documentName: string): TwoStepConfirmationConfig => ({
@@ -186,14 +202,5 @@ export const CommonConfirmations = {
     ],
     actionButton: "Delete",
     finalActionButton: "Yes, Delete",
-  }),
-
-  /**
-   * Runtime refresh confirmation.
-   */
-  refreshRuntimes: (): SimpleConfirmationConfig => ({
-    message:
-      "Refresh runtime controllers? This will update the available runtimes in the kernel picker.",
-    actionButton: "Refresh",
   }),
 };

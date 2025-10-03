@@ -105,8 +105,7 @@ Your profile information is automatically fetched if you authenticated via GitHu
 Customize the extension in VS Code settings:
 
 - `datalayer.serverUrl` - Datalayer server URL (default: https://prod1.datalayer.run)
-- `datalayer.runtime.environment` - Default runtime environment: `python-cpu-env` (standard scientific libraries) or `ai-env` (ML frameworks)
-- `datalayer.runtime.creditsLimit` - Default credits limit for new runtimes (minimum: 1, default: 10)
+- `datalayer.runtime.defaultMinutes` - Default runtime duration in minutes (default: 10, max: 1440)
 
 ## 💡 Common Questions
 
