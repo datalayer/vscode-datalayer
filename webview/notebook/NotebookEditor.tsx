@@ -44,7 +44,7 @@ import {
   notebookCellStyles,
   notebookHeight,
   cellSidebarMargin,
-} from "../components/NotebookStyles";
+} from "../components/notebookStyles";
 
 // Extended interface for runtime with credits information
 interface RuntimeWithCredits extends RuntimeJSON {

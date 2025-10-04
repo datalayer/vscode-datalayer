@@ -18,4 +18,4 @@ export { RuntimeProgressBar } from "./RuntimeProgressBar";
 export type { RuntimeProgressBarProps } from "./RuntimeProgressBar";
 
 // Notebook styles
-export * from "./NotebookStyles";
+export * from "./notebookStyles";
