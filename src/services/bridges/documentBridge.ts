@@ -52,8 +52,6 @@ export interface DocumentMetadata {
  */
 export class DocumentBridge {
   private static instance: DocumentBridge;
-  // @ts-expect-error - Used via getter property
-  private _sdk: DatalayerClient;
   private documentMetadata: Map<string, DocumentMetadata> = new Map();
   private tempDir: string;
   private activeRuntimes: Set<string> = new Set();
@@ -65,7 +63,6 @@ export class DocumentBridge {
     if (!sdk) {
       throw new Error("SDK is required for DocumentBridge");
     }
-    this._sdk = sdk;
     // Create a temp directory for Datalayer documents
     this.tempDir = path.join(os.tmpdir(), "datalayer-vscode");
     if (!fs.existsSync(this.tempDir)) {

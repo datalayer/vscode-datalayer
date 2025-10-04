@@ -400,55 +400,6 @@ function NotebookEditor(): JSX.Element {
   );
 }
 
-// Add debug function to window
-declare global {
-  interface Window {
-    debugNotebook: () => any[];
-  }
-}
-
-window.debugNotebook = function () {
-  const all = document.querySelectorAll("*");
-  const results: any[] = [];
-
-  all.forEach((el: Element) => {
-    const style = getComputedStyle(el);
-    const bg = style.backgroundColor;
-
-    // Check for black or near-black backgrounds
-    if (bg && bg !== "rgba(0, 0, 0, 0)" && bg !== "transparent") {
-      const match = bg.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
-      if (match) {
-        const [_, r, g, b] = match;
-        if (parseInt(r) < 50 && parseInt(g) < 50 && parseInt(b) < 50) {
-          results.push({
-            element: el,
-            tag: el.tagName,
-            id: el.id,
-            classes: el.className,
-            backgroundColor: bg,
-            parent: el.parentElement?.tagName,
-            parentId: el.parentElement?.id,
-            parentClasses: el.parentElement?.className,
-          });
-        }
-      }
-    }
-  });
-
-  console.log("Dark elements found:", results);
-  results.forEach((r) => {
-    console.log(
-      `${r.tag}#${r.id || "no-id"}.${r.classes || "no-class"} = ${r.backgroundColor}`,
-    );
-  });
-  return results;
-};
-
-console.log(
-  "[NotebookEditor] Debug function installed on window.debugNotebook",
-);
-
 // Initialize the React app
 document.addEventListener("DOMContentLoaded", () => {
   const root = createRoot(

@@ -14,20 +14,6 @@
 import * as vscode from "vscode";
 
 /**
- * Configuration for simple confirmation dialogs.
- */
-export interface SimpleConfirmationConfig {
-  /** The main message to display */
-  message: string;
-  /** The action button text (e.g., "Delete", "Terminate") */
-  actionButton: string;
-  /** The cancel button text (defaults to "Cancel") */
-  cancelButton?: string;
-  /** Whether to use modal dialog (defaults to false for non-intrusive) */
-  modal?: boolean;
-}
-
-/**
  * Configuration for two-step destructive action confirmations.
  */
 export interface TwoStepConfirmationConfig {
@@ -41,43 +27,6 @@ export interface TwoStepConfirmationConfig {
   actionButton: string;
   /** The final confirmation button text (e.g., "Yes, Delete", "Yes, Terminate") */
   finalActionButton: string;
-}
-
-/**
- * Shows a simple confirmation dialog.
- * Non-intrusive by default but can be made modal for critical actions.
- *
- * @param config - Configuration for the confirmation dialog
- * @returns Promise that resolves to true if user confirmed, false if cancelled
- *
- * @example
- * ```typescript
- * const confirmed = await showSimpleConfirmation({
- *   message: "Refresh runtime controllers? This will update available runtimes.",
- *   actionButton: "Refresh"
- * });
- * ```
- */
-export async function showSimpleConfirmation(
-  config: SimpleConfirmationConfig,
-): Promise<boolean> {
-  const {
-    message,
-    actionButton,
-    cancelButton = "Cancel",
-    modal = false,
-  } = config;
-
-  const options = modal ? { modal: true } : {};
-
-  const action = await vscode.window.showWarningMessage(
-    message,
-    options,
-    actionButton,
-    cancelButton,
-  );
-
-  return action === actionButton;
 }
 
 /**
@@ -121,37 +70,6 @@ export async function showTwoStepConfirmation(
   const selection = await messageFunction(message, actionButton, "Cancel");
 
   return selection === actionButton;
-}
-
-/**
- * Shows a simple information-style confirmation for non-destructive actions.
- * Uses information message instead of warning for less alarming appearance.
- *
- * @param message - The message to display
- * @param actionButton - The action button text
- * @param cancelButton - The cancel button text (defaults to "Cancel")
- * @returns Promise that resolves to true if user confirmed, false if cancelled
- *
- * @example
- * ```typescript
- * const confirmed = await showInfoConfirmation(
- *   "Create a new runtime? This will use your credits.",
- *   "Create"
- * );
- * ```
- */
-export async function showInfoConfirmation(
-  message: string,
-  actionButton: string,
-  cancelButton: string = "Cancel",
-): Promise<boolean> {
-  const action = await vscode.window.showInformationMessage(
-    message,
-    actionButton,
-    cancelButton,
-  );
-
-  return action === actionButton;
 }
 
 /**

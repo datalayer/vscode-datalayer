@@ -11,7 +11,7 @@
  * @module theme/VSCodeTheme
  */
 
-import React, { useEffect, useMemo, type ReactNode } from "react";
+import React, { useEffect, type ReactNode } from "react";
 import { JupyterReactTheme } from "@datalayer/jupyter-react";
 
 export interface VSCodeThemeProps {
@@ -187,41 +187,4 @@ export function VSCodeTheme({
       </JupyterReactTheme>
     </>
   );
-}
-
-/**
- * Hook to get current VS Code theme colors.
- * Reads directly from CSS variables - no complex state management.
- */
-export function useVSCodeColors() {
-  return useMemo(() => {
-    const getColor = (varName: string): string => {
-      return getComputedStyle(document.documentElement)
-        .getPropertyValue(varName)
-        .trim();
-    };
-
-    return {
-      // Background colors
-      editorBackground: getColor("--vscode-editor-background"),
-      sidebarBackground: getColor("--vscode-sideBar-background"),
-      widgetBackground: getColor("--vscode-editorWidget-background"),
-
-      // Foreground colors
-      editorForeground: getColor("--vscode-editor-foreground"),
-      foreground: getColor("--vscode-foreground"),
-
-      // Border colors
-      panelBorder: getColor("--vscode-panel-border"),
-      widgetBorder: getColor("--vscode-editorWidget-border"),
-
-      // Accent colors
-      focusBorder: getColor("--vscode-focusBorder"),
-      buttonBackground: getColor("--vscode-button-background"),
-
-      // Status colors
-      errorForeground: getColor("--vscode-errorForeground"),
-      warningForeground: getColor("--vscode-editorWarning-foreground"),
-    };
-  }, []);
 }
