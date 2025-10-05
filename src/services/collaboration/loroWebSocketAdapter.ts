@@ -127,6 +127,13 @@ export class LoroWebSocketAdapter {
   }
 
   /**
+   * Check if WebSocket is currently connected
+   */
+  isConnected(): boolean {
+    return this.ws !== null && this.ws.readyState === 1;
+  }
+
+  /**
    * Disconnect from the WebSocket server
    */
   disconnect(): void {

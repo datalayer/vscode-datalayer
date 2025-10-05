@@ -126,6 +126,8 @@ export class LexicalProvider extends BaseDocumentProvider<LexicalDocument> {
    * Map of Loro WebSocket adapters keyed by adapter ID.
    */
   private readonly loroAdapters = new Map<string, LoroWebSocketAdapter>();
+  private readonly adapterCreationTimes = new Map<string, number>();
+  private readonly adapterConnectionTimes = new Map<string, number>();
 
   /**
    * Creates a new LexicalProvider.
@@ -476,12 +478,6 @@ export class LexicalProvider extends BaseDocumentProvider<LexicalDocument> {
     }
 
     if (type === "connect") {
-      // Create a new WebSocket adapter
-      if (this.loroAdapters.has(adapterId)) {
-        console.warn(`[LexicalProvider] Adapter ${adapterId} already exists`);
-        return;
-      }
-
       // Get WebSocket URL from data
       const websocketUrl = data?.websocketUrl;
       if (!websocketUrl) {
@@ -492,6 +488,25 @@ export class LexicalProvider extends BaseDocumentProvider<LexicalDocument> {
           type: "error",
           adapterId,
           data: { message: "Missing websocketUrl in connect message" },
+        });
+        return;
+      }
+
+      // Check if adapter already exists
+      const existingAdapter = this.loroAdapters.get(adapterId);
+      if (existingAdapter) {
+        // Adapter already exists - this happens due to React StrictMode double-mounting
+        // The first adapter is already connected and working, so just acknowledge this
+        // duplicate connect request without creating a new adapter
+        console.log(
+          `[LexicalProvider] Adapter ${adapterId} already exists and connected, ignoring duplicate connect (React StrictMode)`,
+        );
+
+        // Send status message to acknowledge the connection
+        webviewPanel.webview.postMessage({
+          type: "status",
+          adapterId,
+          data: { status: "connected" },
         });
         return;
       }
@@ -507,13 +522,42 @@ export class LexicalProvider extends BaseDocumentProvider<LexicalDocument> {
       );
 
       this.loroAdapters.set(adapterId, adapter);
+      this.adapterCreationTimes.set(adapterId, Date.now());
       adapter.connect();
     } else if (type === "disconnect") {
       // Disconnect and remove adapter
       const adapter = this.loroAdapters.get(adapterId);
       if (adapter) {
+        const creationTime = this.adapterCreationTimes.get(adapterId);
+        const timeSinceCreation = creationTime
+          ? Date.now() - creationTime
+          : Infinity;
+
+        // Check if this is a React StrictMode disconnect
+        // These happen either:
+        // 1. Before the WebSocket connects (within first few ms)
+        // 2. Immediately after connection (within 100ms of creation)
+        if (!adapter.isConnected()) {
+          console.log(
+            `[LexicalProvider] Ignoring disconnect for ${adapterId} - not yet connected (${timeSinceCreation}ms since creation - React StrictMode)`,
+          );
+          return;
+        }
+
+        if (timeSinceCreation < 1000) {
+          console.log(
+            `[LexicalProvider] Ignoring disconnect for ${adapterId} - just connected (${timeSinceCreation}ms since creation - React StrictMode)`,
+          );
+          return;
+        }
+
+        console.log(
+          `[LexicalProvider] Disconnecting adapter ${adapterId} (${timeSinceCreation}ms since creation)`,
+        );
         adapter.disconnect();
         this.loroAdapters.delete(adapterId);
+        this.adapterCreationTimes.delete(adapterId);
+        this.adapterConnectionTimes.delete(adapterId);
       }
     } else if (type === "message") {
       // Forward message to adapter
