@@ -23,17 +23,12 @@ export interface InitMessage {
   body: {
     value: Uint8Array;
     untitled?: boolean;
+    isDatalayerNotebook?: boolean;
+    documentId?: string;
+    serverUrl?: string;
+    token?: string;
     notebookId?: string;
     theme?: "light" | "dark";
-    collaboration?: {
-      enabled: boolean;
-      documentId: string;
-      serverUrl: string;
-      token: string;
-      sessionId: string;
-      username: string;
-      userColor: string;
-    };
   };
 }
 

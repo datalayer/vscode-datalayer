@@ -31,9 +31,6 @@ export interface NotebookState {
   documentId?: string;
   serverUrl?: string;
   token?: string;
-  sessionId?: string;
-  username?: string;
-  userColor?: string;
   notebookId: string;
   isInitialized: boolean;
 
@@ -49,9 +46,6 @@ export interface NotebookState {
   setDocumentId: (id: string) => void;
   setServerUrl: (url: string) => void;
   setToken: (token: string) => void;
-  setSessionId: (id: string) => void;
-  setUsername: (name: string) => void;
-  setUserColor: (color: string) => void;
   setNotebookId: (id: string) => void;
   setIsInitialized: (initialized: boolean) => void;
   setRuntime: (runtime: RuntimeWithCredits | undefined) => void;
@@ -68,9 +62,6 @@ const initialState = {
   documentId: undefined,
   serverUrl: undefined,
   token: undefined,
-  sessionId: undefined,
-  username: undefined,
-  userColor: undefined,
   notebookId: "local-notebook",
   isInitialized: false,
   selectedRuntime: undefined,
@@ -90,9 +81,6 @@ export const useNotebookStore = create<NotebookState>((set) => ({
   setDocumentId: (id) => set({ documentId: id }),
   setServerUrl: (url) => set({ serverUrl: url }),
   setToken: (token) => set({ token }),
-  setSessionId: (id) => set({ sessionId: id }),
-  setUsername: (name) => set({ username: name }),
-  setUserColor: (color) => set({ userColor: color }),
   setNotebookId: (id) => set({ notebookId: id }),
   setIsInitialized: (initialized) => set({ isInitialized: initialized }),
   setRuntime: (runtime) => set({ selectedRuntime: runtime }),

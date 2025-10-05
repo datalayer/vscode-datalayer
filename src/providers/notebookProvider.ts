@@ -274,32 +274,47 @@ export class NotebookProvider extends BaseDocumentProvider<NotebookDocument> {
           // Check if this is a Datalayer notebook (from spaces)
           const isDatalayerNotebook = document.uri.scheme === "datalayer";
 
-          // Setup collaboration for Datalayer notebooks
-          let collaborationConfig: object | undefined;
+          // Get document ID, server URL, and token for Datalayer notebooks
+          let documentId: string | undefined;
+          let serverUrl: string | undefined;
+          let token: string | undefined;
+
           if (isDatalayerNotebook) {
-            try {
-              const { NotebookCollaborationService } = await import(
-                "../services/collaboration/notebookCollaboration"
-              );
-              const collaborationService =
-                NotebookCollaborationService.getInstance();
-              collaborationConfig =
-                await collaborationService.setupCollaboration(document);
-            } catch (error) {
-              console.error(
-                "[NotebookProvider] Collaboration setup failed:",
-                error,
-              );
-              // Don't block editor loading if collaboration fails
+            // Get the Datalayer server configuration
+            const config = vscode.workspace.getConfiguration("datalayer");
+            serverUrl = config.get<string>(
+              "spacerUrl",
+              "https://prod1.datalayer.run",
+            );
+
+            // Get the authentication token
+            const authService = getServiceContainer().authProvider;
+            const authToken = authService.getToken();
+            if (authToken) {
+              token = authToken;
+            }
+
+            // Get metadata from document bridge
+            const { DocumentBridge } = await import(
+              "../services/bridges/documentBridge"
+            );
+            const documentBridge = DocumentBridge.getInstance();
+            const metadata = documentBridge.getDocumentMetadata(document.uri);
+
+            if (metadata && metadata.document.uid) {
+              documentId = metadata.document.uid;
             }
           }
 
           this.postMessage(webviewPanel, "init", {
             value: document.documentData,
             editable,
+            isDatalayerNotebook,
             theme,
+            documentId,
+            serverUrl,
+            token,
             notebookId,
-            collaboration: collaborationConfig,
           });
         }
       }

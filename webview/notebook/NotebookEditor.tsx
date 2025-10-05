@@ -121,19 +121,25 @@ function NotebookEditorCore(): JSX.Element {
             store.setTheme(body.theme);
           }
 
-          // Handle collaboration configuration
-          if (body.collaboration) {
+          // Handle notebook data
+          if (body.isDatalayerNotebook) {
             store.setIsDatalayerNotebook(true);
-            store.setDocumentId(body.collaboration.documentId);
-            store.setServerUrl(body.collaboration.serverUrl);
-            store.setToken(body.collaboration.token);
-            store.setSessionId(body.collaboration.sessionId);
-            store.setUsername(body.collaboration.username);
-            store.setUserColor(body.collaboration.userColor);
+          }
+
+          if (body.documentId) {
+            store.setDocumentId(body.documentId);
+          }
+
+          if (body.serverUrl) {
+            store.setServerUrl(body.serverUrl);
           }
 
           if (body.notebookId) {
             store.setNotebookId(body.notebookId);
+          }
+
+          if (body.token) {
+            store.setToken(body.token);
           }
 
           if (body.untitled) {
