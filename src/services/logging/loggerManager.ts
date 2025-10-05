@@ -185,7 +185,8 @@ export class LoggerManager implements ILoggerManager {
 export class Logger {
   constructor(
     private channel: vscode.LogOutputChannel,
-    // @ts-expect-error - Reserved for future log formatting features
+    /** @internal - Reserved for future log formatting features */
+    // @ts-ignore - TS6138
     private _channelName: string,
     private config: LoggerConfig,
   ) {}

@@ -23,12 +23,17 @@ export interface InitMessage {
   body: {
     value: Uint8Array;
     untitled?: boolean;
-    isDatalayerNotebook?: boolean;
-    documentId?: string;
-    serverUrl?: string;
-    token?: string;
     notebookId?: string;
     theme?: "light" | "dark";
+    collaboration?: {
+      enabled: boolean;
+      documentId: string;
+      serverUrl: string;
+      token: string;
+      sessionId: string;
+      username: string;
+      userColor: string;
+    };
   };
 }
 
@@ -109,6 +114,7 @@ export type ExtensionToWebviewMessage =
   | WebSocketProxyMessage
   | WebSocketOpenMessage
   | WebSocketCloseMessage
+  | HttpResponseMessage
   | RuntimeExpiredMessage;
 
 /**
@@ -184,6 +190,30 @@ export interface WebSocketCloseMessage {
   };
 }
 
+/** HTTP request to proxy through extension */
+export interface HttpRequestMessage {
+  type: "http-request";
+  requestId: string;
+  body: {
+    url: string;
+    method: string;
+    headers?: Record<string, string>;
+    body?: string | ArrayBuffer;
+  };
+}
+
+/** HTTP response from proxied request */
+export interface HttpResponseMessage {
+  type: "http-response";
+  requestId: string;
+  body: {
+    status: number;
+    statusText: string;
+    headers: Record<string, string>;
+    body?: ArrayBuffer;
+  };
+}
+
 /** Error from webview */
 export interface WebviewErrorMessage {
   type: "error";
@@ -206,6 +236,7 @@ export type WebviewToExtensionMessage =
   | WebSocketOpenMessage
   | WebSocketCloseMessage
   | WebSocketProxyMessage
+  | HttpRequestMessage
   | WebviewErrorMessage;
 
 /**

@@ -87,7 +87,8 @@ export class WebSocketKernelClient {
    */
   constructor(
     runtime: Runtime | RuntimeJSON,
-    // @ts-expect-error - Used in runtime connection methods
+    /** @internal - Used in runtime connection methods */
+    // @ts-ignore - TS6138
     private readonly _sdk: DatalayerClient,
   ) {
     this._sessionId = uuidv4();

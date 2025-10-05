@@ -47,13 +47,6 @@ export class NotebookNetworkService {
       headers?: Record<string, string>;
       method: string;
     };
-    console.log("[NotebookNetwork] Forwarding request:", {
-      method: requestBody.method,
-      url: requestBody.url,
-      hasBody: !!requestBody.body,
-      requestId: requestId,
-      messageKeys: Object.keys(message),
-    });
 
     fetch(requestBody.url, {
       body: requestBody.body,
@@ -61,13 +54,6 @@ export class NotebookNetworkService {
       method: requestBody.method,
     })
       .then(async (reply: Response) => {
-        console.log("[NotebookNetwork] Got response:", {
-          url: requestBody.url,
-          status: reply.status,
-          statusText: reply.statusText,
-          requestId: requestId,
-        });
-
         const headers: Record<string, string> = [...reply.headers].reduce(
           (agg, pair) => ({ ...agg, [pair[0]]: pair[1] }),
           {},
@@ -77,10 +63,6 @@ export class NotebookNetworkService {
             ? await reply.arrayBuffer()
             : undefined;
 
-        console.log(
-          "[NotebookNetwork] Calling postMessage with requestId:",
-          requestId,
-        );
         this.postMessage(
           webview,
           "http-response",
@@ -234,13 +216,6 @@ export class NotebookNetworkService {
       ? { type, body, id: requestIdOrId }
       : { type, body, requestId: requestIdOrId };
 
-    console.log("[NotebookNetwork] postMessage:", {
-      type,
-      hasBody: !!body,
-      requestId: !isWebSocketMessage ? requestIdOrId : undefined,
-      id: isWebSocketMessage ? requestIdOrId : undefined,
-      messageKeys: Object.keys(messageToSend),
-    });
     panel.webview.postMessage(messageToSend);
   }
 

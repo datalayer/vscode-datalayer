@@ -24,6 +24,7 @@ import {
 import { getServiceContainer } from "../extension";
 import type { Runtime } from "../../../core/lib/client/models/Runtime";
 import { BaseDocumentProvider } from "./baseDocumentProvider";
+import { LoroWebSocketAdapter } from "../services/collaboration/loroWebSocketAdapter";
 
 /**
  * Custom editor provider for Lexical documents.
@@ -120,6 +121,11 @@ export class LexicalProvider extends BaseDocumentProvider<LexicalDocument> {
       readonly webviewPanel: vscode.WebviewPanel;
     }
   >();
+
+  /**
+   * Map of Loro WebSocket adapters keyed by adapter ID.
+   */
+  private readonly loroAdapters = new Map<string, LoroWebSocketAdapter>();
 
   /**
    * Creates a new LexicalProvider.
@@ -237,6 +243,13 @@ export class LexicalProvider extends BaseDocumentProvider<LexicalDocument> {
             `Failed to initialize Lexical editor: ${error.message}`,
           );
         });
+      } else if (
+        e.type === "connect" ||
+        e.type === "disconnect" ||
+        e.type === "message"
+      ) {
+        // Handle Loro collaboration messages
+        this.handleLoroMessage(e, webviewPanel);
       } else {
         this.onMessage(webviewPanel, document, e);
       }
@@ -246,6 +259,15 @@ export class LexicalProvider extends BaseDocumentProvider<LexicalDocument> {
     webviewPanel.onDidDispose(() => {
       this.webviews.delete(document.uri.toString());
       kernelBridge.unregisterWebview(document.uri);
+
+      // Clean up any Loro adapters for this document
+      const docUri = document.uri.toString();
+      for (const [adapterId, adapter] of this.loroAdapters.entries()) {
+        if (adapterId.includes(docUri)) {
+          adapter.dispose();
+          this.loroAdapters.delete(adapterId);
+        }
+      }
     });
 
     // Function to send initial content
@@ -429,5 +451,84 @@ export class LexicalProvider extends BaseDocumentProvider<LexicalDocument> {
    */
   protected override getDocumentUri(document: LexicalDocument): vscode.Uri {
     return document.uri;
+  }
+
+  /**
+   * Handles Loro collaboration messages from the webview.
+   * Creates/manages WebSocket adapters and forwards messages.
+   *
+   * @param message - Message from webview
+   * @param webviewPanel - The webview panel
+   */
+  private handleLoroMessage(
+    message: {
+      type: string;
+      adapterId: string;
+      data?: { websocketUrl?: string; [key: string]: unknown };
+    },
+    webviewPanel: vscode.WebviewPanel,
+  ): void {
+    const { type, adapterId, data } = message;
+
+    if (!adapterId) {
+      console.error("[LexicalProvider] Loro message missing adapterId");
+      return;
+    }
+
+    if (type === "connect") {
+      // Create a new WebSocket adapter
+      if (this.loroAdapters.has(adapterId)) {
+        console.warn(`[LexicalProvider] Adapter ${adapterId} already exists`);
+        return;
+      }
+
+      // Get WebSocket URL from data
+      const websocketUrl = data?.websocketUrl;
+      if (!websocketUrl) {
+        console.error(
+          "[LexicalProvider] Loro connect message missing websocketUrl",
+        );
+        webviewPanel.webview.postMessage({
+          type: "error",
+          adapterId,
+          data: { message: "Missing websocketUrl in connect message" },
+        });
+        return;
+      }
+
+      console.log(
+        `[LexicalProvider] Creating Loro adapter ${adapterId} for ${websocketUrl}`,
+      );
+
+      const adapter = new LoroWebSocketAdapter(
+        adapterId,
+        websocketUrl,
+        webviewPanel.webview,
+      );
+
+      this.loroAdapters.set(adapterId, adapter);
+      adapter.connect();
+    } else if (type === "disconnect") {
+      // Disconnect and remove adapter
+      const adapter = this.loroAdapters.get(adapterId);
+      if (adapter) {
+        adapter.disconnect();
+        this.loroAdapters.delete(adapterId);
+      }
+    } else if (type === "message") {
+      // Forward message to adapter
+      const adapter = this.loroAdapters.get(adapterId);
+      if (adapter) {
+        adapter.handleMessage({
+          type: "message",
+          adapterId,
+          data,
+        });
+      } else {
+        console.warn(
+          `[LexicalProvider] No adapter found for ${adapterId}, creating on demand`,
+        );
+      }
+    }
   }
 }

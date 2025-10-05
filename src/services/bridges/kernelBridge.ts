@@ -54,9 +54,11 @@ export class KernelBridge implements vscode.Disposable {
    * @param _authProvider - Authentication provider (used for authentication in runtime operations)
    */
   constructor(
-    // @ts-expect-error - Used for runtime operations
+    /** @internal - Used for runtime operations */
+    // @ts-ignore - TS6138
     private readonly _sdk: DatalayerClient,
-    // @ts-expect-error - Used for authentication in runtime operations
+    /** @internal - Used for authentication in runtime operations */
+    // @ts-ignore - TS6138
     private readonly _authProvider: SDKAuthProvider,
   ) {}
 

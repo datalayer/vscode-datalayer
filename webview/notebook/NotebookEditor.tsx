@@ -27,6 +27,7 @@ import {
 } from "../services/messageHandler";
 import { loadFromBytes } from "../utils";
 import { initializeRequireJSStub } from "../utils/requirejsStub";
+import { proxyFetch } from "../utils/httpProxy";
 import { RuntimeProgressBar } from "../components/RuntimeProgressBar";
 
 // Initialize RequireJS stub for ClassicWidgetManager
@@ -82,30 +83,19 @@ function NotebookEditorCore(): JSX.Element {
 
   // Create collaboration provider for Datalayer notebooks
   const collaborationProvider = useMemo(() => {
-    console.log("[NotebookEditor] Collaboration provider check:", {
-      isDatalayerNotebook: store.isDatalayerNotebook,
-      hasServerUrl: !!store.serverUrl,
-      serverUrl: store.serverUrl,
-      hasToken: !!store.token,
-      hasDocumentId: !!store.documentId,
-      documentId: store.documentId,
-    });
-
     if (
       store.isDatalayerNotebook &&
       store.serverUrl &&
       store.token &&
       store.documentId
     ) {
-      console.log("[NotebookEditor] Creating DatalayerCollaborationProvider");
       return new DatalayerCollaborationProvider({
         runUrl: store.serverUrl,
         token: store.token,
+        // Use proxy fetch to avoid CORS issues in VS Code webview
+        fetchFn: proxyFetch as unknown as typeof fetch,
       }) as unknown as ICollaborationProvider;
     }
-    console.log(
-      "[NotebookEditor] Not creating collaboration provider - missing requirements",
-    );
     return undefined;
   }, [
     store.isDatalayerNotebook,
@@ -125,40 +115,25 @@ function NotebookEditorCore(): JSX.Element {
       switch (message.type) {
         case "init": {
           const { body } = message;
-          console.log("[NotebookEditor] Received init message:", {
-            isDatalayerNotebook: body.isDatalayerNotebook,
-            hasDocumentId: !!body.documentId,
-            documentId: body.documentId,
-            hasServerUrl: !!body.serverUrl,
-            serverUrl: body.serverUrl,
-            hasToken: !!body.token,
-            hasNotebookId: !!body.notebookId,
-          });
 
           // Handle theme
           if (body.theme) {
             store.setTheme(body.theme);
           }
 
-          // Handle notebook data
-          if (body.isDatalayerNotebook) {
+          // Handle collaboration configuration
+          if (body.collaboration) {
             store.setIsDatalayerNotebook(true);
-          }
-
-          if (body.documentId) {
-            store.setDocumentId(body.documentId);
-          }
-
-          if (body.serverUrl) {
-            store.setServerUrl(body.serverUrl);
+            store.setDocumentId(body.collaboration.documentId);
+            store.setServerUrl(body.collaboration.serverUrl);
+            store.setToken(body.collaboration.token);
+            store.setSessionId(body.collaboration.sessionId);
+            store.setUsername(body.collaboration.username);
+            store.setUserColor(body.collaboration.userColor);
           }
 
           if (body.notebookId) {
             store.setNotebookId(body.notebookId);
-          }
-
-          if (body.token) {
-            store.setToken(body.token);
           }
 
           if (body.untitled) {
@@ -183,27 +158,15 @@ function NotebookEditorCore(): JSX.Element {
         case "runtime-selected":
         case "kernel-selected": {
           const { body } = message;
-          console.log("[NotebookEditor] Received kernel-selected message:", {
-            hasBody: !!body,
-            hasRuntime: !!body?.runtime,
-            runtime: body?.runtime,
-          });
           if (body?.runtime) {
             selectRuntime(body.runtime);
             store.setRuntime(body.runtime);
-          } else {
-            console.warn(
-              "[NotebookEditor] No runtime in kernel-selected message body",
-            );
           }
           break;
         }
 
         case "kernel-terminated": // Extension sends this when runtime is terminated
         case "runtime-terminated": // Legacy message type
-          console.log(
-            "[NotebookEditor] Runtime terminated, clearing selection",
-          );
           setTimeout(() => {
             selectRuntime(undefined);
             store.setRuntime(undefined);

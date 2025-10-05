@@ -45,7 +45,8 @@ export class SDKAuthProvider extends BaseService implements IAuthProvider {
 
   constructor(
     private sdk: DatalayerClient,
-    // @ts-expect-error - Reserved for future authentication features
+    /** @internal - Reserved for future authentication features */
+    // @ts-ignore - TS6138
     private _context: vscode.ExtensionContext,
     logger: ILogger,
   ) {

@@ -27,6 +27,11 @@ import { HeadingNode, QuoteNode } from "@lexical/rich-text";
 import { ListNode, ListItemNode } from "@lexical/list";
 import { CodeNode, CodeHighlightNode } from "@lexical/code";
 import { LinkNode, AutoLinkNode } from "@lexical/link";
+import { HashtagNode } from "@lexical/hashtag";
+import { MarkNode } from "@lexical/mark";
+import { OverflowNode } from "@lexical/overflow";
+import { HorizontalRuleNode } from "@lexical/react/LexicalHorizontalRuleNode";
+import { TableCellNode, TableNode, TableRowNode } from "@lexical/table";
 import { ListPlugin } from "@lexical/react/LexicalListPlugin";
 import { LinkPlugin } from "@lexical/react/LexicalLinkPlugin";
 import { useJupyter } from "@datalayer/jupyter-react";
@@ -38,14 +43,15 @@ import {
   JupyterInputOutputPlugin,
   DraggableBlockPlugin,
   registerCodeHighlighting,
+  EquationNode,
+  ImageNode,
+  YouTubeNode,
 } from "@datalayer/jupyter-lexical";
 import { LexicalToolbar } from "./LexicalToolbar";
 import { RuntimeProgressBar } from "../components/RuntimeProgressBar";
 import type { RuntimeJSON } from "../../../core/lib/client/models/Runtime";
-import {
-  createWebsocketProvider,
-  LoroCollaborationPlugin,
-} from "@datalayer/lexical-loro";
+import { LoroCollaborationPlugin } from "@datalayer/lexical-loro";
+import { createVSCodeLoroProvider } from "../services/loro/providerFactory";
 
 /**
  * Collaboration configuration for Lexical documents
@@ -379,6 +385,7 @@ export function LexicalEditor({
     namespace: "VSCodeLexicalEditor",
     editable,
     nodes: [
+      // Basic rich text nodes
       HeadingNode,
       QuoteNode,
       ListNode,
@@ -387,6 +394,19 @@ export function LexicalEditor({
       CodeHighlightNode,
       LinkNode,
       AutoLinkNode,
+      // Table nodes
+      TableNode,
+      TableCellNode,
+      TableRowNode,
+      // Additional nodes from @lexical packages (for collaboration compatibility)
+      HashtagNode,
+      MarkNode,
+      OverflowNode,
+      HorizontalRuleNode,
+      // Jupyter lexical nodes (must match SaaS editor for collaboration)
+      EquationNode,
+      ImageNode,
+      YouTubeNode,
       JupyterInputNode,
       JupyterInputHighlightNode,
       JupyterOutputNode,
@@ -607,19 +627,17 @@ export function LexicalEditor({
           {floatingAnchorElem && (
             <DraggableBlockPlugin anchorElem={floatingAnchorElem} />
           )}
-          {collaboration?.enabled &&
-            collaboration.websocketUrl &&
-            collaboration.documentId && (
-              <LoroCollaborationPlugin
-                id={collaboration.documentId}
-                shouldBootstrap
-                providerFactory={createWebsocketProvider}
-                websocketUrl={collaboration.websocketUrl}
-                onInitialization={(_isInitialized) => {
-                  // Collaboration initialized
-                }}
-              />
-            )}
+          {collaboration?.enabled && collaboration.documentId && (
+            <LoroCollaborationPlugin
+              id={collaboration.documentId}
+              shouldBootstrap
+              providerFactory={createVSCodeLoroProvider}
+              websocketUrl={collaboration.websocketUrl || ""}
+              onInitialization={(_isInitialized) => {
+                console.log("[LexicalEditor] Collaboration initialized");
+              }}
+            />
+          )}
         </div>
       </LexicalComposer>
     </div>
