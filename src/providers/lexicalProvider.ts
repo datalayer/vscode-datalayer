@@ -128,6 +128,7 @@ export class LexicalProvider extends BaseDocumentProvider<LexicalDocument> {
   private readonly loroAdapters = new Map<string, LoroWebSocketAdapter>();
   private readonly adapterCreationTimes = new Map<string, number>();
   private readonly adapterConnectionTimes = new Map<string, number>();
+  private readonly adapterToWebview = new Map<string, string>(); // adapterId -> document URI
 
   /**
    * Creates a new LexicalProvider.
@@ -136,6 +137,20 @@ export class LexicalProvider extends BaseDocumentProvider<LexicalDocument> {
    */
   constructor(context: vscode.ExtensionContext) {
     super(context);
+  }
+
+  /**
+   * Find document URI for a given webview panel
+   */
+  private getDocumentUriForPanel(
+    panel: vscode.WebviewPanel,
+  ): string | undefined {
+    for (const [uri, entry] of this.webviews.entries()) {
+      if (entry.webviewPanel === panel) {
+        return uri;
+      }
+    }
+    return undefined;
   }
 
   /**
@@ -264,10 +279,22 @@ export class LexicalProvider extends BaseDocumentProvider<LexicalDocument> {
 
       // Clean up any Loro adapters for this document
       const docUri = document.uri.toString();
-      for (const [adapterId, adapter] of this.loroAdapters.entries()) {
-        if (adapterId.includes(docUri)) {
-          adapter.dispose();
-          this.loroAdapters.delete(adapterId);
+      for (const [
+        adapterId,
+        adapterDocUri,
+      ] of this.adapterToWebview.entries()) {
+        if (adapterDocUri === docUri) {
+          const adapter = this.loroAdapters.get(adapterId);
+          if (adapter) {
+            console.log(
+              `[LexicalProvider] Cleaning up adapter ${adapterId} for closed document`,
+            );
+            adapter.dispose();
+            this.loroAdapters.delete(adapterId);
+            this.adapterCreationTimes.delete(adapterId);
+            this.adapterConnectionTimes.delete(adapterId);
+            this.adapterToWebview.delete(adapterId);
+          }
         }
       }
     });
@@ -523,6 +550,13 @@ export class LexicalProvider extends BaseDocumentProvider<LexicalDocument> {
 
       this.loroAdapters.set(adapterId, adapter);
       this.adapterCreationTimes.set(adapterId, Date.now());
+
+      // Track which webview owns this adapter for proper cleanup
+      const documentUri = this.getDocumentUriForPanel(webviewPanel);
+      if (documentUri) {
+        this.adapterToWebview.set(adapterId, documentUri);
+      }
+
       adapter.connect();
     } else if (type === "disconnect") {
       // Disconnect and remove adapter
@@ -558,6 +592,7 @@ export class LexicalProvider extends BaseDocumentProvider<LexicalDocument> {
         this.loroAdapters.delete(adapterId);
         this.adapterCreationTimes.delete(adapterId);
         this.adapterConnectionTimes.delete(adapterId);
+        this.adapterToWebview.delete(adapterId);
       }
     } else if (type === "message") {
       // Forward message to adapter

@@ -676,3 +676,50 @@ code[data-highlight-language] {
   right: 0 !important;
   pointer-events: none !important;
 }
+
+/* Fix Loro collaborators toolbar - move it to top and apply VS Code theming */
+/* The LoroCollaborators component renders with a light gray background #f8f9fa */
+.lexical-editor-inner > div[style*="background-color: rgb(248, 249, 250)"],
+.lexical-editor-inner > div[style*="backgroundColor:#f8f9fa"],
+.lexical-editor-inner > div[style*="backgroundColor: #f8f9fa"] {
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 100 !important;
+  order: -1 !important;
+
+  /* Override inline styles with VS Code theme colors */
+  background-color: var(--vscode-editor-background) !important;
+  border-bottom: 1px solid var(--vscode-panel-border) !important;
+  color: var(--vscode-foreground) !important;
+  font-family: var(--vscode-font-family) !important;
+  font-size: 11px !important;
+  padding: 6px 12px !important;
+}
+
+/* Theme the separator */
+.lexical-editor-inner
+  > div[style*="background-color: rgb(248, 249, 250)"]
+  > div[style*="width: 1px"],
+.lexical-editor-inner
+  > div[style*="backgroundColor:#f8f9fa"]
+  > div[style*="width: 1px"],
+.lexical-editor-inner
+  > div[style*="backgroundColor: #f8f9fa"]
+  > div[style*="width: 1px"] {
+  background-color: var(--vscode-panel-border) !important;
+  opacity: 0.5 !important;
+}
+
+/* Theme the "No other collaborators" text */
+.lexical-editor-inner
+  > div[style*="background-color: rgb(248, 249, 250)"]
+  > span[style*="italic"],
+.lexical-editor-inner
+  > div[style*="backgroundColor:#f8f9fa"]
+  > span[style*="italic"],
+.lexical-editor-inner
+  > div[style*="backgroundColor: #f8f9fa"]
+  > span[style*="italic"] {
+  color: var(--vscode-descriptionForeground) !important;
+  opacity: 0.8 !important;
+}

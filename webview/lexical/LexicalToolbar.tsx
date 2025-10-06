@@ -23,13 +23,12 @@ import {
   UNDO_COMMAND,
   REDO_COMMAND,
 } from "lexical";
-import { $isHeadingNode } from "@lexical/rich-text";
-import { $createHeadingNode } from "@lexical/rich-text";
+import { $isHeadingNode, $createHeadingNode } from "@lexical/rich-text";
 import {
   INSERT_ORDERED_LIST_COMMAND,
   INSERT_UNORDERED_LIST_COMMAND,
+  $isListNode,
 } from "@lexical/list";
-import { $isListNode } from "@lexical/list";
 import type { RuntimeJSON } from "../../../core/lib/client/models/Runtime";
 import { MessageHandlerContext } from "../services/messageHandler";
 import {
@@ -43,12 +42,14 @@ export interface LexicalToolbarProps {
   disabled?: boolean;
   selectedRuntime?: RuntimeJSON;
   showRuntimeSelector?: boolean;
+  showCollaborativeLabel?: boolean;
 }
 
 export function LexicalToolbar({
   disabled = false,
   selectedRuntime,
   showRuntimeSelector = false,
+  showCollaborativeLabel = false,
 }: LexicalToolbarProps = {}) {
   const [editor] = useLexicalComposerContext();
   const messageHandler = useContext(MessageHandlerContext);
@@ -61,6 +62,34 @@ export function LexicalToolbar({
   const [canUndo, setCanUndo] = useState(false);
   const [canRedo, setCanRedo] = useState(false);
   const [blockType, setBlockType] = useState("paragraph");
+
+  // Add pulse animation styles for collaborative indicator
+  React.useEffect(() => {
+    if (showCollaborativeLabel) {
+      const style = document.createElement("style");
+      style.textContent = `
+        @keyframes pulse {
+          0% {
+            opacity: 1;
+            transform: scale(1);
+          }
+          50% {
+            opacity: 0.7;
+            transform: scale(1.1);
+          }
+          100% {
+            opacity: 1;
+            transform: scale(1);
+          }
+        }
+      `;
+      document.head.appendChild(style);
+      return () => {
+        document.head.removeChild(style);
+      };
+    }
+    return undefined;
+  }, [showCollaborativeLabel]);
 
   const updateToolbar = useCallback(() => {
     const selection = $getSelection();
@@ -167,8 +196,7 @@ export function LexicalToolbar({
     }
   };
 
-  // Define all toolbar actions with priorities
-  // Using text labels for H1/H2/H3/U/S since codicons doesn't have these icons
+  // Define all toolbar actions
   const actions: ToolbarAction[] = [
     {
       id: "undo",
@@ -282,6 +310,11 @@ export function LexicalToolbar({
     },
   ];
 
+  // Calculate reserved right width
+  const reservedForCollaborative = showCollaborativeLabel ? 180 : 0;
+  const reservedForKernel = showRuntimeSelector ? 200 : 0;
+  const reservedRightWidth = reservedForKernel + reservedForCollaborative;
+
   return (
     <BaseToolbar
       actions={actions}
@@ -303,16 +336,44 @@ export function LexicalToolbar({
         />
       )}
       estimatedButtonWidth={35}
-      reservedRightWidth={showRuntimeSelector ? 200 : 0}
+      reservedRightWidth={reservedRightWidth}
       disabled={disabled}
       rightContent={
-        showRuntimeSelector ? (
-          <KernelSelector
-            selectedRuntime={selectedRuntime}
-            onClick={handleSelectRuntime}
-            disabled={disabled}
-          />
-        ) : undefined
+        <>
+          {showCollaborativeLabel && (
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "6px",
+                padding: "0 8px",
+                backgroundColor: "transparent",
+                color: "var(--vscode-foreground)",
+                fontSize: "11px",
+                opacity: 0.8,
+              }}
+            >
+              <span
+                style={{
+                  width: "8px",
+                  height: "8px",
+                  backgroundColor: "var(--vscode-terminal-ansiGreen)",
+                  borderRadius: "50%",
+                  display: "inline-block",
+                  animation: "pulse 2s infinite",
+                }}
+              ></span>
+              <span>Collaborative • Auto-saved</span>
+            </div>
+          )}
+          {showRuntimeSelector && (
+            <KernelSelector
+              selectedRuntime={selectedRuntime}
+              onClick={handleSelectRuntime}
+              disabled={disabled}
+            />
+          )}
+        </>
       }
     />
   );
