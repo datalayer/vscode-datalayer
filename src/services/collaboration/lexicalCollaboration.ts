@@ -73,10 +73,36 @@ export class LexicalCollaborationService {
         return undefined;
       }
 
-      const documentBridge = DocumentBridge.getInstance();
-      const metadata = documentBridge.getDocumentMetadata(document.uri);
+      // Extract document ID from URI query parameter (embedded by DocumentBridge)
+      const queryParams = new URLSearchParams(document.uri.query);
+      const documentId = queryParams.get("docId");
 
-      if (!metadata?.document) {
+      if (!documentId) {
+        console.warn(
+          "[LexicalCollaboration] No document ID found in URI query parameter",
+        );
+        // Fallback to metadata lookup
+        const documentBridge = DocumentBridge.getInstance();
+        const metadata = documentBridge.getDocumentMetadata(document.uri);
+
+        if (!metadata?.document?.uid) {
+          return undefined;
+        }
+        console.log(
+          `[LexicalCollaboration] Using document ID from metadata: ${metadata.document.uid}`,
+        );
+      } else {
+        console.log(
+          `[LexicalCollaboration] Got document ID from query: ${documentId}`,
+        );
+      }
+
+      const finalDocumentId =
+        documentId ||
+        DocumentBridge.getInstance().getDocumentMetadata(document.uri)?.document
+          ?.uid;
+
+      if (!finalDocumentId) {
         return undefined;
       }
 
@@ -89,7 +115,7 @@ export class LexicalCollaborationService {
       );
 
       // Convert http(s) to ws(s)
-      const websocketUrl = `${spacerUrl.replace(/^http/, "ws")}/api/spacer/v1/lexical/ws/${metadata.document.uid}`;
+      const websocketUrl = `${spacerUrl.replace(/^http/, "ws")}/api/spacer/v1/lexical/ws/${finalDocumentId}`;
 
       const user = authState.user;
       const username =
@@ -98,8 +124,8 @@ export class LexicalCollaborationService {
       return {
         enabled: true,
         websocketUrl,
-        documentId: metadata.document.uid,
-        sessionId: metadata.document.uid, // Use UID as session ID
+        documentId: finalDocumentId,
+        sessionId: finalDocumentId, // Use UID as session ID
         username,
         userColor: this.generateUserColor(),
       };
