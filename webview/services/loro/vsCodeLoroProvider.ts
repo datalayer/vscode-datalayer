@@ -54,6 +54,7 @@ export class VSCodeLoroProvider implements Provider {
   private messageDisposable: Disposable | null = null;
 
   private websocketUrl: string;
+  private documentId: string;
 
   constructor(
     adapterId: string,
@@ -65,6 +66,8 @@ export class VSCodeLoroProvider implements Provider {
     this.adapterId = adapterId;
     this.doc = doc;
     this.websocketUrl = websocketUrl || "";
+    // Extract document ID from adapter ID (format: "loro-{documentId}")
+    this.documentId = adapterId.replace(/^loro-/, "");
 
     // Create shared ephemeral store (5 minute timeout)
     this.ephemeralStore = new EphemeralStore(300000);
@@ -103,7 +106,7 @@ export class VSCodeLoroProvider implements Provider {
         this.sendToExtension({
           type: "message",
           adapterId: this.adapterId,
-          data: { type: "ephemeral", bytes: stateBytes },
+          data: { type: "ephemeral", ephemeral: stateBytes, docId: this.documentId },
         });
       }
     });
@@ -234,6 +237,21 @@ export class VSCodeLoroProvider implements Provider {
             adapterId: this.adapterId,
             data: { type: "query-ephemeral" },
           });
+
+          // Send initial awareness state to server
+          const state = this._awareness.getLocalState();
+          if (state) {
+            console.log(
+              `[VSCodeLoroProvider] Sending initial awareness state:`,
+              state,
+            );
+            const stateBytes = Array.from(this._awareness.encodeLocalState());
+            this.sendToExtension({
+              type: "message",
+              adapterId: this.adapterId,
+              data: { type: "ephemeral", ephemeral: stateBytes, docId: this.documentId },
+            });
+          }
         } else if (status.status === "disconnected") {
           this.isSynced = false;
           this.syncListeners.forEach((cb) => cb(false));
@@ -284,8 +302,8 @@ export class VSCodeLoroProvider implements Provider {
 
       case "ephemeral": {
         // Remote awareness state - decode and apply
-        if (message.bytes && Array.isArray(message.bytes)) {
-          const bytes = new Uint8Array(message.bytes);
+        if (message.ephemeral && Array.isArray(message.ephemeral)) {
+          const bytes = new Uint8Array(message.ephemeral);
           this._awareness.decodeRemoteState(bytes);
         }
         break;

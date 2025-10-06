@@ -135,40 +135,28 @@ export class AwarenessAdapter implements AwarenessProvider {
   }
 
   /**
-   * Encode local state to bytes for transmission
+   * Encode all ephemeral state to bytes for transmission (uses Loro's native encoding)
    */
   encodeLocalState(): Uint8Array {
-    if (!this.localState) {
-      return new Uint8Array(0);
-    }
-
     try {
-      const json = JSON.stringify({
-        clientId: this.clientId,
-        state: this.localState,
-      });
-      return new TextEncoder().encode(json);
+      // Use Loro's native encoding - encodes ALL ephemeral states
+      return this.ephemeralStore.encodeAll();
     } catch (error) {
-      console.error("[AwarenessAdapter] Error encoding local state:", error);
+      console.error("[AwarenessAdapter] Error encoding ephemeral store:", error);
       return new Uint8Array(0);
     }
   }
 
   /**
-   * Decode and apply remote state from bytes
+   * Decode and apply remote ephemeral state from bytes (uses Loro's native decoding)
    */
   decodeRemoteState(bytes: Uint8Array): void {
     try {
-      const json = new TextDecoder().decode(bytes);
-      const { clientId, state } = JSON.parse(json);
-
-      if (clientId !== this.clientId) {
-        // Update ephemeral store with remote state
-        this.ephemeralStore.set(clientId.toString(), state);
-        this.notifyListeners();
-      }
+      // Use Loro's native apply - decodes and merges ephemeral states
+      this.ephemeralStore.apply(bytes);
+      this.notifyListeners();
     } catch (error) {
-      console.error("[AwarenessAdapter] Error decoding remote state:", error);
+      console.error("[AwarenessAdapter] Error applying ephemeral state:", error);
     }
   }
 

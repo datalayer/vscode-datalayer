@@ -566,6 +566,8 @@ export function LexicalEditor({
               shouldBootstrap
               providerFactory={createVSCodeLoroProvider}
               websocketUrl={collaboration.websocketUrl || ""}
+              username={collaboration.username}
+              cursorColor={collaboration.userColor}
               onInitialization={(_isInitialized) => {
                 console.log("[LexicalEditor] Collaboration initialized");
               }}

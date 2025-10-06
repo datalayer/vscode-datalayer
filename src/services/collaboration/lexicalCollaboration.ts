@@ -118,8 +118,9 @@ export class LexicalCollaborationService {
       const websocketUrl = `${spacerUrl.replace(/^http/, "ws")}/api/spacer/v1/lexical/ws/${finalDocumentId}`;
 
       const user = authState.user;
-      const username =
+      const baseUsername =
         user?.displayName || user?.handle || user?.email || "Anonymous";
+      const username = `${baseUsername} (VSCode)`;
 
       return {
         enabled: true,
