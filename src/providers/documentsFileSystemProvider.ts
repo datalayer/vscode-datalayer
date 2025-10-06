@@ -88,7 +88,10 @@ export class DatalayerFileSystemProvider implements vscode.FileSystemProvider {
    * @returns Real file path or undefined if not found
    */
   getRealPath(uri: vscode.Uri): string | undefined {
-    return this.virtualToReal.get(uri.toString());
+    // Strip query parameters from URI before lookup
+    // URIs may have query params (e.g., ?docId=xxx) but mappings are stored without them
+    const uriWithoutQuery = uri.with({ query: "" });
+    return this.virtualToReal.get(uriWithoutQuery.toString());
   }
 
   /**

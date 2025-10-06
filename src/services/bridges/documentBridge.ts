@@ -294,9 +294,14 @@ export class DocumentBridge {
         localPath,
       );
 
+      // Add document UID as query parameter so we can retrieve it later
+      const virtualUriWithId = virtualUri.with({
+        query: `docId=${document.uid}`,
+      });
+
       // Virtual URI created successfully
 
-      return virtualUri;
+      return virtualUriWithId;
     } catch (error) {
       throw error;
     }

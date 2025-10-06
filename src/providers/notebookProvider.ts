@@ -294,15 +294,29 @@ export class NotebookProvider extends BaseDocumentProvider<NotebookDocument> {
               token = authToken;
             }
 
-            // Get metadata from document bridge
-            const { DocumentBridge } = await import(
-              "../services/bridges/documentBridge"
-            );
-            const documentBridge = DocumentBridge.getInstance();
-            const metadata = documentBridge.getDocumentMetadata(document.uri);
+            // Extract document ID from URI query parameter (embedded by DocumentBridge)
+            const queryParams = new URLSearchParams(document.uri.query);
+            const docIdFromQuery = queryParams.get("docId");
 
-            if (metadata && metadata.document.uid) {
-              documentId = metadata.document.uid;
+            if (docIdFromQuery) {
+              documentId = docIdFromQuery;
+              console.log(
+                `[NotebookProvider] Got document ID from query: ${documentId}`,
+              );
+            } else {
+              console.warn(
+                "[NotebookProvider] No docId in query, falling back to metadata lookup",
+              );
+              // Fallback: try to get from metadata lookup
+              const { DocumentBridge } = await import(
+                "../services/bridges/documentBridge"
+              );
+              const documentBridge = DocumentBridge.getInstance();
+              const metadata = documentBridge.getDocumentMetadata(document.uri);
+
+              if (metadata && metadata.document.uid) {
+                documentId = metadata.document.uid;
+              }
             }
           }
 
