@@ -36,6 +36,8 @@ export class LoroWebSocketAdapter {
   private reconnectDelay = 100;
   private maxReconnectDelay = 2500;
   private isDisposed = false;
+  private messageQueue: unknown[] = [];
+  private readonly maxQueueSize = 1000;
 
   constructor(
     private readonly adapterId: string,
@@ -61,6 +63,9 @@ export class LoroWebSocketAdapter {
           adapterId: this.adapterId,
           data: { status: "connected" },
         });
+
+        // Flush queued messages
+        this.flushMessageQueue();
       });
 
       this.ws.on("message", (data: ws.RawData) => {
@@ -154,9 +159,17 @@ export class LoroWebSocketAdapter {
   send(data: unknown): void {
     // WebSocket.OPEN = 1
     if (!this.ws || this.ws.readyState !== 1) {
-      console.warn(
-        `[LoroAdapter ${this.adapterId}] Cannot send - WebSocket not connected`,
-      );
+      // Queue message for later delivery
+      if (this.messageQueue.length < this.maxQueueSize) {
+        this.messageQueue.push(data);
+        console.log(
+          `[LoroAdapter ${this.adapterId}] Queued message (queue size: ${this.messageQueue.length})`,
+        );
+      } else {
+        console.warn(
+          `[LoroAdapter ${this.adapterId}] Message queue full, dropping message`,
+        );
+      }
       return;
     }
 
@@ -211,11 +224,32 @@ export class LoroWebSocketAdapter {
   }
 
   /**
+   * Flush queued messages to the WebSocket
+   */
+  private flushMessageQueue(): void {
+    if (this.messageQueue.length === 0) {
+      return;
+    }
+
+    console.log(
+      `[LoroAdapter ${this.adapterId}] Flushing ${this.messageQueue.length} queued messages`,
+    );
+
+    const queue = [...this.messageQueue];
+    this.messageQueue = [];
+
+    for (const data of queue) {
+      this.send(data);
+    }
+  }
+
+  /**
    * Clean up resources
    */
   dispose(): void {
     this.isDisposed = true;
     this.disconnect();
+    this.messageQueue = [];
   }
 
   /**

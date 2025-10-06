@@ -52,6 +52,10 @@ export class AwarenessAdapter implements AwarenessProvider {
       // Notify listeners when remote states change
       this.updateListeners.forEach((cb) => cb());
     });
+
+    // Write initial state to ephemeral store AFTER subscription
+    // This ensures it's ready when collaboration starts
+    this.updateEphemeralStore();
   }
 
   /**

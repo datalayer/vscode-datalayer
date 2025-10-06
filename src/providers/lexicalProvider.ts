@@ -523,18 +523,26 @@ export class LexicalProvider extends BaseDocumentProvider<LexicalDocument> {
       const existingAdapter = this.loroAdapters.get(adapterId);
       if (existingAdapter) {
         // Adapter already exists - this happens due to React StrictMode double-mounting
-        // The first adapter is already connected and working, so just acknowledge this
-        // duplicate connect request without creating a new adapter
         console.log(
-          `[LexicalProvider] Adapter ${adapterId} already exists and connected, ignoring duplicate connect (React StrictMode)`,
+          `[LexicalProvider] Adapter ${adapterId} already exists, ignoring duplicate connect (React StrictMode)`,
         );
 
-        // Send status message to acknowledge the connection
-        webviewPanel.webview.postMessage({
-          type: "status",
-          adapterId,
-          data: { status: "connected" },
-        });
+        // Only send "connected" status if the adapter is actually connected
+        // Otherwise the webview will try to send messages to a non-connected websocket
+        if (existingAdapter.isConnected()) {
+          webviewPanel.webview.postMessage({
+            type: "status",
+            adapterId,
+            data: { status: "connected" },
+          });
+        } else {
+          // Still connecting, send "connecting" status
+          webviewPanel.webview.postMessage({
+            type: "status",
+            adapterId,
+            data: { status: "connecting" },
+          });
+        }
         return;
       }
 
