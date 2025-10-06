@@ -14,6 +14,7 @@
 import * as vscode from "vscode";
 import { SDKAuthProvider } from "./authProvider";
 import { SpacesTreeProvider } from "../../providers/spacesTreeProvider";
+import { RuntimesTreeProvider } from "../../providers/runtimesTreeProvider";
 import { SmartDynamicControllerManager } from "../../providers/smartDynamicControllerManager";
 import { EnvironmentCache } from "../cache/environmentCache";
 import { getServiceContainer } from "../../extension";
@@ -25,11 +26,12 @@ import { getServiceContainer } from "../../extension";
  * @param authProvider - Authentication provider instance
  * @param spacesTreeProvider - Spaces tree view provider
  * @param controllerManager - Dynamic controller manager
+ * @param runtimesTreeProvider - Runtimes tree view provider
  * @returns Function to manually update authentication state
  *
  * @example
  * ```typescript
- * const updateAuth = setupAuthStateManagement(authProvider, spacesTree, platformController);
+ * const updateAuth = setupAuthStateManagement(authProvider, spacesTree, platformController, runtimesTree);
  * // Authentication state changes are handled automatically
  * ```
  */
@@ -37,6 +39,7 @@ export function setupAuthStateManagement(
   authProvider: SDKAuthProvider,
   spacesTreeProvider: SpacesTreeProvider,
   controllerManager: SmartDynamicControllerManager,
+  runtimesTreeProvider?: RuntimesTreeProvider,
 ): () => void {
   /**
    * Updates VS Code context variables and refreshes UI components.
@@ -50,6 +53,9 @@ export function setupAuthStateManagement(
       authState.isAuthenticated,
     );
     spacesTreeProvider.refresh();
+
+    // Refresh runtimes tree on auth change
+    runtimesTreeProvider?.refresh();
 
     // Refresh controllers on auth change
     controllerManager.refreshControllers();

@@ -196,16 +196,10 @@ export class MessageHandler {
   onMessage(callback: (message: unknown) => void): Disposable {
     const id = this._callbackCount++;
     this._messageCallbacks.set(id, callback);
-    console.log(
-      `[MessageHandler] Registered callback ${id}, total callbacks: ${this._messageCallbacks.size}`,
-    );
 
     return {
       dispose: () => {
         this._messageCallbacks.delete(id);
-        console.log(
-          `[MessageHandler] Disposed callback ${id}, remaining: ${this._messageCallbacks.size}`,
-        );
       },
     };
   }

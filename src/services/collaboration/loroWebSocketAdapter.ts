@@ -162,13 +162,6 @@ export class LoroWebSocketAdapter {
       // Queue message for later delivery
       if (this.messageQueue.length < this.maxQueueSize) {
         this.messageQueue.push(data);
-        console.log(
-          `[LoroAdapter ${this.adapterId}] Queued message (queue size: ${this.messageQueue.length})`,
-        );
-      } else {
-        console.warn(
-          `[LoroAdapter ${this.adapterId}] Message queue full, dropping message`,
-        );
       }
       return;
     }
@@ -184,11 +177,6 @@ export class LoroWebSocketAdapter {
       } else if (typeof data === "object" && data !== null) {
         // Object - stringify as JSON
         this.ws.send(JSON.stringify(data));
-      } else {
-        console.warn(
-          `[LoroAdapter ${this.adapterId}] Unsupported data type:`,
-          typeof data,
-        );
       }
     } catch (error) {
       console.error(
@@ -214,12 +202,6 @@ export class LoroWebSocketAdapter {
       case "message":
         this.send(message.data);
         break;
-
-      default:
-        console.warn(
-          `[LoroAdapter ${this.adapterId}] Unknown message type:`,
-          message.type,
-        );
     }
   }
 
@@ -230,10 +212,6 @@ export class LoroWebSocketAdapter {
     if (this.messageQueue.length === 0) {
       return;
     }
-
-    console.log(
-      `[LoroAdapter ${this.adapterId}] Flushing ${this.messageQueue.length} queued messages`,
-    );
 
     const queue = [...this.messageQueue];
     this.messageQueue = [];
@@ -262,7 +240,6 @@ export class LoroWebSocketAdapter {
 
     this.reconnectTimer = setTimeout(() => {
       this.reconnectTimer = null;
-      console.log(`[LoroAdapter ${this.adapterId}] Attempting reconnection...`);
       this.connect();
 
       // Increase backoff delay for next attempt

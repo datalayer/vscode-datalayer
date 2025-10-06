@@ -166,6 +166,40 @@ export class LexicalProvider extends BaseDocumentProvider<LexicalDocument> {
     openContext: { backupId?: string },
     _token: vscode.CancellationToken,
   ): Promise<LexicalDocument> {
+    // Check authentication for Datalayer documents
+    if (uri.scheme === "datalayer") {
+      const { getServiceContainer } = await import("../extension");
+      const authProvider = getServiceContainer().authProvider;
+      const authState = authProvider.getAuthState();
+
+      if (!authState.isAuthenticated) {
+        // Show login prompt
+        const choice = await vscode.window.showWarningMessage(
+          "You must be logged in to Datalayer to open remote documents. Would you like to log in now?",
+          "Log In",
+          "Cancel",
+        );
+
+        if (choice === "Log In") {
+          // Trigger login command
+          await vscode.commands.executeCommand("datalayer.login");
+
+          // Check again after login attempt
+          const newAuthState = authProvider.getAuthState();
+          if (!newAuthState.isAuthenticated) {
+            throw new Error(
+              "Authentication required to open Datalayer documents",
+            );
+          }
+        } else {
+          // User cancelled
+          throw new Error(
+            "Authentication required to open Datalayer documents",
+          );
+        }
+      }
+    }
+
     const document: LexicalDocument = await LexicalDocument.create(
       uri,
       openContext.backupId,
@@ -286,9 +320,6 @@ export class LexicalProvider extends BaseDocumentProvider<LexicalDocument> {
         if (adapterDocUri === docUri) {
           const adapter = this.loroAdapters.get(adapterId);
           if (adapter) {
-            console.log(
-              `[LexicalProvider] Cleaning up adapter ${adapterId} for closed document`,
-            );
             adapter.dispose();
             this.loroAdapters.delete(adapterId);
             this.adapterCreationTimes.delete(adapterId);
@@ -523,10 +554,6 @@ export class LexicalProvider extends BaseDocumentProvider<LexicalDocument> {
       const existingAdapter = this.loroAdapters.get(adapterId);
       if (existingAdapter) {
         // Adapter already exists - this happens due to React StrictMode double-mounting
-        console.log(
-          `[LexicalProvider] Adapter ${adapterId} already exists, ignoring duplicate connect (React StrictMode)`,
-        );
-
         // Only send "connected" status if the adapter is actually connected
         // Otherwise the webview will try to send messages to a non-connected websocket
         if (existingAdapter.isConnected()) {
@@ -545,10 +572,6 @@ export class LexicalProvider extends BaseDocumentProvider<LexicalDocument> {
         }
         return;
       }
-
-      console.log(
-        `[LexicalProvider] Creating Loro adapter ${adapterId} for ${websocketUrl}`,
-      );
 
       const adapter = new LoroWebSocketAdapter(
         adapterId,
@@ -579,23 +602,10 @@ export class LexicalProvider extends BaseDocumentProvider<LexicalDocument> {
         // These happen either:
         // 1. Before the WebSocket connects (within first few ms)
         // 2. Immediately after connection (within 100ms of creation)
-        if (!adapter.isConnected()) {
-          console.log(
-            `[LexicalProvider] Ignoring disconnect for ${adapterId} - not yet connected (${timeSinceCreation}ms since creation - React StrictMode)`,
-          );
+        if (!adapter.isConnected() || timeSinceCreation < 1000) {
           return;
         }
 
-        if (timeSinceCreation < 1000) {
-          console.log(
-            `[LexicalProvider] Ignoring disconnect for ${adapterId} - just connected (${timeSinceCreation}ms since creation - React StrictMode)`,
-          );
-          return;
-        }
-
-        console.log(
-          `[LexicalProvider] Disconnecting adapter ${adapterId} (${timeSinceCreation}ms since creation)`,
-        );
         adapter.disconnect();
         this.loroAdapters.delete(adapterId);
         this.adapterCreationTimes.delete(adapterId);
@@ -611,10 +621,6 @@ export class LexicalProvider extends BaseDocumentProvider<LexicalDocument> {
           adapterId,
           data,
         });
-      } else {
-        console.warn(
-          `[LexicalProvider] No adapter found for ${adapterId}, creating on demand`,
-        );
       }
     }
   }

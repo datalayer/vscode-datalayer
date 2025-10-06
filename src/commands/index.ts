@@ -20,6 +20,7 @@ import { registerInternalCommands, getConnectedRuntime } from "./internal";
 import { SDKAuthProvider } from "../services/core/authProvider";
 import { DocumentBridge } from "../services/bridges/documentBridge";
 import { SpacesTreeProvider } from "../providers/spacesTreeProvider";
+import { RuntimesTreeProvider } from "../providers/runtimesTreeProvider";
 import { SmartDynamicControllerManager } from "../providers/smartDynamicControllerManager";
 
 // Re-export internal command helpers for use by providers
@@ -34,6 +35,7 @@ export interface CommandServices {
   documentBridge: DocumentBridge;
   spacesTreeProvider: SpacesTreeProvider;
   controllerManager: SmartDynamicControllerManager;
+  runtimesTreeProvider: RuntimesTreeProvider;
 }
 
 /**
@@ -65,5 +67,9 @@ export function registerAllCommands(
     services.spacesTreeProvider,
   );
 
-  registerRuntimeCommands(context, services.controllerManager);
+  registerRuntimeCommands(
+    context,
+    services.controllerManager,
+    services.runtimesTreeProvider,
+  );
 }

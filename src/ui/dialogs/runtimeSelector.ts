@@ -29,16 +29,33 @@ interface RuntimeQuickPickItem extends vscode.QuickPickItem {
 }
 
 /**
+ * Options for runtime selection dialog.
+ */
+export interface RuntimeSelectorOptions {
+  /**
+   * If true, hides existing runtimes and only shows create options.
+   * Useful when called from the Runtimes tree view where the user
+   * explicitly wants to create a NEW runtime.
+   * Default: false (show existing runtimes)
+   */
+  hideExistingRuntimes?: boolean;
+}
+
+/**
  * Shows a QuickPick dialog for selecting or creating a Datalayer runtime.
  *
  * @param sdk - Datalayer SDK instance
  * @param authProvider - Authentication provider
+ * @param options - Optional configuration for the dialog
  * @returns Selected or created runtime, or undefined if cancelled
  */
 export async function selectDatalayerRuntime(
   sdk: DatalayerClient,
   authProvider: IAuthProvider,
+  options?: RuntimeSelectorOptions,
 ): Promise<Runtime | undefined> {
+  const { hideExistingRuntimes = false } = options ?? {};
+
   // Check authentication first
   if (!authProvider.isAuthenticated()) {
     await promptAndLogin("Runtime Selection");
@@ -52,7 +69,9 @@ export async function selectDatalayerRuntime(
   const loadedData = await vscode.window.withProgress(
     {
       location: vscode.ProgressLocation.Notification,
-      title: "Loading Datalayer runtimes...",
+      title: hideExistingRuntimes
+        ? "Loading Datalayer environments..."
+        : "Loading Datalayer runtimes...",
       cancellable: true,
     },
     async (_progress, token) => {
@@ -61,34 +80,8 @@ export async function selectDatalayerRuntime(
         return null;
       }
       try {
-        // Fetch existing runtimes
-        const runtimes = await sdk.listRuntimes();
-
-        // DEBUG: Log raw runtime data
-        console.log("[RuntimeSelector] Loaded runtimes:", runtimes.length);
-        if (runtimes.length > 0) {
-          const rawData = runtimes[0].rawData();
-          console.log(
-            "[RuntimeSelector] First runtime raw data FULL:",
-            JSON.stringify(rawData, null, 2),
-          );
-          console.log(
-            "[RuntimeSelector] First runtime raw data keys:",
-            Object.keys(rawData),
-          );
-          console.log(
-            "[RuntimeSelector] First runtime raw data.uid:",
-            rawData.uid,
-          );
-          console.log(
-            "[RuntimeSelector] First runtime toJSON:",
-            runtimes[0].toJSON(),
-          );
-          console.log(
-            "[RuntimeSelector] First runtime uid getter:",
-            runtimes[0].uid,
-          );
-        }
+        // Fetch existing runtimes only if we need to show them
+        const runtimes = hideExistingRuntimes ? [] : await sdk.listRuntimes();
 
         // Get cached environments
         const environments =
@@ -225,10 +218,13 @@ export async function selectDatalayerRuntime(
   }
 
   // Show QuickPick (progress is now dismissed)
-
   const selected = await vscode.window.showQuickPick(items, {
-    title: "Select Datalayer Runtime",
-    placeHolder: "Choose an existing runtime or create a new one",
+    title: hideExistingRuntimes
+      ? "Create New Runtime"
+      : "Select Datalayer Runtime",
+    placeHolder: hideExistingRuntimes
+      ? "Choose an environment for your new runtime"
+      : "Choose an existing runtime or create a new one",
     ignoreFocusOut: true,
   });
 

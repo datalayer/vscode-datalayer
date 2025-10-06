@@ -21,6 +21,8 @@
 import * as vscode from "vscode";
 import { getServiceContainer } from "../extension";
 import { SmartDynamicControllerManager } from "../providers/smartDynamicControllerManager";
+import { RuntimesTreeProvider } from "../providers/runtimesTreeProvider";
+import { RuntimeTreeItem } from "../models/runtimeTreeItem";
 import {
   showTwoStepConfirmation,
   CommonConfirmations,
@@ -39,10 +41,12 @@ interface RuntimeQuickPickItem extends vscode.QuickPickItem {
  *
  * @param context - Extension context for command subscriptions
  * @param controllerManager - The Smart Dynamic Controller Manager
+ * @param runtimesTreeProvider - The Runtimes tree view provider
  */
 export function registerRuntimeCommands(
   context: vscode.ExtensionContext,
   controllerManager: SmartDynamicControllerManager,
+  runtimesTreeProvider?: RuntimesTreeProvider,
 ): void {
   const container = getServiceContainer();
   const sdk = container.sdk;
@@ -507,6 +511,204 @@ export function registerRuntimeCommands(
         );
       }
     }),
+  );
+
+  /**
+   * Command: datalayer.runtimes.refresh
+   * Refreshes the runtimes tree view.
+   */
+  context.subscriptions.push(
+    vscode.commands.registerCommand("datalayer.runtimes.refresh", () => {
+      runtimesTreeProvider?.refresh();
+    }),
+  );
+
+  /**
+   * Command: datalayer.runtimes.create
+   * Opens runtime creation dialog (hides existing runtimes).
+   * Works without any document open.
+   */
+  context.subscriptions.push(
+    vscode.commands.registerCommand("datalayer.runtimes.create", async () => {
+      // Import runtime selector directly to avoid document requirement
+      const { selectDatalayerRuntime } = await import(
+        "../ui/dialogs/runtimeSelector"
+      );
+
+      // Hide existing runtimes - user explicitly wants to CREATE a new one
+      const selectedRuntime = await selectDatalayerRuntime(sdk, authProvider, {
+        hideExistingRuntimes: true,
+      });
+
+      if (selectedRuntime) {
+        vscode.window.showInformationMessage(
+          `Runtime "${selectedRuntime.givenName || selectedRuntime.uid}" is ready`,
+        );
+        runtimesTreeProvider?.refresh();
+        await notifyAllDocuments();
+      }
+    }),
+  );
+
+  /**
+   * Command: datalayer.runtimes.terminate
+   * Terminates a single runtime from the tree view context menu.
+   */
+  context.subscriptions.push(
+    vscode.commands.registerCommand(
+      "datalayer.runtimes.terminate",
+      async (item: RuntimeTreeItem) => {
+        if (!item || !item.runtime) {
+          return;
+        }
+
+        const runtimeName = item.runtime.givenName || item.runtime.podName;
+        const confirmed = await showTwoStepConfirmation(
+          CommonConfirmations.terminateRuntime(runtimeName),
+        );
+
+        if (!confirmed) {
+          return;
+        }
+
+        try {
+          await sdk.deleteRuntime(item.runtime.podName);
+          vscode.window.showInformationMessage(
+            `Runtime "${runtimeName}" terminated successfully`,
+          );
+          runtimesTreeProvider?.refresh();
+          await notifyAllDocuments();
+        } catch (error: unknown) {
+          const errorMessage =
+            error instanceof Error ? error.message : String(error);
+          vscode.window.showErrorMessage(
+            `Failed to terminate runtime: ${errorMessage}`,
+          );
+        }
+      },
+    ),
+  );
+
+  /**
+   * Command: datalayer.runtimes.terminateAll
+   * Terminates all runtimes with confirmation dialog.
+   */
+  context.subscriptions.push(
+    vscode.commands.registerCommand(
+      "datalayer.runtimes.terminateAll",
+      async () => {
+        try {
+          // Check authentication
+          const authState = authProvider.getAuthState();
+          if (!authState.isAuthenticated) {
+            vscode.window.showErrorMessage(
+              "Please login first to manage runtimes",
+            );
+            return;
+          }
+
+          // Fetch all runtimes
+          const runtimes = await sdk.listRuntimes();
+
+          if (!runtimes || runtimes.length === 0) {
+            vscode.window.showInformationMessage("No running runtimes found");
+            return;
+          }
+
+          // Confirm termination
+          const confirmed = await showTwoStepConfirmation(
+            CommonConfirmations.terminateAllRuntimes(runtimes.length),
+          );
+
+          if (!confirmed) {
+            return;
+          }
+
+          // Terminate all runtimes in parallel
+          await vscode.window.withProgress(
+            {
+              location: vscode.ProgressLocation.Notification,
+              title: "Terminating runtimes...",
+              cancellable: false,
+            },
+            async (progress) => {
+              const results = await Promise.allSettled(
+                runtimes.map((runtime, index) => {
+                  progress.report({
+                    message: `Terminating ${runtime.givenName || runtime.podName} (${index + 1}/${runtimes.length})`,
+                  });
+                  return sdk.deleteRuntime(runtime.podName);
+                }),
+              );
+
+              // Count successes and failures
+              const successes = results.filter(
+                (r) => r.status === "fulfilled",
+              ).length;
+              const failures = results.length - successes;
+
+              if (failures === 0) {
+                vscode.window.showInformationMessage(
+                  `Successfully terminated all ${runtimes.length} runtime${runtimes.length !== 1 ? "s" : ""}`,
+                );
+              } else {
+                vscode.window.showWarningMessage(
+                  `Terminated ${successes} runtime${successes !== 1 ? "s" : ""}, ${failures} failed`,
+                );
+              }
+            },
+          );
+
+          runtimesTreeProvider?.refresh();
+          await notifyAllDocuments();
+        } catch (error: unknown) {
+          const errorMessage =
+            error instanceof Error ? error.message : String(error);
+          vscode.window.showErrorMessage(
+            `Failed to terminate runtimes: ${errorMessage}`,
+          );
+        }
+      },
+    ),
+  );
+
+  /**
+   * Command: datalayer.runtimes.createSnapshot
+   * Creates a snapshot from a runtime.
+   */
+  context.subscriptions.push(
+    vscode.commands.registerCommand(
+      "datalayer.runtimes.createSnapshot",
+      async (item: RuntimeTreeItem) => {
+        if (!item || !item.runtime) {
+          return;
+        }
+
+        // TODO: Implement snapshot creation
+        // User will provide the implementation details
+        vscode.window.showInformationMessage(
+          `Create Snapshot for runtime "${item.runtime.givenName || item.runtime.podName}" - Implementation pending`,
+        );
+      },
+    ),
+  );
+
+  /**
+   * Command: datalayer.runtimes.delete
+   * Deletes/terminates a runtime from the context menu.
+   * Alias for datalayer.runtimes.terminate for better UX.
+   */
+  context.subscriptions.push(
+    vscode.commands.registerCommand(
+      "datalayer.runtimes.delete",
+      async (item: RuntimeTreeItem) => {
+        // Reuse the existing terminate command logic
+        await vscode.commands.executeCommand(
+          "datalayer.runtimes.terminate",
+          item,
+        );
+      },
+    ),
   );
 }
 

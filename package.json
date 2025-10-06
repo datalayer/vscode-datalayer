@@ -97,6 +97,34 @@
       {
         "command": "datalayer.deleteItem",
         "title": "Delete"
+      },
+      {
+        "command": "datalayer.runtimes.refresh",
+        "title": "Refresh Runtimes",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "datalayer.runtimes.create",
+        "title": "Create Runtime",
+        "icon": "$(add)"
+      },
+      {
+        "command": "datalayer.runtimes.terminate",
+        "title": "Terminate Runtime",
+        "icon": "$(trash)"
+      },
+      {
+        "command": "datalayer.runtimes.terminateAll",
+        "title": "Terminate All Runtimes",
+        "icon": "$(trash)"
+      },
+      {
+        "command": "datalayer.runtimes.createSnapshot",
+        "title": "Create Snapshot"
+      },
+      {
+        "command": "datalayer.runtimes.delete",
+        "title": "Delete"
       }
     ],
     "views": {
@@ -106,6 +134,13 @@
           "name": "Datalayer Spaces",
           "icon": "$(menu)",
           "contextualTitle": "Datalayer Spaces",
+          "when": "true"
+        },
+        {
+          "id": "datalayerRuntimes",
+          "name": "Datalayer Runtimes",
+          "icon": "$(vm)",
+          "contextualTitle": "Datalayer Runtimes",
           "when": "true"
         }
       ]
@@ -142,6 +177,30 @@
         {
           "command": "datalayer.deleteItem",
           "when": "false"
+        },
+        {
+          "command": "datalayer.runtimes.refresh",
+          "when": "false"
+        },
+        {
+          "command": "datalayer.runtimes.create",
+          "when": "false"
+        },
+        {
+          "command": "datalayer.runtimes.terminate",
+          "when": "false"
+        },
+        {
+          "command": "datalayer.runtimes.terminateAll",
+          "when": "false"
+        },
+        {
+          "command": "datalayer.runtimes.createSnapshot",
+          "when": "false"
+        },
+        {
+          "command": "datalayer.runtimes.delete",
+          "when": "false"
         }
       ],
       "view/title": [
@@ -149,6 +208,21 @@
           "command": "datalayer.refreshSpaces",
           "when": "view == datalayerSpaces",
           "group": "navigation@1"
+        },
+        {
+          "command": "datalayer.runtimes.refresh",
+          "when": "view == datalayerRuntimes",
+          "group": "navigation@1"
+        },
+        {
+          "command": "datalayer.runtimes.create",
+          "when": "view == datalayerRuntimes",
+          "group": "navigation@2"
+        },
+        {
+          "command": "datalayer.runtimes.terminateAll",
+          "when": "view == datalayerRuntimes",
+          "group": "navigation@3"
         }
       ],
       "view/item/context": [
@@ -186,6 +260,21 @@
           "command": "datalayer.createLexicalInSpace",
           "when": "view == datalayerSpaces && viewItem == space",
           "group": "inline@2"
+        },
+        {
+          "command": "datalayer.runtimes.terminate",
+          "when": "view == datalayerRuntimes && viewItem == runtime",
+          "group": "inline"
+        },
+        {
+          "command": "datalayer.runtimes.createSnapshot",
+          "when": "view == datalayerRuntimes && viewItem == runtime",
+          "group": "1_actions@1"
+        },
+        {
+          "command": "datalayer.runtimes.delete",
+          "when": "view == datalayerRuntimes && viewItem == runtime",
+          "group": "2_delete"
         }
       ]
     },
@@ -282,6 +371,7 @@
     ]
   },
   "scripts": {
+    "postinstall": "patch-package",
     "clean": "rm -rf dist out *.vsix",
     "clean:dist": "rm -rf dist",
     "clean:out": "rm -rf out",
@@ -319,7 +409,6 @@
     "@codemirror/view": "^6.38.3",
     "@datalayer/core": "file:../core",
     "@datalayer/jupyter-lexical": "^1.0.6",
-    "@datalayer/jupyter-react": "^1.1.7",
     "@datalayer/lexical-loro": "^0.1.0",
     "@jupyter/ydoc": "^2.0.0",
     "@jupyterlab/services": "^7.0.0",

@@ -52,6 +52,7 @@ export interface DocumentMetadata {
  */
 export class DocumentBridge {
   private static instance: DocumentBridge;
+  private static sdk: DatalayerClient;
   private documentMetadata: Map<string, DocumentMetadata> = new Map();
   private tempDir: string;
   private activeRuntimes: Set<string> = new Set();
@@ -63,6 +64,9 @@ export class DocumentBridge {
     if (!sdk) {
       throw new Error("SDK is required for DocumentBridge");
     }
+    // Store SDK for later use
+    DocumentBridge.sdk = sdk;
+
     // Create a temp directory for Datalayer documents
     this.tempDir = path.join(os.tmpdir(), "datalayer-vscode");
     if (!fs.existsSync(this.tempDir)) {
@@ -82,7 +86,9 @@ export class DocumentBridge {
     sdk?: DatalayerClient,
   ): DocumentBridge {
     if (!DocumentBridge.instance) {
-      DocumentBridge.instance = new DocumentBridge(context, sdk);
+      // Use provided SDK or fall back to stored SDK
+      const sdkToUse = sdk || DocumentBridge.sdk;
+      DocumentBridge.instance = new DocumentBridge(context, sdkToUse);
     }
     return DocumentBridge.instance;
   }

@@ -19,6 +19,7 @@ import {
   type ICollaborationProvider,
   useJupyterReactStore,
   CellSidebarExtension,
+  resetJupyterConfig,
 } from "@datalayer/jupyter-react";
 import { DatalayerCollaborationProvider } from "@datalayer/core/lib/collaboration";
 import {
@@ -115,6 +116,13 @@ function NotebookEditorCore(): JSX.Element {
       switch (message.type) {
         case "init": {
           const { body } = message;
+
+          // Reset store to clear any stale state from previous document
+          store.reset();
+
+          // Reset JupyterConfig singleton (applied via patch)
+          // This ensures fresh config with correct serverUrl/token when webview is reused
+          resetJupyterConfig();
 
           // Handle theme
           if (body.theme) {

@@ -146,7 +146,10 @@ export class AwarenessAdapter implements AwarenessProvider {
       // Use Loro's native encoding - encodes ALL ephemeral states
       return this.ephemeralStore.encodeAll();
     } catch (error) {
-      console.error("[AwarenessAdapter] Error encoding ephemeral store:", error);
+      console.error(
+        "[AwarenessAdapter] Error encoding ephemeral store:",
+        error,
+      );
       return new Uint8Array(0);
     }
   }
@@ -160,7 +163,10 @@ export class AwarenessAdapter implements AwarenessProvider {
       this.ephemeralStore.apply(bytes);
       this.notifyListeners();
     } catch (error) {
-      console.error("[AwarenessAdapter] Error applying ephemeral state:", error);
+      console.error(
+        "[AwarenessAdapter] Error applying ephemeral state:",
+        error,
+      );
     }
   }
 

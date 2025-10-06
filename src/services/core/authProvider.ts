@@ -43,16 +43,16 @@ export class SDKAuthProvider extends BaseService implements IAuthProvider {
   private _onAuthStateChanged = new vscode.EventEmitter<VSCodeAuthState>();
   readonly onAuthStateChanged = this._onAuthStateChanged.event;
 
+  private static readonly TOKEN_SECRET_KEY = "datalayer.token";
+
   constructor(
     private sdk: DatalayerClient,
-    /** @internal - Reserved for future authentication features */
-    // @ts-ignore - TS6138
-    private _context: vscode.ExtensionContext,
+    private context: vscode.ExtensionContext,
     logger: ILogger,
   ) {
     super("SDKAuthProvider", logger);
     this.logger.debug("SDKAuthProvider instance created", {
-      contextId: _context.extension.id,
+      contextId: context.extension.id,
       hasSDK: !!sdk,
     });
   }
@@ -71,11 +71,15 @@ export class SDKAuthProvider extends BaseService implements IAuthProvider {
    * Verifies existing authentication with the platform.
    */
   protected async onInitialize(): Promise<void> {
-    // Check if token exists before attempting verification
-    const hasToken = !!this.sdk.getToken();
+    // Load token from secret storage
+    const storedToken = await this.context.secrets.get(
+      SDKAuthProvider.TOKEN_SECRET_KEY,
+    );
 
-    if (!hasToken) {
-      this.logger.debug("No stored authentication token found");
+    if (!storedToken) {
+      this.logger.debug(
+        "No stored authentication token found in secret storage",
+      );
       this._authState = {
         isAuthenticated: false,
         user: null,
@@ -84,6 +88,10 @@ export class SDKAuthProvider extends BaseService implements IAuthProvider {
       this._onAuthStateChanged.fire(this._authState);
       return;
     }
+
+    // Set token in SDK from secret storage
+    this.logger.debug("Loading token from secret storage");
+    await this.sdk.setToken(storedToken);
 
     try {
       const user = await this.logger.timeAsync(
@@ -156,15 +164,21 @@ export class SDKAuthProvider extends BaseService implements IAuthProvider {
     });
 
     try {
+      // Set token in SDK
       await this.logger.timeAsync("sdk_login", () => this.sdk.setToken(token), {
         operation: "set_token",
       });
 
+      // Verify token by fetching user
       const user = await this.logger.timeAsync(
         "user_verification",
         () => this.sdk.whoami(),
         { operation: "verify_new_token" },
       );
+
+      // Persist token to secret storage AFTER successful verification
+      await this.context.secrets.store(SDKAuthProvider.TOKEN_SECRET_KEY, token);
+      this.logger.debug("Token stored in secret storage");
 
       this._authState = {
         isAuthenticated: true,
@@ -215,9 +229,14 @@ export class SDKAuthProvider extends BaseService implements IAuthProvider {
     });
 
     try {
+      // Call server logout
       await this.logger.timeAsync("sdk_logout", () => this.sdk.logout(), {
         operation: "clear_server_session",
       });
+
+      // Delete token from secret storage
+      await this.context.secrets.delete(SDKAuthProvider.TOKEN_SECRET_KEY);
+      this.logger.debug("Token deleted from secret storage");
 
       this._authState = {
         isAuthenticated: false,
@@ -237,7 +256,12 @@ export class SDKAuthProvider extends BaseService implements IAuthProvider {
         },
       );
 
-      // Even if logout fails, clear local state
+      // Even if logout fails, clear local state and secret storage
+      await this.context.secrets.delete(SDKAuthProvider.TOKEN_SECRET_KEY);
+      this.logger.debug(
+        "Token deleted from secret storage despite server error",
+      );
+
       this._authState = {
         isAuthenticated: false,
         user: null,

@@ -78,9 +78,6 @@ export class LexicalCollaborationService {
       const documentId = queryParams.get("docId");
 
       if (!documentId) {
-        console.warn(
-          "[LexicalCollaboration] No document ID found in URI query parameter",
-        );
         // Fallback to metadata lookup
         const documentBridge = DocumentBridge.getInstance();
         const metadata = documentBridge.getDocumentMetadata(document.uri);
@@ -88,13 +85,6 @@ export class LexicalCollaborationService {
         if (!metadata?.document?.uid) {
           return undefined;
         }
-        console.log(
-          `[LexicalCollaboration] Using document ID from metadata: ${metadata.document.uid}`,
-        );
-      } else {
-        console.log(
-          `[LexicalCollaboration] Got document ID from query: ${documentId}`,
-        );
       }
 
       const finalDocumentId =
@@ -108,7 +98,7 @@ export class LexicalCollaborationService {
 
       // Build websocket URL directly using document UID (no session needed)
       // Similar to Desktop app: `${configuration.spacerRunUrl.replace(/^http/, 'ws')}/api/spacer/v1/lexical/ws/${id}`
-      const config = vscode.workspace.getConfiguration("datalayer");
+      const config = vscode.workspace.getConfiguration("datalayer.services");
       const spacerUrl = config.get<string>(
         "spacerUrl",
         "https://prod1.datalayer.run",

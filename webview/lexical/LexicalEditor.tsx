@@ -137,12 +137,7 @@ function CodeHighlightPlugin() {
   const [editor] = useLexicalComposerContext();
 
   useEffect(() => {
-    console.log("[CodeHighlightPlugin] Registering code highlighting");
-    const unregister = registerCodeHighlighting(editor);
-    console.log(
-      "[CodeHighlightPlugin] Code highlighting registered successfully",
-    );
-    return unregister;
+    return registerCodeHighlighting(editor);
   }, [editor]);
 
   return null;
@@ -247,14 +242,7 @@ export function LexicalEditor({
   const [localKernel, setLocalKernel] = React.useState<any>(null);
 
   // DEBUG: Log kernel status
-  React.useEffect(() => {
-    console.log("[LexicalEditor] Kernel status:", {
-      hasDefaultKernel: !!defaultKernel,
-      hasLocalKernel: !!localKernel,
-      hasSelectedRuntime: !!selectedRuntime,
-      kernelReady: defaultKernel?.ready,
-    });
-  }, [defaultKernel, localKernel, selectedRuntime]);
+  React.useEffect(() => {}, [defaultKernel, localKernel, selectedRuntime]);
 
   // Kernel management is handled by Jupyter React when we have a runtime selected
   // We don't need to manually start kernels - the library does it for us
@@ -283,97 +271,10 @@ export function LexicalEditor({
   // DEBUG: Log element positions and styles to find the gap
   React.useEffect(() => {
     const debugElements = () => {
-      const container = document.querySelector(".lexical-editor-container");
-      const toolbarWrapper = document.querySelector(".lexical-toolbar-wrapper");
-      const editorInner = document.querySelector(".lexical-editor-inner");
-
-      console.log("\n========== LEXICAL EDITOR DEBUG ==========");
-
-      if (container) {
-        const rect = container.getBoundingClientRect();
-        const style = window.getComputedStyle(container);
-        console.log("CONTAINER:", {
-          top: rect.top,
-          bottom: rect.bottom,
-          height: rect.height,
-          padding: style.padding,
-          margin: style.margin,
-          border: style.border,
-          backgroundColor: style.backgroundColor,
-        });
-      }
-
-      if (toolbarWrapper) {
-        const rect = toolbarWrapper.getBoundingClientRect();
-        const style = window.getComputedStyle(toolbarWrapper);
-        console.log("TOOLBAR WRAPPER:", {
-          top: rect.top,
-          bottom: rect.bottom,
-          height: rect.height,
-          padding: style.padding,
-          margin: style.margin,
-          border: style.border,
-          borderBottom: style.borderBottom,
-          backgroundColor: style.backgroundColor,
-        });
-
-        // Check parent of toolbar wrapper
-        const parent = toolbarWrapper.parentElement;
-        if (parent) {
-          const parentRect = parent.getBoundingClientRect();
-          const parentStyle = window.getComputedStyle(parent);
-          console.log("TOOLBAR WRAPPER PARENT:", {
-            tagName: parent.tagName,
-            className: parent.className,
-            top: parentRect.top,
-            bottom: parentRect.bottom,
-            padding: parentStyle.padding,
-            margin: parentStyle.margin,
-            border: parentStyle.border,
-            borderBottom: parentStyle.borderBottom,
-            backgroundColor: parentStyle.backgroundColor,
-          });
-        }
-      }
-
-      if (editorInner) {
-        const rect = editorInner.getBoundingClientRect();
-        const style = window.getComputedStyle(editorInner);
-        console.log("EDITOR INNER:", {
-          top: rect.top,
-          bottom: rect.bottom,
-          height: rect.height,
-          padding: style.padding,
-          margin: style.margin,
-          border: style.border,
-          borderTop: style.borderTop,
-          backgroundColor: style.backgroundColor,
-        });
-
-        // Calculate gap
-        if (toolbarWrapper) {
-          const toolbarRect = toolbarWrapper.getBoundingClientRect();
-          const gap = rect.top - toolbarRect.bottom;
-          console.log("GAP BETWEEN TOOLBAR AND EDITOR:", gap, "px");
-        }
-      }
-
-      // Find ALL elements at y=32 (where the line appears)
-      console.log("ELEMENTS AT Y=32 (toolbar bottom):");
-      const elementsAtLine = document.elementsFromPoint(100, 32);
-      elementsAtLine.forEach((el, idx) => {
-        const style = window.getComputedStyle(el);
-        if (idx < 10) {
-          // Only log first 10
-          console.log(`  ${idx}:`, el.tagName, el.className, {
-            border: style.border,
-            borderBottom: style.borderBottom,
-            backgroundColor: style.backgroundColor,
-          });
-        }
-      });
-
-      console.log("==========================================\n");
+      // Debug logging removed - re-enable if needed for layout debugging
+      // const container = document.querySelector(".lexical-editor-container");
+      // const toolbarWrapper = document.querySelector(".lexical-toolbar-wrapper");
+      // const editorInner = document.querySelector(".lexical-editor-inner");
     };
 
     // Run after a short delay to ensure everything is rendered
@@ -568,9 +469,7 @@ export function LexicalEditor({
               websocketUrl={collaboration.websocketUrl || ""}
               username={collaboration.username}
               cursorColor={collaboration.userColor}
-              onInitialization={(_isInitialized) => {
-                console.log("[LexicalEditor] Collaboration initialized");
-              }}
+              onInitialization={(_isInitialized) => {}}
             />
           )}
         </div>

@@ -21,9 +21,13 @@ import { PerformanceLogger } from "./services/logging/performanceLogger";
 import type { SDKAuthProvider } from "./services/core/authProvider";
 import { DocumentBridge } from "./services/bridges/documentBridge";
 import { DatalayerFileSystemProvider } from "./providers/documentsFileSystemProvider";
+import { RuntimesTreeProvider } from "./providers/runtimesTreeProvider";
 
 // Global service container instance
 let services: ServiceContainer | undefined;
+
+// Global runtimes tree provider for refreshing
+let runtimesTreeProvider: RuntimesTreeProvider | undefined;
 
 /**
  * Get the global service container instance.
@@ -108,10 +112,22 @@ export async function activate(
     );
     activationTimer.checkpoint("ui_initialized");
 
+    // Create runtimes tree provider
+    runtimesTreeProvider = new RuntimesTreeProvider(
+      services.authProvider as SDKAuthProvider,
+    );
+    context.subscriptions.push(
+      vscode.window.createTreeView("datalayerRuntimes", {
+        treeDataProvider: runtimesTreeProvider,
+      }),
+    );
+    activationTimer.checkpoint("runtimes_tree_created");
+
     const updateAuthState = setupAuthStateManagement(
       services.authProvider as SDKAuthProvider,
       ui.spacesTreeProvider,
       ui.controllerManager,
+      runtimesTreeProvider,
     );
     activationTimer.checkpoint("auth_state_setup");
 
@@ -123,6 +139,7 @@ export async function activate(
         documentBridge: services.documentBridge as DocumentBridge,
         spacesTreeProvider: ui.spacesTreeProvider,
         controllerManager: ui.controllerManager,
+        runtimesTreeProvider: runtimesTreeProvider,
       },
       updateAuthState,
     );
@@ -178,6 +195,14 @@ export async function activate(
 }
 
 /**
+ * Refreshes the runtimes tree view.
+ * Called after runtime operations to update the tree.
+ */
+export function refreshRuntimesTree(): void {
+  runtimesTreeProvider?.refresh();
+}
+
+/**
  * Deactivates the extension and cleans up resources.
  * This function is called when the extension is deactivated or VS Code is closing.
  * All disposables are automatically cleaned up through the context.subscriptions array.
@@ -200,6 +225,9 @@ export async function deactivate(): Promise<void> {
         logger.debug("Clearing tracked operations");
       }
     }
+
+    // Dispose runtimes tree provider
+    runtimesTreeProvider?.dispose();
 
     // Dispose service container
     await services?.dispose();

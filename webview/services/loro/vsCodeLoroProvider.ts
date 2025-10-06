@@ -106,7 +106,11 @@ export class VSCodeLoroProvider implements Provider {
         this.sendToExtension({
           type: "message",
           adapterId: this.adapterId,
-          data: { type: "ephemeral", ephemeral: stateBytes, docId: this.documentId },
+          data: {
+            type: "ephemeral",
+            ephemeral: stateBytes,
+            docId: this.documentId,
+          },
         });
       }
     });
@@ -241,15 +245,15 @@ export class VSCodeLoroProvider implements Provider {
           // Send initial awareness state to server
           const state = this._awareness.getLocalState();
           if (state) {
-            console.log(
-              `[VSCodeLoroProvider] Sending initial awareness state:`,
-              state,
-            );
             const stateBytes = Array.from(this._awareness.encodeLocalState());
             this.sendToExtension({
               type: "message",
               adapterId: this.adapterId,
-              data: { type: "ephemeral", ephemeral: stateBytes, docId: this.documentId },
+              data: {
+                type: "ephemeral",
+                ephemeral: stateBytes,
+                docId: this.documentId,
+              },
             });
           }
         } else if (status.status === "disconnected") {
@@ -295,7 +299,6 @@ export class VSCodeLoroProvider implements Provider {
             this.syncListeners.forEach((cb) => cb(true));
           }
         } else {
-          console.warn(`[LoroProvider] Update message missing data field`);
         }
         break;
       }

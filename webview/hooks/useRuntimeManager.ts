@@ -64,38 +64,16 @@ export function useRuntimeManager(initialRuntime?: RuntimeJSON) {
    * The MutableServiceManager reference stays stable - no component re-renders!
    */
   const selectRuntime = useCallback((runtime: RuntimeJSON | undefined) => {
-    console.log(
-      "[useRuntimeManager] selectRuntime called with:",
-      runtime ? `runtime ${runtime.uid}` : "undefined (clearing)",
-    );
-
-    if (runtime) {
-      console.log("[useRuntimeManager] Runtime details:", {
-        uid: runtime.uid,
-        podName: runtime.podName,
-        ingress: runtime.ingress,
-        hasToken: !!runtime.token,
-        tokenLength: runtime.token?.length,
-        environmentName: runtime.environmentName,
-        givenName: runtime.givenName,
-      });
-    }
-
     setSelectedRuntime(runtime);
 
     if (runtime?.ingress) {
       // Update underlying service manager (reference stays stable)
-      console.log(
-        "[useRuntimeManager] Updating connection to:",
-        runtime.ingress,
-      );
       mutableManagerRef.current?.updateConnection(
         runtime.ingress,
         runtime.token || "",
       );
     } else {
       // Reset to mock service manager (reference stays stable)
-      console.log("[useRuntimeManager] Resetting to mock service manager");
       mutableManagerRef.current?.resetToMock();
     }
   }, []);

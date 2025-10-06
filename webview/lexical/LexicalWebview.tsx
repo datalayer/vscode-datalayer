@@ -240,7 +240,6 @@ function LexicalWebview() {
     if (sm.ready) {
       sm.ready
         .then(() => {
-          console.log("[LexicalWebview] ServiceManager is ready");
           setIsReady(true);
         })
         .catch((error) => {
@@ -276,22 +275,6 @@ function LexicalWebview() {
   // MUST set lite=false to tell the library to use our serviceManager
   // Start kernel when runtime is selected (selectedRuntime exists and has ingress)
   const shouldStartKernel = !!selectedRuntime?.ingress;
-
-  // DEBUG: Log to console immediately (not in useEffect to avoid hook order issues)
-  console.log("[LexicalWebview] Render with:", {
-    shouldStartKernel,
-    hasRuntime: !!selectedRuntime,
-    hasIngress: !!selectedRuntime?.ingress,
-    ingressUrl: selectedRuntime?.ingress,
-    hasServiceManager: !!serviceManager,
-    serviceManagerType: serviceManager?.constructor?.name,
-  });
-
-  console.log("🎯 PASSING TO JUPYTER:", {
-    startDefaultKernel: shouldStartKernel,
-    defaultKernelName: "python",
-    lite: false,
-  });
 
   // CRITICAL: Force remount when runtime URL changes!
   // The Jupyter React library caches config in useMemo with empty deps [],

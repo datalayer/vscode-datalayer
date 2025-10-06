@@ -87,6 +87,8 @@ export class NotebookProvider extends BaseDocumentProvider<NotebookDocument> {
         provider,
         {
           webviewOptions: {
+            // Retain context when hidden for better UX (no reload on tab switch)
+            // We handle JupyterConfig singleton reset via resetJupyterConfigPatch() in webview
             retainContextWhenHidden: true,
           },
           supportsMultipleEditorsPerDocument: false,
@@ -138,6 +140,39 @@ export class NotebookProvider extends BaseDocumentProvider<NotebookDocument> {
     openContext: { backupId?: string },
     _token: vscode.CancellationToken,
   ): Promise<NotebookDocument> {
+    // Check authentication for Datalayer documents
+    if (uri.scheme === "datalayer") {
+      const authProvider = getServiceContainer().authProvider;
+      const authState = authProvider.getAuthState();
+
+      if (!authState.isAuthenticated) {
+        // Show login prompt
+        const choice = await vscode.window.showWarningMessage(
+          "You must be logged in to Datalayer to open remote notebooks. Would you like to log in now?",
+          "Log In",
+          "Cancel",
+        );
+
+        if (choice === "Log In") {
+          // Trigger login command
+          await vscode.commands.executeCommand("datalayer.login");
+
+          // Check again after login attempt
+          const newAuthState = authProvider.getAuthState();
+          if (!newAuthState.isAuthenticated) {
+            throw new Error(
+              "Authentication required to open Datalayer notebooks",
+            );
+          }
+        } else {
+          // User cancelled
+          throw new Error(
+            "Authentication required to open Datalayer notebooks",
+          );
+        }
+      }
+    }
+
     const document: NotebookDocument = await NotebookDocument.create(
       uri,
       openContext.backupId,
@@ -281,7 +316,8 @@ export class NotebookProvider extends BaseDocumentProvider<NotebookDocument> {
 
           if (isDatalayerNotebook) {
             // Get the Datalayer server configuration
-            const config = vscode.workspace.getConfiguration("datalayer");
+            const config =
+              vscode.workspace.getConfiguration("datalayer.services");
             serverUrl = config.get<string>(
               "spacerUrl",
               "https://prod1.datalayer.run",
@@ -300,13 +336,7 @@ export class NotebookProvider extends BaseDocumentProvider<NotebookDocument> {
 
             if (docIdFromQuery) {
               documentId = docIdFromQuery;
-              console.log(
-                `[NotebookProvider] Got document ID from query: ${documentId}`,
-              );
             } else {
-              console.warn(
-                "[NotebookProvider] No docId in query, falling back to metadata lookup",
-              );
               // Fallback: try to get from metadata lookup
               const { DocumentBridge } = await import(
                 "../services/bridges/documentBridge"
