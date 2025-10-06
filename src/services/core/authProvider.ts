@@ -278,31 +278,82 @@ export class SDKAuthProvider extends BaseService implements IAuthProvider {
   /**
    * Shows authentication status with interactive options.
    * Displays different options based on current authentication state.
+   * Includes help and feedback links for users.
    */
   async showAuthStatus(): Promise<void> {
     const state = this.getAuthState();
 
     if (state.isAuthenticated && state.user) {
       const user = state.user;
-      const items: string[] = ["Logout"];
+      const items: vscode.QuickPickItem[] = [
+        { label: "$(sign-out) Logout" },
+        { label: "", kind: vscode.QuickPickItemKind.Separator },
+        { label: "$(home) Visit Datalayer Platform" },
+        { label: "$(book) View Documentation" },
+        { label: "$(github) Report Issue" },
+      ];
 
       const displayName = user.displayName;
       const selected = await vscode.window.showQuickPick(items, {
-        title: "Datalayer Authentication Status",
+        title: "Datalayer - Help & Feedback",
         placeHolder: `Connected as ${displayName}`,
       });
 
-      if (selected === "Logout") {
+      if (!selected) {
+        return;
+      }
+
+      if (selected.label === "$(sign-out) Logout") {
         await this.logout();
+      } else if (selected.label === "$(home) Visit Datalayer Platform") {
+        await vscode.env.openExternal(
+          vscode.Uri.parse("https://datalayer.io"),
+        );
+      } else if (selected.label === "$(book) View Documentation") {
+        await vscode.env.openExternal(
+          vscode.Uri.parse("https://docs.datalayer.io"),
+        );
+      } else if (selected.label === "$(github) Report Issue") {
+        await vscode.env.openExternal(
+          vscode.Uri.parse(
+            "https://github.com/datalayer/vscode-datalayer/issues/new",
+          ),
+        );
       }
     } else {
-      const selected = await vscode.window.showQuickPick(["Login", "Cancel"], {
-        title: "Datalayer Authentication Status",
+      const items: vscode.QuickPickItem[] = [
+        { label: "$(sign-in) Login" },
+        { label: "", kind: vscode.QuickPickItemKind.Separator },
+        { label: "$(home) Visit Datalayer Platform" },
+        { label: "$(book) View Documentation" },
+        { label: "$(github) Report Issue" },
+      ];
+
+      const selected = await vscode.window.showQuickPick(items, {
+        title: "Datalayer - Help & Feedback",
         placeHolder: "Not connected to Datalayer",
       });
 
-      if (selected === "Login") {
+      if (!selected) {
+        return;
+      }
+
+      if (selected.label === "$(sign-in) Login") {
         await this.login();
+      } else if (selected.label === "$(home) Visit Datalayer Platform") {
+        await vscode.env.openExternal(
+          vscode.Uri.parse("https://datalayer.io"),
+        );
+      } else if (selected.label === "$(book) View Documentation") {
+        await vscode.env.openExternal(
+          vscode.Uri.parse("https://docs.datalayer.io"),
+        );
+      } else if (selected.label === "$(github) Report Issue") {
+        await vscode.env.openExternal(
+          vscode.Uri.parse(
+            "https://github.com/datalayer/vscode-datalayer/issues/new",
+          ),
+        );
       }
     }
   }

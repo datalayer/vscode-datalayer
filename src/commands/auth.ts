@@ -72,4 +72,15 @@ export function registerAuthCommands(
       await authProvider.showAuthStatus();
     }),
   );
+
+  /**
+   * Command: datalayer.help
+   * Shows help and feedback menu with links to documentation, issues, and discussions.
+   * Provides quick access to platform resources regardless of authentication state.
+   */
+  context.subscriptions.push(
+    vscode.commands.registerCommand("datalayer.help", async () => {
+      await authProvider.showAuthStatus();
+    }),
+  );
 }

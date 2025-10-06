@@ -207,7 +207,7 @@ GitHub → Actions → Release workflow
 ### After Release
 
 1. **Verify GitHub Release**
-   - Check: `https://github.com/datalayer/jupyter-vscode/releases`
+   - Check: `https://github.com/datalayer/vscode-datalayer/releases`
    - Download `.vsix` and verify it works
 
 2. **Verify VS Code Marketplace**
@@ -467,7 +467,7 @@ Keep these updated:
 
 ## Support
 
-- **GitHub Issues**: https://github.com/datalayer/jupyter-vscode/issues
+- **GitHub Issues**: https://github.com/datalayer/vscode-datalayer/issues
 - **Marketplace**: https://marketplace.visualstudio.com/items?itemName=Datalayer.datalayer-jupyter-vscode
 - **Documentation**: https://datalayer-desktop.netlify.app
 

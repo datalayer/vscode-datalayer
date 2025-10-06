@@ -14,7 +14,7 @@
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/datalayer/jupyter-vscode.git"
+    "url": "https://github.com/datalayer/vscode-datalayer.git"
   },
   "engines": {
     "vscode": "^1.98.0",
@@ -39,6 +39,11 @@
       {
         "command": "datalayer.showAuthStatus",
         "title": "Show Authentication Status",
+        "category": "Datalayer"
+      },
+      {
+        "command": "datalayer.help",
+        "title": "Help and Feedback",
         "category": "Datalayer"
       },
       {
