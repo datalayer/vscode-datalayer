@@ -34,6 +34,11 @@ export class SmartDynamicControllerManager implements vscode.Disposable {
   private readonly _notebookRuntimes = new Map<string, Runtime>();
   private _executionOrder = 0;
   private _disposed = false;
+  private _selectingRuntime = false; // Guard flag to prevent re-entry
+
+  // Event emitter for runtime changes - allows tree view to refresh
+  private readonly _onRuntimeCreated = new vscode.EventEmitter<Runtime>();
+  public readonly onRuntimeCreated = this._onRuntimeCreated.event;
 
   constructor(
     context: vscode.ExtensionContext,
@@ -56,7 +61,8 @@ export class SmartDynamicControllerManager implements vscode.Disposable {
 
   /**
    * Creates the main "Datalayer Platform" controller.
-   * This controller is a selector/switcher for runtimes.
+   * This controller acts as an entry point for runtime selection.
+   * When selected, it immediately shows the runtime picker.
    */
   private createMainController(): void {
     const controller = vscode.notebooks.createNotebookController(
@@ -65,27 +71,24 @@ export class SmartDynamicControllerManager implements vscode.Disposable {
       "Datalayer Platform",
     );
 
-    controller.description = "Click to select or change runtime";
-    controller.detail = "Manages Datalayer runtime connections";
+    controller.description = "Select or change Datalayer runtime";
+    controller.detail = "Cloud execution with Datalayer";
     controller.supportedLanguages = ["python", "markdown", "raw"];
-    controller.supportsExecutionOrder = true;
+    controller.supportsExecutionOrder = false;
 
-    // When Platform controller is selected, show runtime selector
+    // When this controller is selected, immediately show runtime selector
+    // The runtime selector will create/select a runtime-specific controller
     controller.onDidChangeSelectedNotebooks(async (e) => {
       if (e.selected) {
-        // Show runtime selector when Platform controller is selected
         await this.showRuntimeSelector(e.notebook);
       }
     });
 
-    // Platform controller should NEVER execute cells
-    // It only serves as a selector for choosing runtimes
-    // Removed executeHandler to prevent execution conflicts
-
-    // Interrupt handler can also be used to switch runtimes
-    controller.interruptHandler = async (notebook) => {
-      await this.showRuntimeSelector(notebook);
-    };
+    // CRITICAL: DO NOT add executeHandler to Platform controller
+    // If we add executeHandler, VS Code will use Platform controller to execute cells
+    // even after we set a runtime controller as Preferred.
+    // By NOT having executeHandler, VS Code will show "Select Kernel" if user tries
+    // to execute without selecting a runtime first.
 
     this._controllers.set("datalayer-platform", controller);
     this._context.subscriptions.push(controller);
@@ -137,12 +140,27 @@ export class SmartDynamicControllerManager implements vscode.Disposable {
     // Track when this runtime controller is selected
     controller.onDidChangeSelectedNotebooks(async (e) => {
       if (e.selected) {
-        // Store that this runtime is active for this notebook
-        this._notebookRuntimes.set(e.notebook.uri.toString(), runtime);
+        const notebookUri = e.notebook.uri.toString();
 
-        // IMPORTANT: Do NOT change Platform controller affinity
-        // We want it to always remain selectable for runtime switching
-      } else {
+        // CRITICAL: Dispose old kernel client if switching from a different runtime
+        const oldKernelClient = this._activeKernels.get(notebookUri);
+        if (oldKernelClient) {
+          oldKernelClient.dispose();
+          this._activeKernels.delete(notebookUri);
+        }
+
+        // Store that this runtime is active for this notebook
+        this._notebookRuntimes.set(notebookUri, runtime);
+
+        // CRITICAL: When user manually selects this controller from the kernel picker,
+        // we need to set it as Preferred so it sticks as the active kernel
+        await controller.updateNotebookAffinity(
+          e.notebook,
+          vscode.NotebookControllerAffinity.Preferred,
+        );
+
+        // Fire event that runtime was selected - this refreshes the runtimes tree
+        this._onRuntimeCreated.fire(runtime);
       }
     });
 
@@ -176,41 +194,61 @@ export class SmartDynamicControllerManager implements vscode.Disposable {
   private async showRuntimeSelector(
     notebook: vscode.NotebookDocument,
   ): Promise<void> {
-    const runtime = await this.selectRuntime();
-    if (!runtime) {
+    // Guard against re-entry - if we're already selecting a runtime, don't open again
+    if (this._selectingRuntime) {
       return;
     }
 
-    // Create or get runtime controller
-    const runtimeController = await this.ensureRuntimeController(runtime);
-    if (!runtimeController) {
-      return;
-    }
+    this._selectingRuntime = true;
+    try {
+      const runtime = await this.selectRuntime();
+      if (!runtime) {
+        return;
+      }
 
-    // Store the selected runtime
-    this._notebookRuntimes.set(notebook.uri.toString(), runtime);
+      // Create or get runtime controller
+      const runtimeController = await this.ensureRuntimeController(runtime);
+      if (!runtimeController) {
+        return;
+      }
 
-    // Make runtime controller preferred
-    await runtimeController.updateNotebookAffinity(
-      notebook,
-      vscode.NotebookControllerAffinity.Preferred,
-    );
+      // Fire event that runtime was created/selected - this refreshes the runtimes tree
+      this._onRuntimeCreated.fire(runtime);
 
-    // Make Platform controller hidden now that we have a runtime selected
-    const platformController = this._controllers.get("datalayer-platform");
-    if (platformController) {
-      await platformController.updateNotebookAffinity(
+      // CRITICAL: Dispose old kernel client if switching runtimes
+      const notebookUri = notebook.uri.toString();
+      const oldKernelClient = this._activeKernels.get(notebookUri);
+      if (oldKernelClient) {
+        oldKernelClient.dispose();
+        this._activeKernels.delete(notebookUri);
+      }
+
+      // Store the selected runtime
+      this._notebookRuntimes.set(notebookUri, runtime);
+
+      // CRITICAL FIX: The issue is that VS Code doesn't auto-select a controller when affinity changes
+      // The solution: temporarily select the notebook with the runtime controller to force the selection
+
+      // First, make sure the runtime controller "selects" this notebook
+      // This is done by firing the onDidChangeSelectedNotebooks event internally
+      // We do this by updating affinity AFTER triggering internal selection
+
+      // Step 1: Make runtime controller preferred
+      await runtimeController.updateNotebookAffinity(
         notebook,
-        vscode.NotebookControllerAffinity.Default,
+        vscode.NotebookControllerAffinity.Preferred,
       );
-    }
 
-    vscode.window.showInformationMessage(
-      `Switched to runtime: ${runtimeController.label.replace(
-        "Datalayer: ",
-        "",
-      )}`,
-    );
+      vscode.window.showInformationMessage(
+        `Switched to runtime: ${runtimeController.label.replace(
+          "Datalayer: ",
+          "",
+        )}`,
+      );
+    } finally {
+      // Always reset the guard flag
+      this._selectingRuntime = false;
+    }
   }
 
   /**
@@ -349,41 +387,6 @@ export class SmartDynamicControllerManager implements vscode.Disposable {
   }
 
   /**
-   * Creates a new runtime controller.
-   */
-  private async createRuntimeController(
-    runtime: Runtime,
-  ): Promise<vscode.NotebookController | null> {
-    const controllerId = this.getRuntimeControllerId(runtime);
-    if (this._controllers.has(controllerId)) {
-      return this._controllers.get(controllerId)!;
-    }
-
-    try {
-      const controller = vscode.notebooks.createNotebookController(
-        controllerId,
-        "jupyter-notebook",
-        `Datalayer: ${runtime.givenName || runtime.uid}`,
-      );
-
-      controller.supportedLanguages = ["python"];
-      controller.supportsExecutionOrder = true;
-      controller.description = `Datalayer Runtime (${runtime.uid})`;
-
-      controller.executeHandler = this._executeHandler.bind(this);
-      controller.interruptHandler = this._interruptHandler.bind(this);
-
-      this._controllers.set(controllerId, controller);
-      this._runtimes.set(controllerId, runtime);
-      this._context.subscriptions.push(controller);
-
-      return controller;
-    } catch (error) {
-      return null;
-    }
-  }
-
-  /**
    * Selects or switches a runtime for a specific notebook.
    * This can be called anytime, even if Platform controller is already selected.
    * @param notebook - The notebook to select runtime for
@@ -391,23 +394,25 @@ export class SmartDynamicControllerManager implements vscode.Disposable {
   public async selectRuntimeForNotebook(
     notebook: vscode.NotebookDocument,
   ): Promise<void> {
-    // First, unhide the platform controller temporarily so user can select runtimes
-    const platformController = this._controllers.get("datalayer-platform");
-    if (platformController) {
-      await platformController.updateNotebookAffinity(
-        notebook,
-        vscode.NotebookControllerAffinity.Default,
-      );
-    }
-
     // Show runtime selector
     const runtime = await this.selectRuntime();
     if (runtime) {
       // Create or get the runtime-specific controller
       const controller = await this.ensureRuntimeController(runtime);
       if (controller) {
+        // Fire event that runtime was created/selected - this refreshes the runtimes tree
+        this._onRuntimeCreated.fire(runtime);
+
+        // CRITICAL: Dispose old kernel client if switching runtimes
+        const notebookUri = notebook.uri.toString();
+        const oldKernelClient = this._activeKernels.get(notebookUri);
+        if (oldKernelClient) {
+          oldKernelClient.dispose();
+          this._activeKernels.delete(notebookUri);
+        }
+
         // Store the selected runtime for this notebook
-        this._notebookRuntimes.set(notebook.uri.toString(), runtime);
+        this._notebookRuntimes.set(notebookUri, runtime);
 
         // Set runtime controller as preferred
         await controller.updateNotebookAffinity(
@@ -415,32 +420,18 @@ export class SmartDynamicControllerManager implements vscode.Disposable {
           vscode.NotebookControllerAffinity.Preferred,
         );
 
-        // Keep platform controller at default affinity (not hidden, so it can be selected again)
+        // Make Platform controller low priority now that we have a real runtime selected
+        const platformController = this._controllers.get("datalayer-platform");
         if (platformController) {
+          // Keep at Default so it's still available in picker for switching
           await platformController.updateNotebookAffinity(
             notebook,
             vscode.NotebookControllerAffinity.Default,
           );
         }
 
-        // Show kernel picker so user can select the runtime
-        setTimeout(async () => {
-          try {
-            await vscode.commands.executeCommand("notebook.selectKernel");
-          } catch (error) {}
-        }, 100);
-
-        // Show message to user
         vscode.window.showInformationMessage(
-          `Runtime "${controller.label}" is ready and should be selected.`,
-        );
-      }
-    } else {
-      // If no runtime selected, keep platform controller at default
-      if (platformController) {
-        await platformController.updateNotebookAffinity(
-          notebook,
-          vscode.NotebookControllerAffinity.Default,
+          `Runtime "${controller.label.replace("Datalayer: ", "")}" is now selected.`,
         );
       }
     }
@@ -461,6 +452,7 @@ export class SmartDynamicControllerManager implements vscode.Disposable {
   /**
    * Refreshes all controllers based on current authentication and available runtimes.
    * Creates controllers for existing runtimes that don't have controllers yet.
+   * Removes controllers for runtimes that no longer exist.
    */
   public async refreshControllers(): Promise<void> {
     if (!this._authProvider.isAuthenticated()) {
@@ -469,20 +461,69 @@ export class SmartDynamicControllerManager implements vscode.Disposable {
         if (id !== "datalayer-platform") {
           controller.dispose();
           this._controllers.delete(id);
+          this._runtimes.delete(id);
         }
       }
+      // Clear notebook runtime mappings
+      this._notebookRuntimes.clear();
       return;
     }
 
     try {
       // Get available runtimes
       const runtimes = await this._sdk.listRuntimes();
+      const activeRuntimeUids = new Set(runtimes.map((r) => r.uid));
+
+      // Remove controllers for runtimes that no longer exist
+      for (const [controllerId, controller] of this._controllers) {
+        if (controllerId === "datalayer-platform") {
+          continue;
+        }
+
+        const runtime = this._runtimes.get(controllerId);
+        if (runtime && !activeRuntimeUids.has(runtime.uid)) {
+          // Runtime no longer exists - find all notebooks using this controller
+          const affectedNotebooks: vscode.NotebookDocument[] = [];
+          for (const [notebookUri, mappedRuntime] of this._notebookRuntimes) {
+            if (mappedRuntime.uid === runtime.uid) {
+              // Find the actual notebook document
+              const notebook = vscode.workspace.notebookDocuments.find(
+                (nb) => nb.uri.toString() === notebookUri,
+              );
+              if (notebook) {
+                affectedNotebooks.push(notebook);
+              }
+              this._notebookRuntimes.delete(notebookUri);
+            }
+          }
+
+          // Dispose the controller - this removes it from VS Code's kernel picker
+          controller.dispose();
+          this._controllers.delete(controllerId);
+          this._runtimes.delete(controllerId);
+
+          // For each affected notebook, clear the selected kernel
+          // This makes VS Code show "Select Kernel" instead of a dead controller
+          for (const notebook of affectedNotebooks) {
+            // Update affinity to force kernel selection dialog
+            const platformController =
+              this._controllers.get("datalayer-platform");
+            if (platformController) {
+              // Set Platform controller as default so user can select new runtime
+              await platformController.updateNotebookAffinity(
+                notebook,
+                vscode.NotebookControllerAffinity.Default,
+              );
+            }
+          }
+        }
+      }
 
       // Create controllers for existing runtimes that don't have controllers yet
       for (const runtime of runtimes) {
         const controllerId = this.getRuntimeControllerId(runtime);
         if (!this._controllers.has(controllerId)) {
-          await this.createRuntimeController(runtime);
+          await this.ensureRuntimeController(runtime);
         }
       }
     } catch (error) {}
@@ -513,44 +554,8 @@ export class SmartDynamicControllerManager implements vscode.Disposable {
 
     // Dispose kernel bridge
     this._kernelBridge.dispose();
-  }
 
-  /**
-   * Handles execution of notebook cells.
-   */
-  private async _executeHandler(
-    cells: vscode.NotebookCell[],
-    _notebook: vscode.NotebookDocument,
-    controller: vscode.NotebookController,
-  ): Promise<void> {
-    for (const cell of cells) {
-      const execution = controller.createNotebookCellExecution(cell);
-      execution.executionOrder = ++this._executionOrder;
-      execution.start(Date.now());
-
-      try {
-        // For now, just mark as successful
-        execution.replaceOutput([
-          new vscode.NotebookCellOutput([
-            vscode.NotebookCellOutputItem.text("Execution not yet implemented"),
-          ]),
-        ]);
-        execution.end(true, Date.now());
-      } catch (error) {
-        execution.replaceOutput([
-          new vscode.NotebookCellOutput([
-            vscode.NotebookCellOutputItem.text(`Error: ${error}`),
-          ]),
-        ]);
-        execution.end(false, Date.now());
-      }
-    }
-  }
-
-  /**
-   * Handles interruption of notebook execution.
-   */
-  private async _interruptHandler(): Promise<void> {
-    // Implementation for interrupting execution
+    // Dispose event emitter
+    this._onRuntimeCreated.dispose();
   }
 }

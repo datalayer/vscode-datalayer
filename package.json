@@ -272,11 +272,6 @@
           "group": "inline"
         },
         {
-          "command": "datalayer.runtimes.createSnapshot",
-          "when": "view == datalayerRuntimes && viewItem == runtime",
-          "group": "1_actions@1"
-        },
-        {
           "command": "datalayer.runtimes.delete",
           "when": "view == datalayerRuntimes && viewItem == runtime",
           "group": "2_delete"

@@ -11,9 +11,16 @@
  * @module services/lexicalCommands
  */
 
-type CommandHandler = (command: string) => void;
+/**
+ * Function type for handling Lexical commands
+ */
+export type CommandHandler = (command: string) => void;
 
-class LexicalCommandEmitter {
+/**
+ * Event emitter for Lexical editor commands.
+ * Manages subscriptions and broadcasts commands to all handlers.
+ */
+export class LexicalCommandEmitter {
   private handlers: CommandHandler[] = [];
 
   /**

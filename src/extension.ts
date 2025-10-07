@@ -123,6 +123,13 @@ export async function activate(
     );
     activationTimer.checkpoint("runtimes_tree_created");
 
+    // Subscribe to runtime creation events from controller manager to refresh tree
+    context.subscriptions.push(
+      ui.controllerManager.onRuntimeCreated(() => {
+        runtimesTreeProvider?.refresh();
+      }),
+    );
+
     const updateAuthState = setupAuthStateManagement(
       services.authProvider as SDKAuthProvider,
       ui.spacesTreeProvider,
@@ -153,7 +160,7 @@ export async function activate(
           cellCount: notebook.cellCount,
           isDirty: notebook.isDirty,
         });
-        ui.controllerManager?.onDidCloseNotebook(notebook);
+        ui.controllerManager.onDidCloseNotebook(notebook);
       }),
     );
 

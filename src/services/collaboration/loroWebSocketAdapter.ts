@@ -18,9 +18,9 @@ import * as ws from "ws";
 const WebSocket = ws.WebSocket || require("ws");
 
 /**
- * Message types exchanged between extension and webview
+ * Message types exchanged between extension and webview for Loro collaboration
  */
-interface LoroMessage {
+export interface LoroMessage {
   type: "connect" | "disconnect" | "message" | "status" | "error";
   adapterId: string;
   data?: unknown;

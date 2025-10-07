@@ -139,12 +139,25 @@ Open settings (`Ctrl+,` / `Cmd+,`) and search "Datalayer":
 
 **How do I get an access token?** Visit datalayer.io, navigate to account settings, and generate a token.
 
+## Recent Updates (January 2025)
+
+### Runtime Controller Improvements
+
+- **Smart Runtime Switching**: Kernel picker now shows individual runtime controllers for seamless switching between cloud environments
+- **Automatic Kernel Selection**: Selecting a runtime automatically activates it as the notebook kernel
+- **Proper Cleanup**: Switching between runtimes properly disposes old WebSocket connections
+- **Tree View Sync**: Runtime tree automatically refreshes when runtimes are created or selected
+
+### Documentation & Quality
+
+- **TypeDoc API Documentation**: Complete API documentation now available at [datalayer-desktop.netlify.app](https://datalayer-desktop.netlify.app)
+- **Zero TypeDoc Warnings**: All exported types properly documented
+- **Node.js 20 Compatibility**: Fully updated to match VS Code 1.98.0 runtime requirements
+
 ## Known Limitations
 
 - Cloud documents open read-only (copy to local workspace to edit)
-- Snapshot creation UI exists but backend pending
 - Uses older Jupyter WebSocket protocol (technical constraint)
-- Native notebook controller temporarily disabled
 
 ## Developer Resources
 

@@ -19,16 +19,16 @@ import { vsCodeAPI, MessageHandler, Disposable } from "../messageHandler";
 /**
  * Message types for extension communication
  */
-interface LoroMessage {
+export interface LoroMessage {
   type: "connect" | "disconnect" | "message" | "status" | "error";
   adapterId: string;
   data?: unknown;
 }
 
 /**
- * WebSocket message protocol
+ * WebSocket message protocol for Loro synchronization
  */
-interface WebSocketMessage {
+export interface WebSocketMessage {
   type: "update" | "ephemeral" | "query-snapshot" | "query-ephemeral";
   bytes?: number[];
   update?: number[]; // Server may send 'update' field instead of 'bytes'

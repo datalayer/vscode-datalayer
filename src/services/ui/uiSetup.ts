@@ -32,8 +32,8 @@ export interface ExtensionUI {
   spacesTreeProvider: SpacesTreeProvider;
   /** VS Code tree view for spaces */
   treeView: vscode.TreeView<unknown>;
-  /** Smart dynamic controller manager for runtime selection and switching (null if disabled) */
-  controllerManager: SmartDynamicControllerManager | null;
+  /** Smart dynamic controller manager for runtime selection and switching */
+  controllerManager: SmartDynamicControllerManager;
 }
 
 /**
@@ -75,14 +75,12 @@ export async function initializeUI(
   }
 
   // Create the smart dynamic controller manager
-  // TODO: Re-enable when controller integration is complete
-  // const controllerManager = new SmartDynamicControllerManager(
-  //   context,
-  //   sdk,
-  //   authProvider,
-  // );
-  // Temporary: Return null controller manager to disable native notebook controller integration
-  const controllerManager = null as unknown as SmartDynamicControllerManager;
+  const controllerManager = new SmartDynamicControllerManager(
+    context,
+    sdk,
+    authProvider,
+  );
+  context.subscriptions.push(controllerManager);
 
   const spacesTreeProvider = new SpacesTreeProvider(authProvider);
   const treeView = vscode.window.createTreeView("datalayerSpaces", {
