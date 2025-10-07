@@ -153,7 +153,7 @@ export async function activate(
           cellCount: notebook.cellCount,
           isDirty: notebook.isDirty,
         });
-        ui.controllerManager.onDidCloseNotebook(notebook);
+        ui.controllerManager?.onDidCloseNotebook(notebook);
       }),
     );
 

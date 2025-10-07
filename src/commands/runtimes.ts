@@ -40,12 +40,12 @@ interface RuntimeQuickPickItem extends vscode.QuickPickItem {
  * Registers all runtime-related commands for the Smart Dynamic Controller Manager.
  *
  * @param context - Extension context for command subscriptions
- * @param controllerManager - The Smart Dynamic Controller Manager
+ * @param controllerManager - The Smart Dynamic Controller Manager (null if disabled)
  * @param runtimesTreeProvider - The Runtimes tree view provider
  */
 export function registerRuntimeCommands(
   context: vscode.ExtensionContext,
-  controllerManager: SmartDynamicControllerManager,
+  controllerManager: SmartDynamicControllerManager | null,
   runtimesTreeProvider?: RuntimesTreeProvider,
 ): void {
   const container = getServiceContainer();
@@ -109,13 +109,18 @@ export function registerRuntimeCommands(
       }
 
       // Directly trigger runtime selection on the controller manager
-      await controllerManager.selectRuntimeForNotebook(activeEditor.notebook);
-
-      // Also ensure the controller is selected for this notebook
-      // This makes sure "Datalayer Platform" is the active kernel
-      vscode.window.showInformationMessage(
-        "Runtime selector opened. Select or create a runtime.",
-      );
+      if (controllerManager) {
+        await controllerManager.selectRuntimeForNotebook(activeEditor.notebook);
+        // Also ensure the controller is selected for this notebook
+        // This makes sure "Datalayer Platform" is the active kernel
+        vscode.window.showInformationMessage(
+          "Runtime selector opened. Select or create a runtime.",
+        );
+      } else {
+        vscode.window.showWarningMessage(
+          "Native notebook controller integration is currently disabled.",
+        );
+      }
     }),
   );
 
@@ -125,11 +130,16 @@ export function registerRuntimeCommands(
    */
   context.subscriptions.push(
     vscode.commands.registerCommand("datalayer.resetRuntime", async () => {
-      await controllerManager.refreshControllers();
-
-      vscode.window.showInformationMessage(
-        "Runtime controllers refreshed. Select a runtime from the kernel picker.",
-      );
+      if (controllerManager) {
+        await controllerManager.refreshControllers();
+        vscode.window.showInformationMessage(
+          "Runtime controllers refreshed. Select a runtime from the kernel picker.",
+        );
+      } else {
+        vscode.window.showWarningMessage(
+          "Native notebook controller integration is currently disabled.",
+        );
+      }
     }),
   );
 
@@ -139,10 +149,16 @@ export function registerRuntimeCommands(
    */
   context.subscriptions.push(
     vscode.commands.registerCommand("datalayer.showRuntimeStatus", async () => {
-      await controllerManager.refreshControllers();
-      vscode.window.showInformationMessage(
-        "Runtime controllers are available in the kernel picker. Select 'Datalayer Platform' to choose a runtime.",
-      );
+      if (controllerManager) {
+        await controllerManager.refreshControllers();
+        vscode.window.showInformationMessage(
+          "Runtime controllers are available in the kernel picker. Select 'Datalayer Platform' to choose a runtime.",
+        );
+      } else {
+        vscode.window.showWarningMessage(
+          "Native notebook controller integration is currently disabled.",
+        );
+      }
     }),
   );
 
@@ -154,11 +170,16 @@ export function registerRuntimeCommands(
     vscode.commands.registerCommand(
       "datalayer.refreshRuntimeControllers",
       async (_selectRuntimeUid?: string) => {
-        await controllerManager.refreshControllers();
-
-        vscode.window.showInformationMessage(
-          "Runtime controllers refreshed. Available runtimes are shown in the kernel picker.",
-        );
+        if (controllerManager) {
+          await controllerManager.refreshControllers();
+          vscode.window.showInformationMessage(
+            "Runtime controllers refreshed. Available runtimes are shown in the kernel picker.",
+          );
+        } else {
+          vscode.window.showWarningMessage(
+            "Native notebook controller integration is currently disabled.",
+          );
+        }
       },
     ),
   );
@@ -576,6 +597,8 @@ export function registerRuntimeCommands(
           vscode.window.showInformationMessage(
             `Runtime "${runtimeName}" terminated successfully`,
           );
+          // Wait a moment for server to process deletion before refreshing
+          await new Promise((resolve) => setTimeout(resolve, 500));
           runtimesTreeProvider?.refresh();
           await notifyAllDocuments();
         } catch (error: unknown) {
@@ -659,6 +682,8 @@ export function registerRuntimeCommands(
             },
           );
 
+          // Wait a moment for server to process deletions before refreshing
+          await new Promise((resolve) => setTimeout(resolve, 500));
           runtimesTreeProvider?.refresh();
           await notifyAllDocuments();
         } catch (error: unknown) {

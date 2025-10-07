@@ -1,31 +1,68 @@
 # Change Log
 
-All notable changes to the "datalayer-notebook" extension will be documented in this file.
-
-Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how to structure this file.
+All notable changes to the Datalayer VS Code extension are documented here.
 
 ## [Unreleased]
 
-### Added
+### Fixed (January 2025)
 
-- Unified kernel selection interface with support for multiple kernel sources
-- Kernel Bridge architecture for routing connections to webview or native notebooks
-- MutableServiceManager to prevent notebook re-renders when switching runtimes
-- Display "Datalayer: {Runtime name}" in notebook toolbar for better runtime identification
-- Support for connecting to existing Jupyter servers via kernel selector
+- **Runtime Tree View Refresh**: Tree view now properly refreshes after "terminate all runtimes" command
+  - Added 500ms delay before refresh to allow server-side processing
+  - Affects both single runtime termination and bulk termination
+  - Files: `src/commands/runtimes.ts:601, 686`
 
-### Fixed
+### Changed (January 2025)
 
-- "No webview found" error when selecting runtime from picker
-- Notebook re-rendering issue when changing runtimes
-- Proper webview registration and lookup in KernelBridge
-
-### Changed
-
-- Kernel selector now shows three options: Datalayer Platform, Python Environments (coming soon), and Existing Jupyter Server
-- Improved runtime switching without component unmount/remount
+- **Smart Controller**: Disabled `SmartDynamicControllerManager` for native notebook integration
+  - Needs improvement before re-enabling
+  - All code handles null controller safely with optional chaining
+  - File: `src/services/ui/uiSetup.ts:85`
 
 ## [0.0.3] - 2025-01-XX
+
+### Major Features
+
+#### Two Custom Editors
+
+- **Jupyter Notebooks** (`.ipynb`): Full notebook editing with cloud runtime execution
+- **Lexical Documents** (`.lexical`): Rich text editing with formatting support
+
+#### Two Tree Views
+
+- **Datalayer Spaces**: Browse and manage cloud documents (notebooks and lexical docs)
+  - Create, rename, delete documents
+  - Hierarchical space display with default space indicator
+  - Context menu actions
+  - Virtual file system (`datalayer://` URIs)
+- **Datalayer Runtimes**: Manage cloud computational environments
+  - Create new runtimes with environment selection
+  - Terminate single or all runtimes
+  - Monitor runtime status and details
+  - Create snapshots (UI ready, implementation pending)
+
+#### Runtime Management
+
+- Automatic runtime creation and reuse
+- Health verification before reuse
+- Dynamic environment loading from API with caching (`EnvironmentCache`)
+- Credits calculation based on duration and environment burning rate
+- Default runtime duration configurable (1-1440 minutes)
+
+#### Authentication System
+
+- Token-based login with Datalayer platform
+- GitHub profile enrichment for OAuth users
+- Secure storage via VS Code SecretStorage API
+- Status bar integration showing connection state
+- Auth state synchronization across components
+
+#### Logging Infrastructure
+
+- Three-tier logging system (LoggerManager → ServiceLoggers → Individual Loggers)
+- Configurable log levels: trace, debug, info, warn, error
+- Optional timestamps and context information
+- SDK logging integration via adapter
+- Performance monitoring (optional)
 
 ### Added - Test Infrastructure & Type Safety
 

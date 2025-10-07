@@ -22,3 +22,6 @@ export type { KernelSelectorProps } from "./KernelSelector";
 
 export { OverflowMenu } from "./OverflowMenu";
 export type { OverflowMenuProps, OverflowMenuAction } from "./OverflowMenu";
+
+export { Dropdown } from "./Dropdown";
+export type { DropdownProps, DropdownItem } from "./Dropdown";

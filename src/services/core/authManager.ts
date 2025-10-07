@@ -38,7 +38,7 @@ import { getServiceContainer } from "../../extension";
 export function setupAuthStateManagement(
   authProvider: SDKAuthProvider,
   spacesTreeProvider: SpacesTreeProvider,
-  controllerManager: SmartDynamicControllerManager,
+  controllerManager: SmartDynamicControllerManager | null,
   runtimesTreeProvider?: RuntimesTreeProvider,
 ): () => void {
   /**
@@ -58,7 +58,7 @@ export function setupAuthStateManagement(
     runtimesTreeProvider?.refresh();
 
     // Refresh controllers on auth change
-    controllerManager.refreshControllers();
+    controllerManager?.refreshControllers();
   };
 
   authProvider.onAuthStateChanged((authState) => {

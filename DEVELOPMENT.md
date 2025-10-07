@@ -491,16 +491,35 @@ The documentation is automatically built and deployed on every push to the main 
 
 ## Configuration
 
-Extension settings can be configured in VS Code:
+The extension provides comprehensive configuration in VS Code settings (`Cmd+,` → "Datalayer"):
 
-- `datalayer.serverUrl` - Datalayer server URL (default: https://prod1.datalayer.run)
-- `datalayer.runtime.defaultMinutes` - Default runtime duration in minutes (default: 10, max: 1440)
+### Service URLs
 
-**Note:** Available runtime environments are fetched dynamically from the Datalayer API and cached for performance. The extension uses `EnvironmentCache` to avoid repeated API calls. Credits are calculated automatically based on runtime duration and environment burning rate.
+- `datalayer.services.iamUrl` - IAM service (default: https://prod1.datalayer.run)
+- `datalayer.services.runtimesUrl` - Runtimes service (default: https://prod1.datalayer.run)
+- `datalayer.services.spacerUrl` - Spacer service (default: https://prod1.datalayer.run)
+- `datalayer.services.spacerWsUrl` - WebSocket URL (default: wss://prod1.datalayer.run)
+
+### Runtime Settings
+
+- `datalayer.runtime.defaultMinutes` - Default duration (default: 10, min: 1, max: 1440)
+
+### Logging Settings
+
+- `datalayer.logging.level` - Log level (default: info)
+- `datalayer.logging.includeTimestamps` - Timestamps in logs (default: true)
+- `datalayer.logging.includeContext` - Context in logs (default: true)
+- `datalayer.logging.enableSDKLogging` - SDK logging (default: true)
+- `datalayer.logging.enablePerformanceMonitoring` - Performance tracking (default: false)
+
+**Note:** Runtime environments are fetched dynamically from API and cached using `EnvironmentCache` singleton. Credits calculated automatically based on duration and environment burning rate.
 
 ## Known Technical Limitations
 
-- **Websocket binary support**: The extension currently forbids the usage of the newer protocol v1.kernel.websocket.jupyter.org due to serialization issues between the webview and extension.
+- **WebSocket Binary Support**: Uses older Jupyter protocol due to serialization issues between webview and extension (cannot use v1.kernel.websocket.jupyter.org)
+- **Smart Controller**: `SmartDynamicControllerManager` is intentionally disabled (null) in `uiSetup.ts:85` while native controller integration is improved
+- **Runtime Tree View Refresh**: Requires 500ms delay after runtime termination to allow server-side processing before refresh
+- **Snapshot Creation**: UI implemented in Runtimes tree view but backend implementation is pending
 
 ## Development Best Practices
 

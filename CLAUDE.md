@@ -1,4 +1,33 @@
-# Datalayer VS Code Extension - Developer Guide
+# Datalayer VS Code Extension - Developer Context
+
+**Last Updated**: January 2025
+
+## Critical Recent Changes
+
+### Smart Controller Registration - DISABLED (January 2025)
+
+**Status**: The `SmartDynamicControllerManager` is **intentionally disabled**
+**Location**: `src/services/ui/uiSetup.ts:85`
+**Reason**: Native notebook controller integration needs improvement before re-enabling
+
+```typescript
+// Disabled in uiSetup.ts
+const controllerManager = null as unknown as SmartDynamicControllerManager;
+```
+
+All code properly handles the null case with optional chaining (`controllerManager?.`) or explicit null checks.
+
+### Runtime Tree View Refresh Fix (January 2025)
+
+**Issue**: Tree view wasn't refreshing after "terminate all runtimes"
+**Fix**: Added 500ms delay before refresh to allow server-side processing
+**Files**: `src/commands/runtimes.ts:601, 686`
+
+```typescript
+// Wait for server to process deletions
+await new Promise((resolve) => setTimeout(resolve, 500));
+runtimesTreeProvider?.refresh();
+```
 
 ## Quick Start
 
@@ -13,20 +42,16 @@ Press F5 in VS Code to launch Extension Development Host
 # Build & Package
 npm run compile
 npm run vsix
-
-# Production Build (Electron Desktop App)
-# From desktop directory:
-npm run build
-npm run dist:mac  # Builds universal macOS app
-# Note: Post-build script automatically fixes CSS import issues
 ```
 
 ## Architecture Overview
 
-- **Extension Context** (`src/`): Node.js environment, handles auth & server communication
-- **Webview** (`webview/`): React-based notebook editor with VS Code theme integration
-- **Message Passing**: JWT token injection between extension and webview
-- **SDK Integration**: Direct use of `@datalayer/core` SDK with handlers pattern for VS Code-specific behavior
+- **Extension Context** (`src/`): Node.js 20 environment, handles auth & server communication
+- **Webview** (`webview/`): React 18-based editors (Jupyter notebooks & Lexical documents)
+- **Message Passing**: Structured messages with JWT tokens between extension and webview
+- **SDK Integration**: Direct use of `@datalayer/core` SDK (file: dependency)
+- **Two Custom Editors**: `.ipynb` (Jupyter notebooks) and `.lexical` (rich text documents)
+- **Two Tree Views**: Datalayer Spaces and Datalayer Runtimes in Explorer sidebar
 
 ## Key Features
 
@@ -78,16 +103,42 @@ npm run dist:mac  # Builds universal macOS app
 - **Runtime display**: Shows "Datalayer: {Runtime name}" in notebook toolbar
 - **Zero re-render**: Runtime changes use MutableServiceManager to prevent component unmount/remount
 
-## Configuration
+## Configuration (Settings)
+
+The extension provides multiple configuration options in VS Code settings:
+
+### Service URLs
 
 ```json
 {
-  "datalayer.serverUrl": "https://prod1.datalayer.run",
-  "datalayer.runtime.defaultMinutes": 10
+  "datalayer.services.iamUrl": "https://prod1.datalayer.run",
+  "datalayer.services.runtimesUrl": "https://prod1.datalayer.run",
+  "datalayer.services.spacerUrl": "https://prod1.datalayer.run",
+  "datalayer.services.spacerWsUrl": "wss://prod1.datalayer.run"
 }
 ```
 
-**Note:** Runtime environments (e.g., Python CPU, AI Environment) are fetched dynamically from the Datalayer API and cached using `EnvironmentCache`. No hardcoded environment names. Credits are calculated automatically based on runtime duration and environment burning rate.
+### Runtime Configuration
+
+```json
+{
+  "datalayer.runtime.defaultMinutes": 10 // Default: 10, Min: 1, Max: 1440 (24 hours)
+}
+```
+
+### Logging Configuration
+
+```json
+{
+  "datalayer.logging.level": "info", // trace|debug|info|warn|error
+  "datalayer.logging.includeTimestamps": true,
+  "datalayer.logging.includeContext": true,
+  "datalayer.logging.enableSDKLogging": true,
+  "datalayer.logging.enablePerformanceMonitoring": false
+}
+```
+
+**Note**: Runtime environments are fetched dynamically from API and cached using `EnvironmentCache` (singleton). No hardcoded environment names.
 
 ## API Response Handling
 
@@ -145,49 +196,113 @@ Key commands:
 - `/api/runtimes/v1/runtimes` - List runtimes (GET)
 - `/api/runtimes/v1/runtimes` - Create runtime (POST)
 
-## Project Structure
+## Project Structure (January 2025)
 
 ```
 src/
+├── extension.ts           # Main extension entry point, activation
+├── commands/              # Command handlers (thin layer, delegate to services)
+│   ├── auth.ts           # Login, logout, show auth status
+│   ├── documents.ts      # Document management (create, rename, delete)
+│   ├── lexical.ts        # Lexical document commands
+│   ├── runtimes.ts       # Runtime management (create, terminate, select)
+│   ├── internal.ts       # Internal commands for inter-component communication
+│   └── index.ts          # Command registration
+├── providers/             # VS Code API implementations
+│   ├── baseDocumentProvider.ts           # Base class for custom editors
+│   ├── notebookProvider.ts               # Jupyter .ipynb custom editor
+│   ├── lexicalProvider.ts                # Lexical .lexical custom editor
+│   ├── spacesTreeProvider.ts             # Datalayer Spaces tree view
+│   ├── runtimesTreeProvider.ts           # Datalayer Runtimes tree view
+│   ├── documentsFileSystemProvider.ts    # Virtual FS for datalayer:// URIs
+│   └── smartDynamicControllerManager.ts  # (DISABLED) Native controller
 ├── services/
-│   ├── bridges/           # ✨ Extension ↔ Webview ↔ Platform bridges
-│   │   ├── documentBridge.ts  # Downloads/opens documents from platform
-│   │   ├── kernelBridge.ts    # Routes kernel connections to webviews
-│   │   ├── networkBridge.ts   # Bridges HTTP/WebSocket for providers
-│   │   └── runtimeBridge.ts   # Runtime lifecycle operations
-│   ├── messaging/         # Message routing infrastructure
-│   │   ├── messageRouter.ts   # Centralized message dispatcher
-│   │   └── types.ts           # Messaging type definitions
-│   ├── network/           # Low-level network primitives
-│   │   └── networkProxy.ts    # HTTP/WebSocket proxy service
-│   ├── core/              # Core services (auth, SDK, error handling)
-│   ├── cache/             # Caching services (environments)
-│   ├── collaboration/     # Real-time collaboration services
+│   ├── core/              # Core infrastructure services
+│   │   ├── authProvider.ts        # Authentication state (token, user)
+│   │   ├── authManager.ts         # Auth operations & state sync
+│   │   ├── sdkAdapter.ts          # SDK initialization with handlers
+│   │   ├── serviceContainer.ts    # Dependency injection container
+│   │   ├── baseService.ts         # Base service class
+│   │   └── errorHandler.ts        # Centralized error handling
+│   ├── bridges/           # Communication bridges
+│   │   ├── documentBridge.ts      # Extension ↔ Platform (download/open docs)
+│   │   ├── kernelBridge.ts        # Extension ↔ Webview (kernel routing)
+│   │   └── notebookNetwork.ts     # HTTP/WebSocket for notebook communication
+│   ├── collaboration/     # Real-time collaboration
+│   │   ├── lexicalCollaboration.ts  # Lexical Y.js sync (singleton)
+│   │   └── loroWebSocketAdapter.ts  # WebSocket adapter for Loro CRDT
 │   ├── logging/           # Logging infrastructure
-│   └── ui/                # UI components (status bar)
-├── providers/
-│   ├── baseDocumentProvider.ts     # Base class for custom editors
-│   ├── notebookProvider.ts         # Jupyter notebook custom editor
-│   ├── lexicalProvider.ts          # Lexical document custom editor
-│   ├── spacesTreeProvider.ts       # Spaces tree view provider
-│   └── smartDynamicControllerManager.ts  # Notebook controller manager
-├── commands/         # VS Code command implementations
-├── models/           # Data models (documents, spaces)
-└── ui/               # UI dialogs (kernel selector, auth, etc.)
+│   │   ├── loggerManager.ts            # Logger factory (singleton)
+│   │   ├── loggers.ts                  # Static logger access (ServiceLoggers)
+│   │   ├── performanceLogger.ts        # Performance monitoring
+│   │   └── datalayerClientLogger.ts    # SDK logging adapter
+│   ├── cache/             # Caching layer
+│   │   └── environmentCache.ts    # Runtime environments cache (singleton)
+│   ├── messaging/         # Message routing
+│   │   └── messageRouter.ts       # (Future) Centralized message dispatcher
+│   ├── network/           # Low-level network
+│   │   └── networkProxy.ts        # HTTP/WebSocket proxy
+│   ├── ui/                # UI management
+│   │   ├── statusBar.ts           # Status bar manager (singleton)
+│   │   └── uiSetup.ts             # UI initialization
+│   └── interfaces/        # TypeScript interfaces for services
+│       ├── IAuthProvider.ts
+│       ├── IDocumentBridge.ts
+│       ├── IKernelBridge.ts
+│       ├── ILogger.ts
+│       ├── ILoggerManager.ts
+│       └── IErrorHandler.ts
+├── models/                # Data models
+│   ├── notebookDocument.ts      # Notebook document model
+│   ├── lexicalDocument.ts       # Lexical document model
+│   ├── spaceItem.ts             # Space tree item model
+│   └── runtimeTreeItem.ts       # Runtime tree item model
+├── ui/                    # UI components
+│   ├── dialogs/
+│   │   ├── authDialog.ts            # Authentication dialog
+│   │   ├── kernelSelector.ts        # Kernel selection UI
+│   │   ├── runtimeSelector.ts       # Runtime selection UI
+│   │   └── confirmationDialog.ts    # Two-step confirmation
+│   └── templates/
+│       └── notebookTemplate.ts      # Notebook webview HTML template
+├── kernel/                # Kernel communication
+│   └── clients/
+│       └── websocketKernelClient.ts # WebSocket kernel protocol client
+├── utils/                 # Utility functions
+│   ├── dispose.ts               # Disposable utilities
+│   ├── webviewSecurity.ts       # CSP nonce generation
+│   ├── webviewCollection.ts     # Webview lifecycle management
+│   └── documentUtils.ts         # Document manipulation
+├── types/                 # Type definitions
+│   ├── errors.ts                # Custom error types
+│   └── vscode/
+│       └── messages.ts          # Webview message types
+└── test/                  # Test suites (41 tests, 100% pass)
+    ├── extension.test.ts        # Extension activation tests
+    ├── services/                # Service tests (21 tests)
+    ├── utils-tests/             # Utility tests (19 tests)
+    └── utils/                   # Test infrastructure
+        ├── mockFactory.ts       # Type-safe mock creators
+        └── testHelpers.ts       # Test utilities
 
 webview/
-├── theme/          # VS Code theme integration
-├── notebook/       # Notebook editor components
-│   ├── NotebookEditor.tsx    # Main notebook component
-│   └── NotebookToolbar.tsx   # Toolbar with kernel display
-├── lexical/        # Lexical editor components
-│   ├── LexicalWebview.tsx    # Main lexical editor
-│   └── LexicalToolbar.tsx    # Lexical toolbar
-├── components/     # Shared UI components
-├── stores/         # Zustand state stores
-└── services/       # Webview services
-    ├── serviceManager.ts         # JupyterLab ServiceManager wrapper
-    └── mutableServiceManager.ts  # Hot-swappable ServiceManager
+├── notebook/              # Jupyter notebook editor
+│   ├── main.ts                  # Entry point
+│   ├── NotebookEditor.tsx       # Main component
+│   └── NotebookToolbar.tsx      # Toolbar
+├── lexical/               # Lexical rich text editor
+│   ├── lexicalWebview.tsx       # Entry point
+│   ├── LexicalEditor.tsx        # Editor component
+│   └── LexicalToolbar.tsx       # Toolbar
+├── theme/                 # VS Code theme integration
+│   ├── codemirror/              # CodeMirror themes
+│   ├── components/              # Themed components
+│   ├── mapping/                 # Color mappers
+│   └── providers/               # Theme providers
+└── services/              # Webview services
+    ├── messageHandler.ts        # Extension communication
+    ├── mockServiceManager.ts    # Development mock
+    └── serviceManager.ts        # JupyterLab service management
 ```
 
 ### Service Organization Rationale
@@ -401,8 +516,56 @@ const serviceManager = mutableServiceManager.createProxy();
 - ✅ **Runtime Hot-Swapping** - Change kernels without notebook re-render
 - ✅ **Kernel Bridge Architecture** - Unified routing for webview and native notebooks
 
-## Version
+## Current State Summary (January 2025)
 
-Current: 0.0.2
-VS Code requirement: ^1.98.0
-Node.js: >= 20.0.0
+### Version Information
+
+- **Extension Version**: 0.0.3
+- **VS Code**: ^1.98.0 (required)
+- **Node.js**: >= 20.0.0 and < 21.0.0 (strict requirement)
+- **TypeScript**: 5.8.3
+- **React**: 18.3.1
+
+### Quality Metrics
+
+- ✅ **Tests**: 41/41 passing (100%)
+- ✅ **Type Check**: 0 errors (strict mode)
+- ✅ **Lint**: 0 warnings
+- ✅ **Documentation**: 100% coverage (466/466 items)
+- ✅ **Build**: Multi-platform (Windows, macOS, Linux)
+
+### Key Capabilities
+
+1. **Authentication**: Token-based login with Datalayer platform
+2. **Jupyter Notebooks**: Edit `.ipynb` files with cloud runtimes
+3. **Lexical Documents**: Edit `.lexical` rich text files
+4. **Datalayer Spaces**: Browse and manage cloud documents in tree view
+5. **Runtime Management**: Create, terminate, and monitor cloud runtimes in tree view
+6. **Virtual File System**: `datalayer://` URIs for seamless document access
+7. **Real-time Collaboration**: Y.js-based sync for lexical documents
+8. **Theme Integration**: Complete VS Code theme matching
+
+### Known Limitations
+
+- **Smart Controller**: Disabled (native notebook controller needs improvement)
+- **WebSocket Protocol**: Uses older Jupyter protocol due to serialization constraints
+- **Snapshot Creation**: UI exists but implementation pending
+
+### Documentation Resources
+
+- **API Docs**: https://datalayer-desktop.netlify.app (auto-deployed)
+- **Marketplace**: https://marketplace.visualstudio.com/items?itemName=Datalayer.datalayer-jupyter-vscode
+- **GitHub**: https://github.com/datalayer/vscode-datalayer
+
+### CI/CD Workflows
+
+All workflows run on every push to main and on PRs:
+
+1. **Extension Build & Test**: Multi-platform .vsix generation
+2. **Code Quality**: ESLint, Prettier, console.log detection
+3. **Type Check**: TypeScript compilation with strict mode
+4. **Documentation**: TypeDoc generation and Netlify deployment
+
+---
+
+_Last Updated: January 2025_

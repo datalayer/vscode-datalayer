@@ -34,7 +34,8 @@ export interface CommandServices {
   authProvider: SDKAuthProvider;
   documentBridge: DocumentBridge;
   spacesTreeProvider: SpacesTreeProvider;
-  controllerManager: SmartDynamicControllerManager;
+  /** Controller manager (null if native notebook controller integration is disabled) */
+  controllerManager: SmartDynamicControllerManager | null;
   runtimesTreeProvider: RuntimesTreeProvider;
 }
 

@@ -306,9 +306,7 @@ export class SDKAuthProvider extends BaseService implements IAuthProvider {
       if (selected.label === "$(sign-out) Logout") {
         await this.logout();
       } else if (selected.label === "$(home) Visit Datalayer Platform") {
-        await vscode.env.openExternal(
-          vscode.Uri.parse("https://datalayer.io"),
-        );
+        await vscode.env.openExternal(vscode.Uri.parse("https://datalayer.io"));
       } else if (selected.label === "$(book) View Documentation") {
         await vscode.env.openExternal(
           vscode.Uri.parse("https://docs.datalayer.io"),
@@ -341,9 +339,7 @@ export class SDKAuthProvider extends BaseService implements IAuthProvider {
       if (selected.label === "$(sign-in) Login") {
         await this.login();
       } else if (selected.label === "$(home) Visit Datalayer Platform") {
-        await vscode.env.openExternal(
-          vscode.Uri.parse("https://datalayer.io"),
-        );
+        await vscode.env.openExternal(vscode.Uri.parse("https://datalayer.io"));
       } else if (selected.label === "$(book) View Documentation") {
         await vscode.env.openExternal(
           vscode.Uri.parse("https://docs.datalayer.io"),

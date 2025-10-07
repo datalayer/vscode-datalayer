@@ -29,7 +29,7 @@ export interface ToolbarAction {
 export interface BaseToolbarProps {
   /** Toolbar actions with priority-based ordering (lower priority = shown first) */
   actions?: ToolbarAction[];
-  /** Custom rendered left content (used when actions are not provided) */
+  /** Custom rendered left content (rendered before actions) */
   leftContent?: React.ReactNode;
   /** Right-aligned toolbar content (runtime controls) */
   rightContent?: React.ReactNode;
@@ -43,6 +43,8 @@ export interface BaseToolbarProps {
   estimatedButtonWidth?: number;
   /** Reserved width for right content (default: calculated from rightContent) */
   reservedRightWidth?: number;
+  /** Reserved width for left content (default: 0) */
+  reservedLeftWidth?: number;
   /** Function to render action buttons (allows custom rendering) */
   renderAction?: (action: ToolbarAction) => React.ReactNode;
   /** Whether actions are disabled */
@@ -62,6 +64,7 @@ export const BaseToolbar: React.FC<BaseToolbarProps> = ({
   className = "",
   estimatedButtonWidth = 80,
   reservedRightWidth,
+  reservedLeftWidth = 0,
   renderAction,
   disabled = false,
 }) => {
@@ -77,9 +80,14 @@ export const BaseToolbar: React.FC<BaseToolbarProps> = ({
 
       const toolbarWidth = toolbarRef.current.offsetWidth;
       const rightContentWidth = reservedRightWidth ?? 220; // Default estimate if not provided
+      const leftContentWidth = reservedLeftWidth;
       const reservedForOverflow = 40; // Space for overflow menu button
       const availableWidth =
-        toolbarWidth - rightContentWidth - reservedForOverflow - 20;
+        toolbarWidth -
+        rightContentWidth -
+        leftContentWidth -
+        reservedForOverflow -
+        20;
 
       const maxButtons = Math.floor(availableWidth / estimatedButtonWidth);
       setVisibleCount(Math.max(0, Math.min(maxButtons, actions.length)));
@@ -88,7 +96,12 @@ export const BaseToolbar: React.FC<BaseToolbarProps> = ({
     adjustVisibleButtons();
     window.addEventListener("resize", adjustVisibleButtons);
     return () => window.removeEventListener("resize", adjustVisibleButtons);
-  }, [actions.length, estimatedButtonWidth, reservedRightWidth]);
+  }, [
+    actions.length,
+    estimatedButtonWidth,
+    reservedRightWidth,
+    reservedLeftWidth,
+  ]);
 
   const visibleActions = actions.slice(0, visibleCount);
   const overflowActions: OverflowMenuAction[] = actions
@@ -132,42 +145,42 @@ export const BaseToolbar: React.FC<BaseToolbarProps> = ({
           overflow: "hidden",
         }}
       >
-        {leftContent ||
-          (actions.length > 0 && (
-            <>
-              {visibleActions.map((action) =>
-                renderAction ? (
-                  <React.Fragment key={action.id}>
-                    {renderAction(action)}
-                  </React.Fragment>
-                ) : (
-                  <button
-                    key={action.id}
-                    onClick={action.onClick}
-                    disabled={action.disabled || disabled}
-                    title={action.title}
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "4px",
-                      padding: "4px 8px",
-                      border: "none",
-                      background: "transparent",
-                      color: "var(--vscode-foreground)",
-                      cursor: action.disabled ? "not-allowed" : "pointer",
-                      opacity: action.disabled ? 0.5 : 1,
-                    }}
-                  >
-                    {action.icon && <i className={action.icon} />}
-                    <span>{action.label}</span>
-                  </button>
-                ),
-              )}
-              {overflowActions.length > 0 && (
-                <OverflowMenu actions={overflowActions} />
-              )}
-            </>
-          ))}
+        {leftContent}
+        {actions.length > 0 && (
+          <>
+            {visibleActions.map((action) =>
+              renderAction ? (
+                <React.Fragment key={action.id}>
+                  {renderAction(action)}
+                </React.Fragment>
+              ) : (
+                <button
+                  key={action.id}
+                  onClick={action.onClick}
+                  disabled={action.disabled || disabled}
+                  title={action.title}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "4px",
+                    padding: "4px 8px",
+                    border: "none",
+                    background: "transparent",
+                    color: "var(--vscode-foreground)",
+                    cursor: action.disabled ? "not-allowed" : "pointer",
+                    opacity: action.disabled ? 0.5 : 1,
+                  }}
+                >
+                  {action.icon && <i className={action.icon} />}
+                  <span>{action.label}</span>
+                </button>
+              ),
+            )}
+            {overflowActions.length > 0 && (
+              <OverflowMenu actions={overflowActions} />
+            )}
+          </>
+        )}
       </div>
 
       <div

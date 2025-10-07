@@ -118,20 +118,20 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Check VS Code Marketplace credentials
-        id: check_vsce_pat
+        id: check_VSCE_KEY
         run: |
-          if [ -n "${{ secrets.VSCE_PAT }}" ]; then
+          if [ -n "${{ secrets.VSCE_KEY }}" ]; then
             echo "has_secret=true" >> $GITHUB_OUTPUT
           else
             echo "has_secret=false" >> $GITHUB_OUTPUT
-            echo "⚠️ VSCE_PAT secret not found - skipping VS Code Marketplace publishing"
+            echo "⚠️ VSCE_KEY secret not found - skipping VS Code Marketplace publishing"
           fi
 
       - name: Publish to VS Code Marketplace
-        if: ${{ steps.check_vsce_pat.outputs.has_secret == 'true' && !contains(steps.extract_version.outputs.version, '-') }}
+        if: ${{ steps.check_VSCE_KEY.outputs.has_secret == 'true' && !contains(steps.extract_version.outputs.version, '-') }}
         working-directory: datalayer/vscode-datalayer
         run: |
           echo "Publishing version ${{ steps.extract_version.outputs.version }} to VS Code Marketplace"
           npx vsce publish --packagePath ${{ steps.vsix_filename.outputs.filename }}
         env:
-          VSCE_PAT: ${{ secrets.VSCE_PAT }}
+          VSCE_KEY: ${{ secrets.VSCE_KEY }}
