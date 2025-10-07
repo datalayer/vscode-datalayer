@@ -28,8 +28,8 @@ import {
   CommonConfirmations,
 } from "../ui/dialogs/confirmationDialog";
 
-import type { Runtime } from "../../../core/lib/client/models/Runtime";
-import type { DatalayerClient } from "../../../core/lib/client";
+import type { Runtime } from "@datalayer/core/lib/client/models/Runtime";
+import type { DatalayerClient } from "@datalayer/core/lib/client";
 
 interface RuntimeQuickPickItem extends vscode.QuickPickItem {
   runtime?: Runtime;

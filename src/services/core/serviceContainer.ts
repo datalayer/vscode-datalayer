@@ -12,7 +12,7 @@
  */
 
 import * as vscode from "vscode";
-import type { DatalayerClient } from "../../../../core/lib/client";
+import type { DatalayerClient } from "@datalayer/core/lib/client";
 import type { IAuthProvider } from "../interfaces/IAuthProvider";
 import type { IDocumentBridge } from "../interfaces/IDocumentBridge";
 import type { IKernelBridge } from "../interfaces/IKernelBridge";

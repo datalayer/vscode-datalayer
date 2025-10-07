@@ -14,8 +14,8 @@ import { EnvironmentCache } from "../../services/cache/environmentCache";
 import { SDKAuthProvider } from "../../services/core/authProvider";
 import { LoggerManager } from "../../services/logging/loggerManager";
 import { ServiceLoggers } from "../../services/logging/loggers";
-import type { DatalayerClient } from "../../../../core/lib/client";
-import type { User } from "../../../../core/lib/client/models/User";
+import type { DatalayerClient } from "@datalayer/core/lib/client";
+import type { User } from "@datalayer/core/lib/client/models/User";
 import {
   createMockSDK,
   createMockExtensionContext,

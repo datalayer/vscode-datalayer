@@ -19,7 +19,7 @@ import { NotebookProvider } from "../../providers/notebookProvider";
 import { LexicalProvider } from "../../providers/lexicalProvider";
 import { SDKAuthProvider } from "../core/authProvider";
 import { EnvironmentCache } from "../cache/environmentCache";
-import type { DatalayerClient } from "../../../../core/lib/client";
+import type { DatalayerClient } from "@datalayer/core/lib/client";
 
 /**
  * Container for all extension UI components.

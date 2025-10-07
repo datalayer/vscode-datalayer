@@ -12,9 +12,9 @@
  */
 
 import * as vscode from "vscode";
-import type { DatalayerClient as _DatalayerClient } from "../../../../core/lib/client";
-import type { User as _User } from "../../../../core/lib/client/models/User";
-import type { Runtime as _Runtime } from "../../../../core/lib/client/models/Runtime";
+import type { DatalayerClient as _DatalayerClient } from "@datalayer/core/lib/client";
+import type { User as _User } from "@datalayer/core/lib/client/models/User";
+import type { Runtime as _Runtime } from "@datalayer/core/lib/client/models/Runtime";
 import type { ILogger } from "../../services/interfaces/ILogger";
 
 /**

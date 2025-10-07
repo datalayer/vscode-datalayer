@@ -12,7 +12,7 @@
  */
 
 import * as vscode from "vscode";
-import type { Runtime } from "../../../core/lib/client/models/Runtime";
+import type { Runtime } from "@datalayer/core/lib/client/models/Runtime";
 
 /**
  * Tree item for displaying a runtime in the VS Code tree view.

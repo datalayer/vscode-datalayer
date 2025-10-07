@@ -22,7 +22,7 @@ import {
   LexicalCollaborationConfig,
 } from "../services/collaboration/lexicalCollaboration";
 import { getServiceContainer } from "../extension";
-import type { Runtime } from "../../../core/lib/client/models/Runtime";
+import type { Runtime } from "@datalayer/core/lib/client/models/Runtime";
 import { BaseDocumentProvider } from "./baseDocumentProvider";
 import { LoroWebSocketAdapter } from "../services/collaboration/loroWebSocketAdapter";
 

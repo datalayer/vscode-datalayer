@@ -121,7 +121,7 @@ export function createMockExtensionContext(): vscode.ExtensionContext;
 
 ```typescript
 import { createMockSDK, createMockLogger } from "../utils/mockFactory";
-import type { DatalayerClient } from "../../../../core/lib/client";
+import type { DatalayerClient } from "@datalayer/core/lib/client";
 
 suite("My Feature Tests", () => {
   let mockSDK: ReturnType<typeof createMockSDK>;

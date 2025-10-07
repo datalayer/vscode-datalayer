@@ -13,7 +13,7 @@
 
 import React from "react";
 import { ToolbarButton } from "./ToolbarButton";
-import type { RuntimeJSON } from "../../../../core/lib/client/models/Runtime";
+import type { RuntimeJSON } from "@datalayer/core/lib/client/models/Runtime";
 
 export interface KernelSelectorProps {
   /** Currently selected Datalayer runtime */

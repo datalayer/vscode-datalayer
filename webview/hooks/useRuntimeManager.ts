@@ -12,7 +12,7 @@
 
 import { useState, useCallback, useRef } from "react";
 import type { ServiceManager } from "@jupyterlab/services";
-import type { RuntimeJSON } from "../../../core/lib/client/models/Runtime";
+import type { RuntimeJSON } from "@datalayer/core/lib/client/models/Runtime";
 import { MutableServiceManager } from "../services/mutableServiceManager";
 
 /**

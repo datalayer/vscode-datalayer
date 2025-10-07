@@ -60,7 +60,7 @@ The test infrastructure uses strongly-typed mocks to ensure type safety:
 
 ```typescript
 import { createMockSDK, createMockLogger } from "../utils/mockFactory";
-import type { DatalayerClient } from "../../../../core/lib/client";
+import type { DatalayerClient } from "@datalayer/core/lib/client";
 import type { ILogger } from "../../services/interfaces/ILogger";
 
 suite("My Feature Tests", () => {
@@ -129,7 +129,7 @@ import {
   createMockLogger,
 } from "../utils/mockFactory";
 import { assertResolves, waitUntil } from "../utils/testHelpers";
-import type { DatalayerClient } from "../../../../core/lib/client";
+import type { DatalayerClient } from "@datalayer/core/lib/client";
 
 suite("My Feature Tests", () => {
   let mockContext: ReturnType<typeof createMockExtensionContext>;

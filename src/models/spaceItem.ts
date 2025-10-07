@@ -13,10 +13,10 @@
 
 import * as vscode from "vscode";
 import * as path from "path";
-import { ItemTypes } from "../../../core/lib/client/constants";
-import type { Space } from "../../../core/lib/client/models/Space";
-import type { Notebook } from "../../../core/lib/client/models/Notebook";
-import type { Lexical } from "../../../core/lib/client/models/Lexical";
+import { ItemTypes } from "@datalayer/core/lib/client/constants";
+import type { Space } from "@datalayer/core/lib/client/models/Space";
+import type { Notebook } from "@datalayer/core/lib/client/models/Notebook";
+import type { Lexical } from "@datalayer/core/lib/client/models/Lexical";
 
 /**
  * Type alias for any SDK document model (Notebook or Lexical).
