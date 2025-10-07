@@ -14,7 +14,7 @@ import React, { useState, useEffect, useContext } from "react";
 import { notebookStore2 } from "@datalayer/jupyter-react";
 import { NotebookActions } from "@jupyterlab/notebook";
 import { MessageHandlerContext } from "../services/messageHandler";
-import type { RuntimeJSON } from "../../../core/lib/client/models/Runtime";
+import type { RuntimeJSON } from "@datalayer/core/lib/client/models/Runtime";
 
 // Import shared toolbar components
 import {

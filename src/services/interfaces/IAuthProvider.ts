@@ -12,7 +12,7 @@
  */
 
 import * as vscode from "vscode";
-import type { User } from "../../../../core/lib/client/models/User";
+import type { User } from "@datalayer/core/lib/client/models/User";
 
 /**
  * Authentication state for VS Code context.

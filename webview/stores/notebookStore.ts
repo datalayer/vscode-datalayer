@@ -11,7 +11,7 @@
  */
 
 import { create } from "zustand";
-import type { RuntimeJSON } from "../../../core/lib/client/models/Runtime";
+import type { RuntimeJSON } from "@datalayer/core/lib/client/models/Runtime";
 
 /**
  * Extended interface for runtime with credits information

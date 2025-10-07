@@ -12,8 +12,8 @@
  */
 
 import * as vscode from "vscode";
-import type { DatalayerClient } from "../../../../core/lib/client";
-import type { User } from "../../../../core/lib/client/models/User";
+import type { DatalayerClient } from "@datalayer/core/lib/client";
+import type { User } from "@datalayer/core/lib/client/models/User";
 import type { ILogger } from "../interfaces/ILogger";
 import type {
   IAuthProvider,

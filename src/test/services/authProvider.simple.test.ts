@@ -14,7 +14,7 @@ import * as vscode from "vscode";
 import { SDKAuthProvider } from "../../services/core/authProvider";
 import { LoggerManager } from "../../services/logging/loggerManager";
 import { ServiceLoggers } from "../../services/logging/loggers";
-import type { DatalayerClient } from "../../../../core/lib/client";
+import type { DatalayerClient } from "@datalayer/core/lib/client";
 import {
   createMockExtensionContext,
   createMockSDK,

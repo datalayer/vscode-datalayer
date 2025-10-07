@@ -11,8 +11,8 @@
  * @module services/environmentCache
  */
 
-import type { DatalayerClient } from "../../../../core/lib/client";
-import type { Environment } from "../../../../core/lib/client/models/Environment";
+import type { DatalayerClient } from "@datalayer/core/lib/client";
+import type { Environment } from "@datalayer/core/lib/client/models/Environment";
 import type { IAuthProvider } from "../interfaces/IAuthProvider";
 
 /**

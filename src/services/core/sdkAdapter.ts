@@ -12,8 +12,8 @@
  */
 
 import * as vscode from "vscode";
-import { DatalayerClient } from "../../../../core/lib/client";
-import type { DatalayerClientConfig } from "../../../../core/lib/client";
+import { DatalayerClient } from "@datalayer/core/lib/client";
+import type { DatalayerClientConfig } from "@datalayer/core/lib/client";
 import { ServiceLoggers } from "../logging/loggers";
 import { DatalayerClientOperationTracker } from "../logging/datalayerClientLogger";
 

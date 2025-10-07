@@ -12,7 +12,7 @@
  */
 
 import * as vscode from "vscode";
-import type { SDKHandlers } from "../../../../core/lib/client";
+import type { SDKHandlers } from "@datalayer/core/lib/client";
 import { ServiceLoggers } from "./loggers";
 import { promptAndLogin } from "../../ui/dialogs/authDialog";
 

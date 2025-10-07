@@ -13,11 +13,11 @@
 
 import { WebSocket } from "ws";
 import { v4 as uuidv4 } from "uuid";
-import type { DatalayerClient } from "../../../../core/lib/client";
+import type { DatalayerClient } from "@datalayer/core/lib/client";
 import type {
   Runtime,
   RuntimeJSON,
-} from "../../../../core/lib/client/models/Runtime";
+} from "@datalayer/core/lib/client/models/Runtime";
 
 /**
  * Jupyter message structure according to the protocol.

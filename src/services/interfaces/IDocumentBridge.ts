@@ -13,7 +13,7 @@
 
 import * as vscode from "vscode";
 import type { Document } from "../../models/spaceItem";
-import type { Runtime } from "../../../../core/lib/client/models/Runtime";
+import type { Runtime } from "@datalayer/core/lib/client/models/Runtime";
 
 /**
  * Metadata for a downloaded document.

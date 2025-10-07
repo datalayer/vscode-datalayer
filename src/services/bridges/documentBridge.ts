@@ -17,8 +17,8 @@ import * as path from "path";
 import * as os from "os";
 import { Document } from "../../models/spaceItem";
 import { getServiceContainer } from "../../extension";
-import type { DatalayerClient } from "../../../../core/lib/client";
-import type { Runtime } from "../../../../core/lib/client/models/Runtime";
+import type { DatalayerClient } from "@datalayer/core/lib/client";
+import type { Runtime } from "@datalayer/core/lib/client/models/Runtime";
 import { DatalayerFileSystemProvider } from "../../providers/documentsFileSystemProvider";
 import { detectDocumentType } from "../../utils/documentUtils";
 

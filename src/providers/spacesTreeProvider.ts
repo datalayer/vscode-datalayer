@@ -16,10 +16,10 @@ import * as vscode from "vscode";
 import { SpaceItem, ItemType } from "../models/spaceItem";
 import { SDKAuthProvider } from "../services/core/authProvider";
 import { getServiceContainer } from "../extension";
-import { ItemTypes } from "../../../core/lib/client/constants";
-import type { Space } from "../../../core/lib/client/models/Space";
-import type { Notebook } from "../../../core/lib/client/models/Notebook";
-import type { Lexical } from "../../../core/lib/client/models/Lexical";
+import { ItemTypes } from "@datalayer/core/lib/client/constants";
+import type { Space } from "@datalayer/core/lib/client/models/Space";
+import type { Notebook } from "@datalayer/core/lib/client/models/Notebook";
+import type { Lexical } from "@datalayer/core/lib/client/models/Lexical";
 
 /**
  * Tree data provider for the Datalayer Spaces view.

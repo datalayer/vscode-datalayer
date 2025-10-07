@@ -44,7 +44,7 @@ import { $findMatchingParent } from "@lexical/utils";
 import { INSERT_HORIZONTAL_RULE_COMMAND } from "@lexical/react/LexicalHorizontalRuleNode";
 import { TOGGLE_LINK_COMMAND, $isLinkNode } from "@lexical/link";
 import { INSERT_IMAGE_COMMAND } from "@datalayer/jupyter-lexical";
-import type { RuntimeJSON } from "../../../core/lib/client/models/Runtime";
+import type { RuntimeJSON } from "@datalayer/core/lib/client/models/Runtime";
 import { MessageHandlerContext } from "../services/messageHandler";
 import {
   BaseToolbar,

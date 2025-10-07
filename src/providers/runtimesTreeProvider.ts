@@ -16,7 +16,7 @@ import * as vscode from "vscode";
 import { RuntimeTreeItem } from "../models/runtimeTreeItem";
 import { SDKAuthProvider } from "../services/core/authProvider";
 import { getServiceContainer } from "../extension";
-import type { Runtime } from "../../../core/lib/client/models/Runtime";
+import type { Runtime } from "@datalayer/core/lib/client/models/Runtime";
 
 /**
  * Tree data provider for the Datalayer Runtimes view.

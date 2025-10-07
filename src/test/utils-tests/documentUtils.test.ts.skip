@@ -11,7 +11,7 @@
 
 import * as assert from 'assert';
 import { detectDocumentType, getDocumentDisplayName } from '../../utils/documentUtils';
-import { ItemTypes } from '../../../../core/lib/client/constants';
+import { ItemTypes } from '@datalayer/core/lib/client/constants';
 
 suite('Document Utils Tests', () => {
   suite('detectDocumentType', () => {

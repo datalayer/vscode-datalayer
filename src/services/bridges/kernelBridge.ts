@@ -12,9 +12,9 @@
  */
 
 import * as vscode from "vscode";
-import type { DatalayerClient } from "../../../../core/lib/client";
-import type { Runtime } from "../../../../core/lib/client/models/Runtime";
-import type { RuntimeJSON } from "../../../../core/lib/client/models/Runtime";
+import type { DatalayerClient } from "@datalayer/core/lib/client";
+import type { Runtime } from "@datalayer/core/lib/client/models/Runtime";
+import type { RuntimeJSON } from "@datalayer/core/lib/client/models/Runtime";
 import { SDKAuthProvider } from "../core/authProvider";
 
 /**
