@@ -48,8 +48,8 @@ jobs:
 
       - name: Generate TypeDoc documentation
         working-directory: datalayer/vscode-datalayer
-        run: npm run doc
+        run: npm run docs
 
       - name: Check documentation coverage
         working-directory: datalayer/vscode-datalayer
-        run: npm run doc:coverage
+        run: npm run docs:coverage

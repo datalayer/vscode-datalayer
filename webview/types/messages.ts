@@ -44,7 +44,8 @@ export interface ThemeChangeMessage {
 export interface KernelSelectedMessage {
   type: "kernel-selected";
   body: {
-    runtime: RuntimeJSON;
+    runtime?: RuntimeJSON;
+    kernelType?: "pyodide" | "remote";
   };
 }
 
@@ -57,7 +58,8 @@ export interface KernelTerminatedMessage {
 export interface RuntimeSelectedMessage {
   type: "runtime-selected";
   body: {
-    runtime: RuntimeJSON;
+    runtime?: RuntimeJSON;
+    kernelType?: "pyodide" | "remote";
   };
 }
 

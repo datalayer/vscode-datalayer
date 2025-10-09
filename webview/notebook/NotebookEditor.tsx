@@ -64,9 +64,12 @@ function NotebookEditorCore(): JSX.Element {
   const containerRef = useRef<HTMLDivElement>(null);
 
   // Runtime management with hook
-  const { selectedRuntime, serviceManager, selectRuntime } = useRuntimeManager(
-    store.selectedRuntime,
-  );
+  const {
+    selectedRuntime,
+    serviceManager,
+    selectRuntime,
+    selectPyodideRuntime,
+  } = useRuntimeManager(store.selectedRuntime);
 
   // Notebook model management
   const { handleNotebookModelChanged, getNotebookData, markClean } =
@@ -172,9 +175,29 @@ function NotebookEditorCore(): JSX.Element {
         case "runtime-selected":
         case "kernel-selected": {
           const { body } = message;
-          if (body?.runtime) {
+          console.log("[NotebookEditor] Kernel selected:", body);
+
+          if (body?.kernelType === "pyodide") {
+            // Switch to Pyodide kernel
+            console.log("[NotebookEditor] Switching to Pyodide kernel");
+            selectPyodideRuntime().catch((error) => {
+              console.error(
+                "[NotebookEditor] Failed to switch to Pyodide kernel:",
+                error,
+              );
+            });
+          } else if (body?.runtime) {
+            // Switch to remote runtime
+            console.log(
+              "[NotebookEditor] Switching to remote runtime:",
+              body.runtime.ingress,
+            );
             selectRuntime(body.runtime);
             store.setRuntime(body.runtime);
+          } else {
+            console.warn(
+              "[NotebookEditor] kernel-selected with no runtime or kernelType",
+            );
           }
           break;
         }
@@ -245,7 +268,14 @@ function NotebookEditorCore(): JSX.Element {
       handleMessage as (message: unknown) => void,
     );
     return () => disposable.dispose();
-  }, [messageHandler, store, selectRuntime, getNotebookData, markClean]);
+  }, [
+    messageHandler,
+    store,
+    selectRuntime,
+    selectPyodideRuntime,
+    getNotebookData,
+    markClean,
+  ]);
 
   // Sync colormode with theme changes
   useEffect(() => {

@@ -14,6 +14,7 @@
 import { ServiceManager } from "@jupyterlab/services";
 import { createServiceManager } from "./serviceManager";
 import { createMockServiceManager } from "./mockServiceManager";
+import { createLiteServiceManager } from "@datalayer/jupyter-react";
 
 /**
  * Type guard to check if service manager has a dispose method
@@ -124,6 +125,80 @@ export class MutableServiceManager {
 
     // Notify listeners
     this._listeners.forEach((listener) => listener());
+  }
+
+  /**
+   * Switch to Pyodide service manager for offline execution.
+   * Uses JupyterLite with Pyodide kernel from @datalayer/jupyter-react package.
+   */
+  async updateToPyodide(): Promise<void> {
+    console.log("[MutableServiceManager] Switching to Pyodide service manager");
+
+    // Dispose old service manager if it has a dispose method
+    if (this._serviceManager && hasDispose(this._serviceManager)) {
+      const oldSm = this._serviceManager;
+      try {
+        // Add a small delay to allow any pending operations to complete
+        setTimeout(() => {
+          try {
+            oldSm.dispose();
+          } catch (error) {
+            console.error(
+              "[MutableServiceManager] Error during delayed disposal:",
+              error,
+            );
+          }
+        }, 50);
+      } catch (error) {
+        console.error(
+          "[MutableServiceManager] Error disposing service manager:",
+          error,
+        );
+        // Continue with Pyodide setup anyway
+      }
+    }
+
+    // Create Pyodide service manager using package export
+    try {
+      this._serviceManager = await createLiteServiceManager();
+      console.log(
+        "[MutableServiceManager] Switched to Pyodide service manager successfully",
+      );
+    } catch (error) {
+      console.error(
+        "[MutableServiceManager] Failed to create Pyodide service manager:",
+        error,
+      );
+      // Fallback to mock on error
+      this._serviceManager = createMockServiceManager();
+      throw error;
+    }
+
+    // Notify listeners that the service manager has changed
+    this._listeners.forEach((listener) => listener());
+  }
+
+  /**
+   * Check if currently using Pyodide service manager.
+   */
+  isPyodide(): boolean {
+    return (
+      (this._serviceManager as { __NAME__?: string }).__NAME__ ===
+      "LiteServiceManager"
+    );
+  }
+
+  /**
+   * Get the current service manager type for debugging.
+   */
+  getType(): string {
+    if (isMockServiceManager(this._serviceManager)) {
+      return "mock";
+    }
+    if (this.isPyodide()) {
+      return "pyodide";
+    }
+    return "remote";
   }
 
   /**

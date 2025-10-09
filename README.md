@@ -55,8 +55,15 @@ Edit Jupyter Notebooks (`.ipynb`) and Lexical documents (`.lexical`) with seamle
 ### VS Code Integration
 
 - Documents match your VS Code theme automatically
-- Kernel picker supports Datalayer, local Python, and Jupyter servers
+- Kernel picker supports Datalayer, local Python, Jupyter servers, and Pyodide (offline)
 - Status bar shows connection and runtime info
+
+### Offline Execution (Experimental)
+
+- **Pyodide Kernel**: Run Python code entirely in your browser (no server needed)
+- **Zero Setup**: No local Python installation required
+- **Works Offline**: Execute notebooks without internet connection
+- **Full Notebook Support**: Works with both custom editor notebooks and Lexical documents
 
 ## Installation
 
@@ -141,6 +148,13 @@ Open settings (`Ctrl+,` / `Cmd+,`) and search "Datalayer":
 
 ## Recent Updates (January 2025)
 
+### Pyodide Integration (Experimental - In Progress)
+
+- **Phase 1 Complete**: Webview integration for Pyodide kernel support
+- **Browser-Based Execution**: Run Python code entirely in-browser with zero server dependencies
+- **Offline Capability**: Execute notebooks without internet connection
+- **Next Steps**: Native notebook integration and kernel picker UI
+
 ### Runtime Controller Improvements
 
 - **Smart Runtime Switching**: Kernel picker now shows individual runtime controllers for seamless switching between cloud environments
@@ -161,10 +175,11 @@ Open settings (`Ctrl+,` / `Cmd+,`) and search "Datalayer":
 
 ## Developer Resources
 
-- [DEVELOPMENT.md](./DEVELOPMENT.md) - Setup, debugging, architecture
-- [CONTRIBUTING.md](./CONTRIBUTING.md) - Contribution guidelines
-- [TESTING.md](./TESTING.md) - Test infrastructure (41 tests, 100% pass)
+- [DEVELOPMENT.md](./dev/docs/DEVELOPMENT.md) - Setup, debugging, architecture
+- [CONTRIBUTING.md](./dev/docs/CONTRIBUTING.md) - Contribution guidelines
+- [TESTING.md](./dev/docs/TESTING.md) - Test infrastructure (41 tests, 100% pass)
 - [CHANGELOG.md](./CHANGELOG.md) - Version history
+- [Pyodide Integration](./dev/docs/PYODIDE.md) - Offline Python execution details
 
 ## Support & Community
 
