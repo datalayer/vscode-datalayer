@@ -59,12 +59,15 @@ export function useRuntimeManager(initialRuntime?: RuntimeJSON) {
     RuntimeJSON | undefined
   >(initialRuntime);
 
+  const [kernelName, setKernelName] = useState<string | undefined>(undefined);
+
   /**
    * Select a runtime and update the underlying service manager.
    * The MutableServiceManager reference stays stable - no component re-renders!
    */
   const selectRuntime = useCallback((runtime: RuntimeJSON | undefined) => {
     setSelectedRuntime(runtime);
+    setKernelName(undefined); // Clear kernel name when using runtime
 
     if (runtime?.ingress) {
       // Update underlying service manager (reference stays stable)
@@ -83,10 +86,17 @@ export function useRuntimeManager(initialRuntime?: RuntimeJSON) {
    * The MutableServiceManager reference stays stable - no component re-renders!
    */
   const selectPyodideRuntime = useCallback(async () => {
+    console.log("[useRuntimeManager] Switching to Pyodide...");
     setSelectedRuntime(undefined); // Clear runtime info since Pyodide is local
 
-    // Update underlying service manager to Pyodide (reference stays stable)
+    // CRITICAL: Update service manager FIRST, THEN set kernel name
+    // This prevents race condition where Notebook2 remounts with old service manager
     await mutableManagerRef.current?.updateToPyodide();
+
+    console.log(
+      "[useRuntimeManager] Pyodide service manager ready, setting kernel name",
+    );
+    setKernelName("Pyodide"); // Set kernel name for toolbar display AFTER service manager is ready
   }, []);
 
   // Return the proxy for seamless integration
@@ -100,6 +110,7 @@ export function useRuntimeManager(initialRuntime?: RuntimeJSON) {
 
   return {
     selectedRuntime,
+    kernelName,
     serviceManager: serviceManagerProxy.current, // ✅ Stable reference - no Notebook2 re-renders!
     selectRuntime,
     selectPyodideRuntime,

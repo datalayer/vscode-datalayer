@@ -244,6 +244,11 @@ const webviewConfig = {
           from: "node_modules/@vscode/codicons/dist/codicon.ttf",
           to: "codicon.ttf",
         },
+        // Copy Pyodide files for local bundling (essential files only)
+        {
+          from: "node_modules/pyodide/*.{js,wasm,json,zip,mjs,map}",
+          to: "pyodide/[name][ext]",
+        },
       ],
     }),
   ],

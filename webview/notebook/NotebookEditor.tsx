@@ -85,6 +85,7 @@ function NotebookEditorCore({
   // Runtime management with hook
   const {
     selectedRuntime,
+    kernelName,
     serviceManager,
     selectRuntime,
     selectPyodideRuntime,
@@ -405,6 +406,7 @@ function NotebookEditorCore({
         notebookId={documentId || notebookId}
         isDatalayerNotebook={isDatalayerNotebook}
         selectedRuntime={selectedRuntime}
+        kernelName={kernelName}
       />
 
       <Box
@@ -429,11 +431,11 @@ function NotebookEditorCore({
             // @ts-ignore - Type mismatch between @jupyterlab/services versions
             serviceManager={serviceManager}
             collaborationProvider={collaborationProvider}
-            // Start kernel when we have a real runtime selected
+            // Start kernel when we have a runtime OR when using Pyodide
             // Collaboration and execution are orthogonal:
             // - collaborationProvider syncs notebook content with Datalayer platform
-            // - serviceManager + kernel handles cell execution (same for local and remote)
-            startDefaultKernel={!!selectedRuntime}
+            // - serviceManager + kernel handles cell execution (same for local/remote/Pyodide)
+            startDefaultKernel={!!selectedRuntime || !!kernelName}
             height={notebookHeight}
             cellSidebarMargin={cellSidebarMargin}
             extensions={extensions}

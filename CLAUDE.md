@@ -25,17 +25,22 @@
 
 ## 📋 Recent Changes (Last 60 Days)
 
-### Pyodide Phase 1 Complete (January 2025)
+### Pyodide Integration (January 2025)
 
 **What**: Browser-based Python execution (offline, zero setup)
-**Status**: Webview integration complete
+**Status**: ✅ Working - Code executes, outputs display, execution counts increment
 
 **Key Changes**:
 
-- `MutableServiceManager`: Added `updateToPyodide()`, `isPyodide()`, `getType()`
-- Message protocol: `KernelSelectedMessage` supports `kernelType: "pyodide" | "remote"`
-- `useRuntimeManager`: Added `selectPyodideRuntime()` function
-- `KernelBridge`: Added `connectWebviewWithPyodide()` method
+- `PyodideInlineKernel`: Blob URL worker with inline asm.js loading
+- Message protocol: Execute input, parent_header filtering, property setters
+- Output isolation: Each cell receives only its own execution messages
+- Execution counts: Proper `[1]:`, `[2]:` display via execute_input messages
+
+**Known Issues**:
+
+- ⚠️ Output formatting (line breaks, streaming) needs refinement
+- No syntax highlighting in outputs yet
 
 **Details**: See [`dev/docs/PYODIDE.md`](./dev/docs/PYODIDE.md)
 

@@ -339,53 +339,72 @@ The editor is encapsulated within an iframe. All communications between the edit
 3. **Extension Processing**: The extension deserializes and makes actual network requests
 4. **Response Handling**: Responses are serialized and posted back to the webview
 
-### Pyodide Integration (Experimental)
+### Pyodide Integration (Working - January 2025)
 
 The extension supports offline Python execution via Pyodide (Python compiled to WebAssembly):
 
+**Status**: ✅ Code executes, outputs display, execution counts increment
+
 **Architecture:**
 
-1. **MutableServiceManager** (`webview/services/mutableServiceManager.ts`)
-   - Stable wrapper that prevents React re-renders during kernel swaps
-   - `updateToPyodide()`: Switches to browser-based Pyodide kernel
-   - `updateConnection()`: Switches to remote Jupyter server
-   - `resetToMock()`: Switches to mock (no execution)
+1. **PyodideInlineKernel** (`webview/services/pyodideInlineKernel.ts`)
+   - Web Worker created from Blob URL (bypasses CSP)
+   - Pre-fetches pyodide.js (16KB) and pyodide.asm.js (1.1MB) in main thread
+   - Executes scripts via eval in worker context
+   - Overrides fetch() to route all Pyodide resources through main thread
+   - Implements complete Kernel.IKernelConnection interface
 
-2. **Message Protocol** (`webview/types/messages.ts`)
-   - `KernelSelectedMessage` supports `kernelType: "pyodide" | "remote"`
-   - KernelBridge routes messages to appropriate handler
+2. **Message Protocol**
+   - Execute input messages for execution count display
+   - Parent header filtering for output isolation
+   - Property setters for onIOPub/onReply/onStdin (not methods)
+   - Lumino Signal wrappers to drop sender parameter
 
-3. **Webview Components**
-   - `useRuntimeManager` hook provides `selectPyodideRuntime()` function
-   - NotebookEditor and LexicalWebview handle Pyodide kernel selection
-   - Zero re-renders when switching kernels (uses Proxy pattern)
+3. **Key Technical Decisions**
+   - **asm.js required**: Defines `_createPyodideModule` (not optional)
+   - **Blob URL worker**: Only way to bypass VS Code CSP restrictions
+   - **Synchronous future return**: JupyterLab expects immediate future object
+   - **Parent header filtering**: Prevents output cross-contamination between cells
 
-**Implementation Status (Phase 1 - Complete):**
+**Implementation Challenges Solved:**
 
-- ✅ MutableServiceManager Pyodide support
-- ✅ Message protocol updates
-- ✅ Webview integration (notebooks + lexical)
-- ✅ KernelBridge routing
-- ⏳ Native notebook integration (Phase 2)
-- ⏳ Kernel picker UI (Phase 3)
+- ✅ CSP restrictions (Blob URL worker)
+- ✅ Resource loading (fetch override + main thread proxy)
+- ✅ Output display (synchronous future return, property setters)
+- ✅ Execution counts (execute_input messages)
+- ✅ Output isolation (parent_header filtering)
+- ⚠️ Output formatting (line breaks, streaming - work in progress)
 
 **How It Works:**
 
 ```typescript
-// User selects Pyodide kernel
-await kernelBridge.connectWebviewWithPyodide(uri);
+// Main thread: Pre-fetch Pyodide scripts
+Promise.all([
+  fetch(`${pyodideBaseUrl}/pyodide.js`).then(r => r.text()),
+  fetch(`${pyodideBaseUrl}/pyodide.asm.js`).then(r => r.text())
+]).then(([pyodideScript, asmScript]) => {
+  worker.postMessage({ type: "init", pyodideScript, asmScript, baseUrl });
+});
 
-// Webview receives message
-{ type: "kernel-selected", body: { kernelType: "pyodide" } }
+// Worker: Execute scripts and initialize
+eval(asmScript);  // Defines _createPyodideModule
+eval(pyodideScript);  // Defines loadPyodide
+pyodide = await loadPyodide({ indexURL: baseUrl });
 
-// Hook switches to Pyodide
-await selectPyodideRuntime();
+// Execution: Route through worker
+worker.postMessage({ type: "execute", code: "print('Hello')" });
 
-// MutableServiceManager creates Pyodide service manager
-const liteManager = await createLiteServiceManager(); // from @datalayer/jupyter-react
-
-// Notebook continues working with new kernel (no re-render!)
+// Output: Worker sends back stream/execute_result messages
+postMessage({ type: "stream", name: "stdout", text: "Hello\n" });
 ```
+
+**Known Limitations:**
+- Output line breaks need refinement
+- No streaming output during long executions yet
+- No syntax highlighting in outputs
+- No interactive widgets support
+
+See [PYODIDE.md](./PYODIDE.md) for complete implementation history and technical details.
 
 ## Project Structure
 
