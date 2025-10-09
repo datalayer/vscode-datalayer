@@ -34,6 +34,8 @@ export interface NotebookToolbarProps {
   isDatalayerNotebook?: boolean;
   /** Selected runtime information for Datalayer notebooks */
   selectedRuntime?: RuntimeJSON;
+  /** Kernel name (for non-runtime kernels like Pyodide) */
+  kernelName?: string;
 }
 
 /**
@@ -44,6 +46,7 @@ export const NotebookToolbar: React.FC<NotebookToolbarProps> = ({
   notebookId,
   isDatalayerNotebook = false,
   selectedRuntime,
+  kernelName,
 }) => {
   const messageHandler = useContext(MessageHandlerContext);
   const [kernelStatus, setKernelStatus] = useState<string>("disconnected");
@@ -298,6 +301,7 @@ export const NotebookToolbar: React.FC<NotebookToolbarProps> = ({
 
             <KernelSelector
               selectedRuntime={selectedRuntime}
+              kernelName={kernelName}
               kernelStatus={
                 kernelStatus as "idle" | "busy" | "disconnected" | undefined
               }

@@ -37,6 +37,11 @@ export function getNotebookHtml(
     vscode.Uri.joinPath(extensionUri, "dist", "codicon.css"),
   );
 
+  // Get the Pyodide base URI for local Python execution
+  const pyodideBaseUri = webview
+    .asWebviewUri(vscode.Uri.joinPath(extensionUri, "dist", "pyodide"))
+    .toString();
+
   // Use a nonce to whitelist which scripts can be run
   const nonce = getNonce();
 
@@ -171,6 +176,10 @@ export function getNotebookHtml(
 
         <body>
           <div id="notebook-editor"></div>
+          <script nonce="${nonce}">
+            // Provide Pyodide base URI to webview for local Python execution
+            window.__PYODIDE_BASE_URI__ = "${pyodideBaseUri}";
+          </script>
           <script nonce="${nonce}" src="${scriptUri}"></script>
         </body>
 
