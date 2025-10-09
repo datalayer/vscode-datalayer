@@ -48,7 +48,7 @@ npm run lint
 # Zero warnings policy in production code
 
 # Documentation generation
-npm run doc
+npm run docs
 # Must have 100% documentation coverage
 
 # Run all checks
@@ -74,7 +74,7 @@ Before committing any code:
 
 1. `npm run type-check` - Must pass with zero errors
 2. `npm run lint` - Must pass with zero warnings
-3. `npm run doc` - Must generate without errors
+3. `npm run docs` - Must generate without errors
 4. `npm test` - All tests must pass
 
 ## Testing
@@ -245,7 +245,7 @@ export function myFunction(param1: string): string {
 }
 ````
 
-Run `npm run doc` to verify documentation.
+Run `npm run docs` to verify documentation.
 
 ## Architecture Overview
 
@@ -338,6 +338,54 @@ The editor is encapsulated within an iframe. All communications between the edit
 2. **Message Serialization**: Requests are serialized and posted to the extension
 3. **Extension Processing**: The extension deserializes and makes actual network requests
 4. **Response Handling**: Responses are serialized and posted back to the webview
+
+### Pyodide Integration (Experimental)
+
+The extension supports offline Python execution via Pyodide (Python compiled to WebAssembly):
+
+**Architecture:**
+
+1. **MutableServiceManager** (`webview/services/mutableServiceManager.ts`)
+   - Stable wrapper that prevents React re-renders during kernel swaps
+   - `updateToPyodide()`: Switches to browser-based Pyodide kernel
+   - `updateConnection()`: Switches to remote Jupyter server
+   - `resetToMock()`: Switches to mock (no execution)
+
+2. **Message Protocol** (`webview/types/messages.ts`)
+   - `KernelSelectedMessage` supports `kernelType: "pyodide" | "remote"`
+   - KernelBridge routes messages to appropriate handler
+
+3. **Webview Components**
+   - `useRuntimeManager` hook provides `selectPyodideRuntime()` function
+   - NotebookEditor and LexicalWebview handle Pyodide kernel selection
+   - Zero re-renders when switching kernels (uses Proxy pattern)
+
+**Implementation Status (Phase 1 - Complete):**
+
+- ✅ MutableServiceManager Pyodide support
+- ✅ Message protocol updates
+- ✅ Webview integration (notebooks + lexical)
+- ✅ KernelBridge routing
+- ⏳ Native notebook integration (Phase 2)
+- ⏳ Kernel picker UI (Phase 3)
+
+**How It Works:**
+
+```typescript
+// User selects Pyodide kernel
+await kernelBridge.connectWebviewWithPyodide(uri);
+
+// Webview receives message
+{ type: "kernel-selected", body: { kernelType: "pyodide" } }
+
+// Hook switches to Pyodide
+await selectPyodideRuntime();
+
+// MutableServiceManager creates Pyodide service manager
+const liteManager = await createLiteServiceManager(); // from @datalayer/jupyter-react
+
+// Notebook continues working with new kernel (no re-render!)
+```
 
 ## Project Structure
 
@@ -460,16 +508,16 @@ The codebase uses TypeDoc for comprehensive API documentation:
 
 ```bash
 # Generate HTML documentation
-npm run doc
+npm run docs
 
 # Generate markdown documentation
-npm run doc:markdown
+npm run docs:markdown
 
 # Watch mode for development (rebuilds on file changes)
-npm run doc:watch
+npm run docs:watch
 
 # Check documentation coverage
-npm run doc:coverage
+npm run docs:coverage
 ```
 
 ### Output Directories

@@ -147,6 +147,50 @@ export class KernelBridge implements vscode.Disposable {
   }
 
   /**
+   * Connects a webview document (notebook or lexical) to Pyodide kernel.
+   * Sends Pyodide kernel type to the webview for in-browser execution.
+   *
+   * @param uri - Document URI
+   */
+  public async connectWebviewWithPyodide(uri: vscode.Uri): Promise<void> {
+    const key = uri.toString();
+    const webview = this._webviews.get(key);
+
+    if (!webview) {
+      // Try to find webview by searching active panels
+      const allWebviews = this.findWebviewsForUri(uri);
+      if (allWebviews.length === 0) {
+        throw new Error("No webview found for document");
+      }
+      // Use first matching webview
+      const webviewPanel = allWebviews[0];
+      this._webviews.set(key, webviewPanel);
+    }
+
+    const targetWebview = this._webviews.get(key);
+    if (!targetWebview) {
+      throw new Error("Failed to get webview panel for document");
+    }
+
+    // Create message with Pyodide kernel type
+    const message = {
+      type: "kernel-selected",
+      body: {
+        kernelType: "pyodide",
+      },
+    };
+
+    console.log("[KernelBridge] Posting Pyodide kernel-selected message:", {
+      type: message.type,
+      kernelType: message.body.kernelType,
+    });
+
+    // Post message to webview
+    const result = await targetWebview.webview.postMessage(message);
+    console.log("[KernelBridge] postMessage result:", result);
+  }
+
+  /**
    * Detects the type of notebook (native vs webview).
    *
    * @param uri - Notebook URI

@@ -78,6 +78,17 @@ export function useRuntimeManager(initialRuntime?: RuntimeJSON) {
     }
   }, []);
 
+  /**
+   * Switch to Pyodide kernel for offline execution.
+   * The MutableServiceManager reference stays stable - no component re-renders!
+   */
+  const selectPyodideRuntime = useCallback(async () => {
+    setSelectedRuntime(undefined); // Clear runtime info since Pyodide is local
+
+    // Update underlying service manager to Pyodide (reference stays stable)
+    await mutableManagerRef.current?.updateToPyodide();
+  }, []);
+
   // Return the proxy for seamless integration
   // The proxy forwards all property access to the current underlying service manager
   const serviceManagerProxy = useRef<ServiceManager.IManager | null>(null);
@@ -91,5 +102,6 @@ export function useRuntimeManager(initialRuntime?: RuntimeJSON) {
     selectedRuntime,
     serviceManager: serviceManagerProxy.current, // ✅ Stable reference - no Notebook2 re-renders!
     selectRuntime,
+    selectPyodideRuntime,
   };
 }

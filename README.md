@@ -109,6 +109,16 @@
 **How fast is the local ↔ cloud switching?** Switching between local and cloud execution takes just 2 clicks via the kernel picker - no configuration or setup required.
 
 **What makes lexical documents special?** Think Notion meets Jupyter! Unlike traditional notebooks, lexical documents provide a Notion-like editing experience with rich formatting, real-time collaboration, and support for images, tables, and formatted text alongside executable code - perfect for creating professional reports and documentation.
+- Documents match your VS Code theme automatically
+- Kernel picker supports Datalayer, local Python, Jupyter servers, and Pyodide (offline)
+- Status bar shows connection and runtime info
+
+### Offline Execution (Experimental)
+
+- **Pyodide Kernel**: Run Python code entirely in your browser (no server needed)
+- **Zero Setup**: No local Python installation required
+- **Works Offline**: Execute notebooks without internet connection
+- **Full Notebook Support**: Works with both custom editor notebooks and Lexical documents
 
 ## Installation
 
@@ -168,6 +178,13 @@ Open settings (`Ctrl+,` / `Cmd+,`) and search "Datalayer":
 
 ## Recent Updates
 
+### Pyodide Integration (Experimental - In Progress)
+
+- **Phase 1 Complete**: Webview integration for Pyodide kernel support
+- **Browser-Based Execution**: Run Python code entirely in-browser with zero server dependencies
+- **Offline Capability**: Execute notebooks without internet connection
+- **Next Steps**: Native notebook integration and kernel picker UI
+
 ### Runtime Controller Improvements
 
 - **Smart Runtime Switching**: Kernel picker now shows individual runtime controllers for seamless switching between cloud environments
@@ -187,10 +204,11 @@ Open settings (`Ctrl+,` / `Cmd+,`) and search "Datalayer":
 
 ## Developer Resources
 
-- [DEVELOPMENT.md](./DEVELOPMENT.md) - Setup, debugging, architecture
-- [CONTRIBUTING.md](./CONTRIBUTING.md) - Contribution guidelines
-- [TESTING.md](./TESTING.md) - Test infrastructure (41 tests, 100% pass)
+- [DEVELOPMENT.md](./dev/docs/DEVELOPMENT.md) - Setup, debugging, architecture
+- [CONTRIBUTING.md](./dev/docs/CONTRIBUTING.md) - Contribution guidelines
+- [TESTING.md](./dev/docs/TESTING.md) - Test infrastructure (41 tests, 100% pass)
 - [CHANGELOG.md](./CHANGELOG.md) - Version history
+- [Pyodide Integration](./dev/docs/PYODIDE.md) - Offline Python execution details
 
 ## Support & Community
 
