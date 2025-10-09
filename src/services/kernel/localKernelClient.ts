@@ -42,11 +42,6 @@ export class LocalKernelClient {
       throw new Error("LocalKernelClient has been disposed");
     }
 
-    console.log(
-      "[LocalKernelClient] Starting kernel:",
-      this._kernelInfo.displayName,
-    );
-
     // For existing Jupyter servers, we should not be here
     if (this._kernelInfo.type === "jupyter-server") {
       throw new Error(
@@ -68,34 +63,20 @@ export class LocalKernelClient {
     const connection = await this.createConnectionFile();
     this._connectionFile = connection.file;
 
-    console.log("[LocalKernelClient] Connection file:", this._connectionFile);
-    console.log("[LocalKernelClient] Connection config:", connection.config);
-
     // Spawn ipykernel with connection file
     const args = ["-m", "ipykernel_launcher", "-f", this._connectionFile];
-
-    console.log("[LocalKernelClient] Spawning:", pythonPath, args.join(" "));
 
     this._kernelProcess = spawn(pythonPath, args, {
       stdio: ["ignore", "pipe", "pipe"],
       env: { ...process.env },
     });
 
-    // Monitor kernel process output
-    this._kernelProcess.stdout?.on("data", (data) => {
-      console.log(`[Kernel stdout] ${data.toString()}`);
-    });
-
+    // Monitor kernel process output (errors only)
     this._kernelProcess.stderr?.on("data", (data) => {
       console.error(`[Kernel stderr] ${data.toString()}`);
     });
 
-    this._kernelProcess.on("exit", (code, signal) => {
-      console.log(
-        `[LocalKernelClient] Kernel process exited: code=${code}, signal=${signal}`,
-      );
-      this.dispose();
-    });
+    this._kernelProcess.on("exit", (_code, _signal) => {});
 
     this._kernelProcess.on("error", (err) => {
       console.error("[LocalKernelClient] Kernel process error:", err);
@@ -108,37 +89,12 @@ export class LocalKernelClient {
     const clientId = crypto.randomBytes(16).toString("hex");
     const username = "datalayer";
 
-    console.log("[LocalKernelClient] Creating raw kernel connection...");
-
     const { realKernel } = createRawKernel(
       connection.config,
       clientId,
       username,
     );
     this._realKernel = realKernel;
-
-    // Monitor kernel status (check if signals exist)
-    if (
-      this._realKernel &&
-      "statusChanged" in this._realKernel &&
-      this._realKernel.statusChanged
-    ) {
-      this._realKernel.statusChanged.connect((_, status) => {
-        console.log(`[LocalKernelClient] Kernel status: ${status}`);
-      });
-    }
-
-    if (
-      this._realKernel &&
-      "iopubMessage" in this._realKernel &&
-      this._realKernel.iopubMessage
-    ) {
-      this._realKernel.iopubMessage.connect((_, msg) => {
-        console.log(`[LocalKernelClient] IOPub message:`, msg.header.msg_type);
-      });
-    }
-
-    console.log("[LocalKernelClient] Kernel connection established!");
   }
 
   /**
@@ -202,22 +158,7 @@ export class LocalKernelClient {
       throw new Error("Kernel not started");
     }
 
-    console.log("[LocalKernelClient] Executing code:", code);
-
     const future = this._realKernel.requestExecute({ code });
-
-    future.onIOPub = (msg) => {
-      console.log(
-        "[LocalKernelClient] Execute IOPub:",
-        msg.header.msg_type,
-        msg.content,
-      );
-    };
-
-    future.onReply = (msg) => {
-      console.log("[LocalKernelClient] Execute reply:", msg.content);
-    };
-
     await future.done;
   }
 
@@ -262,7 +203,6 @@ export class LocalKernelClient {
       throw new Error("Kernel not started");
     }
 
-    console.log("[LocalKernelClient] Restarting kernel...");
     await this._realKernel.restart();
   }
 
@@ -273,8 +213,6 @@ export class LocalKernelClient {
     if (!this._kernelProcess || !this._kernelProcess.pid) {
       throw new Error("Kernel process not running");
     }
-
-    console.log("[LocalKernelClient] Interrupting kernel...");
 
     // Send SIGINT to kernel process
     process.kill(this._kernelProcess.pid, "SIGINT");
@@ -287,8 +225,6 @@ export class LocalKernelClient {
     if (this._disposed) {
       return;
     }
-
-    console.log("[LocalKernelClient] Disposing kernel client");
 
     this._disposed = true;
 

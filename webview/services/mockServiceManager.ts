@@ -44,6 +44,7 @@ import type { ServiceManager, ServerConnection } from "@jupyterlab/services";
 export function createMockServiceManager(): ServiceManager.IManager {
   const mockServiceManager = {
     __isMockServiceManager: true, // Flag to identify mock service manager
+    managerType: "mock" as const, // Type identifier for factory
     ready: Promise.resolve(),
     isReady: true,
     disposed: { connect: () => {}, disconnect: () => {} },

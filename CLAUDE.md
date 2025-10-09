@@ -1,35 +1,102 @@
-# Datalayer VS Code Extension - Developer Context
+# Datalayer VS Code Extension - AI Assistant Context
 
-**Last Updated**: January 2025
+**Last Updated**: October 2025
+**Purpose**: Concise quick-start context. For details, see `dev/docs/`
 
-## Critical Recent Changes
+## 🚨 Critical Warnings
 
-### Smart Controller Registration - DISABLED (January 2025)
+### 1. SmartDynamicControllerManager - DISABLED
 
-**Status**: The `SmartDynamicControllerManager` is **intentionally disabled**
-**Location**: `src/services/ui/uiSetup.ts:85`
-**Reason**: Native notebook controller integration needs improvement before re-enabling
+- **Location**: `src/services/ui/uiSetup.ts:85`
+- **Code**: `const controllerManager = null as unknown as SmartDynamicControllerManager;`
+- **Why**: Native notebook controller needs improvement before re-enabling
 
-```typescript
-// Disabled in uiSetup.ts
-const controllerManager = null as unknown as SmartDynamicControllerManager;
+### 2. Spacer API Import Pattern
+
+❌ **NEVER**: `import { items } from '../../../api/spacer';`
+✅ **ALWAYS**: `import * as spacerAPI from '../../../api/spacer';`
+**Why**: Webpack bundling causes runtime errors with destructured imports
+
+### 3. Node.js Version (STRICT)
+
+- **Required**: Node.js 20.x (NOT 22, NOT latest)
+- **Files**: `.nvmrc`, `.node-version` = `20.18.0`
+- **Why**: Matches VS Code 1.98.0 runtime environment
+
+## 📋 Recent Changes (Last 60 Days)
+
+### Pyodide Integration (November 2025)
+
+**What**: Browser-based Python execution (offline, zero setup)
+**Status**: ✅ Production-ready - Complete with TypeScript strict mode compliance and no duplicate outputs
+
+**Key Changes**:
+
+- `PyodideInlineKernel`: Blob URL worker with inline asm.js loading
+- Message protocol: Execute input, parent_header filtering, property setters
+- Output isolation: Each cell receives only its own execution messages
+- Execution counts: Proper `[1]:`, `[2]:` display via execute_input messages
+- **JupyterLite callback pattern**: Eliminated duplicate outputs completely
+- **Code organization**: Python module in `.py` file, reduced main file by 582 lines (41%)
+- **sys.path configuration**: Added `/` to Python path for module imports
+
+**Package Preloading**:
+
+The extension can automatically download common Python packages on startup:
+
+- **Configuration**: `datalayer.pyodide.preloadBehavior`
+  - `ask-once` (default): Prompt once on first use
+  - `ask-always`: Prompt every time packages aren't cached
+  - `auto`: Download automatically without prompting
+  - `disabled`: Never preload packages
+- **Package List**: `datalayer.pyodide.preloadPackages` (24 packages by default)
+- **Cache Management**: Command `datalayer.pyodide.clearCache` clears IndexedDB and resets prompt state
+
+**Technical Achievements**:
+
+- ✅ Output formatting (line breaks, streaming) working perfectly
+- ✅ IAnyMessageArgs message unwrapping for TypeScript compliance
+- ✅ Package preloading with flexible behavior modes
+- ✅ **No duplicate outputs** - JupyterLite callback pattern implemented
+- ✅ **Clean architecture** - Python in `.py`, worker in `.ts`, main kernel in `.ts`
+- ✅ **Type safety** - Modern Python type hints with `from __future__ import annotations`
+- ⚠️ No syntax highlighting in outputs yet (minor)
+
+**Details**: See [`dev/docs/PYODIDE.md`](./dev/docs/PYODIDE.md)
+
+## 🏗️ Quick Architecture
+
+```
+src/               # Extension (Node.js 20)
+├── commands/      # Command handlers
+├── services/      # Business logic (bridges/, core/, logging/)
+└── providers/     # VS Code APIs (tree views, custom editors)
+
+webview/           # React 18 UI
+├── notebook/      # Jupyter editor
+├── lexical/       # Rich text editor
+├── services/      # MutableServiceManager, messageHandler
+└── hooks/         # useRuntimeManager (kernel hot-swap)
 ```
 
-All code properly handles the null case with optional chaining (`controllerManager?.`) or explicit null checks.
+### Key Patterns
 
-### Runtime Tree View Refresh Fix (January 2025)
-
-**Issue**: Tree view wasn't refreshing after "terminate all runtimes"
-**Fix**: Added 500ms delay before refresh to allow server-side processing
-**Files**: `src/commands/runtimes.ts:601, 686`
+**MutableServiceManager**: Hot-swap kernels without re-render
 
 ```typescript
-// Wait for server to process deletions
-await new Promise((resolve) => setTimeout(resolve, 500));
-runtimesTreeProvider?.refresh();
+await mutableServiceManager.updateToPyodide(); // Browser kernel
+mutableServiceManager.updateConnection(url, token); // Remote kernel
+mutableServiceManager.resetToMock(); // No execution
 ```
 
-## Quick Start
+**Singleton Services**: Use `getInstance()`
+
+- LoggerManager, EnvironmentCache, DocumentBridge
+- NotebookRuntimeService, LexicalCollaborationService, StatusBar
+
+## 🔧 Essential Commands
+
+### Quality Checks (Run Before Commit!)
 
 ```bash
 # Setup
@@ -406,62 +473,53 @@ This organization provides clear separation of concerns and makes it easy to und
 
 ### Code Quality
 
+npm run format # Prettier
+npm run lint # ESLint (0 warnings required)
+npm run type-check # TypeScript (0 errors required)
+npm run docs # TypeDoc (100% coverage required)
+npm test # All 41 tests must pass
+
+````
+
+### Development
+
 ```bash
-npm run lint        # ESLint
-npm run type-check  # TypeScript checking
+npm run watch       # Start watch mode
+# Press F5 to launch Extension Development Host
 npm run compile     # Build extension
-npm run doc         # Documentation
-```
+npm run vsix        # Create .vsix package
+````
 
-### SDK Usage Pattern (January 2025)
+## 📚 Detailed Documentation
 
-**IMPORTANT**: The extension now uses the Datalayer SDK directly with handlers for VS Code-specific behavior.
+**Core Docs** (root):
 
-```typescript
-// In sdkAdapter.ts - SDK configured with VS Code handlers
-const sdk = new DatalayerClient({
-  token: authProvider.getToken(),
-  handlers: {
-    beforeCall: (methodName, args) => {
-      console.log(`[SDK] Calling ${methodName}`, args);
-    },
-    onError: async (methodName, error) => {
-      if (error.message.includes("Not authenticated")) {
-        const action = await vscode.window.showErrorMessage(
-          "Authentication required. Please login to Datalayer.",
-          "Login",
-        );
-        if (action === "Login") {
-          vscode.commands.executeCommand("datalayer.login");
-        }
-      }
-    },
-  },
-});
+- [README.md](./README.md) - User guide
+- [CHANGELOG.md](./CHANGELOG.md) - Version history
+- [RELEASE.md](./RELEASE.md) - Release process
 
-// Usage throughout extension - no casts needed anymore
-const notebooks = await sdk.listNotebooks();
-const runtime = await sdk.ensureRuntime();
-```
+**Developer Docs** (`dev/docs/`):
 
-### Service Layer Removal
+- [ARCHITECTURE.md](./dev/docs/ARCHITECTURE.md) - Complete architecture patterns
+- [DEVELOPMENT.md](./dev/docs/DEVELOPMENT.md) - Setup, debugging, workflows
+- [TESTING.md](./dev/docs/TESTING.md) - Test infrastructure (41 tests)
+- [CONTRIBUTING.md](./dev/docs/CONTRIBUTING.md) - Contribution guidelines
+- [PYODIDE.md](./dev/docs/PYODIDE.md) - Pyodide integration details
 
-**Removed Services** (January 2025):
+## 🔥 Common Gotchas
 
-- ❌ `spacerService.ts` - Deleted, use SDK directly
-- ❌ `runtimeService.ts` - Deleted, use SDK directly
+1. **Add Cell**: Use `NotebookActions.insertBelow(widget)` NOT commands/store
+2. **Icons missing**: Check codicon font loading
+3. **No webview found**: Pass existing KernelBridge instance
+4. **Re-renders on runtime change**: Use MutableServiceManager pattern
+5. **Module specifier error**: Post-build script should fix CSS imports
 
-These services were wrapping every SDK method 1:1 just for logging. Now handled by SDK handlers pattern.
+## 📊 Current State
 
-### Important Notes
+**Version**: 0.0.4
+**Quality**: 41/41 tests passing, 0 lint warnings, 0 type errors, 100% doc coverage
 
-- **NO EMOJIS** in code, comments, or documentation
-- Always check for existing runtimes before creating new ones
-- Use actual API field names (e.g., `ingress` not `jupyter_base_url`)
-- Maintain JSDoc comments for all exported functions
-- Use FormData for notebook/lexical creation, JSON for other endpoints
-- All cross-cutting concerns (logging, error handling) go in SDK handlers, not wrapper services
-- SDK interface is now complete - no type casts needed
+**Known Limitations**:
 
 ### Notebook Cell Management
 
@@ -681,6 +739,10 @@ All workflows run on every push to main and on PRs:
 3. **Type Check**: TypeScript compilation with strict mode
 4. **Documentation**: TypeDoc generation and Netlify deployment
 
+- Smart Controller disabled
+- WebSocket uses older Jupyter protocol
+- Cloud documents read-only
+
 ---
 
-_Last Updated: January 2025_
+_Keep this file under 300 lines. Archive older changes to `dev/docs/HISTORICAL_CHANGES.md`_

@@ -204,6 +204,16 @@ const webviewConfig = {
           filename: "[name][ext]",
         },
       },
+      // Rule for Python files (load as raw text)
+      {
+        test: /\.py$/,
+        type: "asset/source",
+      },
+      // Rule for worker JavaScript files (load as raw text)
+      {
+        test: /\.worker\.js$/,
+        type: "asset/source",
+      },
       // Rule for pyodide kernel wheel files
       {
         test: /\.whl$/,
@@ -322,6 +332,11 @@ const lexicalWebviewConfig = {
       {
         test: /\.wasm$/,
         type: "webassembly/async",
+      },
+      // Rule for Python files (load as raw text)
+      {
+        test: /\.py$/,
+        type: "asset/source",
       },
       // Rule for pyodide kernel wheel files
       {

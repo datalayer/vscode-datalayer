@@ -96,30 +96,16 @@ export class OutlineTreeProvider
     items: OutlineItem[],
     activeItemId?: string,
   ): void {
-    console.log("[OutlineTreeProvider] updateOutline called", {
-      documentUri,
-      itemCount: items.length,
-      activeItemId,
-      activeDocumentUri: this.activeDocumentUri,
-      items: items
-        .slice(0, 3)
-        .map((i) => ({ id: i.id, label: i.label, type: i.type })),
-    });
-
     this.outlineData.set(documentUri, items);
     this.activeItemId = activeItemId;
 
     // CRITICAL: When receiving outline update, set this document as active
     // This handles the case where VS Code reuses the same webview panel for different documents
     if (this.activeDocumentUri !== documentUri) {
-      console.log(
-        "[OutlineTreeProvider] Outline update for different document, updating active document",
-      );
       this.activeDocumentUri = documentUri;
     }
 
     // Always refresh when outline data changes
-    console.log("[OutlineTreeProvider] Firing tree refresh event");
     this._onDidChangeTreeData.fire();
   }
 
@@ -128,20 +114,10 @@ export class OutlineTreeProvider
    * Called when user switches between editors.
    */
   public setActiveDocument(uri: string | undefined): void {
-    console.log("[OutlineTreeProvider] setActiveDocument called", {
-      oldUri: this.activeDocumentUri,
-      newUri: uri,
-    });
-
     if (this.activeDocumentUri !== uri) {
       this.activeDocumentUri = uri;
       this.activeItemId = undefined;
-      console.log(
-        "[OutlineTreeProvider] Active document changed, refreshing tree",
-      );
       this._onDidChangeTreeData.fire();
-    } else {
-      console.log("[OutlineTreeProvider] Active document unchanged");
     }
   }
 
@@ -188,39 +164,21 @@ export class OutlineTreeProvider
    * Get children for tree hierarchy.
    */
   getChildren(element?: OutlineTreeItem): OutlineTreeItem[] {
-    console.log("[OutlineTreeProvider] getChildren called", {
-      hasElement: !!element,
-      elementLabel: element?.item.label,
-      activeDocumentUri: this.activeDocumentUri,
-      hasOutlineData: this.outlineData.size > 0,
-      outlineDataKeys: Array.from(this.outlineData.keys()),
-    });
-
     if (!this.activeDocumentUri) {
-      console.log("[OutlineTreeProvider] No active document, returning empty");
       return [];
     }
 
     const items = this.outlineData.get(this.activeDocumentUri);
-    console.log("[OutlineTreeProvider] Retrieved items for active document", {
-      itemCount: items?.length || 0,
-      items: items?.slice(0, 3).map((i) => ({ id: i.id, label: i.label })),
-    });
 
     if (!items) {
-      console.log("[OutlineTreeProvider] No items found for active document");
       return [];
     }
 
     if (!element) {
       // Root level
-      const rootItems = items.map(
+      return items.map(
         (item) => new OutlineTreeItem(item, item.id === this.activeItemId),
       );
-      console.log("[OutlineTreeProvider] Returning root items", {
-        count: rootItems.length,
-      });
-      return rootItems;
     }
 
     // Children of an element

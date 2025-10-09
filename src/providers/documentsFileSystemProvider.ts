@@ -391,6 +391,44 @@ export class DatalayerFileSystemProvider implements vscode.FileSystemProvider {
   }
 
   /**
+   * Update the virtual URI mapping without moving the real file.
+   * Used when a document is renamed externally (e.g., via SDK API).
+   *
+   * @param oldUri - The current virtual URI
+   * @param newUri - The new virtual URI
+   */
+  updateMapping(oldUri: vscode.Uri, newUri: vscode.Uri): void {
+    const realPath = this.getRealPath(oldUri);
+
+    if (!realPath) {
+      // No mapping exists, nothing to update
+      return;
+    }
+
+    // Update the mappings to point to the new URI
+    this.virtualToReal.delete(oldUri.toString());
+    this.virtualToReal.set(newUri.toString(), realPath);
+    this.realToVirtual.set(realPath, newUri);
+
+    // Persist the change
+    this.saveMappings();
+  }
+
+  /**
+   * Fire rename event to notify VS Code of virtual URI change.
+   * Causes VS Code to update tab titles for open documents.
+   *
+   * @param oldUri - The previous virtual URI
+   * @param newUri - The new virtual URI
+   */
+  fireRename(oldUri: vscode.Uri, newUri: vscode.Uri): void {
+    this._emitter.fire([
+      { type: vscode.FileChangeType.Deleted, uri: oldUri },
+      { type: vscode.FileChangeType.Created, uri: newUri },
+    ]);
+  }
+
+  /**
    * Clean up all mappings.
    */
   dispose(): void {

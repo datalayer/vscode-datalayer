@@ -7,6 +7,19 @@ lib/
 # Dependencies
 node_modules/
 
+# Pyodide distribution (loaded from CDN, not bundled)
+# Only ignore Pyodide CDN files, not our source code in webview/services/pyodide/
+pyodide.js
+pyodide.asm.js
+/pyodide/
+public/pyodide/
+dist/pyodide/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
 # IDE
 .vscode-test/
 *.suo
@@ -29,10 +42,10 @@ Thumbs.db
 .env
 .env.local
 
-# Documentation (auto-generated)
-docs/
-docs-html/
-docs-markdown/
+# Documentation (auto-generated TypeDoc output)
+/docs/
+/docs-html/
+/docs-markdown/
 
 # Code coverage
 coverage/

@@ -45,7 +45,8 @@ export interface ThemeChangeMessage {
 export interface KernelSelectedMessage {
   type: "kernel-selected";
   body: {
-    runtime: RuntimeJSON;
+    runtime?: RuntimeJSON;
+    kernelType?: "pyodide" | "remote";
   };
 }
 
@@ -58,7 +59,8 @@ export interface KernelTerminatedMessage {
 export interface RuntimeSelectedMessage {
   type: "runtime-selected";
   body: {
-    runtime: RuntimeJSON;
+    runtime?: RuntimeJSON;
+    kernelType?: "pyodide" | "remote";
   };
 }
 
@@ -119,6 +121,11 @@ export interface OutlineNavigateMessage {
   itemId: string;
 }
 
+/** Command to clear all cell outputs */
+export interface ClearAllOutputsCommandMessage {
+  type: "clear-all-outputs-command";
+}
+
 /**
  * Union of all Extension → Webview messages
  */
@@ -139,7 +146,8 @@ export type ExtensionToWebviewMessage =
   | HttpResponseMessage
   | RuntimeExpiredMessage
   | LLMCompletionResponseMessage
-  | OutlineNavigateMessage;
+  | OutlineNavigateMessage
+  | ClearAllOutputsCommandMessage;
 
 /**
  * Webview → Extension Messages
@@ -285,6 +293,18 @@ export interface OutlineUpdateMessage {
   activeItemId?: string; // Currently focused/selected item
 }
 
+/** Request to clear all outputs */
+export interface ClearAllOutputsMessage {
+  type: "clear-all-outputs";
+  body: Record<string, never>;
+}
+
+/** Request to open outline view */
+export interface OpenOutlineMessage {
+  type: "open-outline";
+  body: Record<string, never>;
+}
+
 /**
  * Union of all Webview → Extension messages
  */
@@ -301,7 +321,9 @@ export type WebviewToExtensionMessage =
   | HttpRequestMessage
   | WebviewErrorMessage
   | LLMCompletionRequestMessage
-  | OutlineUpdateMessage;
+  | OutlineUpdateMessage
+  | ClearAllOutputsMessage
+  | OpenOutlineMessage;
 
 /**
  * Bidirectional message type (for backward compatibility)

@@ -67,6 +67,14 @@ export interface IKernelBridge {
   ): Promise<void>;
 
   /**
+   * Connects a webview document (notebook or lexical) to Pyodide kernel.
+   * Sends Pyodide kernel type to the webview for in-browser execution.
+   *
+   * @param uri - Document URI
+   */
+  connectWebviewWithPyodide(uri: vscode.Uri): Promise<void>;
+
+  /**
    * Detects the type of notebook (native vs webview).
    *
    * @param uri - Notebook URI

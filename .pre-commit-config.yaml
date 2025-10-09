@@ -1,0 +1,43 @@
+# Pre-commit hooks for Python code quality
+# Install: pip install pre-commit
+# Setup: pre-commit install
+# Run manually: pre-commit run --all-files
+
+repos:
+  # Python linting and formatting with Ruff (replaces Black, isort, flake8, pylint)
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.7.4
+    hooks:
+      - id: ruff
+        name: Lint Python with Ruff
+        args: ['--fix']
+        files: \.py$
+      - id: ruff-format
+        name: Format Python with Ruff
+        files: \.py$
+
+  # Python type checking with mypy
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.13.0
+    hooks:
+      - id: mypy
+        name: Type check Python with mypy
+        files: \.py$
+        # Allow missing imports since this is Pyodide code with special imports
+        args: ['--ignore-missing-imports', '--python-version=3.11']
+        additional_dependencies: []
+
+  # Python-specific file cleanup
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: trailing-whitespace
+        name: Trim trailing whitespace from Python files
+        files: \.py$
+      - id: end-of-file-fixer
+        name: Fix end of Python files
+        files: \.py$
+      - id: mixed-line-ending
+        name: Fix mixed line endings in Python files
+        args: ['--fix=lf']
+        files: \.py$

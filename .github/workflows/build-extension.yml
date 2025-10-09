@@ -26,10 +26,7 @@ jobs:
   build-and-test:
     name: Build & Test on ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
-    outputs:
-      artifact-name: ${{ steps.version-info.outputs.artifact-name }}
     permissions:
-      contents: read # Required for actions/checkout
       pull-requests: write # Required to post PR comments
     strategy:
       fail-fast: false

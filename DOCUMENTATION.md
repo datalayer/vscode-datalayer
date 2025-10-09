@@ -23,21 +23,21 @@ We use `typedoc-plugin-coverage` to track documentation completeness. This provi
 
 ```bash
 # Generate HTML documentation with coverage
-npm run doc
+npm run docs
 
 # Generate Markdown documentation
-npm run doc:markdown
+npm run docs:markdown
 
 # Check documentation coverage only (validation mode)
-npm run doc:coverage
+npm run docs:coverage
 
 # Watch mode for development
-npm run doc:watch
+npm run docs:watch
 ```
 
 ## Coverage Reports
 
-When you run `npm run doc`, the following files are generated:
+When you run `npm run docs`, the following files are generated:
 
 - `docs/coverage.json` - Machine-readable coverage data
 - `docs/coverage.svg` - Coverage badge for README files

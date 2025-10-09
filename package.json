@@ -169,6 +169,11 @@
         "category": "Datalayer"
       },
       {
+        "command": "datalayer.pyodide.clearCache",
+        "title": "Clear Pyodide Package Cache",
+        "category": "Datalayer"
+      },
+      {
         "command": "datalayer.selectRuntime",
         "title": "Select/Switch Runtime",
         "category": "Datalayer"
@@ -654,6 +659,77 @@
           "type": "boolean",
           "default": false,
           "description": "Enable performance monitoring with timing and memory usage tracking (may impact performance)"
+        },
+        "datalayer.pyodide.preloadBehavior": {
+          "type": "string",
+          "enum": [
+            "ask-once",
+            "ask-always",
+            "auto",
+            "disabled"
+          ],
+          "enumDescriptions": [
+            "Prompt once on first use, then remember choice",
+            "Always prompt on extension startup",
+            "Automatically download packages without asking",
+            "Never preload packages"
+          ],
+          "default": "ask-once",
+          "description": "Controls how Pyodide packages are preloaded on extension startup"
+        },
+        "datalayer.pyodide.version": {
+          "type": "string",
+          "default": "0.27.3",
+          "description": "Pyodide version to use (e.g., '0.27.3', '0.27.0'). Note: Polars is only available in 0.27.x versions. Changes require closing and reopening notebooks."
+        },
+        "datalayer.pyodide.preloadPackages": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [
+            "altair",
+            "asttokens",
+            "bokeh",
+            "dateutil",
+            "decorator",
+            "duckdb",
+            "executing",
+            "fonttools",
+            "ipython",
+            "ipywidgets",
+            "jedi",
+            "kiwisolver",
+            "matplotlib",
+            "matplotlib-inline",
+            "micropip",
+            "networkx",
+            "numpy",
+            "pandas",
+            "parso",
+            "pillow",
+            "plotly",
+            "polars",
+            "prompt-toolkit",
+            "pure-eval",
+            "pyarrow",
+            "Pygments",
+            "pyparsing",
+            "pytz",
+            "requests",
+            "scikit-learn",
+            "scipy",
+            "seaborn",
+            "six",
+            "stack-data",
+            "statsmodels",
+            "sympy",
+            "traitlets",
+            "tqdm",
+            "vega_datasets",
+            "wcwidth"
+          ],
+          "description": "Python packages to preload when extension starts (only if enablePreload is true)"
         }
       }
     },

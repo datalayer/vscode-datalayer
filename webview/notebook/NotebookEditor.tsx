@@ -93,9 +93,14 @@ function NotebookEditorCore({
   const nbformat = store((state) => state.nbformat);
 
   // Runtime management with hook
-  const { selectedRuntime, serviceManager, selectRuntime } = useRuntimeManager(
-    selectedRuntimeFromStore,
-  );
+  const {
+    selectedRuntime,
+    kernelName,
+    serviceManager,
+    serviceManagerVersion,
+    selectRuntime,
+    selectPyodideRuntime,
+  } = useRuntimeManager(selectedRuntimeFromStore);
 
   // Notebook model management
   const { handleNotebookModelChanged, getNotebookData, markClean } =
@@ -110,9 +115,6 @@ function NotebookEditorCore({
   // Wrap handleNotebookModelChanged to capture the model for outline
   const handleNotebookModelChangedWithOutline = useCallback(
     (model: unknown) => {
-      console.log("[NotebookEditor] Model changed, updating state", {
-        hasModel: !!model,
-      });
       notebookModelRef.current = model;
       setNotebookModel(model); // Update state to trigger re-render
       handleNotebookModelChanged(model);
@@ -140,19 +142,14 @@ function NotebookEditorCore({
     vscode: vscodeApi,
   });
 
-  // Log documentUri for debugging
-  useEffect(() => {
-    console.log("[NotebookEditor] documentUri from store:", documentUri);
-  }, [documentUri]);
-
   // Create notebook extensions (sidebar)
   const extensions = useMemo(() => [new CellSidebarExtension({})], []);
 
   // Create LLM completion provider for VS Code
-  const llmProvider = useMemo(() => {
-    console.log("[NotebookEditor] Creating VSCodeLLMProvider");
-    return new VSCodeLLMProvider();
-  }, []);
+  const llmProvider = useMemo(() => new VSCodeLLMProvider(), []);
+
+  // Create stable array for inline providers to prevent re-renders
+  const inlineProviders = useMemo(() => [llmProvider], [llmProvider]);
 
   // Create collaboration provider for Datalayer notebooks
   const collaborationProvider = useMemo(() => {
@@ -182,12 +179,6 @@ function NotebookEditorCore({
       switch (message.type) {
         case "init": {
           const { body } = message;
-
-          console.log("[NotebookEditor] Received init message", {
-            hasDocumentUri: !!body.documentUri,
-            documentUri: body.documentUri,
-            notebookId: body.notebookId,
-          });
 
           // CRITICAL: Detect when webview is reused for a different document
           if (
@@ -227,13 +218,7 @@ function NotebookEditorCore({
           }
 
           if (body.documentUri) {
-            console.log(
-              "[NotebookEditor] Setting documentUri in store",
-              body.documentUri,
-            );
             store.getState().setDocumentUri(body.documentUri);
-          } else {
-            console.warn("[NotebookEditor] No documentUri in init message!");
           }
 
           if (body.serverUrl) {
@@ -270,21 +255,27 @@ function NotebookEditorCore({
         case "local-kernel-connected": {
           // Handle local kernel connection - bypass runtime/session creation
           const { body } = message;
+
           console.log(
-            `[NotebookEditor] Local kernel connected:`,
-            body?.kernelInfo,
+            "[NotebookEditor] local-kernel-connected message received:",
+            body,
           );
 
-          // For local kernels, we MUST still set the runtime because the notebook
-          // component needs a serviceManager, but JupyterLab will handle the kernel
-          // connection directly via the LocalKernelProxy without going through
-          // the full session creation flow
+          // For local kernels, we MUST update the service manager AND set the runtime
+          // The service manager update creates the proper LocalKernelServiceManager
+          // which handles WebSocket communication with the extension
           if (body?.runtime) {
             console.log(
-              `[NotebookEditor] Setting runtime for local kernel: ${body.runtime.ingress}`,
+              "[NotebookEditor] Switching to local kernel runtime:",
+              body.runtime,
             );
-            selectRuntime(body.runtime);
+            selectRuntime(body.runtime); // This updates the service manager!
             store.getState().setRuntime(body.runtime);
+          } else {
+            console.warn(
+              "[NotebookEditor] local-kernel-connected with no runtime",
+              body,
+            );
           }
           break;
         }
@@ -292,16 +283,31 @@ function NotebookEditorCore({
         case "runtime-selected":
         case "kernel-selected": {
           const { body } = message;
-          console.log(
-            `[NotebookEditor] Received ${message.type}:`,
-            body?.runtime,
-          );
-          if (body?.runtime) {
-            console.log(
-              `[NotebookEditor] Setting runtime with ingress: ${body.runtime.ingress}`,
-            );
+
+          console.log("[NotebookEditor] kernel-selected message received:", {
+            kernelType: body?.kernelType,
+            hasRuntime: !!body?.runtime,
+          });
+
+          if (body?.kernelType === "pyodide") {
+            // Switch to Pyodide kernel
+            console.log("[NotebookEditor] Switching to Pyodide kernel");
+            selectPyodideRuntime().catch((error) => {
+              console.error(
+                "[NotebookEditor] Failed to switch to Pyodide kernel:",
+                error,
+              );
+            });
+          } else if (body?.runtime) {
+            // Switch to local/remote runtime
+            console.log("[NotebookEditor] Switching to runtime:", body.runtime);
             selectRuntime(body.runtime);
             store.getState().setRuntime(body.runtime);
+          } else {
+            console.warn(
+              "[NotebookEditor] kernel-selected with no runtime or kernelType",
+              body,
+            );
           }
           break;
         }
@@ -366,6 +372,24 @@ function NotebookEditorCore({
           }
           break;
 
+        case "clear-all-outputs-command": {
+          // Handle Clear All Outputs command from toolbar
+          console.log(
+            "[NotebookEditor] Clearing all outputs via notebook store",
+          );
+
+          // Use the notebook store to clear outputs via the adapter
+          const currentNotebookId = documentId || notebookId;
+          if (currentNotebookId) {
+            notebookStore2.getState().clearAllOutputs(currentNotebookId);
+          } else {
+            console.warn(
+              "[NotebookEditor] Cannot clear outputs: no notebook ID available",
+            );
+          }
+          break;
+        }
+
         case "outline-navigate": {
           // Handle navigation to outline item
           if (message.itemId && notebookModelRef.current) {
@@ -399,6 +423,7 @@ function NotebookEditorCore({
     },
     [
       selectRuntime,
+      selectPyodideRuntime,
       getNotebookData,
       markClean,
       theme,
@@ -515,6 +540,7 @@ function NotebookEditorCore({
         notebookId={documentId || notebookId}
         isDatalayerNotebook={isDatalayerNotebook}
         selectedRuntime={selectedRuntime}
+        kernelName={kernelName}
       />
 
       <Box
@@ -530,30 +556,23 @@ function NotebookEditorCore({
       >
         <Box className="dla-Box-Notebook" sx={notebookCellStyles}>
           <Notebook2
-            // Use stable key - MutableServiceManager handles runtime switching internally
-            // Remounting would lose notebook state and cause race conditions
+            // Use stable key - prevents remounting when switching runtimes
+            // MutableServiceManager + proxies handle service manager changes internally
             key={documentId || notebookId || "notebook"}
             // @ts-ignore - Type mismatch between different @jupyterlab versions
             nbformat={nbformat || {}}
             id={documentId || notebookId}
             // @ts-ignore - Type mismatch between @jupyterlab/services versions
             serviceManager={serviceManager}
+            serviceManagerVersion={serviceManagerVersion}
             collaborationProvider={collaborationProvider}
-            // Start kernel when we have a real runtime selected
-            // Collaboration and execution are orthogonal:
-            // - collaborationProvider syncs notebook content with Datalayer platform
-            // - serviceManager + kernel handles cell execution (same for local and remote)
-            startDefaultKernel={!!selectedRuntime}
+            // Auto-start kernel for Pyodide and remote runtimes
+            // The concurrent checks and kernel existence validation will prevent errors
+            startDefaultKernel={!!kernelName || !!selectedRuntime}
             height={notebookHeight}
             cellSidebarMargin={cellSidebarMargin}
             extensions={extensions}
-            inlineProviders={(() => {
-              console.log(
-                "[NotebookEditor] Passing inlineProviders to Notebook2:",
-                [llmProvider],
-              );
-              return [llmProvider];
-            })()}
+            inlineProviders={inlineProviders}
             onNotebookModelChanged={handleNotebookModelChangedWithOutline}
           />
         </Box>

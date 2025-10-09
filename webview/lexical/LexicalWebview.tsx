@@ -62,9 +62,11 @@ interface WebviewMessage {
 function LexicalWebviewInner({
   selectedRuntime,
   onRuntimeSelected,
+  onPyodideSelected,
 }: {
   selectedRuntime?: RuntimeJSON;
   onRuntimeSelected: (runtime: RuntimeJSON | undefined) => void;
+  onPyodideSelected: () => Promise<void>;
 }) {
   // Create per-instance store - prevents global state sharing
   const [store] = useState(() => createLexicalStore());
@@ -171,9 +173,31 @@ function LexicalWebviewInner({
           break;
         }
         case "kernel-selected": {
-          const body = message.body as { runtime?: RuntimeJSON } | undefined;
-          if (body?.runtime) {
+          const body = message.body as
+            | { runtime?: RuntimeJSON; kernelType?: "pyodide" | "remote" }
+            | undefined;
+          console.log("[LexicalWebview] Kernel selected:", body);
+
+          if (body?.kernelType === "pyodide") {
+            // Switch to Pyodide kernel
+            console.log("[LexicalWebview] Switching to Pyodide kernel");
+            onPyodideSelected().catch((error) => {
+              console.error(
+                "[LexicalWebview] Failed to switch to Pyodide kernel:",
+                error,
+              );
+            });
+          } else if (body?.runtime) {
+            // Switch to remote runtime
+            console.log(
+              "[LexicalWebview] Switching to remote runtime:",
+              body.runtime.ingress,
+            );
             onRuntimeSelected(body.runtime);
+          } else {
+            console.warn(
+              "[LexicalWebview] kernel-selected with no runtime or kernelType",
+            );
           }
           break;
         }
@@ -202,7 +226,7 @@ function LexicalWebviewInner({
       window.removeEventListener("message", messageHandler);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [onRuntimeSelected]); // store access doesn't need to be in deps - Zustand handles reactivity
+  }, [onRuntimeSelected, onPyodideSelected]); // store access doesn't need to be in deps - Zustand handles reactivity
 
   const handleSave = useCallback(
     (newContent: string) => {
@@ -304,8 +328,12 @@ function LexicalWebviewInner({
  */
 function LexicalWebview() {
   // Use the runtime manager hook - no forced remounts!
-  const { selectedRuntime, serviceManager, selectRuntime } =
-    useRuntimeManager();
+  const {
+    selectedRuntime,
+    serviceManager,
+    selectRuntime,
+    selectPyodideRuntime,
+  } = useRuntimeManager();
   const [isReady, setIsReady] = useState(false);
 
   // NOTE: We do NOT call setJupyterServerUrl/setJupyterServerToken here!
@@ -384,6 +412,7 @@ function LexicalWebview() {
       <LexicalWebviewInner
         selectedRuntime={selectedRuntime}
         onRuntimeSelected={selectRuntime}
+        onPyodideSelected={selectPyodideRuntime}
       />
     </Jupyter>
   );

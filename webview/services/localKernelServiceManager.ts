@@ -34,6 +34,7 @@ import { UUID } from "@lumino/coreutils";
  * Provides kernel spec information and creates LocalKernelConnection.
  */
 class LocalKernelManager implements Kernel.IManager {
+  readonly managerType = "local" as const;
   private _kernelId: string;
   private _kernelName: string;
   private _serverSettings: ServerConnection.ISettings;
@@ -178,6 +179,7 @@ class LocalKernelManager implements Kernel.IManager {
  * Returns sessions with LocalKernelConnection instead of standard KernelConnection.
  */
 class LocalSessionManager implements Session.IManager {
+  readonly managerType = "local" as const;
   private _kernelId: string;
   private _kernelName: string;
   private _serverSettings: ServerConnection.ISettings;
@@ -455,7 +457,8 @@ export function createLocalKernelServiceManager(
 
   // Create minimal service manager
   // We need to implement both kernels and sessions managers
-  const serviceManager: ServiceManager.IManager = {
+  const serviceManager: ServiceManager.IManager & { managerType: "local" } = {
+    managerType: "local" as const,
     kernels: kernelManager as unknown as Kernel.IManager,
     sessions: sessionManager as unknown as Session.IManager,
     contents: contentsManager as unknown as ServiceManager.IManager["contents"],

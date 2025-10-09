@@ -26,6 +26,7 @@ import {
 } from "./services/bridges/documentBridge";
 import { DatalayerFileSystemProvider } from "./providers/documentsFileSystemProvider";
 import type { ExtensionUI } from "./services/ui/uiSetup";
+import { PyodidePreloader } from "./services/pyodide/pyodidePreloader";
 
 // Global service container instance
 let services: ServiceContainer | undefined;
@@ -167,6 +168,61 @@ export async function activate(
           isDirty: notebook.isDirty,
         });
         ui?.controllerManager.onDidCloseNotebook(notebook);
+      }),
+    );
+
+    // Initialize Pyodide preloader (runs in background, doesn't block activation)
+    const pyodidePreloader = new PyodidePreloader(
+      context,
+      services.loggerManager.createLogger("PyodidePreloader"),
+    );
+    context.subscriptions.push(pyodidePreloader);
+
+    // Start preload asynchronously - don't await to avoid blocking activation
+    pyodidePreloader.initialize().catch((error: Error) => {
+      logger.warn("Pyodide preloader initialization failed", {
+        error: error.message,
+      });
+    });
+    activationTimer.checkpoint("pyodide_preloader_started");
+
+    // Watch for Pyodide version changes and notify user
+    context.subscriptions.push(
+      vscode.workspace.onDidChangeConfiguration((e) => {
+        if (e.affectsConfiguration("datalayer.pyodide.version")) {
+          const config = vscode.workspace.getConfiguration("datalayer.pyodide");
+          const newVersion = config.get<string>("version", "0.29.0");
+
+          logger.info("Pyodide version changed", { newVersion });
+
+          // Check if there are any active notebooks
+          const activeNotebooks = vscode.workspace.notebookDocuments;
+
+          if (activeNotebooks.length > 0) {
+            vscode.window
+              .showInformationMessage(
+                `Pyodide version changed to ${newVersion}. Close and reopen notebooks to use the new version and packages.`,
+                "Close All Notebooks",
+                "OK",
+              )
+              .then((selection) => {
+                if (selection === "Close All Notebooks") {
+                  // Close all notebook editors
+                  vscode.window.tabGroups.all.forEach((group) => {
+                    group.tabs.forEach((tab) => {
+                      if (tab.input instanceof vscode.TabInputNotebook) {
+                        vscode.window.tabGroups.close(tab);
+                      }
+                    });
+                  });
+                }
+              });
+          } else {
+            vscode.window.showInformationMessage(
+              `Pyodide version changed to ${newVersion}. The new version will be used when you open a notebook.`,
+            );
+          }
+        }
       }),
     );
 

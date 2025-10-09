@@ -44,6 +44,14 @@ export function getNotebookHtml(
     vscode.Uri.joinPath(extensionUri, "dist", "vscode-completion-theme.css"),
   );
 
+  // Get the Pyodide version from configuration
+  const config = vscode.workspace.getConfiguration("datalayer.pyodide");
+  const pyodideVersion = config.get<string>("version", "0.27.3");
+
+  // Get the Pyodide base URI for local Python execution
+  // Use CDN - packages are downloaded via extension backend (proxyFetch) and cached in IndexedDB
+  const pyodideBaseUri = `https://cdn.jsdelivr.net/pyodide/v${pyodideVersion}/full`;
+
   // Use a nonce to whitelist which scripts can be run
   const nonce = getNonce();
 
@@ -173,14 +181,26 @@ export function getNotebookHtml(
 
           Note: 'unsafe-inline' is required for typestyle dynamic style injection.
           Note: 'unsafe-eval' is required for AJV (JSON schema validator used by Jupyter dependencies).
+          Note: worker-src allows both blob: URLs and webview.cspSource for Pyodide worker.
+          Note: script-src allows cdnjs.cloudflare.com for RequireJS (needed by IPyWidgets).
+          Note: script-src allows cdn.plot.ly for Plotly.js visualization library.
+          Note: script-src allows 'unsafe-inline' for Plotly's inline script execution.
           This is acceptable as we control the extension code and use nonces for scripts.
           -->
-          <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src ${webview.cspSource} blob: data:; style-src ${webview.cspSource} 'unsafe-inline'; font-src ${webview.cspSource}; script-src 'nonce-${nonce}' 'unsafe-eval'; connect-src ${webview.cspSource} https: wss:; worker-src blob:;" />
+          <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src ${webview.cspSource} blob: data:; style-src ${webview.cspSource} 'unsafe-inline'; font-src ${webview.cspSource}; script-src 'nonce-${nonce}' 'unsafe-inline' 'unsafe-eval' https://cdnjs.cloudflare.com https://cdn.plot.ly; connect-src ${webview.cspSource} https: wss:; worker-src ${webview.cspSource} blob:;" />
 
         </head>
 
         <body>
           <div id="notebook-editor"></div>
+          
+          <!-- Load Plotly.js for visualization support -->
+          <script nonce="${nonce}" src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+          
+          <script nonce="${nonce}">
+            // Provide Pyodide base URI to webview for local Python execution
+            window.__PYODIDE_BASE_URI__ = "${pyodideBaseUri}";
+          </script>
           <script nonce="${nonce}" src="${scriptUri}"></script>
         </body>
 

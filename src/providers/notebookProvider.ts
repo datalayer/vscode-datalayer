@@ -107,6 +107,12 @@ export class NotebookProvider extends BaseDocumentProvider<NotebookDocument> {
   private readonly webviews = new WebviewCollection();
 
   /**
+   * Maps document URIs to their NotebookDocument instances.
+   * Needed to access documents when handling webview messages.
+   */
+  private readonly documents = new Map<string, NotebookDocument>();
+
+  /**
    * Creates a new NotebookProvider.
    *
    * @param context - Extension context for resource access
@@ -226,7 +232,14 @@ export class NotebookProvider extends BaseDocumentProvider<NotebookDocument> {
       ),
     );
 
-    document.onDidDispose(() => disposeAll(listeners));
+    document.onDidDispose(() => {
+      disposeAll(listeners);
+      // Remove from document map
+      this.documents.delete(document.uri.toString());
+    });
+
+    // Store document in map for later access
+    this.documents.set(document.uri.toString(), document);
 
     return document;
   }
@@ -317,6 +330,17 @@ export class NotebookProvider extends BaseDocumentProvider<NotebookDocument> {
           requestId: e.requestId,
           completion,
         });
+      } else if (e.type === "clear-all-outputs") {
+        // Handle Clear All Outputs button
+        console.log("[NotebookProvider] Clear all outputs requested");
+
+        // Send message to webview to clear all outputs
+        webviewPanel.webview.postMessage({
+          type: "clear-all-outputs-command",
+        });
+      } else if (e.type === "open-outline") {
+        // Handle Outline button - focus the Datalayer outline view
+        await vscode.commands.executeCommand("datalayerOutline.focus");
       } else if (e.type === "ready") {
         // Detect VS Code theme
         const theme =
@@ -599,9 +623,9 @@ Complete the code at <CURSOR>:`;
       "notebook-content-changed",
       async (message, context) => {
         // Only track changes for local notebooks, not Datalayer space notebooks
-        const isDatalayerNotebook = !context.isFromDatalayer;
+        const isLocalNotebook = !context.isFromDatalayer;
 
-        if (isDatalayerNotebook) {
+        if (isLocalNotebook) {
           const messageBody = message.body as {
             content?: Uint8Array | number[];
           };
@@ -616,19 +640,13 @@ Complete the code at <CURSOR>:`;
             return;
           }
 
-          // We need the document instance - get it from webviews
-          const documentUri = vscode.Uri.parse(context.documentUri);
-          const webviewPanel = Array.from(this.webviews.get(documentUri))[0];
-          if (webviewPanel) {
-            const doc = (
-              webviewPanel as unknown as { document: NotebookDocument }
-            ).document;
-            if (doc) {
-              doc.makeEdit({
-                type: "content-update",
-                content: content,
-              });
-            }
+          // Get the document instance from our map
+          const doc = this.documents.get(context.documentUri);
+          if (doc) {
+            doc.makeEdit({
+              type: "content-update",
+              content: content,
+            });
           }
         }
       },

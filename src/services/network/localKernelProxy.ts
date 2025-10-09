@@ -73,20 +73,12 @@ export class LocalKernelProxy {
     ).onmessage = (event: { data?: KernelMessage.IMessage }) => {
       // Forward to webview with sanitized buffers
       if (event.data) {
-        console.log(
-          `[LocalKernelProxy] RawSocket message:`,
-          event.data.header?.msg_type,
-        );
         this._forwardKernelMessage(event.data);
       }
     };
 
     // Notify webview that connection is open
-    console.log(
-      `[LocalKernelProxy] Sending websocket-open to ${initialClientId}`,
-    );
     this._sendToWebview("websocket-open", {}, initialClientId);
-    console.log(`[LocalKernelProxy] WebSocket opened for ${initialClientId}`);
   }
 
   /**
@@ -95,9 +87,6 @@ export class LocalKernelProxy {
    */
   public addConnection(clientId: string): Record<string, never> {
     this._clientIds.add(clientId);
-    console.log(
-      `[LocalKernelProxy] Added connection ${clientId}, total connections: ${this._clientIds.size}`,
-    );
     return {};
   }
 
@@ -107,9 +96,6 @@ export class LocalKernelProxy {
    */
   public removeConnection(clientId: string): boolean {
     this._clientIds.delete(clientId);
-    console.log(
-      `[LocalKernelProxy] Removed connection ${clientId}, remaining connections: ${this._clientIds.size}`,
-    );
     return this._clientIds.size > 0;
   }
 
@@ -124,11 +110,6 @@ export class LocalKernelProxy {
     // Listen to all IOPub messages (outputs, status changes, etc.)
     this._kernel.iopubMessage.connect((_sender, msg) => {
       this._forwardKernelMessage(msg);
-    });
-
-    // Listen to status changes
-    this._kernel.statusChanged.connect((_sender, status) => {
-      console.log(`[LocalKernelProxy] Kernel status changed: ${status}`);
     });
   }
 
@@ -194,12 +175,7 @@ export class LocalKernelProxy {
 
       if (jupyterlabSessionId) {
         // This is a reply to a request we sent - translate the session ID
-        const originalKernelSessionId = sanitizedMsg.header.session;
         sanitizedMsg.header.session = jupyterlabSessionId;
-
-        console.log(
-          `[LocalKernelProxy] Translated session ID: ${originalKernelSessionId} -> ${jupyterlabSessionId} for ${sanitizedMsg.header.msg_type}`,
-        );
       }
     } else if (
       this._kernelSessionId &&
@@ -212,11 +188,7 @@ export class LocalKernelProxy {
         this._sessionIdMap.values(),
       )[0];
       if (firstJupyterLabSessionId) {
-        const originalKernelSessionId = sanitizedMsg.header.session;
         sanitizedMsg.header.session = firstJupyterLabSessionId;
-        console.log(
-          `[LocalKernelProxy] Translated unsolicited message session ID: ${originalKernelSessionId} -> ${firstJupyterLabSessionId} for ${sanitizedMsg.header.msg_type}`,
-        );
       }
     }
 
@@ -236,9 +208,6 @@ export class LocalKernelProxy {
   ): void {
     if (specificClientId) {
       // Send to specific client only
-      console.log(
-        `[LocalKernelProxy] Sending to webview: type=${type}, clientId=${specificClientId}`,
-      );
       this._webview.webview.postMessage({
         type,
         id: specificClientId,
@@ -246,9 +215,6 @@ export class LocalKernelProxy {
       });
     } else {
       // Broadcast to all clients
-      console.log(
-        `[LocalKernelProxy] Broadcasting to webview: type=${type}, clients=${Array.from(this._clientIds).join(", ")}`,
-      );
       for (const clientId of this._clientIds) {
         this._webview.webview.postMessage({
           type,
@@ -287,13 +253,6 @@ export class LocalKernelProxy {
       return;
     }
 
-    console.log(
-      `[LocalKernelProxy] Received message: ${msg.header?.msg_type}`,
-      msg.header?.msg_type === "execute_request"
-        ? "CODE:" + (msg.content as { code?: string })?.code
-        : "",
-    );
-
     // Check if header is valid
     if (!msg.header || !msg.header.msg_id) {
       console.error(
@@ -306,9 +265,6 @@ export class LocalKernelProxy {
     // Store the mapping from request msg_id to JupyterLab's session ID
     // This allows us to translate the kernel's session ID back to JupyterLab's session ID in replies
     this._sessionIdMap.set(msg.header.msg_id, msg.header.session);
-    console.log(
-      `[LocalKernelProxy] Stored session mapping: ${msg.header.msg_id} -> ${msg.header.session}`,
-    );
 
     // Forward ALL messages to the real kernel
     // The real kernel will handle everything with its own session ID
@@ -317,10 +273,6 @@ export class LocalKernelProxy {
         this._rawSocket &&
         typeof (this._rawSocket as { send?: unknown }).send === "function"
       ) {
-        console.log(
-          `[LocalKernelProxy] Forwarding message to kernel:`,
-          msg.header.msg_type,
-        );
         (
           this._rawSocket as { send: (msg: KernelMessage.IMessage) => void }
         ).send(msg);

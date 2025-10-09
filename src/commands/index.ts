@@ -21,6 +21,7 @@ import { registerInternalCommands, getConnectedRuntime } from "./internal";
 import { registerCreateCommands } from "./create";
 import { registerThemeCommands } from "./theme";
 import { registerOutlineCommands } from "./outline";
+import { registerPyodideCommands } from "./pyodide";
 import { SDKAuthProvider } from "../services/core/authProvider";
 import { DocumentBridge } from "../services/bridges/documentBridge";
 import { SpacesTreeProvider } from "../providers/spacesTreeProvider";
@@ -97,4 +98,5 @@ export function registerAllCommands(
 
   // Register outline commands
   registerOutlineCommands(context, services.outlineTreeProvider);
+  registerPyodideCommands(context);
 }
