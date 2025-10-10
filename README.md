@@ -2,8 +2,6 @@
 
 [![Become a Sponsor](https://img.shields.io/static/v1?label=Become%20a%20Sponsor&message=%E2%9D%A4&logo=GitHub&style=flat&color=1ABC9C)](https://github.com/sponsors/datalayer)
 
-## Project Status
-
 [![Build Status](https://github.com/datalayer/vscode-datalayer/actions/workflows/build-extension.yml/badge.svg)](https://github.com/datalayer/vscode-datalayer/actions/workflows/build-extension.yml)
 [![VS Code Marketplace](https://img.shields.io/visual-studio-marketplace/v/Datalayer.datalayer-jupyter-vscode?label=VS%20Code%20Marketplace&logo=visual-studio-code)](https://marketplace.visualstudio.com/items?itemName=Datalayer.datalayer-jupyter-vscode)
 [![Installs](https://img.shields.io/visual-studio-marketplace/i/Datalayer.datalayer-jupyter-vscode?label=Installs)](https://marketplace.visualstudio.com/items?itemName=Datalayer.datalayer-jupyter-vscode)
@@ -12,51 +10,98 @@
 
 # Datalayer for Visual Studio Code
 
-Edit Jupyter Notebooks (`.ipynb`) and Lexical documents (`.lexical`) with seamless integration to the Datalayer platform. Run notebooks in the cloud with zero local Python setup, or connect to your own Jupyter servers.
+**🚀 Transform VS Code into a collaborative data science platform with seamless local-to-cloud scaling and rich document creation in just 2 clicks.** 
+
+💻 Execute notebooks on cloud compute, 📝 create beautiful reports with Notion-like collaborative documents, and 🔄 switch effortlessly between local and remote environments - all within your familiar VS Code interface.
 
 **See it in action:**
 
-<img src="https://jupyter-examples.datalayer.tech/jupyter-react-vscode.gif" alt="Datalayer extension running Jupyter notebook in VS Code"/>
+<img src="https://assets.datalayer.tech/demo-vscode-lexical.gif" alt="Datalayer extension running lexical document in VS Code"/>
 
-## Quick Start
+## 🚀 Key Benefits
 
-1. Install from [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=Datalayer.datalayer-jupyter-vscode)
-2. Login: Open Command Palette (`Ctrl+Shift+P` / `Cmd+Shift+P`) → "Datalayer: Login to Datalayer"
-3. Open any `.ipynb` file or browse your spaces in the sidebar
-4. Run cells with cloud runtimes
+### ⚡ **Instant Cloud Scaling**
+- **Zero-setup cloud execution** - Run workloads on cloud CPUs or GPUs without any local Python installation
+- **2-click scaling** - Switch from local development to cloud compute instantly via the kernel picker
+- **Smart resource management** - Automatic runtime creation and reuse to optimize compute costs
 
-## Features
+### 📝 **Collaborative Rich Documents**
+- **Notion-like documents** with rich formatting - Create beautiful reports with headings, lists, images, tables, executable code blocks, etc.
+- **Real-time collaboration** - Multiple users can edit documents simultaneously with live updates
+- **Mixed content support** - Seamlessly combine executable code, images, text, and more in a single document
 
-### Two Document Editors
+### 🔀 **Ultimate Flexibility** 
+- **Seamless local ↔ cloud switching** - Start locally, scale to cloud, then return to local development
+- **Multiple runtime support** - Connect to Datalayer cloud, local Python, or existing Jupyter servers  
+- **Code preservation** - Your code runs identically across local and cloud environments
+- **Hybrid workflows** - Use the best of both worlds without vendor lock-in
 
-**Jupyter Notebooks** - Full notebook editing with cloud or local execution
-**Lexical Documents** - Rich text editing with formatting (headings, lists, bold, italic, etc.)
+## ⚡ Quick Start
 
-### Two Tree Views (Explorer Sidebar)
+1. **Create a free account** at [datalayer.app](https://datalayer.app) and get an access token from your account settings.
+2. **Install** from [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=Datalayer.datalayer-jupyter-vscode)
+3. **Login**: `Ctrl+Shift+P` → "Datalayer: Login to Datalayer" → paste your token
+4. **Scale instantly**: Open any `.ipynb` file with the Datalayer Editor → click kernel picker → select cloud runtime
+5. **Create rich docs**: Create `.lexical` files for Notion-like collaborative reports with code, images and rich formatting
 
-**Datalayer Spaces** - Browse and manage your cloud documents
+## 🎯 Core Features
 
-- Create, rename, delete notebooks and lexical documents
+### 📊 **Advanced Document Editors**
+
+**Jupyter Notebooks** 
+- Full-featured notebook editing with syntax highlighting and IntelliSense
+- Execute on cloud GPUs/CPUs or local Python environments
+- Seamless kernel switching between local and remote runtimes
+
+**Lexical Documents** 
+- Notion-like rich text editor** with real-time collaborative editing
+- Support for images, tables, code blocks, mathematical equations, and formatted text
+- Perfect for creating data science reports, documentation, and presentations
+
+### 🗂️ **Integrated Workspace Management**
+
+**Datalayer Spaces** (Explorer Sidebar)
+- Browse and manage your cloud documents and notebooks
+- Create, rename, delete files directly in the cloud
 - Virtual file paths: `datalayer://Space Name/document.ipynb`
+- Collaborative workspace sharing
 
-**Datalayer Runtimes** - Monitor and control cloud environments
+**Datalayer Runtimes** (Explorer Sidebar)
+- Real-time monitoring of all active cloud environments
+- One-click runtime creation and termination  
+- Resource usage and cost tracking
+- Environment type indicators (CPU/GPU, memory, duration, etc.)
+- Health status monitoring and automatic recovery
 
-- View all active runtimes with status indicators
-- Create, terminate, and manage computational environments
-- Monitor environment type and resource usage
+### ⚙️ **Smart Runtime Management**
 
-### Runtime Management
+- **Automatic provisioning** - Runtimes created on-demand when you run cells
+- **Intelligent reuse** - Existing healthy runtimes are reused to conserve credits
+- **Health verification** - Automatic checks ensure runtime reliability
+- **Flexible duration** - Configure runtime lifetime (1-1440 minutes)
 
-- Automatic runtime creation when you run cells
-- Smart reuse of existing runtimes to conserve credits
-- Health verification before reuse
-- Configurable runtime duration (1-1440 minutes)
+### 🎨 **Native VS Code Integration**
 
-### VS Code Integration
+- **Theme synchronization** - Documents automatically match your VS Code theme
+- **Unified kernel picker** - Access Datalayer cloud, local Python, and Jupyter servers
+- **Rich status indicators** - Connection status and runtime info in status bar
+- **Command palette integration** - All features accessible via `Ctrl+Shift+P`
 
-- Documents match your VS Code theme automatically
-- Kernel picker supports Datalayer, local Python, and Jupyter servers
-- Status bar shows connection and runtime info
+## 💡 Common Questions
+
+**Do I need Python locally?** No! Cloud runtimes handle all execution with zero local setup. You can still connect to local Python/Jupyter environments if preferred for hybrid workflows.
+
+**Can I edit cloud documents?** Yes! Cloud documents are fully editable. Create, modify, and collaborate on notebooks and lexical documents directly in your cloud spaces.
+
+**How do credits work?** Runtimes consume credits while active. The extension intelligently reuses existing healthy runtimes to minimize costs and maximize your credit efficiency.
+
+**Can I use without a Datalayer account?** Absolutely! Use it for local `.ipynb` files and connecting to your existing Python/Jupyter environments. Cloud features require an account.
+
+**How do I get an access token?** Visit [datalayer.app](https://datalayer.app), navigate to account settings, and generate a token for VS Code integration.
+
+**How fast is the local ↔ cloud switching?** Switching between local and cloud execution takes just 2 clicks via the kernel picker - no configuration or setup required.
+
+**What makes lexical documents special?** Think Notion meets Jupyter! Unlike traditional notebooks, lexical documents provide a Notion-like editing experience with rich formatting, real-time collaboration, and support for images, tables, and formatted text alongside executable code - perfect for creating professional reports and documentation.
 
 ## Installation
 
@@ -71,21 +116,7 @@ Edit Jupyter Notebooks (`.ipynb`) and Lexical documents (`.lexical`) with seamle
 1. Download from [releases](https://github.com/datalayer/vscode-datalayer/releases)
 2. Open Command Palette (`Ctrl+Shift+P` / `Cmd+Shift+P`) → "Extensions: Install from VSIX..."
 
-## Getting Started
-
-### Opening Documents
-
-**Notebooks**: Right-click `.ipynb` → "Open With..." → "Datalayer Notebook"
-**Lexical**: Click any `.lexical` file (opens automatically)
-**Cloud Documents**: Click files in the Datalayer Spaces tree view
-
-### Authentication
-
-1. Open Command Palette (`Ctrl+Shift+P` / `Cmd+Shift+P`) → "Datalayer: Login to Datalayer"
-2. Paste your access token
-3. Check status bar for connection status
-
-### Key Commands
+## Key Commands
 
 **Authentication:**
 
@@ -94,16 +125,17 @@ Edit Jupyter Notebooks (`.ipynb`) and Lexical documents (`.lexical`) with seamle
 
 **Documents:**
 
-- Create New Jupyter Notebook (local)
-- Create New Lexical Document (local)
-- Context menu in Spaces tree: New Notebook/Lexical in cloud space
-- Context menu: Open, Rename, Delete
+- Create New Jupyter Notebook (local or cloud)
+- Create New Lexical Document (local or cloud)
+- Context menu in Spaces tree: New Notebook/Lexical in cloud workspace
+- Context menu: Open, Rename, Delete, Share for collaboration
 
 **Runtimes:**
 
-- Select/Switch Runtime
-- Terminate Runtime(s)
+- Select/Switch Runtime (local ↔ cloud switching)
+- Terminate Runtime(s)  
 - View Runtime Controllers Status
+- Monitor resource usage and costs
 
 ## Configuration
 
@@ -127,19 +159,7 @@ Open settings (`Ctrl+,` / `Cmd+,`) and search "Datalayer":
 - `datalayer.logging.enableSDKLogging` - Log API calls (default: true)
 - `datalayer.logging.enablePerformanceMonitoring` - Track performance (default: false)
 
-## Common Questions
-
-**Do I need Python locally?** No, cloud runtimes handle execution. You can connect to local Python/Jupyter if preferred.
-
-**Why are cloud documents read-only?** To prevent accidental changes. Copy to local workspace to edit.
-
-**How do credits work?** Runtimes consume credits while active. Extension reuses existing runtimes to conserve credits.
-
-**Can I use without Datalayer account?** Yes, for local `.ipynb` files and connecting to local Python/Jupyter.
-
-**How do I get an access token?** Visit datalayer.io, navigate to account settings, and generate a token.
-
-## Recent Updates (January 2025)
+## Recent Updates
 
 ### Runtime Controller Improvements
 
@@ -156,8 +176,7 @@ Open settings (`Ctrl+,` / `Cmd+,`) and search "Datalayer":
 
 ## Known Limitations
 
-- Cloud documents open read-only (copy to local workspace to edit)
-- Uses older Jupyter WebSocket protocol (technical constraint)
+- Uses older Jupyter WebSocket protocol (technical constraint, does not affect functionality)
 
 ## Developer Resources
 
@@ -169,8 +188,8 @@ Open settings (`Ctrl+,` / `Cmd+,`) and search "Datalayer":
 ## Support & Community
 
 - [GitHub Issues](https://github.com/datalayer/vscode-datalayer/issues) - Bug reports and features
-- [Datalayer Docs](https://docs.datalayer.io) - Platform documentation
-- [Website](https://datalayer.io) - Learn more
+- [Datalayer Docs](https://docs.datalayer.ai) - Platform documentation
+- [Website](https://datalayer.ai) - Learn more
 
 ## License
 
