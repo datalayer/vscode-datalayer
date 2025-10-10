@@ -38,9 +38,8 @@ export function getNotebookHtml(
   );
 
   // Get the Pyodide base URI for local Python execution
-  const pyodideBaseUri = webview
-    .asWebviewUri(vscode.Uri.joinPath(extensionUri, "dist", "pyodide"))
-    .toString();
+  // Use CDN - packages are downloaded via extension backend (proxyFetch) and cached in IndexedDB
+  const pyodideBaseUri = "https://cdn.jsdelivr.net/pyodide/v0.26.4/full";
 
   // Use a nonce to whitelist which scripts can be run
   const nonce = getNonce();
