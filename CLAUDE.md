@@ -49,6 +49,11 @@
 ```
 
 ### Smart Controller Registration - DISABLED (January 2025)
+**Last Updated**: October 2025
+
+## Critical Recent Changes
+
+### Smart Controller Registration - DISABLED (October 2025)
 
 **Status**: The `SmartDynamicControllerManager` is **intentionally disabled**
 **Location**: `src/services/ui/uiSetup.ts:85`
@@ -61,7 +66,7 @@ const controllerManager = null as unknown as SmartDynamicControllerManager;
 
 All code properly handles the null case with optional chaining (`controllerManager?.`) or explicit null checks.
 
-### Runtime Tree View Refresh Fix (January 2025)
+### Runtime Tree View Refresh Fix (October 2025)
 
 **Issue**: Tree view wasn't refreshing after "terminate all runtimes"
 **Fix**: Added 500ms delay before refresh to allow server-side processing
@@ -306,7 +311,7 @@ Key commands:
 - `/api/runtimes/v1/runtimes` - List runtimes (GET)
 - `/api/runtimes/v1/runtimes` - Create runtime (POST)
 
-## Project Structure (January 2025)
+## Project Structure (October 2025)
 
 ```
 src/
@@ -318,6 +323,22 @@ src/
 │   ├── runtimes.ts       # Runtime management (create, terminate, select)
 │   ├── internal.ts       # Internal commands for inter-component communication
 │   └── index.ts          # Command registration
+├── tools/                 # MCP (Model Context Protocol) embedded tools (14 total)
+│   ├── createLocalNotebook.ts       # Create local .ipynb files
+│   ├── createRemoteNotebook.ts      # Create cloud notebooks
+│   ├── startRuntime.ts              # Start Datalayer runtime
+│   ├── connectRuntime.ts            # Connect runtime to notebook
+│   ├── insertCell.ts                # Insert cells into notebooks
+│   ├── executeCell.ts               # Execute cell and get outputs
+│   ├── readAllCells.ts              # Read all cells (jupyter-mcp-server parity)
+│   ├── readCell.ts                  # Read specific cell (jupyter-mcp-server parity)
+│   ├── getNotebookInfo.ts           # Get notebook metadata (jupyter-mcp-server parity)
+│   ├── deleteCell.ts                # Delete cell (jupyter-mcp-server parity)
+│   ├── overwriteCell.ts             # Overwrite cell source (jupyter-mcp-server parity)
+│   ├── appendMarkdownCell.ts        # Append markdown cell (jupyter-mcp-server parity)
+│   ├── appendExecuteCodeCell.ts     # Append and execute code cell (jupyter-mcp-server parity)
+│   ├── insertMarkdownCell.ts        # Insert markdown at index (jupyter-mcp-server parity)
+│   └── index.ts                     # Tool registration
 ├── providers/             # VS Code API implementations
 │   ├── baseDocumentProvider.ts           # Base class for custom editors
 │   ├── notebookProvider.ts               # Jupyter .ipynb custom editor
@@ -457,7 +478,7 @@ npm run compile     # Build extension
 npm run doc         # Documentation
 ```
 
-### SDK Usage Pattern (January 2025)
+### SDK Usage Pattern (October 2025)
 
 **IMPORTANT**: The extension now uses the Datalayer SDK directly with handlers for VS Code-specific behavior.
 
@@ -490,7 +511,7 @@ const runtime = await sdk.ensureRuntime();
 
 ### Service Layer Removal
 
-**Removed Services** (January 2025):
+**Removed Services** (October 2025):
 
 - ❌ `spacerService.ts` - Deleted, use SDK directly
 - ❌ `runtimeService.ts` - Deleted, use SDK directly
@@ -613,6 +634,18 @@ const serviceManager = mutableServiceManager.createProxy();
 - Cause: React key changes with runtime causing unmount/remount
 - Fix: Remove dynamic key, use MutableServiceManager for stable reference
 
+11. **MCP tool opens VS Code native notebook instead of Datalayer editor**:
+
+- Cause: Using VS Code native API (`vscode.workspace.openNotebookDocument`)
+- Fix: Use message-based communication via `datalayer.internal.sendToWebview`
+- See: [dev/docs/MCP.md](dev/docs/MCP.md) for details
+
+12. **Insert cell fails with "notebook widget not found"**:
+
+- Cause: `notebookStore2.notebooks` is a Map, not an object
+- Fix: Use `notebooks.get(notebookId)` instead of `notebooks[notebookId]`
+- Also: Add polling logic to wait for notebook initialization (up to 10 seconds)
+
 ### Debug Commands
 
 - View authentication status: "Datalayer: Show Authentication Status"
@@ -630,10 +663,10 @@ const serviceManager = mutableServiceManager.createProxy();
 - ✅ Virtual file system for Datalayer documents
 - ✅ Production build CSS import fix for @primer/react-brand
 - ✅ Post-build script to remove problematic module specifiers
-- ✅ **SDK Integration with Handlers Pattern** (January 2025) - Eliminated service wrappers
+- ✅ **SDK Integration with Handlers Pattern** (October 2025) - Eliminated service wrappers
 - ✅ **Clean Architecture** - Direct SDK usage with platform-specific handlers
 - ✅ **Zero Code Duplication** - No more 1:1 method wrapping
-- ✅ **Unified Kernel Selection** (January 2025) - Single picker for all kernel sources
+- ✅ **Unified Kernel Selection** (October 2025) - Single picker for all kernel sources
 - ✅ **Runtime Hot-Swapping** - Change kernels without notebook re-render
 - ✅ **Kernel Bridge Architecture** - Unified routing for webview and native notebooks
 - ✅ **LLM Inline Completions** (January 2025) - Copilot-like ghost text suggestions in Lexical editor
@@ -772,8 +805,16 @@ interface ITypedKernelManager extends Kernel.IManager {
 - [ ] Update NotebookEditor to use RuntimeProvider
 - [ ] Update LexicalEditor to use shared architecture
 - [ ] Comprehensive testing across all kernel types
+- ✅ **MCP Tools Integration** (October 2025) - GitHub Copilot can create and manipulate notebooks programmatically
+- ✅ **Jupyter MCP Server Parity** (October 2025) - All 14 tools mirror jupyter-mcp-server functionality
+- ✅ **Lexical Creation Tools** (October 2025) - 16 total tools with local/remote lexical document creation
+- ✅ **Complete CRUD Operations** - Read, create, update, delete cells via Copilot
+- ✅ **Message-Based Cell Insertion** - Proper custom editor support via extension-webview messaging
+- ✅ **Async Notebook Initialization Handling** - Polling mechanism for reliable cell insertion
+- ✅ **Request-Response Pattern** - Webview can respond to extension requests with cell data
+- ✅ **NotebookActions Integration** - Uses JupyterLab's NotebookActions for cell operations
 
-## Current State Summary (January 2025)
+## Current State Summary (October 2025)
 
 ### Version Information
 
@@ -826,4 +867,4 @@ All workflows run on every push to main and on PRs:
 
 ---
 
-_Last Updated: January 2025_
+_Last Updated: October 2025_
