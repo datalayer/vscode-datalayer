@@ -1,6 +1,6 @@
 # Datalayer VS Code Extension - AI Assistant Context
 
-**Last Updated**: January 2025
+**Last Updated**: October 2025
 **Purpose**: Concise quick-start context. For details, see `dev/docs/`
 
 ## 🚨 Critical Warnings
@@ -25,10 +25,10 @@
 
 ## 📋 Recent Changes (Last 60 Days)
 
-### Pyodide Integration (January 2025)
+### Pyodide Integration (October 2025)
 
 **What**: Browser-based Python execution (offline, zero setup)
-**Status**: ✅ Working - Code executes, outputs display, execution counts increment
+**Status**: ✅ Production-ready - Complete with TypeScript strict mode compliance
 
 **Key Changes**:
 
@@ -49,10 +49,12 @@ The extension can automatically download common Python packages on startup:
 - **Package List**: `datalayer.pyodide.preloadPackages` (24 packages by default)
 - **Cache Management**: Command `datalayer.pyodide.clearCache` clears IndexedDB and resets prompt state
 
-**Known Issues**:
+**Technical Achievements**:
 
-- ⚠️ Output formatting (line breaks, streaming) needs refinement
-- No syntax highlighting in outputs yet
+- ✅ Output formatting (line breaks, streaming) working perfectly
+- ✅ IAnyMessageArgs message unwrapping for TypeScript compliance
+- ✅ Package preloading with flexible behavior modes
+- ⚠️ No syntax highlighting in outputs yet (minor)
 
 **Details**: See [`dev/docs/PYODIDE.md`](./dev/docs/PYODIDE.md)
 

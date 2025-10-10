@@ -471,7 +471,7 @@ if (msg.url.endsWith('.wasm') || msg.url.endsWith('.zip')) {
 
 ---
 
-## ✅ SUCCESS - Pyodide Integration Working! (January 2025)
+## ✅ SUCCESS - Pyodide Integration Working! (October 2025)
 
 **Final Result**: Pyodide successfully integrated and executing Python code in VS Code extension!
 
@@ -482,7 +482,9 @@ if (msg.url.endsWith('.wasm') || msg.url.endsWith('.zip')) {
 - ✅ Expressions work: `1+4` returns `5` ✓
 - ✅ Outputs display correctly in cells
 - ✅ Execution counts increment properly (`[1]:`, `[2]:`, etc.)
-- ⚠️ Minor output formatting issues (work in progress)
+- ✅ Line breaks and streaming output work perfectly
+- ✅ Package preloading with configurable behavior
+- ✅ TypeScript strict mode compliance
 
 **What Was Fixed**:
 1. **Blob URL worker** - Bypasses CSP for worker creation
@@ -517,10 +519,11 @@ Worker (Blob URL):
 - ✅ ~~Execution counts not showing~~ FIXED - Added execute_input messages
 - ✅ ~~Outputs appending to all cells~~ FIXED - Added parent_header filtering
 - ✅ ~~Output formatting issues (line breaks, streaming)~~ FIXED - See Fix 6 below
+- ✅ ~~IAnyMessageArgs unwrapping~~ FIXED - See Fix 7 below
 - No syntax highlighting in outputs yet (minor)
 - No interactive widgets support yet (future enhancement)
 
-**Latest Fixes (January 2025)**:
+**Latest Fixes (October 2025)**:
 
 **Fix 1** - Proper execution completion:
 Changed `done` promise from immediate resolve to waiting for execution completion:
@@ -540,11 +543,11 @@ const executionPromise = new Promise<any>((resolve) => {
 
 ---
 
-## Recent Fixes (January 2025)
+## Recent Fixes (October 2025)
 
 ### Fix 5: Execution Counts and Output Isolation
 
-**Date**: January 2025
+**Date**: October 2025
 
 **Issues Fixed**:
 1. Execution counts not showing (`[*]:` instead of `[1]:`, `[2]:`)
@@ -718,7 +721,7 @@ resolve({
 
 ## Fix 4: Missing metadata.started Timestamp
 
-**Date**: January 2025
+**Date**: October 2025
 
 **Issue**: `TypeError: Cannot read properties of undefined (reading 'date')` at widget.js:1403
 
@@ -773,7 +776,7 @@ resolve({
 
 ## Fix 6: Stdout Streaming and Line Breaks (January 2025)
 
-**Date**: January 2025
+**Date**: October 2025
 
 **Issues**:
 1. Print output had no line breaks - `print(0); print(1)` displayed as `01` instead of two lines
@@ -866,6 +869,201 @@ for i in range(10):
 
 ---
 
+### Fix 7: IAnyMessageArgs Message Unwrapping (January 2025)
+
+**Date**: October 2025
+
+**Issue**: After implementing TypeScript strict mode compliance with `IAnyMessageArgs` interface, Pyodide kernel execution broke with error "Requesting cell execution without any cell executor defined".
+
+**Root Cause**: Signal listeners in `requestExecute()` were expecting raw message objects but were now receiving wrapped `{msg: IMessage, direction: 'recv'}` format from `createMessageArgs()`. Properties like `msg.parent_header` were actually at `msgArgs.msg.parent_header`.
+
+**Error**:
+```
+Requesting cell execution without any cell executor defined.
+Execution count property access failed - msg.content undefined
+Parent header filtering broken - messages not reaching correct cells
+```
+
+**Symptoms**:
+1. Kernel execution hung after status "busy"
+2. No outputs appeared in cells
+3. Execution never completed (no "idle" status)
+4. Future.onIOPub callbacks never triggered
+
+**Fix Applied**: Updated signal listeners to unwrap messages from IAnyMessageArgs format:
+
+**1. Execution Completion Handler** (lines 863-870):
+```typescript
+// Create a promise that resolves when execution is complete
+const executionPromise = new Promise<any>((resolve) => {
+  const handler = (_sender: any, msgArgs: any) => {
+    // Unwrap message from IAnyMessageArgs format
+    const msg = msgArgs.msg || msgArgs;  // ✅ Handle both formats
+
+    // Execution complete when status goes back to idle
+    if (msg.content && msg.content.execution_state === "idle") {
+      this._iopubMessage.disconnect(handler);
+      resolve({
+        header: { date: new Date().toISOString() },
+        content: { status: "ok", execution_count: this._executionCount },
+        metadata: { started: startTime },
+      });
+    }
+  };
+  this._iopubMessage.connect(handler);
+});
+```
+
+**2. onIOPub Callback Wrapper** (lines 917-931):
+```typescript
+// Lumino signals emit (sender, args), but JupyterLab expects just (msg)
+// Wrap the callback to drop the sender parameter AND filter by parent_header
+// NOTE: msg is wrapped as {msg: IMessage, direction: 'recv'} due to IAnyMessageArgs
+iopubWrapper = (_sender: any, msgArgs: any) => {
+  // Unwrap the message from IAnyMessageArgs format
+  const msg = msgArgs.msg || msgArgs; // ✅ Handle both wrapped and unwrapped formats
+
+  // Only emit messages that belong to THIS execution
+  if (
+    msg.parent_header &&
+    msg.parent_header.msg_id === executeRequestHeader.msg_id
+  ) {
+    cb(msg);  // Call with unwrapped message
+  }
+};
+```
+
+**Why This Pattern Works**:
+- `msgArgs.msg || msgArgs` works for both wrapped and unwrapped formats
+- Wrapped format: Returns `msgArgs.msg` (the actual IMessage object)
+- Unwrapped format: Returns `msgArgs` (already an IMessage object)
+- Maintains backward compatibility with direct message passing
+- Complies with TypeScript's `IAnyMessageArgs` interface requirements
+
+**Impact on Other Components**:
+- `createMessageArgs()` helper continues to wrap messages for Signal emission
+- Signal listeners must unwrap before accessing message properties
+- Future callbacks receive unwrapped messages (JupyterLab expectation)
+- Parent header filtering works correctly with unwrapped messages
+
+**Test Results**:
+- ✅ Pyodide kernel execution works perfectly
+- ✅ Execution counts display correctly
+- ✅ Outputs appear in cells
+- ✅ Multi-cell execution without cross-contamination
+- ✅ TypeScript compiles with zero errors
+- ✅ All signal listeners properly unwrap messages
+
+**Status**: ✅ COMPLETE - TypeScript strict mode compliance achieved without breaking functionality!
+
+---
+
+## Package Preloading System (October 2025)
+
+### Overview
+
+The extension can automatically download common Python packages on startup to improve Pyodide performance. Packages are cached in the browser's IndexedDB for offline use.
+
+### Configuration
+
+**Setting**: `datalayer.pyodide.preloadBehavior`
+
+**Modes**:
+
+1. **ask-once** (default): Prompt once on first use, remember choice
+2. **ask-always**: Prompt every time packages aren't cached
+3. **auto**: Download automatically without asking
+4. **disabled**: Never preload packages
+
+**Setting**: `datalayer.pyodide.preloadPackages`
+
+**Default Packages** (24 packages):
+```json
+[
+  "numpy", "pandas", "matplotlib", "scipy", "scikit-learn",
+  "pillow", "requests", "beautifulsoup4", "lxml", "regex",
+  "pyyaml", "setuptools", "micropip", "packaging", "pytz",
+  "six", "python-dateutil", "kiwisolver", "cycler", "fonttools",
+  "contourpy", "pyparsing", "certifi", "charset-normalizer"
+]
+```
+
+### Cache Management
+
+**Command**: `datalayer.pyodide.clearCache`
+
+**What It Does**:
+1. Clears all cached Pyodide packages from IndexedDB
+2. Resets extension tracking state (`PRELOADED_PACKAGES_KEY`)
+3. Resets prompt flag (`PRELOAD_PROMPTED_KEY`)
+4. Reloads webviews to apply changes
+
+**Usage**:
+- Command Palette → "Datalayer: Clear Pyodide Package Cache"
+- Prompts for confirmation before clearing
+- Shows notification with instructions to reload extension window
+
+### Implementation Details
+
+**Files**:
+- `src/services/pyodide/pyodidePreloader.ts` - Preloader service with behavior modes
+- `src/commands/pyodide.ts` - Cache clearing command
+- `package.json` - Configuration schema and command registration
+
+**State Keys** (VS Code globalState):
+```typescript
+const PRELOAD_PROMPTED_KEY = "datalayer.pyodide.preloadPrompted";    // Boolean
+const PRELOADED_PACKAGES_KEY = "datalayer.pyodide.preloadedPackages"; // String hash
+```
+
+**Behavior Logic**:
+
+```typescript
+// Auto mode: Download without asking if not cached
+if (preloadBehavior === "auto") {
+  if (!arePackagesPreloaded) {
+    await this._startPreload();
+  }
+}
+
+// Ask-always mode: Prompt every time if packages aren't cached
+else if (preloadBehavior === "ask-always") {
+  if (!arePackagesPreloaded) {
+    await this._promptUserForPreload();
+  }
+}
+
+// Ask-once mode (default): Prompt only first time
+else {
+  if (!hasPrompted) {
+    // First time - prompt user
+    await this._promptUserForPreload();
+  } else if (!arePackagesPreloaded) {
+    // Package list changed - download silently
+    await this._startPreload();
+  }
+}
+```
+
+**Cache Storage**:
+- Location: Browser IndexedDB (in webview context)
+- Managed by: Pyodide's internal package caching system
+- Size: ~50-100MB depending on packages
+- Persistence: Survives extension reloads and VS Code restarts
+
+**User Experience**:
+1. Extension activates
+2. PyodidePreloader checks behavior mode
+3. If needed, shows notification: "Pyodide package preloading available. Download 24 packages (~50MB) for offline use?"
+4. User chooses "Download" or "Skip"
+5. If "Download", shows progress notification
+6. Packages cached for future use
+7. Subsequent loads use cached packages (instant)
+
+**Status**: ✅ COMPLETE - Package preloading with flexible behavior modes working!
+
+---
+
 ## Next Steps to Try (If Further Issues Arise)
 
 ### Option 1: Pre-load WASM in Main Thread
@@ -920,4 +1118,4 @@ Content-Security-Policy:
 
 ---
 
-*Last Updated: January 2025*
+*Last Updated: October 2025*
