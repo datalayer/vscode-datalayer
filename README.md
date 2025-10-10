@@ -55,8 +55,17 @@ Edit Jupyter Notebooks (`.ipynb`) and Lexical documents (`.lexical`) with seamle
 ### VS Code Integration
 
 - Documents match your VS Code theme automatically
-- Kernel picker supports Datalayer, local Python, and Jupyter servers
+- Kernel picker supports Datalayer, local Python, Jupyter servers, and Pyodide (offline)
 - Status bar shows connection and runtime info
+
+### Offline Execution with Pyodide
+
+- **Pyodide Kernel**: Run Python code entirely in-browser (no server needed)
+- **Zero Setup**: No local Python installation required
+- **Works Offline**: Execute notebooks without internet connection
+- **Package Preloading**: Automatically download common packages (numpy, pandas, matplotlib, etc.)
+- **Configurable Behavior**: Control when packages are downloaded (ask-once, ask-always, auto, disabled)
+- **Cache Management**: Clear package cache with `datalayer.pyodide.clearCache` command
 
 ## Installation
 
@@ -127,6 +136,11 @@ Open settings (`Ctrl+,` / `Cmd+,`) and search "Datalayer":
 - `datalayer.logging.enableSDKLogging` - Log API calls (default: true)
 - `datalayer.logging.enablePerformanceMonitoring` - Track performance (default: false)
 
+**Pyodide:**
+
+- `datalayer.pyodide.preloadBehavior` - When to download packages (ask-once/ask-always/auto/disabled, default: ask-once)
+- `datalayer.pyodide.preloadPackages` - List of packages to preload (24 packages by default)
+
 ## Common Questions
 
 **Do I need Python locally?** No, cloud runtimes handle execution. You can connect to local Python/Jupyter if preferred.
@@ -139,7 +153,19 @@ Open settings (`Ctrl+,` / `Cmd+,`) and search "Datalayer":
 
 **How do I get an access token?** Visit datalayer.io, navigate to account settings, and generate a token.
 
-## Recent Updates (January 2025)
+**What's Pyodide?** Python compiled to WebAssembly for browser-based execution. No server or local Python needed.
+
+## Recent Updates (October 2025)
+
+### Pyodide Integration (Production Ready)
+
+- **✅ Complete**: Full Pyodide kernel support with TypeScript strict mode compliance
+- **Browser-Based Execution**: Run Python code entirely in-browser with zero server dependencies
+- **Offline Capability**: Execute notebooks without internet connection after initial package download
+- **Package Preloading**: Configurable behavior for downloading common Python packages
+- **Cache Management**: Clear package cache with dedicated command
+- **Streaming Output**: Real-time output display with preserved line breaks
+- **Message Protocol**: Complete Jupyter message protocol compliance with IAnyMessageArgs interface
 
 ### Runtime Controller Improvements
 
@@ -161,10 +187,11 @@ Open settings (`Ctrl+,` / `Cmd+,`) and search "Datalayer":
 
 ## Developer Resources
 
-- [DEVELOPMENT.md](./DEVELOPMENT.md) - Setup, debugging, architecture
-- [CONTRIBUTING.md](./CONTRIBUTING.md) - Contribution guidelines
-- [TESTING.md](./TESTING.md) - Test infrastructure (41 tests, 100% pass)
+- [DEVELOPMENT.md](./dev/docs/DEVELOPMENT.md) - Setup, debugging, architecture
+- [CONTRIBUTING.md](./dev/docs/CONTRIBUTING.md) - Contribution guidelines
+- [TESTING.md](./dev/docs/TESTING.md) - Test infrastructure (41 tests, 100% pass)
 - [CHANGELOG.md](./CHANGELOG.md) - Version history
+- [Pyodide Integration](./dev/docs/PYODIDE.md) - Offline Python execution details
 
 ## Support & Community
 

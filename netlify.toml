@@ -3,7 +3,7 @@
 
 [build]
   # Build command
-  command = "npm ci && npm run doc"
+  command = "npm ci && npm run docs"
   # Publish directory (TypeDoc output)
   publish = "docs/"
 
@@ -27,13 +27,13 @@
 
 # Branch-specific build settings
 [context.production]
-  command = "npm ci --production=false && npm run doc"
+  command = "npm ci && npm run docs"
 
 [context.deploy-preview]
-  command = "npm ci --production=false && npm run doc"
+  command = "npm ci && npm run docs"
 
 [context.branch-deploy]
-  command = "npm ci --production=false && npm run doc"
+  command = "npm ci && npm run docs"
 
 # Custom headers for documentation
 [[headers]]
@@ -54,7 +54,6 @@
 
 # Security and performance
 [build.environment]
-  NODE_ENV = "production"
   NODE_VERSION = "20"
   GENERATE_SOURCEMAP = "false"
   CI = "true"

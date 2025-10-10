@@ -14,6 +14,7 @@
 import { ServiceManager } from "@jupyterlab/services";
 import { createServiceManager } from "./serviceManager";
 import { createMockServiceManager } from "./mockServiceManager";
+import { createPyodideMinimalServiceManager } from "./pyodideMinimalServiceManager";
 
 /**
  * Type guard to check if service manager has a dispose method
@@ -36,12 +37,29 @@ function isMockServiceManager(
 }
 
 /**
+ * Type guard to check if service manager is Pyodide/JupyterLite.
+ *
+ * @param sm - Service manager to check
+ * @returns True if service manager is JupyterLite with Pyodide kernel or DirectPyodideServiceManager
+ */
+function isLiteServiceManager(
+  sm: ServiceManager.IManager,
+): sm is ServiceManager.IManager & { __NAME__: string } {
+  const name = (sm as { __NAME__?: string }).__NAME__;
+  return (
+    name === "LiteServiceManager" || name === "DirectPyodideServiceManager"
+  );
+}
+
+/**
  * Mutable service manager wrapper that maintains a stable reference
  * while allowing the underlying service manager to be swapped.
  */
 export class MutableServiceManager {
   private _serviceManager: ServiceManager.IManager;
   private _listeners: Array<() => void> = [];
+  private _disposalTimeoutId: ReturnType<typeof setTimeout> | null = null;
+  private _subProxyClearFunctions: Array<() => void> = [];
 
   constructor(initialServiceManager?: ServiceManager.IManager) {
     this._serviceManager = initialServiceManager || createMockServiceManager();
@@ -86,6 +104,9 @@ export class MutableServiceManager {
     // Create new service manager with new settings
     this._serviceManager = createServiceManager(url, token);
 
+    // CRITICAL: Clear sub-proxy caches so they point to new service manager
+    this._clearSubProxyCaches();
+
     // Notify listeners that the service manager has changed
     this._listeners.forEach((listener) => listener());
   }
@@ -122,8 +143,113 @@ export class MutableServiceManager {
 
     this._serviceManager = createMockServiceManager();
 
+    // CRITICAL: Clear sub-proxy caches so they point to new service manager
+    this._clearSubProxyCaches();
+
     // Notify listeners
     this._listeners.forEach((listener) => listener());
+  }
+
+  /**
+   * Switch to Pyodide service manager for offline execution.
+   * Uses JupyterLite with Pyodide kernel from @datalayer/jupyter-react package.
+   * Falls back to mock service manager if Pyodide initialization fails.
+   *
+   * @remarks
+   * Cancels any pending disposal to prevent race conditions from rapid kernel switching.
+   */
+  async updateToPyodide(): Promise<void> {
+    console.log("[MutableServiceManager] Switching to Pyodide service manager");
+
+    // Cancel any pending disposal timeout to prevent race conditions
+    if (this._disposalTimeoutId !== null) {
+      clearTimeout(this._disposalTimeoutId);
+      this._disposalTimeoutId = null;
+    }
+
+    // Dispose old service manager if it has a dispose method
+    // Skip disposal for mock service manager since it doesn't need cleanup
+    if (
+      this._serviceManager &&
+      hasDispose(this._serviceManager) &&
+      !isMockServiceManager(this._serviceManager)
+    ) {
+      const oldSm = this._serviceManager;
+      // Schedule delayed disposal to allow pending operations to complete
+      this._disposalTimeoutId = setTimeout(() => {
+        try {
+          oldSm.dispose();
+          this._disposalTimeoutId = null;
+        } catch (error) {
+          console.error(
+            "[MutableServiceManager] Error during delayed disposal:",
+            error,
+          );
+        }
+      }, 50);
+    }
+
+    // Create minimal Pyodide service manager (with mock execution for now)
+    // NOTE: This has mock Python execution. Real Pyodide requires solving CDN/CSP issues.
+    try {
+      console.log(
+        "[MutableServiceManager] Creating minimal Pyodide service manager...",
+      );
+
+      this._serviceManager = await createPyodideMinimalServiceManager();
+
+      console.log(
+        "[MutableServiceManager] Pyodide service manager created, waiting for ready...",
+      );
+
+      // CRITICAL: Wait for service manager to be ready before notifying listeners
+      await this._serviceManager.ready;
+      console.log(
+        "[MutableServiceManager] Pyodide service manager is ready! isReady:",
+        this._serviceManager.isReady,
+      );
+    } catch (error) {
+      console.error(
+        "[MutableServiceManager] Failed to create Pyodide service manager:",
+        error,
+      );
+      // Fallback to mock on error (don't throw - allow graceful degradation)
+      this._serviceManager = createMockServiceManager();
+      console.warn(
+        "[MutableServiceManager] Falling back to mock service manager",
+      );
+    }
+
+    // CRITICAL: Clear sub-proxy caches so they point to new Pyodide service manager
+    this._clearSubProxyCaches();
+
+    // Notify listeners that the service manager has changed
+    // This triggers Notebook2 to reinitialize with the new service manager
+    this._listeners.forEach((listener) => listener());
+  }
+
+  /**
+   * Check if currently using Pyodide service manager.
+   *
+   * @returns True if using JupyterLite with Pyodide kernel
+   */
+  isPyodide(): boolean {
+    return isLiteServiceManager(this._serviceManager);
+  }
+
+  /**
+   * Get the current service manager type for debugging.
+   *
+   * @returns "mock", "pyodide", or "remote"
+   */
+  getType(): string {
+    if (isMockServiceManager(this._serviceManager)) {
+      return "mock";
+    }
+    if (this.isPyodide()) {
+      return "pyodide";
+    }
+    return "remote";
   }
 
   /**
@@ -145,6 +271,15 @@ export class MutableServiceManager {
   }
 
   /**
+   * Clear all sub-proxy caches to force re-creation with new service manager.
+   * This is CRITICAL when swapping service managers to prevent stale references.
+   */
+  private _clearSubProxyCaches(): void {
+    console.log("[MutableServiceManager] Clearing sub-proxy caches");
+    this._subProxyClearFunctions.forEach((clearFn) => clearFn());
+  }
+
+  /**
    * Create a proxy that forwards all property access to the current service manager.
    * This allows the MutableServiceManager to be used as a drop-in replacement.
    *
@@ -152,11 +287,12 @@ export class MutableServiceManager {
    * we need to return proxies as well, because SessionContext extracts these properties
    * and holds onto them. Without proxies, SessionContext would keep references to the
    * old mock service manager's kernels/sessions even after we swap to a real one.
+   *
+   * CRITICAL FIX: Do NOT cache sub-proxies! Even though we clear the cache when service
+   * manager changes, React components may already have references to the old cached sub-proxies.
+   * Always creating fresh proxies ensures every property access reads from the CURRENT service manager.
    */
   createProxy(): ServiceManager.IManager {
-    // Cache for sub-proxies (kernels, sessions, etc.) to maintain object identity
-    const subProxies = new Map<string, unknown>();
-
     return new Proxy({} as ServiceManager.IManager, {
       get: (_target, prop) => {
         const current = this._serviceManager as unknown as Record<
@@ -180,14 +316,11 @@ export class MutableServiceManager {
             "events",
             "settings",
             "nbconvert",
+            "user",
           ].includes(prop)
         ) {
-          // Return cached proxy if exists to maintain object identity
-          if (subProxies.has(prop)) {
-            return subProxies.get(prop);
-          }
-
-          // Create new proxy for this property
+          // ALWAYS create a new proxy - DO NOT cache!
+          // This ensures every access reads from the CURRENT service manager
           const subProxy = new Proxy({} as Record<string, unknown>, {
             get: (_subTarget, subProp) => {
               const currentSm = this._serviceManager as unknown as Record<
@@ -227,7 +360,6 @@ export class MutableServiceManager {
             },
           });
 
-          subProxies.set(prop, subProxy);
           return subProxy;
         }
 

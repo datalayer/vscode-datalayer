@@ -64,9 +64,13 @@ function NotebookEditorCore(): JSX.Element {
   const containerRef = useRef<HTMLDivElement>(null);
 
   // Runtime management with hook
-  const { selectedRuntime, serviceManager, selectRuntime } = useRuntimeManager(
-    store.selectedRuntime,
-  );
+  const {
+    selectedRuntime,
+    kernelName,
+    serviceManager,
+    selectRuntime,
+    selectPyodideRuntime,
+  } = useRuntimeManager(store.selectedRuntime);
 
   // Notebook model management
   const { handleNotebookModelChanged, getNotebookData, markClean } =
@@ -130,9 +134,9 @@ function NotebookEditorCore(): JSX.Element {
           }
 
           // Handle notebook data
-          if (body.isDatalayerNotebook) {
-            store.setIsDatalayerNotebook(true);
-          }
+          // Always explicitly set isDatalayerNotebook (don't skip when false)
+          // Otherwise reused webviews may retain stale value
+          store.setIsDatalayerNotebook(!!body.isDatalayerNotebook);
 
           if (body.documentId) {
             store.setDocumentId(body.documentId);
@@ -172,9 +176,29 @@ function NotebookEditorCore(): JSX.Element {
         case "runtime-selected":
         case "kernel-selected": {
           const { body } = message;
-          if (body?.runtime) {
+          console.log("[NotebookEditor] Kernel selected:", body);
+
+          if (body?.kernelType === "pyodide") {
+            // Switch to Pyodide kernel
+            console.log("[NotebookEditor] Switching to Pyodide kernel");
+            selectPyodideRuntime().catch((error) => {
+              console.error(
+                "[NotebookEditor] Failed to switch to Pyodide kernel:",
+                error,
+              );
+            });
+          } else if (body?.runtime) {
+            // Switch to remote runtime
+            console.log(
+              "[NotebookEditor] Switching to remote runtime:",
+              body.runtime.ingress,
+            );
             selectRuntime(body.runtime);
             store.setRuntime(body.runtime);
+          } else {
+            console.warn(
+              "[NotebookEditor] kernel-selected with no runtime or kernelType",
+            );
           }
           break;
         }
@@ -245,7 +269,14 @@ function NotebookEditorCore(): JSX.Element {
       handleMessage as (message: unknown) => void,
     );
     return () => disposable.dispose();
-  }, [messageHandler, store, selectRuntime, getNotebookData, markClean]);
+  }, [
+    messageHandler,
+    store,
+    selectRuntime,
+    selectPyodideRuntime,
+    getNotebookData,
+    markClean,
+  ]);
 
   // Sync colormode with theme changes
   useEffect(() => {
@@ -317,6 +348,7 @@ function NotebookEditorCore(): JSX.Element {
         notebookId={store.documentId || store.notebookId}
         isDatalayerNotebook={store.isDatalayerNotebook}
         selectedRuntime={selectedRuntime}
+        kernelName={kernelName}
       />
 
       <Box
@@ -332,20 +364,21 @@ function NotebookEditorCore(): JSX.Element {
       >
         <Box className="dla-Box-Notebook" sx={notebookCellStyles}>
           <Notebook2
-            // Use stable key - MutableServiceManager handles runtime switching internally
-            // Remounting would lose notebook state and cause race conditions
-            key={store.documentId || store.notebookId || "notebook"}
+            // Use stable key for same service manager type
+            // But force remount when switching between Pyodide and remote
+            // This ensures kernel session is properly initialized
+            key={`${store.documentId || store.notebookId || "notebook"}-${kernelName || selectedRuntime?.uid || "none"}`}
             // @ts-ignore - Type mismatch between different @jupyterlab versions
             nbformat={store.nbformat || {}}
             id={store.documentId || store.notebookId}
             // @ts-ignore - Type mismatch between @jupyterlab/services versions
             serviceManager={serviceManager}
             collaborationProvider={collaborationProvider}
-            // Start kernel when we have a real runtime selected
+            // Start kernel when we have a runtime OR when using Pyodide
             // Collaboration and execution are orthogonal:
             // - collaborationProvider syncs notebook content with Datalayer platform
-            // - serviceManager + kernel handles cell execution (same for local and remote)
-            startDefaultKernel={!!selectedRuntime}
+            // - serviceManager + kernel handles cell execution (same for local/remote/Pyodide)
+            startDefaultKernel={!!selectedRuntime || !!kernelName}
             height={notebookHeight}
             cellSidebarMargin={cellSidebarMargin}
             extensions={extensions}

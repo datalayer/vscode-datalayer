@@ -47,6 +47,11 @@
         "category": "Datalayer"
       },
       {
+        "command": "datalayer.pyodide.clearCache",
+        "title": "Clear Pyodide Package Cache",
+        "category": "Datalayer"
+      },
+      {
         "command": "datalayer.selectRuntime",
         "title": "Select/Switch Runtime",
         "category": "Datalayer"
@@ -346,6 +351,55 @@
           "type": "boolean",
           "default": false,
           "description": "Enable performance monitoring with timing and memory usage tracking (may impact performance)"
+        },
+        "datalayer.pyodide.preloadBehavior": {
+          "type": "string",
+          "enum": [
+            "ask-once",
+            "ask-always",
+            "auto",
+            "disabled"
+          ],
+          "enumDescriptions": [
+            "Prompt once on first use, then remember choice",
+            "Always prompt on extension startup",
+            "Automatically download packages without asking",
+            "Never preload packages"
+          ],
+          "default": "ask-once",
+          "description": "Controls how Pyodide packages are preloaded on extension startup"
+        },
+        "datalayer.pyodide.preloadPackages": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [
+            "altair",
+            "bokeh",
+            "dateutil",
+            "duckdb",
+            "ipywidgets",
+            "matplotlib",
+            "matplotlib-inline",
+            "networkx",
+            "numpy",
+            "pandas",
+            "plotly",
+            "polars",
+            "pyarrow",
+            "pytz",
+            "requests",
+            "scikit-learn",
+            "scipy",
+            "seaborn",
+            "statsmodels",
+            "sympy",
+            "traitlets",
+            "tqdm",
+            "vega_datasets"
+          ],
+          "description": "Python packages to preload when extension starts (only if enablePreload is true)"
         }
       }
     },
@@ -394,10 +448,10 @@
     "check:fix": "npm run format && npm run lint:fix && npm run type-check",
     "test": "vscode-test",
     "vsix": "npm run clean:vsix && npx @vscode/vsce package --no-yarn --no-dependencies",
-    "doc": "typedoc",
-    "doc:watch": "typedoc --watch",
-    "doc:markdown": "typedoc --plugin typedoc-plugin-markdown --out docs-markdown",
-    "doc:coverage": "typedoc --validation"
+    "docs": "typedoc",
+    "docs:watch": "typedoc --watch",
+    "docs:markdown": "typedoc --plugin typedoc-plugin-markdown --out docs-markdown",
+    "docs:coverage": "typedoc --validation"
   },
   "dependencies": {
     "@codemirror/autocomplete": "^6.18.7",
@@ -463,6 +517,7 @@
     "patch-package": "^8.0.0",
     "prettier": "^3.6.2",
     "process": "^0.11.10",
+    "pyodide": "^0.25.0",
     "style-loader": "^2.0.0",
     "svg-inline-loader": "^0.8.2",
     "ts-loader": "^9.5.2",
