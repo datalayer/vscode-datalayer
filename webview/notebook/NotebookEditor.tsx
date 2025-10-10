@@ -181,7 +181,7 @@ function NotebookEditorCore({
   // Handle messages from the extension
   // Memoize the handler to prevent re-registration on every render
   const handleMessage = useCallback(
-    (message: ExtensionMessage) => {
+    async (message: ExtensionMessage) => {
       switch (message.type) {
         case "init": {
           const { body } = message;
@@ -309,6 +309,266 @@ function NotebookEditorCore({
             markClean();
           }
           break;
+
+        case "insert-cell": {
+          const { body } = message;
+          const { cellType, source, index } = body;
+
+          // GUARD: Validate source exists
+          if (source === undefined || source === null) {
+            console.error(
+              `[NotebookEditor] insert-cell: 'source' is ${source}! Message body:`,
+              body,
+              "This indicates internal.insertCell sent undefined/null source.",
+            );
+            throw new Error(
+              `insert-cell requires 'source' field. Got: ${source}`,
+            );
+          }
+
+          // Poll for notebook to be ready
+          const waitForNotebook = async () => {
+            const maxAttempts = 20; // 10 seconds max (20 * 500ms)
+            for (let i = 0; i < maxAttempts; i++) {
+              const notebookState = notebookStore2.getState();
+              const notebook = notebookState.notebooks.get(notebookId);
+
+              if (notebook?.adapter?.panel?.content) {
+                return notebook;
+              }
+
+              await new Promise((resolve) => setTimeout(resolve, 500));
+            }
+            return null;
+          };
+
+          const notebook = await waitForNotebook();
+
+          if (notebook?.adapter?.panel?.content) {
+            // Use insertAt when index is provided, insertBelow otherwise
+            if (index !== undefined) {
+              notebookStore2.getState().insertAt({
+                id: notebookId,
+                cellType: cellType,
+                cellIndex: index,
+                source: source,
+              });
+            } else {
+              notebookStore2.getState().insertBelow({
+                id: notebookId,
+                cellType: cellType,
+                source: source,
+              });
+            }
+          }
+          break;
+        }
+
+        case "delete-cell": {
+          const { body } = message;
+          const { index } = body;
+
+          const notebookState = notebookStore2.getState();
+          const notebook = notebookState.notebooks.get(notebookId);
+
+          if (notebook?.adapter?.panel?.content) {
+            const notebookWidget = notebook.adapter.panel.content;
+            const cellCount = notebookWidget.model!.cells.length;
+
+            if (index >= 0 && index < cellCount) {
+              // Delete cell directly through the model
+              notebookWidget.model!.sharedModel.deleteCell(index);
+            }
+          }
+          break;
+        }
+
+        case "overwrite-cell": {
+          const { body } = message;
+          const { index, source } = body;
+
+          try {
+            // Update cell directly through the model
+            const notebookState = notebookStore2.getState();
+            const notebook = notebookState.notebooks.get(notebookId);
+            if (notebook?.adapter?.panel?.content) {
+              const notebookWidget = notebook.adapter.panel.content;
+              const cell = notebookWidget.model!.cells.get(index);
+              if (cell) {
+                cell.sharedModel.setSource(source);
+              }
+            }
+          } catch (error) {
+            console.error("[Webview] Failed to overwrite cell:", error);
+          }
+          break;
+        }
+
+        case "set-active-cell": {
+          const { body } = message;
+          const { index } = body;
+
+          // Poll for notebook to be ready
+          const waitForNotebook = async () => {
+            const maxAttempts = 20; // 10 seconds max
+            for (let i = 0; i < maxAttempts; i++) {
+              const notebookState = notebookStore2.getState();
+              const notebook = notebookState.notebooks.get(notebookId);
+
+              if (notebook?.adapter?.panel?.content) {
+                return notebook;
+              }
+
+              await new Promise((resolve) => setTimeout(resolve, 500));
+            }
+            return null;
+          };
+
+          const notebook = await waitForNotebook();
+
+          if (notebook?.adapter?.panel?.content) {
+            try {
+              const notebookWidget = notebook.adapter.panel.content;
+              const cellCount = notebookWidget.model!.cells.length;
+
+              if (index >= 0 && index < cellCount) {
+                notebookWidget.activeCellIndex = index;
+              }
+            } catch (error) {
+              console.error("[Webview] Failed to set active cell:", error);
+            }
+          }
+          break;
+        }
+
+        case "read-cell-request": {
+          const { body, requestId } = message;
+          const { index } = body;
+
+          console.log("[Webview] Received read-cell-request:", {
+            index,
+            requestId,
+            notebookId,
+          });
+
+          try {
+            // Read cell directly from the model
+            const notebookState = notebookStore2.getState();
+            const notebook = notebookState.notebooks.get(notebookId);
+            let cellData: any = null;
+
+            if (notebook?.adapter?.panel?.content) {
+              const notebookWidget = notebook.adapter.panel.content;
+              const cell = notebookWidget.model!.cells.get(index);
+              if (cell) {
+                cellData = {
+                  type: cell.type,
+                  source: cell.sharedModel.getSource(),
+                  outputs:
+                    cell.type === "code"
+                      ? Array.from((cell as any).outputs || [])
+                      : undefined,
+                };
+              }
+            }
+
+            if (cellData) {
+              // Convert outputs to string format for the response
+              let outputs: string[] | undefined;
+              if (cellData.outputs && cellData.outputs.length > 0) {
+                outputs = cellData.outputs.map((output: any) => {
+                  if (output.output_type === "stream") {
+                    return output.text || "";
+                  } else if (
+                    output.output_type === "execute_result" ||
+                    output.output_type === "display_data"
+                  ) {
+                    return output.data?.["text/plain"] || "[non-text output]";
+                  } else if (output.output_type === "error") {
+                    return output.traceback?.join("\n") || "[error output]";
+                  } else {
+                    return `[${output.output_type} output]`;
+                  }
+                });
+              }
+
+              // Send response
+              messageHandler.send({
+                type: "response",
+                requestId,
+                body: {
+                  index: index,
+                  type: cellData.type,
+                  source: cellData.source,
+                  outputs,
+                },
+              });
+
+              console.log("[Webview] Sent response for cell index:", index);
+            } else {
+              console.error("[Webview] Cell not found at index:", index);
+            }
+          } catch (error) {
+            console.error("[Webview] Failed to read cell:", error);
+          }
+          break;
+        }
+
+        case "get-cells-request": {
+          const { requestId } = message;
+
+          try {
+            const allCells = notebookStore2.getState().getCells(notebookId);
+            const cells = allCells.map((cellData, i) => ({
+              id: `cell-${i}`,
+              cell_type: cellData.type,
+              source: cellData.source,
+              outputs: cellData.outputs,
+            }));
+
+            messageHandler.send({
+              type: "response",
+              requestId,
+              body: cells,
+            });
+          } catch (error) {
+            console.error("[Webview] Failed to get cells:", error);
+          }
+          break;
+        }
+
+        case "get-notebook-info-request": {
+          const { requestId } = message;
+
+          try {
+            const cellCount = notebookStore2
+              .getState()
+              .getCellCount(notebookId);
+            const allCells = notebookStore2.getState().getCells(notebookId);
+
+            // Count cell types
+            const cellTypes = { code: 0, markdown: 0, raw: 0 };
+            allCells.forEach((cell) => {
+              if (cell.type === "code") cellTypes.code++;
+              else if (cell.type === "markdown") cellTypes.markdown++;
+              else if (cell.type === "raw") cellTypes.raw++;
+            });
+
+            // Send response
+            messageHandler.send({
+              type: "response",
+              requestId,
+              body: {
+                path: notebookId,
+                cellCount,
+                cellTypes,
+              },
+            });
+          } catch (error) {
+            console.error("[Webview] Failed to get notebook info:", error);
+          }
+          break;
+        }
 
         case "outline-navigate": {
           // Handle navigation to outline item

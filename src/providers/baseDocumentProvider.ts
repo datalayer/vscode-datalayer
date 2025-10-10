@@ -36,7 +36,7 @@ export abstract class BaseDocumentProvider<
   protected readonly _runtimeBridge: RuntimeBridgeService;
 
   private _requestId = 1;
-  private readonly _callbacks = new Map<
+  protected readonly _callbacks = new Map<
     string | number,
     (response: unknown) => void
   >();

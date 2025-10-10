@@ -67,6 +67,7 @@ import { createVSCodeLoroProvider } from "../services/loro/providerFactory";
 import { LexicalVSCodeLLMProvider } from "../services/completion/lexicalLLMProvider";
 import { OutlinePlugin } from "./plugins/OutlinePlugin";
 import { NavigationPlugin } from "./plugins/NavigationPlugin";
+import { InternalCommandsPlugin } from "./plugins/InternalCommandsPlugin";
 import type { OutlineUpdateMessage } from "../types/messages";
 
 /**
@@ -543,6 +544,9 @@ export function LexicalEditor({
               onNavigated={onNavigated}
             />
           )}
+          <InternalCommandsPlugin
+            vscode={vscode as { postMessage: (message: unknown) => void }}
+          />
           {floatingAnchorElem && (
             <DraggableBlockPlugin anchorElem={floatingAnchorElem} />
           )}

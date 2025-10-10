@@ -168,7 +168,7 @@ export async function showKernelSelector(
         if (confirmed && documentUri) {
           // Send terminate message to the document's webview
           vscode.commands.executeCommand(
-            "datalayer.internal.terminateRuntime",
+            "datalayer.internal.runtime.terminate",
             documentUri,
             currentRuntime,
           );

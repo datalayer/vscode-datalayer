@@ -91,7 +91,7 @@ export function registerRuntimeCommands(
 
               // Fire event that lexical provider can listen to
               vscode.commands.executeCommand(
-                "datalayer.internal.runtimeSelected",
+                "datalayer.internal.runtime.selected",
                 runtimeJSON,
               );
 
@@ -385,7 +385,7 @@ export function registerRuntimeCommands(
    */
   context.subscriptions.push(
     vscode.commands.registerCommand(
-      "datalayer.internal.terminateRuntime",
+      "datalayer.internal.runtime.terminate",
       async (uri: vscode.Uri, runtime: unknown) => {
         const runtimeObj = runtime as {
           podName?: string;
@@ -420,7 +420,7 @@ export function registerRuntimeCommands(
         // Send kernel-terminated message to appropriate provider
         // This is a fire-and-forget command to notify the UI
         vscode.commands.executeCommand(
-          "datalayer.internal.notifyRuntimeTerminated",
+          "datalayer.internal.runtime.notifyTerminated",
           uri,
         );
       },
@@ -837,7 +837,7 @@ async function notifyAllDocuments(): Promise<void> {
       ) {
         const uri = (input as { uri: vscode.Uri }).uri;
         vscode.commands.executeCommand(
-          "datalayer.internal.notifyRuntimeTerminated",
+          "datalayer.internal.runtime.notifyTerminated",
           uri,
         );
       }

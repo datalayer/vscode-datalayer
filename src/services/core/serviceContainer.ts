@@ -28,6 +28,7 @@ import { KernelBridge } from "../bridges/kernelBridge";
 import { NotebookNetworkService } from "../network/networkProxy";
 import { ErrorHandler } from "./errorHandler";
 import { ILifecycle } from "./baseService";
+import { DocumentRegistry } from "../documents/documentRegistry";
 
 /**
  * Service container interface defining all available services.
@@ -42,6 +43,9 @@ export interface IServiceContainer extends ILifecycle {
   // Logging services
   readonly loggerManager: ILoggerManager;
   readonly logger: ILogger;
+
+  // Document services
+  readonly documentRegistry: DocumentRegistry;
 
   // Notebook services
   readonly documentBridge: IDocumentBridge;
@@ -73,6 +77,7 @@ export class ServiceContainer implements IServiceContainer {
   private _loggerManager?: ILoggerManager;
   private _logger?: ILogger;
   private _errorHandler?: IErrorHandler;
+  private _documentRegistry?: DocumentRegistry;
 
   constructor(public readonly context: vscode.ExtensionContext) {}
 
@@ -117,6 +122,15 @@ export class ServiceContainer implements IServiceContainer {
       this._logger = this.loggerManager.createLogger("Service Container");
     }
     return this._logger;
+  }
+
+  // Document services
+
+  get documentRegistry(): DocumentRegistry {
+    if (!this._documentRegistry) {
+      this._documentRegistry = new DocumentRegistry();
+    }
+    return this._documentRegistry;
   }
 
   // Notebook services
