@@ -10,7 +10,7 @@
 
 # Datalayer for Visual Studio Code
 
-**🚀 Transform VS Code into a collaborative data science platform with seamless local-to-cloud scaling and rich document creation in just 2 clicks.** 
+**🚀 Transform VS Code into a collaborative data science platform with seamless local-to-cloud scaling and rich document creation in just 2 clicks.**
 
 💻 Execute notebooks on cloud compute, 📝 create beautiful reports with Notion-like collaborative documents, and 🔄 switch effortlessly between local and remote environments - all within your familiar VS Code interface.
 
@@ -21,18 +21,21 @@
 ## 🚀 Key Benefits
 
 ### ⚡ **Instant Cloud Scaling**
+
 - **Zero-setup cloud execution** - Run workloads on cloud CPUs or GPUs without any local Python installation
 - **2-click scaling** - Switch from local development to cloud compute instantly via the kernel picker
 - **Smart resource management** - Automatic runtime creation and reuse to optimize compute costs
 
 ### 📝 **Collaborative Rich Documents**
+
 - **Notion-like documents** with rich formatting - Create beautiful reports with headings, lists, images, tables, executable code blocks, etc.
 - **Real-time collaboration** - Multiple users can edit documents simultaneously with live updates
 - **Mixed content support** - Seamlessly combine executable code, images, text, and more in a single document
 
-### 🔀 **Ultimate Flexibility** 
+### 🔀 **Ultimate Flexibility**
+
 - **Seamless local ↔ cloud switching** - Start locally, scale to cloud, then return to local development
-- **Multiple runtime support** - Connect to Datalayer cloud, local Python, or existing Jupyter servers  
+- **Multiple runtime support** - Connect to Datalayer cloud, local Python, or existing Jupyter servers
 - **Code preservation** - Your code runs identically across local and cloud environments
 - **Hybrid workflows** - Use the best of both worlds without vendor lock-in
 
@@ -48,27 +51,31 @@
 
 ### 📊 **Advanced Document Editors**
 
-**Jupyter Notebooks** 
+**Jupyter Notebooks**
+
 - Full-featured notebook editing with syntax highlighting and IntelliSense
 - Execute on cloud GPUs/CPUs or local Python environments
 - Seamless kernel switching between local and remote runtimes
 
-**Lexical Documents** 
-- Notion-like rich text editor** with real-time collaborative editing
+**Lexical Documents**
+
+- Notion-like rich text editor\*\* with real-time collaborative editing
 - Support for images, tables, code blocks, mathematical equations, and formatted text
 - Perfect for creating data science reports, documentation, and presentations
 
 ### 🗂️ **Integrated Workspace Management**
 
 **Datalayer Spaces** (Explorer Sidebar)
+
 - Browse and manage your cloud documents and notebooks
 - Create, rename, delete files directly in the cloud
 - Virtual file paths: `datalayer://Space Name/document.ipynb`
 - Collaborative workspace sharing
 
 **Datalayer Runtimes** (Explorer Sidebar)
+
 - Real-time monitoring of all active cloud environments
-- One-click runtime creation and termination  
+- One-click runtime creation and termination
 - Resource usage and cost tracking
 - Environment type indicators (CPU/GPU, memory, duration, etc.)
 - Health status monitoring and automatic recovery
@@ -86,6 +93,7 @@
 - **Unified kernel picker** - Access Datalayer cloud, local Python, and Jupyter servers
 - **Rich status indicators** - Connection status and runtime info in status bar
 - **Command palette integration** - All features accessible via `Ctrl+Shift+P`
+- **GitHub Copilot integration** - Use natural language to create notebooks and insert cells (e.g., "Create a local notebook and add a plot")
 
 ## 💡 Common Questions
 
@@ -133,7 +141,7 @@
 **Runtimes:**
 
 - Select/Switch Runtime (local ↔ cloud switching)
-- Terminate Runtime(s)  
+- Terminate Runtime(s)
 - View Runtime Controllers Status
 - Monitor resource usage and costs
 

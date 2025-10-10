@@ -37,16 +37,21 @@ export function createMockExtensionContext(): vscode.ExtensionContext {
     logPath: "/mock/logs",
     extensionMode: vscode.ExtensionMode.Test,
 
-    secrets: {
-      get: async (key: string) => secrets.get(key),
-      store: async (key: string, value: string) => {
-        secrets.set(key, value);
-      },
-      delete: async (key: string) => {
-        secrets.delete(key);
-      },
-      onDidChange: new vscode.EventEmitter<vscode.SecretStorageChangeEvent>()
-        .event,
+    get secrets(): vscode.SecretStorage {
+      const storage: vscode.SecretStorage = {
+        get: async (key: string) => secrets.get(key),
+        store: async (key: string, value: string) => {
+          secrets.set(key, value);
+        },
+        delete: async (key: string) => {
+          secrets.delete(key);
+        },
+        // @ts-ignore - keys() method required in VS Code 1.98+ but not in older versions
+        keys: async () => Array.from(secrets.keys()),
+        onDidChange: new vscode.EventEmitter<vscode.SecretStorageChangeEvent>()
+          .event,
+      };
+      return storage;
     },
 
     globalState: {
@@ -380,7 +385,7 @@ export function createMockSecretStorage(): vscode.SecretStorage {
   const onDidChangeEmitter =
     new vscode.EventEmitter<vscode.SecretStorageChangeEvent>();
 
-  return {
+  const storage: vscode.SecretStorage = {
     get: async (key: string) => secrets.get(key),
     store: async (key: string, value: string) => {
       secrets.set(key, value);
@@ -390,8 +395,11 @@ export function createMockSecretStorage(): vscode.SecretStorage {
       secrets.delete(key);
       onDidChangeEmitter.fire({ key });
     },
+    // @ts-ignore - keys() method required in VS Code 1.98+ but not in older versions
+    keys: async () => Array.from(secrets.keys()),
     onDidChange: onDidChangeEmitter.event,
   };
+  return storage;
 }
 
 /**

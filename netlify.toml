@@ -3,7 +3,7 @@
 
 [build]
   # Build command
-  command = "npm ci && npm run doc"
+  command = "npm install && npm run doc"
   # Publish directory (TypeDoc output)
   publish = "docs/"
 
@@ -27,13 +27,13 @@
 
 # Branch-specific build settings
 [context.production]
-  command = "npm ci --production=false && npm run doc"
+  command = "npm install && npm run doc"
 
 [context.deploy-preview]
-  command = "npm ci --production=false && npm run doc"
+  command = "npm install && npm run doc"
 
 [context.branch-deploy]
-  command = "npm ci --production=false && npm run doc"
+  command = "npm install && npm run doc"
 
 # Custom headers for documentation
 [[headers]]
@@ -54,8 +54,8 @@
 
 # Security and performance
 [build.environment]
-  NODE_ENV = "production"
-  NODE_VERSION = "20"
+  # Don't set NODE_ENV to production - we need devDependencies for TypeDoc
+  NODE_VERSION = "20.18.1"
   GENERATE_SOURCEMAP = "false"
   CI = "true"
   # Increase Node.js heap size for large documentation builds
