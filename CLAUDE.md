@@ -37,6 +37,18 @@
 - Output isolation: Each cell receives only its own execution messages
 - Execution counts: Proper `[1]:`, `[2]:` display via execute_input messages
 
+**Package Preloading**:
+
+The extension can automatically download common Python packages on startup:
+
+- **Configuration**: `datalayer.pyodide.preloadBehavior`
+  - `ask-once` (default): Prompt once on first use
+  - `ask-always`: Prompt every time packages aren't cached
+  - `auto`: Download automatically without prompting
+  - `disabled`: Never preload packages
+- **Package List**: `datalayer.pyodide.preloadPackages` (24 packages by default)
+- **Cache Management**: Command `datalayer.pyodide.clearCache` clears IndexedDB and resets prompt state
+
 **Known Issues**:
 
 - ⚠️ Output formatting (line breaks, streaming) needs refinement

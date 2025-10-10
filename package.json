@@ -50,6 +50,11 @@
         "category": "Datalayer"
       },
       {
+        "command": "datalayer.pyodide.clearCache",
+        "title": "Clear Pyodide Package Cache",
+        "category": "Datalayer"
+      },
+      {
         "command": "datalayer.selectRuntime",
         "title": "Select/Switch Runtime",
         "category": "Datalayer"
@@ -423,6 +428,55 @@
           "type": "boolean",
           "default": false,
           "description": "Enable performance monitoring with timing and memory usage tracking (may impact performance)"
+        },
+        "datalayer.pyodide.preloadBehavior": {
+          "type": "string",
+          "enum": [
+            "ask-once",
+            "ask-always",
+            "auto",
+            "disabled"
+          ],
+          "enumDescriptions": [
+            "Prompt once on first use, then remember choice",
+            "Always prompt on extension startup",
+            "Automatically download packages without asking",
+            "Never preload packages"
+          ],
+          "default": "ask-once",
+          "description": "Controls how Pyodide packages are preloaded on extension startup"
+        },
+        "datalayer.pyodide.preloadPackages": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [
+            "altair",
+            "bokeh",
+            "dateutil",
+            "duckdb",
+            "ipywidgets",
+            "matplotlib",
+            "matplotlib-inline",
+            "networkx",
+            "numpy",
+            "pandas",
+            "plotly",
+            "polars",
+            "pyarrow",
+            "pytz",
+            "requests",
+            "scikit-learn",
+            "scipy",
+            "seaborn",
+            "statsmodels",
+            "sympy",
+            "traitlets",
+            "tqdm",
+            "vega_datasets"
+          ],
+          "description": "Python packages to preload when extension starts (only if enablePreload is true)"
         }
       }
     },

@@ -11,28 +11,32 @@
  * Loads Pyodide from bundled resources using fetch+eval instead of importScripts
  */
 
-import { Kernel, ServerConnection } from "@jupyterlab/services";
+import { Kernel, ServerConnection, KernelMessage } from "@jupyterlab/services";
 import { Signal, ISignal } from "@lumino/signaling";
 
 // Worker message types
 interface WorkerStatusMessage {
   type: "status";
+  id?: number; // Execution ID for tracking which cell this status belongs to
   status: Kernel.Status;
 }
 
 interface WorkerStreamMessage {
   type: "stream";
+  id?: number; // Execution ID for tracking which cell this output belongs to
   name: string;
   text: string;
 }
 
 interface WorkerExecuteResultMessage {
   type: "execute_result";
+  id?: number; // Execution ID for tracking which cell this result belongs to
   result: unknown;
 }
 
 interface WorkerErrorMessage {
   type: "error";
+  id?: number; // Execution ID for tracking which cell this error belongs to
   error: {
     ename: string;
     evalue: string;
@@ -222,6 +226,13 @@ self.addEventListener('message', async (event) => {
       // Execute Python code with proper stdout handling
       console.log('[PyodideWorker] Executing:', code);
 
+      // IMPORTANT: Auto-load packages before execution
+      // Use Pyodide's built-in function that parses imports and loads packages
+      // This is exactly what Pyodide REPL does
+      console.log('[PyodideWorker] Auto-loading packages from imports...');
+      await pyodide.loadPackagesFromImports(code);
+      console.log('[PyodideWorker] Packages loaded, executing code...');
+
       // Use Python-side stdout capture for proper newline handling
       // This is similar to how JupyterLite does it - handle stdout in Python, not JS
       // Use pyodide.globals to pass the user code and message ID safely
@@ -351,6 +362,19 @@ console.log('[PyodideWorker] Worker initialized, waiting for init message...');
 `;
 
 /**
+ * Helper to create IAnyMessageArgs from a kernel message
+ */
+function createMessageArgs(
+  msg: Record<string, unknown>,
+  direction: "send" | "recv" = "recv",
+): Kernel.IAnyMessageArgs {
+  return {
+    msg: msg as unknown as KernelMessage.IMessage,
+    direction,
+  };
+}
+
+/**
  * Inline Pyodide kernel that creates Web Worker from Blob URL
  */
 export class PyodideInlineKernel implements Kernel.IKernelConnection {
@@ -362,6 +386,7 @@ export class PyodideInlineKernel implements Kernel.IKernelConnection {
     this,
   );
   private _anyMessage = new Signal<this, Kernel.IAnyMessageArgs>(this);
+  private _unhandledMessage = new Signal<this, KernelMessage.IMessage>(this);
   private _pendingInput = new Signal<this, boolean>(this);
   private _status: Kernel.Status = "idle"; // Start as idle to prevent immediate shutdown
   private _connectionStatus: Kernel.ConnectionStatus = "connected"; // Start as connected
@@ -369,6 +394,10 @@ export class PyodideInlineKernel implements Kernel.IKernelConnection {
   private _messageId = 0;
   private _currentExecuteHeader: ExecuteRequestHeader | undefined;
   private _currentExecuteCode: string | undefined;
+  // Map execution ID to parent header for proper message routing when running multiple cells
+  private _executionHeaders: Map<number, ExecuteRequestHeader> = new Map();
+  // Map execution ID to execution count for proper cell numbering when running multiple cells
+  private _executionCounts: Map<number, number> = new Map();
 
   readonly id: string;
   readonly name: string;
@@ -378,7 +407,7 @@ export class PyodideInlineKernel implements Kernel.IKernelConnection {
   readonly clientId: string;
   readonly handleComms: boolean = true;
 
-  constructor(options: any, serverSettings: ServerConnection.ISettings) {
+  constructor(_options: any, serverSettings: ServerConnection.ISettings) {
     this.serverSettings = serverSettings;
     this.id = `pyodide-inline-${Date.now()}`;
     this.name = "pyodide";
@@ -419,18 +448,26 @@ export class PyodideInlineKernel implements Kernel.IKernelConnection {
       // Handle fetch requests from worker
       if (msg.type === "fetch-request") {
         console.log("[PyodideInlineKernel] Worker requested fetch:", msg.url);
-        fetch(msg.url)
-          .then((response) => {
+
+        // SECURITY: Use proxyFetch to route through extension backend
+        // Webviews cannot make arbitrary network requests due to CSP
+        import("../utils/httpProxy")
+          .then(({ proxyFetch }) => proxyFetch(msg.url))
+          .then(async (response) => {
             if (!response.ok) {
               throw new Error(
                 `HTTP ${response.status}: ${response.statusText}`,
               );
             }
-            // For binary files (WASM, ZIP), return arrayBuffer; for text files, return text
-            if (msg.url.endsWith(".wasm") || msg.url.endsWith(".zip")) {
-              return response.arrayBuffer();
+            // For binary files (WASM, ZIP, WHL), return arrayBuffer; for text files, return text
+            if (
+              msg.url.endsWith(".wasm") ||
+              msg.url.endsWith(".zip") ||
+              msg.url.endsWith(".whl")
+            ) {
+              return await response.arrayBuffer();
             } else {
-              return response.text();
+              return await response.text();
             }
           })
           .then((data) => {
@@ -534,6 +571,16 @@ export class PyodideInlineKernel implements Kernel.IKernelConnection {
       });
     }
 
+    // IMPORTANT: Get the correct parent header for this execution
+    // Each message has an 'id' that corresponds to the execution msgId
+    // WorkerReadyMessage and WorkerFetchRequestMessage don't have execution-related IDs
+    const msgId =
+      msg.type !== "ready" && msg.type !== "fetch-request" ? msg.id : undefined;
+    const parentHeader =
+      msgId !== undefined
+        ? this._executionHeaders.get(msgId) || this._currentExecuteHeader || {}
+        : this._currentExecuteHeader || {};
+
     if (msg.type === "status") {
       const status = msg.status as Kernel.Status;
       if (status !== this._status) {
@@ -542,8 +589,15 @@ export class PyodideInlineKernel implements Kernel.IKernelConnection {
       }
 
       // When transitioning to busy, increment execution count and send execute_input
-      if (status === "busy" && this._currentExecuteCode) {
+      if (
+        status === "busy" &&
+        this._currentExecuteCode &&
+        msg.id !== undefined
+      ) {
         this._executionCount++;
+
+        // Store execution count for this specific execution ID
+        this._executionCounts.set(msg.id, this._executionCount);
 
         // Emit execute_input message with execution count
         const executeInputMsg = {
@@ -554,7 +608,7 @@ export class PyodideInlineKernel implements Kernel.IKernelConnection {
             username: this.username,
             session: this.clientId,
           },
-          parent_header: this._currentExecuteHeader || {},
+          parent_header: parentHeader,
           metadata: {},
           content: {
             code: this._currentExecuteCode,
@@ -562,8 +616,8 @@ export class PyodideInlineKernel implements Kernel.IKernelConnection {
           },
           channel: "iopub",
         };
-        this._iopubMessage.emit(executeInputMsg);
-        this._anyMessage.emit(executeInputMsg);
+        this._iopubMessage.emit(createMessageArgs(executeInputMsg));
+        this._anyMessage.emit(createMessageArgs(executeInputMsg));
       }
 
       // Emit status message
@@ -575,15 +629,21 @@ export class PyodideInlineKernel implements Kernel.IKernelConnection {
           username: this.username,
           session: this.clientId,
         },
-        parent_header: this._currentExecuteHeader || {},
+        parent_header: parentHeader,
         metadata: {},
         content: {
           execution_state: status,
         },
         channel: "iopub",
       };
-      this._iopubMessage.emit(iopubMsg);
-      this._anyMessage.emit(iopubMsg);
+      this._iopubMessage.emit(createMessageArgs(iopubMsg));
+      this._anyMessage.emit(createMessageArgs(iopubMsg));
+
+      // Clean up header and execution count after execution completes (status goes to idle)
+      if (status === "idle" && msg.id !== undefined) {
+        this._executionHeaders.delete(msg.id);
+        this._executionCounts.delete(msg.id);
+      }
     } else if (msg.type === "stream") {
       // Emit stream output (stdout/stderr) as iopub message
       const iopubMsg = {
@@ -594,7 +654,7 @@ export class PyodideInlineKernel implements Kernel.IKernelConnection {
           username: this.username,
           session: this.clientId,
         },
-        parent_header: this._currentExecuteHeader || {},
+        parent_header: parentHeader,
         metadata: {},
         content: {
           name: msg.name, // 'stdout' or 'stderr'
@@ -602,10 +662,16 @@ export class PyodideInlineKernel implements Kernel.IKernelConnection {
         },
         channel: "iopub",
       };
-      this._iopubMessage.emit(iopubMsg);
-      this._anyMessage.emit(iopubMsg);
+      this._iopubMessage.emit(createMessageArgs(iopubMsg));
+      this._anyMessage.emit(createMessageArgs(iopubMsg));
     } else if (msg.type === "execute_result") {
-      // Emit execute result as iopub message (execution count already incremented on execute_input)
+      // Get the execution count for this specific execution
+      const executionCount =
+        msg.id !== undefined
+          ? this._executionCounts.get(msg.id) || this._executionCount
+          : this._executionCount;
+
+      // Emit execute result as iopub message
       const iopubMsg = {
         header: {
           msg_id: `execute_result_${Date.now()}`,
@@ -614,10 +680,10 @@ export class PyodideInlineKernel implements Kernel.IKernelConnection {
           username: this.username,
           session: this.clientId,
         },
-        parent_header: this._currentExecuteHeader || {},
+        parent_header: parentHeader,
         metadata: {},
         content: {
-          execution_count: this._executionCount,
+          execution_count: executionCount,
           data: {
             "text/plain": String(msg.result),
           },
@@ -625,8 +691,8 @@ export class PyodideInlineKernel implements Kernel.IKernelConnection {
         },
         channel: "iopub",
       };
-      this._iopubMessage.emit(iopubMsg);
-      this._anyMessage.emit(iopubMsg);
+      this._iopubMessage.emit(createMessageArgs(iopubMsg));
+      this._anyMessage.emit(createMessageArgs(iopubMsg));
     } else if (msg.type === "error") {
       // Emit error as iopub message
       const iopubMsg = {
@@ -637,7 +703,7 @@ export class PyodideInlineKernel implements Kernel.IKernelConnection {
           username: this.username,
           session: this.clientId,
         },
-        parent_header: this._currentExecuteHeader || {},
+        parent_header: parentHeader,
         metadata: {},
         content: {
           ename: msg.error.ename,
@@ -646,8 +712,8 @@ export class PyodideInlineKernel implements Kernel.IKernelConnection {
         },
         channel: "iopub",
       };
-      this._iopubMessage.emit(iopubMsg);
-      this._anyMessage.emit(iopubMsg);
+      this._iopubMessage.emit(createMessageArgs(iopubMsg));
+      this._anyMessage.emit(createMessageArgs(iopubMsg));
     } else if (msg.type === "ready") {
       console.log("[PyodideInlineKernel] Pyodide is ready!");
       this._status = "idle";
@@ -718,6 +784,10 @@ export class PyodideInlineKernel implements Kernel.IKernelConnection {
     return this._anyMessage;
   }
 
+  get unhandledMessage(): ISignal<this, KernelMessage.IMessage> {
+    return this._unhandledMessage;
+  }
+
   get isDisposed(): boolean {
     return this._worker === null;
   }
@@ -731,7 +801,7 @@ export class PyodideInlineKernel implements Kernel.IKernelConnection {
     }
   }
 
-  clone(options?: any): Kernel.IKernelConnection {
+  clone(_options?: any): Kernel.IKernelConnection {
     throw new Error("Cloning not supported for PyodideInlineKernel");
   }
 
@@ -753,15 +823,15 @@ export class PyodideInlineKernel implements Kernel.IKernelConnection {
     };
   }
 
-  async requestInspect(content: any): Promise<any> {
+  async requestInspect(_content: any): Promise<any> {
     return { status: "ok", found: false, data: {}, metadata: {} };
   }
 
-  async requestHistory(content: any): Promise<any> {
+  async requestHistory(_content: any): Promise<any> {
     return { status: "ok", history: [] };
   }
 
-  requestExecute(content: any, disposeOnDone?: boolean, metadata?: any): any {
+  requestExecute(content: any, _disposeOnDone?: boolean, _metadata?: any): any {
     console.log("[PyodideInlineKernel] Execute request:", content.code);
 
     const msgId = this._messageId++;
@@ -780,6 +850,9 @@ export class PyodideInlineKernel implements Kernel.IKernelConnection {
     this._currentExecuteHeader = executeRequestHeader;
     this._currentExecuteCode = content.code;
 
+    // IMPORTANT: Store header by msgId for proper message routing when running multiple cells
+    this._executionHeaders.set(msgId, executeRequestHeader);
+
     // Send execute message to worker
     this._worker.postMessage({
       id: msgId,
@@ -789,7 +862,10 @@ export class PyodideInlineKernel implements Kernel.IKernelConnection {
 
     // Create a promise that resolves when execution is complete
     const executionPromise = new Promise<any>((resolve) => {
-      const handler = (sender: any, msg: any) => {
+      const handler = (_sender: any, msgArgs: any) => {
+        // Unwrap message from IAnyMessageArgs format
+        const msg = msgArgs.msg || msgArgs;
+
         // Execution complete when status goes back to idle
         if (msg.content && msg.content.execution_state === "idle") {
           this._iopubMessage.disconnect(handler);
@@ -821,10 +897,10 @@ export class PyodideInlineKernel implements Kernel.IKernelConnection {
     // Return future object with getter/setter properties (not methods!)
     const future: any = {
       done: executionPromise,
-      registerMessageHook: (hook: any) => {
+      registerMessageHook: (_hook: any) => {
         // No-op for Pyodide
       },
-      removeMessageHook: (hook: any) => {
+      removeMessageHook: (_hook: any) => {
         // No-op for Pyodide
       },
       dispose: () => {},
@@ -843,7 +919,11 @@ export class PyodideInlineKernel implements Kernel.IKernelConnection {
 
         // Lumino signals emit (sender, args), but JupyterLab expects just (msg)
         // Wrap the callback to drop the sender parameter AND filter by parent_header
-        iopubWrapper = (_sender: any, msg: any) => {
+        // NOTE: msg is wrapped as {msg: IMessage, direction: 'recv'} due to IAnyMessageArgs
+        iopubWrapper = (_sender: any, msgArgs: any) => {
+          // Unwrap the message from IAnyMessageArgs format
+          const msg = msgArgs.msg || msgArgs; // Handle both wrapped and unwrapped formats
+
           // Only emit messages that belong to THIS execution
           if (
             msg.parent_header &&
@@ -869,7 +949,7 @@ export class PyodideInlineKernel implements Kernel.IKernelConnection {
 
     // Define onStdin as a setter
     Object.defineProperty(future, "onStdin", {
-      set: (cb: any) => {
+      set: (_cb: any) => {
         // No-op for Pyodide
       },
       get: () => undefined,
@@ -878,11 +958,11 @@ export class PyodideInlineKernel implements Kernel.IKernelConnection {
     return future;
   }
 
-  async requestIsComplete(content: any): Promise<any> {
+  async requestIsComplete(_content: any): Promise<any> {
     return { status: "complete" };
   }
 
-  async requestCommInfo(content: any): Promise<any> {
+  async requestCommInfo(_content: any): Promise<any> {
     return { comms: {}, status: "ok" };
   }
 
@@ -891,37 +971,37 @@ export class PyodideInlineKernel implements Kernel.IKernelConnection {
   }
 
   sendShellMessage(
-    msg: any,
-    expectReply?: boolean,
-    disposeOnDone?: boolean,
+    _msg: any,
+    _expectReply?: boolean,
+    _disposeOnDone?: boolean,
   ): any {
     throw new Error("sendShellMessage not implemented");
   }
 
   registerCommTarget(
     targetName: string,
-    callback: (comm: any, msg: any) => void | PromiseLike<void>,
+    _callback: (comm: any, msg: any) => void | PromiseLike<void>,
   ): void {
     console.log("[PyodideInlineKernel] Register comm target:", targetName);
   }
 
   removeCommTarget(
     targetName: string,
-    callback: (comm: any, msg: any) => void | PromiseLike<void>,
+    _callback: (comm: any, msg: any) => void | PromiseLike<void>,
   ): void {
     console.log("[PyodideInlineKernel] Remove comm target:", targetName);
   }
 
   registerMessageHook(
     msgId: string,
-    hook: (msg: any) => boolean | PromiseLike<boolean>,
+    _hook: (msg: any) => boolean | PromiseLike<boolean>,
   ): void {
     console.log("[PyodideInlineKernel] Register message hook:", msgId);
   }
 
   removeMessageHook(
     msgId: string,
-    hook: (msg: any) => boolean | PromiseLike<boolean>,
+    _hook: (msg: any) => boolean | PromiseLike<boolean>,
   ): void {
     console.log("[PyodideInlineKernel] Remove message hook:", msgId);
   }
@@ -929,6 +1009,65 @@ export class PyodideInlineKernel implements Kernel.IKernelConnection {
   async reconnect(): Promise<void> {
     console.log("[PyodideInlineKernel] Reconnect (no-op)");
   }
+
+  // Missing IKernelConnection methods - stub implementations
+  get hasPendingInput(): boolean {
+    return false;
+  }
+
+  sendControlMessage<T extends KernelMessage.ControlMessageType>(
+    _msg: KernelMessage.IControlMessage<T>,
+    _expectReply?: boolean,
+    _disposeOnDone?: boolean,
+  ): any {
+    throw new Error("sendControlMessage not implemented for Pyodide");
+  }
+
+  requestDebug(
+    _content: KernelMessage.IDebugRequestMsg["content"],
+    _disposeOnDone?: boolean,
+  ): any {
+    throw new Error("requestDebug not implemented for Pyodide");
+  }
+
+  requestCreateSubshell(
+    _content: KernelMessage.ICreateSubshellRequestMsg["content"],
+    _disposeOnDone?: boolean,
+  ): any {
+    throw new Error("requestCreateSubshell not implemented for Pyodide");
+  }
+
+  requestDeleteSubshell(
+    _content: KernelMessage.IDeleteSubshellRequestMsg["content"],
+    _disposeOnDone?: boolean,
+  ): any {
+    throw new Error("requestDeleteSubshell not implemented for Pyodide");
+  }
+
+  requestListSubshell(
+    _content: KernelMessage.IListSubshellRequestMsg["content"],
+    _disposeOnDone?: boolean,
+  ): any {
+    throw new Error("requestListSubshell not implemented for Pyodide");
+  }
+
+  createComm(_targetName: string, _commId?: string): any {
+    throw new Error("createComm not implemented for Pyodide");
+  }
+
+  hasComm(_commId: string): boolean {
+    return false;
+  }
+
+  removeInputGuard(): void {
+    // No-op for Pyodide
+  }
+
+  get supportsSubshells(): boolean {
+    return false;
+  }
+
+  subshellId: string | null = null;
 
   async interrupt(): Promise<void> {
     console.log("[PyodideInlineKernel] Interrupt");

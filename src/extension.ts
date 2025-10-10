@@ -23,6 +23,7 @@ import type { ILogger } from "./services/interfaces/ILogger";
 import { DocumentBridge } from "./services/bridges/documentBridge";
 import { DatalayerFileSystemProvider } from "./providers/documentsFileSystemProvider";
 import { RuntimesTreeProvider } from "./providers/runtimesTreeProvider";
+import { PyodidePreloader } from "./services/pyodide/pyodidePreloader";
 
 // Global service container instance
 let services: ServiceContainer | undefined;
@@ -164,6 +165,21 @@ export async function activate(
         ui.controllerManager.onDidCloseNotebook(notebook);
       }),
     );
+
+    // Initialize Pyodide preloader (runs in background, doesn't block activation)
+    const pyodidePreloader = new PyodidePreloader(
+      context,
+      services.loggerManager.createLogger("PyodidePreloader"),
+    );
+    context.subscriptions.push(pyodidePreloader);
+
+    // Start preload asynchronously - don't await to avoid blocking activation
+    pyodidePreloader.initialize().catch((error: Error) => {
+      logger.warn("Pyodide preloader initialization failed", {
+        error: error.message,
+      });
+    });
+    activationTimer.checkpoint("pyodide_preloader_started");
 
     // Register disposal
     context.subscriptions.push({

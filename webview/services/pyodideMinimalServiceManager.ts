@@ -17,7 +17,6 @@ import {
   Kernel,
   Session,
 } from "@jupyterlab/services";
-import { PromiseDelegate } from "@lumino/coreutils";
 import { Signal, ISignal } from "@lumino/signaling";
 
 // Import inline Pyodide kernel that uses Blob URL for Web Worker
@@ -163,23 +162,30 @@ class MinimalSessionManager {
       pendingInput: null as any, // Will be set after
       isDisposed: false,
       dispose: () => {},
-      setPath: async (path: string) => {},
-      setName: async (name: string) => {},
-      setType: async (type: string) => {},
-      changeKernel: async (options: any) => kernel,
+      setPath: async (_path: string) => {},
+      setName: async (_name: string) => {},
+      setType: async (_type: string) => {},
+      changeKernel: async (_options: any) => kernel,
       shutdown: async () => {},
     };
 
     // Now add signals AFTER session is created (avoids TDZ error)
-    session.disposed = new Signal(session, undefined);
-    session.kernelChanged = new Signal(session, undefined);
-    session.propertyChanged = new Signal(session, undefined);
-    session.statusChanged = new Signal(session, undefined);
-    session.connectionStatusChanged = new Signal(session, undefined);
-    session.iopubMessage = new Signal(session, undefined);
-    session.unhandledMessage = new Signal(session, undefined);
-    session.anyMessage = new Signal(session, undefined);
-    session.pendingInput = new Signal(session, undefined);
+    // Signals with readonly properties need to be added via Object.defineProperty
+    Object.defineProperty(session, "disposed", {
+      value: new Signal(session),
+      writable: false,
+    });
+    session.kernelChanged = new Signal(session);
+    Object.defineProperty(session, "propertyChanged", {
+      value: new Signal(session),
+      writable: false,
+    });
+    session.statusChanged = new Signal(session);
+    session.connectionStatusChanged = new Signal(session);
+    session.iopubMessage = new Signal(session);
+    session.unhandledMessage = new Signal(session);
+    session.anyMessage = new Signal(session);
+    session.pendingInput = new Signal(session);
 
     return session;
   }
@@ -249,7 +255,7 @@ export async function createPyodideMinimalServiceManager(): Promise<ServiceManag
 
   // CRITICAL: Pass userManager itself as the signal sender (not null!)
   // Lumino Signal uses WeakMap internally which requires an object key
-  userManager.userChanged = new Signal(userManager, undefined);
+  userManager.userChanged = new Signal(userManager);
 
   // Create minimal events manager
   const eventsManager: any = {
@@ -259,7 +265,7 @@ export async function createPyodideMinimalServiceManager(): Promise<ServiceManag
   };
 
   // Pass eventsManager as sender for its stream signal
-  eventsManager.stream = new Signal(eventsManager, undefined);
+  eventsManager.stream = new Signal(eventsManager);
 
   // Create minimal contents manager - CRITICAL: Context calls contents.normalize()!
   // The contentsManager object MUST exist BEFORE creating the Signal
@@ -294,7 +300,7 @@ export async function createPyodideMinimalServiceManager(): Promise<ServiceManag
   };
 
   // Add fileChanged signal AFTER contentsManager is created
-  contentsManager.fileChanged = new Signal(contentsManager, undefined);
+  contentsManager.fileChanged = new Signal(contentsManager);
 
   // Create minimal kernelspecs manager WITHOUT signal first
   const kernelspecsManager: any = {
@@ -320,7 +326,7 @@ export async function createPyodideMinimalServiceManager(): Promise<ServiceManag
   };
 
   // Add signal AFTER kernelspecsManager is created
-  kernelspecsManager.specsChanged = new Signal(kernelspecsManager, undefined);
+  kernelspecsManager.specsChanged = new Signal(kernelspecsManager);
 
   // Create minimal service manager object
   const serviceManager: ServiceManager.IManager = {
@@ -342,8 +348,8 @@ export async function createPyodideMinimalServiceManager(): Promise<ServiceManag
     get ready() {
       return Promise.resolve();
     },
-    get connectionFailure() {
-      return new Signal(serviceManager as any, undefined);
+    get connectionFailure(): ISignal<ServiceManager.IManager, Error> {
+      return new Signal(serviceManager as any);
     },
     dispose: () => {
       console.log("[PyodideMinimalServiceManager] dispose");

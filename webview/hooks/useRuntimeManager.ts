@@ -89,14 +89,17 @@ export function useRuntimeManager(initialRuntime?: RuntimeJSON) {
     console.log("[useRuntimeManager] Switching to Pyodide...");
     setSelectedRuntime(undefined); // Clear runtime info since Pyodide is local
 
-    // CRITICAL: Update service manager FIRST, THEN set kernel name
-    // This prevents race condition where Notebook2 remounts with old service manager
+    // Update service manager FIRST
     await mutableManagerRef.current?.updateToPyodide();
 
     console.log(
       "[useRuntimeManager] Pyodide service manager ready, setting kernel name",
     );
-    setKernelName("Pyodide"); // Set kernel name for toolbar display AFTER service manager is ready
+
+    // CRITICAL: Set kernel name AFTER service manager is ready
+    // This triggers React re-render with new key, forcing Notebook2 to remount
+    // with the Pyodide service manager already in place
+    setKernelName("Pyodide");
   }, []);
 
   // Return the proxy for seamless integration
