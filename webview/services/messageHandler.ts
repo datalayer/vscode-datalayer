@@ -19,8 +19,11 @@ export type {
 } from "../types/messages";
 
 declare let acquireVsCodeApi: () => {
+  /** Post a message to the VS Code extension host */
   postMessage: (message: unknown) => void;
+  /** Get the persisted state for this webview */
   getState: () => unknown;
+  /** Set the persisted state for this webview */
   setState: (state: unknown) => void;
 };
 
@@ -39,6 +42,7 @@ export const vsCodeAPI = vscode;
  * Disposable object with dispose method
  */
 export interface Disposable {
+  /** Dispose the resource and clean up event listeners */
   dispose(): void;
 }
 
@@ -46,8 +50,11 @@ export interface Disposable {
  * Pending request with promise resolver/rejector
  */
 export interface PendingRequest<T = unknown> {
+  /** Resolve the promise with the response value */
   resolve: (value: T) => void;
+  /** Reject the promise with an error */
   reject: (error: Error) => void;
+  /** Timeout handle to cancel the request */
   timeout: ReturnType<typeof setTimeout>;
 }
 

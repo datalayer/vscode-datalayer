@@ -58,6 +58,8 @@ import {
   YouTubePlugin,
   AutoLinkPlugin,
   AutoEmbedPlugin,
+  LexicalConfigProvider,
+  LexicalStatePlugin,
 } from "@datalayer/jupyter-lexical";
 import { LexicalToolbar } from "./LexicalToolbar";
 import { RuntimeProgressBar } from "../components/RuntimeProgressBar";
@@ -67,6 +69,7 @@ import { createVSCodeLoroProvider } from "../services/loro/providerFactory";
 import { LexicalVSCodeLLMProvider } from "../services/completion/lexicalLLMProvider";
 import { OutlinePlugin } from "./plugins/OutlinePlugin";
 import { NavigationPlugin } from "./plugins/NavigationPlugin";
+import { InternalCommandsPlugin } from "./plugins/InternalCommandsPlugin";
 import type { OutlineUpdateMessage } from "../types/messages";
 
 /**
@@ -113,6 +116,7 @@ export interface LexicalEditorProps {
   navigationTarget?: string | null;
   onNavigated?: () => void;
   serviceManager: ServiceManager.IManager;
+  lexicalId?: string | null;
 }
 
 /**
@@ -297,6 +301,7 @@ export function LexicalEditor({
   navigationTarget,
   onNavigated,
   serviceManager,
+  lexicalId,
 }: LexicalEditorProps) {
   const [floatingAnchorElem, setFloatingAnchorElem] =
     useState<HTMLDivElement | null>(null);
@@ -459,106 +464,117 @@ export function LexicalEditor({
         runtime={selectedRuntime}
         isDatalayerRuntime={isDatalayerRuntime}
       />
-      <LexicalComposer initialConfig={editorConfig}>
-        {(showToolbar || collaboration?.enabled) && (
-          <div
-            className="lexical-toolbar-wrapper"
-            style={{
-              display: "flex",
-              alignItems: "flex-start",
-              justifyContent: "space-between",
-              backgroundColor: "var(--vscode-editor-background)",
-              width: "100%",
-              maxWidth: "100%",
-              overflow: "hidden",
-              border: "none !important",
-              outline: "none !important",
-              boxShadow: "none !important",
-            }}
-          >
-            {showToolbar && (
-              <LexicalToolbar
-                disabled={!editable}
-                selectedRuntime={selectedRuntime}
-                showRuntimeSelector={showRuntimeSelector}
-                showCollaborativeLabel={collaboration?.enabled}
+      <LexicalConfigProvider
+        lexicalId={lexicalId || documentUri || ""}
+        serviceManager={serviceManager}
+      >
+        <LexicalComposer initialConfig={editorConfig}>
+          {/* CRITICAL: LexicalStatePlugin registers the adapter in the store */}
+          <LexicalStatePlugin />
+          {(showToolbar || collaboration?.enabled) && (
+            <div
+              className="lexical-toolbar-wrapper"
+              style={{
+                display: "flex",
+                alignItems: "flex-start",
+                justifyContent: "space-between",
+                backgroundColor: "var(--vscode-editor-background)",
+                width: "100%",
+                maxWidth: "100%",
+                overflow: "hidden",
+                border: "none !important",
+                outline: "none !important",
+                boxShadow: "none !important",
+              }}
+            >
+              {showToolbar && (
+                <LexicalToolbar
+                  disabled={!editable}
+                  selectedRuntime={selectedRuntime}
+                  showRuntimeSelector={showRuntimeSelector}
+                  showCollaborativeLabel={collaboration?.enabled}
+                />
+              )}
+            </div>
+          )}
+          <div className="lexical-editor-inner" ref={onRef}>
+            <RichTextPlugin
+              contentEditable={
+                <ContentEditable
+                  className="lexical-editor-content"
+                  aria-label="Lexical Editor"
+                />
+              }
+              ErrorBoundary={LexicalErrorBoundary}
+            />
+            <OnChangePlugin onChange={handleChange} />
+            <HistoryPlugin />
+            <AutoFocusPlugin />
+            <ListPlugin />
+            <CheckListPlugin />
+            <LinkPlugin />
+            <AutoLinkPlugin />
+            <MarkdownShortcutPlugin transformers={TRANSFORMERS} />
+            <SavePlugin onSave={editable ? onSave : undefined} />
+            <LoadContentPlugin
+              content={initialContent}
+              skipLoad={collaboration?.enabled}
+            />
+            <CodeHighlightPlugin />
+            <ImagesPlugin captionsEnabled={false} />
+            <HorizontalRulePlugin />
+            <EquationsPlugin />
+            <YouTubePlugin />
+            <AutoEmbedPlugin />
+            <JupyterCellPlugin />
+            {/* Wrap kernel plugins with Jupyter provider - only these remount on runtime change */}
+            <Jupyter
+              key={selectedRuntime?.ingress || "no-runtime"}
+              // @ts-ignore - Type mismatch between @jupyterlab/services versions
+              serviceManager={serviceManager}
+              startDefaultKernel={!!selectedRuntime}
+              defaultKernelName="python"
+              lite={false}
+              collaborative={false}
+              terminals={false}
+            >
+              <JupyterKernelPlugins />
+            </Jupyter>
+            <LexicalInlineCompletionPlugin
+              providers={[lexicalLLMProvider]}
+              debounceMs={200}
+              enabled={editable}
+            />
+            {documentUri && vscode && (
+              <OutlinePlugin documentUri={documentUri} vscode={vscode} />
+            )}
+            {navigationTarget && onNavigated && (
+              <NavigationPlugin
+                navigationTarget={navigationTarget}
+                onNavigated={onNavigated}
+              />
+            )}
+            <InternalCommandsPlugin
+              vscode={vscode as { postMessage: (message: unknown) => void }}
+              lexicalId={lexicalId}
+            />
+            {floatingAnchorElem && (
+              <DraggableBlockPlugin anchorElem={floatingAnchorElem} />
+            )}
+            {collaboration?.enabled && collaboration.documentId && (
+              <LoroCollaborationPlugin
+                id={collaboration.documentId}
+                shouldBootstrap
+                providerFactory={createVSCodeLoroProvider}
+                websocketUrl={collaboration.websocketUrl || ""}
+                username={collaboration.username}
+                cursorColor={collaboration.userColor}
+                onInitialization={(_isInitialized) => {}}
               />
             )}
           </div>
-        )}
-        <div className="lexical-editor-inner" ref={onRef}>
-          <RichTextPlugin
-            contentEditable={
-              <ContentEditable
-                className="lexical-editor-content"
-                aria-label="Lexical Editor"
-              />
-            }
-            ErrorBoundary={LexicalErrorBoundary}
-          />
-          <OnChangePlugin onChange={handleChange} />
-          <HistoryPlugin />
-          <AutoFocusPlugin />
-          <ListPlugin />
-          <CheckListPlugin />
-          <LinkPlugin />
-          <AutoLinkPlugin />
-          <MarkdownShortcutPlugin transformers={TRANSFORMERS} />
-          <SavePlugin onSave={editable ? onSave : undefined} />
-          <LoadContentPlugin
-            content={initialContent}
-            skipLoad={collaboration?.enabled}
-          />
-          <CodeHighlightPlugin />
-          <ImagesPlugin captionsEnabled={false} />
-          <HorizontalRulePlugin />
-          <EquationsPlugin />
-          <YouTubePlugin />
-          <AutoEmbedPlugin />
-          <JupyterCellPlugin />
-          {/* Wrap kernel plugins with Jupyter provider - only these remount on runtime change */}
-          <Jupyter
-            key={selectedRuntime?.ingress || "no-runtime"}
-            // @ts-ignore - Type mismatch between @jupyterlab/services versions
-            serviceManager={serviceManager}
-            startDefaultKernel={!!selectedRuntime}
-            defaultKernelName="python"
-            lite={false}
-            collaborative={false}
-            terminals={false}
-          >
-            <JupyterKernelPlugins />
-          </Jupyter>
-          <LexicalInlineCompletionPlugin
-            providers={[lexicalLLMProvider]}
-            debounceMs={200}
-            enabled={editable}
-          />
-          {documentUri && vscode && (
-            <OutlinePlugin documentUri={documentUri} vscode={vscode} />
-          )}
-          {navigationTarget && onNavigated && (
-            <NavigationPlugin
-              navigationTarget={navigationTarget}
-              onNavigated={onNavigated}
-            />
-          )}
-          {floatingAnchorElem && (
-            <DraggableBlockPlugin anchorElem={floatingAnchorElem} />
-          )}
-          {collaboration?.enabled && collaboration.documentId && (
-            <LoroCollaborationPlugin
-              id={collaboration.documentId}
-              shouldBootstrap
-              providerFactory={createVSCodeLoroProvider}
-              websocketUrl={collaboration.websocketUrl || ""}
-              username={collaboration.username}
-              cursorColor={collaboration.userColor}
-              onInitialization={(_isInitialized) => {}}
-            />
-          )}
-        </div>
-      </LexicalComposer>
+        </LexicalComposer>
+      </LexicalConfigProvider>
     </div>
   );
 }

@@ -12,12 +12,40 @@
  */
 
 import { useEffect, useRef, useCallback } from "react";
-import type { INotebookModel } from "@jupyterlab/notebook";
-import type { ICellModel } from "@jupyterlab/cells";
 import type { OutlineItem, OutlineUpdateMessage } from "../types/messages";
 
+// Use minimal type definitions to avoid JupyterLab peer dependency issues
+// These types match the JupyterLab INotebookModel and ICellModel interfaces
+type NotebookModel = {
+  cells: {
+    length: number;
+    get: (index: number) => CellModel;
+    changed: {
+      connect: (slot: (list: unknown, change: unknown) => void) => void;
+      disconnect: (slot: (list: unknown, change: unknown) => void) => void;
+    };
+  };
+  sharedModel: {
+    changed: {
+      connect: (slot: () => void) => void;
+      disconnect: (slot: () => void) => void;
+    };
+  };
+};
+
+type CellModel = {
+  type: "code" | "markdown" | "raw";
+  sharedModel: {
+    getSource: () => string;
+    changed: {
+      connect: (slot: () => void) => void;
+      disconnect: (slot: () => void) => void;
+    };
+  };
+};
+
 interface UseNotebookOutlineOptions {
-  notebookModel: INotebookModel | null;
+  notebookModel: NotebookModel | null;
   documentUri: string;
   vscode: { postMessage: (message: OutlineUpdateMessage) => void };
 }
@@ -39,17 +67,7 @@ export function useNotebookOutline({
    * Builds a hierarchical tree based on heading levels.
    */
   const extractOutlineFromLiveModel = useCallback((): OutlineItem[] => {
-    console.log("[useNotebookOutline] extractOutlineFromLiveModel called", {
-      hasModel: !!notebookModel,
-      modelType: notebookModel ? notebookModel.constructor?.name : "null",
-      hasCells: notebookModel?.cells ? true : false,
-      cellCount: notebookModel?.cells?.length,
-    });
-
     if (!notebookModel) {
-      console.warn(
-        "[useNotebookOutline] No notebookModel, returning empty array",
-      );
       return [];
     }
 
@@ -57,11 +75,11 @@ export function useNotebookOutline({
     const cells = notebookModel.cells;
     const cellCount = cells.length;
 
-    console.log("[useNotebookOutline] Iterating over cells", { cellCount });
+    // console.log("[useNotebookOutline] Iterating over cells", { cellCount });
 
     // First pass: extract all items with their levels
     for (let i = 0; i < cellCount; i++) {
-      const cell: ICellModel = notebookModel.cells.get(i);
+      const cell: CellModel = notebookModel.cells.get(i);
       const cellType = cell.type;
 
       if (cellType === "code") {
@@ -95,16 +113,6 @@ export function useNotebookOutline({
 
     // Second pass: build hierarchical structure
     const tree = buildHierarchy(flatItems);
-
-    console.log("[useNotebookOutline] Extraction complete", {
-      itemCount: tree.length,
-      items: tree.slice(0, 3).map((i) => ({
-        id: i.id,
-        label: i.label,
-        type: i.type,
-        childCount: i.children?.length || 0,
-      })),
-    });
 
     return tree;
   }, [notebookModel]);
@@ -185,25 +193,12 @@ export function useNotebookOutline({
    * Send outline update to extension.
    */
   const sendOutlineUpdate = useCallback(() => {
-    console.log("[useNotebookOutline] sendOutlineUpdate called", {
-      hasModel: !!notebookModel,
-      documentUri,
-    });
-
     // Don't send if documentUri is empty
     if (!documentUri) {
-      console.log("[useNotebookOutline] No documentUri, skipping send");
       return;
     }
 
     const items = extractOutlineFromLiveModel();
-
-    console.log("[useNotebookOutline] Extracted outline", {
-      itemCount: items.length,
-      items: items
-        .slice(0, 5)
-        .map((i) => ({ id: i.id, label: i.label, type: i.type })),
-    });
 
     const outlineStr = JSON.stringify({ items });
 
@@ -217,13 +212,9 @@ export function useNotebookOutline({
         items,
       };
 
-      console.log(
-        "[useNotebookOutline] Sending outline-update message to extension",
-        message,
-      );
       vscode.postMessage(message);
     } else {
-      console.log("[useNotebookOutline] Outline unchanged, skipping send");
+      // console.log("[useNotebookOutline] Outline unchanged, skipping send");
     }
   }, [extractOutlineFromLiveModel, documentUri, vscode]);
 
@@ -237,42 +228,28 @@ export function useNotebookOutline({
    * Set up listeners for notebook changes.
    */
   useEffect(() => {
-    console.log("[useNotebookOutline] useEffect - setting up listeners", {
-      hasModel: !!notebookModel,
-      documentUri,
-      modelType: notebookModel ? typeof notebookModel : "null",
-    });
-
     if (!notebookModel) {
-      console.warn("[useNotebookOutline] No notebookModel available");
       return;
     }
 
-    console.log("[useNotebookOutline] Attaching change listeners");
+    // console.log("[useNotebookOutline] Attaching change listeners");
 
     // Send initial outline
     sendOutlineUpdateRef.current();
 
     // Debounced update function
     const debouncedUpdate = () => {
-      console.log("[useNotebookOutline] debouncedUpdate triggered");
+      // console.log("[useNotebookOutline] debouncedUpdate triggered");
       if (updateTimeoutRef.current) {
         clearTimeout(updateTimeoutRef.current);
       }
       updateTimeoutRef.current = setTimeout(() => {
-        console.log(
-          "[useNotebookOutline] Timeout fired, calling sendOutlineUpdate",
-        );
         sendOutlineUpdateRef.current();
       }, 150);
     };
 
     // Listen to cell list changes (add/remove/move cells)
     const cellsChangedSlot = (_list: unknown, change: unknown) => {
-      console.log("[useNotebookOutline] Cells changed (add/remove/move)", {
-        change,
-      });
-
       // When cells are added, attach listeners to them
       if (
         change &&
@@ -280,13 +257,10 @@ export function useNotebookOutline({
         "type" in change &&
         change.type === "add"
       ) {
-        const changeTyped = change as { newValues?: ICellModel[] };
+        const changeTyped = change as { newValues?: CellModel[] };
         if (changeTyped.newValues) {
           changeTyped.newValues.forEach((cell) => {
             if (cell && cell.sharedModel && cell.sharedModel.changed) {
-              console.log(
-                "[useNotebookOutline] Attaching listener to new cell",
-              );
               cell.sharedModel.changed.connect(cellContentChangedSlot);
             }
           });
@@ -299,14 +273,14 @@ export function useNotebookOutline({
 
     // Listen to changes in the notebook's shared model (this captures ALL cell content changes)
     const notebookChangedSlot = () => {
-      console.log("[useNotebookOutline] Notebook content changed");
+      // console.log("[useNotebookOutline] Notebook content changed");
       debouncedUpdate();
     };
     notebookModel.sharedModel.changed.connect(notebookChangedSlot);
 
     // Also listen to individual cell changes
     const cellContentChangedSlot = () => {
-      console.log("[useNotebookOutline] Cell content changed");
+      // console.log("[useNotebookOutline] Cell content changed");
       debouncedUpdate();
     };
 

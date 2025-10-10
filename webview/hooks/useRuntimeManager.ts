@@ -60,12 +60,43 @@ export function useRuntimeManager(initialRuntime?: RuntimeJSON) {
             initialRuntime.environmentName || "python3",
             initialRuntime.ingress,
           );
+
+          // Start the kernel to set _activeKernel (required for tool execution)
+          mutableManagerRef.current.current.kernels
+            .startNew()
+            .then(() => {
+              console.log(
+                `[useRuntimeManager] ✓ Initial kernel started for ${kernelId}`,
+              );
+            })
+            .catch((error) => {
+              console.error(
+                `[useRuntimeManager] ❌ Failed to start initial kernel:`,
+                error,
+              );
+            });
         }
       } else {
         mutableManagerRef.current.updateToRemote(
           initialRuntime.ingress,
           initialRuntime.token || "",
         );
+
+        // Start the kernel for remote runtime (avoid race condition with tool execution)
+        mutableManagerRef.current.current.kernels
+          .startNew({ name: initialRuntime.environmentName || "python3" })
+          .then((kernel) => {
+            console.log(
+              `[useRuntimeManager] ✓ Initial remote kernel started:`,
+              kernel.id,
+            );
+          })
+          .catch((error) => {
+            console.error(
+              `[useRuntimeManager] ❌ Failed to start initial remote kernel:`,
+              error,
+            );
+          });
       }
     }
     // Otherwise starts with mock (default in MutableServiceManager constructor)
@@ -115,12 +146,56 @@ export function useRuntimeManager(initialRuntime?: RuntimeJSON) {
         console.log(
           `[useRuntimeManager] Successfully switched to LocalKernelServiceManager`,
         );
+
+        // CRITICAL: Start the kernel to set _activeKernel
+        // This is required for tool execution (e.g., executeCode) to work
+        // UI execution works without this because it uses SessionContext,
+        // but tool execution path checks serviceManager.kernels.running()
+        if (mutableManagerRef.current) {
+          mutableManagerRef.current.current.kernels
+            .startNew()
+            .then(() => {
+              console.log(
+                `[useRuntimeManager] ✓ Kernel started, _activeKernel is now set`,
+              );
+            })
+            .catch((error) => {
+              console.error(
+                `[useRuntimeManager] ❌ Failed to start kernel:`,
+                error,
+              );
+            });
+        }
       } else {
         // Regular remote runtime - use standard connection
         mutableManagerRef.current?.updateToRemote(
           runtime.ingress,
           runtime.token || "",
         );
+
+        console.log(
+          `[useRuntimeManager] Successfully switched to remote ServiceManager`,
+        );
+
+        // CRITICAL: Start the kernel for remote runtimes too
+        // Same race condition as local kernels - tool execution could happen
+        // before Jupyter component mounts and starts the kernel
+        if (mutableManagerRef.current) {
+          mutableManagerRef.current.current.kernels
+            .startNew({ name: runtime.environmentName || "python3" })
+            .then((kernel) => {
+              console.log(
+                `[useRuntimeManager] ✓ Remote kernel started:`,
+                kernel.id,
+              );
+            })
+            .catch((error) => {
+              console.error(
+                `[useRuntimeManager] ❌ Failed to start remote kernel:`,
+                error,
+              );
+            });
+        }
       }
     } else {
       // Reset to mock service manager (reference stays stable)

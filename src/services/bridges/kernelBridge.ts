@@ -133,7 +133,7 @@ export class KernelBridge implements vscode.Disposable {
     // Fire event so providers can track the runtime
     // This allows them to show "Terminate Runtime" option later
     await vscode.commands.executeCommand(
-      "datalayer.internal.runtimeConnected",
+      "datalayer.internal.runtime.connected",
       uri,
       runtime,
     );
@@ -227,7 +227,7 @@ export class KernelBridge implements vscode.Disposable {
 
     // Fire event so providers can track the local kernel
     await vscode.commands.executeCommand(
-      "datalayer.internal.runtimeConnected",
+      "datalayer.internal.runtime.connected",
       uri,
       mockRuntime,
     );

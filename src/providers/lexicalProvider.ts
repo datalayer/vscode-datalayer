@@ -76,10 +76,15 @@ export class LexicalProvider extends BaseDocumentProvider<LexicalDocument> {
     const provider = new LexicalProvider(context);
     const kernelBridge = getServiceContainer().kernelBridge;
 
+    // Register this provider's message handler
+    // Note: The actual sendToWebview command is registered centrally in commands/internal.ts
+    // We just need to expose a way to route messages to our webviews
+    LexicalProvider._instance = provider;
+
     // Register internal command for broadcasting kernel selection
     context.subscriptions.push(
       vscode.commands.registerCommand(
-        "datalayer.internal.kernelSelected",
+        "datalayer.internal.runtime.kernelSelected",
         async (runtime: unknown) => {
           // Runtime tracking is now handled by centralized commands/internal.ts
           // via datalayer.internal.runtimeConnected command called by KernelBridge
@@ -116,6 +121,91 @@ export class LexicalProvider extends BaseDocumentProvider<LexicalDocument> {
   }
 
   private static readonly viewType = "datalayer.lexical-editor";
+  private static _instance: LexicalProvider | undefined;
+
+  /**
+   * Get the singleton instance of LexicalProvider for message routing
+   */
+  public static getInstance(): LexicalProvider | undefined {
+    return LexicalProvider._instance;
+  }
+
+  /**
+   * Send a message to a specific Lexical webview
+   */
+  public async sendToWebview(uri: vscode.Uri, message: unknown): Promise<void> {
+    console.log(
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      `[LexicalProvider] sendToWebview: uri=${uri.toString()}, message type=${(message as any)?.type}`,
+    );
+    const entry = this.webviews.get(uri.toString());
+    if (entry) {
+      console.log(`[LexicalProvider] Posting message to webview:`, message);
+      await entry.webviewPanel.webview.postMessage(message);
+    } else {
+      console.warn(
+        `[LexicalProvider] No webview found for URI: ${uri.toString()}`,
+      );
+      console.warn(
+        `[LexicalProvider] Available webviews:`,
+        Array.from(this.webviews.keys()),
+      );
+    }
+  }
+
+  /**
+   * Send a message to a specific Lexical webview and wait for response
+   */
+  public async sendToWebviewWithResponse(
+    uri: vscode.Uri,
+    message: unknown,
+    requestId: string,
+  ): Promise<unknown> {
+    console.log(
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      `[LexicalProvider] sendToWebviewWithResponse: uri=${uri.toString()}, message type=${(message as any)?.type}, requestId=${requestId}`,
+    );
+    const entry = this.webviews.get(uri.toString());
+    if (!entry) {
+      console.warn(
+        `[LexicalProvider] No webview found for URI: ${uri.toString()}`,
+      );
+      console.warn(
+        `[LexicalProvider] Available webviews:`,
+        Array.from(this.webviews.keys()),
+      );
+      throw new Error(`No webview found for URI: ${uri.toString()}`);
+    }
+
+    return new Promise((resolve, reject) => {
+      // Set up response handler with timeout
+      const timeout = setTimeout(() => {
+        this._callbacks.delete(requestId);
+        reject(
+          new Error(`Timeout waiting for response to request ${requestId}`),
+        );
+      }, 10000); // 10 second timeout
+
+      // Store callback
+      this._callbacks.set(requestId, (response: unknown) => {
+        clearTimeout(timeout);
+        resolve(response);
+      });
+
+      // Send message to webview
+      console.log(`[LexicalProvider] Posting message to webview:`, message);
+      entry.webviewPanel.webview.postMessage(message).then(
+        () => {
+          // Message sent successfully
+        },
+        (error) => {
+          clearTimeout(timeout);
+          this._callbacks.delete(requestId);
+          reject(error);
+        },
+      );
+    });
+  }
 
   /**
    * Map of currently active webviews keyed by document URI.
@@ -291,6 +381,16 @@ export class LexicalProvider extends BaseDocumentProvider<LexicalDocument> {
       webviewPanel,
     });
 
+    // Register lexical document in the unified registry for tool operations
+    // For lexicals: lexicalId = documentId (if remote) OR documentUri (if local)
+    const lexicalId = document.uri.toString(); // TODO: Get actual documentId for remote lexicals
+    getServiceContainer().documentRegistry.register(
+      lexicalId,
+      document.uri.toString(),
+      "lexical",
+      webviewPanel, // Register webview panel for tool execution messaging
+    );
+
     // Register webview with KernelBridge for unified runtime handling
     const kernelBridge = getServiceContainer().kernelBridge;
     kernelBridge.registerWebview(document.uri, webviewPanel);
@@ -311,7 +411,17 @@ export class LexicalProvider extends BaseDocumentProvider<LexicalDocument> {
     webviewPanel.webview.html = this.getHtmlForWebview(webviewPanel.webview);
 
     webviewPanel.webview.onDidReceiveMessage(async (e) => {
-      if (e.type === "llm-completion-request") {
+      if (e.type === "response") {
+        // Handle response messages from webview (for sendToWebviewWithResponse)
+        const { requestId, body } = e;
+        if (requestId) {
+          const callback = this._callbacks.get(requestId);
+          if (callback) {
+            this._callbacks.delete(requestId);
+            callback(body);
+          }
+        }
+      } else if (e.type === "llm-completion-request") {
         console.log("[LexicalProvider] LLM completion request received", {
           requestId: e.requestId,
           prefixLength: e.prefix?.length,
@@ -431,6 +541,12 @@ export class LexicalProvider extends BaseDocumentProvider<LexicalDocument> {
         ? `${document.uri.toString()}::${collaborationConfig.documentId}`
         : document.uri.toString();
 
+      console.log(
+        `[LexicalProvider] Sending lexicalId to webview:`,
+        lexicalId,
+        `for document:`,
+        document.uri.toString(),
+      );
       webviewPanel.webview.postMessage({
         type: "update",
         content: contentArray,
@@ -438,6 +554,7 @@ export class LexicalProvider extends BaseDocumentProvider<LexicalDocument> {
         collaboration: collaborationConfig,
         documentUri: document.uri.toString(), // Still include for logging
         documentId: uniqueDocId, // Unique ID for validation
+        lexicalId: lexicalId, // Pass lexicalId for tool execution context
       });
 
       // Try auto-connect after sending initial content

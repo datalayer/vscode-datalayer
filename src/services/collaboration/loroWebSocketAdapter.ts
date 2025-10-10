@@ -31,14 +31,28 @@ export interface LoroMessage {
  * Manages WebSocket connection to Loro collaboration server.
  */
 export class LoroWebSocketAdapter {
+  /** The underlying WebSocket connection to the Loro server */
   private ws: ws.WebSocket | null = null;
+  /** Timer for scheduled reconnection attempts */
   private reconnectTimer: NodeJS.Timeout | null = null;
+  /** Current delay in milliseconds before next reconnection attempt */
   private reconnectDelay = 100;
+  /** Maximum delay in milliseconds for exponential backoff */
   private maxReconnectDelay = 2500;
+  /** Flag indicating whether the adapter has been disposed */
   private isDisposed = false;
+  /** Queue of messages waiting to be sent when connection is established */
   private messageQueue: unknown[] = [];
+  /** Maximum number of messages to queue before dropping new ones */
   private readonly maxQueueSize = 1000;
 
+  /**
+   * Create a new Loro WebSocket adapter.
+   *
+   * @param adapterId - Unique identifier for this adapter instance
+   * @param websocketUrl - URL of the Loro WebSocket server to connect to
+   * @param webview - VS Code Webview instance to send messages to
+   */
   constructor(
     private readonly adapterId: string,
     private readonly websocketUrl: string,
@@ -46,7 +60,13 @@ export class LoroWebSocketAdapter {
   ) {}
 
   /**
-   * Connect to the WebSocket server
+   * Connect to the WebSocket server.
+   * Establishes a new WebSocket connection if one doesn't already exist.
+   * Sets up event handlers for open, message, close, and error events.
+   * Messages received while disconnected are queued and sent upon reconnection.
+   * Automatically attempts to reconnect with exponential backoff on close.
+   *
+   * @returns void
    */
   connect(): void {
     if (this.ws || this.isDisposed) {
@@ -132,14 +152,21 @@ export class LoroWebSocketAdapter {
   }
 
   /**
-   * Check if WebSocket is currently connected
+   * Check if the WebSocket is currently connected and ready to send.
+   * Verifies that the WebSocket exists and readyState is 1 (OPEN).
+   *
+   * @returns true if connected and ready, false otherwise
    */
   isConnected(): boolean {
     return this.ws !== null && this.ws.readyState === 1;
   }
 
   /**
-   * Disconnect from the WebSocket server
+   * Disconnect from the WebSocket server.
+   * Cancels any pending reconnection timers and closes the WebSocket connection.
+   * Safe to call multiple times; handles null checks internally.
+   *
+   * @returns void
    */
   disconnect(): void {
     if (this.reconnectTimer) {
@@ -154,7 +181,13 @@ export class LoroWebSocketAdapter {
   }
 
   /**
-   * Send a message to the WebSocket server
+   * Send a message to the WebSocket server.
+   * Supports multiple data types: string (JSON), array (binary/Loro update bytes), or object (JSON).
+   * If not connected, messages are queued up to maxQueueSize and sent when connection establishes.
+   * Queue overflow is silently dropped to prevent memory issues.
+   *
+   * @param data - The data to send (string, array, or object)
+   * @returns void
    */
   send(data: unknown): void {
     // WebSocket.OPEN = 1
@@ -187,7 +220,14 @@ export class LoroWebSocketAdapter {
   }
 
   /**
-   * Handle incoming messages from the webview
+   * Handle incoming messages from the webview.
+   * Routes messages to appropriate handlers:
+   * - 'connect': Initiates WebSocket connection
+   * - 'disconnect': Closes WebSocket connection
+   * - 'message': Forwards data to WebSocket server
+   *
+   * @param message - The message from the webview with type, adapterId, and optional data
+   * @returns void
    */
   handleMessage(message: LoroMessage): void {
     switch (message.type) {
@@ -206,7 +246,11 @@ export class LoroWebSocketAdapter {
   }
 
   /**
-   * Flush queued messages to the WebSocket
+   * Flush all queued messages to the WebSocket server.
+   * Called when the WebSocket connection is first established.
+   * Clears the queue after sending to prevent duplicate transmissions.
+   *
+   * @private
    */
   private flushMessageQueue(): void {
     if (this.messageQueue.length === 0) {
@@ -222,7 +266,11 @@ export class LoroWebSocketAdapter {
   }
 
   /**
-   * Clean up resources
+   * Clean up resources and prepare for garbage collection.
+   * Marks the adapter as disposed, disconnects from the server, and clears the message queue.
+   * After disposal, the adapter should not be used.
+   *
+   * @returns void
    */
   dispose(): void {
     this.isDisposed = true;
@@ -231,7 +279,11 @@ export class LoroWebSocketAdapter {
   }
 
   /**
-   * Schedule reconnection with exponential backoff
+   * Schedule a reconnection attempt with exponential backoff.
+   * Calculates delay using `reconnectDelay * 2` up to `maxReconnectDelay`.
+   * Only schedules if no reconnection is already pending.
+   *
+   * @private
    */
   private scheduleReconnect(): void {
     if (this.reconnectTimer) {
@@ -251,7 +303,11 @@ export class LoroWebSocketAdapter {
   }
 
   /**
-   * Send a message to the webview
+   * Send a message to the webview via postMessage.
+   * Wraps the call in try-catch to handle serialization or connection errors.
+   *
+   * @param message - The message to send to the webview
+   * @private
    */
   private sendToWebview(message: LoroMessage): void {
     try {

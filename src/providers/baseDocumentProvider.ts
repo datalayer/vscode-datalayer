@@ -19,6 +19,7 @@ import { ServiceLoggers } from "../services/logging/loggers";
 import type { ExtensionMessage } from "../types/vscode/messages";
 import { getOutlineTreeProvider } from "../extension";
 import type { OutlineUpdateMessage } from "../../webview/types/messages";
+import { Runner, createExtensionRunner } from "../tools/core/runnerSetup";
 
 /**
  * Abstract base class for document providers.
@@ -30,13 +31,41 @@ export abstract class BaseDocumentProvider<
   TDocument extends vscode.CustomDocument,
 > implements vscode.CustomEditorProvider<TDocument>
 {
+  /**
+   * VS Code extension context providing access to storage, subscriptions, etc.
+   */
   protected readonly _context: vscode.ExtensionContext;
+
+  /**
+   * Message router for handling webview messages and routing to appropriate handlers.
+   */
   protected readonly _messageRouter: DocumentMessageRouter;
+
+  /**
+   * Network bridge service for HTTP/WebSocket communication between extension and webview.
+   */
   protected readonly _networkBridge: NetworkBridgeService;
+
+  /**
+   * Runtime bridge service for managing runtime lifecycle and selection.
+   */
   protected readonly _runtimeBridge: RuntimeBridgeService;
 
+  /**
+   * Map of webview panels to their Runner instances.
+   * Runners handle tool execution via the BridgeExecutor pattern.
+   */
+  protected readonly _runners = new Map<vscode.WebviewPanel, Runner>();
+
+  /**
+   * Counter for generating unique request IDs in request/response pattern.
+   */
   private _requestId = 1;
-  private readonly _callbacks = new Map<
+
+  /**
+   * Map of request ID to response callbacks for request/response message pattern.
+   */
+  protected readonly _callbacks = new Map<
     string | number,
     (response: unknown) => void
   >();
@@ -170,6 +199,58 @@ export abstract class BaseDocumentProvider<
     _cancellation: vscode.CancellationToken,
   ): Thenable<vscode.CustomDocumentBackup> {
     throw new Error("Backup not implemented");
+  }
+
+  /**
+   * Initializes a Runner for a webview panel.
+   * Subclasses should call this in their resolveCustomEditor implementation.
+   *
+   * The Runner uses a BridgeExecutor to send tool execution requests
+   * to the webview, where they are executed by the webview's own Runner
+   * with DefaultExecutor.
+   *
+   * @param webviewPanel - The webview panel to create a Runner for
+   * @returns The created Runner instance
+   *
+   * @example
+   * ```typescript
+   * async resolveCustomEditor(document, webviewPanel, token) {
+   *   // Initialize Runner for this webview
+   *   this.initializeRunnerForWebview(webviewPanel);
+   *
+   *   // ... rest of setup
+   * }
+   * ```
+   */
+  protected initializeRunnerForWebview(
+    webviewPanel: vscode.WebviewPanel,
+  ): Runner {
+    // Create Runner with BridgeExecutor
+    const runner = createExtensionRunner(webviewPanel);
+
+    // Store in map for later access
+    this._runners.set(webviewPanel, runner);
+
+    // Clean up when webview is disposed
+    webviewPanel.onDidDispose(() => {
+      this._runners.delete(webviewPanel);
+    });
+
+    console.log(`[BaseDocumentProvider] Initialized Runner for webview panel`);
+
+    return runner;
+  }
+
+  /**
+   * Gets the Runner for a specific webview panel.
+   *
+   * @param webviewPanel - The webview panel
+   * @returns The Runner instance, or undefined if not initialized
+   */
+  protected getRunnerForWebview(
+    webviewPanel: vscode.WebviewPanel,
+  ): Runner | undefined {
+    return this._runners.get(webviewPanel);
   }
 
   /**

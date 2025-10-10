@@ -31,6 +31,10 @@ import type { RuntimeSnapshotDTO } from "@datalayer/core/lib/models/RuntimeSnaps
 export class SnapshotsTreeProvider
   implements vscode.TreeDataProvider<SnapshotTreeItem>
 {
+  /**
+   * Event emitter for tree data changes.
+   * Fires when the tree needs to be refreshed.
+   */
   private _onDidChangeTreeData: vscode.EventEmitter<
     SnapshotTreeItem | undefined | void
   > = new vscode.EventEmitter<SnapshotTreeItem | undefined | void>();
@@ -38,7 +42,15 @@ export class SnapshotsTreeProvider
     SnapshotTreeItem | undefined | void
   > = this._onDidChangeTreeData.event;
 
+  /**
+   * Authentication service for managing user authentication state.
+   */
   private authService: SDKAuthProvider;
+
+  /**
+   * Cached array of runtime snapshots.
+   * Updated during loadSnapshots and cleared on refresh.
+   */
   private snapshotsCache: RuntimeSnapshotDTO[] = [];
 
   /**

@@ -24,22 +24,51 @@ import { promptAndLogin } from "../ui/dialogs/authDialog";
  * Manages notebook controllers with a main selector and runtime-specific controllers.
  */
 export class SmartDynamicControllerManager implements vscode.Disposable {
+  /** VS Code extension context for accessing API and managing subscriptions */
   private readonly _context: vscode.ExtensionContext;
-  private readonly _sdk: DatalayerClient;
-  private readonly _authProvider: SDKAuthProvider;
-  private readonly _kernelBridge: KernelBridge;
-  private readonly _controllers = new Map<string, vscode.NotebookController>();
-  private readonly _runtimes = new Map<string, RuntimeDTO>();
-  private readonly _activeKernels = new Map<string, WebSocketKernelClient>();
-  private readonly _notebookRuntimes = new Map<string, RuntimeDTO>();
-  private _executionOrder = 0;
-  private _disposed = false;
-  private _selectingRuntime = false; // Guard flag to prevent re-entry
 
-  // Event emitter for runtime changes - allows tree view to refresh
+  /** Datalayer SDK client for API communication */
+  private readonly _sdk: DatalayerClient;
+
+  /** Authentication provider for managing auth state */
+  private readonly _authProvider: SDKAuthProvider;
+
+  /** Bridge for managing kernel connections and webview communication */
+  private readonly _kernelBridge: KernelBridge;
+
+  /** Map of notebook controller IDs to VS Code NotebookController instances */
+  private readonly _controllers = new Map<string, vscode.NotebookController>();
+
+  /** Map of controller IDs to runtime DTOs for reverse lookup */
+  private readonly _runtimes = new Map<string, RuntimeDTO>();
+
+  /** Map of notebook URIs to active WebSocket kernel clients */
+  private readonly _activeKernels = new Map<string, WebSocketKernelClient>();
+
+  /** Map of notebook URIs to their selected runtimes */
+  private readonly _notebookRuntimes = new Map<string, RuntimeDTO>();
+
+  /** Counter for execution order tracking across cells */
+  private _executionOrder = 0;
+
+  /** Flag to track if this manager has been disposed */
+  private _disposed = false;
+
+  /** Guard flag to prevent re-entry during runtime selection */
+  private _selectingRuntime = false;
+
+  /** Event emitter fired when a runtime is created or selected */
   private readonly _onRuntimeCreated = new vscode.EventEmitter<RuntimeDTO>();
+
+  /** Event that fires when a runtime is created or selected, allows tree view refresh */
   public readonly onRuntimeCreated = this._onRuntimeCreated.event;
 
+  /**
+   * Creates a new SmartDynamicControllerManager instance.
+   * @param context VS Code extension context for managing subscriptions
+   * @param sdk Datalayer SDK client for API communication
+   * @param authProvider Authentication provider for managing user login state
+   */
   constructor(
     context: vscode.ExtensionContext,
     sdk: DatalayerClient,
@@ -173,7 +202,9 @@ export class SmartDynamicControllerManager implements vscode.Disposable {
   }
 
   /**
-   * Shows runtime selector and returns selected runtime.
+   * Shows runtime selector dialog and returns the selected runtime.
+   * Prompts for login if not authenticated.
+   * @returns The selected runtime DTO, or undefined if user cancels or not authenticated
    */
   private async selectRuntime(): Promise<RuntimeDTO | undefined> {
     if (!this._authProvider.isAuthenticated()) {
@@ -380,7 +411,9 @@ export class SmartDynamicControllerManager implements vscode.Disposable {
   }
 
   /**
-   * Gets the controller ID for a specific runtime.
+   * Gets the unique controller ID for a specific runtime.
+   * @param runtime The runtime DTO to get the controller ID for
+   * @returns The unique controller identifier string
    */
   private getRuntimeControllerId(runtime: RuntimeDTO): string {
     return `datalayer-runtime-${runtime.uid}`;

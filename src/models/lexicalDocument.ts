@@ -79,6 +79,18 @@ export class LexicalDocument
     return new LexicalDocument(uri, fileData, delegate);
   }
 
+  /**
+   * Reads file content from disk or remote storage.
+   *
+   * Handles three URI schemes:
+   * - "untitled": Returns default content for new documents
+   * - "datalayer": Attempts to read from Datalayer platform with fallback
+   * - other: Reads from local file system via VS Code workspace API
+   *
+   * @param uri - The file URI to read from
+   * @returns Promise resolving to binary file content
+   * @private
+   */
   private static async readFile(uri: vscode.Uri): Promise<Uint8Array> {
     if (uri.scheme === "untitled") {
       return LexicalDocument.getDefaultContent();
@@ -99,6 +111,15 @@ export class LexicalDocument
     return fileData;
   }
 
+  /**
+   * Generates default Lexical editor content for new documents.
+   *
+   * Returns a valid Lexical state JSON with a heading containing welcome text.
+   * Used when creating untitled documents or handling file read failures.
+   *
+   * @returns Binary encoded default Lexical state JSON
+   * @private
+   */
   private static getDefaultContent(): Uint8Array {
     const defaultState = {
       root: {
@@ -133,6 +154,17 @@ export class LexicalDocument
     return new TextEncoder().encode(JSON.stringify(defaultState, null, 2));
   }
 
+  /**
+   * Reads document content from Datalayer platform.
+   *
+   * Attempts to retrieve document metadata and load content from local cache
+   * or virtual file system. Falls back to default content if document unavailable
+   * or extension not ready.
+   *
+   * @param uri - Datalayer document URI
+   * @returns Promise resolving to binary file content
+   * @private
+   */
   private static async readDatalayerFile(uri: vscode.Uri): Promise<Uint8Array> {
     try {
       // Use async getInstance to wait for extension readiness
@@ -164,27 +196,90 @@ export class LexicalDocument
     }
   }
 
+  /**
+   * The document's URI.
+   *
+   * @private
+   */
   private readonly _uri: vscode.Uri;
+
+  /**
+   * The document's binary content.
+   *
+   * @private
+   */
   private _documentData: Uint8Array;
+
+  /**
+   * Whether the document has unsaved changes.
+   *
+   * @private
+   */
   private _isDirty: boolean = false;
+
+  /**
+   * Delegate for retrieving document content from webview during save.
+   *
+   * @private
+   */
   private readonly _delegate: LexicalDocumentDelegate;
+
+  /**
+   * Whether the document is in collaborative editing mode.
+   *
+   * @private
+   */
   private _isCollaborative: boolean = false;
 
+  /**
+   * Event emitter fired when document is disposed.
+   *
+   * @private
+   */
   private readonly _onDidDispose = this._register(
     new vscode.EventEmitter<void>(),
   );
+
+  /**
+   * Event fired when document is disposed.
+   * VS Code CustomDocument interface compliance.
+   */
   public readonly onDidDispose = this._onDidDispose.event;
 
+  /**
+   * Event emitter fired when document content changes.
+   * Includes optional updated content binary data.
+   *
+   * @private
+   */
   private readonly _onDidChangeDocument = this._register(
     new vscode.EventEmitter<{
+      /**
+       * Optional updated document content in binary format.
+       */
       readonly content?: Uint8Array;
     }>(),
   );
+
+  /**
+   * Event fired when document content changes.
+   * VS Code CustomDocument interface compliance.
+   */
   public readonly onDidChangeContent = this._onDidChangeDocument.event;
 
+  /**
+   * Event emitter fired when document state changes.
+   *
+   * @private
+   */
   private readonly _onDidChange = this._register(
     new vscode.EventEmitter<void>(),
   );
+
+  /**
+   * Event fired when document state changes.
+   * Indicates document is dirty or collaborative sync occurred.
+   */
   public readonly onDidChange = this._onDidChange.event;
 
   /**

@@ -41,21 +41,41 @@ export interface WebSocketMessage {
  * Uses postMessage to communicate with extension's WebSocket adapter.
  */
 export class VSCodeLoroProvider implements Provider {
+  /** Adapter ID for identifying messages from extension */
   private readonly adapterId: string;
+  /** Loro document for CRDT operations */
   private readonly doc: LoroDoc;
+  /** Ephemeral store for awareness state (5 minute timeout) */
   private readonly ephemeralStore: EphemeralStore;
+  /** Awareness adapter for collaborative presence information */
   private readonly _awareness: AwarenessAdapter;
+  /** Listeners for synchronization state changes */
   private syncListeners: Set<(isSynced: boolean) => void> = new Set();
+  /** Listeners for connection status changes */
   private statusListeners: Set<(status: { status: string }) => void> =
     new Set();
+  /** Listeners for remote document updates */
   private updateListeners: Set<(update: unknown) => void> = new Set();
+  /** Listeners for document reload events */
   private reloadListeners: Set<(doc: LoroDoc) => void> = new Set();
+  /** Flag indicating whether document is synchronized with server */
   private isSynced = false;
+  /** Disposable for cleanup of message listener registration */
   private messageDisposable: Disposable | null = null;
 
+  /** WebSocket URL for server connection */
   private websocketUrl: string;
+  /** Document ID extracted from adapter ID */
   private documentId: string;
 
+  /**
+   * Creates a new VS Code Loro provider instance
+   * @param adapterId - Unique adapter identifier for this provider
+   * @param doc - Loro document instance for CRDT operations
+   * @param userName - Username for awareness state
+   * @param userColor - User's display color for awareness presence
+   * @param websocketUrl - Optional WebSocket URL for server connection
+   */
   constructor(
     adapterId: string,
     doc: LoroDoc,
@@ -162,12 +182,34 @@ export class VSCodeLoroProvider implements Provider {
   }
 
   /**
-   * Register event listener
+   * Register event listener for synchronization state changes
+   * @param type - Event type 'sync'
+   * @param cb - Callback function receiving sync state
    */
   on(type: "sync", cb: (isSynced: boolean) => void): void;
+  /**
+   * Register event listener for connection status changes
+   * @param type - Event type 'status'
+   * @param cb - Callback function receiving status object
+   */
   on(type: "status", cb: (status: { status: string }) => void): void;
+  /**
+   * Register event listener for remote document updates
+   * @param type - Event type 'update'
+   * @param cb - Callback function receiving update data
+   */
   on(type: "update", cb: (update: unknown) => void): void;
+  /**
+   * Register event listener for document reload events
+   * @param type - Event type 'reload'
+   * @param cb - Callback function receiving reloaded document
+   */
   on(type: "reload", cb: (doc: LoroDoc) => void): void;
+  /**
+   * Register event listener implementation
+   * @param type - Event type
+   * @param cb - Callback function
+   */
   on(type: string, cb: Function): void {
     switch (type) {
       case "sync":
@@ -186,12 +228,34 @@ export class VSCodeLoroProvider implements Provider {
   }
 
   /**
-   * Unregister event listener
+   * Unregister event listener for synchronization state changes
+   * @param type - Event type 'sync'
+   * @param cb - Callback function to remove
    */
   off(type: "sync", cb: (isSynced: boolean) => void): void;
+  /**
+   * Unregister event listener for connection status changes
+   * @param type - Event type 'status'
+   * @param cb - Callback function to remove
+   */
   off(type: "status", cb: (status: { status: string }) => void): void;
+  /**
+   * Unregister event listener for remote document updates
+   * @param type - Event type 'update'
+   * @param cb - Callback function to remove
+   */
   off(type: "update", cb: (update: unknown) => void): void;
+  /**
+   * Unregister event listener for document reload events
+   * @param type - Event type 'reload'
+   * @param cb - Callback function to remove
+   */
   off(type: "reload", cb: (doc: LoroDoc) => void): void;
+  /**
+   * Unregister event listener implementation
+   * @param type - Event type
+   * @param cb - Callback function to remove
+   */
   off(type: string, cb: Function): void {
     switch (type) {
       case "sync":

@@ -15,17 +15,33 @@ import React, { useRef, useState, useEffect } from "react";
 import { OverflowMenu } from "./OverflowMenu";
 import type { OverflowMenuAction } from "./OverflowMenu";
 
+/**
+ * Toolbar action configuration for buttons.
+ * Actions are sorted by priority (lower number = shown first).
+ */
 export interface ToolbarAction {
+  /** Unique identifier for the action */
   id: string;
+  /** Optional icon class (e.g., "codicon codicon-play") */
   icon?: string;
+  /** Display label for the action button */
   label: string;
+  /** Optional tooltip text shown on hover */
   title?: string;
+  /** Callback invoked when the action is clicked */
   onClick: () => void;
+  /** Whether the action button is disabled */
   disabled?: boolean;
+  /** Priority for overflow handling (lower values shown first, higher overflow first) */
   priority: number;
+  /** Whether the action is currently active/selected */
   active?: boolean;
 }
 
+/**
+ * Props for the BaseToolbar component.
+ * Supports flexible layout with left content, actions, and right content areas.
+ */
 export interface BaseToolbarProps {
   /** Toolbar actions with priority-based ordering (lower priority = shown first) */
   actions?: ToolbarAction[];

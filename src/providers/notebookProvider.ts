@@ -48,6 +48,78 @@ export class NotebookProvider extends BaseDocumentProvider<NotebookDocument> {
 
     const disposables: vscode.Disposable[] = [];
 
+    // Register internal command to send messages to webview
+    // This command routes to both Notebook and Lexical webviews
+    disposables.push(
+      vscode.commands.registerCommand(
+        "datalayer.internal.document.sendToWebview",
+        async (uriString: string, message: unknown) => {
+          const uri = vscode.Uri.parse(uriString);
+
+          // Try notebook webviews first
+          const webviewPanels = provider.webviews.get(uri);
+          if (webviewPanels) {
+            for (const panel of webviewPanels) {
+              await panel.webview.postMessage(message);
+            }
+            return;
+          }
+
+          // Try Lexical webviews
+          const { LexicalProvider } = await import("./lexicalProvider");
+          const lexicalProvider = LexicalProvider.getInstance();
+          if (lexicalProvider) {
+            await lexicalProvider.sendToWebview(uri, message);
+          } else {
+            console.warn(
+              `[NotebookProvider] No webview found for URI: ${uri.toString()}`,
+            );
+          }
+        },
+      ),
+    );
+
+    // Register internal command to send messages to webview WITH response
+    // This command routes to both Notebook and Lexical webviews and waits for response
+    disposables.push(
+      vscode.commands.registerCommand(
+        "datalayer.internal.document.sendToWebviewWithResponse",
+        async (
+          uriString: string,
+          message: unknown,
+          requestId: string,
+        ): Promise<unknown> => {
+          const uri = vscode.Uri.parse(uriString);
+
+          // Try notebook webviews first
+          const webviewPanels = provider.webviews.get(uri);
+          if (webviewPanels) {
+            const panel = Array.from(webviewPanels)[0];
+            if (panel) {
+              return provider.sendToWebviewWithResponse(
+                panel,
+                message,
+                requestId,
+              );
+            }
+          }
+
+          // Try Lexical webviews
+          const { LexicalProvider } = await import("./lexicalProvider");
+          const lexicalProvider = LexicalProvider.getInstance();
+          if (lexicalProvider) {
+            return lexicalProvider.sendToWebviewWithResponse(
+              uri,
+              message,
+              requestId,
+            );
+          }
+
+          throw new Error(`No webview found for URI: ${uri.toString()}`);
+        },
+      ),
+    );
+
     disposables.push(
       vscode.commands.registerCommand("datalayer.jupyter-notebook-new", () => {
         const workspaceFolders = vscode.workspace.workspaceFolders;
@@ -135,6 +207,49 @@ export class NotebookProvider extends BaseDocumentProvider<NotebookDocument> {
       if (document?.document) {
         this.showDatalayerRuntimeSelector(document.document);
       }
+    });
+  }
+
+  /**
+   * Send a message to a webview panel and wait for a response.
+   * Uses the request/response pattern inherited from BaseDocumentProvider.
+   *
+   * @param panel - Webview panel to send message to
+   * @param message - Message to send (should include type and requestId)
+   * @param requestId - Request ID to match response
+   * @returns Promise resolving to the response
+   */
+  public async sendToWebviewWithResponse(
+    panel: vscode.WebviewPanel,
+    message: unknown,
+    requestId: string,
+  ): Promise<unknown> {
+    return new Promise((resolve, reject) => {
+      // Set up response handler with timeout
+      const timeout = setTimeout(() => {
+        this._callbacks.delete(requestId);
+        reject(
+          new Error(`Timeout waiting for response to request ${requestId}`),
+        );
+      }, 10000); // 10 second timeout
+
+      // Store callback
+      this._callbacks.set(requestId, (response: unknown) => {
+        clearTimeout(timeout);
+        resolve(response);
+      });
+
+      // Send message to webview
+      panel.webview.postMessage(message).then(
+        () => {
+          // Message sent successfully
+        },
+        (error) => {
+          clearTimeout(timeout);
+          this._callbacks.delete(requestId);
+          reject(error);
+        },
+      );
     });
   }
 
@@ -303,7 +418,17 @@ export class NotebookProvider extends BaseDocumentProvider<NotebookDocument> {
 
     // Wait for the webview to be properly ready before we init
     webviewPanel.webview.onDidReceiveMessage(async (e) => {
-      if (e.type === "llm-completion-request") {
+      if (e.type === "response") {
+        // Handle response messages from webview (for sendToWebviewWithResponse)
+        const { requestId, body } = e;
+        if (requestId) {
+          const callback = this._callbacks.get(requestId);
+          if (callback) {
+            this._callbacks.delete(requestId);
+            callback(body);
+          }
+        }
+      } else if (e.type === "llm-completion-request") {
         console.log("[NotebookProvider] LLM completion request received", {
           requestId: e.requestId,
           prefixLength: e.prefix?.length,
@@ -427,6 +552,14 @@ export class NotebookProvider extends BaseDocumentProvider<NotebookDocument> {
 
           // Use actual document ID for Datalayer notebooks, URI for local files
           const notebookId = documentId || document.uri.toString();
+
+          // Register the notebook in the adapter registry for tool operations
+          getServiceContainer().documentRegistry.register(
+            notebookId,
+            document.uri.toString(),
+            "notebook",
+            webviewPanel, // Register webview panel for tool execution messaging
+          );
 
           this.postMessage(webviewPanel, "init", {
             value: document.documentData,

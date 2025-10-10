@@ -23,18 +23,30 @@ import type {
  * Jupyter message structure according to the protocol.
  */
 export interface JupyterMessage {
+  /** Message header containing protocol metadata */
   header: {
+    /** Unique message identifier */
     msg_id: string;
+    /** Message type (e.g., 'execute_request', 'execute_reply') */
     msg_type: string;
+    /** Username of the sender */
     username: string;
+    /** Session identifier */
     session: string;
+    /** ISO timestamp when message was created */
     date: string;
+    /** Jupyter message protocol version */
     version: string;
   };
+  /** Header of the parent message this message responds to */
   parent_header: unknown;
+  /** Message metadata object */
   metadata: unknown;
+  /** Message content payload */
   content: unknown;
+  /** Optional binary buffers attached to message */
   buffers?: unknown[];
+  /** Communication channel (e.g., 'shell', 'iopub') */
   channel?: string;
 }
 
@@ -42,7 +54,9 @@ export interface JupyterMessage {
  * Execution result from kernel.
  */
 export interface ExecutionResult {
+  /** Array of outputs produced during execution */
   outputs: ExecutionOutput[];
+  /** Whether execution completed successfully */
   success: boolean;
 }
 
@@ -50,13 +64,20 @@ export interface ExecutionResult {
  * Output from code execution.
  */
 export interface ExecutionOutput {
+  /** Type of output produced */
   type: "stream" | "execute_result" | "display_data" | "error";
-  name?: string; // For stream outputs (stdout/stderr)
-  text?: string; // For stream outputs
-  data?: unknown; // For execute_result/display_data
-  ename?: string; // For errors
-  evalue?: string; // For errors
-  traceback?: string[]; // For errors
+  /** Stream name (stdout or stderr) for stream outputs */
+  name?: string;
+  /** Text content for stream outputs */
+  text?: string;
+  /** Display data object for execute_result or display_data outputs */
+  data?: unknown;
+  /** Exception name for error outputs */
+  ename?: string;
+  /** Exception value for error outputs */
+  evalue?: string;
+  /** Exception traceback lines for error outputs */
+  traceback?: string[];
 }
 
 /**
@@ -64,17 +85,27 @@ export interface ExecutionOutput {
  * Handles connection, execution, and message processing for native notebooks.
  */
 export class WebSocketKernelClient {
+  /** WebSocket connection instance */
   private _ws: WebSocket | undefined;
+  /** Unique session identifier for this client */
   private _sessionId: string;
+  /** Kernel ID assigned by the Jupyter server */
   private _kernelId: string | undefined;
+  /** Connection status flag */
   private _connected = false;
+  /** Connection attempt in progress flag */
   private _connecting = false;
+  /** Runtime configuration and credentials */
   private _runtime: RuntimeJSON;
+  /** Map of pending execution requests awaiting replies */
   private _pendingRequests = new Map<
     string,
     {
+      /** Callback to resolve with execution result */
       resolve: (result: ExecutionResult) => void;
+      /** Callback to reject with error */
       reject: (error: Error) => void;
+      /** Accumulated outputs during execution */
       outputs: ExecutionOutput[];
     }
   >();

@@ -17,7 +17,9 @@ import type { RuntimeJSON } from "@datalayer/core/lib/client";
  * Extended interface for runtime with credits information
  */
 export interface RuntimeWithCredits extends RuntimeJSON {
+  /** Number of credits consumed by the runtime */
   creditsUsed?: number;
+  /** Maximum number of credits available for the runtime */
   creditsLimit?: number;
 }
 
@@ -26,32 +28,53 @@ export interface RuntimeWithCredits extends RuntimeJSON {
  */
 export interface NotebookState {
   // Document state
+  /** Notebook format version */
   nbformat: unknown;
+  /** Whether this is a Datalayer-hosted notebook */
   isDatalayerNotebook: boolean;
+  /** Unique document identifier for Datalayer notebooks */
   documentId?: string;
-  documentUri: string; // VS Code document URI for outline tracking
+  /** VS Code document URI for outline tracking and identification */
+  documentUri: string;
+  /** Datalayer server URL for API communication */
   serverUrl?: string;
+  /** Authentication token for API requests */
   token?: string;
+  /** Notebook identifier, defaults to "local-notebook" */
   notebookId: string;
+  /** Whether the notebook has been initialized with required data */
   isInitialized: boolean;
 
   // Runtime state
+  /** Currently selected runtime with optional credits information */
   selectedRuntime?: RuntimeWithCredits;
 
   // Theme state
+  /** Current theme mode for the notebook editor */
   theme: "light" | "dark";
 
   // Actions
+  /** Updates the notebook format version */
   setNbformat: (nbformat: unknown) => void;
+  /** Updates whether the notebook is a Datalayer notebook */
   setIsDatalayerNotebook: (isDatalayer: boolean) => void;
+  /** Updates the document identifier */
   setDocumentId: (id: string) => void;
+  /** Updates the VS Code document URI */
   setDocumentUri: (uri: string) => void;
+  /** Updates the Datalayer server URL */
   setServerUrl: (url: string) => void;
+  /** Updates the authentication token */
   setToken: (token: string) => void;
+  /** Updates the notebook identifier */
   setNotebookId: (id: string) => void;
+  /** Updates the initialization state */
   setIsInitialized: (initialized: boolean) => void;
+  /** Updates the selected runtime */
   setRuntime: (runtime: RuntimeWithCredits | undefined) => void;
+  /** Updates the theme mode */
   setTheme: (theme: "light" | "dark") => void;
+  /** Resets all state to initial values */
   reset: () => void;
 }
 

@@ -17,11 +17,17 @@ import type { ILogger } from "../interfaces/ILogger";
  * Service lifecycle states.
  */
 export enum ServiceState {
+  /** Service has not been initialized yet */
   Uninitialized = "uninitialized",
+  /** Service is currently initializing */
   Initializing = "initializing",
+  /** Service is ready for use */
   Ready = "ready",
+  /** Service is currently disposing resources */
   Disposing = "disposing",
+  /** Service has been disposed and cleaned up */
   Disposed = "disposed",
+  /** Service encountered an error during initialization */
   Error = "error",
 }
 

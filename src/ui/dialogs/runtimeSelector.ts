@@ -446,7 +446,7 @@ export async function createRuntime(
   // Get default runtime duration from settings (in minutes)
   const defaultMinutes = vscode.workspace
     .getConfiguration("datalayer.runtime")
-    .get<number>("defaultMinutes", 10);
+    .get<number>("defaultMinutes", 3);
   const suggestedMinutes = maxMinutes
     ? Math.min(defaultMinutes, maxMinutes)
     : defaultMinutes;

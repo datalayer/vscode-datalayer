@@ -24,18 +24,32 @@ import { createRawKernel, IKernelConnection } from "./rawSocket";
  * Works with environments that only have ipykernel installed (no jupyter-server needed).
  */
 export class LocalKernelClient {
+  /** Kernel information including Python path and kernel spec */
   private _kernelInfo: NativeKernelInfo;
+
+  /** Indicates whether this client has been disposed */
   private _disposed = false;
+
+  /** The spawned kernel process */
   private _kernelProcess: ChildProcess | undefined;
+
+  /** Path to the kernel connection file */
   private _connectionFile: string | undefined;
+
+  /** The JupyterLab kernel connection instance */
   private _realKernel: Kernel.IKernelConnection | undefined;
 
+  /**
+   * Creates a new LocalKernelClient instance.
+   * @param kernelInfo - Kernel information including Python path and kernel spec
+   */
   constructor(kernelInfo: NativeKernelInfo) {
     this._kernelInfo = kernelInfo;
   }
 
   /**
    * Start the local kernel by spawning ipykernel and connecting via ZMQ.
+   * @throws Error if the client has been disposed or if kernel type is jupyter-server
    */
   public async start(): Promise<void> {
     if (this._disposed) {
@@ -143,6 +157,7 @@ export class LocalKernelClient {
 
   /**
    * Create a kernel connection file with random ports.
+   * @returns Object containing the connection file path and configuration
    */
   private async createConnectionFile(): Promise<{
     file: string;
@@ -176,6 +191,7 @@ export class LocalKernelClient {
 
   /**
    * Find a free port by letting the OS assign one.
+   * @returns A free port number assigned by the operating system
    */
   private async findFreePort(): Promise<number> {
     return new Promise((resolve, reject) => {
@@ -196,6 +212,8 @@ export class LocalKernelClient {
 
   /**
    * Execute code on the kernel.
+   * @param code - The code to execute
+   * @throws Error if kernel not started
    */
   public async executeCode(code: string): Promise<void> {
     if (!this._realKernel) {
@@ -223,6 +241,7 @@ export class LocalKernelClient {
 
   /**
    * Get the underlying kernel connection.
+   * @returns The JupyterLab kernel connection instance, or undefined if not started
    */
   public getKernel(): Kernel.IKernelConnection | undefined {
     return this._realKernel;
@@ -231,6 +250,7 @@ export class LocalKernelClient {
   /**
    * Get the raw WebSocket for proxying (internal use by LocalKernelProxy).
    * @internal
+   * @returns The raw WebSocket instance, or undefined if kernel not started
    */
   public getRawSocket(): unknown {
     if (!this._realKernel) {
@@ -244,6 +264,8 @@ export class LocalKernelClient {
 
   /**
    * Get kernel information.
+   * @returns Kernel information object
+   * @throws Error if kernel not started
    */
   public async getKernelInfo(): Promise<unknown> {
     if (!this._realKernel) {
@@ -256,6 +278,7 @@ export class LocalKernelClient {
 
   /**
    * Restart the kernel.
+   * @throws Error if kernel not started
    */
   public async restart(): Promise<void> {
     if (!this._realKernel) {
@@ -267,7 +290,8 @@ export class LocalKernelClient {
   }
 
   /**
-   * Interrupt the kernel.
+   * Interrupt the kernel by sending SIGINT signal.
+   * @throws Error if kernel process not running
    */
   public async interrupt(): Promise<void> {
     if (!this._kernelProcess || !this._kernelProcess.pid) {

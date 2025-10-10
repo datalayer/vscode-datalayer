@@ -187,12 +187,22 @@ function createCloseEvent(config: ICloseEventConfiguration) {
   return closeEvent;
 }
 
+/**
+ * Calculate the length of a string in UTF-8 bytes.
+ * @param str The string to measure
+ * @returns The length of the string in UTF-8 bytes
+ */
 function lengthInUtf8Bytes(str: string): number {
   // Matches only the 10.. bytes that are non-initial characters in a multi-byte sequence.
   const m = encodeURIComponent(str).match(/%[89ABab]/g);
   return str.length + (m ? m.length : 0);
 }
 
+/**
+ * Normalize WebSocket send data to a serializable format.
+ * @param data The raw data to normalize
+ * @returns The normalized data suitable for WebSocket transmission
+ */
 function normalizeSendData(data: unknown) {
   // FIXME this does not work -> JupyterLab fails to serialize the data
   // when the protocol is v1.kernel.websocket.jupyter.org
@@ -205,6 +215,13 @@ function normalizeSendData(data: unknown) {
   return data;
 }
 
+/**
+ * Verify and normalize WebSocket subprotocols.
+ * Validates protocol format, checks for duplicates, and filters out unsupported protocols.
+ * @param protocols The subprotocol or protocols to verify
+ * @returns Validated array of protocols
+ * @throws SyntaxError if protocols are invalid or duplicated
+ */
 function protocolVerification(protocols?: string | string[]): string[] {
   protocols = protocols ?? new Array<string>();
   if (!Array.isArray(protocols) && typeof protocols !== "string") {
@@ -235,6 +252,14 @@ function protocolVerification(protocols?: string | string[]): string[] {
   return protocols.filter((p) => p !== "v1.kernel.websocket.jupyter.org");
 }
 
+/**
+ * Verify and normalize a WebSocket URL.
+ * Validates URL format, scheme, and structure according to WebSocket standards.
+ * @param url The URL to verify
+ * @returns The normalized URL string
+ * @throws TypeError if URL is missing
+ * @throws SyntaxError if URL is invalid, has wrong scheme, or contains fragment
+ */
 function urlVerification(url: string | URL) {
   const urlRecord = new URL(url);
   const { pathname, protocol, hash } = urlRecord;
@@ -277,13 +302,12 @@ class EventTarget {
   protected listeners: Map<string, Set<(...args: unknown[]) => void>> =
     new Map();
 
-  /*
-   * Ties a listener function to an event type which can later be invoked via the
-   * dispatchEvent method.
+  /**
+   * Register a listener function for a specific event type.
+   * The listener can later be invoked via the dispatchEvent method.
    *
-   * @param {string} type - the type of event (ie: 'open', 'message', etc.)
-   * @param {function} listener - callback function to invoke when an event is dispatched matching the type
-   * @param {boolean} useCapture - N/A TODO: implement useCapture functionality
+   * @param type The type of event (e.g., 'open', 'message', 'close', 'error')
+   * @param listener Callback function to invoke when an event of this type is dispatched
    */
   addEventListener(
     type: string,
@@ -298,12 +322,12 @@ class EventTarget {
     }
   }
 
-  /*
-   * Removes the listener so it will no longer be invoked via the dispatchEvent method.
+  /**
+   * Unregister a listener function for a specific event type.
+   * The listener will no longer be invoked when events of this type are dispatched.
    *
-   * @param {string} type - the type of event (ie: 'open', 'message', etc.)
-   * @param {function} listener - callback function to invoke when an event is dispatched matching the type
-   * @param {boolean} useCapture - N/A TODO: implement useCapture functionality
+   * @param type The type of event (e.g., 'open', 'message', 'close', 'error')
+   * @param listener The callback function to remove
    */
   removeEventListener(
     type: string,
@@ -312,11 +336,13 @@ class EventTarget {
     this.listeners.get(type)?.delete(listener);
   }
 
-  /*
-   * Invokes all listener functions that are listening to the given event.type property. Each
-   * listener will be passed the event as the first argument.
+  /**
+   * Dispatch an event to all registered listeners of that event type.
+   * Each listener is invoked with the event as the first argument, or with custom arguments if provided.
    *
-   * @param {object} event - event object which will be passed to all listeners of the event.type property
+   * @param event The event object to dispatch
+   * @param customArguments Optional custom arguments to pass to listeners instead of the event
+   * @returns True if listeners were found and invoked, false otherwise
    */
   dispatchEvent(event: Event, ...customArguments: unknown[]) {
     const eventName = event.type;
@@ -414,54 +440,92 @@ export class ProxiedWebSocket extends EventTarget {
   /** Binary data type for received messages */
   binaryType: BinaryType;
 
+  /**
+   * Get the current connection state of the WebSocket.
+   */
   get readyState(): number {
     return this._readyState;
   }
 
+  /**
+   * Get the open event handler callback.
+   */
   get onopen(): ((this: WebSocket, ev: Event) => unknown) | null {
     return (this.listeners.get("open") ?? null) as unknown as
       | ((this: WebSocket, ev: Event) => unknown)
       | null;
   }
 
+  /**
+   * Get the message event handler callback.
+   */
   get onmessage(): ((this: WebSocket, ev: MessageEvent) => unknown) | null {
     return (this.listeners.get("message") ?? null) as unknown as
       | ((this: WebSocket, ev: MessageEvent) => unknown)
       | null;
   }
 
+  /**
+   * Get the close event handler callback.
+   */
   get onclose(): ((this: WebSocket, ev: CloseEvent) => unknown) | null {
     return (this.listeners.get("close") ?? null) as unknown as
       | ((this: WebSocket, ev: CloseEvent) => unknown)
       | null;
   }
 
+  /**
+   * Get the error event handler callback.
+   */
   get onerror(): ((this: WebSocket, ev: Event) => unknown) | null {
     return (this.listeners.get("error") ?? null) as unknown as
       | ((this: WebSocket, ev: Event) => unknown)
       | null;
   }
 
+  /**
+   * Set the open event handler callback.
+   * @param listener The callback function to invoke when the connection opens
+   */
   set onopen(listener: (...args: unknown[]) => void) {
     this.listeners.delete("open");
     this.addEventListener("open", listener);
   }
 
+  /**
+   * Set the message event handler callback.
+   * @param listener The callback function to invoke when a message is received
+   */
   set onmessage(listener: (...args: unknown[]) => void) {
     this.listeners.delete("message");
     this.addEventListener("message", listener);
   }
 
+  /**
+   * Set the close event handler callback.
+   * @param listener The callback function to invoke when the connection closes
+   */
   set onclose(listener: (...args: unknown[]) => void) {
     this.listeners.delete("close");
     this.addEventListener("close", listener);
   }
 
+  /**
+   * Set the error event handler callback.
+   * @param listener The callback function to invoke when an error occurs
+   */
   set onerror(listener: (...args: unknown[]) => void) {
     this.listeners.delete("error");
     this.addEventListener("error", listener);
   }
 
+  /**
+   * Close the WebSocket connection.
+   * @param code Optional close code (1000 or 3000-4999)
+   * @param reason Optional human-readable close reason
+   * @throws TypeError if the close code is invalid
+   * @throws SyntaxError if the close reason is too long
+   */
   close(code?: number, reason?: string) {
     if (code !== undefined) {
       if (
@@ -519,6 +583,11 @@ export class ProxiedWebSocket extends EventTarget {
     });
   }
 
+  /**
+   * Send data through the WebSocket connection.
+   * @param data The data to send (string, Blob, or ArrayBuffer)
+   * @throws Error if the WebSocket is in CLOSING or CLOSED state
+   */
   send(data: unknown) {
     if (
       this.readyState === ProxiedWebSocket.CLOSING ||
@@ -538,6 +607,13 @@ export class ProxiedWebSocket extends EventTarget {
     });
   }
 
+  /**
+   * Handle incoming messages from the extension.
+   * Routes WebSocket messages (open, message, close) to appropriate handlers.
+   * @param message The extension message containing WebSocket event data
+   * @returns True if the message was processed, false otherwise
+   * @private
+   */
   private _onExtensionMessage(message: ExtensionMessage): boolean {
     const { type } = message;
 
@@ -624,6 +700,10 @@ export class ProxiedWebSocket extends EventTarget {
     return false;
   }
 
+  /**
+   * Initialize the WebSocket connection by sending an open request to the extension.
+   * @private
+   */
   private _open(): void {
     MessageHandler.instance.send({
       type: "websocket-open",

@@ -24,9 +24,10 @@ JUPYTER_UI_ROOT="$( cd "$VSCODE_ROOT/../jupyter-ui" && pwd )"
 sync_packages() {
   echo -e "${BLUE}🔄 Syncing jupyter-ui packages to vscode-datalayer...${NC}"
 
-  # Build jupyter-lexical
+  # Build jupyter-lexical (with resources)
   echo -e "${BLUE}📦 Building @datalayer/jupyter-lexical...${NC}"
   cd "$JUPYTER_UI_ROOT/packages/lexical"
+  npx gulp resources-to-lib
   npm run build:lib
 
   # Build jupyter-react
@@ -34,15 +35,22 @@ sync_packages() {
   cd "$JUPYTER_UI_ROOT/packages/react"
   npm run build:lib
 
-  # Copy lib files to vscode-datalayer node_modules
-  echo -e "${BLUE}📋 Copying lib files to node_modules...${NC}"
+  # Copy all necessary files to vscode-datalayer node_modules
+  echo -e "${BLUE}📋 Copying files to node_modules...${NC}"
   cd "$VSCODE_ROOT"
 
-  mkdir -p node_modules/@datalayer/jupyter-lexical/lib
-  mkdir -p node_modules/@datalayer/jupyter-react/lib
+  # Create directories
+  mkdir -p node_modules/@datalayer/jupyter-lexical
+  mkdir -p node_modules/@datalayer/jupyter-react
 
-  cp -r "$JUPYTER_UI_ROOT/packages/lexical/lib/"* node_modules/@datalayer/jupyter-lexical/lib/
-  cp -r "$JUPYTER_UI_ROOT/packages/react/lib/"* node_modules/@datalayer/jupyter-react/lib/
+  # Copy jupyter-lexical: lib/, style/, package.json
+  cp -r "$JUPYTER_UI_ROOT/packages/lexical/lib" node_modules/@datalayer/jupyter-lexical/
+  cp -r "$JUPYTER_UI_ROOT/packages/lexical/style" node_modules/@datalayer/jupyter-lexical/
+  cp "$JUPYTER_UI_ROOT/packages/lexical/package.json" node_modules/@datalayer/jupyter-lexical/
+
+  # Copy jupyter-react: lib/, package.json
+  cp -r "$JUPYTER_UI_ROOT/packages/react/lib" node_modules/@datalayer/jupyter-react/
+  cp "$JUPYTER_UI_ROOT/packages/react/package.json" node_modules/@datalayer/jupyter-react/
 
   echo -e "${GREEN}✅ Successfully synced at $(date +"%H:%M:%S")${NC}"
 }

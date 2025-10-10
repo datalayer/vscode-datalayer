@@ -50,6 +50,12 @@
 
 ### Smart Controller Registration - DISABLED (January 2025)
 
+**Last Updated**: October 2025
+
+## Critical Recent Changes
+
+### Smart Controller Registration - DISABLED (October 2025)
+
 **Status**: The `SmartDynamicControllerManager` is **intentionally disabled**
 **Location**: `src/services/ui/uiSetup.ts:85`
 **Reason**: Native notebook controller integration needs improvement before re-enabling
@@ -61,7 +67,7 @@ const controllerManager = null as unknown as SmartDynamicControllerManager;
 
 All code properly handles the null case with optional chaining (`controllerManager?.`) or explicit null checks.
 
-### Runtime Tree View Refresh Fix (January 2025)
+### Runtime Tree View Refresh Fix (October 2025)
 
 **Issue**: Tree view wasn't refreshing after "terminate all runtimes"
 **Fix**: Added 500ms delay before refresh to allow server-side processing
@@ -306,7 +312,7 @@ Key commands:
 - `/api/runtimes/v1/runtimes` - List runtimes (GET)
 - `/api/runtimes/v1/runtimes` - Create runtime (POST)
 
-## Project Structure (January 2025)
+## Project Structure (October 2025)
 
 ```
 src/
@@ -318,6 +324,22 @@ src/
 │   ├── runtimes.ts       # Runtime management (create, terminate, select)
 │   ├── internal.ts       # Internal commands for inter-component communication
 │   └── index.ts          # Command registration
+├── tools/                 # MCP (Model Context Protocol) embedded tools (14 total)
+│   ├── createLocalNotebook.ts       # Create local .ipynb files
+│   ├── createRemoteNotebook.ts      # Create cloud notebooks
+│   ├── startRuntime.ts              # Start Datalayer runtime
+│   ├── connectRuntime.ts            # Connect runtime to notebook
+│   ├── insertCell.ts                # Insert cells into notebooks
+│   ├── executeCell.ts               # Execute cell and get outputs
+│   ├── readAllCells.ts              # Read all cells (jupyter-mcp-server parity)
+│   ├── readCell.ts                  # Read specific cell (jupyter-mcp-server parity)
+│   ├── getNotebookInfo.ts           # Get notebook metadata (jupyter-mcp-server parity)
+│   ├── deleteCell.ts                # Delete cell (jupyter-mcp-server parity)
+│   ├── overwriteCell.ts             # Overwrite cell source (jupyter-mcp-server parity)
+│   ├── appendMarkdownCell.ts        # Append markdown cell (jupyter-mcp-server parity)
+│   ├── appendExecuteCodeCell.ts     # Append and execute code cell (jupyter-mcp-server parity)
+│   ├── insertMarkdownCell.ts        # Insert markdown at index (jupyter-mcp-server parity)
+│   └── index.ts                     # Tool registration
 ├── providers/             # VS Code API implementations
 │   ├── baseDocumentProvider.ts           # Base class for custom editors
 │   ├── notebookProvider.ts               # Jupyter .ipynb custom editor
@@ -457,7 +479,7 @@ npm run compile     # Build extension
 npm run doc         # Documentation
 ```
 
-### SDK Usage Pattern (January 2025)
+### SDK Usage Pattern (October 2025)
 
 **IMPORTANT**: The extension now uses the Datalayer SDK directly with handlers for VS Code-specific behavior.
 
@@ -490,7 +512,7 @@ const runtime = await sdk.ensureRuntime();
 
 ### Service Layer Removal
 
-**Removed Services** (January 2025):
+**Removed Services** (October 2025):
 
 - ❌ `spacerService.ts` - Deleted, use SDK directly
 - ❌ `runtimeService.ts` - Deleted, use SDK directly
@@ -613,6 +635,18 @@ const serviceManager = mutableServiceManager.createProxy();
 - Cause: React key changes with runtime causing unmount/remount
 - Fix: Remove dynamic key, use MutableServiceManager for stable reference
 
+11. **MCP tool opens VS Code native notebook instead of Datalayer editor**:
+
+- Cause: Using VS Code native API (`vscode.workspace.openNotebookDocument`)
+- Fix: Use message-based communication via `datalayer.internal.sendToWebview`
+- See: [dev/docs/MCP.md](dev/docs/MCP.md) for details
+
+12. **Insert cell fails with "notebook widget not found"**:
+
+- Cause: `notebookStore2.notebooks` is a Map, not an object
+- Fix: Use `notebooks.get(notebookId)` instead of `notebooks[notebookId]`
+- Also: Add polling logic to wait for notebook initialization (up to 10 seconds)
+
 ### Debug Commands
 
 - View authentication status: "Datalayer: Show Authentication Status"
@@ -630,13 +664,110 @@ const serviceManager = mutableServiceManager.createProxy();
 - ✅ Virtual file system for Datalayer documents
 - ✅ Production build CSS import fix for @primer/react-brand
 - ✅ Post-build script to remove problematic module specifiers
-- ✅ **SDK Integration with Handlers Pattern** (January 2025) - Eliminated service wrappers
+- ✅ **SDK Integration with Handlers Pattern** (October 2025) - Eliminated service wrappers
 - ✅ **Clean Architecture** - Direct SDK usage with platform-specific handlers
 - ✅ **Zero Code Duplication** - No more 1:1 method wrapping
-- ✅ **Unified Kernel Selection** (January 2025) - Single picker for all kernel sources
+- ✅ **Unified Kernel Selection** (October 2025) - Single picker for all kernel sources
 - ✅ **Runtime Hot-Swapping** - Change kernels without notebook re-render
 - ✅ **Kernel Bridge Architecture** - Unified routing for webview and native notebooks
 - ✅ **LLM Inline Completions** (January 2025) - Copilot-like ghost text suggestions in Lexical editor
+- ✅ **Batch Block Insertion** (November 2025) - insertBlocks tool for efficient multi-block creation
+- ✅ **Automatic Schema Generator** (November 2025) - TypeScript-to-JSON tool schema sync
+
+### Batch Block Insertion (November 2025)
+
+**Feature**: `insertBlocks` tool allows Copilot to create complex documents with one API call instead of sequential `insertBlock` calls.
+
+**Problem Solved**: Creating a document with 10 blocks required 10 separate API calls, causing:
+
+- Performance overhead (message serialization × 10)
+- Complex state management in AI model
+- Risk of partial failures leaving incomplete documents
+
+**Solution**: Single `insertBlocks` call with array of blocks:
+
+```typescript
+// Instead of 10 calls to insertBlock:
+insertBlocks({
+  insert_after_block_id: "TOP",
+  blocks: [
+    { blockType: "heading", source: "# Title" },
+    { blockType: "paragraph", source: "Intro..." },
+    // ... 8 more blocks
+  ],
+});
+```
+
+**Implementation**:
+
+- **Full stack architecture**: 8 layers from tool definition to webview controller
+- **Sequential insertion**: Each block inserts after the previous (maintains order)
+- **Error handling**: Stops on first failure with block number in error message
+- **Chaining support**: Returns last inserted block ID for continuation
+
+**Files**:
+
+- `src/tools/definitions/tools/insertBlocks.ts` - Tool definition
+- `src/tools/core/lexical/insertBlocks.ts` - Operation logic
+- `src/commands/internal.ts` - Internal command with requestId
+- `webview/lexical/plugins/InternalCommandsPlugin.tsx` - Message handler
+- `webview/utils/LexicalDocumentController.ts` - Controller method
+
+### Tool Schema Generator (November 2025)
+
+**Feature**: Automatic synchronization of TypeScript tool definitions to `package.json` for GitHub Copilot.
+
+**Architecture**:
+
+- **Source of Truth**: TypeScript tool definitions in `src/tools/definitions/tools/*.ts`
+- **Generator**: `scripts/generate-tool-schemas.js` - Parses TypeScript AST without eval()
+- **Validator**: `scripts/validate-tool-schemas.js` - Checks schema completeness
+
+**Parser Capabilities**:
+
+- Parses TypeScript object literals (handles `as const`, single quotes, trailing commas)
+- Extracts nested objects and arrays
+- Preserves complex schemas (array items with properties and required fields)
+- Handles string escaping and multiline descriptions
+- Type-safe without using eval() or dynamic code execution
+
+**Workflow**:
+
+1. **Define tool in TypeScript** with full type safety:
+
+```typescript
+export const myTool: ToolDefinition = {
+  name: "datalayer_myTool",
+  description: "AI-readable description",
+  parameters: {
+    properties: { param: { type: "string" } },
+    required: ["param"],
+  },
+} as const;
+```
+
+2. **Generate schema**:
+
+```bash
+node scripts/generate-tool-schemas.js
+# Output: ✅ 12/12 tools parsed successfully
+```
+
+3. **Validate**:
+
+```bash
+node scripts/validate-tool-schemas.js
+# Output: ✅ All expected Lexical tools present
+```
+
+**Benefits**:
+
+- **Type Safety**: TypeScript catches errors at compile time
+- **Single Source of Truth**: No manual duplication between TS and JSON
+- **Automatic Sync**: Eliminates schema drift
+- **Developer Experience**: Write once, generate everywhere
+
+**Current Status**: 13 tools (8 notebook + 5 Lexical), 100% schema coverage
 
 ### LLM Inline Completions (January 2025)
 
@@ -772,8 +903,16 @@ interface ITypedKernelManager extends Kernel.IManager {
 - [ ] Update NotebookEditor to use RuntimeProvider
 - [ ] Update LexicalEditor to use shared architecture
 - [ ] Comprehensive testing across all kernel types
+- ✅ **MCP Tools Integration** (October 2025) - GitHub Copilot can create and manipulate notebooks programmatically
+- ✅ **Jupyter MCP Server Parity** (October 2025) - All 14 tools mirror jupyter-mcp-server functionality
+- ✅ **Lexical Creation Tools** (October 2025) - 16 total tools with local/remote lexical document creation
+- ✅ **Complete CRUD Operations** - Read, create, update, delete cells via Copilot
+- ✅ **Message-Based Cell Insertion** - Proper custom editor support via extension-webview messaging
+- ✅ **Async Notebook Initialization Handling** - Polling mechanism for reliable cell insertion
+- ✅ **Request-Response Pattern** - Webview can respond to extension requests with cell data
+- ✅ **NotebookActions Integration** - Uses JupyterLab's NotebookActions for cell operations
 
-## Current State Summary (January 2025)
+## Current State Summary (October 2025)
 
 ### Version Information
 
@@ -826,4 +965,4 @@ All workflows run on every push to main and on PRs:
 
 ---
 
-_Last Updated: January 2025_
+_Last Updated: October 2025_

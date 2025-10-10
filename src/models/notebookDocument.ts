@@ -183,32 +183,64 @@ export class NotebookDocument
     return new TextEncoder().encode(JSON.stringify(emptyNotebook));
   }
 
+  /** The notebook's URI that determines collaborative vs local behavior */
   private readonly _uri: vscode.Uri;
+
+  /** Binary representation of the current notebook content */
   private _documentData: Uint8Array;
+
+  /** Array of edits applied to the document since last save */
   private _edits: NotebookEdit[] = [];
+
+  /** Array of edits that were saved to disk */
   private _savedEdits: NotebookEdit[] = [];
+
+  /** Delegate for webview content retrieval and panel management */
   private readonly _delegate: NotebookDocumentDelegate;
 
+  /** Event emitter for document disposal */
   private readonly _onDidDispose = this._register(
     new vscode.EventEmitter<void>(),
   );
+
+  /**
+   * Event fired when the document is disposed.
+   * Used to clean up resources and listeners.
+   */
   public readonly onDidDispose = this._onDidDispose.event;
 
+  /** Event emitter for document content and edit changes */
   private readonly _onDidChangeDocument = this._register(
     new vscode.EventEmitter<{
+      /** Optional updated notebook content in binary format */
       readonly content?: Uint8Array;
+      /** Array of edits that were applied */
       readonly edits: readonly NotebookEdit[];
     }>(),
   );
+
+  /**
+   * Event fired when the document content or edits change.
+   * Listeners receive the updated content and edit history.
+   */
   public readonly onDidChangeContent = this._onDidChangeDocument.event;
 
+  /** Event emitter for undo/redo change operations */
   private readonly _onDidChange = this._register(
     new vscode.EventEmitter<{
+      /** Human-readable label for the edit operation */
       readonly label: string;
+      /** Function to undo the operation and restore previous state */
       undo(): void;
+      /** Function to redo the operation after undoing */
       redo(): void;
     }>(),
   );
+
+  /**
+   * Event fired when an edit is made with undo/redo handlers.
+   * Enables VS Code's edit history functionality.
+   */
   public readonly onDidChange = this._onDidChange.event;
 
   /**
