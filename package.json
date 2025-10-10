@@ -1,16 +1,18 @@
 {
   "name": "datalayer-jupyter-vscode",
-  "displayName": "Datalayer Platform",
-  "description": "A Jupyter Notebook Editor for VS Code",
-  "publisher": "Datalayer",
+  "displayName": "Datalayer",
+  "description": "⚡ Bring cloud power to your Jupyter notebooks. ✨ Create Notion-like collaborative reports with executable code.",
   "version": "0.0.4",
   "icon": "images/datalayer-logo.png",
   "categories": [
     "AI",
     "Data Science",
     "Machine Learning",
+    "Data Analysis",
     "Notebooks",
-    "Visualization"
+    "Visualization",
+    "Jupyter",
+    "Cloud Computing"
   ],
   "repository": {
     "type": "git",
