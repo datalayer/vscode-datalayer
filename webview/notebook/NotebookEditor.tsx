@@ -32,6 +32,8 @@ import { loadFromBytes } from "../utils";
 import { initializeRequireJSStub } from "../utils/requirejsStub";
 import { proxyFetch } from "../utils/httpProxy";
 import { RuntimeProgressBar } from "../components/RuntimeProgressBar";
+import { NotebookActions } from "@jupyterlab/notebook";
+import { notebookStore2 } from "@datalayer/jupyter-react";
 
 // Initialize RequireJS stub for ClassicWidgetManager
 initializeRequireJSStub();
@@ -124,7 +126,7 @@ function NotebookEditorCore({
 
   // Handle messages from the extension
   useEffect(() => {
-    const handleMessage = (message: ExtensionMessage) => {
+    const handleMessage = async (message: ExtensionMessage) => {
       switch (message.type) {
         case "init": {
           const { body } = message;
@@ -266,6 +268,342 @@ function NotebookEditorCore({
             markClean();
           }
           break;
+
+        case "insert-cell": {
+          const { body } = message;
+          const { cellType, cellSource, cellIndex } = body;
+
+          console.log("[Webview] Received insert-cell message:", {
+            cellType,
+            cellIndex,
+            notebookId,
+          });
+
+          // Poll for notebook to be ready
+          const waitForNotebook = async () => {
+            const maxAttempts = 20; // 10 seconds max (20 * 500ms)
+            for (let i = 0; i < maxAttempts; i++) {
+              const notebookState = notebookStore2.getState();
+              const notebook = notebookState.notebooks.get(notebookId);
+
+              console.log(
+                `[Webview] Checking notebook readiness, attempt ${i + 1}/${maxAttempts}:`,
+                {
+                  notebookId,
+                  hasNotebook: !!notebook,
+                  hasAdapter: !!notebook?.adapter,
+                  hasPanel: !!notebook?.adapter?.panel,
+                  hasContent: !!notebook?.adapter?.panel?.content,
+                },
+              );
+
+              if (notebook?.adapter?.panel?.content) {
+                console.log("[Webview] Notebook is ready!");
+                return notebook;
+              }
+
+              console.log(`[Webview] Notebook not ready, waiting 500ms...`);
+              await new Promise((resolve) => setTimeout(resolve, 500));
+            }
+            return null;
+          };
+
+          const notebook = await waitForNotebook();
+
+          if (notebook?.adapter?.panel?.content) {
+            const notebookWidget = notebook.adapter.panel.content;
+
+            // Set selection to target index if specified, otherwise append to end
+            if (cellIndex !== undefined && cellIndex >= 0) {
+              notebookWidget.activeCellIndex = Math.min(
+                cellIndex,
+                notebookWidget.model!.cells.length,
+              );
+            } else {
+              // Move to end for appending
+              notebookWidget.activeCellIndex =
+                notebookWidget.model!.cells.length - 1;
+            }
+
+            // Insert cell below current position
+            NotebookActions.insertBelow(notebookWidget);
+            NotebookActions.changeCellType(notebookWidget, cellType);
+
+            // Set cell content
+            const activeCell = notebookWidget.activeCell;
+            if (activeCell && activeCell.model.sharedModel) {
+              activeCell.model.sharedModel.source = cellSource;
+              console.log(
+                "[Webview] Cell inserted successfully at index:",
+                notebookWidget.activeCellIndex,
+              );
+            } else {
+              console.warn(
+                "[Webview] Could not set cell content - activeCell or sharedModel missing",
+              );
+            }
+          } else {
+            console.error(
+              "[Webview] Could not insert cell - notebook widget not found after waiting 10 seconds",
+            );
+          }
+          break;
+        }
+
+        case "delete-cell": {
+          const { body } = message;
+          const { cellIndex } = body;
+
+          console.log("[Webview] Received delete-cell message:", {
+            cellIndex,
+            notebookId,
+          });
+
+          const notebookState = notebookStore2.getState();
+          const notebook = notebookState.notebooks.get(notebookId);
+
+          if (notebook?.adapter?.panel?.content) {
+            const notebookWidget = notebook.adapter.panel.content;
+            const cellCount = notebookWidget.model!.cells.length;
+
+            if (cellIndex >= 0 && cellIndex < cellCount) {
+              // Set active cell to the one we want to delete
+              notebookWidget.activeCellIndex = cellIndex;
+              // Delete the cell
+              NotebookActions.deleteCells(notebookWidget);
+              console.log(
+                "[Webview] Cell deleted successfully at index:",
+                cellIndex,
+              );
+            } else {
+              console.error(
+                `[Webview] Cell index ${cellIndex} out of range (0-${cellCount - 1})`,
+              );
+            }
+          } else {
+            console.error(
+              "[Webview] Notebook widget not found for delete-cell",
+            );
+          }
+          break;
+        }
+
+        case "overwrite-cell": {
+          const { body } = message;
+          const { cellIndex, cellSource } = body;
+
+          console.log("[Webview] Received overwrite-cell message:", {
+            cellIndex,
+            notebookId,
+          });
+
+          const notebookState = notebookStore2.getState();
+          const notebook = notebookState.notebooks.get(notebookId);
+
+          if (notebook?.adapter?.panel?.content) {
+            const notebookWidget = notebook.adapter.panel.content;
+            const cellCount = notebookWidget.model!.cells.length;
+
+            if (cellIndex >= 0 && cellIndex < cellCount) {
+              const cell = notebookWidget.model!.cells.get(cellIndex);
+              if (cell?.sharedModel) {
+                cell.sharedModel.source = cellSource;
+                console.log(
+                  "[Webview] Cell source overwritten successfully at index:",
+                  cellIndex,
+                );
+              } else {
+                console.error(
+                  "[Webview] Cell or sharedModel not found for overwrite",
+                );
+              }
+            } else {
+              console.error(
+                `[Webview] Cell index ${cellIndex} out of range (0-${cellCount - 1})`,
+              );
+            }
+          } else {
+            console.error(
+              "[Webview] Notebook widget not found for overwrite-cell",
+            );
+          }
+          break;
+        }
+
+        case "read-cell-request": {
+          const { body, requestId } = message;
+          const { cellIndex } = body;
+
+          console.log("[Webview] Received read-cell-request:", {
+            cellIndex,
+            requestId,
+            notebookId,
+          });
+
+          const notebookState = notebookStore2.getState();
+          const notebook = notebookState.notebooks.get(notebookId);
+
+          if (notebook?.adapter?.panel?.content) {
+            const notebookWidget = notebook.adapter.panel.content;
+            const cellCount = notebookWidget.model!.cells.length;
+
+            if (cellIndex >= 0 && cellIndex < cellCount) {
+              const cell = notebookWidget.model!.cells.get(cellIndex);
+              if (cell) {
+                const cellType =
+                  cell.type === "code"
+                    ? "code"
+                    : cell.type === "markdown"
+                      ? "markdown"
+                      : "raw";
+                const source = cell.sharedModel?.source || "";
+
+                // Extract outputs for code cells
+                let outputs: string[] | undefined;
+                if (cell.type === "code" && (cell as any).model?.outputs) {
+                  outputs = [];
+                  const outputList = (cell as any).model.outputs;
+                  for (let i = 0; i < outputList.length; i++) {
+                    const output = outputList.get(i);
+                    const outputType = output.type;
+
+                    if (outputType === "stream") {
+                      outputs.push(output.text || "");
+                    } else if (
+                      outputType === "execute_result" ||
+                      outputType === "display_data"
+                    ) {
+                      outputs.push(
+                        output.data?.["text/plain"] || "[non-text output]",
+                      );
+                    } else if (outputType === "error") {
+                      outputs.push(
+                        output.traceback?.join("\n") || "[error output]",
+                      );
+                    } else {
+                      outputs.push(`[${outputType} output]`);
+                    }
+                  }
+                }
+
+                // Send response
+                messageHandler.send({
+                  type: "read-cell-response",
+                  requestId,
+                  body: {
+                    index: cellIndex,
+                    type: cellType,
+                    source,
+                    outputs,
+                  },
+                });
+
+                console.log(
+                  "[Webview] Sent read-cell-response for index:",
+                  cellIndex,
+                );
+              }
+            } else {
+              console.error(
+                `[Webview] Cell index ${cellIndex} out of range (0-${cellCount - 1})`,
+              );
+            }
+          } else {
+            console.error(
+              "[Webview] Notebook widget not found for read-cell-request",
+            );
+          }
+          break;
+        }
+
+        case "read-all-cells-request": {
+          const { requestId } = message;
+
+          console.log("[Webview] Received read-all-cells-request:", {
+            requestId,
+            notebookId,
+          });
+
+          const notebookState = notebookStore2.getState();
+          const notebook = notebookState.notebooks.get(notebookId);
+
+          if (notebook?.adapter?.panel?.content) {
+            const notebookWidget = notebook.adapter.panel.content;
+            const cells: Array<{
+              index: number;
+              type: string;
+              source: string;
+              outputs?: string[];
+            }> = [];
+
+            const cellCount = notebookWidget.model!.cells.length;
+            for (let i = 0; i < cellCount; i++) {
+              const cell = notebookWidget.model!.cells.get(i);
+              if (cell) {
+                const cellType =
+                  cell.type === "code"
+                    ? "code"
+                    : cell.type === "markdown"
+                      ? "markdown"
+                      : "raw";
+                const source = cell.sharedModel?.source || "";
+
+                // Extract outputs for code cells
+                let outputs: string[] | undefined;
+                if (cell.type === "code" && (cell as any).model?.outputs) {
+                  outputs = [];
+                  const outputList = (cell as any).model.outputs;
+                  for (let j = 0; j < outputList.length; j++) {
+                    const output = outputList.get(j);
+                    const outputType = output.type;
+
+                    if (outputType === "stream") {
+                      outputs.push(output.text || "");
+                    } else if (
+                      outputType === "execute_result" ||
+                      outputType === "display_data"
+                    ) {
+                      outputs.push(
+                        output.data?.["text/plain"] || "[non-text output]",
+                      );
+                    } else if (outputType === "error") {
+                      outputs.push(
+                        output.traceback?.join("\n") || "[error output]",
+                      );
+                    } else {
+                      outputs.push(`[${outputType} output]`);
+                    }
+                  }
+                }
+
+                cells.push({
+                  index: i,
+                  type: cellType,
+                  source,
+                  outputs,
+                });
+              }
+            }
+
+            // Send response
+            messageHandler.send({
+              type: "read-all-cells-response",
+              requestId,
+              body: cells,
+            });
+
+            console.log(
+              "[Webview] Sent read-all-cells-response with",
+              cells.length,
+              "cells",
+            );
+          } else {
+            console.error(
+              "[Webview] Notebook widget not found for read-all-cells-request",
+            );
+          }
+          break;
+        }
       }
     };
 

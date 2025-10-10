@@ -32,6 +32,7 @@ let runtimesTreeProvider: RuntimesTreeProvider | undefined;
 
 /**
  * Get the global service container instance.
+ * @internal
  * @throws Error if called before extension activation
  */
 export function getServiceContainer(): ServiceContainer {
@@ -152,6 +153,111 @@ export async function activate(
       updateAuthState,
     );
     activationTimer.checkpoint("commands_registered");
+
+    // Register embedded MCP tools for Copilot integration
+    logger.debug("Registering embedded MCP tools");
+    const {
+      // Notebook creation tools
+      CreateDatalayerRemoteNotebookTool,
+      CreateDatalayerLocalNotebookTool,
+      // Lexical creation tools
+      CreateRemoteLexicalTool,
+      CreateLocalLexicalTool,
+      // Runtime management tools
+      StartRuntimeTool,
+      ConnectRuntimeTool,
+      // Datalayer cell manipulation tools (only work with Datalayer notebooks)
+      InsertDatalayerCellTool,
+      ExecuteDatalayerCellTool,
+      // Datalayer cell read tools (jupyter-mcp-server parity)
+      ReadAllDatalayerCellsTool,
+      ReadDatalayerCellTool,
+      GetDatalayerNotebookInfoTool,
+      // Datalayer cell modification tools (jupyter-mcp-server parity)
+      DeleteDatalayerCellTool,
+      OverwriteDatalayerCellTool,
+      // Datalayer cell append tools (jupyter-mcp-server parity)
+      AppendDatalayerMarkdownCellTool,
+      AppendExecuteDatalayerCodeCellTool,
+      // Datalayer cell insert tools (jupyter-mcp-server parity)
+      InsertDatalayerMarkdownCellTool,
+    } = await import("./tools");
+
+    context.subscriptions.push(
+      // Notebook creation
+      vscode.lm.registerTool(
+        "datalayer_createDatalayerRemoteNotebook",
+        new CreateDatalayerRemoteNotebookTool(),
+      ),
+      vscode.lm.registerTool(
+        "datalayer_createDatalayerLocalNotebook",
+        new CreateDatalayerLocalNotebookTool(),
+      ),
+      // Lexical creation
+      vscode.lm.registerTool(
+        "datalayer_createRemoteLexical",
+        new CreateRemoteLexicalTool(),
+      ),
+      vscode.lm.registerTool(
+        "datalayer_createLocalLexical",
+        new CreateLocalLexicalTool(),
+      ),
+      // Runtime management
+      vscode.lm.registerTool("datalayer_startRuntime", new StartRuntimeTool()),
+      vscode.lm.registerTool(
+        "datalayer_connectRuntime",
+        new ConnectRuntimeTool(),
+      ),
+      // Datalayer cell manipulation (ONLY Datalayer notebooks)
+      vscode.lm.registerTool(
+        "datalayer_insertDatalayerCell",
+        new InsertDatalayerCellTool(),
+      ),
+      vscode.lm.registerTool(
+        "datalayer_executeDatalayerCell",
+        new ExecuteDatalayerCellTool(),
+      ),
+      // Datalayer cell read tools
+      vscode.lm.registerTool(
+        "datalayer_readAllDatalayerCells",
+        new ReadAllDatalayerCellsTool(),
+      ),
+      vscode.lm.registerTool(
+        "datalayer_readDatalayerCell",
+        new ReadDatalayerCellTool(),
+      ),
+      vscode.lm.registerTool(
+        "datalayer_getDatalayerNotebookInfo",
+        new GetDatalayerNotebookInfoTool(),
+      ),
+      // Datalayer cell modification tools
+      vscode.lm.registerTool(
+        "datalayer_deleteDatalayerCell",
+        new DeleteDatalayerCellTool(),
+      ),
+      vscode.lm.registerTool(
+        "datalayer_overwriteDatalayerCell",
+        new OverwriteDatalayerCellTool(),
+      ),
+      // Datalayer cell append tools
+      vscode.lm.registerTool(
+        "datalayer_appendDatalayerMarkdownCell",
+        new AppendDatalayerMarkdownCellTool(),
+      ),
+      vscode.lm.registerTool(
+        "datalayer_appendExecuteDatalayerCodeCell",
+        new AppendExecuteDatalayerCodeCellTool(),
+      ),
+      // Datalayer cell insert tools
+      vscode.lm.registerTool(
+        "datalayer_insertDatalayerMarkdownCell",
+        new InsertDatalayerMarkdownCellTool(),
+      ),
+    );
+    activationTimer.checkpoint("mcp_tools_registered");
+    logger.info(
+      "Registered 16 embedded MCP tools for Copilot (full jupyter-mcp-server parity + lexical creation)",
+    );
 
     // Set up notebook event handlers with logging
     context.subscriptions.push(

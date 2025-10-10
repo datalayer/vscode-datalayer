@@ -94,6 +94,73 @@ export interface SavedMessage {
   body: Record<string, never>; // Empty object
 }
 
+/** Insert cell into notebook (MCP tool support) */
+export interface InsertCellMessage {
+  type: "insert-cell";
+  body: {
+    cellType: "code" | "markdown";
+    cellSource: string;
+    cellIndex?: number;
+  };
+}
+
+/** Delete cell from notebook (MCP tool support) */
+export interface DeleteCellMessage {
+  type: "delete-cell";
+  body: {
+    cellIndex: number;
+  };
+}
+
+/** Overwrite cell source (MCP tool support) */
+export interface OverwriteCellMessage {
+  type: "overwrite-cell";
+  body: {
+    cellIndex: number;
+    cellSource: string;
+  };
+}
+
+/** Read specific cell request (MCP tool support) */
+export interface ReadCellRequestMessage {
+  type: "read-cell-request";
+  requestId: string;
+  body: {
+    cellIndex: number;
+  };
+}
+
+/** Read specific cell response (MCP tool support) */
+export interface ReadCellResponseMessage {
+  type: "read-cell-response";
+  requestId: string;
+  body: {
+    index: number;
+    type: string;
+    source: string;
+    outputs?: string[];
+  };
+}
+
+/** Read all cells request (MCP tool support) */
+export interface ReadAllCellsRequestMessage {
+  type: "read-all-cells-request";
+  requestId: string;
+  body: Record<string, never>;
+}
+
+/** Read all cells response (MCP tool support) */
+export interface ReadAllCellsResponseMessage {
+  type: "read-all-cells-response";
+  requestId: string;
+  body: Array<{
+    index: number;
+    type: string;
+    source: string;
+    outputs?: string[];
+  }>;
+}
+
 /**
  * Union of all Extension → Webview messages
  */
@@ -107,6 +174,13 @@ export type ExtensionToWebviewMessage =
   | SetRuntimeMessage
   | GetFileDataRequestMessage
   | SavedMessage
+  | InsertCellMessage
+  | DeleteCellMessage
+  | OverwriteCellMessage
+  | ReadCellRequestMessage
+  | ReadCellResponseMessage
+  | ReadAllCellsRequestMessage
+  | ReadAllCellsResponseMessage
   | WebSocketProxyMessage
   | WebSocketOpenMessage
   | WebSocketCloseMessage
