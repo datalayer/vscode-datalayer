@@ -58,12 +58,14 @@ Edit Jupyter Notebooks (`.ipynb`) and Lexical documents (`.lexical`) with seamle
 - Kernel picker supports Datalayer, local Python, Jupyter servers, and Pyodide (offline)
 - Status bar shows connection and runtime info
 
-### Offline Execution (Experimental)
+### Offline Execution with Pyodide
 
-- **Pyodide Kernel**: Run Python code entirely in your browser (no server needed)
+- **Pyodide Kernel**: Run Python code entirely in-browser (no server needed)
 - **Zero Setup**: No local Python installation required
 - **Works Offline**: Execute notebooks without internet connection
-- **Full Notebook Support**: Works with both custom editor notebooks and Lexical documents
+- **Package Preloading**: Automatically download common packages (numpy, pandas, matplotlib, etc.)
+- **Configurable Behavior**: Control when packages are downloaded (ask-once, ask-always, auto, disabled)
+- **Cache Management**: Clear package cache with `datalayer.pyodide.clearCache` command
 
 ## Installation
 
@@ -134,6 +136,11 @@ Open settings (`Ctrl+,` / `Cmd+,`) and search "Datalayer":
 - `datalayer.logging.enableSDKLogging` - Log API calls (default: true)
 - `datalayer.logging.enablePerformanceMonitoring` - Track performance (default: false)
 
+**Pyodide:**
+
+- `datalayer.pyodide.preloadBehavior` - When to download packages (ask-once/ask-always/auto/disabled, default: ask-once)
+- `datalayer.pyodide.preloadPackages` - List of packages to preload (24 packages by default)
+
 ## Common Questions
 
 **Do I need Python locally?** No, cloud runtimes handle execution. You can connect to local Python/Jupyter if preferred.
@@ -146,14 +153,19 @@ Open settings (`Ctrl+,` / `Cmd+,`) and search "Datalayer":
 
 **How do I get an access token?** Visit datalayer.io, navigate to account settings, and generate a token.
 
-## Recent Updates (January 2025)
+**What's Pyodide?** Python compiled to WebAssembly for browser-based execution. No server or local Python needed.
 
-### Pyodide Integration (Experimental - In Progress)
+## Recent Updates (October 2025)
 
-- **Phase 1 Complete**: Webview integration for Pyodide kernel support
+### Pyodide Integration (Production Ready)
+
+- **✅ Complete**: Full Pyodide kernel support with TypeScript strict mode compliance
 - **Browser-Based Execution**: Run Python code entirely in-browser with zero server dependencies
-- **Offline Capability**: Execute notebooks without internet connection
-- **Next Steps**: Native notebook integration and kernel picker UI
+- **Offline Capability**: Execute notebooks without internet connection after initial package download
+- **Package Preloading**: Configurable behavior for downloading common Python packages
+- **Cache Management**: Clear package cache with dedicated command
+- **Streaming Output**: Real-time output display with preserved line breaks
+- **Message Protocol**: Complete Jupyter message protocol compliance with IAnyMessageArgs interface
 
 ### Runtime Controller Improvements
 

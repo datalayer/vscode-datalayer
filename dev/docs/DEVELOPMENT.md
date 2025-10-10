@@ -339,11 +339,11 @@ The editor is encapsulated within an iframe. All communications between the edit
 3. **Extension Processing**: The extension deserializes and makes actual network requests
 4. **Response Handling**: Responses are serialized and posted back to the webview
 
-### Pyodide Integration (Working - January 2025)
+### Pyodide Integration (Working - October 2025)
 
 The extension supports offline Python execution via Pyodide (Python compiled to WebAssembly):
 
-**Status**: ✅ Code executes, outputs display, execution counts increment
+**Status**: ✅ Production-ready with all core features working
 
 **Architecture:**
 
@@ -352,19 +352,28 @@ The extension supports offline Python execution via Pyodide (Python compiled to 
    - Pre-fetches pyodide.js (16KB) and pyodide.asm.js (1.1MB) in main thread
    - Executes scripts via eval in worker context
    - Overrides fetch() to route all Pyodide resources through main thread
-   - Implements complete Kernel.IKernelConnection interface
+   - Implements complete Kernel.IKernelConnection interface with IAnyMessageArgs compliance
 
 2. **Message Protocol**
    - Execute input messages for execution count display
    - Parent header filtering for output isolation
    - Property setters for onIOPub/onReply/onStdin (not methods)
-   - Lumino Signal wrappers to drop sender parameter
+   - Lumino Signal wrappers with IAnyMessageArgs unwrapping
+   - Python-side stdout capture for streaming and line break preservation
 
-3. **Key Technical Decisions**
+3. **Package Preloading** (`src/services/pyodide/pyodidePreloader.ts`)
+   - Configurable behavior modes: ask-once, ask-always, auto, disabled
+   - 24 default packages (numpy, pandas, matplotlib, etc.)
+   - IndexedDB caching for offline use
+   - Cache management command: `datalayer.pyodide.clearCache`
+
+4. **Key Technical Decisions**
    - **asm.js required**: Defines `_createPyodideModule` (not optional)
    - **Blob URL worker**: Only way to bypass VS Code CSP restrictions
    - **Synchronous future return**: JupyterLab expects immediate future object
    - **Parent header filtering**: Prevents output cross-contamination between cells
+   - **Message unwrapping**: `msgArgs.msg || msgArgs` for IAnyMessageArgs compliance
+   - **Python-side capture**: sys.stdout override for streaming and newlines
 
 **Implementation Challenges Solved:**
 
@@ -373,7 +382,9 @@ The extension supports offline Python execution via Pyodide (Python compiled to 
 - ✅ Output display (synchronous future return, property setters)
 - ✅ Execution counts (execute_input messages)
 - ✅ Output isolation (parent_header filtering)
-- ⚠️ Output formatting (line breaks, streaming - work in progress)
+- ✅ Line breaks and streaming (Python-side stdout capture)
+- ✅ TypeScript strict mode (IAnyMessageArgs unwrapping)
+- ✅ Package preloading (configurable behavior with cache management)
 
 **How It Works:**
 
@@ -391,18 +402,28 @@ eval(asmScript);  // Defines _createPyodideModule
 eval(pyodideScript);  // Defines loadPyodide
 pyodide = await loadPyodide({ indexURL: baseUrl });
 
-// Execution: Route through worker
-worker.postMessage({ type: "execute", code: "print('Hello')" });
+// Execution: Route through worker with Python-side capture
+worker.postMessage({ type: "execute", code: "print('Hello\\nWorld')" });
 
-// Output: Worker sends back stream/execute_result messages
-postMessage({ type: "stream", name: "stdout", text: "Hello\n" });
+// Output: Worker sends back stream messages with preserved newlines
+postMessage({ type: "stream", name: "stdout", text: "Hello\nWorld\n" });
+```
+
+**Configuration:**
+
+```json
+{
+  "datalayer.pyodide.preloadBehavior": "ask-once",  // ask-once|ask-always|auto|disabled
+  "datalayer.pyodide.preloadPackages": [
+    "numpy", "pandas", "matplotlib", "scipy", "scikit-learn",
+    // ... 24 packages total
+  ]
+}
 ```
 
 **Known Limitations:**
-- Output line breaks need refinement
-- No streaming output during long executions yet
-- No syntax highlighting in outputs
-- No interactive widgets support
+- No syntax highlighting in outputs (minor)
+- No interactive widgets support (future enhancement)
 
 See [PYODIDE.md](./PYODIDE.md) for complete implementation history and technical details.
 
