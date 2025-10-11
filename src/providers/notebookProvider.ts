@@ -42,6 +42,20 @@ export class NotebookProvider extends BaseDocumentProvider<NotebookDocument> {
 
     const disposables: vscode.Disposable[] = [];
 
+    // Register internal command to send messages to webview
+    disposables.push(
+      vscode.commands.registerCommand(
+        "datalayer.internal.sendToWebview",
+        async (uriString: string, message: unknown) => {
+          const uri = vscode.Uri.parse(uriString);
+          const webviewPanels = provider.webviews.get(uri);
+          for (const panel of webviewPanels) {
+            await panel.webview.postMessage(message);
+          }
+        },
+      ),
+    );
+
     disposables.push(
       vscode.commands.registerCommand("datalayer.jupyter-notebook-new", () => {
         const workspaceFolders = vscode.workspace.workspaceFolders;
