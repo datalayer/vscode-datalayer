@@ -68,13 +68,16 @@ function LexicalWebviewInner({
 
       switch (message.type) {
         case "update": {
+          // Handle content (even if empty)
+          let jsonString = "";
           if (message.content && message.content.length > 0) {
             const decoder = new TextDecoder();
-            const jsonString = decoder.decode(new Uint8Array(message.content));
-            store.setContent(jsonString);
-            store.setIsReady(true);
-            store.setIsInitialLoad(true);
+            jsonString = decoder.decode(new Uint8Array(message.content));
           }
+          store.setContent(jsonString);
+          store.setIsReady(true); // Always set ready, even for empty files
+          store.setIsInitialLoad(true);
+
           if (message.editable !== undefined) {
             store.setIsEditable(message.editable);
           }

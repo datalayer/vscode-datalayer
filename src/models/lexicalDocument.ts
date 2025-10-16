@@ -88,7 +88,15 @@ export class LexicalDocument
       return LexicalDocument.readDatalayerFile(uri);
     }
 
-    return new Uint8Array(await vscode.workspace.fs.readFile(uri));
+    // Read local file
+    const fileData = new Uint8Array(await vscode.workspace.fs.readFile(uri));
+
+    // Handle empty files gracefully - return valid empty Lexical state
+    if (fileData.length === 0) {
+      return LexicalDocument.getEmptyContent();
+    }
+
+    return fileData;
   }
 
   private static getDefaultContent(): Uint8Array {
