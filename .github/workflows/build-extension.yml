@@ -26,6 +26,8 @@ jobs:
   build-and-test:
     name: Build & Test on ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
+    outputs:
+      artifact-name: ${{ steps.version-info.outputs.artifact-name }}
     permissions:
       contents: read # Required for actions/checkout
       pull-requests: write # Required to post PR comments
@@ -61,21 +63,26 @@ jobs:
           ls -la *.vsix || echo "No .vsix files found"
         shell: bash
 
-      - name: Rename extension package
+      - name: Get version info
         if: matrix.os == 'ubuntu-latest'
+        id: version-info
         run: |
-          # Get package version from package.json
+          COMMIT_HASH_LENGTH=7
           VERSION=$(node -p "require('./package.json').version")
-          # Get short commit hash
-          COMMIT_HASH=$(git rev-parse --short HEAD)
-          # Find the generated .vsix file
-          ORIGINAL_VSIX=$(ls *.vsix | head -1)
-          # Create new filename
-          NEW_NAME="vscode-datalayer-node${{ matrix.node-version }}-${VERSION}-${COMMIT_HASH}.vsix"
-          # Rename the file
-          mv "$ORIGINAL_VSIX" "$NEW_NAME"
-          echo "Renamed $ORIGINAL_VSIX to $NEW_NAME"
-          ls -la *.vsix
+          # For PRs, use the actual PR head SHA, otherwise use the current commit
+          if [ "${{ github.event_name }}" == "pull_request" ]; then
+            COMMIT_HASH_FULL="${{ github.event.pull_request.head.sha }}"
+          else
+            COMMIT_HASH_FULL="${{ github.sha }}"
+          fi
+          COMMIT_HASH="${COMMIT_HASH_FULL:0:$COMMIT_HASH_LENGTH}"
+          ARTIFACT_NAME="vscode-datalayer-node${{ matrix.node-version }}-${VERSION}-${COMMIT_HASH}"
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "commit_hash=$COMMIT_HASH" >> $GITHUB_OUTPUT
+          echo "commit_hash_full=$COMMIT_HASH_FULL" >> $GITHUB_OUTPUT
+          echo "artifact-name=$ARTIFACT_NAME" >> $GITHUB_OUTPUT
+          echo "Version: $VERSION, Commit: $COMMIT_HASH (Full: $COMMIT_HASH_FULL)"
+          echo "Artifact name: $ARTIFACT_NAME"
         shell: bash
 
       - name: Upload VS Code extension artifact
@@ -83,7 +90,7 @@ jobs:
         id: upload-artifact
         uses: actions/upload-artifact@v4
         with:
-          name: vscode-datalayer-node${{ matrix.node-version }}
+          name: ${{ steps.version-info.outputs.artifact-name }}
           path: "*.vsix"
           retention-days: 30
 
@@ -91,7 +98,7 @@ jobs:
         if: matrix.os == 'ubuntu-latest' && github.event_name == 'pull_request' && !github.event.pull_request.head.repo.fork
         uses: marocchino/sticky-pull-request-comment@v2
         with:
-          number: ${{ github.event.pull_request.number }}
+          replace: true
           header: extension-artifact
           message: |
             ## 📦 Extension Build Ready!
@@ -127,7 +134,7 @@ jobs:
 
             > **Note**: The `.vsix` artifact works on **Windows, macOS, and Linux**.
             >
-            > Built from commit [`${{ github.sha }}`](https://github.com/${{ github.repository }}/commit/${{ github.sha }}) • [View workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+            > Built from commit [`${{ steps.version-info.outputs.commit_hash }}`](https://github.com/${{ github.repository }}/commit/${{ steps.version-info.outputs.commit_hash_full }}) • Version `${{ steps.version-info.outputs.version }}` • [View workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
 
   test-installation:
     name: Test Extension Installation
@@ -137,7 +144,7 @@ jobs:
       - name: Download extension artifact
         uses: actions/download-artifact@v4
         with:
-          name: vscode-datalayer-node20
+          name: ${{ needs.build-and-test.outputs.artifact-name }}
           path: ./artifacts
 
       - name: List downloaded artifacts
