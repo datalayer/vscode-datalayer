@@ -1,8 +1,132 @@
+diff --git a/node_modules/@datalayer/jupyter-react/lib/components/lumino/Lumino.js b/node_modules/@datalayer/jupyter-react/lib/components/lumino/Lumino.js
+index 850306f..138e9c6 100644
+--- a/node_modules/@datalayer/jupyter-react/lib/components/lumino/Lumino.js
++++ b/node_modules/@datalayer/jupyter-react/lib/components/lumino/Lumino.js
+@@ -6,9 +6,8 @@ import { jsx as _jsx } from "react/jsx-runtime";
+  */
+ import { useRef, useEffect } from 'react';
+ import { Widget } from '@lumino/widgets';
+-export const Lumino = (props) => {
++export const Lumino = ({ id = 'lumino-id', height = '100%', children }) => {
+     const ref = useRef(null);
+-    const { children, id, height } = props;
+     useEffect(() => {
+         console.log('Lumino useEffect - ref.current:', ref.current, 'children:', children, 'children.isAttached:', children?.isAttached);
+         if (ref && ref.current && children) {
+@@ -59,9 +58,5 @@ export const Lumino = (props) => {
+     }, [ref, children]);
+     return (_jsx("div", { id: id, ref: ref, style: { height: height, minHeight: height } }));
+ };
+-Lumino.defaultProps = {
+-    id: 'lumino-id',
+-    height: '100%',
+-};
+ export default Lumino;
+ //# sourceMappingURL=Lumino.js.map
+\ No newline at end of file
+diff --git a/node_modules/@datalayer/jupyter-react/lib/components/notebook/Notebook2Adapter.d.ts b/node_modules/@datalayer/jupyter-react/lib/components/notebook/Notebook2Adapter.d.ts
+index 841a2cf..05e0d52 100644
+--- a/node_modules/@datalayer/jupyter-react/lib/components/notebook/Notebook2Adapter.d.ts
++++ b/node_modules/@datalayer/jupyter-react/lib/components/notebook/Notebook2Adapter.d.ts
+@@ -54,6 +54,14 @@ export declare class Notebook2Adapter {
+      * Get the notebook model.
+      */
+     get model(): NotebookModel | null;
++    /**
++     * Undo the last change in the notebook.
++     */
++    undo(): void;
++    /**
++     * Redo the last undone change in the notebook.
++     */
++    redo(): void;
+     /**
+      * Dispose of the adapter.
+      */
+diff --git a/node_modules/@datalayer/jupyter-react/lib/components/notebook/Notebook2Adapter.js b/node_modules/@datalayer/jupyter-react/lib/components/notebook/Notebook2Adapter.js
+index a6c29d2..8d6d435 100644
+--- a/node_modules/@datalayer/jupyter-react/lib/components/notebook/Notebook2Adapter.js
++++ b/node_modules/@datalayer/jupyter-react/lib/components/notebook/Notebook2Adapter.js
+@@ -110,6 +110,36 @@ export class Notebook2Adapter {
+     get model() {
+         return this._context.model;
+     }
++    /**
++     * Undo the last change in the notebook.
++     */
++    undo() {
++        const notebook = this._notebook;
++        // If in edit mode and active cell has an editor, undo within the cell editor (CodeMirror)
++        // Otherwise, undo structural changes (add/delete/move cells)
++        if (notebook.mode === 'edit' && notebook.activeCell?.editor) {
++            notebook.activeCell.editor.undo();
++        }
++        else {
++            // Structural undo (cell operations)
++            NotebookActions.undo(notebook);
++        }
++    }
++    /**
++     * Redo the last undone change in the notebook.
++     */
++    redo() {
++        const notebook = this._notebook;
++        // If in edit mode and active cell has an editor, redo within the cell editor (CodeMirror)
++        // Otherwise, redo structural changes (add/delete/move cells)
++        if (notebook.mode === 'edit' && notebook.activeCell?.editor) {
++            notebook.activeCell.editor.redo();
++        }
++        else {
++            // Structural redo (cell operations)
++            NotebookActions.redo(notebook);
++        }
++    }
+     /**
+      * Dispose of the adapter.
+      */
+diff --git a/node_modules/@datalayer/jupyter-react/lib/components/notebook/Notebook2State.d.ts b/node_modules/@datalayer/jupyter-react/lib/components/notebook/Notebook2State.d.ts
+index 1ea7f63..c6f6cb7 100644
+--- a/node_modules/@datalayer/jupyter-react/lib/components/notebook/Notebook2State.d.ts
++++ b/node_modules/@datalayer/jupyter-react/lib/components/notebook/Notebook2State.d.ts
+@@ -22,6 +22,8 @@ export type Notebook2State = INotebooks2State & {
+     insertBelow: (mutation: CellMutation) => void;
+     delete: (id: string) => void;
+     changeCellType: (mutation: CellMutation) => void;
++    undo: (id: string) => void;
++    redo: (id: string) => void;
+     reset: () => void;
+ };
+ export declare const notebookStore2: import("zustand").StoreApi<Notebook2State>;
+diff --git a/node_modules/@datalayer/jupyter-react/lib/components/notebook/Notebook2State.js b/node_modules/@datalayer/jupyter-react/lib/components/notebook/Notebook2State.js
+index 33a060c..543392e 100644
+--- a/node_modules/@datalayer/jupyter-react/lib/components/notebook/Notebook2State.js
++++ b/node_modules/@datalayer/jupyter-react/lib/components/notebook/Notebook2State.js
+@@ -54,6 +54,20 @@ export const notebookStore2 = createStore((set, get) => ({
+             .notebooks.get(mutation.id)
+             ?.adapter?.changeCellType(mutation.cellType);
+     },
++    undo: (id) => {
++        // Directly call adapter's undo method which uses NotebookActions
++        // This works for both local notebooks and collaborative notebooks
++        get()
++            .notebooks.get(id)
++            ?.adapter?.undo();
++    },
++    redo: (id) => {
++        // Directly call adapter's redo method which uses NotebookActions
++        // This works for both local notebooks and collaborative notebooks
++        get()
++            .notebooks.get(id)
++            ?.adapter?.redo();
++    },
+     reset: () => set((state) => ({
+         notebooks: new Map(),
+     })),
 diff --git a/node_modules/@datalayer/jupyter-react/lib/jupyter/JupyterConfig.d.ts b/node_modules/@datalayer/jupyter-react/lib/jupyter/JupyterConfig.d.ts
-index 1234567..abcdefg 100644
+index 2e6c71b..a1551d1 100644
 --- a/node_modules/@datalayer/jupyter-react/lib/jupyter/JupyterConfig.d.ts
 +++ b/node_modules/@datalayer/jupyter-react/lib/jupyter/JupyterConfig.d.ts
-@@ -25,6 +25,12 @@ export declare const setJupyterServerToken: (jupyterServerToken: string) => voi
+@@ -24,6 +24,12 @@ export declare const setJupyterServerToken: (jupyterServerToken: string) => void
   * Getter for jupyterServerToken.
   */
  export declare const getJupyterServerToken: () => string;
@@ -16,10 +140,10 @@ index 1234567..abcdefg 100644
   * Method to load the Jupyter configuration from the host HTML page.
   */
 diff --git a/node_modules/@datalayer/jupyter-react/lib/jupyter/JupyterConfig.js b/node_modules/@datalayer/jupyter-react/lib/jupyter/JupyterConfig.js
-index 1234567..abcdefg 100644
+index c6ea148..c5cbbe3 100644
 --- a/node_modules/@datalayer/jupyter-react/lib/jupyter/JupyterConfig.js
 +++ b/node_modules/@datalayer/jupyter-react/lib/jupyter/JupyterConfig.js
-@@ -60,6 +60,14 @@ export const getJupyterServerToken = () => {
+@@ -48,6 +48,14 @@ export const getJupyterServerToken = () => {
      }
      return config.jupyterServerToken;
  };
