@@ -26,6 +26,8 @@ jobs:
   build-and-test:
     name: Build & Test on ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
+    permissions:
+      pull-requests: write # Required to post PR comments
     strategy:
       fail-fast: false
       matrix:
@@ -59,11 +61,53 @@ jobs:
         shell: bash
 
       - name: Upload VS Code extension artifact
+        if: matrix.os == 'ubuntu-latest'
+        id: upload-artifact
         uses: actions/upload-artifact@v4
         with:
-          name: extension-${{ matrix.os }}-node${{ matrix.node-version }}
+          name: vscode-datalayer-node${{ matrix.node-version }}
           path: "*.vsix"
           retention-days: 30
+
+      - name: Post PR comment with artifact
+        if: matrix.os == 'ubuntu-latest' && github.event_name == 'pull_request'
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          number: ${{ github.event.pull_request.number }}
+          header: extension-artifact
+          message: |
+            ## 📦 Extension Build Ready!
+
+            **Download the extension** (works on all platforms):
+
+            [📥 Download datalayer-jupyter-vscode.vsix](${{ steps.upload-artifact.outputs.artifact-url }})
+
+            ---
+
+            <details>
+            <summary>📖 Installation Instructions</summary>
+
+            ### Method 1: VS Code UI
+            1. Download the `.vsix` file above
+            2. Open VS Code
+            3. Go to Extensions (`Ctrl+Shift+X` / `Cmd+Shift+X`)
+            4. Click `...` menu → "Install from VSIX..."
+            5. Select the downloaded file
+
+            ### Method 2: Command Line
+            ```bash
+            code --install-extension datalayer-jupyter-vscode.vsix
+            ```
+
+            ### Method 3: Drag & Drop
+            1. Download the `.vsix` file
+            2. Drag it into the VS Code Extensions sidebar
+
+            </details>
+
+            > **Note**: The `.vsix` artifact works on **Windows, macOS, and Linux**.
+            >
+            > Built from commit [`${{ github.sha }}`](https://github.com/${{ github.repository }}/commit/${{ github.sha }}) • [View workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
 
   test-installation:
     name: Test Extension Installation
@@ -73,7 +117,7 @@ jobs:
       - name: Download extension artifact
         uses: actions/download-artifact@v4
         with:
-          name: extension-ubuntu-latest-node20
+          name: vscode-datalayer-node20
           path: ./artifacts
 
       - name: List downloaded artifacts
