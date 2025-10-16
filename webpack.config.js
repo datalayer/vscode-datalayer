@@ -81,6 +81,19 @@ const webviewConfig = {
     path: path.resolve(__dirname, "dist"),
     filename: "webview.js",
   },
+  optimization: {
+    // Split React into a separate chunk to ensure single instance
+    splitChunks: {
+      cacheGroups: {
+        react: {
+          test: /[\\/]node_modules[\\/](react|react-dom|scheduler)[\\/]/,
+          name: "react-vendors",
+          chunks: "all",
+          priority: 20,
+        },
+      },
+    },
+  },
   // Suppress warnings from external dependencies
   ignoreWarnings: [
     {
@@ -98,6 +111,9 @@ const webviewConfig = {
     },
     // Deduplicate CodeMirror modules to prevent multiple instances
     alias: {
+      // Force all React imports to use the same instance
+      react: path.resolve(__dirname, "./node_modules/react"),
+      "react-dom": path.resolve(__dirname, "./node_modules/react-dom"),
       "@codemirror/state": path.resolve(
         __dirname,
         "./node_modules/@codemirror/state",
@@ -343,6 +359,9 @@ const lexicalWebviewConfig = {
     },
     // Deduplicate CodeMirror modules to prevent multiple instances
     alias: {
+      // Force all React imports to use the same instance
+      react: path.resolve(__dirname, "./node_modules/react"),
+      "react-dom": path.resolve(__dirname, "./node_modules/react-dom"),
       "@codemirror/state": path.resolve(
         __dirname,
         "./node_modules/@codemirror/state",

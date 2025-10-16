@@ -12,7 +12,6 @@
 
 import React, { useState, useEffect, useContext } from "react";
 import { notebookStore2 } from "@datalayer/jupyter-react";
-import { NotebookActions } from "@jupyterlab/notebook";
 import { MessageHandlerContext } from "../services/messageHandler";
 import type { RuntimeJSON } from "@datalayer/core/lib/client/models/Runtime";
 
@@ -180,19 +179,20 @@ export const NotebookToolbar: React.FC<NotebookToolbarProps> = ({
   };
 
   const handleAddCodeCell = () => {
-    if (notebookId && notebook?.adapter?.panel?.content) {
-      NotebookActions.insertBelow(notebook.adapter.panel.content);
-      NotebookActions.changeCellType(notebook.adapter.panel.content, "code");
+    if (notebookId) {
+      notebookStore2.getState().insertBelow({
+        id: notebookId,
+        cellType: "code",
+      });
     }
   };
 
   const handleAddMarkdownCell = () => {
-    if (notebookId && notebook?.adapter?.panel?.content) {
-      NotebookActions.insertBelow(notebook.adapter.panel.content);
-      NotebookActions.changeCellType(
-        notebook.adapter.panel.content,
-        "markdown",
-      );
+    if (notebookId) {
+      notebookStore2.getState().insertBelow({
+        id: notebookId,
+        cellType: "markdown",
+      });
     }
   };
 
