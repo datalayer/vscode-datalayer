@@ -26,6 +26,9 @@ jobs:
   build-and-test:
     name: Build & Test on ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
+    permissions:
+      contents: read # Required for actions/checkout
+      pull-requests: write # Required to post PR comments
     strategy:
       fail-fast: false
       matrix:
@@ -33,50 +36,98 @@ jobs:
         node-version: ["20"]
 
     steps:
-      - name: Setup directory structure
-        run: mkdir -p datalayer
-
-      - name: Checkout VS Code extension repository
+      - name: Checkout repository
         uses: actions/checkout@v5
         with:
-          path: datalayer/vscode-datalayer
           fetch-depth: 0
 
-      - name: Checkout core repository
-        uses: actions/checkout@v5
-        with:
-          repository: goanpeca/core
-          ref: sdk/core-updates
-          path: datalayer/core
-
-      - name: Setup build environment
-        uses: ./datalayer/vscode-datalayer/.github/actions/setup-environment
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v5
         with:
           node-version: ${{ matrix.node-version }}
-          os: ${{ matrix.os }}
-          skip-debug: "false"
+
+      - name: Install dependencies
+        run: npm install
 
       - name: Build VS Code extension
-        working-directory: datalayer/vscode-datalayer
         run: npm run compile
 
       - name: Package extension (.vsix)
-        working-directory: datalayer/vscode-datalayer
         run: npm run vsix
 
       - name: List generated artifacts
-        working-directory: datalayer/vscode-datalayer
         run: |
           echo "Generated extension package:"
           ls -la *.vsix || echo "No .vsix files found"
         shell: bash
 
+      - name: Rename extension package
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          # Get package version from package.json
+          VERSION=$(node -p "require('./package.json').version")
+          # Get short commit hash
+          COMMIT_HASH=$(git rev-parse --short HEAD)
+          # Find the generated .vsix file
+          ORIGINAL_VSIX=$(ls *.vsix | head -1)
+          # Create new filename
+          NEW_NAME="vscode-datalayer-node${{ matrix.node-version }}-${VERSION}-${COMMIT_HASH}.vsix"
+          # Rename the file
+          mv "$ORIGINAL_VSIX" "$NEW_NAME"
+          echo "Renamed $ORIGINAL_VSIX to $NEW_NAME"
+          ls -la *.vsix
+        shell: bash
+
       - name: Upload VS Code extension artifact
+        if: matrix.os == 'ubuntu-latest'
+        id: upload-artifact
         uses: actions/upload-artifact@v4
         with:
-          name: extension-${{ matrix.os }}-node${{ matrix.node-version }}
-          path: "datalayer/vscode-datalayer/*.vsix"
+          name: vscode-datalayer-node${{ matrix.node-version }}
+          path: "*.vsix"
           retention-days: 30
+
+      - name: Post PR comment with artifact
+        if: matrix.os == 'ubuntu-latest' && github.event_name == 'pull_request' && !github.event.pull_request.head.repo.fork
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          number: ${{ github.event.pull_request.number }}
+          header: extension-artifact
+          message: |
+            ## 📦 Extension Build Ready!
+
+            **Download the extension** (works on all platforms):
+
+            [📥 Download build artifact](${{ steps.upload-artifact.outputs.artifact-url }})
+
+            <sup>The artifact contains the <code>.vsix</code> extension package.</sup>
+
+            ---
+
+            <details>
+            <summary>📖 Installation Instructions</summary>
+
+            ### Method 1: VS Code UI
+            1. Download the `.vsix` file above
+            2. Open VS Code
+            3. Go to Extensions (`Ctrl+Shift+X` / `Cmd+Shift+X`)
+            4. Click `...` menu → "Install from VSIX..."
+            5. Select the downloaded file
+
+            ### Method 2: Command Line
+            ```bash
+            code --install-extension datalayer-jupyter-vscode.vsix
+            ```
+
+            ### Method 3: Drag & Drop
+            1. Download the `.vsix` file
+            2. Drag it into the VS Code Extensions sidebar
+
+            </details>
+
+            > **Note**: The `.vsix` artifact works on **Windows, macOS, and Linux**.
+            >
+            > Built from commit [`${{ github.sha }}`](https://github.com/${{ github.repository }}/commit/${{ github.sha }}) • [View workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
 
   test-installation:
     name: Test Extension Installation
@@ -86,7 +137,7 @@ jobs:
       - name: Download extension artifact
         uses: actions/download-artifact@v4
         with:
-          name: extension-ubuntu-latest-node20
+          name: vscode-datalayer-node20
           path: ./artifacts
 
       - name: List downloaded artifacts

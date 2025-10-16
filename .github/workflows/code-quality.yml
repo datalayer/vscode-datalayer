@@ -30,28 +30,18 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Setup directory structure
-        run: mkdir -p datalayer
-
-      - name: Checkout VS Code extension repository
+      - name: Checkout repository
         uses: actions/checkout@v5
-        with:
-          path: datalayer/vscode-datalayer
 
-      - name: Checkout core repository
-        uses: actions/checkout@v5
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
         with:
-          repository: goanpeca/core
-          ref: sdk/core-updates
-          path: datalayer/core
+          node-version: "20"
 
-      - name: Setup build environment
-        uses: ./datalayer/vscode-datalayer/.github/actions/setup-environment
-        with:
-          skip-debug: "true"
+      - name: Install dependencies
+        run: npm install
 
       - name: Check formatting
-        working-directory: datalayer/vscode-datalayer
         run: npm run format:check
 
   lint:
@@ -59,28 +49,18 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Setup directory structure
-        run: mkdir -p datalayer
-
-      - name: Checkout VS Code extension repository
+      - name: Checkout repository
         uses: actions/checkout@v5
-        with:
-          path: datalayer/vscode-datalayer
 
-      - name: Checkout core repository
-        uses: actions/checkout@v5
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
         with:
-          repository: goanpeca/core
-          ref: sdk/core-updates
-          path: datalayer/core
+          node-version: "20"
 
-      - name: Setup build environment
-        uses: ./datalayer/vscode-datalayer/.github/actions/setup-environment
-        with:
-          skip-debug: "true"
+      - name: Install dependencies
+        run: npm install
 
       - name: Run linting
-        working-directory: datalayer/vscode-datalayer
         run: npm run lint
 
   type-check:
@@ -88,26 +68,16 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Setup directory structure
-        run: mkdir -p datalayer
-
-      - name: Checkout VS Code extension repository
+      - name: Checkout repository
         uses: actions/checkout@v5
-        with:
-          path: datalayer/vscode-datalayer
 
-      - name: Checkout core repository
-        uses: actions/checkout@v5
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
         with:
-          repository: goanpeca/core
-          ref: sdk/core-updates
-          path: datalayer/core
+          node-version: "20"
 
-      - name: Setup build environment
-        uses: ./datalayer/vscode-datalayer/.github/actions/setup-environment
-        with:
-          skip-debug: "true"
+      - name: Install dependencies
+        run: npm install
 
       - name: Run type checking
-        working-directory: datalayer/vscode-datalayer
         run: npm run type-check

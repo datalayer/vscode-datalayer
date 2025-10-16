@@ -32,34 +32,21 @@ jobs:
     timeout-minutes: 20
 
     steps:
-      - name: Setup directory structure
-        run: mkdir -p datalayer
-
-      - name: Checkout VS Code extension repository
+      - name: Checkout repository
         uses: actions/checkout@v5
-        with:
-          path: datalayer/vscode-datalayer
 
-      - name: Checkout core repository
-        uses: actions/checkout@v5
-        with:
-          repository: goanpeca/core
-          ref: sdk/core-updates
-          path: datalayer/core
-
-      - name: Setup build environment
-        uses: ./datalayer/vscode-datalayer/.github/actions/setup-environment
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
         with:
           node-version: "20"
-          os: ${{ matrix.os }}
-          skip-debug: "true"
+
+      - name: Install dependencies
+        run: npm install
 
       - name: Compile tests
-        working-directory: datalayer/vscode-datalayer
         run: npm run compile-tests
 
       - name: Run unit tests
-        working-directory: datalayer/vscode-datalayer
         run: |
           if [ "$RUNNER_OS" = "Linux" ]; then
             xvfb-run -a npm test
@@ -70,16 +57,13 @@ jobs:
 
       - name: Generate coverage report (Ubuntu only)
         if: matrix.os == 'ubuntu-latest'
-        working-directory: datalayer/vscode-datalayer
-        run: |
-          xvfb-run -a npm run test:coverage
+        run: xvfb-run -a npm run test:coverage
         shell: bash
 
       - name: Upload coverage to Codecov (Ubuntu only)
         if: matrix.os == 'ubuntu-latest'
         uses: codecov/codecov-action@v5
         with:
-          working-directory: datalayer/vscode-datalayer
           files: ./coverage/lcov.info
           flags: unittests
           name: vscode-extension

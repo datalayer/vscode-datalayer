@@ -15,51 +15,36 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Setup directory structure
-        run: mkdir -p datalayer
-
-      - name: Checkout VS Code extension repository
+      - name: Checkout repository
         uses: actions/checkout@v5
         with:
-          path: datalayer/vscode-datalayer
           fetch-depth: 0 # Fetch all history for changelog generation
 
-      - name: Checkout core repository
-        uses: actions/checkout@v5
-        with:
-          repository: goanpeca/core
-          ref: sdk/core-updates
-          path: datalayer/core
-
-      - name: Setup build environment
-        uses: ./datalayer/vscode-datalayer/.github/actions/setup-environment
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
         with:
           node-version: "20"
-          os: "ubuntu-latest"
-          skip-debug: "true"
+
+      - name: Install dependencies
+        run: npm install
 
       - name: Run type checking
-        working-directory: datalayer/vscode-datalayer
         run: npm run type-check
 
       - name: Run linter
-        working-directory: datalayer/vscode-datalayer
         run: npm run lint
 
       - name: Build extension
-        working-directory: datalayer/vscode-datalayer
         run: npm run compile
 
       - name: Extract version from tag
         id: extract_version
-        working-directory: datalayer/vscode-datalayer
         run: |
           VERSION=${GITHUB_REF#refs/tags/v}
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "Version: $VERSION"
 
       - name: Verify package.json version matches tag
-        working-directory: datalayer/vscode-datalayer
         run: |
           PACKAGE_VERSION=$(node -p "require('./package.json').version")
           TAG_VERSION="${{ steps.extract_version.outputs.version }}"
@@ -70,12 +55,10 @@ jobs:
           echo "Version verified: $PACKAGE_VERSION"
 
       - name: Package extension
-        working-directory: datalayer/vscode-datalayer
         run: npm run vsix
 
       - name: Get VSIX filename
         id: vsix_filename
-        working-directory: datalayer/vscode-datalayer
         run: |
           VSIX_FILE=$(ls *.vsix | head -n 1)
           echo "filename=$VSIX_FILE" >> $GITHUB_OUTPUT
@@ -83,7 +66,6 @@ jobs:
 
       - name: Generate changelog
         id: changelog
-        working-directory: datalayer/vscode-datalayer
         run: |
           # Get the previous tag
           PREVIOUS_TAG=$(git describe --abbrev=0 --tags $(git rev-list --tags --skip=1 --max-count=1) 2>/dev/null || echo "")
@@ -109,8 +91,8 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           name: Release ${{ steps.extract_version.outputs.version }}
-          body_path: datalayer/vscode-datalayer/CHANGELOG.txt
-          files: datalayer/vscode-datalayer/${{ steps.vsix_filename.outputs.filename }}
+          body_path: CHANGELOG.txt
+          files: ${{ steps.vsix_filename.outputs.filename }}
           draft: false
           prerelease: ${{ contains(steps.extract_version.outputs.version, '-') }}
           generate_release_notes: true
@@ -129,7 +111,6 @@ jobs:
 
       - name: Publish to VS Code Marketplace
         if: ${{ steps.check_VSCE_KEY.outputs.has_secret == 'true' && !contains(steps.extract_version.outputs.version, '-') }}
-        working-directory: datalayer/vscode-datalayer
         run: |
           echo "Publishing version ${{ steps.extract_version.outputs.version }} to VS Code Marketplace"
           npx vsce publish --packagePath ${{ steps.vsix_filename.outputs.filename }}

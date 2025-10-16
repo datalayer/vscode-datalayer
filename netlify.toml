@@ -2,8 +2,8 @@
 # Automatically builds TypeDoc documentation on every push to main branch
 
 [build]
-  # Build command
-  command = "npm ci && npm run doc"
+  # Build command (use npm install since package-lock.json is not committed)
+  command = "npm install && npm run doc"
   # Publish directory (TypeDoc output)
   publish = "docs/"
 
@@ -27,13 +27,13 @@
 
 # Branch-specific build settings
 [context.production]
-  command = "npm ci --production=false && npm run doc"
+  command = "npm install && npm run doc"
 
 [context.deploy-preview]
-  command = "npm ci --production=false && npm run doc"
+  command = "npm install && npm run doc"
 
 [context.branch-deploy]
-  command = "npm ci --production=false && npm run doc"
+  command = "npm install && npm run doc"
 
 # Custom headers for documentation
 [[headers]]
@@ -54,7 +54,8 @@
 
 # Security and performance
 [build.environment]
-  NODE_ENV = "production"
+  # NOTE: Do NOT set NODE_ENV = "production" here!
+  # It prevents devDependencies from being installed, breaking patch-package and typedoc
   NODE_VERSION = "20"
   GENERATE_SOURCEMAP = "false"
   CI = "true"
