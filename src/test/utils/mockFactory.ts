@@ -38,6 +38,7 @@ export function createMockExtensionContext(): vscode.ExtensionContext {
     extensionMode: vscode.ExtensionMode.Test,
 
     secrets: {
+      keys: async () => Array.from(secrets.keys()),
       get: async (key: string) => secrets.get(key),
       store: async (key: string, value: string) => {
         secrets.set(key, value);
@@ -381,6 +382,7 @@ export function createMockSecretStorage(): vscode.SecretStorage {
     new vscode.EventEmitter<vscode.SecretStorageChangeEvent>();
 
   return {
+    keys: async () => Array.from(secrets.keys()),
     get: async (key: string) => secrets.get(key),
     store: async (key: string, value: string) => {
       secrets.set(key, value);

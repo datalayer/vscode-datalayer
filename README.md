@@ -59,7 +59,7 @@
 
 **Lexical Documents**
 
-- Notion-like rich text editor\*\* with real-time collaborative editing
+- **Notion-like rich text editor** with real-time collaborative editing
 - Support for images, tables, code blocks, mathematical equations, and formatted text
 - Perfect for creating data science reports, documentation, and presentations
 
