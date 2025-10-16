@@ -3,7 +3,7 @@
 
 [build]
   # Build command (use npm install since package-lock.json is not committed)
-  command = "npm install && npm run doc"
+  command = "npm install && npm run docs"
   # Publish directory (TypeDoc output)
   publish = "docs/"
 
@@ -27,13 +27,13 @@
 
 # Branch-specific build settings
 [context.production]
-  command = "npm install && npm run doc"
+  command = "npm install && npm run docs"
 
 [context.deploy-preview]
-  command = "npm install && npm run doc"
+  command = "npm install && npm run docs"
 
 [context.branch-deploy]
-  command = "npm install && npm run doc"
+  command = "npm install && npm run docs"
 
 # Custom headers for documentation
 [[headers]]
