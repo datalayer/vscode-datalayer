@@ -33,39 +33,26 @@ jobs:
         node-version: ["20"]
 
     steps:
-      - name: Setup directory structure
-        run: mkdir -p datalayer
-
-      - name: Checkout VS Code extension repository
+      - name: Checkout repository
         uses: actions/checkout@v5
         with:
-          path: datalayer/vscode-datalayer
           fetch-depth: 0
 
-      - name: Checkout core repository
-        uses: actions/checkout@v5
-        with:
-          repository: goanpeca/core
-          ref: sdk/core-updates
-          path: datalayer/core
-
-      - name: Setup build environment
-        uses: ./datalayer/vscode-datalayer/.github/actions/setup-environment
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v5
         with:
           node-version: ${{ matrix.node-version }}
-          os: ${{ matrix.os }}
-          skip-debug: "false"
+
+      - name: Install dependencies
+        run: npm install
 
       - name: Build VS Code extension
-        working-directory: datalayer/vscode-datalayer
         run: npm run compile
 
       - name: Package extension (.vsix)
-        working-directory: datalayer/vscode-datalayer
         run: npm run vsix
 
       - name: List generated artifacts
-        working-directory: datalayer/vscode-datalayer
         run: |
           echo "Generated extension package:"
           ls -la *.vsix || echo "No .vsix files found"
@@ -75,7 +62,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: extension-${{ matrix.os }}-node${{ matrix.node-version }}
-          path: "datalayer/vscode-datalayer/*.vsix"
+          path: "*.vsix"
           retention-days: 30
 
   test-installation:
