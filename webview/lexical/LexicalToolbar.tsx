@@ -159,9 +159,12 @@ function updateStyleProperty(
   property: string,
   value: string,
 ): string {
+  // Escape special regex characters in property name for safety
+  const escapedProperty = property.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
   // Remove existing property while preserving others
   const withoutProperty = currentStyle
-    .replace(new RegExp(`${property}:\\s*[^;]+;?\\s*`, "gi"), "")
+    .replace(new RegExp(`${escapedProperty}:\\s*[^;]+;?\\s*`, "gi"), "")
     .replace(/;\s*;/g, ";") // Clean up double semicolons
     .replace(/^\s*;|;\s*$/g, "") // Clean up leading/trailing semicolons
     .trim();
