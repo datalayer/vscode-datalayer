@@ -49,10 +49,15 @@ import { TOGGLE_LINK_COMMAND, $isLinkNode } from "@lexical/link";
 import {
   INSERT_YOUTUBE_COMMAND,
   INSERT_JUPYTER_INPUT_OUTPUT_COMMAND,
+  RUN_JUPYTER_CELL_COMMAND,
+  RUN_ALL_JUPYTER_CELLS_COMMAND,
+  RESTART_JUPYTER_KERNEL_COMMAND,
+  CLEAR_ALL_OUTPUTS_COMMAND,
   InsertImageDialog,
   InsertEquationDialog,
   useModal,
 } from "@datalayer/jupyter-lexical";
+import { useJupyter } from "@datalayer/jupyter-react";
 import type { RuntimeJSON } from "@datalayer/core/lib/client/models/Runtime";
 import { MessageHandlerContext } from "../services/messageHandler";
 import {
@@ -201,6 +206,7 @@ export function LexicalToolbar({
   const [editor] = useLexicalComposerContext();
   const messageHandler = useContext(MessageHandlerContext);
   const [modal, showModal] = useModal();
+  const { defaultKernel } = useJupyter();
 
   // Text formatting state
   const [isBold, setIsBold] = useState(false);
@@ -554,6 +560,22 @@ export function LexicalToolbar({
     }
   };
 
+  const handleRunCell = useCallback(() => {
+    editor.dispatchCommand(RUN_JUPYTER_CELL_COMMAND, undefined);
+  }, [editor]);
+
+  const handleRunAll = useCallback(() => {
+    editor.dispatchCommand(RUN_ALL_JUPYTER_CELLS_COMMAND, undefined);
+  }, [editor]);
+
+  const handleRestartKernel = useCallback(() => {
+    editor.dispatchCommand(RESTART_JUPYTER_KERNEL_COMMAND, undefined);
+  }, [editor]);
+
+  const handleClearAllOutputs = useCallback(() => {
+    editor.dispatchCommand(CLEAR_ALL_OUTPUTS_COMMAND, undefined);
+  }, [editor]);
+
   const applyFontFamily = (font: string) => {
     editor.update(() => {
       const selection = $getSelection();
@@ -885,19 +907,63 @@ export function LexicalToolbar({
     },
   ];
 
-  // All toolbar actions - empty array means no overflow menu items
-  // All buttons are now in leftContent (dropdowns and direct buttons)
-  const toolbarActions: ToolbarAction[] = [];
+  // Toolbar actions for kernel commands (Run Cell, Run All, Clear All Outputs, Restart Kernel)
+  // These will appear in the right section and collapse to overflow menu when space is limited
+  const hasKernel = !!defaultKernel;
+  const hasKernelSession = !!defaultKernel?.session;
+
+  const toolbarActions: ToolbarAction[] = [
+    {
+      id: "runCell",
+      icon: "codicon codicon-play",
+      label: "Run Cell",
+      title: "Run Current Cell (Shift+Enter)",
+      onClick: handleRunCell,
+      priority: 1,
+      disabled: !hasKernel,
+    },
+    {
+      id: "runAll",
+      icon: "codicon codicon-run-all",
+      label: "Run All",
+      title: "Run All Cells",
+      onClick: handleRunAll,
+      priority: 2,
+      disabled: !hasKernel,
+    },
+    {
+      id: "clearAllOutputs",
+      icon: "codicon codicon-clear-all",
+      label: "Clear All Outputs",
+      title: "Clear All Cell Outputs",
+      onClick: handleClearAllOutputs,
+      priority: 4,
+      disabled: !hasKernel,
+    },
+    {
+      id: "restartKernel",
+      icon: "codicon codicon-debug-restart",
+      label: "Restart",
+      title: "Restart Kernel",
+      onClick: handleRestartKernel,
+      priority: 5,
+      disabled: !hasKernelSession,
+    },
+  ];
 
   const getBlockTypeLabel = () => {
     const item = blockTypeItems.find((i) => i.active);
     return item?.label || "Normal";
   };
 
-  // Calculate reserved widths
-  const reservedForCollaborative = showCollaborativeLabel ? 180 : 0;
-  const reservedForKernel = showRuntimeSelector ? 200 : 0;
-  const reservedRightWidth = reservedForKernel + reservedForCollaborative;
+  // Reserved width for right content (kernel selector + collaborative label)
+  // Use conservative estimates to ensure action buttons hide BEFORE overlapping
+  // KernelSelector: ~140-200px (varies with runtime name length) - using 200px
+  // Collaborative label: ~180px - using 200px for extra buffer
+  // These estimates include gaps, padding, and safety margin
+  const estimatedKernelWidth = showRuntimeSelector ? 200 : 0;
+  const estimatedCollabWidth = showCollaborativeLabel ? 200 : 0;
+  const reservedRightWidth = estimatedKernelWidth + estimatedCollabWidth;
 
   // Calculate left content width (Undo/Redo + dropdowns + +/- buttons + formatting buttons + dividers)
   // Undo: 36px, Redo: 36px, Divider: 10px
