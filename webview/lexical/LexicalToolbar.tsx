@@ -291,7 +291,7 @@ export function LexicalToolbar({
           : parent?.getFormatType() || "left";
       setElementFormat(format);
 
-      // Extract current text color and highlight color from selection
+      // Extract current text color, highlight color, and font size from selection
       if ($isTextNode(anchorNode)) {
         const style = anchorNode.getStyle();
 
@@ -319,6 +319,30 @@ export function LexicalToolbar({
           // No explicit background color, use default
           setHighlightColor(DEFAULT_HIGHLIGHT_COLOR);
         }
+
+        // Extract font size
+        const fontSizeMatch = style.match(/font-size:\s*([^;]+)/);
+        if (fontSizeMatch) {
+          const size = fontSizeMatch[1].trim();
+          // Normalize to "pt" format if needed
+          const normalizedSize = size.endsWith("pt") ? size : `${size}pt`;
+          setFontSize(normalizedSize);
+        } else {
+          // No explicit font size, use default
+          setFontSize("12pt");
+        }
+
+        // Extract font family
+        const fontFamilyMatch = style.match(/font-family:\s*([^;]+)/);
+        if (fontFamilyMatch) {
+          const family = fontFamilyMatch[1].trim();
+          // Remove quotes if present
+          const cleanFamily = family.replace(/['"]/g, "");
+          setFontFamily(cleanFamily);
+        } else {
+          // No explicit font family, use default
+          setFontFamily("Arial");
+        }
       } else {
         // Not a text node, reset to defaults
         const themeColor = getComputedStyle(document.documentElement)
@@ -326,6 +350,8 @@ export function LexicalToolbar({
           .trim();
         setTextColor(themeColor ? colorToHex(themeColor) : DEFAULT_TEXT_COLOR);
         setHighlightColor(DEFAULT_HIGHLIGHT_COLOR);
+        setFontSize("12pt");
+        setFontFamily("Arial");
       }
     }
   }, []);

@@ -5,9 +5,9 @@
         "children": [
           {
             "detail": 0,
-            "format": 0,
+            "format": 8,
             "mode": "normal",
-            "style": "font-family: Courier New;",
+            "style": "font-family: Times New Roman; font-size: 18pt;",
             "text": "Welcome to the Lexical Editor!",
             "type": "text",
             "version": 1
@@ -18,7 +18,8 @@
         "indent": 0,
         "type": "heading",
         "version": 1,
-        "textStyle": "font-family: Courier New;",
+        "textFormat": 8,
+        "textStyle": "font-family: Times New Roman; font-size: 18pt;",
         "tag": "h1"
       },
       {
@@ -1201,6 +1202,6 @@
     "indent": 0,
     "type": "root",
     "version": 1,
-    "textStyle": "font-family: Courier New;"
+    "textStyle": "font-size: 18pt;"
   }
 }
