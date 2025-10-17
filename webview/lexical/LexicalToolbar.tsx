@@ -30,6 +30,7 @@ import {
   UNDO_COMMAND,
   REDO_COMMAND,
   SELECTION_CHANGE_COMMAND,
+  LexicalNode,
 } from "lexical";
 import {
   $isHeadingNode,
@@ -52,6 +53,8 @@ import {
   InsertImageDialog,
   InsertEquationDialog,
   useModal,
+  $isJupyterInputNode,
+  $isJupyterInputHighlightNode,
 } from "@datalayer/jupyter-lexical";
 import type { RuntimeJSON } from "@datalayer/core/lib/client/models/Runtime";
 import { MessageHandlerContext } from "../services/messageHandler";
@@ -173,6 +176,25 @@ function updateStyleProperty(
   return withoutProperty
     ? `${withoutProperty}; ${property}: ${value};`
     : `${property}: ${value};`;
+}
+
+/**
+ * Checks if a text node is inside a Jupyter input/output code block.
+ * Font changes should not apply to code inside Jupyter cells.
+ *
+ * @param node - The text node to check
+ * @returns True if the node is inside a Jupyter code block
+ */
+function $isInsideJupyterCode(node: LexicalNode): boolean {
+  let parent = node.getParent();
+  while (parent) {
+    // Check if parent is a JupyterInputNode or JupyterInputHighlightNode
+    if ($isJupyterInputNode(parent) || $isJupyterInputHighlightNode(parent)) {
+      return true;
+    }
+    parent = parent.getParent();
+  }
+  return false;
 }
 
 /**
@@ -560,6 +582,10 @@ export function LexicalToolbar({
       if ($isRangeSelection(selection)) {
         selection.getNodes().forEach((node) => {
           if ($isTextNode(node)) {
+            // Skip font changes for nodes inside Jupyter input/output code blocks
+            if ($isInsideJupyterCode(node)) {
+              return;
+            }
             const currentStyle = node.getStyle();
             const newStyle = updateStyleProperty(
               currentStyle,
@@ -580,6 +606,10 @@ export function LexicalToolbar({
       if ($isRangeSelection(selection)) {
         selection.getNodes().forEach((node) => {
           if ($isTextNode(node)) {
+            // Skip font size changes for nodes inside Jupyter input/output code blocks
+            if ($isInsideJupyterCode(node)) {
+              return;
+            }
             const currentStyle = node.getStyle();
             const newStyle = updateStyleProperty(
               currentStyle,

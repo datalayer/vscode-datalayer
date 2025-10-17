@@ -167,22 +167,22 @@ function LexicalWebviewInner({
 
   const handleContentChange = useCallback(
     (newContent: string) => {
-      store.setContent(newContent);
+      const currentState = useLexicalStore.getState();
+      currentState.setContent(newContent);
       vscode.setState({ content: newContent });
 
-      if (!store.collaborationConfig.enabled) {
-        if (!store.isInitialLoad) {
+      if (!currentState.collaborationConfig.enabled) {
+        if (!currentState.isInitialLoad) {
           vscode.postMessage({
             type: "contentChanged",
             content: newContent,
           });
         } else {
-          store.setIsInitialLoad(false);
+          currentState.setIsInitialLoad(false);
         }
       }
     },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [], // store access doesn't need to be in deps - Zustand handles reactivity
+    [], // Using getState() to get current values instead of relying on closure
   );
 
   return (

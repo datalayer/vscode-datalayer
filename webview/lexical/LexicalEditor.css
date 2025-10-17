@@ -272,8 +272,8 @@ code[data-highlight-language] {
     --vscode-editor-font-family,
     "Menlo, Monaco, Courier New, monospace"
   ) !important;
-  font-size: 12px !important; /* MUST match code font size for alignment */
-  line-height: 1.4 !important; /* Match code line height */
+  font-size: inherit !important; /* Inherit font size from parent code block for alignment */
+  line-height: inherit !important; /* Inherit line height from parent code block */
   white-space: pre !important;
   user-select: none !important;
   pointer-events: none !important;
