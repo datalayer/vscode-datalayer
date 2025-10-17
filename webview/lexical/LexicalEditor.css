@@ -388,6 +388,12 @@ code[data-highlight-language] {
   list-style-type: disc;
 }
 
+/* Remove left padding for check lists */
+.lexical-editor-ul:has(.lexical-editor-listitem-checked),
+.lexical-editor-ul:has(.lexical-editor-listitem-unchecked) {
+  padding-left: 0;
+}
+
 .lexical-editor-ol {
   padding-left: 20px;
   margin: 8px 0;
@@ -403,6 +409,17 @@ code[data-highlight-language] {
   list-style-type: circle;
 }
 
+/* Checklist items - add checkbox UI with ::before pseudo-elements */
+.lexical-editor-listitem-checked,
+.lexical-editor-listitem-unchecked {
+  position: relative;
+  margin-left: 0;
+  margin-right: 8px;
+  padding-left: 24px;
+  list-style-type: none; /* Remove bullet points */
+  outline: none;
+}
+
 .lexical-editor-listitem-checked {
   text-decoration: line-through;
   color: var(--vscode-descriptionForeground);
@@ -412,9 +429,487 @@ code[data-highlight-language] {
   color: var(--vscode-editor-foreground);
 }
 
+/* Create checkbox visual using ::before pseudo-element */
+.lexical-editor-listitem-unchecked::before,
+.lexical-editor-listitem-checked::before {
+  content: "";
+  width: 16px;
+  height: 16px;
+  top: 2px;
+  left: 0;
+  cursor: pointer;
+  display: block;
+  background-size: cover;
+  position: absolute;
+  border-radius: 2px;
+}
+
+/* Unchecked checkbox - empty box using VS Code checkbox variables */
+.lexical-editor-listitem-unchecked::before {
+  /* Use checkbox border color for maximum visibility */
+  border: 1.5px solid
+    var(--vscode-checkbox-border, var(--vscode-input-border, #8b8b8b));
+  /* Light background to ensure checkbox is visible against dark editor background */
+  background-color: var(--vscode-input-background, rgba(255, 255, 255, 0.1));
+  /* Ensure it stands out with full opacity */
+  opacity: 1;
+}
+
+/* Checked checkbox - filled box with checkmark using VS Code checkbox variables */
+.lexical-editor-listitem-checked::before {
+  border: 1px solid
+    var(--vscode-checkbox-border, var(--vscode-input-border, #999));
+  background-color: var(
+    --vscode-checkbox-selectBackground,
+    var(--vscode-inputOption-activeBackground, #3d87f5)
+  );
+  background-repeat: no-repeat;
+}
+
+/* Checkmark icon for checked items using Unicode character */
+.lexical-editor-listitem-checked::after {
+  content: "✓";
+  position: absolute;
+  left: 3px;
+  top: 0px;
+  font-size: 12px;
+  color: var(
+    --vscode-checkbox-foreground,
+    var(--vscode-input-background, white)
+  );
+  font-weight: bold;
+  pointer-events: none;
+}
+
+/* Focus styles */
+.lexical-editor-listitem-unchecked:focus::before,
+.lexical-editor-listitem-checked:focus::before {
+  box-shadow: 0 0 0 2px var(--vscode-focusBorder);
+  border-radius: 2px;
+}
+
 ::selection {
   background-color: var(--vscode-editor-selectionBackground);
   color: var(--vscode-editor-selectionForeground);
+}
+
+/* Dialog and Modal theming for VS Code */
+.Modal,
+.Dialog,
+[class*="Dialog"],
+[class*="Modal"],
+[role="dialog"] {
+  background-color: var(--vscode-editorWidget-background) !important;
+  color: var(--vscode-editorWidget-foreground) !important;
+  border: 1px solid var(--vscode-editorWidget-border) !important;
+  border-radius: 4px !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4) !important;
+  font-family: var(--vscode-font-family) !important;
+  font-size: var(--vscode-editor-font-size) !important;
+}
+
+/* Modal overlay - full screen backdrop */
+.Modal__overlay {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  background-color: rgba(0, 0, 0, 0.5) !important;
+  z-index: 9999 !important;
+}
+
+/* Modal container */
+.Modal__modal {
+  background-color: var(--vscode-editorWidget-background) !important;
+  border: 1px solid var(--vscode-editorWidget-border) !important;
+  border-radius: 6px !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5) !important;
+  padding: 20px !important;
+  min-width: 400px !important;
+  max-width: 600px !important;
+  position: relative !important;
+}
+
+/* Modal title */
+.Modal__title {
+  color: var(--vscode-editorWidget-foreground) !important;
+  font-size: 16px !important;
+  font-weight: 600 !important;
+  margin: 0 0 16px 0 !important;
+  font-family: var(--vscode-font-family) !important;
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+/* Modal close button */
+.Modal__closeButton {
+  position: absolute !important;
+  top: 12px !important;
+  right: 12px !important;
+  background: transparent !important;
+  border: none !important;
+  color: var(--vscode-icon-foreground) !important;
+  cursor: pointer !important;
+  font-size: 18px !important;
+  width: 24px !important;
+  height: 24px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border-radius: 3px !important;
+  padding: 0 !important;
+}
+
+.Modal__closeButton:hover {
+  background-color: var(--vscode-toolbar-hoverBackground) !important;
+}
+
+/* Modal content area */
+.Modal__content {
+  color: var(--vscode-editorWidget-foreground) !important;
+  font-family: var(--vscode-font-family) !important;
+}
+
+/* Dialog backdrop/overlay (for other dialogs) */
+.Dialog__overlay,
+[class*="overlay"],
+[role="presentation"] {
+  background-color: rgba(0, 0, 0, 0.4) !important;
+}
+
+/* Dialog buttons */
+.Modal button,
+.Dialog button,
+[class*="Dialog"] button,
+[class*="Modal"] button,
+[role="dialog"] button {
+  background-color: var(--vscode-button-background) !important;
+  color: var(--vscode-button-foreground) !important;
+  border: none !important;
+  padding: 6px 14px !important;
+  border-radius: 2px !important;
+  cursor: pointer !important;
+  font-family: var(--vscode-font-family) !important;
+  font-size: 13px !important;
+}
+
+.Modal button:hover,
+.Dialog button:hover,
+[class*="Dialog"] button:hover,
+[class*="Modal"] button:hover,
+[role="dialog"] button:hover {
+  background-color: var(--vscode-button-hoverBackground) !important;
+}
+
+/* Dialog input fields */
+.Modal input,
+.Dialog input,
+[class*="Dialog"] input,
+[class*="Modal"] input,
+[role="dialog"] input {
+  background-color: var(--vscode-input-background) !important;
+  color: var(--vscode-input-foreground) !important;
+  border: 1px solid var(--vscode-input-border) !important;
+  padding: 6px 8px !important;
+  border-radius: 2px !important;
+  font-family: var(--vscode-editor-font-family) !important;
+  font-size: 13px !important;
+}
+
+.Modal input:focus,
+.Dialog input:focus,
+[class*="Dialog"] input:focus,
+[class*="Modal"] input:focus,
+[role="dialog"] input:focus {
+  outline: 1px solid var(--vscode-focusBorder) !important;
+  border-color: var(--vscode-focusBorder) !important;
+}
+
+/* Dialog labels */
+.Modal label,
+.Dialog label,
+[class*="Dialog"] label,
+[class*="Modal"] label,
+[role="dialog"] label {
+  color: var(--vscode-foreground) !important;
+  font-family: var(--vscode-font-family) !important;
+  font-size: 13px !important;
+  margin-bottom: 4px !important;
+  display: block !important;
+}
+
+/* Remove ALL borders from ANY element inside dialogs/modals */
+.Modal *:not(input):not(button),
+.Dialog *:not(input):not(button),
+[class*="Dialog"] *:not(input):not(button),
+[class*="Modal"] *:not(input):not(button),
+[role="dialog"] *:not(input):not(button) {
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+/* Remove ALL borders from dialog internal divs and sections */
+.Modal div,
+.Dialog div,
+[class*="Dialog"] div,
+[class*="Modal"] div,
+[role="dialog"] div,
+.Modal section,
+.Dialog section,
+[class*="Dialog"] section,
+[class*="Modal"] section,
+[role="dialog"] section,
+.Modal header,
+.Dialog header,
+[class*="Dialog"] header,
+[class*="Modal"] header,
+[role="dialog"] header {
+  border: none !important;
+}
+
+/* Remove borders from tabs and tab-like elements in dialogs */
+.Modal [role="tab"],
+.Dialog [role="tab"],
+[class*="Dialog"] [role="tab"],
+[class*="Modal"] [role="tab"],
+[role="dialog"] [role="tab"],
+.Modal [role="tablist"],
+.Dialog [role="tablist"],
+[class*="Dialog"] [role="tablist"],
+[class*="Modal"] [role="tablist"],
+[role="dialog"] [role="tablist"],
+.Modal [role="tabpanel"],
+.Dialog [role="tabpanel"],
+[class*="Dialog"] [role="tabpanel"],
+[class*="Modal"] [role="tabpanel"],
+[role="dialog"] [role="tabpanel"] {
+  border: none !important;
+  outline: none !important;
+}
+
+/* AutoEmbed Dialog (YouTube, etc.) styling for VS Code */
+/* Fix the inline width: 600px that causes overflow */
+.Modal div[style*="width: 600px"],
+.Modal div[style*="width:600px"] {
+  width: 100% !important;
+  max-width: 560px !important;
+  box-sizing: border-box !important;
+}
+
+.auto-embed-menu {
+  background-color: var(--vscode-editorWidget-background) !important;
+  border: 1px solid var(--vscode-editorWidget-border) !important;
+  border-radius: 4px !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4) !important;
+}
+
+.auto-embed-menu ul {
+  list-style: none !important;
+  padding: 4px !important;
+  margin: 0 !important;
+}
+
+.auto-embed-menu .item {
+  padding: 6px 12px !important;
+  cursor: pointer !important;
+  border-radius: 3px !important;
+  color: var(--vscode-foreground) !important;
+  font-family: var(--vscode-font-family) !important;
+  font-size: 13px !important;
+}
+
+.auto-embed-menu .item:hover,
+.auto-embed-menu .item.selected {
+  background-color: var(--vscode-list-hoverBackground) !important;
+}
+
+/* Input wrapper in AutoEmbed dialog */
+.Input__wrapper {
+  margin-bottom: 16px !important;
+}
+
+/* Target input field with NUCLEAR specificity - override library Input.css */
+.lexical-editor-root .Modal .Input__wrapper .Input__input,
+.lexical-editor-root .Modal .Input__input,
+.lexical-editor-root input.Input__input,
+.lexical-editor-root .Input__input,
+.lexical-editor .Modal .Input__wrapper .Input__input,
+.lexical-editor .Modal .Input__input,
+.lexical-editor input.Input__input,
+.lexical-editor .Input__input,
+html body .Modal .Input__wrapper .Input__input,
+html body .Modal .Input__input,
+html body input.Input__input,
+html body .Input__input,
+.Modal .Input__wrapper .Input__input,
+.Modal .Input__input,
+input.Input__input,
+.Input__input,
+.Modal input[type="text"],
+.Modal input[class*="Input"] {
+  width: 100% !important;
+  background-color: var(--vscode-input-background) !important;
+  background: var(--vscode-input-background) !important;
+  color: var(--vscode-input-foreground) !important;
+  border: 1px solid var(--vscode-input-border) !important;
+  padding: 8px 12px !important;
+  border-radius: 2px !important;
+  font-family: var(--vscode-editor-font-family) !important;
+  font-size: 13px !important;
+  box-sizing: border-box !important;
+}
+
+.Modal .Input__wrapper .Input__input:focus,
+.Modal .Input__input:focus,
+input.Input__input:focus,
+.Input__input:focus {
+  outline: 1px solid var(--vscode-focusBorder) !important;
+  border-color: var(--vscode-focusBorder) !important;
+  background-color: var(--vscode-input-background) !important;
+  background: var(--vscode-input-background) !important;
+}
+
+.Modal .Input__input::placeholder,
+input.Input__input::placeholder,
+.Input__input::placeholder {
+  color: var(--vscode-input-placeholderForeground) !important;
+  opacity: 1 !important;
+}
+
+/* DialogActions (button container) in AutoEmbed and other dialogs */
+.DialogActions {
+  display: flex !important;
+  justify-content: flex-end !important;
+  margin-top: 16px !important;
+  gap: 8px !important;
+}
+
+/* Button component styling for dialogs - NUCLEAR specificity to override library Button.css */
+html body .Modal .DialogActions button.Button__root,
+html body .Modal .DialogActions .Button__root,
+html body .Modal button.Button__root,
+html body .Modal .Button__root,
+html body .DialogActions button.Button__root,
+html body .DialogActions .Button__root,
+html body button.Button__root,
+html body .Button__root,
+.Modal .DialogActions button.Button__root,
+.Modal .DialogActions .Button__root,
+.Modal button.Button__root,
+.Modal .Button__root,
+.DialogActions button.Button__root,
+.DialogActions .Button__root,
+button.Button__root,
+.Button__root,
+.Modal .DialogActions .Button,
+.Modal .Button,
+.DialogActions .Button,
+button.Button,
+.Button {
+  background-color: var(--vscode-button-background) !important;
+  background: var(--vscode-button-background) !important;
+  color: var(--vscode-button-foreground) !important;
+  border: none !important;
+  padding: 6px 14px !important;
+  border-radius: 2px !important;
+  cursor: pointer !important;
+  font-family: var(--vscode-font-family) !important;
+  font-size: 13px !important;
+  font-weight: 400 !important;
+}
+
+.Modal .DialogActions button.Button__root:hover:not(.Button__disabled),
+.Modal .DialogActions .Button__root:hover:not(.Button__disabled),
+.Modal button.Button__root:hover:not(.Button__disabled),
+.Modal .Button__root:hover:not(.Button__disabled),
+.DialogActions button.Button__root:hover:not(.Button__disabled),
+.DialogActions .Button__root:hover:not(.Button__disabled),
+button.Button__root:hover:not(.Button__disabled),
+.Button__root:hover:not(.Button__disabled),
+.Modal .DialogActions .Button:hover:not(:disabled),
+.Modal .Button:hover:not(:disabled),
+.DialogActions .Button:hover:not(:disabled),
+button.Button:hover:not(:disabled),
+.Button:hover:not(:disabled) {
+  background-color: var(--vscode-button-hoverBackground) !important;
+  background: var(--vscode-button-hoverBackground) !important;
+}
+
+.Modal .DialogActions button.Button__root.Button__disabled,
+.Modal .DialogActions .Button__root.Button__disabled,
+.Modal button.Button__root.Button__disabled,
+.Modal .Button__root.Button__disabled,
+.DialogActions button.Button__root.Button__disabled,
+.DialogActions .Button__root.Button__disabled,
+button.Button__root.Button__disabled,
+.Button__root.Button__disabled,
+.Modal .DialogActions .Button:disabled,
+.Modal .Button:disabled,
+.DialogActions .Button:disabled,
+button.Button:disabled,
+.Button:disabled {
+  opacity: 0.5 !important;
+  cursor: not-allowed !important;
+  background-color: var(--vscode-button-background) !important;
+  background: var(--vscode-button-background) !important;
+}
+
+/* Horizontal Rule (Divider) theming for VS Code */
+.lexical-editor hr,
+hr {
+  border: none;
+  border-top: 1px solid
+    var(--vscode-panel-border, var(--vscode-editorWidget-border, #454545));
+  margin: 16px 0;
+  background: none;
+  height: 0;
+  opacity: 0.6;
+}
+
+/* Slightly more visible in editor content area */
+.lexical-editor-content hr {
+  border-top-color: var(
+    --vscode-editorWidget-border,
+    var(--vscode-panel-border, #454545)
+  );
+  opacity: 0.8;
+}
+
+/* YouTube video embed theming for VS Code */
+iframe[src*="youtube.com"],
+iframe[title="YouTube video"] {
+  max-width: 100%;
+  border: 1px solid var(--vscode-editorWidget-border, #454545);
+  border-radius: 4px;
+  background-color: var(--vscode-editor-background);
+}
+
+/* YouTube container - ensure proper spacing and centering */
+.lexical-editor-content [class*="youtube"],
+.lexical-editor-content [class*="YouTube"] {
+  margin: 16px 0;
+  text-align: center;
+}
+
+/* Image node theming for VS Code */
+.editor-image img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+  border-radius: 4px;
+}
+
+/* Remove any green background from broken images */
+.editor-image img[src=""],
+.editor-image img:not([src]),
+.editor-image img[src="#"] {
+  display: none;
 }
 
 /* Collaborative cursor styles using VS Code theme colors */
@@ -723,3 +1218,53 @@ code[data-highlight-language] {
   color: var(--vscode-descriptionForeground) !important;
   opacity: 0.8 !important;
 }
+
+/* ===== Color Picker Styling ===== */
+/* Style color picker inputs to integrate better with VS Code theme */
+/* Note: The OS/browser-native color picker dialog itself cannot be themed */
+input[type="color"] {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  width: 32px;
+  height: 24px;
+  border: 1px solid var(--vscode-input-border) !important;
+  border-radius: 3px;
+  cursor: pointer;
+  background-color: transparent;
+  padding: 0;
+}
+
+/* Color picker color swatch (the actual color display) */
+input[type="color"]::-webkit-color-swatch-wrapper {
+  padding: 2px;
+  border-radius: 2px;
+}
+
+input[type="color"]::-webkit-color-swatch {
+  border: none;
+  border-radius: 2px;
+}
+
+input[type="color"]::-moz-color-swatch {
+  border: none;
+  border-radius: 2px;
+}
+
+/* Hover effect */
+input[type="color"]:hover:not(:disabled) {
+  border-color: var(--vscode-focusBorder) !important;
+}
+
+/* Focus effect */
+input[type="color"]:focus {
+  outline: 1px solid var(--vscode-focusBorder);
+  outline-offset: 1px;
+}
+
+/* Disabled state */
+input[type="color"]:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+/* ===== END: Color Picker Styling ===== */
