@@ -374,7 +374,7 @@
     ]
   },
   "scripts": {
-    "postinstall": "patch-package",
+    "postinstall": "node scripts/patch-jupyter-lexical.js && patch-package",
     "clean": "rm -rf dist out *.vsix",
     "clean:dist": "rm -rf dist",
     "clean:out": "rm -rf out",
@@ -463,7 +463,7 @@
     "mini-svg-data-uri": "^1.4.4",
     "null-loader": "^4.0.1",
     "ovsx": "^0.10.6",
-    "patch-package": "^8.0.0",
+    "patch-package": "^8.0.1",
     "prettier": "^3.6.2",
     "process": "^0.11.10",
     "style-loader": "^2.0.0",
