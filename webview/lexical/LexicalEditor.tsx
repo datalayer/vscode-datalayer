@@ -33,19 +33,28 @@ import { OverflowNode } from "@lexical/overflow";
 import { HorizontalRuleNode } from "@lexical/react/LexicalHorizontalRuleNode";
 import { TableCellNode, TableNode, TableRowNode } from "@lexical/table";
 import { ListPlugin } from "@lexical/react/LexicalListPlugin";
+import { CheckListPlugin } from "@lexical/react/LexicalCheckListPlugin";
 import { LinkPlugin } from "@lexical/react/LexicalLinkPlugin";
 import { useJupyter } from "@datalayer/jupyter-react";
 import {
   JupyterInputNode,
   JupyterInputHighlightNode,
   JupyterOutputNode,
+  JupyterCellNode,
   ComponentPickerMenuPlugin,
+  JupyterCellPlugin,
   JupyterInputOutputPlugin,
   DraggableBlockPlugin,
   registerCodeHighlighting,
   EquationNode,
   ImageNode,
   YouTubeNode,
+  ImagesPlugin,
+  HorizontalRulePlugin,
+  EquationsPlugin,
+  YouTubePlugin,
+  AutoLinkPlugin,
+  AutoEmbedPlugin,
 } from "@datalayer/jupyter-lexical";
 import { LexicalToolbar } from "./LexicalToolbar";
 import { RuntimeProgressBar } from "../components/RuntimeProgressBar";
@@ -308,6 +317,7 @@ export function LexicalEditor({
       EquationNode,
       ImageNode,
       YouTubeNode,
+      JupyterCellNode,
       JupyterInputNode,
       JupyterInputHighlightNode,
       JupyterOutputNode,
@@ -448,7 +458,9 @@ export function LexicalEditor({
           <HistoryPlugin />
           <AutoFocusPlugin />
           <ListPlugin />
+          <CheckListPlugin />
           <LinkPlugin />
+          <AutoLinkPlugin />
           <MarkdownShortcutPlugin transformers={TRANSFORMERS} />
           <SavePlugin onSave={editable ? onSave : undefined} />
           <LoadContentPlugin
@@ -456,6 +468,12 @@ export function LexicalEditor({
             skipLoad={collaboration?.enabled}
           />
           <CodeHighlightPlugin />
+          <ImagesPlugin captionsEnabled={false} />
+          <HorizontalRulePlugin />
+          <EquationsPlugin />
+          <YouTubePlugin />
+          <AutoEmbedPlugin />
+          <JupyterCellPlugin />
           <ComponentPickerMenuPlugin kernel={defaultKernel} />
           <JupyterInputOutputPlugin kernel={defaultKernel} />
           {floatingAnchorElem && (

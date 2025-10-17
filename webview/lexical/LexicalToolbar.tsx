@@ -5,8 +5,10 @@
  */
 
 /**
+ * Lexical editor toolbar component.
+ * Provides rich text formatting controls including styles, fonts, colors, and alignment.
+ *
  * @module LexicalToolbar
- * Comprehensive toolbar with dropdowns for block types, fonts, alignment + overflow menu for extra buttons.
  */
 
 import React, { useCallback, useEffect, useState, useContext } from "react";
@@ -17,6 +19,7 @@ import {
   $isRangeSelection,
   $isElementNode,
   $isTextNode,
+  $createParagraphNode,
   CAN_REDO_COMMAND,
   CAN_UNDO_COMMAND,
   COMMAND_PRIORITY_CRITICAL,
@@ -43,7 +46,13 @@ import { $setBlocksType } from "@lexical/selection";
 import { $findMatchingParent } from "@lexical/utils";
 import { INSERT_HORIZONTAL_RULE_COMMAND } from "@lexical/react/LexicalHorizontalRuleNode";
 import { TOGGLE_LINK_COMMAND, $isLinkNode } from "@lexical/link";
-import { INSERT_IMAGE_COMMAND } from "@datalayer/jupyter-lexical";
+import {
+  INSERT_YOUTUBE_COMMAND,
+  INSERT_JUPYTER_INPUT_OUTPUT_COMMAND,
+  InsertImageDialog,
+  InsertEquationDialog,
+  useModal,
+} from "@datalayer/jupyter-lexical";
 import type { RuntimeJSON } from "@datalayer/core/lib/client/models/Runtime";
 import { MessageHandlerContext } from "../services/messageHandler";
 import {
@@ -53,11 +62,19 @@ import {
   Dropdown,
 } from "../components/toolbar";
 import type { ToolbarAction, DropdownItem } from "../components/toolbar";
+import { InsertYouTubeDialog, InsertLinkDialog } from "../components/dialogs";
 
+/**
+ * Props for the LexicalToolbar component.
+ */
 export interface LexicalToolbarProps {
+  /** Whether toolbar controls are disabled */
   disabled?: boolean;
+  /** Currently selected runtime for kernel operations */
   selectedRuntime?: RuntimeJSON;
+  /** Whether to show the runtime selector dropdown */
   showRuntimeSelector?: boolean;
+  /** Whether to show the collaborative editing indicator */
   showCollaborativeLabel?: boolean;
 }
 
@@ -71,21 +88,73 @@ const FONT_FAMILY_OPTIONS: [string, string][] = [
   ["Verdana", "Verdana"],
 ];
 
-// Font size options
+// Font size options (8pt to 72pt, common sizes)
 const FONT_SIZE_OPTIONS = [
-  "10px",
-  "11px",
-  "12px",
-  "13px",
-  "14px",
-  "15px",
-  "16px",
-  "17px",
-  "18px",
-  "19px",
-  "20px",
+  "8pt",
+  "10pt",
+  "12pt",
+  "14pt",
+  "16pt",
+  "18pt",
+  "24pt",
+  "36pt",
+  "72pt",
 ];
 
+// Default colors for color pickers
+const DEFAULT_TEXT_COLOR = "#000000";
+const DEFAULT_HIGHLIGHT_COLOR = "#FFFF00";
+
+/**
+ * Convert any CSS color format to hex format.
+ * Required because native color inputs only accept hex values.
+ *
+ * @param color - CSS color in any format (rgb, rgba, hex, named)
+ * @returns Hex color string (e.g., "#ff0000")
+ */
+function colorToHex(color: string): string {
+  // Already hex format
+  if (color.startsWith("#")) {
+    return color;
+  }
+
+  // Create a temporary element to let the browser convert the color
+  const temp = document.createElement("div");
+  temp.style.color = color;
+  document.body.appendChild(temp);
+  const computedColor = getComputedStyle(temp).color;
+  document.body.removeChild(temp);
+
+  // Parse rgb/rgba format
+  const match = computedColor.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
+  if (match) {
+    const r = parseInt(match[1]).toString(16).padStart(2, "0");
+    const g = parseInt(match[2]).toString(16).padStart(2, "0");
+    const b = parseInt(match[3]).toString(16).padStart(2, "0");
+    return `#${r}${g}${b}`;
+  }
+
+  // Fallback to black if conversion fails
+  return DEFAULT_TEXT_COLOR;
+}
+
+/**
+ * Rich text editing toolbar for Lexical editor.
+ * Provides formatting controls, style dropdowns, color pickers, and alignment tools.
+ * Integrates with Jupyter kernels for code execution.
+ *
+ * @param props - Component properties
+ * @returns Toolbar component
+ *
+ * @example
+ * ```tsx
+ * <LexicalToolbar
+ *   disabled={false}
+ *   selectedRuntime={runtime}
+ *   showRuntimeSelector={true}
+ * />
+ * ```
+ */
 export function LexicalToolbar({
   disabled = false,
   selectedRuntime,
@@ -94,6 +163,7 @@ export function LexicalToolbar({
 }: LexicalToolbarProps = {}) {
   const [editor] = useLexicalComposerContext();
   const messageHandler = useContext(MessageHandlerContext);
+  const [modal, showModal] = useModal();
 
   // Text formatting state
   const [isBold, setIsBold] = useState(false);
@@ -112,7 +182,9 @@ export function LexicalToolbar({
   const [elementFormat, setElementFormat] = useState<string>("left");
   const [isLink, setIsLink] = useState(false);
   const [fontFamily, setFontFamily] = useState("Arial");
-  const [fontSize, setFontSize] = useState("15px");
+  const [fontSize, setFontSize] = useState("12pt");
+  const [textColor, setTextColor] = useState(DEFAULT_TEXT_COLOR);
+  const [highlightColor, setHighlightColor] = useState(DEFAULT_HIGHLIGHT_COLOR);
 
   // Add pulse animation for collaborative indicator
   React.useEffect(() => {
@@ -181,6 +253,43 @@ export function LexicalToolbar({
           ? node.getFormatType()
           : parent?.getFormatType() || "left";
       setElementFormat(format);
+
+      // Extract current text color and highlight color from selection
+      if ($isTextNode(anchorNode)) {
+        const style = anchorNode.getStyle();
+
+        // Extract text color
+        const colorMatch = style.match(/color:\s*([^;]+)/);
+        if (colorMatch) {
+          const color = colorMatch[1].trim();
+          setTextColor(colorToHex(color));
+        } else {
+          // No explicit color set, use theme default
+          const themeColor = getComputedStyle(document.documentElement)
+            .getPropertyValue("--vscode-editor-foreground")
+            .trim();
+          setTextColor(
+            themeColor ? colorToHex(themeColor) : DEFAULT_TEXT_COLOR,
+          );
+        }
+
+        // Extract highlight/background color
+        const bgColorMatch = style.match(/background-color:\s*([^;]+)/);
+        if (bgColorMatch) {
+          const bgColor = bgColorMatch[1].trim();
+          setHighlightColor(colorToHex(bgColor));
+        } else {
+          // No explicit background color, use default
+          setHighlightColor(DEFAULT_HIGHLIGHT_COLOR);
+        }
+      } else {
+        // Not a text node, reset to defaults
+        const themeColor = getComputedStyle(document.documentElement)
+          .getPropertyValue("--vscode-editor-foreground")
+          .trim();
+        setTextColor(themeColor ? colorToHex(themeColor) : DEFAULT_TEXT_COLOR);
+        setHighlightColor(DEFAULT_HIGHLIGHT_COLOR);
+      }
     }
   }, []);
 
@@ -253,6 +362,17 @@ export function LexicalToolbar({
     }
   };
 
+  const formatParagraph = () => {
+    if (blockType !== "paragraph") {
+      editor.update(() => {
+        const selection = $getSelection();
+        if ($isRangeSelection(selection)) {
+          $setBlocksType(selection, () => $createParagraphNode());
+        }
+      });
+    }
+  };
+
   const formatQuote = () => {
     if (blockType !== "quote") {
       editor.update(() => {
@@ -286,10 +406,39 @@ export function LexicalToolbar({
   };
 
   const insertLink = () => {
-    if (!isLink) {
-      editor.dispatchCommand(TOGGLE_LINK_COMMAND, "https://");
-    } else {
+    if (isLink) {
+      // Remove existing link
       editor.dispatchCommand(TOGGLE_LINK_COMMAND, null);
+    } else {
+      // Get selected text
+      let selectedText = "";
+      editor.getEditorState().read(() => {
+        const selection = $getSelection();
+        if ($isRangeSelection(selection)) {
+          selectedText = selection.getTextContent();
+        }
+      });
+
+      // Show link dialog
+      showModal("Insert Link", (onClose) => (
+        <InsertLinkDialog
+          initialText={selectedText}
+          initialUrl="https://"
+          onInsert={(url, text) => {
+            // Insert the link text at the selection
+            editor.update(() => {
+              const selection = $getSelection();
+              if ($isRangeSelection(selection)) {
+                selection.insertText(text);
+              }
+            });
+
+            // Apply the link
+            editor.dispatchCommand(TOGGLE_LINK_COMMAND, url);
+          }}
+          onClose={onClose}
+        />
+      ));
     }
   };
 
@@ -297,13 +446,40 @@ export function LexicalToolbar({
     editor.dispatchCommand(INSERT_HORIZONTAL_RULE_COMMAND, undefined);
 
   const insertImage = () => {
-    const url = prompt("Enter image URL:");
-    if (url) {
-      editor.dispatchCommand(INSERT_IMAGE_COMMAND, {
-        altText: "Inserted image",
-        src: url,
-      });
-    }
+    showModal("Insert Image", (onClose) => (
+      <InsertImageDialog activeEditor={editor} onClose={onClose} />
+    ));
+  };
+
+  const insertGif = () => {
+    showModal("Insert GIF", (onClose) => (
+      <InsertImageDialog activeEditor={editor} onClose={onClose} />
+    ));
+  };
+
+  const insertYouTube = () => {
+    showModal("Insert YouTube Video", (onClose) => (
+      <InsertYouTubeDialog
+        onInsert={(videoId) => {
+          editor.dispatchCommand(INSERT_YOUTUBE_COMMAND, videoId);
+        }}
+        onClose={onClose}
+      />
+    ));
+  };
+
+  const insertEquation = () => {
+    showModal("Insert Equation", (onClose) => (
+      <InsertEquationDialog activeEditor={editor} onClose={onClose} />
+    ));
+  };
+
+  const insertJupyterCell = () => {
+    editor.dispatchCommand(INSERT_JUPYTER_INPUT_OUTPUT_COMMAND, {
+      code: "print('Hello Jupyter')",
+      outputs: [],
+      loading: "Loading...",
+    });
   };
 
   const handleSelectRuntime = () => {
@@ -371,12 +547,73 @@ export function LexicalToolbar({
   const outdent = () =>
     editor.dispatchCommand(OUTDENT_CONTENT_COMMAND, undefined);
 
+  // Apply text color from color picker
+  // Apply text color
+  const applyTextColor = (color: string) => {
+    setTextColor(color);
+    editor.update(() => {
+      const selection = $getSelection();
+      if ($isRangeSelection(selection)) {
+        selection.getNodes().forEach((node) => {
+          if ($isTextNode(node)) {
+            // Preserve existing styles and only update color
+            const currentStyle = node.getStyle();
+
+            // Remove existing color property while preserving others
+            const withoutColor = currentStyle
+              .replace(/color:\s*[^;]+;?\s*/gi, "")
+              .replace(/;\s*;/g, ";") // Clean up double semicolons
+              .replace(/^\s*;|;\s*$/g, "") // Clean up leading/trailing semicolons
+              .trim();
+
+            // Build new style string
+            const newStyle = withoutColor
+              ? `${withoutColor}; color: ${color};`
+              : `color: ${color};`;
+
+            node.setStyle(newStyle);
+          }
+        });
+      }
+    });
+  };
+
+  // Apply highlight color
+  const applyHighlightColor = (color: string) => {
+    setHighlightColor(color);
+    editor.update(() => {
+      const selection = $getSelection();
+      if ($isRangeSelection(selection)) {
+        selection.getNodes().forEach((node) => {
+          if ($isTextNode(node)) {
+            // Preserve existing styles and only update background-color
+            const currentStyle = node.getStyle();
+
+            // Remove existing background-color property while preserving others
+            const withoutBgColor = currentStyle
+              .replace(/background-color:\s*[^;]+;?\s*/gi, "")
+              .replace(/;\s*;/g, ";") // Clean up double semicolons
+              .replace(/^\s*;|;\s*$/g, "") // Clean up leading/trailing semicolons
+              .trim();
+
+            // Build new style string
+            const newStyle = withoutBgColor
+              ? `${withoutBgColor}; background-color: ${color};`
+              : `background-color: ${color};`;
+
+            node.setStyle(newStyle);
+          }
+        });
+      }
+    });
+  };
+
   // Block type dropdown items
   const blockTypeItems: DropdownItem[] = [
     {
       id: "paragraph",
       label: "Normal",
-      onClick: () => formatQuote(), // Should be formatParagraph but doesn't exist
+      onClick: formatParagraph,
       active: blockType === "paragraph",
     },
     {
@@ -436,7 +673,7 @@ export function LexicalToolbar({
   // Font size dropdown
   const fontSizeItems: DropdownItem[] = FONT_SIZE_OPTIONS.map((size) => ({
     id: size,
-    label: size,
+    label: size.replace("pt", ""),
     onClick: () => applyFontSize(size),
     active: fontSize === size,
   }));
@@ -480,6 +717,44 @@ export function LexicalToolbar({
     },
   ];
 
+  // Insert menu dropdown items
+  const insertMenuItems: DropdownItem[] = [
+    {
+      id: "insert-jupyter-cell",
+      label: "Jupyter Cell",
+      onClick: insertJupyterCell,
+    },
+    {
+      id: "insert-equation",
+      label: "Equation",
+      onClick: insertEquation,
+    },
+    {
+      id: "insert-hr",
+      label: "Horizontal Rule",
+      onClick: insertHorizontalRule,
+      dividerBefore: true,
+    },
+    {
+      id: "insert-image",
+      label: "Image",
+      onClick: insertImage,
+    },
+    {
+      id: "insert-gif",
+      label: "GIF",
+      onClick: insertGif,
+    },
+    {
+      id: "insert-youtube",
+      label: "YouTube Video",
+      onClick: insertYouTube,
+    },
+    // TODO: Add more insert options when available:
+    // Page Break, Excalidraw, Table, Poll, Columns Layout,
+    // Sticky Note, Collapsible container, Date, Tweet, Figma
+  ];
+
   // Text formatting dropdown (like SaaS "Aa" dropdown)
   const textFormattingItems: DropdownItem[] = [
     {
@@ -494,7 +769,6 @@ export function LexicalToolbar({
           }
         });
       },
-      shortcut: "⌘+Shift+1",
     },
     {
       id: "lowercase",
@@ -508,7 +782,6 @@ export function LexicalToolbar({
           }
         });
       },
-      shortcut: "⌘+Shift+2",
     },
     {
       id: "capitalize",
@@ -525,15 +798,12 @@ export function LexicalToolbar({
           }
         });
       },
-      shortcut: "⌘+Shift+3",
     },
     {
       id: "strikethrough2",
       label: "Strikethrough",
-      icon: "codicon codicon-primitive-square",
       onClick: formatStrikethrough,
       active: isStrikethrough,
-      shortcut: "⌘+Shift+X",
       dividerBefore: true,
     },
     {
@@ -541,14 +811,12 @@ export function LexicalToolbar({
       label: "Subscript",
       onClick: formatSubscript,
       active: isSubscript,
-      shortcut: "⌘+,",
     },
     {
       id: "superscript2",
       label: "Superscript",
       onClick: formatSuperscript,
       active: isSuperscript,
-      shortcut: "⌘+.",
     },
     {
       id: "highlight2",
@@ -560,107 +828,14 @@ export function LexicalToolbar({
     {
       id: "clear-format2",
       label: "Clear Formatting",
-      icon: "codicon codicon-clear-all",
       onClick: clearFormatting,
-      shortcut: "⌘+\\",
       dividerBefore: true,
     },
   ];
 
-  // All toolbar actions - will overflow into 3-dot menu automatically
-  const toolbarActions: ToolbarAction[] = [
-    {
-      id: "bold",
-      icon: "codicon codicon-bold",
-      label: "Bold",
-      title: "Bold",
-      onClick: formatBold,
-      active: isBold,
-      priority: 1,
-    },
-    {
-      id: "italic",
-      icon: "codicon codicon-italic",
-      label: "Italic",
-      title: "Italic",
-      onClick: formatItalic,
-      active: isItalic,
-      priority: 2,
-    },
-    {
-      id: "underline",
-      icon: "codicon codicon-text-size",
-      label: "Underline",
-      title: "Underline",
-      onClick: formatUnderline,
-      active: isUnderline,
-      priority: 3,
-    },
-    {
-      id: "code",
-      icon: "codicon codicon-code",
-      label: "Code",
-      title: "Code",
-      onClick: formatCode,
-      active: isCode,
-      priority: 4,
-    },
-    {
-      id: "link",
-      icon: "codicon codicon-link",
-      label: "Link",
-      title: "Link",
-      onClick: insertLink,
-      active: isLink,
-      priority: 5,
-    },
-    {
-      id: "strikethrough",
-      label: "Strikethrough",
-      onClick: formatStrikethrough,
-      active: isStrikethrough,
-      priority: 6,
-    },
-    {
-      id: "subscript",
-      label: "Subscript",
-      onClick: formatSubscript,
-      active: isSubscript,
-      priority: 7,
-    },
-    {
-      id: "superscript",
-      label: "Superscript",
-      onClick: formatSuperscript,
-      active: isSuperscript,
-      priority: 8,
-    },
-    {
-      id: "highlight",
-      label: "Highlight",
-      onClick: formatHighlight,
-      active: isHighlight,
-      priority: 9,
-    },
-    {
-      id: "clear-format",
-      label: "Clear Formatting",
-      onClick: clearFormatting,
-      priority: 10,
-    },
-    {
-      id: "hr",
-      label: "Horizontal Rule",
-      onClick: insertHorizontalRule,
-      priority: 11,
-    },
-    {
-      id: "image",
-      label: "Image",
-      onClick: insertImage,
-      priority: 12,
-    },
-  ];
+  // All toolbar actions - empty array means no overflow menu items
+  // All buttons are now in leftContent (dropdowns and direct buttons)
+  const toolbarActions: ToolbarAction[] = [];
 
   const getBlockTypeLabel = () => {
     const item = blockTypeItems.find((i) => i.active);
@@ -672,196 +847,385 @@ export function LexicalToolbar({
   const reservedForKernel = showRuntimeSelector ? 200 : 0;
   const reservedRightWidth = reservedForKernel + reservedForCollaborative;
 
-  // Calculate left content width (Undo/Redo + dropdowns + +/- buttons + dividers)
-  // Undo: 36px, Redo: 36px, Block: 120px, Font: 140px, Size: 60px + 2*28px (+-buttons), TextFormat(Aa): 60px, Align: 36px, Dividers: 5*10px = 50px
-  const reservedLeftWidth = 36 + 36 + 120 + 140 + 60 + 56 + 60 + 36 + 50;
+  // Calculate left content width (Undo/Redo + dropdowns + +/- buttons + formatting buttons + dividers)
+  // Undo: 36px, Redo: 36px, Divider: 10px
+  // Block (icon only): 36px, Divider: 10px
+  // Font (T icon only): 36px, Size: 32px + 2*20px (+-buttons), Divider: 10px
+  // Bold, Italic, Underline, Code, Link: 5*36px = 180px, Divider: 10px
+  // TextColor picker: 28px, HighlightColor picker: 28px, TextTransform (Aa): 36px, Divider: 10px
+  // Insert (icon only): 36px, Divider: 10px
+  // Align: 36px, Divider: 10px
+  const reservedLeftWidth =
+    36 +
+    36 +
+    10 +
+    36 +
+    10 +
+    36 +
+    32 +
+    40 +
+    10 +
+    180 +
+    10 +
+    28 +
+    28 +
+    36 +
+    10 +
+    36 +
+    10 +
+    36 +
+    10;
 
   return (
-    <BaseToolbar
-      actions={toolbarActions}
-      reservedLeftWidth={reservedLeftWidth}
-      leftContent={
-        <div style={{ display: "flex", gap: "4px", alignItems: "center" }}>
-          {/* Undo/Redo */}
-          <ToolbarButton
-            icon="codicon codicon-discard"
-            onClick={undo}
-            disabled={!canUndo || disabled}
-            title="Undo"
-          />
-          <ToolbarButton
-            icon="codicon codicon-redo"
-            onClick={redo}
-            disabled={!canRedo || disabled}
-            title="Redo"
-          />
-
-          <div
-            style={{
-              width: "1px",
-              height: "20px",
-              backgroundColor: "var(--vscode-panel-border)",
-              margin: "0 4px",
-            }}
-          />
-
-          {/* Block type dropdown */}
-          <Dropdown
-            buttonLabel={getBlockTypeLabel()}
-            buttonIcon="codicon codicon-symbol-keyword"
-            items={blockTypeItems}
-            disabled={disabled}
-            ariaLabel="Block type"
-            minWidth="120px"
-          />
-
-          <div
-            style={{
-              width: "1px",
-              height: "20px",
-              backgroundColor: "var(--vscode-panel-border)",
-              margin: "0 4px",
-            }}
-          />
-
-          {/* Font family */}
-          <Dropdown
-            buttonLabel={fontFamily}
-            items={fontFamilyItems}
-            disabled={disabled}
-            ariaLabel="Font family"
-            minWidth="140px"
-          />
-
-          {/* Font size with +/- buttons */}
-          <div style={{ display: "flex", alignItems: "center", gap: "2px" }}>
+    <>
+      {modal}
+      <BaseToolbar
+        actions={toolbarActions}
+        reservedLeftWidth={reservedLeftWidth}
+        leftContent={
+          <div style={{ display: "flex", gap: "4px", alignItems: "center" }}>
+            {/* Undo/Redo */}
             <ToolbarButton
-              icon="codicon codicon-remove"
-              onClick={decreaseFontSize}
-              disabled={disabled || FONT_SIZE_OPTIONS.indexOf(fontSize) === 0}
-              title="Decrease font size"
-            />
-            <Dropdown
-              buttonLabel={fontSize}
-              items={fontSizeItems}
-              disabled={disabled}
-              ariaLabel="Font size"
-              minWidth="60px"
+              icon="codicon codicon-discard"
+              onClick={undo}
+              disabled={!canUndo || disabled}
+              title="Undo"
             />
             <ToolbarButton
-              icon="codicon codicon-add"
-              onClick={increaseFontSize}
-              disabled={
-                disabled ||
-                FONT_SIZE_OPTIONS.indexOf(fontSize) ===
-                  FONT_SIZE_OPTIONS.length - 1
-              }
-              title="Increase font size"
+              icon="codicon codicon-redo"
+              onClick={redo}
+              disabled={!canRedo || disabled}
+              title="Redo"
             />
-          </div>
 
-          <div
-            style={{
-              width: "1px",
-              height: "20px",
-              backgroundColor: "var(--vscode-panel-border)",
-              margin: "0 4px",
-            }}
-          />
-
-          {/* Text formatting dropdown (Aa) */}
-          <Dropdown
-            buttonLabel="Aa"
-            items={textFormattingItems}
-            disabled={disabled}
-            ariaLabel="Text formatting"
-            minWidth="60px"
-          />
-
-          <div
-            style={{
-              width: "1px",
-              height: "20px",
-              backgroundColor: "var(--vscode-panel-border)",
-              margin: "0 4px",
-            }}
-          />
-
-          {/* Alignment dropdown */}
-          <Dropdown
-            buttonLabel=""
-            buttonIcon="codicon codicon-editor-layout"
-            items={alignmentItems}
-            disabled={disabled}
-            ariaLabel="Alignment"
-            showArrow={false}
-            minWidth="36px"
-          />
-
-          <div
-            style={{
-              width: "1px",
-              height: "20px",
-              backgroundColor: "var(--vscode-panel-border)",
-              margin: "0 4px",
-            }}
-          />
-        </div>
-      }
-      renderAction={(action) => (
-        <ToolbarButton
-          icon={action.icon}
-          label={action.label}
-          onClick={action.onClick}
-          disabled={action.disabled}
-          title={action.title || action.label}
-          style={{
-            backgroundColor: action.active
-              ? "var(--vscode-button-background)"
-              : "transparent",
-            color: action.active
-              ? "var(--vscode-button-foreground)"
-              : "inherit",
-          }}
-        />
-      )}
-      estimatedButtonWidth={36}
-      reservedRightWidth={reservedRightWidth}
-      disabled={disabled}
-      rightContent={
-        <>
-          {showCollaborativeLabel && (
             <div
               style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "6px",
-                padding: "0 8px",
-                fontSize: "11px",
-                opacity: 0.8,
+                width: "1px",
+                height: "20px",
+                backgroundColor: "var(--vscode-panel-border)",
+                margin: "0 4px",
               }}
-            >
-              <span
+            />
+
+            {/* Block type dropdown */}
+            <div title={`Styles: ${getBlockTypeLabel()}`}>
+              <Dropdown
+                buttonLabel=""
+                buttonIcon="codicon codicon-symbol-keyword"
+                items={blockTypeItems}
+                disabled={disabled}
+                ariaLabel={`Styles: ${getBlockTypeLabel()}`}
+                minWidth="36px"
+                showArrow={false}
+              />
+            </div>
+
+            <div
+              style={{
+                width: "1px",
+                height: "20px",
+                backgroundColor: "var(--vscode-panel-border)",
+                margin: "0 4px",
+              }}
+            />
+
+            {/* Font family with T icon - compact version */}
+            <div title={`Font: ${fontFamily}`}>
+              <Dropdown
+                buttonLabel=""
+                buttonIcon="codicon codicon-symbol-text"
+                items={fontFamilyItems}
+                disabled={disabled}
+                ariaLabel={`Font: ${fontFamily}`}
+                minWidth="36px"
+                showArrow={false}
+              />
+            </div>
+
+            {/* Font size with +/- buttons - compact version */}
+            <div style={{ display: "flex", alignItems: "center", gap: "0px" }}>
+              <ToolbarButton
+                icon="codicon codicon-remove"
+                onClick={decreaseFontSize}
+                disabled={disabled || FONT_SIZE_OPTIONS.indexOf(fontSize) === 0}
+                title="Decrease font size"
                 style={{
-                  width: "8px",
-                  height: "8px",
-                  backgroundColor: "var(--vscode-terminal-ansiGreen)",
-                  borderRadius: "50%",
-                  animation: "pulse 2s infinite",
+                  padding: "2px",
+                  minWidth: "20px",
+                  height: "24px",
                 }}
               />
-              <span>Collaborative • Auto-saved</span>
+              <Dropdown
+                buttonLabel={fontSize.replace("pt", "")}
+                items={fontSizeItems}
+                disabled={disabled}
+                ariaLabel={`Font size: ${fontSize}`}
+                minWidth="32px"
+                showArrow={false}
+              />
+              <ToolbarButton
+                icon="codicon codicon-add"
+                onClick={increaseFontSize}
+                disabled={
+                  disabled ||
+                  FONT_SIZE_OPTIONS.indexOf(fontSize) ===
+                    FONT_SIZE_OPTIONS.length - 1
+                }
+                title="Increase font size"
+                style={{
+                  padding: "2px",
+                  minWidth: "20px",
+                  height: "24px",
+                }}
+              />
             </div>
-          )}
-          {showRuntimeSelector && (
-            <KernelSelector
-              selectedRuntime={selectedRuntime}
-              onClick={handleSelectRuntime}
-              disabled={disabled}
+
+            <div
+              style={{
+                width: "1px",
+                height: "20px",
+                backgroundColor: "var(--vscode-panel-border)",
+                margin: "0 4px",
+              }}
             />
-          )}
-        </>
-      }
-    />
+
+            {/* Bold, Italic, Underline, Code, Link buttons (icon only with tooltips) */}
+            <div title="Bold">
+              <ToolbarButton
+                icon="codicon codicon-bold"
+                onClick={formatBold}
+                disabled={disabled}
+                style={{
+                  backgroundColor: isBold
+                    ? "var(--vscode-toolbar-hoverBackground)"
+                    : "transparent",
+                  color: "var(--vscode-foreground)",
+                }}
+              />
+            </div>
+            <div title="Italic">
+              <ToolbarButton
+                icon="codicon codicon-italic"
+                onClick={formatItalic}
+                disabled={disabled}
+                style={{
+                  backgroundColor: isItalic
+                    ? "var(--vscode-toolbar-hoverBackground)"
+                    : "transparent",
+                  color: "var(--vscode-foreground)",
+                }}
+              />
+            </div>
+            <div title="Underline">
+              <ToolbarButton
+                label="U"
+                onClick={formatUnderline}
+                disabled={disabled}
+                style={{
+                  backgroundColor: isUnderline
+                    ? "var(--vscode-toolbar-hoverBackground)"
+                    : "transparent",
+                  color: "var(--vscode-foreground)",
+                  textDecoration: "underline",
+                  fontWeight: "bold",
+                }}
+              />
+            </div>
+            <div title="Code">
+              <ToolbarButton
+                icon="codicon codicon-code"
+                onClick={formatCode}
+                disabled={disabled}
+                style={{
+                  backgroundColor: isCode
+                    ? "var(--vscode-toolbar-hoverBackground)"
+                    : "transparent",
+                  color: "var(--vscode-foreground)",
+                }}
+              />
+            </div>
+            <div title="Link">
+              <ToolbarButton
+                icon="codicon codicon-link"
+                onClick={insertLink}
+                disabled={disabled}
+                style={{
+                  backgroundColor: isLink
+                    ? "var(--vscode-toolbar-hoverBackground)"
+                    : "transparent",
+                  color: "var(--vscode-foreground)",
+                }}
+              />
+            </div>
+
+            <div
+              style={{
+                width: "1px",
+                height: "20px",
+                backgroundColor: "var(--vscode-panel-border)",
+                margin: "0 4px",
+              }}
+            />
+
+            {/* Text Color Picker */}
+            <div title="Text color" style={{ position: "relative" }}>
+              <input
+                type="color"
+                value={textColor}
+                onChange={(e) => applyTextColor(e.target.value)}
+                disabled={disabled}
+                style={{
+                  width: "24px",
+                  height: "24px",
+                  border: "1px solid transparent",
+                  borderRadius: "2px",
+                  padding: "0",
+                  cursor: disabled ? "not-allowed" : "pointer",
+                  opacity: disabled ? 0.5 : 1,
+                }}
+              />
+            </div>
+
+            {/* Highlight Color Picker */}
+            <div title="Highlight color" style={{ position: "relative" }}>
+              <input
+                type="color"
+                value={highlightColor}
+                onChange={(e) => applyHighlightColor(e.target.value)}
+                disabled={disabled}
+                style={{
+                  width: "24px",
+                  height: "24px",
+                  border: "1px solid transparent",
+                  borderRadius: "2px",
+                  padding: "0",
+                  cursor: disabled ? "not-allowed" : "pointer",
+                  opacity: disabled ? 0.5 : 1,
+                }}
+              />
+            </div>
+
+            {/* Text Transform dropdown (Aa) - compact */}
+            <div title="Text transform">
+              <Dropdown
+                buttonLabel="Aa"
+                items={textFormattingItems}
+                disabled={disabled}
+                ariaLabel="Text transform"
+                minWidth="36px"
+                showArrow={false}
+              />
+            </div>
+
+            <div
+              style={{
+                width: "1px",
+                height: "20px",
+                backgroundColor: "var(--vscode-panel-border)",
+                margin: "0 4px",
+              }}
+            />
+
+            {/* Insert dropdown (+ only, no text) */}
+            <div title="Insert">
+              <Dropdown
+                buttonLabel=""
+                buttonIcon="codicon codicon-add"
+                items={insertMenuItems}
+                disabled={disabled}
+                ariaLabel="Insert"
+                minWidth="36px"
+                showArrow={false}
+              />
+            </div>
+
+            <div
+              style={{
+                width: "1px",
+                height: "20px",
+                backgroundColor: "var(--vscode-panel-border)",
+                margin: "0 4px",
+              }}
+            />
+
+            {/* Alignment dropdown at the end */}
+            <div title="Alignment">
+              <Dropdown
+                buttonLabel=""
+                buttonIcon="codicon codicon-editor-layout"
+                items={alignmentItems}
+                disabled={disabled}
+                ariaLabel="Alignment"
+                showArrow={false}
+                minWidth="36px"
+              />
+            </div>
+
+            <div
+              style={{
+                width: "1px",
+                height: "20px",
+                backgroundColor: "var(--vscode-panel-border)",
+                margin: "0 4px",
+              }}
+            />
+          </div>
+        }
+        renderAction={(action) => (
+          <ToolbarButton
+            icon={action.icon}
+            label={action.label}
+            onClick={action.onClick}
+            disabled={action.disabled}
+            title={action.title || action.label}
+            style={{
+              backgroundColor: action.active
+                ? "var(--vscode-button-background)"
+                : "transparent",
+              color: action.active
+                ? "var(--vscode-button-foreground)"
+                : "inherit",
+            }}
+          />
+        )}
+        estimatedButtonWidth={36}
+        reservedRightWidth={reservedRightWidth}
+        disabled={disabled}
+        rightContent={
+          <>
+            {showCollaborativeLabel && (
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "6px",
+                  padding: "0 8px",
+                  fontSize: "11px",
+                  opacity: 0.8,
+                }}
+              >
+                <span
+                  style={{
+                    width: "8px",
+                    height: "8px",
+                    backgroundColor: "var(--vscode-terminal-ansiGreen)",
+                    borderRadius: "50%",
+                    animation: "pulse 2s infinite",
+                  }}
+                />
+                <span>Collaborative • Auto-saved</span>
+              </div>
+            )}
+            {showRuntimeSelector && (
+              <KernelSelector
+                selectedRuntime={selectedRuntime}
+                onClick={handleSelectRuntime}
+                disabled={disabled}
+              />
+            )}
+          </>
+        }
+      />
+    </>
   );
 }
