@@ -123,6 +123,12 @@ export class LexicalProvider extends BaseDocumentProvider<LexicalDocument> {
   >();
 
   /**
+   * Map of document instances keyed by document URI.
+   * Used for dirty state tracking and document operations.
+   */
+  private readonly documents = new Map<string, LexicalDocument>();
+
+  /**
    * Map of Loro WebSocket adapters keyed by adapter ID.
    */
   private readonly loroAdapters = new Map<string, LoroWebSocketAdapter>();
@@ -225,11 +231,18 @@ export class LexicalProvider extends BaseDocumentProvider<LexicalDocument> {
     listeners.push(
       document.onDidChange((_e) => {
         // Fire content change event
+        console.log(
+          "[LexicalProvider] onDidChange fired, document.isDirty:",
+          document.isDirty,
+        );
         this._onDidChangeCustomDocument.fire({
           document,
           undo: () => {},
           redo: () => {},
         });
+        console.log(
+          "[LexicalProvider] _onDidChangeCustomDocument.fire() called",
+        );
       }),
     );
 
@@ -245,7 +258,13 @@ export class LexicalProvider extends BaseDocumentProvider<LexicalDocument> {
       }),
     );
 
-    document.onDidDispose(() => disposeAll(listeners));
+    // Store document instance for dirty state tracking
+    this.documents.set(uri.toString(), document);
+
+    document.onDidDispose(() => {
+      disposeAll(listeners);
+      this.documents.delete(uri.toString());
+    });
 
     return document;
   }
@@ -489,10 +508,27 @@ export class LexicalProvider extends BaseDocumentProvider<LexicalDocument> {
     // Handler for content changes
     this._messageRouter.registerHandler(
       "contentChanged",
-      async (_message, _context) => {
-        // TODO: Implement dirty state tracking for local files
-        // This is a limitation of the current refactoring - we need access to the document instance
-        // to call makeEdit(), but it's not available in the message context
+      async (_message, context) => {
+        // Update dirty state for local files (not Datalayer documents)
+        if (!context.isFromDatalayer) {
+          const document = this.documents.get(context.documentUri);
+          if (document) {
+            console.log(
+              "[LexicalProvider] Content changed, marking document as dirty:",
+              context.documentUri,
+            );
+            document.makeEdit({});
+            console.log(
+              "[LexicalProvider] Document isDirty after makeEdit:",
+              document.isDirty,
+            );
+          } else {
+            console.warn(
+              "[LexicalProvider] Content changed but document not found:",
+              context.documentUri,
+            );
+          }
+        }
       },
     );
 
