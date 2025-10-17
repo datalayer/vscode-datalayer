@@ -86,8 +86,21 @@ function LexicalWebviewInner({
         case "getFileData": {
           const state = vscode.getState() as { content?: string };
           const currentContent = state?.content || store.content;
+
+          // Pretty-print JSON for readability (git-friendly diffs, easier debugging)
+          let formattedContent = currentContent;
+          try {
+            const parsed = JSON.parse(currentContent);
+            formattedContent = JSON.stringify(parsed, null, 2);
+          } catch (error) {
+            console.warn(
+              "[LexicalWebview] Failed to format JSON, using raw content:",
+              error,
+            );
+          }
+
           const encoder = new TextEncoder();
-          const encoded = encoder.encode(currentContent);
+          const encoded = encoder.encode(formattedContent);
           vscode.postMessage({
             type: "response",
             requestId: message.requestId,

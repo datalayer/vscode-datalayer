@@ -121,7 +121,7 @@ export class LexicalDocument
         version: 1,
       },
     };
-    return new TextEncoder().encode(JSON.stringify(defaultState));
+    return new TextEncoder().encode(JSON.stringify(defaultState, null, 2));
   }
 
   private static async readDatalayerFile(uri: vscode.Uri): Promise<Uint8Array> {
@@ -151,7 +151,7 @@ export class LexicalDocument
         version: 1,
       },
     };
-    return new TextEncoder().encode(JSON.stringify(emptyState));
+    return new TextEncoder().encode(JSON.stringify(emptyState, null, 2));
   }
 
   private readonly _uri: vscode.Uri;
