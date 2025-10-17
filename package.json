@@ -3,6 +3,7 @@
   "displayName": "Datalayer",
   "description": "⚡ Bring cloud power to your Jupyter notebooks. ✨ Create Notion-like collaborative reports with executable code.",
   "version": "0.0.4",
+  "cache_version": "2",
   "icon": "images/datalayer-logo.png",
   "categories": [
     "AI",

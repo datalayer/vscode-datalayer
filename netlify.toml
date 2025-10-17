@@ -1,11 +1,14 @@
 # Netlify configuration for Datalayer VS Code Extension documentation
 # Automatically builds TypeDoc documentation on every push to main branch
+# Cache version: 2 (increment to force cache invalidation)
 
 [build]
-  # Build command (use npm install since package-lock.json is not committed)
-  command = "npm install && npm run docs"
+  # Build command (clear cache and reinstall to ensure patches apply correctly)
+  command = "rm -rf node_modules && npm install && npm run docs"
   # Publish directory (TypeDoc output)
   publish = "docs/"
+  # Ignore node_modules cache
+  ignore = "git diff --quiet $CACHED_COMMIT_REF $COMMIT_REF ."
 
 [build.processing]
   # Skip processing since TypeDoc generates static HTML
@@ -27,13 +30,13 @@
 
 # Branch-specific build settings
 [context.production]
-  command = "npm install && npm run docs"
+  command = "rm -rf node_modules && npm install && npm run docs"
 
 [context.deploy-preview]
-  command = "npm install && npm run docs"
+  command = "rm -rf node_modules && npm install && npm run docs"
 
 [context.branch-deploy]
-  command = "npm install && npm run docs"
+  command = "rm -rf node_modules && npm install && npm run docs"
 
 # Custom headers for documentation
 [[headers]]
@@ -67,4 +70,7 @@
   NO_UPDATE_NOTIFIER = "1"
   # Disable npm funding messages
   OPEN_SOURCE_CONTRIBUTOR = "1"
+  # Disable node_modules caching to ensure patches apply correctly
+  NPM_FLAGS = "--prefer-offline false"
+  NODE_MODULES_CACHE = "false"
 
