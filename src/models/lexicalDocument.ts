@@ -88,7 +88,15 @@ export class LexicalDocument
       return LexicalDocument.readDatalayerFile(uri);
     }
 
-    return new Uint8Array(await vscode.workspace.fs.readFile(uri));
+    // Read local file
+    const fileData = new Uint8Array(await vscode.workspace.fs.readFile(uri));
+
+    // Handle empty files gracefully - return valid empty Lexical state
+    if (fileData.length === 0) {
+      return LexicalDocument.getDefaultContent();
+    }
+
+    return fileData;
   }
 
   private static getDefaultContent(): Uint8Array {
@@ -110,7 +118,8 @@ export class LexicalDocument
             direction: "ltr",
             format: "",
             indent: 0,
-            type: "paragraph",
+            type: "heading",
+            tag: "h1",
             version: 1,
           },
         ],
@@ -136,22 +145,8 @@ export class LexicalDocument
     try {
       return new Uint8Array(await vscode.workspace.fs.readFile(uri));
     } catch (error) {
-      return LexicalDocument.getEmptyContent();
+      return LexicalDocument.getDefaultContent();
     }
-  }
-
-  private static getEmptyContent(): Uint8Array {
-    const emptyState = {
-      root: {
-        children: [],
-        direction: "ltr",
-        format: "",
-        indent: 0,
-        type: "root",
-        version: 1,
-      },
-    };
-    return new TextEncoder().encode(JSON.stringify(emptyState, null, 2));
   }
 
   private readonly _uri: vscode.Uri;

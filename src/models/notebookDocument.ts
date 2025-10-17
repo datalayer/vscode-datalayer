@@ -132,7 +132,31 @@ export class NotebookDocument
     if (uri.scheme === "untitled") {
       return new Uint8Array();
     }
-    return new Uint8Array(await vscode.workspace.fs.readFile(uri));
+
+    const fileData = new Uint8Array(await vscode.workspace.fs.readFile(uri));
+
+    // Handle empty files gracefully - return minimal valid notebook
+    if (fileData.length === 0) {
+      return NotebookDocument.getEmptyNotebook();
+    }
+
+    return fileData;
+  }
+
+  /**
+   * Returns a minimal valid empty Jupyter notebook.
+   * Used when opening blank/empty .ipynb files.
+   *
+   * @returns Binary representation of an empty notebook
+   */
+  private static getEmptyNotebook(): Uint8Array {
+    const emptyNotebook = {
+      cells: [],
+      metadata: {},
+      nbformat: 4,
+      nbformat_minor: 5,
+    };
+    return new TextEncoder().encode(JSON.stringify(emptyNotebook));
   }
 
   private readonly _uri: vscode.Uri;
