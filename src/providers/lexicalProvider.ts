@@ -318,10 +318,25 @@ export class LexicalProvider extends BaseDocumentProvider<LexicalDocument> {
       }
     });
 
+    // Listen for theme changes
+    const themeChangeDisposable = vscode.window.onDidChangeActiveColorTheme(
+      () => {
+        const theme =
+          vscode.window.activeColorTheme.kind === vscode.ColorThemeKind.Dark
+            ? "dark"
+            : "light";
+        webviewPanel.webview.postMessage({
+          type: "theme-change",
+          theme,
+        });
+      },
+    );
+
     // Cleanup when panel is disposed
     webviewPanel.onDidDispose(() => {
       this.webviews.delete(document.uri.toString());
       kernelBridge.unregisterWebview(document.uri);
+      themeChangeDisposable.dispose();
 
       // Clean up any Loro adapters for this document
       const docUri = document.uri.toString();
@@ -366,11 +381,18 @@ export class LexicalProvider extends BaseDocumentProvider<LexicalDocument> {
         }
       }
 
+      // Detect initial theme
+      const theme =
+        vscode.window.activeColorTheme.kind === vscode.ColorThemeKind.Dark
+          ? "dark"
+          : "light";
+
       webviewPanel.webview.postMessage({
         type: "update",
         content: contentArray,
         editable: true,
         collaboration: collaborationConfig,
+        theme,
       });
     };
   }

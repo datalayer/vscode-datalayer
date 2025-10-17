@@ -380,6 +380,7 @@ export function LexicalEditor({
         regex: "token-regex",
         selector: "token-selector",
         string: "token-string",
+        "triple-quoted-string": "token-string", // Python docstrings
         symbol: "token-symbol",
         tag: "token-tag",
         url: "token-url",

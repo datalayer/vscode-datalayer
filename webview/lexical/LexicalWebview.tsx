@@ -24,12 +24,14 @@ import {
 } from "../stores/lexicalStore";
 import "@vscode/codicons/dist/codicon.css";
 import "@datalayer/jupyter-lexical/style/index.css";
-import "prismjs/themes/prism-tomorrow.css"; // Syntax highlighting theme
 // Import Prism language grammars explicitly (webpack needs this!)
 import "prismjs/components/prism-python";
 import "prismjs/components/prism-javascript";
 import "prismjs/components/prism-markdown";
 import "prismjs/components/prism-sql";
+// Import base Prism CSS (provides default token structure)
+// Our custom CSS will override the colors with theme-aware versions
+import "prismjs/themes/prism.css";
 import "./LexicalEditor.css";
 
 /**
@@ -47,6 +49,7 @@ interface WebviewMessage {
   content?: number[];
   editable?: boolean;
   collaboration?: CollaborationConfig;
+  theme?: "light" | "dark";
 }
 
 /**
@@ -83,6 +86,15 @@ function LexicalWebviewInner({
           }
           if (message.collaboration) {
             store.setCollaborationConfig(message.collaboration);
+          }
+          if (message.theme) {
+            store.setTheme(message.theme);
+          }
+          break;
+        }
+        case "theme-change": {
+          if (message.theme) {
+            store.setTheme(message.theme);
           }
           break;
         }
@@ -187,6 +199,7 @@ function LexicalWebviewInner({
 
   return (
     <div
+      data-theme={store.theme}
       style={{
         height: "100vh",
         width: "100vw",

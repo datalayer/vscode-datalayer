@@ -281,81 +281,133 @@ code[data-highlight-language] {
   border-bottom-left-radius: 4px !important;
 }
 
-/* Syntax highlighting - VS Code Dark+ theme colors */
-/* Matches the default Python syntax highlighting in VS Code */
+/* Syntax highlighting - Theme-aware using Lexical's token-* classes */
+/* Note: Lexical uses token-keyword, token-string etc. (NOT .token.keyword) */
 
-.token-comment,
-.token-prolog,
-.token-doctype,
-.token-cdata {
-  /* Comments - green (like in Python files) */
-  color: #6a9955;
+/* Dark theme token colors - using VS Code's semantic token colors */
+[data-theme="dark"] .token-comment,
+[data-theme="dark"] .token-prolog,
+[data-theme="dark"] .token-doctype,
+[data-theme="dark"] .token-cdata {
+  color: #6a9955 !important; /* Green - standard comment color */
   font-style: italic;
 }
 
-.token-punctuation {
-  /* Punctuation - default foreground */
-  color: var(--vscode-editor-foreground);
+[data-theme="dark"] .token-namespace {
+  opacity: 0.7 !important;
 }
 
-.token-tag,
-.token-attr,
-.token-namespace,
-.token-deleted {
-  /* HTML/XML tags */
-  color: #569cd6;
+[data-theme="dark"] .token-string,
+[data-theme="dark"] .token-attr-value {
+  color: #ce9178 !important; /* Orange/salmon - distinctive for strings */
 }
 
-.token-function {
-  /* Function names - yellow (like print, def in Python) */
-  color: #dcdcaa;
+[data-theme="dark"] .token-punctuation,
+[data-theme="dark"] .token-operator {
+  color: var(--vscode-editor-foreground, #d4d4d4) !important;
 }
 
-.token-boolean,
-.token-number {
-  /* Numbers and booleans - light green */
-  color: #b5cea8;
+[data-theme="dark"] .token-entity,
+[data-theme="dark"] .token-url,
+[data-theme="dark"] .token-symbol,
+[data-theme="dark"] .token-number,
+[data-theme="dark"] .token-boolean,
+[data-theme="dark"] .token-constant {
+  color: var(--vscode-debugTokenExpression-number, #b5cea8) !important;
 }
 
-.token-property,
-.token-class-name,
-.token-constant,
-.token-symbol {
-  /* Class names, types - teal/cyan */
-  color: #4ec9b0;
+[data-theme="dark"] .token-variable,
+[data-theme="dark"] .token-property {
+  color: var(--vscode-debugTokenExpression-name, #9cdcfe) !important;
 }
 
-.token-selector,
-.token-important,
-.token-atrule,
-.token-keyword,
-.token-builtin {
-  /* Keywords (import, def, class, if, for, etc) - purple */
-  color: #c586c0;
+[data-theme="dark"] .token-regex,
+[data-theme="dark"] .token-inserted {
+  color: var(--vscode-debugTokenExpression-string, #ce9178) !important;
 }
 
-.token-string,
-.token-char,
-.token-regex,
-.token-variable {
-  /* Strings - orange/red */
-  color: #ce9178;
+[data-theme="dark"] .token-atrule,
+[data-theme="dark"] .token-keyword,
+[data-theme="dark"] .token-attr-name {
+  color: var(--vscode-debugTokenExpression-keyword, #569cd6) !important;
 }
 
-.token-operator,
-.token-entity,
-.token-url {
-  /* Operators (+, -, =, etc) */
-  color: var(--vscode-editor-foreground);
+[data-theme="dark"] .token-function,
+[data-theme="dark"] .token-class-name {
+  color: var(--vscode-debugTokenExpression-name, #dcdcaa) !important;
 }
 
-.token-important {
-  font-weight: bold;
+[data-theme="dark"] .token-deleted {
+  color: var(--vscode-editorError-foreground, #f48771) !important;
 }
 
-.token-inserted {
-  /* Added text in diffs */
-  color: #89d185;
+[data-theme="dark"] .token-tag,
+[data-theme="dark"] .token-selector {
+  color: var(--vscode-debugTokenExpression-name, #4ec9b0) !important;
+}
+
+/* Light theme token colors (Prism Solarized Light) */
+[data-theme="light"] .token-comment,
+[data-theme="light"] .token-prolog,
+[data-theme="light"] .token-doctype,
+[data-theme="light"] .token-cdata {
+  color: #93a1a1 !important;
+  font-style: italic;
+}
+
+[data-theme="light"] .token-punctuation {
+  color: #586e75 !important;
+}
+
+[data-theme="light"] .token-namespace {
+  opacity: 0.7 !important;
+}
+
+[data-theme="light"] .token-property,
+[data-theme="light"] .token-tag,
+[data-theme="light"] .token-boolean,
+[data-theme="light"] .token-number,
+[data-theme="light"] .token-constant,
+[data-theme="light"] .token-symbol,
+[data-theme="light"] .token-deleted {
+  color: #268bd2 !important;
+}
+
+[data-theme="light"] .token-selector,
+[data-theme="light"] .token-attr-name,
+[data-theme="light"] .token-string,
+[data-theme="light"] .token-char,
+[data-theme="light"] .token-builtin,
+[data-theme="light"] .token-url,
+[data-theme="light"] .token-inserted {
+  color: #2aa198 !important;
+}
+
+[data-theme="light"] .token-entity {
+  color: #657b83 !important;
+  background: #eee8d5 !important;
+}
+
+[data-theme="light"] .token-atrule,
+[data-theme="light"] .token-attr-value,
+[data-theme="light"] .token-keyword {
+  color: #859900 !important;
+}
+
+[data-theme="light"] .token-function,
+[data-theme="light"] .token-class-name {
+  color: #b58900 !important;
+}
+
+[data-theme="light"] .token-regex,
+[data-theme="light"] .token-important,
+[data-theme="light"] .token-variable {
+  color: #cb4b16 !important;
+}
+
+/* Common styles for both themes */
+.token-italic {
+  font-style: italic;
 }
 
 .lexical-editor-link {
