@@ -69,7 +69,7 @@
             "format": 0,
             "mode": "normal",
             "style": "font-family: Courier New;",
-            "text": "Bullet lists.      ",
+            "text": "Bullet lists",
             "type": "text",
             "version": 1
           }
@@ -1212,7 +1212,6 @@
     "indent": 0,
     "type": "root",
     "version": 1,
-    "textFormat": 8,
-    "textStyle": "font-family: Times New Roman; font-size: 18pt;"
+    "textStyle": "font-size: 18pt;"
   }
 }

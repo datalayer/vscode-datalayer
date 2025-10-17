@@ -231,18 +231,11 @@ export class LexicalProvider extends BaseDocumentProvider<LexicalDocument> {
     listeners.push(
       document.onDidChange((_e) => {
         // Fire content change event
-        console.log(
-          "[LexicalProvider] onDidChange fired, document.isDirty:",
-          document.isDirty,
-        );
         this._onDidChangeCustomDocument.fire({
           document,
           undo: () => {},
           redo: () => {},
         });
-        console.log(
-          "[LexicalProvider] _onDidChangeCustomDocument.fire() called",
-        );
       }),
     );
 
@@ -513,20 +506,7 @@ export class LexicalProvider extends BaseDocumentProvider<LexicalDocument> {
         if (!context.isFromDatalayer) {
           const document = this.documents.get(context.documentUri);
           if (document) {
-            console.log(
-              "[LexicalProvider] Content changed, marking document as dirty:",
-              context.documentUri,
-            );
             document.makeEdit({});
-            console.log(
-              "[LexicalProvider] Document isDirty after makeEdit:",
-              document.isDirty,
-            );
-          } else {
-            console.warn(
-              "[LexicalProvider] Content changed but document not found:",
-              context.documentUri,
-            );
           }
         }
       },

@@ -168,32 +168,15 @@ function LexicalWebviewInner({
       currentState.setContent(newContent);
       vscode.setState({ content: newContent });
 
-      console.log(
-        "[LexicalWebview] handleContentChange called, isInitialLoad:",
-        currentState.isInitialLoad,
-        "collaborative:",
-        currentState.collaborationConfig.enabled,
-      );
-
       if (!currentState.collaborationConfig.enabled) {
         if (!currentState.isInitialLoad) {
-          console.log(
-            "[LexicalWebview] Sending contentChanged message to extension",
-          );
           vscode.postMessage({
             type: "contentChanged",
             content: newContent,
           });
         } else {
-          console.log(
-            "[LexicalWebview] Skipping contentChanged (initial load), setting isInitialLoad to false",
-          );
           currentState.setIsInitialLoad(false);
         }
-      } else {
-        console.log(
-          "[LexicalWebview] Skipping contentChanged (collaborative mode)",
-        );
       }
     },
     [], // Using getState() to get current values instead of relying on closure
