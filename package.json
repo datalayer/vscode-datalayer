@@ -396,10 +396,10 @@
     "check:fix": "npm run format && npm run lint:fix && npm run type-check",
     "test": "vscode-test",
     "vsix": "npm run clean:vsix && npx @vscode/vsce package --no-yarn --no-dependencies",
-    "doc": "typedoc",
-    "doc:watch": "typedoc --watch",
-    "doc:markdown": "typedoc --plugin typedoc-plugin-markdown --out docs-markdown",
-    "doc:coverage": "typedoc --validation"
+    "docs": "typedoc",
+    "docs:watch": "typedoc --watch",
+    "docs:markdown": "typedoc --plugin typedoc-plugin-markdown --out docs-markdown",
+    "docs:coverage": "typedoc --validation"
   },
   "dependencies": {
     "@codemirror/autocomplete": "^6.18.7",

@@ -1,0 +1,103 @@
+version: 2
+updates:
+  # Enable version updates for npm
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 10
+    commit-message:
+      prefix: "npm"
+      prefix-development: "npm(dev)"
+      include: "scope"
+    labels:
+      - "dependencies"
+      - "npm"
+    reviewers:
+      - "goanpeca"
+    assignees:
+      - "goanpeca"
+    # Group related updates together
+    groups:
+      # Group all @types/* packages together
+      types:
+        patterns:
+          - "@types/*"
+        update-types:
+          - "minor"
+          - "patch"
+      # Group all @vscode/* packages together
+      vscode:
+        patterns:
+          - "@vscode/*"
+        update-types:
+          - "minor"
+          - "patch"
+      # Group all @jupyterlab/* packages together
+      jupyterlab:
+        patterns:
+          - "@jupyterlab/*"
+        update-types:
+          - "minor"
+          - "patch"
+      # Group all @datalayer/* packages together
+      datalayer:
+        patterns:
+          - "@datalayer/*"
+        update-types:
+          - "minor"
+          - "patch"
+      # Group webpack and related tools
+      webpack:
+        patterns:
+          - "webpack*"
+          - "*-loader"
+        update-types:
+          - "minor"
+          - "patch"
+      # Group ESLint and related packages
+      eslint:
+        patterns:
+          - "eslint*"
+          - "@typescript-eslint/*"
+        update-types:
+          - "minor"
+          - "patch"
+      # Group testing packages
+      testing:
+        patterns:
+          - "@vscode/test-*"
+          - "mocha"
+          - "chai"
+        update-types:
+          - "minor"
+          - "patch"
+    # Ignore major version updates for these packages (require manual review)
+    ignore:
+      - dependency-name: "typescript"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "webpack"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "react"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "react-dom"
+        update-types: ["version-update:semver-major"]
+
+  # Enable version updates for GitHub Actions
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "ci"
+      include: "scope"
+    labels:
+      - "dependencies"
+      - "github-actions"
+    reviewers:
+      - "goanpeca"
+    assignees:
+      - "goanpeca"

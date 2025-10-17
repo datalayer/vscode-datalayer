@@ -1,0 +1,29 @@
+{
+  "$schema": "https://typedoc.org/schema.json",
+  "entryPoints": ["src", "webview"],
+  "entryPointStrategy": "expand",
+  "out": "docs",
+  "tsconfig": "tsconfig.doc.json",
+  "plugin": [],
+  "exclude": [
+    "**/node_modules/**",
+    "**/dist/**",
+    "**/*.test.ts",
+    "**/*.test.tsx",
+    "**/test/**",
+    "**/testing.ts"
+  ],
+  "excludePrivate": false,
+  "excludeProtected": false,
+  "excludeInternal": true,
+  "excludeExternals": true,
+  "readme": "README.md",
+  "name": "Datalayer VS Code Extension",
+  "includeVersion": true,
+  "disableSources": false,
+  "skipErrorChecking": true,
+  "validation": {
+    "notExported": false,
+    "invalidLink": false
+  }
+}
