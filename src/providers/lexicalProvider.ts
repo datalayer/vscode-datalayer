@@ -275,6 +275,12 @@ export class LexicalProvider extends BaseDocumentProvider<LexicalDocument> {
     webviewPanel: vscode.WebviewPanel,
     _token: vscode.CancellationToken,
   ): Promise<void> {
+    console.log(
+      `[LexicalProvider] resolveCustomEditor called for URI: ${document.uri.toString()}`,
+    );
+    console.log(
+      `[LexicalProvider] URI query params: ${document.uri.query}`,
+    );
     this.webviews.set(document.uri.toString(), {
       resource: document.uri.toString(),
       webviewPanel,
@@ -290,13 +296,14 @@ export class LexicalProvider extends BaseDocumentProvider<LexicalDocument> {
 
     webviewPanel.webview.html = this.getHtmlForWebview(webviewPanel.webview);
 
-    // Store a flag to track when webview is ready
-    let webviewReady = false;
-
     webviewPanel.webview.onDidReceiveMessage((e) => {
-      if (e.type === "ready" && !webviewReady) {
-        webviewReady = true;
+      if (e.type === "ready") {
+        console.log(
+          `[LexicalProvider] Received ready message for document: ${document.uri.toString()}`,
+        );
         // Send content when webview signals it's ready
+        // NOTE: This can be called multiple times if webview is reused for different documents
+        // The webview will detect document URI changes and reset its store appropriately
         sendInitialContent().catch((error) => {
           console.error(
             "[LexicalProvider] Error sending initial content:",
@@ -359,6 +366,9 @@ export class LexicalProvider extends BaseDocumentProvider<LexicalDocument> {
 
     // Function to send initial content
     const sendInitialContent = async () => {
+      console.log(
+        `[LexicalProvider] sendInitialContent called for: ${document.uri.toString()}`,
+      );
       const isFromDatalayer = document.uri.scheme === "datalayer";
 
       if (isFromDatalayer) {
@@ -366,6 +376,9 @@ export class LexicalProvider extends BaseDocumentProvider<LexicalDocument> {
       }
 
       const contentArray = Array.from(document.documentData);
+      console.log(
+        `[LexicalProvider] Content array length: ${contentArray.length}`,
+      );
 
       // Setup collaboration for Datalayer documents
       let collaborationConfig: LexicalCollaborationConfig | undefined;
@@ -387,14 +400,24 @@ export class LexicalProvider extends BaseDocumentProvider<LexicalDocument> {
           ? "dark"
           : "light";
 
+      // Create a unique document ID that combines URI with Datalayer document ID if available
+      // This ensures uniqueness even when two documents have the same name
+      const uniqueDocId = collaborationConfig?.documentId
+        ? `${document.uri.toString()}#${collaborationConfig.documentId}`
+        : document.uri.toString();
+
+      console.log(
+        `[LexicalProvider] Sending update message with documentUri: ${document.uri.toString()}, uniqueDocId: ${uniqueDocId}`,
+      );
       webviewPanel.webview.postMessage({
         type: "update",
         content: contentArray,
         editable: true,
         collaboration: collaborationConfig,
-        theme,
-        documentUri: document.uri.toString(), // Include URI for validation
+        documentUri: document.uri.toString(), // Still include for logging
+        documentId: uniqueDocId, // Unique ID for validation
       });
+      console.log("[LexicalProvider] Update message sent");
     };
   }
 

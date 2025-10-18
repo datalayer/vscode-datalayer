@@ -11,7 +11,7 @@
  * @module lexical/lexicalWebview
  */
 
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, useRef } from "react";
 import ReactDOM from "react-dom/client";
 import { Jupyter } from "@datalayer/jupyter-react";
 import { LexicalEditor } from "./LexicalEditor";
@@ -50,7 +50,8 @@ interface WebviewMessage {
   editable?: boolean;
   collaboration?: CollaborationConfig;
   theme?: "light" | "dark";
-  documentUri?: string;
+  documentUri?: string; // For logging only
+  documentId?: string; // Unique ID for document validation
 }
 
 /**
@@ -66,30 +67,57 @@ function LexicalWebviewInner({
 }) {
   // Create per-instance store - prevents global state sharing
   const [store] = useState(() => createLexicalStore());
-  // Track this document's URI to validate incoming messages
-  const [documentUri, setDocumentUri] = useState<string | null>(null);
+  // Track this document's unique ID to validate incoming messages
+  // CRITICAL: Use ref instead of state to avoid stale closure issues!
+  // The messageHandler closure needs to see the LATEST value, not the value when useEffect ran.
+  const documentIdRef = useRef<string | null>(null);
 
   useEffect(() => {
+    console.log(
+      `[LexicalWebview] useEffect running. Current documentId: ${documentIdRef.current}`,
+    );
+
     const messageHandler = (event: MessageEvent<WebviewMessage>) => {
       const message = event.data;
+      console.log(
+        `[LexicalWebview] Received message type: ${message.type}, documentId: ${message.documentId}, current documentId: ${documentIdRef.current}`,
+      );
 
       switch (message.type) {
         case "update": {
-          // CRITICAL: Validate message is for THIS document (prevent content mixing)
+          console.log(
+            `[LexicalWebview] Processing update. Content length: ${message.content?.length || 0}`,
+          );
+
+          // CRITICAL: Detect when webview is reused for a different document
           if (
-            message.documentUri &&
-            documentUri &&
-            message.documentUri !== documentUri
+            message.documentId &&
+            documentIdRef.current &&
+            message.documentId !== documentIdRef.current
           ) {
-            console.warn(
-              `[LexicalWebview] Ignoring update for different document. Expected: ${documentUri}, Got: ${message.documentUri}`,
+            console.log(
+              `[LexicalWebview] Webview reused for different document. Resetting store. Old: ${documentIdRef.current}, New: ${message.documentId}`,
             );
-            return;
+            // Reset store to clear stale content from previous document
+            store.getState().reset();
+            // Clear VS Code state
+            vscode.setState(null);
+            // Update to new document ID
+            documentIdRef.current = message.documentId;
+
+            // CRITICAL: Send ready message again to request content for new document
+            console.log(
+              "[LexicalWebview] Sending ready message for new document",
+            );
+            vscode.postMessage({ type: "ready" });
           }
 
-          // First update - save our document URI
-          if (message.documentUri && !documentUri) {
-            setDocumentUri(message.documentUri);
+          // First update - save our document ID
+          if (message.documentId && !documentIdRef.current) {
+            console.log(
+              `[LexicalWebview] First update, saving documentId: ${message.documentId}`,
+            );
+            documentIdRef.current = message.documentId;
           }
 
           // Handle content (even if empty)
@@ -97,16 +125,21 @@ function LexicalWebviewInner({
           if (message.content && message.content.length > 0) {
             const decoder = new TextDecoder();
             jsonString = decoder.decode(new Uint8Array(message.content));
+            console.log(
+              `[LexicalWebview] Decoded content length: ${jsonString.length}`,
+            );
+          } else {
+            console.log("[LexicalWebview] No content in message");
           }
-          store.setContent(jsonString);
-          store.setIsReady(true); // Always set ready, even for empty files
-          store.setIsInitialLoad(true);
+          store.getState().setContent(jsonString);
+          store.getState().setIsReady(true); // Always set ready, even for empty files
+          store.getState().setIsInitialLoad(true);
 
           if (message.editable !== undefined) {
-            store.setIsEditable(message.editable);
+            store.getState().setIsEditable(message.editable);
           }
           if (message.collaboration) {
-            store.setCollaborationConfig(message.collaboration);
+            store.getState().setCollaborationConfig(message.collaboration);
           }
           if (message.theme) {
             store.setTheme(message.theme);
@@ -121,7 +154,7 @@ function LexicalWebviewInner({
         }
         case "getFileData": {
           const state = vscode.getState() as { content?: string };
-          const currentContent = state?.content || store.content;
+          const currentContent = state?.content || store.getState().content;
 
           // Pretty-print JSON for readability (git-friendly diffs, easier debugging)
           let formattedContent = currentContent;
@@ -173,31 +206,37 @@ function LexicalWebviewInner({
 
     // CRITICAL: Clear any stale VS Code state from recycled webviews
     // This prevents content from previous documents appearing in new documents
+    console.log(
+      "[LexicalWebview] Clearing VS Code state and sending ready message",
+    );
     vscode.setState(null);
 
     // Tell the extension we're ready
     vscode.postMessage({ type: "ready" });
+    console.log("[LexicalWebview] Ready message sent");
 
-    return () => window.removeEventListener("message", messageHandler);
+    return () => {
+      console.log("[LexicalWebview] Cleanup: removing message listener");
+      window.removeEventListener("message", messageHandler);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [onRuntimeSelected]); // store access doesn't need to be in deps - Zustand handles reactivity
 
   const handleSave = useCallback(
     (newContent: string) => {
       vscode.setState({ content: newContent });
-      store.setContent(newContent);
+      store.getState().setContent(newContent);
       vscode.postMessage({
         type: "save",
       });
     },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [], // store access doesn't need to be in deps - Zustand handles reactivity
+    [store], // Depend on store (but it's stable from useState)
   );
 
   const handleContentChange = useCallback(
     (newContent: string) => {
       // Access store state directly (store is from useState, always the same instance)
-      store.setContent(newContent);
+      store.getState().setContent(newContent);
       vscode.setState({ content: newContent });
 
       if (!store.getState().collaborationConfig.enabled) {
@@ -213,6 +252,12 @@ function LexicalWebviewInner({
     },
     [store], // Depend on store (but it's stable from useState)
   );
+
+  // Use the store as a hook for reactive values in JSX
+  const isReady = store((state) => state.isReady);
+  const content = store((state) => state.content);
+  const isEditable = store((state) => state.isEditable);
+  const collaborationConfig = store((state) => state.collaborationConfig);
 
   return (
     <div
@@ -230,14 +275,14 @@ function LexicalWebviewInner({
         padding: 0,
       }}
     >
-      {store.isReady ? (
+      {isReady ? (
         <LexicalEditor
-          initialContent={store.content}
+          initialContent={content}
           onSave={handleSave}
           onContentChange={handleContentChange}
           showToolbar={true}
-          editable={store.isEditable}
-          collaboration={store.collaborationConfig}
+          editable={isEditable}
+          collaboration={collaborationConfig}
           selectedRuntime={selectedRuntime}
           showRuntimeSelector={true}
         />

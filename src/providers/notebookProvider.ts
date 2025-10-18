@@ -294,13 +294,17 @@ export class NotebookProvider extends BaseDocumentProvider<NotebookDocument> {
           .toString()
           .replace(/[^a-zA-Z0-9]/g, "-")}-${Date.now()}`;
 
+        // Create a unique document ID using notebookId (always unique)
+        const uniqueDocId = notebookId;
+
         if (document.uri.scheme === "untitled") {
           this.postMessage(webviewPanel, "init", {
             untitled: true,
             editable: true,
             theme,
             notebookId,
-            documentUri: document.uri.toString(), // Include URI for validation
+            documentUri: document.uri.toString(), // For logging
+            uniqueDocId, // Unique ID for validation
           });
         } else {
           const editable = vscode.workspace.fs.isWritableFileSystem(
@@ -360,7 +364,8 @@ export class NotebookProvider extends BaseDocumentProvider<NotebookDocument> {
             serverUrl,
             token,
             notebookId,
-            documentUri: document.uri.toString(), // Include URI for validation
+            documentUri: document.uri.toString(), // For logging
+            uniqueDocId, // Unique ID for validation
           });
         }
       }
