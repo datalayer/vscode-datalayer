@@ -430,7 +430,7 @@
     "@lumino/signaling": "^2.1.1",
     "@primer/react": "^37.19.0",
     "@primer/react-brand": "^0.58.1",
-    "@vscode/codicons": "^0.0.40",
+    "@vscode/codicons": "^0.0.41",
     "buffer": "^6.0.3",
     "codemirror": "^6.0.2",
     "lexical": "^0.35.0",
