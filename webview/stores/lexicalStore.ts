@@ -34,6 +34,9 @@ export interface LexicalState {
   isReady: boolean;
   isInitialLoad: boolean;
 
+  // Theme state
+  theme: "light" | "dark";
+
   // Collaboration state
   collaborationConfig: CollaborationConfig;
 
@@ -42,6 +45,7 @@ export interface LexicalState {
   setIsEditable: (editable: boolean) => void;
   setIsReady: (ready: boolean) => void;
   setIsInitialLoad: (isInitial: boolean) => void;
+  setTheme: (theme: "light" | "dark") => void;
   setCollaborationConfig: (config: CollaborationConfig) => void;
   reset: () => void;
 }
@@ -54,6 +58,7 @@ const initialState = {
   isEditable: true,
   isReady: false,
   isInitialLoad: true,
+  theme: "dark" as const,
   collaborationConfig: {
     enabled: false,
   },
@@ -70,6 +75,7 @@ export const useLexicalStore = create<LexicalState>((set) => ({
   setIsEditable: (editable) => set({ isEditable: editable }),
   setIsReady: (ready) => set({ isReady: ready }),
   setIsInitialLoad: (isInitial) => set({ isInitialLoad: isInitial }),
+  setTheme: (theme) => set({ theme }),
   setCollaborationConfig: (config) => set({ collaborationConfig: config }),
   reset: () => set(initialState),
 }));
