@@ -69,21 +69,27 @@ const initialState = {
 };
 
 /**
- * Notebook store using Zustand
- * Provides centralized state management for notebook webview
+ * Creates a new isolated Notebook store instance.
+ * Each webview should create its own store to prevent state sharing.
+ *
+ * IMPORTANT: This is a factory function, NOT a global singleton.
+ * Calling this multiple times creates independent store instances.
+ *
+ * @returns A new Zustand store instance for Notebook state management
  */
-export const useNotebookStore = create<NotebookState>((set) => ({
-  ...initialState,
+export const createNotebookStore = () =>
+  create<NotebookState>((set) => ({
+    ...initialState,
 
-  setNbformat: (nbformat) => set({ nbformat }),
-  setIsDatalayerNotebook: (isDatalayer) =>
-    set({ isDatalayerNotebook: isDatalayer }),
-  setDocumentId: (id) => set({ documentId: id }),
-  setServerUrl: (url) => set({ serverUrl: url }),
-  setToken: (token) => set({ token }),
-  setNotebookId: (id) => set({ notebookId: id }),
-  setIsInitialized: (initialized) => set({ isInitialized: initialized }),
-  setRuntime: (runtime) => set({ selectedRuntime: runtime }),
-  setTheme: (theme) => set({ theme }),
-  reset: () => set(initialState),
-}));
+    setNbformat: (nbformat) => set({ nbformat }),
+    setIsDatalayerNotebook: (isDatalayer) =>
+      set({ isDatalayerNotebook: isDatalayer }),
+    setDocumentId: (id) => set({ documentId: id }),
+    setServerUrl: (url) => set({ serverUrl: url }),
+    setToken: (token) => set({ token }),
+    setNotebookId: (id) => set({ notebookId: id }),
+    setIsInitialized: (initialized) => set({ isInitialized: initialized }),
+    setRuntime: (runtime) => set({ selectedRuntime: runtime }),
+    setTheme: (theme) => set({ theme }),
+    reset: () => set(initialState),
+  }));

@@ -393,6 +393,7 @@ export class LexicalProvider extends BaseDocumentProvider<LexicalDocument> {
         editable: true,
         collaboration: collaborationConfig,
         theme,
+        documentUri: document.uri.toString(), // Include URI for validation
       });
     };
   }

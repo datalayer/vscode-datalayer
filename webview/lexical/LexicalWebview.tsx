@@ -19,7 +19,7 @@ import { vsCodeAPI } from "../services/messageHandler";
 import type { RuntimeJSON } from "@datalayer/core/lib/client/models/Runtime";
 import { useRuntimeManager } from "../hooks/useRuntimeManager";
 import {
-  useLexicalStore,
+  createLexicalStore,
   type CollaborationConfig,
 } from "../stores/lexicalStore";
 import "@vscode/codicons/dist/codicon.css";
@@ -50,11 +50,12 @@ interface WebviewMessage {
   editable?: boolean;
   collaboration?: CollaborationConfig;
   theme?: "light" | "dark";
+  documentUri?: string;
 }
 
 /**
- * Inner webview component that has access to Jupyter context
- * Uses centralized state management via useLexicalStore
+ * Inner webview component that has access to Jupyter context.
+ * IMPORTANT: Each instance creates its own isolated store to prevent content mixing.
  */
 function LexicalWebviewInner({
   selectedRuntime,
@@ -63,7 +64,10 @@ function LexicalWebviewInner({
   selectedRuntime?: RuntimeJSON;
   onRuntimeSelected: (runtime: RuntimeJSON | undefined) => void;
 }) {
-  const store = useLexicalStore();
+  // Create per-instance store - prevents global state sharing
+  const [store] = useState(() => createLexicalStore());
+  // Track this document's URI to validate incoming messages
+  const [documentUri, setDocumentUri] = useState<string | null>(null);
 
   useEffect(() => {
     const messageHandler = (event: MessageEvent<WebviewMessage>) => {
@@ -71,6 +75,23 @@ function LexicalWebviewInner({
 
       switch (message.type) {
         case "update": {
+          // CRITICAL: Validate message is for THIS document (prevent content mixing)
+          if (
+            message.documentUri &&
+            documentUri &&
+            message.documentUri !== documentUri
+          ) {
+            console.warn(
+              `[LexicalWebview] Ignoring update for different document. Expected: ${documentUri}, Got: ${message.documentUri}`,
+            );
+            return;
+          }
+
+          // First update - save our document URI
+          if (message.documentUri && !documentUri) {
+            setDocumentUri(message.documentUri);
+          }
+
           // Handle content (even if empty)
           let jsonString = "";
           if (message.content && message.content.length > 0) {
@@ -150,13 +171,9 @@ function LexicalWebviewInner({
 
     window.addEventListener("message", messageHandler);
 
-    // Check if we have saved state
-    const savedState = vscode.getState() as { content?: string };
-    if (savedState?.content) {
-      store.setContent(savedState.content);
-      store.setIsReady(true);
-      store.setIsInitialLoad(true);
-    }
+    // CRITICAL: Clear any stale VS Code state from recycled webviews
+    // This prevents content from previous documents appearing in new documents
+    vscode.setState(null);
 
     // Tell the extension we're ready
     vscode.postMessage({ type: "ready" });
@@ -179,22 +196,22 @@ function LexicalWebviewInner({
 
   const handleContentChange = useCallback(
     (newContent: string) => {
-      const currentState = useLexicalStore.getState();
-      currentState.setContent(newContent);
+      // Access store state directly (store is from useState, always the same instance)
+      store.setContent(newContent);
       vscode.setState({ content: newContent });
 
-      if (!currentState.collaborationConfig.enabled) {
-        if (!currentState.isInitialLoad) {
+      if (!store.getState().collaborationConfig.enabled) {
+        if (!store.getState().isInitialLoad) {
           vscode.postMessage({
             type: "contentChanged",
             content: newContent,
           });
         } else {
-          currentState.setIsInitialLoad(false);
+          store.getState().setIsInitialLoad(false);
         }
       }
     },
-    [], // Using getState() to get current values instead of relying on closure
+    [store], // Depend on store (but it's stable from useState)
   );
 
   return (

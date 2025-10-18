@@ -39,7 +39,7 @@ import { VSCodeTheme } from "../theme/VSCodeTheme";
 import type { RuntimeJSON } from "@datalayer/core/lib/client/models/Runtime";
 
 // Import our new hooks and stores
-import { useNotebookStore } from "../stores/notebookStore";
+import { createNotebookStore } from "../stores/notebookStore";
 import { useRuntimeManager } from "../hooks/useRuntimeManager";
 import { useNotebookModel } from "../hooks/useNotebookModel";
 import { useNotebookResize } from "../hooks/useNotebookResize";
@@ -60,7 +60,10 @@ interface RuntimeWithCredits extends RuntimeJSON {
  */
 function NotebookEditorCore(): JSX.Element {
   const messageHandler = useContext(MessageHandlerContext);
-  const store = useNotebookStore();
+  // Create per-instance store - prevents global state sharing
+  const [store] = React.useState(() => createNotebookStore());
+  // Track this document's URI to validate incoming messages
+  const [documentUri, setDocumentUri] = React.useState<string | null>(null);
   const { setColormode } = useJupyterReactStore();
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -108,6 +111,9 @@ function NotebookEditorCore(): JSX.Element {
 
   // Signal ready immediately when component mounts
   useEffect(() => {
+    // CRITICAL: Clear any stale VS Code state from recycled webviews
+    // This prevents content from previous documents appearing in new documents
+    messageHandler.setState(null);
     messageHandler.send({ type: "ready" });
   }, [messageHandler]);
 
@@ -118,8 +124,25 @@ function NotebookEditorCore(): JSX.Element {
         case "init": {
           const { body } = message;
 
-          // Reset store to clear any stale state from previous document
-          store.reset();
+          // CRITICAL: Validate message is for THIS document (prevent content mixing)
+          if (
+            body.documentUri &&
+            documentUri &&
+            body.documentUri !== documentUri
+          ) {
+            console.warn(
+              `[NotebookEditor] Ignoring init for different document. Expected: ${documentUri}, Got: ${body.documentUri}`,
+            );
+            return;
+          }
+
+          // First init - save our document URI
+          if (body.documentUri && !documentUri) {
+            setDocumentUri(body.documentUri);
+          }
+
+          // No longer need store.reset() - each webview has its own isolated store instance
+          // The factory pattern ensures no state sharing between documents
 
           // Reset JupyterConfig singleton (applied via patch)
           // This ensures fresh config with correct serverUrl/token when webview is reused
@@ -393,10 +416,15 @@ function NotebookEditorCore(): JSX.Element {
 }
 
 /**
- * Main notebook component with theme provider
+ * Main notebook component with theme provider.
+ * Note: This component still uses the global selector pattern for theme only,
+ * but the NotebookEditorCore creates its own isolated store instance.
  */
 function NotebookEditor(): JSX.Element {
-  const theme = useNotebookStore((state) => state.theme);
+  // Create a store instance just for reading theme
+  // This is acceptable because theme is a global UI preference, not document-specific state
+  const [store] = React.useState(() => createNotebookStore());
+  const theme = store((state) => state.theme);
 
   return (
     <VSCodeTheme
