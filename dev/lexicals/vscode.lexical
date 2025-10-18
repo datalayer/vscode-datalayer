@@ -1067,11 +1067,11 @@
       },
       {
         "type": "jupyter-output",
-        "source": "# This is a test cell that can be executed when connected to a runtime!\n\nimport platform\n\n\ndef plus(x, y):\n   \"\"\"Sum two number.\"\"\"\n   return x + y\n\n\nprint(plus(1, 2))\nprint(platform.node())\n",
+        "source": "# This is a test cell that can be executed when connected to a runtime!\n\nimport platform\n\n\ndef plus(x, y):\n   \"\"\"Sum two number.\"\"\"\n   return x + y\n\n\nprint(plus(1, 2))\nprint(platform.node())\n\n",
         "outputs": [
           {
             "name": "stdout",
-            "text": "3\nruntime-01k7pr05zze2erq3013j6wkevr\n",
+            "text": "3\nruntime-01k7taz7hm1hby1emsdm3rtbwh\n",
             "output_type": "stream"
           }
         ],
@@ -1081,14 +1081,6 @@
       },
       {
         "children": [
-          {
-            "type": "jupyter-output",
-            "source": "import platform\nplatform.node()",
-            "outputs": [],
-            "jupyterInputNodeUuid": "de562f40-de5b-4410-881c-7c42e55f7104",
-            "jupyterOutputNodeUuid": "f935d1fb-015c-4733-8345-70d739aee090",
-            "version": 1
-          },
           {
             "detail": 0,
             "format": 0,

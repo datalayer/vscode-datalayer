@@ -250,8 +250,9 @@ export function LexicalEditor({
   const { defaultKernel } = useJupyter();
   const [localKernel, setLocalKernel] = React.useState<any>(null);
 
-  // DEBUG: Log kernel status
-  React.useEffect(() => {}, [defaultKernel, localKernel, selectedRuntime]);
+  // When runtime is terminated, we should use undefined kernel instead of defaultKernel
+  // This ensures the JupyterInputOutputPlugin knows there's no kernel available
+  const activeKernel = selectedRuntime?.ingress ? defaultKernel : undefined;
 
   // Kernel management is handled by Jupyter React when we have a runtime selected
   // We don't need to manually start kernels - the library does it for us
@@ -474,8 +475,8 @@ export function LexicalEditor({
           <YouTubePlugin />
           <AutoEmbedPlugin />
           <JupyterCellPlugin />
-          <ComponentPickerMenuPlugin kernel={defaultKernel} />
-          <JupyterInputOutputPlugin kernel={defaultKernel} />
+          <ComponentPickerMenuPlugin kernel={activeKernel} />
+          <JupyterInputOutputPlugin kernel={activeKernel} />
           {floatingAnchorElem && (
             <DraggableBlockPlugin anchorElem={floatingAnchorElem} />
           )}

@@ -49,9 +49,6 @@ export class KernelBridge implements vscode.Disposable {
 
   /**
    * Creates a new KernelBridge instance.
-   *
-   * @param _sdk - Datalayer SDK instance (used for runtime operations)
-   * @param _authProvider - Authentication provider (used for authentication in runtime operations)
    */
   constructor(
     /** @internal - Used for runtime operations */
