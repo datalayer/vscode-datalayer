@@ -83,7 +83,6 @@ export class WebSocketKernelClient {
    * Creates a new WebSocketKernelClient.
    *
    * @param runtime - The Datalayer runtime to connect to
-   * @param _sdk - Datalayer SDK instance (used in runtime connection methods)
    */
   constructor(
     runtime: Runtime | RuntimeJSON,
