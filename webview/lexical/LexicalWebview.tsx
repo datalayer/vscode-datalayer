@@ -73,31 +73,17 @@ function LexicalWebviewInner({
   const documentIdRef = useRef<string | null>(null);
 
   useEffect(() => {
-    console.log(
-      `[LexicalWebview] useEffect running. Current documentId: ${documentIdRef.current}`,
-    );
-
     const messageHandler = (event: MessageEvent<WebviewMessage>) => {
       const message = event.data;
-      console.log(
-        `[LexicalWebview] Received message type: ${message.type}, documentId: ${message.documentId}, current documentId: ${documentIdRef.current}`,
-      );
 
       switch (message.type) {
         case "update": {
-          console.log(
-            `[LexicalWebview] Processing update. Content length: ${message.content?.length || 0}`,
-          );
-
           // CRITICAL: Detect when webview is reused for a different document
           if (
             message.documentId &&
             documentIdRef.current &&
             message.documentId !== documentIdRef.current
           ) {
-            console.log(
-              `[LexicalWebview] Webview reused for different document. Resetting store. Old: ${documentIdRef.current}, New: ${message.documentId}`,
-            );
             // Reset store to clear stale content from previous document
             store.getState().reset();
             // Clear VS Code state
@@ -106,17 +92,11 @@ function LexicalWebviewInner({
             documentIdRef.current = message.documentId;
 
             // CRITICAL: Send ready message again to request content for new document
-            console.log(
-              "[LexicalWebview] Sending ready message for new document",
-            );
             vscode.postMessage({ type: "ready" });
           }
 
           // First update - save our document ID
           if (message.documentId && !documentIdRef.current) {
-            console.log(
-              `[LexicalWebview] First update, saving documentId: ${message.documentId}`,
-            );
             documentIdRef.current = message.documentId;
           }
 
@@ -125,11 +105,6 @@ function LexicalWebviewInner({
           if (message.content && message.content.length > 0) {
             const decoder = new TextDecoder();
             jsonString = decoder.decode(new Uint8Array(message.content));
-            console.log(
-              `[LexicalWebview] Decoded content length: ${jsonString.length}`,
-            );
-          } else {
-            console.log("[LexicalWebview] No content in message");
           }
           store.getState().setContent(jsonString);
           store.getState().setIsReady(true); // Always set ready, even for empty files
@@ -185,17 +160,11 @@ function LexicalWebviewInner({
           break;
         }
         case "kernel-terminated": {
-          console.log(
-            "[LexicalWebview] Received kernel-terminated, clearing runtime",
-          );
           onRuntimeSelected(undefined);
           break;
         }
         case "runtime-expired": {
           // Runtime has expired - reset to mock service manager
-          console.log(
-            "[LexicalWebview] Received runtime-expired from progress bar, clearing runtime",
-          );
           onRuntimeSelected(undefined);
           break;
         }
@@ -206,17 +175,12 @@ function LexicalWebviewInner({
 
     // CRITICAL: Clear any stale VS Code state from recycled webviews
     // This prevents content from previous documents appearing in new documents
-    console.log(
-      "[LexicalWebview] Clearing VS Code state and sending ready message",
-    );
     vscode.setState(null);
 
     // Tell the extension we're ready
     vscode.postMessage({ type: "ready" });
-    console.log("[LexicalWebview] Ready message sent");
 
     return () => {
-      console.log("[LexicalWebview] Cleanup: removing message listener");
       window.removeEventListener("message", messageHandler);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps

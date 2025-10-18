@@ -133,9 +133,6 @@ function NotebookEditorCore(): JSX.Element {
             uniqueDocIdRef.current &&
             body.uniqueDocId !== uniqueDocIdRef.current
           ) {
-            console.log(
-              `[NotebookEditor] Webview reused for different document. Resetting store. Old: ${uniqueDocIdRef.current}, New: ${body.uniqueDocId}`,
-            );
             // Reset store to clear stale content from previous document
             store.getState().reset();
             // Clear VS Code state

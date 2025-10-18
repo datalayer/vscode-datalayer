@@ -142,17 +142,8 @@ export class KernelBridge implements vscode.Disposable {
       },
     };
 
-    console.log("[KernelBridge] Posting kernel-selected message:", {
-      type: message.type,
-      hasBody: !!message.body,
-      hasRuntime: !!message.body.runtime,
-      runtimeKeys: Object.keys(message.body.runtime),
-      ingress: message.body.runtime.ingress,
-    });
-
     // Post message to webview
-    const result = await targetWebview.webview.postMessage(message);
-    console.log("[KernelBridge] postMessage result:", result);
+    await targetWebview.webview.postMessage(message);
   }
 
   /**
