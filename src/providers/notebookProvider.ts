@@ -300,6 +300,7 @@ export class NotebookProvider extends BaseDocumentProvider<NotebookDocument> {
             editable: true,
             theme,
             notebookId,
+            documentUri: document.uri.toString(), // Include URI for validation
           });
         } else {
           const editable = vscode.workspace.fs.isWritableFileSystem(
@@ -359,6 +360,7 @@ export class NotebookProvider extends BaseDocumentProvider<NotebookDocument> {
             serverUrl,
             token,
             notebookId,
+            documentUri: document.uri.toString(), // Include URI for validation
           });
         }
       }
