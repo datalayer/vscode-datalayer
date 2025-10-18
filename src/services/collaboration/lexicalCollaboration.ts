@@ -76,22 +76,13 @@ export class LexicalCollaborationService {
       // Extract document ID from URI query parameter (embedded by DocumentBridge)
       const queryParams = new URLSearchParams(document.uri.query);
       const documentId = queryParams.get("docId");
-      console.log(
-        `[LexicalCollaboration] URI: ${document.uri.toString()}, query docId: ${documentId}`,
-      );
 
       if (!documentId) {
         // Fallback to metadata lookup
         const documentBridge = DocumentBridge.getInstance();
         const metadata = documentBridge.getDocumentMetadata(document.uri);
-        console.log(
-          `[LexicalCollaboration] Metadata lookup result: ${metadata ? `found UID ${metadata.document.uid}` : "NOT FOUND"}`,
-        );
 
         if (!metadata?.document?.uid) {
-          console.error(
-            `[LexicalCollaboration] No metadata found for ${document.uri.toString()}`,
-          );
           return undefined;
         }
       }
@@ -100,10 +91,6 @@ export class LexicalCollaborationService {
         documentId ||
         DocumentBridge.getInstance().getDocumentMetadata(document.uri)?.document
           ?.uid;
-
-      console.log(
-        `[LexicalCollaboration] Final document ID for ${document.uri.toString()}: ${finalDocumentId}`,
-      );
 
       if (!finalDocumentId) {
         return undefined;
