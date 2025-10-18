@@ -117,13 +117,13 @@ function LexicalWebviewInner({
             store.getState().setCollaborationConfig(message.collaboration);
           }
           if (message.theme) {
-            store.setTheme(message.theme);
+            store.getState().setTheme(message.theme);
           }
           break;
         }
         case "theme-change": {
           if (message.theme) {
-            store.setTheme(message.theme);
+            store.getState().setTheme(message.theme);
           }
           break;
         }
@@ -222,10 +222,11 @@ function LexicalWebviewInner({
   const content = store((state) => state.content);
   const isEditable = store((state) => state.isEditable);
   const collaborationConfig = store((state) => state.collaborationConfig);
+  const theme = store((state) => state.theme);
 
   return (
     <div
-      data-theme={store.theme}
+      data-theme={theme}
       style={{
         height: "100vh",
         width: "100vw",

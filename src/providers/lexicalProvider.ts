@@ -379,12 +379,6 @@ export class LexicalProvider extends BaseDocumentProvider<LexicalDocument> {
         }
       }
 
-      // Detect initial theme
-      const theme =
-        vscode.window.activeColorTheme.kind === vscode.ColorThemeKind.Dark
-          ? "dark"
-          : "light";
-
       // Create a unique document ID that combines URI with Datalayer document ID if available
       // This ensures uniqueness even when two documents have the same name
       const uniqueDocId = collaborationConfig?.documentId

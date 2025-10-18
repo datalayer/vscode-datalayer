@@ -63,9 +63,9 @@ function NotebookEditorCore(): JSX.Element {
   const messageHandler = useContext(MessageHandlerContext);
   // Create per-instance store - prevents global state sharing
   const [store] = React.useState(() => createNotebookStore());
-  // Track this document's unique ID to validate incoming messages
+  // Track this notebook's ID to detect when webview is reused for a different document
   // CRITICAL: Use ref instead of state to avoid stale closure issues!
-  const uniqueDocIdRef = useRef<string | null>(null);
+  const notebookIdRef = useRef<string | null>(null);
   const { setColormode } = useJupyterReactStore();
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -129,21 +129,21 @@ function NotebookEditorCore(): JSX.Element {
 
           // CRITICAL: Detect when webview is reused for a different document
           if (
-            body.uniqueDocId &&
-            uniqueDocIdRef.current &&
-            body.uniqueDocId !== uniqueDocIdRef.current
+            body.notebookId &&
+            notebookIdRef.current &&
+            body.notebookId !== notebookIdRef.current
           ) {
             // Reset store to clear stale content from previous document
             store.getState().reset();
             // Clear VS Code state
             vsCodeAPI.setState(null);
-            // Update to new document ID
-            uniqueDocIdRef.current = body.uniqueDocId;
+            // Update to new notebook ID
+            notebookIdRef.current = body.notebookId;
           }
 
-          // First init - save our unique document ID
-          if (body.uniqueDocId && !uniqueDocIdRef.current) {
-            uniqueDocIdRef.current = body.uniqueDocId;
+          // First init - save our notebook ID
+          if (body.notebookId && !notebookIdRef.current) {
+            notebookIdRef.current = body.notebookId;
           }
 
           // Reset JupyterConfig singleton (applied via patch)
@@ -307,13 +307,13 @@ function NotebookEditorCore(): JSX.Element {
   // Handle Cmd+Z/Ctrl+Z (undo) and Cmd+Shift+Z/Ctrl+Y (redo)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      const notebookId = store.documentId || store.notebookId;
-      if (!notebookId) return;
+      const currentNotebookId = documentId || notebookId;
+      if (!currentNotebookId) return;
 
       // Cmd+Z (macOS) or Ctrl+Z (Windows/Linux) - Undo
       if ((e.metaKey || e.ctrlKey) && e.key === "z" && !e.shiftKey) {
         e.preventDefault();
-        notebookStore2.getState().undo(notebookId);
+        notebookStore2.getState().undo(currentNotebookId);
         return;
       }
 
@@ -323,7 +323,7 @@ function NotebookEditorCore(): JSX.Element {
         (e.ctrlKey && e.key === "y" && !e.metaKey)
       ) {
         e.preventDefault();
-        notebookStore2.getState().redo(notebookId);
+        notebookStore2.getState().redo(currentNotebookId);
         return;
       }
     };
@@ -332,7 +332,7 @@ function NotebookEditorCore(): JSX.Element {
     return () => {
       document.removeEventListener("keydown", handleKeyDown, true);
     };
-  }, [store.documentId, store.notebookId]);
+  }, [documentId, notebookId]);
 
   // Loading state
   if (!isInitialized || !nbformat) {

@@ -1,85 +1,70 @@
-diff --git a/node_modules/@datalayer/jupyter-react/lib/components/lumino/Lumino.js b/node_modules/@datalayer/jupyter-react/lib/components/lumino/Lumino.js
-index 850306f..138e9c6 100644
---- a/node_modules/@datalayer/jupyter-react/lib/components/lumino/Lumino.js
-+++ b/node_modules/@datalayer/jupyter-react/lib/components/lumino/Lumino.js
-@@ -6,9 +6,8 @@ import { jsx as _jsx } from "react/jsx-runtime";
-  */
- import { useRef, useEffect } from 'react';
- import { Widget } from '@lumino/widgets';
--export const Lumino = (props) => {
-+export const Lumino = ({ id = 'lumino-id', height = '100%', children }) => {
-     const ref = useRef(null);
--    const { children, id, height } = props;
-     useEffect(() => {
-         console.log('Lumino useEffect - ref.current:', ref.current, 'children:', children, 'children.isAttached:', children?.isAttached);
-         if (ref && ref.current && children) {
-@@ -59,9 +58,5 @@ export const Lumino = (props) => {
-     }, [ref, children]);
-     return (_jsx("div", { id: id, ref: ref, style: { height: height, minHeight: height } }));
- };
--Lumino.defaultProps = {
--    id: 'lumino-id',
--    height: '100%',
--};
- export default Lumino;
- //# sourceMappingURL=Lumino.js.map
-\ No newline at end of file
 diff --git a/node_modules/@datalayer/jupyter-react/lib/components/notebook/Notebook2Adapter.d.ts b/node_modules/@datalayer/jupyter-react/lib/components/notebook/Notebook2Adapter.d.ts
-index 841a2cf..05e0d52 100644
+index 841a2cf..b8bf4a6 100644
 --- a/node_modules/@datalayer/jupyter-react/lib/components/notebook/Notebook2Adapter.d.ts
 +++ b/node_modules/@datalayer/jupyter-react/lib/components/notebook/Notebook2Adapter.d.ts
-@@ -54,6 +54,14 @@ export declare class Notebook2Adapter {
+@@ -54,6 +54,24 @@ export declare class Notebook2Adapter {
       * Get the notebook model.
       */
      get model(): NotebookModel | null;
 +    /**
 +     * Undo the last change in the notebook.
++     *
++     * @remarks
++     * If there is no history to undo (e.g., at the beginning of the undo stack),
++     * this operation will have no effect. The notebook must be available and
++     * properly initialized for this operation to succeed.
 +     */
 +    undo(): void;
 +    /**
 +     * Redo the last undone change in the notebook.
++     *
++     * @remarks
++     * If there is no history to redo (e.g., no prior undo operations or at the
++     * end of the redo stack), this operation will have no effect. The notebook
++     * must be available and properly initialized for this operation to succeed.
 +     */
 +    redo(): void;
      /**
       * Dispose of the adapter.
       */
 diff --git a/node_modules/@datalayer/jupyter-react/lib/components/notebook/Notebook2Adapter.js b/node_modules/@datalayer/jupyter-react/lib/components/notebook/Notebook2Adapter.js
-index a6c29d2..8d6d435 100644
+index a6c29d2..53144a3 100644
 --- a/node_modules/@datalayer/jupyter-react/lib/components/notebook/Notebook2Adapter.js
 +++ b/node_modules/@datalayer/jupyter-react/lib/components/notebook/Notebook2Adapter.js
-@@ -110,6 +110,36 @@ export class Notebook2Adapter {
+@@ -3,7 +3,7 @@
+  *
+  * MIT License
+  */
+-import { NotebookActions } from '@jupyterlab/notebook';
++import { NotebookActions, } from '@jupyterlab/notebook';
+ export class Notebook2Adapter {
+     _commands;
+     _panel;
+@@ -110,6 +110,28 @@ export class Notebook2Adapter {
      get model() {
          return this._context.model;
      }
 +    /**
 +     * Undo the last change in the notebook.
++     *
++     * @remarks
++     * If there is no history to undo (e.g., at the beginning of the undo stack),
++     * this operation will have no effect. The notebook must be available and
++     * properly initialized for this operation to succeed.
 +     */
 +    undo() {
-+        const notebook = this._notebook;
-+        // If in edit mode and active cell has an editor, undo within the cell editor (CodeMirror)
-+        // Otherwise, undo structural changes (add/delete/move cells)
-+        if (notebook.mode === 'edit' && notebook.activeCell?.editor) {
-+            notebook.activeCell.editor.undo();
-+        }
-+        else {
-+            // Structural undo (cell operations)
-+            NotebookActions.undo(notebook);
-+        }
++        NotebookActions.undo(this._notebook);
 +    }
 +    /**
 +     * Redo the last undone change in the notebook.
++     *
++     * @remarks
++     * If there is no history to redo (e.g., no prior undo operations or at the
++     * end of the redo stack), this operation will have no effect. The notebook
++     * must be available and properly initialized for this operation to succeed.
 +     */
 +    redo() {
-+        const notebook = this._notebook;
-+        // If in edit mode and active cell has an editor, redo within the cell editor (CodeMirror)
-+        // Otherwise, redo structural changes (add/delete/move cells)
-+        if (notebook.mode === 'edit' && notebook.activeCell?.editor) {
-+            notebook.activeCell.editor.redo();
-+        }
-+        else {
-+            // Structural redo (cell operations)
-+            NotebookActions.redo(notebook);
-+        }
++        NotebookActions.redo(this._notebook);
 +    }
      /**
       * Dispose of the adapter.
@@ -98,26 +83,40 @@ index 1ea7f63..c6f6cb7 100644
  };
  export declare const notebookStore2: import("zustand").StoreApi<Notebook2State>;
 diff --git a/node_modules/@datalayer/jupyter-react/lib/components/notebook/Notebook2State.js b/node_modules/@datalayer/jupyter-react/lib/components/notebook/Notebook2State.js
-index 33a060c..543392e 100644
+index 33a060c..3a00b15 100644
 --- a/node_modules/@datalayer/jupyter-react/lib/components/notebook/Notebook2State.js
 +++ b/node_modules/@datalayer/jupyter-react/lib/components/notebook/Notebook2State.js
-@@ -54,6 +54,20 @@ export const notebookStore2 = createStore((set, get) => ({
+@@ -54,6 +54,34 @@ export const notebookStore2 = createStore((set, get) => ({
              .notebooks.get(mutation.id)
              ?.adapter?.changeCellType(mutation.cellType);
      },
 +    undo: (id) => {
 +        // Directly call adapter's undo method which uses NotebookActions
 +        // This works for both local notebooks and collaborative notebooks
-+        get()
-+            .notebooks.get(id)
-+            ?.adapter?.undo();
++        const notebook = get().notebooks.get(id);
++        if (!notebook) {
++            console.warn(`[Notebook2State] Cannot undo: notebook with id "${id}" not found`);
++            return;
++        }
++        if (!notebook.adapter) {
++            console.warn(`[Notebook2State] Cannot undo: adapter not available for notebook "${id}"`);
++            return;
++        }
++        notebook.adapter.undo();
 +    },
 +    redo: (id) => {
 +        // Directly call adapter's redo method which uses NotebookActions
 +        // This works for both local notebooks and collaborative notebooks
-+        get()
-+            .notebooks.get(id)
-+            ?.adapter?.redo();
++        const notebook = get().notebooks.get(id);
++        if (!notebook) {
++            console.warn(`[Notebook2State] Cannot redo: notebook with id "${id}" not found`);
++            return;
++        }
++        if (!notebook.adapter) {
++            console.warn(`[Notebook2State] Cannot redo: adapter not available for notebook "${id}"`);
++            return;
++        }
++        notebook.adapter.redo();
 +    },
      reset: () => set((state) => ({
          notebooks: new Map(),

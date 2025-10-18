@@ -27,8 +27,9 @@ export interface InitMessage {
     documentId?: string;
     serverUrl?: string;
     token?: string;
-    notebookId?: string;
+    notebookId?: string; // Also used for webview reuse detection
     theme?: "light" | "dark";
+    documentUri?: string; // For logging
   };
 }
 

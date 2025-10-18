@@ -290,21 +290,30 @@ export class NotebookProvider extends BaseDocumentProvider<NotebookDocument> {
             ? "dark"
             : "light";
 
-        const notebookId = `notebook-${document.uri
-          .toString()
-          .replace(/[^a-zA-Z0-9]/g, "-")}-${Date.now()}`;
-
-        // Create a unique document ID using notebookId (always unique)
-        const uniqueDocId = notebookId;
-
         if (document.uri.scheme === "untitled") {
+          // Use URI as the unique ID for untitled notebooks
+          const notebookId = document.uri.toString();
+
+          // For untitled notebooks, send empty notebook structure if document has no data
+          const value =
+            document.documentData.length > 0
+              ? document.documentData
+              : new TextEncoder().encode(
+                  JSON.stringify({
+                    cells: [],
+                    metadata: {},
+                    nbformat: 4,
+                    nbformat_minor: 5,
+                  }),
+                );
+
           this.postMessage(webviewPanel, "init", {
+            value,
             untitled: true,
             editable: true,
             theme,
             notebookId,
             documentUri: document.uri.toString(), // For logging
-            uniqueDocId, // Unique ID for validation
           });
         } else {
           const editable = vscode.workspace.fs.isWritableFileSystem(
@@ -355,6 +364,9 @@ export class NotebookProvider extends BaseDocumentProvider<NotebookDocument> {
             }
           }
 
+          // Use actual document ID for Datalayer notebooks, URI for local files
+          const notebookId = documentId || document.uri.toString();
+
           this.postMessage(webviewPanel, "init", {
             value: document.documentData,
             editable,
@@ -365,7 +377,6 @@ export class NotebookProvider extends BaseDocumentProvider<NotebookDocument> {
             token,
             notebookId,
             documentUri: document.uri.toString(), // For logging
-            uniqueDocId, // Unique ID for validation
           });
         }
       }
