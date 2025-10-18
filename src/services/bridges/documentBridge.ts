@@ -276,9 +276,12 @@ export class DocumentBridge {
         localPath,
         lastDownloaded: new Date(),
       };
-      this.documentMetadata.set(document.uid, metadata);
 
       // Document downloaded successfully
+
+      // CRITICAL: Store metadata by UID for methods that need UID-based lookup
+      // (clearDocument, ensureRuntime, getMetadataById)
+      this.documentMetadata.set(document.uid, metadata);
 
       // Create a virtual URI that shows clean path structure
       // Sanitize space name for URI compatibility (remove characters that cause URI errors)
@@ -289,9 +292,13 @@ export class DocumentBridge {
             .trim()
         : null;
 
+      // CRITICAL: Include document UID in the path to guarantee uniqueness
+      // Multiple documents with the same name in the same space would otherwise collide
+      // Format: spaceName/UID/documentName.extension
+      // This keeps the filename clean for tab titles while ensuring path uniqueness
       const virtualPath = sanitizedSpaceName
-        ? `${sanitizedSpaceName}/${cleanName}${extension}`
-        : `${cleanName}${extension}`;
+        ? `${sanitizedSpaceName}/${document.uid}/${cleanName}${extension}`
+        : `${document.uid}/${cleanName}${extension}`;
 
       // Register the mapping with the file system provider
       const fileSystemProvider = DatalayerFileSystemProvider.getInstance();
@@ -300,14 +307,13 @@ export class DocumentBridge {
         localPath,
       );
 
-      // Add document UID as query parameter so we can retrieve it later
-      const virtualUriWithId = virtualUri.with({
-        query: `docId=${document.uid}`,
-      });
+      // CRITICAL: Also store metadata by URI for fast O(1) lookups in editor/provider code
+      // The UID is embedded in the path, making each URI globally unique
+      // This enables direct lookup via getDocumentMetadata(uri)
+      this.documentMetadata.set(virtualUri.toString(), metadata);
 
-      // Virtual URI created successfully
-
-      return virtualUriWithId;
+      // Virtual URI created successfully (UID is embedded in path, no query params needed)
+      return virtualUri;
     } catch (error) {
       throw error;
     }
@@ -359,21 +365,9 @@ export class DocumentBridge {
    * @returns Document metadata if found
    */
   getDocumentMetadata(uri: vscode.Uri): DocumentMetadata | undefined {
-    // Try to find metadata by matching the localPath
-    for (const [id, metadata] of this.documentMetadata.entries()) {
-      // Check if the URI matches the local path
-      if (uri.fsPath === metadata.localPath) {
-        return metadata;
-      }
-      // Also check for virtual URIs
-      if (uri.scheme === "datalayer") {
-        // Virtual URIs may have been mapped, check if this document ID matches
-        if (metadata.document.uid === id) {
-          return metadata;
-        }
-      }
-    }
-    return undefined;
+    // Direct O(1) lookup by URI
+    // Metadata is keyed by virtualUri.toString() which includes the UID in the path
+    return this.documentMetadata.get(uri.toString());
   }
 
   /**

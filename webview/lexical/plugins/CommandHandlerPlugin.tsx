@@ -89,7 +89,6 @@ export function CommandHandlerPlugin(): null {
         // Link - for now just show a message, full implementation needs dialog
         case "link":
           // TODO: Show link insertion dialog
-          console.log("Link command - dialog not yet implemented");
           break;
       }
     };

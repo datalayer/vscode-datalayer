@@ -25,6 +25,7 @@ import { DatalayerCollaborationProvider } from "@datalayer/core/lib/collaboratio
 import {
   MessageHandlerContext,
   type ExtensionMessage,
+  vsCodeAPI,
 } from "../services/messageHandler";
 import { loadFromBytes } from "../utils";
 import { initializeRequireJSStub } from "../utils/requirejsStub";
@@ -38,7 +39,7 @@ import { VSCodeTheme } from "../theme/VSCodeTheme";
 import type { RuntimeJSON } from "@datalayer/core/lib/client/models/Runtime";
 
 // Import our new hooks and stores
-import { useNotebookStore } from "../stores/notebookStore";
+import { createNotebookStore } from "../stores/notebookStore";
 import { useRuntimeManager } from "../hooks/useRuntimeManager";
 import { useNotebookModel } from "../hooks/useNotebookModel";
 import { useNotebookResize } from "../hooks/useNotebookResize";
@@ -59,54 +60,62 @@ interface RuntimeWithCredits extends RuntimeJSON {
  */
 function NotebookEditorCore(): JSX.Element {
   const messageHandler = useContext(MessageHandlerContext);
-  const store = useNotebookStore();
+  // Create per-instance store - prevents global state sharing
+  const [store] = React.useState(() => createNotebookStore());
+  // Track this document's unique ID to validate incoming messages
+  // CRITICAL: Use ref instead of state to avoid stale closure issues!
+  const uniqueDocIdRef = useRef<string | null>(null);
   const { setColormode } = useJupyterReactStore();
   const containerRef = useRef<HTMLDivElement>(null);
 
+  // Use the store as a hook for reactive values
+  const selectedRuntimeFromStore = store((state) => state.selectedRuntime);
+  const isDatalayerNotebook = store((state) => state.isDatalayerNotebook);
+  const documentId = store((state) => state.documentId);
+  const notebookId = store((state) => state.notebookId);
+  const serverUrl = store((state) => state.serverUrl);
+  const token = store((state) => state.token);
+  const theme = store((state) => state.theme);
+  const isInitialized = store((state) => state.isInitialized);
+  const nbformat = store((state) => state.nbformat);
+
   // Runtime management with hook
   const { selectedRuntime, serviceManager, selectRuntime } = useRuntimeManager(
-    store.selectedRuntime,
+    selectedRuntimeFromStore,
   );
 
   // Notebook model management
   const { handleNotebookModelChanged, getNotebookData, markClean } =
     useNotebookModel({
-      isDatalayerNotebook: store.isDatalayerNotebook,
+      isDatalayerNotebook,
       messageHandler,
     });
 
   // Set up resize observer
-  const notebookId = store.documentId || store.notebookId || "";
-  useNotebookResize(notebookId, containerRef);
+  const notebookIdForResize = documentId || notebookId || "";
+  useNotebookResize(notebookIdForResize, containerRef);
 
   // Create notebook extensions (sidebar)
   const extensions = useMemo(() => [new CellSidebarExtension({})], []);
 
   // Create collaboration provider for Datalayer notebooks
   const collaborationProvider = useMemo(() => {
-    if (
-      store.isDatalayerNotebook &&
-      store.serverUrl &&
-      store.token &&
-      store.documentId
-    ) {
+    if (isDatalayerNotebook && serverUrl && token && documentId) {
       return new DatalayerCollaborationProvider({
-        runUrl: store.serverUrl,
-        token: store.token,
+        runUrl: serverUrl,
+        token: token,
         // Use proxy fetch to avoid CORS issues in VS Code webview
         fetchFn: proxyFetch as unknown as typeof fetch,
       }) as unknown as ICollaborationProvider;
     }
     return undefined;
-  }, [
-    store.isDatalayerNotebook,
-    store.serverUrl,
-    store.token,
-    store.documentId,
-  ]);
+  }, [isDatalayerNotebook, serverUrl, token, documentId]);
 
   // Signal ready immediately when component mounts
   useEffect(() => {
+    // CRITICAL: Clear any stale VS Code state from recycled webviews
+    // This prevents content from previous documents appearing in new documents
+    vsCodeAPI.setState(null);
     messageHandler.send({ type: "ready" });
   }, [messageHandler]);
 
@@ -117,8 +126,24 @@ function NotebookEditorCore(): JSX.Element {
         case "init": {
           const { body } = message;
 
-          // Reset store to clear any stale state from previous document
-          store.reset();
+          // CRITICAL: Detect when webview is reused for a different document
+          if (
+            body.uniqueDocId &&
+            uniqueDocIdRef.current &&
+            body.uniqueDocId !== uniqueDocIdRef.current
+          ) {
+            // Reset store to clear stale content from previous document
+            store.getState().reset();
+            // Clear VS Code state
+            vsCodeAPI.setState(null);
+            // Update to new document ID
+            uniqueDocIdRef.current = body.uniqueDocId;
+          }
+
+          // First init - save our unique document ID
+          if (body.uniqueDocId && !uniqueDocIdRef.current) {
+            uniqueDocIdRef.current = body.uniqueDocId;
+          }
 
           // Reset JupyterConfig singleton (applied via patch)
           // This ensures fresh config with correct serverUrl/token when webview is reused
@@ -126,45 +151,45 @@ function NotebookEditorCore(): JSX.Element {
 
           // Handle theme
           if (body.theme) {
-            store.setTheme(body.theme);
+            store.getState().setTheme(body.theme);
           }
 
           // Handle notebook data
           if (body.isDatalayerNotebook) {
-            store.setIsDatalayerNotebook(true);
+            store.getState().setIsDatalayerNotebook(true);
           }
 
           if (body.documentId) {
-            store.setDocumentId(body.documentId);
+            store.getState().setDocumentId(body.documentId);
           }
 
           if (body.serverUrl) {
-            store.setServerUrl(body.serverUrl);
+            store.getState().setServerUrl(body.serverUrl);
           }
 
           if (body.notebookId) {
-            store.setNotebookId(body.notebookId);
+            store.getState().setNotebookId(body.notebookId);
           }
 
           if (body.token) {
-            store.setToken(body.token);
+            store.getState().setToken(body.token);
           }
 
           if (body.untitled) {
-            store.setNbformat({});
+            store.getState().setNbformat({});
           } else {
             const loadedNbformat = loadFromBytes(body.value);
-            store.setNbformat(loadedNbformat);
+            store.getState().setNbformat(loadedNbformat);
           }
 
-          store.setIsInitialized(true);
+          store.getState().setIsInitialized(true);
           break;
         }
 
         case "theme-change": {
           const { body } = message;
-          if (body.theme && body.theme !== store.theme) {
-            store.setTheme(body.theme);
+          if (body.theme && body.theme !== theme) {
+            store.getState().setTheme(body.theme);
           }
           break;
         }
@@ -174,7 +199,7 @@ function NotebookEditorCore(): JSX.Element {
           const { body } = message;
           if (body?.runtime) {
             selectRuntime(body.runtime);
-            store.setRuntime(body.runtime);
+            store.getState().setRuntime(body.runtime);
           }
           break;
         }
@@ -183,7 +208,7 @@ function NotebookEditorCore(): JSX.Element {
         case "runtime-terminated": // Legacy message type
           setTimeout(() => {
             selectRuntime(undefined);
-            store.setRuntime(undefined);
+            store.getState().setRuntime(undefined);
           }, 100);
           break;
 
@@ -191,7 +216,7 @@ function NotebookEditorCore(): JSX.Element {
           // Runtime has expired - reset to mock service manager
           setTimeout(() => {
             selectRuntime(undefined);
-            store.setRuntime(undefined);
+            store.getState().setRuntime(undefined);
           }, 100);
           break;
 
@@ -212,14 +237,14 @@ function NotebookEditorCore(): JSX.Element {
               expiredAt: "",
             };
             selectRuntime(runtimeInfo);
-            store.setRuntime(runtimeInfo);
+            store.getState().setRuntime(runtimeInfo);
           }
           break;
         }
 
         case "getFileData": {
-          if (!store.isDatalayerNotebook) {
-            const bytes = getNotebookData(store.nbformat);
+          if (!isDatalayerNotebook) {
+            const bytes = getNotebookData(nbformat);
             const arrayData = Array.from(bytes);
 
             messageHandler.send({
@@ -234,7 +259,7 @@ function NotebookEditorCore(): JSX.Element {
         }
 
         case "saved":
-          if (!store.isDatalayerNotebook) {
+          if (!isDatalayerNotebook) {
             markClean();
           }
           break;
@@ -245,16 +270,25 @@ function NotebookEditorCore(): JSX.Element {
       handleMessage as (message: unknown) => void,
     );
     return () => disposable.dispose();
-  }, [messageHandler, store, selectRuntime, getNotebookData, markClean]);
+  }, [
+    messageHandler,
+    store,
+    selectRuntime,
+    getNotebookData,
+    markClean,
+    theme,
+    isDatalayerNotebook,
+    nbformat,
+  ]);
 
   // Sync colormode with theme changes
   useEffect(() => {
-    setColormode(store.theme);
-  }, [store.theme, setColormode]);
+    setColormode(theme);
+  }, [theme, setColormode]);
 
   // Block Cmd/Ctrl+S for collaborative Datalayer notebooks
   useEffect(() => {
-    if (store.isDatalayerNotebook) {
+    if (isDatalayerNotebook) {
       const handleKeyDown = (e: KeyboardEvent) => {
         if ((e.metaKey || e.ctrlKey) && e.key === "s") {
           e.preventDefault();
@@ -267,10 +301,10 @@ function NotebookEditorCore(): JSX.Element {
       };
     }
     return undefined;
-  }, [store.isDatalayerNotebook]);
+  }, [isDatalayerNotebook]);
 
   // Loading state
-  if (!store.isInitialized || !store.nbformat) {
+  if (!isInitialized || !nbformat) {
     return (
       <Box
         style={{
@@ -314,8 +348,8 @@ function NotebookEditorCore(): JSX.Element {
       />
 
       <NotebookToolbar
-        notebookId={store.documentId || store.notebookId}
-        isDatalayerNotebook={store.isDatalayerNotebook}
+        notebookId={documentId || notebookId}
+        isDatalayerNotebook={isDatalayerNotebook}
         selectedRuntime={selectedRuntime}
       />
 
@@ -334,10 +368,10 @@ function NotebookEditorCore(): JSX.Element {
           <Notebook2
             // Use stable key - MutableServiceManager handles runtime switching internally
             // Remounting would lose notebook state and cause race conditions
-            key={store.documentId || store.notebookId || "notebook"}
+            key={documentId || notebookId || "notebook"}
             // @ts-ignore - Type mismatch between different @jupyterlab versions
-            nbformat={store.nbformat || {}}
-            id={store.documentId || store.notebookId}
+            nbformat={nbformat || {}}
+            id={documentId || notebookId}
             // @ts-ignore - Type mismatch between @jupyterlab/services versions
             serviceManager={serviceManager}
             collaborationProvider={collaborationProvider}
@@ -350,9 +384,7 @@ function NotebookEditorCore(): JSX.Element {
             cellSidebarMargin={cellSidebarMargin}
             extensions={extensions}
             onNotebookModelChanged={
-              !store.isDatalayerNotebook
-                ? handleNotebookModelChanged
-                : undefined
+              !isDatalayerNotebook ? handleNotebookModelChanged : undefined
             }
           />
         </Box>
@@ -362,16 +394,13 @@ function NotebookEditorCore(): JSX.Element {
 }
 
 /**
- * Main notebook component with theme provider
+ * Main notebook component with theme provider.
+ * We use a hardcoded default theme here - the actual theme is managed
+ * by NotebookEditorCore which has its own store instance.
  */
 function NotebookEditor(): JSX.Element {
-  const theme = useNotebookStore((state) => state.theme);
-
   return (
-    <VSCodeTheme
-      colorMode={theme === "dark" ? "dark" : "light"}
-      loadJupyterLabCss={true}
-    >
+    <VSCodeTheme colorMode="light" loadJupyterLabCss={true}>
       <NotebookEditorCore />
     </VSCodeTheme>
   );
