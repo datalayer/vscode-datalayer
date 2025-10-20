@@ -17,6 +17,7 @@ import { registerAuthCommands } from "./auth";
 import { registerDocumentCommands } from "./documents";
 import { registerRuntimeCommands } from "./runtimes";
 import { registerInternalCommands, getConnectedRuntime } from "./internal";
+import { registerCreateCommands } from "./create";
 import { SDKAuthProvider } from "../services/core/authProvider";
 import { DocumentBridge } from "../services/bridges/documentBridge";
 import { SpacesTreeProvider } from "../providers/spacesTreeProvider";
@@ -73,4 +74,7 @@ export function registerAllCommands(
     services.controllerManager,
     services.runtimesTreeProvider,
   );
+
+  // Register smart create commands (context-aware notebook/lexical creation)
+  registerCreateCommands(context);
 }

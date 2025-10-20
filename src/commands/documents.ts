@@ -34,6 +34,7 @@ import {
   showTwoStepConfirmation,
   CommonConfirmations,
 } from "../ui/dialogs/confirmationDialog";
+import type { Space } from "@datalayer/core/lib/client/models/Space";
 
 /**
  * Registers all document-related VS Code commands for the Datalayer extension.
@@ -174,21 +175,56 @@ export function registerDocumentCommands(
   );
 
   /**
-   * Command: datalayer.createNotebookInSpace
-   * Creates a new Jupyter notebook in the selected space.
-   * Prompts for name and optional description with validation.
+   * Command: datalayer.newRemoteDatalayerNotebookPrompt
+   * Creates a new Jupyter notebook in a Datalayer space.
+   * Smart command that handles both context menu (with spaceItem) and command palette (prompts for space).
+   * Automatically extracts space from parent when called on a document item.
    */
   context.subscriptions.push(
     vscode.commands.registerCommand(
-      "datalayer.createNotebookInSpace",
-      async (spaceItem) => {
+      "datalayer.newRemoteDatalayerNotebookPrompt",
+      async (spaceItem?: unknown) => {
         try {
-          if (!spaceItem?.data?.space) {
-            vscode.window.showErrorMessage("Please select a space");
-            return;
-          }
+          let space: Space;
 
-          const space = spaceItem.data.space;
+          // Check if called from context menu with spaceItem
+          const itemWithData = spaceItem as {
+            data?: { space?: Space };
+            parent?: { data?: { space?: Space } };
+          };
+
+          if (itemWithData?.data?.space) {
+            // Called from context menu on a space item - use provided space
+            space = itemWithData.data.space;
+          } else if (itemWithData?.parent?.data?.space) {
+            // Called from context menu on a document item - use parent space
+            space = itemWithData.parent.data.space;
+          } else {
+            // Called from command palette, title bar, or root - prompt for space
+            const spaces = await sdk.getMySpaces();
+            if (!spaces || spaces.length === 0) {
+              vscode.window.showErrorMessage("No spaces available");
+              return;
+            }
+
+            const spaceItems = spaces.map((s) => ({
+              label: s.variant === "default" ? `${s.name} (Default)` : s.name,
+              space: s,
+            }));
+
+            const selectedSpace = await vscode.window.showQuickPick(
+              spaceItems,
+              {
+                placeHolder: "Select a space to create the notebook in",
+              },
+            );
+
+            if (!selectedSpace) {
+              return;
+            }
+
+            space = selectedSpace.space;
+          }
 
           const name = await vscode.window.showInputBox({
             prompt: "Enter notebook name",
@@ -213,7 +249,7 @@ export function registerDocumentCommands(
           await vscode.window.withProgress(
             {
               location: vscode.ProgressLocation.Notification,
-              title: `Creating notebook "${name}" in space "${space.name_t}"...`,
+              title: `Creating notebook "${name}" in space "${space.name}"...`,
               cancellable: false,
             },
             async () => {
@@ -245,21 +281,56 @@ export function registerDocumentCommands(
   );
 
   /**
-   * Command: datalayer.createLexicalInSpace
-   * Creates a new lexical document in the selected space.
-   * Prompts for name and optional description with validation.
+   * Command: datalayer.newRemoteLexicalDocumentPrompt
+   * Creates a new lexical document in a Datalayer space.
+   * Smart command that handles both context menu (with spaceItem) and command palette (prompts for space).
+   * Automatically extracts space from parent when called on a document item.
    */
   context.subscriptions.push(
     vscode.commands.registerCommand(
-      "datalayer.createLexicalInSpace",
-      async (spaceItem) => {
+      "datalayer.newRemoteLexicalDocumentPrompt",
+      async (spaceItem?: unknown) => {
         try {
-          if (!spaceItem?.data?.space) {
-            vscode.window.showErrorMessage("Please select a space");
-            return;
-          }
+          let space: Space;
 
-          const space = spaceItem.data.space;
+          // Check if called from context menu with spaceItem
+          const itemWithData = spaceItem as {
+            data?: { space?: Space };
+            parent?: { data?: { space?: Space } };
+          };
+
+          if (itemWithData?.data?.space) {
+            // Called from context menu on a space item - use provided space
+            space = itemWithData.data.space;
+          } else if (itemWithData?.parent?.data?.space) {
+            // Called from context menu on a document item - use parent space
+            space = itemWithData.parent.data.space;
+          } else {
+            // Called from command palette, title bar, or root - prompt for space
+            const spaces = await sdk.getMySpaces();
+            if (!spaces || spaces.length === 0) {
+              vscode.window.showErrorMessage("No spaces available");
+              return;
+            }
+
+            const spaceItems = spaces.map((s) => ({
+              label: s.variant === "default" ? `${s.name} (Default)` : s.name,
+              space: s,
+            }));
+
+            const selectedSpace = await vscode.window.showQuickPick(
+              spaceItems,
+              {
+                placeHolder: "Select a space to create the document in",
+              },
+            );
+
+            if (!selectedSpace) {
+              return;
+            }
+
+            space = selectedSpace.space;
+          }
 
           const name = await vscode.window.showInputBox({
             prompt: "Enter document name",
@@ -284,7 +355,7 @@ export function registerDocumentCommands(
           await vscode.window.withProgress(
             {
               location: vscode.ProgressLocation.Notification,
-              title: `Creating lexical document "${name}" in space "${space.name_t}"...`,
+              title: `Creating lexical document "${name}" in space "${space.name}"...`,
               cancellable: false,
             },
             async () => {

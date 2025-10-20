@@ -157,6 +157,7 @@ export class SpacesTreeProvider implements vscode.TreeDataProvider<SpaceItem> {
 
   /**
    * Fetches and returns user's spaces as tree items.
+   * Pre-fetches all items for all spaces to show them expanded immediately.
    *
    * @returns Array of SpaceItems representing user's spaces
    */
@@ -173,6 +174,23 @@ export class SpacesTreeProvider implements vscode.TreeDataProvider<SpaceItem> {
         const sdk = getServiceContainer().sdk;
         spaces = (await sdk.getMySpaces()) ?? [];
         this.spacesCache.set("user", spaces);
+
+        // Pre-fetch items for all spaces so they appear immediately
+        await Promise.all(
+          spaces.map(async (space) => {
+            try {
+              const items = await space.getItems();
+              this.itemsCache.set(space.uid, items);
+            } catch (error) {
+              console.error(
+                `Failed to fetch items for space ${space.uid}:`,
+                error,
+              );
+              // Store empty array so we don't keep trying
+              this.itemsCache.set(space.uid, []);
+            }
+          }),
+        );
       }
 
       if (spaces.length === 0) {
@@ -199,12 +217,12 @@ export class SpacesTreeProvider implements vscode.TreeDataProvider<SpaceItem> {
         return a.name.localeCompare(b.name);
       });
 
-      // Create tree items
+      // Create tree items with Expanded state so items show immediately
       return spaces.map((space) => {
         const name = space.name;
         const variant = space.variant;
         const label = variant === "default" ? `${name} (Default)` : name;
-        return new SpaceItem(label, vscode.TreeItemCollapsibleState.Collapsed, {
+        return new SpaceItem(label, vscode.TreeItemCollapsibleState.Expanded, {
           type: ItemType.SPACE,
           space: space,
         });
