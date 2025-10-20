@@ -426,32 +426,6 @@
         }
       }
     },
-    "notebooks": [
-      {
-        "type": "datalayer-notebook",
-        "displayName": "Datalayer Notebook",
-        "selector": [
-          {
-            "filenamePattern": "*.datalayer.ipynb"
-          },
-          {
-            "filenamePattern": "*.ipynb"
-          }
-        ]
-      },
-      {
-        "type": "datalayer-lexical",
-        "displayName": "Datalayer Lexical",
-        "selector": [
-          {
-            "filenamePattern": "*.datalayer.lexical"
-          },
-          {
-            "filenamePattern": "*.lexical"
-          }
-        ]
-      }
-    ],
     "customEditors": [
       {
         "viewType": "datalayer.jupyter-notebook",

@@ -59,10 +59,12 @@ interface RuntimeWithCredits extends RuntimeJSON {
 /**
  * Core notebook editor component using centralized state
  */
-function NotebookEditorCore(): JSX.Element {
+function NotebookEditorCore({
+  store,
+}: {
+  store: ReturnType<typeof createNotebookStore>;
+}): JSX.Element {
   const messageHandler = useContext(MessageHandlerContext);
-  // Create per-instance store - prevents global state sharing
-  const [store] = React.useState(() => createNotebookStore());
   // Track this notebook's ID to detect when webview is reused for a different document
   // CRITICAL: Use ref instead of state to avoid stale closure issues!
   const notebookIdRef = useRef<string | null>(null);
@@ -426,13 +428,18 @@ function NotebookEditorCore(): JSX.Element {
 
 /**
  * Main notebook component with theme provider.
- * We use a hardcoded default theme here - the actual theme is managed
- * by NotebookEditorCore which has its own store instance.
+ * Creates the store at this level so theme can be shared between
+ * VSCodeTheme wrapper and NotebookEditorCore.
  */
 function NotebookEditor(): JSX.Element {
+  // Create per-instance store - prevents global state sharing
+  const [store] = React.useState(() => createNotebookStore());
+  // Subscribe to theme changes from the store
+  const theme = store((state) => state.theme);
+
   return (
-    <VSCodeTheme colorMode="light" loadJupyterLabCss={true}>
-      <NotebookEditorCore />
+    <VSCodeTheme colorMode={theme} loadJupyterLabCss={true}>
+      <NotebookEditorCore store={store} />
     </VSCodeTheme>
   );
 }

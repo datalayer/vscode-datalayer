@@ -381,8 +381,9 @@ export class LexicalProvider extends BaseDocumentProvider<LexicalDocument> {
 
       // Create a unique document ID that combines URI with Datalayer document ID if available
       // This ensures uniqueness even when two documents have the same name
+      // Using :: separator which won't appear in file URIs
       const uniqueDocId = collaborationConfig?.documentId
-        ? `${document.uri.toString()}#${collaborationConfig.documentId}`
+        ? `${document.uri.toString()}::${collaborationConfig.documentId}`
         : document.uri.toString();
 
       webviewPanel.webview.postMessage({
