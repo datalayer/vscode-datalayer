@@ -60,14 +60,28 @@
         "category": "Datalayer"
       },
       {
-        "command": "datalayer.jupyter-notebook-new",
-        "title": "Create New Jupyter Notebook",
-        "category": "Datalayer"
+        "command": "datalayer.newLocalDatalayerNotebook",
+        "title": "New Notebook...",
+        "category": "Datalayer",
+        "icon": "$(notebook)"
       },
       {
-        "command": "datalayer.lexical-editor-new",
-        "title": "Create New Lexical Document",
-        "category": "Datalayer"
+        "command": "datalayer.newLocalLexicalDocument",
+        "title": "New Lexical...",
+        "category": "Datalayer",
+        "icon": "$(file-text)"
+      },
+      {
+        "command": "datalayer.newRemoteDatalayerNotebookPrompt",
+        "title": "New Notebook in Space...",
+        "category": "Datalayer",
+        "icon": "$(notebook)"
+      },
+      {
+        "command": "datalayer.newRemoteLexicalDocumentPrompt",
+        "title": "New Lexical in Space...",
+        "category": "Datalayer",
+        "icon": "$(file-text)"
       },
       {
         "command": "datalayer.showNotebookControllerStatus",
@@ -87,16 +101,6 @@
       {
         "command": "datalayer.openDocument",
         "title": "Open"
-      },
-      {
-        "command": "datalayer.createNotebookInSpace",
-        "title": "New Notebook...",
-        "icon": "$(notebook)"
-      },
-      {
-        "command": "datalayer.createLexicalInSpace",
-        "title": "New Lexical Document...",
-        "icon": "$(file-text)"
       },
       {
         "command": "datalayer.renameItem",
@@ -160,6 +164,32 @@
         "when": "!datalayer.authenticated"
       }
     ],
+    "keybindings": [
+      {
+        "command": "datalayer.newLocalDatalayerNotebook",
+        "key": "ctrl+alt+shift+n",
+        "mac": "cmd+alt+shift+n",
+        "when": "!editorFocus"
+      },
+      {
+        "command": "datalayer.newLocalLexicalDocument",
+        "key": "ctrl+alt+shift+l",
+        "mac": "cmd+alt+shift+l",
+        "when": "!editorFocus"
+      },
+      {
+        "command": "datalayer.newRemoteDatalayerNotebookPrompt",
+        "key": "ctrl+alt+n",
+        "mac": "cmd+alt+n",
+        "when": "!editorFocus"
+      },
+      {
+        "command": "datalayer.newRemoteLexicalDocumentPrompt",
+        "key": "ctrl+alt+l",
+        "mac": "cmd+alt+l",
+        "when": "!editorFocus"
+      }
+    ],
     "menus": {
       "commandPalette": [
         {
@@ -168,14 +198,6 @@
         },
         {
           "command": "datalayer.openDocument",
-          "when": "false"
-        },
-        {
-          "command": "datalayer.createNotebookInSpace",
-          "when": "false"
-        },
-        {
-          "command": "datalayer.createLexicalInSpace",
           "when": "false"
         },
         {
@@ -213,6 +235,16 @@
       ],
       "view/title": [
         {
+          "command": "datalayer.newRemoteDatalayerNotebookPrompt",
+          "when": "view == datalayerSpaces",
+          "group": "navigation@0"
+        },
+        {
+          "command": "datalayer.newRemoteLexicalDocumentPrompt",
+          "when": "view == datalayerSpaces",
+          "group": "navigation@0.5"
+        },
+        {
           "command": "datalayer.refreshSpaces",
           "when": "view == datalayerSpaces",
           "group": "navigation@1"
@@ -235,37 +267,57 @@
       ],
       "view/item/context": [
         {
+          "command": "datalayer.newRemoteDatalayerNotebookPrompt",
+          "when": "view == datalayerSpaces && (viewItem == notebook || viewItem == document)",
+          "group": "1_create@1"
+        },
+        {
+          "command": "datalayer.newRemoteLexicalDocumentPrompt",
+          "when": "view == datalayerSpaces && (viewItem == notebook || viewItem == document)",
+          "group": "1_create@2"
+        },
+        {
           "command": "datalayer.openDocument",
           "when": "view == datalayerSpaces && (viewItem == notebook || viewItem == document)",
-          "group": "1_open"
+          "group": "2_open"
         },
         {
           "command": "datalayer.renameItem",
           "when": "view == datalayerSpaces && (viewItem == notebook || viewItem == document)",
-          "group": "2_edit@1"
+          "group": "3_edit@1"
         },
         {
           "command": "datalayer.deleteItem",
           "when": "view == datalayerSpaces && (viewItem == notebook || viewItem == document)",
-          "group": "2_edit@2"
+          "group": "3_edit@2"
         },
         {
-          "command": "datalayer.createNotebookInSpace",
+          "command": "datalayer.newRemoteDatalayerNotebookPrompt",
+          "when": "view == datalayerSpaces && viewItem == root",
+          "group": "1_create@1"
+        },
+        {
+          "command": "datalayer.newRemoteLexicalDocumentPrompt",
+          "when": "view == datalayerSpaces && viewItem == root",
+          "group": "1_create@2"
+        },
+        {
+          "command": "datalayer.newRemoteDatalayerNotebookPrompt",
           "when": "view == datalayerSpaces && viewItem == space",
           "group": "1_create"
         },
         {
-          "command": "datalayer.createLexicalInSpace",
+          "command": "datalayer.newRemoteLexicalDocumentPrompt",
           "when": "view == datalayerSpaces && viewItem == space",
           "group": "1_create"
         },
         {
-          "command": "datalayer.createNotebookInSpace",
+          "command": "datalayer.newRemoteDatalayerNotebookPrompt",
           "when": "view == datalayerSpaces && viewItem == space",
           "group": "inline@1"
         },
         {
-          "command": "datalayer.createLexicalInSpace",
+          "command": "datalayer.newRemoteLexicalDocumentPrompt",
           "when": "view == datalayerSpaces && viewItem == space",
           "group": "inline@2"
         },
@@ -278,6 +330,28 @@
           "command": "datalayer.runtimes.delete",
           "when": "view == datalayerRuntimes && viewItem == runtime",
           "group": "2_delete"
+        }
+      ],
+      "explorer/context": [
+        {
+          "command": "datalayer.newLocalDatalayerNotebook",
+          "group": "navigation@10"
+        },
+        {
+          "command": "datalayer.newLocalLexicalDocument",
+          "group": "navigation@11"
+        }
+      ],
+      "editor/title": [
+        {
+          "command": "datalayer.newLocalDatalayerNotebook",
+          "when": "resourceExtname == .ipynb || resourceExtname == .lexical",
+          "group": "navigation@1"
+        },
+        {
+          "command": "datalayer.newLocalLexicalDocument",
+          "when": "resourceExtname == .ipynb || resourceExtname == .lexical",
+          "group": "navigation@2"
         }
       ]
     },
@@ -352,6 +426,32 @@
         }
       }
     },
+    "notebooks": [
+      {
+        "type": "datalayer-notebook",
+        "displayName": "Datalayer Notebook",
+        "selector": [
+          {
+            "filenamePattern": "*.datalayer.ipynb"
+          },
+          {
+            "filenamePattern": "*.ipynb"
+          }
+        ]
+      },
+      {
+        "type": "datalayer-lexical",
+        "displayName": "Datalayer Lexical",
+        "selector": [
+          {
+            "filenamePattern": "*.datalayer.lexical"
+          },
+          {
+            "filenamePattern": "*.lexical"
+          }
+        ]
+      }
+    ],
     "customEditors": [
       {
         "viewType": "datalayer.jupyter-notebook",
