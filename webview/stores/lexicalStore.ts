@@ -65,17 +65,22 @@ const initialState = {
 };
 
 /**
- * Lexical store using Zustand
- * Provides centralized state management for lexical webview
+ * Creates a new isolated Lexical store instance.
+ * Each webview should create its own store to prevent state sharing.
+ *
+ * IMPORTANT: This is a factory function, NOT a global singleton.
+ * Calling this multiple times creates independent store instances.
+ *
+ * @returns A new Zustand store instance for Lexical state management
  */
-export const useLexicalStore = create<LexicalState>((set) => ({
-  ...initialState,
-
-  setContent: (content) => set({ content }),
-  setIsEditable: (editable) => set({ isEditable: editable }),
-  setIsReady: (ready) => set({ isReady: ready }),
-  setIsInitialLoad: (isInitial) => set({ isInitialLoad: isInitial }),
-  setTheme: (theme) => set({ theme }),
-  setCollaborationConfig: (config) => set({ collaborationConfig: config }),
-  reset: () => set(initialState),
-}));
+export const createLexicalStore = () =>
+  create<LexicalState>((set) => ({
+    ...initialState,
+    setContent: (content) => set({ content }),
+    setTheme: (theme) => set({ theme }),
+    setIsEditable: (editable) => set({ isEditable: editable }),
+    setIsReady: (ready) => set({ isReady: ready }),
+    setIsInitialLoad: (isInitial) => set({ isInitialLoad: isInitial }),
+    setCollaborationConfig: (config) => set({ collaborationConfig: config }),
+    reset: () => set(initialState),
+  }));

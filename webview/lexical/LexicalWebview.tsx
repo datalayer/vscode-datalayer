@@ -11,7 +11,7 @@
  * @module lexical/lexicalWebview
  */
 
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, useRef } from "react";
 import ReactDOM from "react-dom/client";
 import { Jupyter } from "@datalayer/jupyter-react";
 import { LexicalEditor } from "./LexicalEditor";
@@ -19,7 +19,7 @@ import { vsCodeAPI } from "../services/messageHandler";
 import type { RuntimeJSON } from "@datalayer/core/lib/client/models/Runtime";
 import { useRuntimeManager } from "../hooks/useRuntimeManager";
 import {
-  useLexicalStore,
+  createLexicalStore,
   type CollaborationConfig,
 } from "../stores/lexicalStore";
 import "@vscode/codicons/dist/codicon.css";
@@ -50,11 +50,13 @@ interface WebviewMessage {
   editable?: boolean;
   collaboration?: CollaborationConfig;
   theme?: "light" | "dark";
+  documentUri?: string; // For logging only
+  documentId?: string; // Unique ID for document validation
 }
 
 /**
- * Inner webview component that has access to Jupyter context
- * Uses centralized state management via useLexicalStore
+ * Inner webview component that has access to Jupyter context.
+ * IMPORTANT: Each instance creates its own isolated store to prevent content mixing.
  */
 function LexicalWebviewInner({
   selectedRuntime,
@@ -63,7 +65,12 @@ function LexicalWebviewInner({
   selectedRuntime?: RuntimeJSON;
   onRuntimeSelected: (runtime: RuntimeJSON | undefined) => void;
 }) {
-  const store = useLexicalStore();
+  // Create per-instance store - prevents global state sharing
+  const [store] = useState(() => createLexicalStore());
+  // Track this document's unique ID to validate incoming messages
+  // CRITICAL: Use ref instead of state to avoid stale closure issues!
+  // The messageHandler closure needs to see the LATEST value, not the value when useEffect ran.
+  const documentIdRef = useRef<string | null>(null);
 
   useEffect(() => {
     const messageHandler = (event: MessageEvent<WebviewMessage>) => {
@@ -71,36 +78,58 @@ function LexicalWebviewInner({
 
       switch (message.type) {
         case "update": {
+          // CRITICAL: Detect when webview is reused for a different document
+          if (
+            message.documentId &&
+            documentIdRef.current &&
+            message.documentId !== documentIdRef.current
+          ) {
+            // Reset store to clear stale content from previous document
+            store.getState().reset();
+            // Clear VS Code state
+            vscode.setState(null);
+            // Update to new document ID
+            documentIdRef.current = message.documentId;
+
+            // CRITICAL: Send ready message again to request content for new document
+            vscode.postMessage({ type: "ready" });
+          }
+
+          // First update - save our document ID
+          if (message.documentId && !documentIdRef.current) {
+            documentIdRef.current = message.documentId;
+          }
+
           // Handle content (even if empty)
           let jsonString = "";
           if (message.content && message.content.length > 0) {
             const decoder = new TextDecoder();
             jsonString = decoder.decode(new Uint8Array(message.content));
           }
-          store.setContent(jsonString);
-          store.setIsReady(true); // Always set ready, even for empty files
-          store.setIsInitialLoad(true);
+          store.getState().setContent(jsonString);
+          store.getState().setIsReady(true); // Always set ready, even for empty files
+          store.getState().setIsInitialLoad(true);
 
           if (message.editable !== undefined) {
-            store.setIsEditable(message.editable);
+            store.getState().setIsEditable(message.editable);
           }
           if (message.collaboration) {
-            store.setCollaborationConfig(message.collaboration);
+            store.getState().setCollaborationConfig(message.collaboration);
           }
           if (message.theme) {
-            store.setTheme(message.theme);
+            store.getState().setTheme(message.theme);
           }
           break;
         }
         case "theme-change": {
           if (message.theme) {
-            store.setTheme(message.theme);
+            store.getState().setTheme(message.theme);
           }
           break;
         }
         case "getFileData": {
           const state = vscode.getState() as { content?: string };
-          const currentContent = state?.content || store.content;
+          const currentContent = state?.content || store.getState().content;
 
           // Pretty-print JSON for readability (git-friendly diffs, easier debugging)
           let formattedContent = currentContent;
@@ -131,17 +160,11 @@ function LexicalWebviewInner({
           break;
         }
         case "kernel-terminated": {
-          console.log(
-            "[LexicalWebview] Received kernel-terminated, clearing runtime",
-          );
           onRuntimeSelected(undefined);
           break;
         }
         case "runtime-expired": {
           // Runtime has expired - reset to mock service manager
-          console.log(
-            "[LexicalWebview] Received runtime-expired from progress bar, clearing runtime",
-          );
           onRuntimeSelected(undefined);
           break;
         }
@@ -150,56 +173,60 @@ function LexicalWebviewInner({
 
     window.addEventListener("message", messageHandler);
 
-    // Check if we have saved state
-    const savedState = vscode.getState() as { content?: string };
-    if (savedState?.content) {
-      store.setContent(savedState.content);
-      store.setIsReady(true);
-      store.setIsInitialLoad(true);
-    }
+    // CRITICAL: Clear any stale VS Code state from recycled webviews
+    // This prevents content from previous documents appearing in new documents
+    vscode.setState(null);
 
     // Tell the extension we're ready
     vscode.postMessage({ type: "ready" });
 
-    return () => window.removeEventListener("message", messageHandler);
+    return () => {
+      window.removeEventListener("message", messageHandler);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [onRuntimeSelected]); // store access doesn't need to be in deps - Zustand handles reactivity
 
   const handleSave = useCallback(
     (newContent: string) => {
       vscode.setState({ content: newContent });
-      store.setContent(newContent);
+      store.getState().setContent(newContent);
       vscode.postMessage({
         type: "save",
       });
     },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [], // store access doesn't need to be in deps - Zustand handles reactivity
+    [store], // Depend on store (but it's stable from useState)
   );
 
   const handleContentChange = useCallback(
     (newContent: string) => {
-      const currentState = useLexicalStore.getState();
-      currentState.setContent(newContent);
+      // Access store state directly (store is from useState, always the same instance)
+      store.getState().setContent(newContent);
       vscode.setState({ content: newContent });
 
-      if (!currentState.collaborationConfig.enabled) {
-        if (!currentState.isInitialLoad) {
+      if (!store.getState().collaborationConfig.enabled) {
+        if (!store.getState().isInitialLoad) {
           vscode.postMessage({
             type: "contentChanged",
             content: newContent,
           });
         } else {
-          currentState.setIsInitialLoad(false);
+          store.getState().setIsInitialLoad(false);
         }
       }
     },
-    [], // Using getState() to get current values instead of relying on closure
+    [store], // Depend on store (but it's stable from useState)
   );
+
+  // Use the store as a hook for reactive values in JSX
+  const isReady = store((state) => state.isReady);
+  const content = store((state) => state.content);
+  const isEditable = store((state) => state.isEditable);
+  const collaborationConfig = store((state) => state.collaborationConfig);
+  const theme = store((state) => state.theme);
 
   return (
     <div
-      data-theme={store.theme}
+      data-theme={theme}
       style={{
         height: "100vh",
         width: "100vw",
@@ -213,14 +240,14 @@ function LexicalWebviewInner({
         padding: 0,
       }}
     >
-      {store.isReady ? (
+      {isReady ? (
         <LexicalEditor
-          initialContent={store.content}
+          initialContent={content}
           onSave={handleSave}
           onContentChange={handleContentChange}
           showToolbar={true}
-          editable={store.isEditable}
-          collaboration={store.collaborationConfig}
+          editable={isEditable}
+          collaboration={collaborationConfig}
           selectedRuntime={selectedRuntime}
           showRuntimeSelector={true}
         />

@@ -19,6 +19,7 @@ import { setupAuthStateManagement } from "./services/core/authManager";
 import { ServiceLoggers } from "./services/logging/loggers";
 import { PerformanceLogger } from "./services/logging/performanceLogger";
 import type { SDKAuthProvider } from "./services/core/authProvider";
+import type { ILogger } from "./services/interfaces/ILogger";
 import { DocumentBridge } from "./services/bridges/documentBridge";
 import { DatalayerFileSystemProvider } from "./providers/documentsFileSystemProvider";
 import { RuntimesTreeProvider } from "./providers/runtimesTreeProvider";
@@ -171,6 +172,9 @@ export async function activate(
       },
     });
 
+    // Prompt user to set Datalayer as default notebook editor (only once)
+    await promptSetDefaultNotebookEditor(context, logger);
+
     // End activation timer
     activationTimer.end("success");
 
@@ -207,6 +211,71 @@ export async function activate(
  */
 export function refreshRuntimesTree(): void {
   runtimesTreeProvider?.refresh();
+}
+
+/**
+ * Prompts the user to set Datalayer as the default notebook editor.
+ * Only shows the prompt once per installation.
+ *
+ * @param context - Extension context for storing state
+ * @param logger - Logger instance for tracking user response
+ */
+async function promptSetDefaultNotebookEditor(
+  context: vscode.ExtensionContext,
+  logger: ILogger,
+): Promise<void> {
+  const PROMPT_KEY = "datalayer.defaultEditorPromptShown";
+
+  // Check if we've already shown this prompt
+  const hasShownPrompt = context.globalState.get<boolean>(PROMPT_KEY, false);
+  if (hasShownPrompt) {
+    return;
+  }
+
+  // Check current default editor setting
+  const config = vscode.workspace.getConfiguration();
+  const currentDefault = config.get<string>(
+    "workbench.editorAssociations.*.ipynb",
+  );
+
+  // If already set to Datalayer, no need to prompt
+  if (currentDefault === "datalayer.jupyter-notebook") {
+    await context.globalState.update(PROMPT_KEY, true);
+    return;
+  }
+
+  // Show prompt to user
+  const choice = await vscode.window.showInformationMessage(
+    "Would you like to set Datalayer as the default editor for Jupyter Notebook (.ipynb) files?",
+    "Yes",
+    "No",
+    "Don't Ask Again",
+  );
+
+  logger.info("Default editor prompt shown", { userChoice: choice });
+
+  if (choice === "Yes") {
+    // Set Datalayer as default for .ipynb files
+    await config.update(
+      "workbench.editorAssociations",
+      {
+        "*.ipynb": "datalayer.jupyter-notebook",
+      },
+      vscode.ConfigurationTarget.Global,
+    );
+
+    logger.info("Datalayer set as default notebook editor");
+
+    vscode.window.showInformationMessage(
+      "Datalayer is now the default editor for .ipynb files",
+    );
+
+    await context.globalState.update(PROMPT_KEY, true);
+  } else if (choice === "Don't Ask Again") {
+    logger.info("User chose not to be asked again about default editor");
+    await context.globalState.update(PROMPT_KEY, true);
+  }
+  // If "No" or dismissed, we'll ask again next time (don't set PROMPT_KEY)
 }
 
 /**

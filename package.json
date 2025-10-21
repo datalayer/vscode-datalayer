@@ -426,32 +426,6 @@
         }
       }
     },
-    "notebooks": [
-      {
-        "type": "datalayer-notebook",
-        "displayName": "Datalayer Notebook",
-        "selector": [
-          {
-            "filenamePattern": "*.datalayer.ipynb"
-          },
-          {
-            "filenamePattern": "*.ipynb"
-          }
-        ]
-      },
-      {
-        "type": "datalayer-lexical",
-        "displayName": "Datalayer Lexical",
-        "selector": [
-          {
-            "filenamePattern": "*.datalayer.lexical"
-          },
-          {
-            "filenamePattern": "*.lexical"
-          }
-        ]
-      }
-    ],
     "customEditors": [
       {
         "viewType": "datalayer.jupyter-notebook",
@@ -512,7 +486,6 @@
     "@codemirror/view": "^6.38.3",
     "@datalayer/core": "^0.0.13",
     "@datalayer/jupyter-lexical": "^1.0.6",
-    "@datalayer/jupyter-react": "^1.1.7",
     "@datalayer/lexical-loro": "^0.1.0",
     "@jupyter/ydoc": "^2.0.0",
     "@jupyterlab/services": "^7.0.0",

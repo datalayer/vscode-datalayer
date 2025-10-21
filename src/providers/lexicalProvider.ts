@@ -290,13 +290,11 @@ export class LexicalProvider extends BaseDocumentProvider<LexicalDocument> {
 
     webviewPanel.webview.html = this.getHtmlForWebview(webviewPanel.webview);
 
-    // Store a flag to track when webview is ready
-    let webviewReady = false;
-
     webviewPanel.webview.onDidReceiveMessage((e) => {
-      if (e.type === "ready" && !webviewReady) {
-        webviewReady = true;
+      if (e.type === "ready") {
         // Send content when webview signals it's ready
+        // NOTE: This can be called multiple times if webview is reused for different documents
+        // The webview will detect document URI changes and reset its store appropriately
         sendInitialContent().catch((error) => {
           console.error(
             "[LexicalProvider] Error sending initial content:",
@@ -381,18 +379,20 @@ export class LexicalProvider extends BaseDocumentProvider<LexicalDocument> {
         }
       }
 
-      // Detect initial theme
-      const theme =
-        vscode.window.activeColorTheme.kind === vscode.ColorThemeKind.Dark
-          ? "dark"
-          : "light";
+      // Create a unique document ID that combines URI with Datalayer document ID if available
+      // This ensures uniqueness even when two documents have the same name
+      // Using :: separator which won't appear in file URIs
+      const uniqueDocId = collaborationConfig?.documentId
+        ? `${document.uri.toString()}::${collaborationConfig.documentId}`
+        : document.uri.toString();
 
       webviewPanel.webview.postMessage({
         type: "update",
         content: contentArray,
         editable: true,
         collaboration: collaborationConfig,
-        theme,
+        documentUri: document.uri.toString(), // Still include for logging
+        documentId: uniqueDocId, // Unique ID for validation
       });
     };
   }
