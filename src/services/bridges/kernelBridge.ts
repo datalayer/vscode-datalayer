@@ -81,6 +81,29 @@ export class KernelBridge implements vscode.Disposable {
   }
 
   /**
+   * Helper to get or find and cache a webview panel for a given URI.
+   *
+   * @param uri - Document URI
+   * @returns The found or cached webview panel
+   * @throws Error if no webview panel is found
+   */
+  private getOrFindWebview(uri: vscode.Uri): vscode.WebviewPanel {
+    const key = uri.toString();
+    let webviewPanel = this._webviews.get(key);
+
+    if (!webviewPanel) {
+      const allWebviews = this.findWebviewsForUri(uri);
+      if (allWebviews.length === 0) {
+        throw new Error("No webview found for document");
+      }
+      webviewPanel = allWebviews[0];
+      this._webviews.set(key, webviewPanel);
+    }
+
+    return webviewPanel;
+  }
+
+  /**
    * Connects a webview document (notebook or lexical) to a runtime.
    * Sends runtime information to the webview for ServiceManager creation.
    *
@@ -91,24 +114,7 @@ export class KernelBridge implements vscode.Disposable {
     uri: vscode.Uri,
     runtime: Runtime,
   ): Promise<void> {
-    const key = uri.toString();
-    const webview = this._webviews.get(key);
-
-    if (!webview) {
-      // Try to find webview by searching active panels
-      const allWebviews = this.findWebviewsForUri(uri);
-      if (allWebviews.length === 0) {
-        throw new Error("No webview found for document");
-      }
-      // Use first matching webview
-      const webviewPanel = allWebviews[0];
-      this._webviews.set(key, webviewPanel);
-    }
-
-    const targetWebview = this._webviews.get(key);
-    if (!targetWebview) {
-      throw new Error("Failed to get webview panel for document");
-    }
+    const targetWebview = this.getOrFindWebview(uri);
 
     // Use runtime.toJSON() to get the stable interface
     let runtimeData: RuntimeJSON;
@@ -144,6 +150,33 @@ export class KernelBridge implements vscode.Disposable {
 
     // Post message to webview
     await targetWebview.webview.postMessage(message);
+  }
+
+  /**
+   * Connects a webview document (notebook or lexical) to Pyodide kernel.
+   * Sends Pyodide kernel type to the webview for in-browser execution.
+   *
+   * @param uri - Document URI
+   */
+  public async connectWebviewWithPyodide(uri: vscode.Uri): Promise<void> {
+    const targetWebview = this.getOrFindWebview(uri);
+
+    // Create message with Pyodide kernel type
+    const message = {
+      type: "kernel-selected",
+      body: {
+        kernelType: "pyodide",
+      },
+    };
+
+    console.log("[KernelBridge] Posting Pyodide kernel-selected message:", {
+      type: message.type,
+      kernelType: message.body.kernelType,
+    });
+
+    // Post message to webview
+    const result = await targetWebview.webview.postMessage(message);
+    console.log("[KernelBridge] postMessage result:", result);
   }
 
   /**
