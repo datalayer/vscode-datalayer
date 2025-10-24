@@ -4,6 +4,7 @@
   "description": "⚡ Bring cloud power to your Jupyter notebooks. ✨ Create Notion-like collaborative reports with executable code.",
   "version": "0.0.4",
   "cache_version": "2",
+  "publisher": "Datalayer",
   "icon": "images/datalayer-logo.png",
   "categories": [
     "AI",
@@ -355,6 +356,379 @@
         }
       ]
     },
+    "languageModelTools": [
+      {
+        "name": "datalayer_createDatalayerRemoteNotebook",
+        "displayName": "Create Datalayer Remote Notebook",
+        "toolReferenceName": "createDatalayerRemoteNotebook",
+        "modelDescription": "Creates a new Jupyter notebook in a Datalayer space (remote/cloud). Intelligently generates notebook name and description from user's request. Defaults to 'Personal' space if not specified.",
+        "canBeReferencedInPrompt": true,
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "notebook_name": {
+              "type": "string",
+              "description": "Name of the notebook (Copilot generates from request, e.g., 'data analysis' → 'data-analysis.ipynb'). Extension '.ipynb' is added automatically if missing."
+            },
+            "description": {
+              "type": "string",
+              "description": "Optional: Description of the notebook's purpose (Copilot generates from request context, e.g., 'for analyzing sales data')"
+            },
+            "space_name": {
+              "type": "string",
+              "description": "Optional: Name of the Datalayer space (e.g., 'Personal', 'Team Project'). Defaults to 'Personal' if not specified."
+            }
+          },
+          "required": [
+            "notebook_name"
+          ]
+        }
+      },
+      {
+        "name": "datalayer_createDatalayerLocalNotebook",
+        "displayName": "Create Datalayer Local Notebook",
+        "toolReferenceName": "createDatalayerLocalNotebook",
+        "modelDescription": "Creates a new local Jupyter notebook file in the current workspace. The notebook will be saved to disk and opened in the editor.",
+        "canBeReferencedInPrompt": true,
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "filename": {
+              "type": "string",
+              "description": "Optional: Name of the notebook file (e.g., 'analysis.ipynb'). If not provided, an auto-generated name will be used."
+            }
+          },
+          "required": []
+        }
+      },
+      {
+        "name": "datalayer_startRuntime",
+        "displayName": "Start Datalayer Runtime",
+        "toolReferenceName": "startRuntime",
+        "modelDescription": "Starts a new Datalayer runtime (compute instance) with default or specified parameters. Use this before executing notebook cells that require computation.",
+        "canBeReferencedInPrompt": true,
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "environment": {
+              "type": "string",
+              "description": "Optional: Runtime environment name (e.g., 'python-3.11'). If not provided, uses the default environment."
+            },
+            "duration_minutes": {
+              "type": "number",
+              "description": "Optional: Duration in minutes (default: 10). Runtime will automatically terminate after this period."
+            }
+          },
+          "required": []
+        }
+      },
+      {
+        "name": "datalayer_connectRuntime",
+        "displayName": "Connect Runtime to Notebook",
+        "toolReferenceName": "connectRuntime",
+        "modelDescription": "Connects an existing runtime to a notebook to enable code execution. Use this after starting a runtime and before executing cells.",
+        "canBeReferencedInPrompt": true,
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "notebook_uri": {
+              "type": "string",
+              "description": "Optional: URI of the notebook (e.g., 'datalayer:/SpaceID/notebook.ipynb'). If not provided, uses the active notebook editor."
+            },
+            "runtime_name": {
+              "type": "string",
+              "description": "Optional: Name of the runtime to connect (pod name). If not provided, uses the most recent runtime."
+            }
+          },
+          "required": []
+        }
+      },
+      {
+        "name": "datalayer_insertDatalayerCell",
+        "displayName": "Insert Datalayer Cell",
+        "toolReferenceName": "insertDatalayerCell",
+        "modelDescription": "Inserts a code or markdown cell into a Jupyter notebook at a specified position or at the end",
+        "canBeReferencedInPrompt": true,
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "cell_type": {
+              "type": "string",
+              "enum": [
+                "code",
+                "markdown"
+              ],
+              "description": "Type of cell to insert: 'code' for executable Python code or 'markdown' for formatted text"
+            },
+            "cell_source": {
+              "type": "string",
+              "description": "Content of the cell (Python code or Markdown text)"
+            },
+            "cell_index": {
+              "type": "number",
+              "description": "Optional: Position where the cell should be inserted (0-based index). If not provided, inserts at the end."
+            },
+            "notebook_uri": {
+              "type": "string",
+              "description": "Optional: URI of the notebook (e.g., 'datalayer:/SpaceID/notebook.ipynb'). If not provided, uses the active notebook editor."
+            }
+          },
+          "required": [
+            "cell_type",
+            "cell_source"
+          ]
+        }
+      },
+      {
+        "name": "datalayer_executeDatalayerCell",
+        "displayName": "Execute Datalayer Cell",
+        "toolReferenceName": "executeDatalayerCell",
+        "modelDescription": "Executes a specific cell in a Jupyter notebook and returns its output (text, errors, or data)",
+        "canBeReferencedInPrompt": true,
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "cell_index": {
+              "type": "number",
+              "description": "Index of the cell to execute (0-based)"
+            },
+            "notebook_uri": {
+              "type": "string",
+              "description": "Optional: URI of the notebook (e.g., 'datalayer:/SpaceID/notebook.ipynb'). If not provided, uses the active notebook editor."
+            }
+          },
+          "required": [
+            "cell_index"
+          ]
+        }
+      },
+      {
+        "name": "datalayer_createLocalLexical",
+        "displayName": "Create Local Lexical Document",
+        "toolReferenceName": "createLocalLexical",
+        "modelDescription": "Creates a new local Lexical document file (.lexical) in the workspace. Use for rich text documents.",
+        "canBeReferencedInPrompt": true,
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "filename": {
+              "type": "string",
+              "description": "Optional: Name of the lexical file (e.g., 'notes.lexical'). Auto-generated if not provided."
+            }
+          },
+          "required": []
+        }
+      },
+      {
+        "name": "datalayer_createRemoteLexical",
+        "displayName": "Create Remote Lexical Document",
+        "toolReferenceName": "createRemoteLexical",
+        "modelDescription": "Creates a new Lexical document in a Datalayer space (cloud). Use for cloud-based rich text documents.",
+        "canBeReferencedInPrompt": true,
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "lexical_name": {
+              "type": "string",
+              "description": "Name of the lexical document"
+            },
+            "space_name": {
+              "type": "string",
+              "description": "Optional: Name of the space (defaults to 'Personal')"
+            },
+            "description": {
+              "type": "string",
+              "description": "Optional: Description of the document"
+            }
+          },
+          "required": [
+            "lexical_name"
+          ]
+        }
+      },
+      {
+        "name": "datalayer_readAllDatalayerCells",
+        "displayName": "Read All Datalayer Cells",
+        "toolReferenceName": "readAllDatalayerCells",
+        "modelDescription": "Reads all cells from a Datalayer notebook, including source code and outputs. ONLY works with Datalayer notebooks.",
+        "canBeReferencedInPrompt": true,
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "notebook_uri": {
+              "type": "string",
+              "description": "Optional: URI of Datalayer notebook. Uses active notebook if not provided."
+            }
+          },
+          "required": []
+        }
+      },
+      {
+        "name": "datalayer_readDatalayerCell",
+        "displayName": "Read Datalayer Cell",
+        "toolReferenceName": "readDatalayerCell",
+        "modelDescription": "Reads a specific cell from a Datalayer notebook by index. ONLY works with Datalayer notebooks.",
+        "canBeReferencedInPrompt": true,
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "cell_index": {
+              "type": "number",
+              "description": "Index of the cell to read (0-based)"
+            },
+            "notebook_uri": {
+              "type": "string",
+              "description": "Optional: URI of Datalayer notebook. Uses active notebook if not provided."
+            }
+          },
+          "required": [
+            "cell_index"
+          ]
+        }
+      },
+      {
+        "name": "datalayer_getDatalayerNotebookInfo",
+        "displayName": "Get Datalayer Notebook Info",
+        "toolReferenceName": "getDatalayerNotebookInfo",
+        "modelDescription": "Gets metadata about a Datalayer notebook (path, cell counts, types). ONLY works with Datalayer notebooks.",
+        "canBeReferencedInPrompt": true,
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "notebook_uri": {
+              "type": "string",
+              "description": "Optional: URI of Datalayer notebook. Uses active notebook if not provided."
+            }
+          },
+          "required": []
+        }
+      },
+      {
+        "name": "datalayer_deleteDatalayerCell",
+        "displayName": "Delete Datalayer Cell",
+        "toolReferenceName": "deleteDatalayerCell",
+        "modelDescription": "Deletes a cell from a Datalayer notebook. ONLY works with Datalayer notebooks.",
+        "canBeReferencedInPrompt": true,
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "cell_index": {
+              "type": "number",
+              "description": "Index of the cell to delete (0-based)"
+            },
+            "notebook_uri": {
+              "type": "string",
+              "description": "Optional: URI of Datalayer notebook. Uses active notebook if not provided."
+            }
+          },
+          "required": [
+            "cell_index"
+          ]
+        }
+      },
+      {
+        "name": "datalayer_overwriteDatalayerCell",
+        "displayName": "Overwrite Datalayer Cell",
+        "toolReferenceName": "overwriteDatalayerCell",
+        "modelDescription": "Replaces cell source content in a Datalayer notebook (does NOT execute). ONLY works with Datalayer notebooks.",
+        "canBeReferencedInPrompt": true,
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "cell_index": {
+              "type": "number",
+              "description": "Index of the cell to overwrite (0-based)"
+            },
+            "cell_source": {
+              "type": "string",
+              "description": "New source code for the cell"
+            },
+            "notebook_uri": {
+              "type": "string",
+              "description": "Optional: URI of Datalayer notebook. Uses active notebook if not provided."
+            }
+          },
+          "required": [
+            "cell_index",
+            "cell_source"
+          ]
+        }
+      },
+      {
+        "name": "datalayer_appendDatalayerMarkdownCell",
+        "displayName": "Append Datalayer Markdown Cell",
+        "toolReferenceName": "appendDatalayerMarkdownCell",
+        "modelDescription": "Appends a markdown cell at the end of a Datalayer notebook. ONLY works with Datalayer notebooks.",
+        "canBeReferencedInPrompt": true,
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "cell_source": {
+              "type": "string",
+              "description": "Markdown content for the cell"
+            },
+            "notebook_uri": {
+              "type": "string",
+              "description": "Optional: URI of Datalayer notebook. Uses active notebook if not provided."
+            }
+          },
+          "required": [
+            "cell_source"
+          ]
+        }
+      },
+      {
+        "name": "datalayer_appendExecuteDatalayerCodeCell",
+        "displayName": "Append Execute Datalayer Code Cell",
+        "toolReferenceName": "appendExecuteDatalayerCodeCell",
+        "modelDescription": "Appends a code cell at the end of a Datalayer notebook and executes it. ONLY works with Datalayer notebooks.",
+        "canBeReferencedInPrompt": true,
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "cell_source": {
+              "type": "string",
+              "description": "Code to execute in the cell"
+            },
+            "notebook_uri": {
+              "type": "string",
+              "description": "Optional: URI of Datalayer notebook. Uses active notebook if not provided."
+            }
+          },
+          "required": [
+            "cell_source"
+          ]
+        }
+      },
+      {
+        "name": "datalayer_insertDatalayerMarkdownCell",
+        "displayName": "Insert Datalayer Markdown Cell",
+        "toolReferenceName": "insertDatalayerMarkdownCell",
+        "modelDescription": "Inserts a markdown cell at a specific index in a Datalayer notebook. ONLY works with Datalayer notebooks.",
+        "canBeReferencedInPrompt": true,
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "cell_index": {
+              "type": "number",
+              "description": "Index where to insert the cell (0-based)"
+            },
+            "cell_source": {
+              "type": "string",
+              "description": "Markdown content for the cell"
+            },
+            "notebook_uri": {
+              "type": "string",
+              "description": "Optional: URI of Datalayer notebook. Uses active notebook if not provided."
+            }
+          },
+          "required": [
+            "cell_index",
+            "cell_source"
+          ]
+        }
+      }
+    ],
     "configuration": {
       "title": "Datalayer",
       "properties": {
