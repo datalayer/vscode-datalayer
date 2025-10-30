@@ -13,12 +13,23 @@
 
 import * as vscode from "vscode";
 import type { RuntimeDTO } from "@datalayer/core/lib/models/RuntimeDTO";
+import type { NativeKernelInfo } from "../kernel/nativeKernelIntegration";
+import type { LocalKernelClient } from "../kernel/localKernelClient";
 
 /**
  * Kernel bridge interface for managing kernel connections.
  * Implementations should route connections to appropriate handlers.
  */
 export interface IKernelBridge {
+  /**
+   * Gets a local kernel client by ID.
+   * Used by network proxy to route messages to local ZMQ kernels.
+   *
+   * @param kernelId - Kernel identifier
+   * @returns Local kernel client or undefined
+   */
+  getLocalKernel(kernelId: string): LocalKernelClient | undefined;
+
   /**
    * Registers a webview panel for kernel communication.
    *
@@ -42,6 +53,18 @@ export interface IKernelBridge {
    * @param runtime - Selected runtime
    */
   connectWebviewDocument(uri: vscode.Uri, runtime: RuntimeDTO): Promise<void>;
+
+  /**
+   * Connects a webview document to a local kernel (Python environment, Jupyter kernel, or Jupyter server).
+   * Starts the kernel and sends kernel information to the webview.
+   *
+   * @param uri - Document URI
+   * @param kernelInfo - Native kernel information
+   */
+  connectWebviewDocumentToLocalKernel(
+    uri: vscode.Uri,
+    kernelInfo: NativeKernelInfo,
+  ): Promise<void>;
 
   /**
    * Detects the type of notebook (native vs webview).

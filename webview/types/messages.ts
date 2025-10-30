@@ -101,6 +101,18 @@ export interface SavedMessage {
   body: Record<string, never>; // Empty object
 }
 
+/** Local kernel connected */
+export interface LocalKernelConnectedMessage {
+  type: "local-kernel-connected";
+  body: {
+    kernelInfo?: {
+      name: string;
+      specFile?: string;
+    };
+    runtime?: RuntimeJSON;
+  };
+}
+
 /**
  * Union of all Extension → Webview messages
  */
@@ -114,6 +126,7 @@ export type ExtensionToWebviewMessage =
   | SetRuntimeMessage
   | GetFileDataRequestMessage
   | SavedMessage
+  | LocalKernelConnectedMessage
   | WebSocketProxyMessage
   | WebSocketOpenMessage
   | WebSocketCloseMessage

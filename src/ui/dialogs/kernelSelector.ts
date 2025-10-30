@@ -12,7 +12,7 @@
  */
 
 import * as vscode from "vscode";
-import { selectDatalayerRuntime, setRuntime } from "./runtimeSelector";
+import { selectDatalayerRuntime } from "./runtimeSelector";
 import type { DatalayerClient } from "@datalayer/core/lib/client";
 import type { RuntimeDTO } from "@datalayer/core/lib/models/RuntimeDTO";
 import { SDKAuthProvider } from "../../services/core/authProvider";
@@ -44,6 +44,11 @@ export async function showKernelSelector(
   documentUri?: vscode.Uri,
   currentRuntime?: unknown,
 ): Promise<void> {
+  // Import native kernel integration
+  const { showPythonEnvironmentPicker, showJupyterServerPicker } = await import(
+    "../../services/kernel/nativeKernelIntegration"
+  );
+
   const options: KernelOption[] = [
     {
       label: "Datalayer Platform",
@@ -58,21 +63,34 @@ export async function showKernelSelector(
       },
     },
     {
-      label: "Python Environments... (coming soon)",
+      label: "Python Environments...",
       action: async () => {
-        vscode.window.showInformationMessage(
-          "Local Python kernel support is coming soon. For now, please use Datalayer Platform or open the notebook directly in VS Code.",
-        );
+        const kernelInfo = await showPythonEnvironmentPicker();
+        if (kernelInfo && documentUri) {
+          try {
+            // Connect to local Python environment via kernel bridge
+            await kernelBridge.connectWebviewDocumentToLocalKernel(
+              documentUri,
+              kernelInfo,
+            );
+            vscode.window.showInformationMessage(
+              `Connected to Python environment: ${kernelInfo.displayName}`,
+            );
+          } catch (error) {
+            vscode.window.showErrorMessage(
+              `Failed to connect to Python environment: ${error}`,
+            );
+          }
+        }
       },
     },
     {
       label: "Existing Jupyter Server...",
       action: async () => {
-        // Use the existing setRuntime function to get Jupyter server URL
-        const serverUrl = await setRuntime();
-        if (serverUrl) {
+        const kernelInfo = await showJupyterServerPicker();
+        if (kernelInfo && documentUri) {
           try {
-            const parsedURL = new URL(serverUrl);
+            const parsedURL = new URL(kernelInfo.serverUrl || "");
             const token = parsedURL.searchParams.get("token") ?? "";
             parsedURL.search = "";
             const baseUrl = parsedURL.toString();
@@ -98,8 +116,13 @@ export async function showKernelSelector(
               );
             }
 
+            // Connect to Jupyter server via kernel bridge
+            await kernelBridge.connectWebviewDocumentToLocalKernel(
+              documentUri,
+              kernelInfo,
+            );
             vscode.window.showInformationMessage(
-              `Connected to Jupyter server at ${baseUrl}`,
+              `Connected to Jupyter server: ${kernelInfo.displayName}`,
             );
           } catch (error) {
             vscode.window.showErrorMessage(
