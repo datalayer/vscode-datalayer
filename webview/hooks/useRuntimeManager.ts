@@ -14,6 +14,7 @@ import { useState, useCallback, useRef } from "react";
 import type { ServiceManager } from "@jupyterlab/services";
 import type { RuntimeJSON } from "@datalayer/core/lib/client/models/Runtime";
 import { MutableServiceManager } from "../services/mutableServiceManager";
+import { createLocalKernelServiceManager } from "../services/localKernelServiceManager";
 
 /**
  * Hook to manage runtime selection and service manager lifecycle.
@@ -67,11 +68,46 @@ export function useRuntimeManager(initialRuntime?: RuntimeJSON) {
     setSelectedRuntime(runtime);
 
     if (runtime?.ingress) {
-      // Update underlying service manager (reference stays stable)
-      mutableManagerRef.current?.updateConnection(
-        runtime.ingress,
-        runtime.token || "",
-      );
+      // Detect local kernel runtimes (URL starts with "local-kernel-")
+      const isLocalKernel = runtime.ingress.includes("local-kernel-");
+
+      if (isLocalKernel) {
+        console.log(
+          `[useRuntimeManager] Detected local kernel runtime: ${runtime.ingress}`,
+        );
+
+        // Extract kernel ID from URL (format: ws://local-kernel-<kernelId>.localhost)
+        const kernelId = runtime.ingress.match(/local-kernel-([^.]+)/)?.[1];
+        if (!kernelId) {
+          console.error(
+            `[useRuntimeManager] Could not extract kernel ID from URL: ${runtime.ingress}`,
+          );
+          mutableManagerRef.current?.resetToMock();
+          return;
+        }
+
+        // Create LocalKernelServiceManager
+        const localServiceManager = createLocalKernelServiceManager(
+          kernelId,
+          runtime.environmentName || "python3", // Use environment name as kernel name
+          runtime.ingress,
+        );
+
+        // Update the MutableServiceManager with the local service manager
+        // We need to manually replace the internal service manager
+        // @ts-ignore - accessing private property
+        mutableManagerRef.current._serviceManager = localServiceManager;
+
+        console.log(
+          `[useRuntimeManager] Created LocalKernelServiceManager for kernel ${kernelId}`,
+        );
+      } else {
+        // Regular remote runtime - use standard connection
+        mutableManagerRef.current?.updateConnection(
+          runtime.ingress,
+          runtime.token || "",
+        );
+      }
     } else {
       // Reset to mock service manager (reference stays stable)
       mutableManagerRef.current?.resetToMock();

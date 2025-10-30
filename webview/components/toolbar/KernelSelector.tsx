@@ -32,7 +32,8 @@ export interface KernelSelectorProps {
  * Kernel selector button component.
  *
  * Display logic:
- * - If selectedRuntime exists: "Datalayer: {runtimeName}"
+ * - If selectedRuntime exists and is a cloud runtime: "Datalayer: {runtimeName}"
+ * - If selectedRuntime exists and is a local kernel: "{runtimeName}" (no prefix)
  * - If kernelName exists: "{kernelName}"
  * - Otherwise: "Select Kernel"
  *
@@ -59,7 +60,10 @@ export const KernelSelector: React.FC<KernelSelectorProps> = ({
         selectedRuntime.environmentName ||
         selectedRuntime.uid ||
         "Runtime";
-      return `Datalayer: ${runtimeName}`;
+      // Check if this is a local kernel (URL contains "local-kernel-")
+      const isLocalKernel = selectedRuntime.ingress?.includes("local-kernel-");
+      // Don't show "Datalayer: " prefix for local kernels
+      return isLocalKernel ? runtimeName : `Datalayer: ${runtimeName}`;
     }
     if (kernelName) {
       return kernelName;

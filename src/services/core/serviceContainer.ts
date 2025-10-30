@@ -143,7 +143,8 @@ export class ServiceContainer implements IServiceContainer {
   get notebookNetwork(): NotebookNetworkService {
     if (!this._notebookNetwork) {
       this.logger.debug("Lazily initializing NotebookNetwork service");
-      this._notebookNetwork = new NotebookNetworkService();
+      // Pass kernel bridge so network service can access local kernels
+      this._notebookNetwork = new NotebookNetworkService(this.kernelBridge);
     }
     return this._notebookNetwork;
   }
