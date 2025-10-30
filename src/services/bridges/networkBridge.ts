@@ -17,6 +17,7 @@ import type { DocumentContext } from "../messaging/types";
 import { BaseService } from "../core/baseService";
 import { ServiceLoggers } from "../logging/loggers";
 import { NotebookNetworkService } from "../network/networkProxy";
+import { getServiceContainer } from "../../extension";
 
 /**
  * Bridges network communication between webviews and the extension.
@@ -33,7 +34,9 @@ export class NetworkBridgeService extends BaseService {
       "NetworkBridgeService",
       ServiceLoggers.getLogger("NetworkBridgeService"),
     );
-    this._networkService = new NotebookNetworkService();
+    // Get kernel bridge from service container to enable local kernel support
+    const kernelBridge = getServiceContainer().kernelBridge;
+    this._networkService = new NotebookNetworkService(kernelBridge);
   }
 
   /**
