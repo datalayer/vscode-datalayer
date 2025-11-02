@@ -15,9 +15,9 @@ console.log('🔧 Applying fixes to @datalayer/jupyter-lexical...');
 
 // Copy fixed files
 const filesToCopy = [
-  'JupyterInputOutputPlugin.js',
-  'JupyterInputOutputPlugin.d.ts',
-  'JupyterInputOutputPlugin.js.map'
+//  'JupyterInputOutputPlugin.js',
+//  'JupyterInputOutputPlugin.d.ts',
+//  'JupyterInputOutputPlugin.js.map'
 ];
 
 try {
