@@ -8,7 +8,26 @@
 const fs = require('fs');
 const path = require('path');
 
-const TARGET_DIR = path.join(__dirname, '..', 'node_modules', '@datalayer', 'jupyter-lexical', 'lib', 'plugins');
+const CANDIDATE_TARGET_DIRS = [
+  path.join(
+    __dirname,
+    '..',
+    'node_modules',
+    '@datalayer',
+    'jupyter-lexical',
+    'lib',
+    'plugins',
+  ),
+  path.join(
+    __dirname,
+    '..',
+    'node_modules',
+    '@datalayer',
+    'jupyter-lexical',
+    'dist',
+    'plugins',
+  ),
+];
 const FIXED_FILES_DIR = path.join(__dirname, 'fixed-files', 'jupyter-lexical');
 
 console.log('🔧 Applying fixes to @datalayer/jupyter-lexical...');
@@ -20,10 +39,21 @@ const filesToCopy = [
   'JupyterInputOutputPlugin.js.map'
 ];
 
+const targetDir = CANDIDATE_TARGET_DIRS.find(dir => fs.existsSync(dir));
+
+if (!targetDir) {
+  console.warn(
+    '⚠️  Target plugin directory not found. Skipping patch; package layout may have changed or dependency is missing.',
+  );
+  process.exit(0);
+}
+
 try {
   filesToCopy.forEach(file => {
     const source = path.join(FIXED_FILES_DIR, file);
-    const target = path.join(TARGET_DIR, file);
+    const target = path.join(targetDir, file);
+
+    fs.mkdirSync(path.dirname(target), { recursive: true });
 
     if (fs.existsSync(source)) {
       fs.copyFileSync(source, target);
