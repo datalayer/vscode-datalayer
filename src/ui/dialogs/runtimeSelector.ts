@@ -13,8 +13,8 @@
 
 import * as vscode from "vscode";
 import type { DatalayerClient } from "@datalayer/core/lib/client";
-import type { Runtime } from "@datalayer/core/lib/client/models/Runtime";
-import type { Environment } from "@datalayer/core/lib/client/models/Environment";
+import type { Runtime3 } from "@datalayer/core/lib/models/Runtime3";
+import type { Environment2 } from "@datalayer/core/lib/models/Environment2";
 import type { IAuthProvider } from "../../services/interfaces/IAuthProvider";
 import { EnvironmentCache } from "../../services/cache/environmentCache";
 import { promptAndLogin } from "./authDialog";
@@ -24,9 +24,9 @@ import { generateRuntimeName } from "../../utils/runtimeNameGenerator";
  * QuickPick item for runtime selection.
  */
 interface RuntimeQuickPickItem extends vscode.QuickPickItem {
-  runtime?: Runtime;
+  runtime?: Runtime3;
   action?: "create";
-  environment?: Environment;
+  environment?: Environment2;
 }
 
 /**
@@ -54,7 +54,7 @@ export async function selectDatalayerRuntime(
   sdk: DatalayerClient,
   authProvider: IAuthProvider,
   options?: RuntimeSelectorOptions,
-): Promise<Runtime | undefined> {
+): Promise<Runtime3 | undefined> {
   const { hideExistingRuntimes = false } = options ?? {};
 
   // Check authentication first
@@ -113,8 +113,8 @@ export async function selectDatalayerRuntime(
   // Add existing runtimes (include all runtimes, not just "running" or "ready")
   // The SDK returns Runtime models now, not plain objects
   // Sort runtimes by most recent first using SDK getter
-  const validRuntimes = runtimes.sort((a: Runtime, b: Runtime) => {
-    const getStartTime = (runtime: Runtime) => {
+  const validRuntimes = runtimes.sort((a: Runtime3, b: Runtime3) => {
+    const getStartTime = (runtime: Runtime3) => {
       try {
         return runtime.startedAt ? runtime.startedAt.getTime() : 0;
       } catch (error) {
@@ -256,12 +256,10 @@ export async function selectDatalayerRuntime(
  */
 async function createRuntime(
   sdk: DatalayerClient,
-  environment: Environment,
-): Promise<Runtime | undefined> {
-  // Generate a unique name suggestion
+  environment: Environment2,
+): Promise<Runtime3 | undefined> {
+  // Prompt for runtime name (human-readable)
   const suggestedName = generateRuntimeName();
-
-  // Prompt for runtime name (human-readable) with generated name as default
   const name = await vscode.window.showInputBox({
     title: `Create ${environment.title ?? environment.name} Runtime`,
     prompt: "Enter a friendly name for the new runtime",
@@ -445,7 +443,7 @@ async function createRuntime(
 
           // Fetch the updated runtime list
           const runtimes = await sdk.listRuntimes();
-          readyRuntime = runtimes.find((r: Runtime) => r.uid === runtime.uid);
+          readyRuntime = runtimes.find((r: Runtime3) => r.uid === runtime.uid);
 
           // Check if runtime has connection info
           if (readyRuntime && readyRuntime.ingress) {

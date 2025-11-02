@@ -16,7 +16,7 @@ import * as vscode from "vscode";
 import { RuntimeTreeItem } from "../models/runtimeTreeItem";
 import { SDKAuthProvider } from "../services/core/authProvider";
 import { getServiceContainer } from "../extension";
-import type { Runtime } from "@datalayer/core/lib/client/models/Runtime";
+import type { Runtime3 } from "@datalayer/core/lib/models/Runtime3";
 
 /**
  * Tree data provider for the Datalayer Runtimes view.
@@ -40,7 +40,7 @@ export class RuntimesTreeProvider
   > = this._onDidChangeTreeData.event;
 
   private authService: SDKAuthProvider;
-  private runtimesCache: Runtime[] = [];
+  private runtimesCache: Runtime3[] = [];
   private refreshTimer?: NodeJS.Timeout;
 
   /**

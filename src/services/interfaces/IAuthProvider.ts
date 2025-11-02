@@ -12,14 +12,14 @@
  */
 
 import * as vscode from "vscode";
-import type { User } from "@datalayer/core/lib/client/models/User";
+import type { User3 } from "@datalayer/core/lib/models/User3";
 
 /**
  * Authentication state for VS Code context.
  */
 export interface VSCodeAuthState {
   isAuthenticated: boolean;
-  user: User | null;
+  user: User3 | null;
   error: string | null;
 }
 
@@ -69,7 +69,7 @@ export interface IAuthProvider {
    * Gets current user information.
    * @returns User object if authenticated, null otherwise
    */
-  getCurrentUser(): User | null;
+  getCurrentUser(): User3 | null;
 
   /**
    * Gets authentication token.

@@ -28,11 +28,11 @@ import {
   CommonConfirmations,
 } from "../ui/dialogs/confirmationDialog";
 
-import type { Runtime } from "@datalayer/core/lib/client/models/Runtime";
+import type { Runtime3 } from "@datalayer/core/lib/models/Runtime3";
 import type { DatalayerClient } from "@datalayer/core/lib/client";
 
 interface RuntimeQuickPickItem extends vscode.QuickPickItem {
-  runtime?: Runtime;
+  runtime?: Runtime3;
   isTerminateAll?: boolean;
 }
 
@@ -467,7 +467,7 @@ export function registerRuntimeCommands(
         }
 
         // Multiple runtimes - show quick pick
-        const items = runtimes.map((runtime: Runtime) => {
+        const items = runtimes.map((runtime: Runtime3) => {
           const name = runtime.givenName;
           const environment = runtime.environmentName;
           // Note: state property may not exist on Runtime type
@@ -753,7 +753,7 @@ async function notifyAllDocuments(): Promise<void> {
  */
 async function terminateRuntime(
   sdk: DatalayerClient,
-  runtime: Runtime,
+  runtime: Runtime3,
 ): Promise<void> {
   const name = runtime.givenName;
 

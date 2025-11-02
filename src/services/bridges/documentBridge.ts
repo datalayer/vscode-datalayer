@@ -18,7 +18,7 @@ import * as os from "os";
 import { Document } from "../../models/spaceItem";
 import { getServiceContainer } from "../../extension";
 import type { DatalayerClient } from "@datalayer/core/lib/client";
-import type { Runtime } from "@datalayer/core/lib/client/models/Runtime";
+import type { Runtime3 } from "@datalayer/core/lib/models/Runtime3";
 import { DatalayerFileSystemProvider } from "../../providers/documentsFileSystemProvider";
 import { detectDocumentType } from "../../utils/documentUtils";
 
@@ -37,7 +37,7 @@ export interface DocumentMetadata {
   /** When the document was last downloaded */
   lastDownloaded: Date;
   /** Associated runtime for notebooks */
-  runtime?: Runtime;
+  runtime?: Runtime3;
 }
 
 /**
@@ -392,7 +392,7 @@ export class DocumentBridge {
    * @param documentId - Document UID needing runtime
    * @returns Runtime instance or undefined if creation fails
    */
-  async ensureRuntime(documentId: string): Promise<Runtime | undefined> {
+  async ensureRuntime(documentId: string): Promise<Runtime3 | undefined> {
     const metadata = this.documentMetadata.get(documentId);
 
     // Check if we have a cached runtime, but verify it's still running

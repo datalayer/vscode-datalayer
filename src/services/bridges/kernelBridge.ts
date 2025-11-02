@@ -13,8 +13,8 @@
 
 import * as vscode from "vscode";
 import type { DatalayerClient } from "@datalayer/core/lib/client";
-import type { Runtime } from "@datalayer/core/lib/client/models/Runtime";
-import type { RuntimeJSON } from "@datalayer/core/lib/client/models/Runtime";
+import type { Runtime3 } from "@datalayer/core/lib/models/Runtime3";
+import type { RuntimeJSON } from "@datalayer/core/lib/models/Runtime3";
 import { SDKAuthProvider } from "../core/authProvider";
 
 /**
@@ -89,7 +89,7 @@ export class KernelBridge implements vscode.Disposable {
    */
   public async connectWebviewDocument(
     uri: vscode.Uri,
-    runtime: Runtime,
+    runtime: Runtime3,
   ): Promise<void> {
     const key = uri.toString();
     const webview = this._webviews.get(key);
@@ -292,7 +292,7 @@ export class KernelBridge implements vscode.Disposable {
    *
    * @param runtime - Selected runtime to broadcast
    */
-  public async broadcastKernelSelected(runtime: Runtime): Promise<void> {
+  public async broadcastKernelSelected(runtime: Runtime3): Promise<void> {
     const runtimeData = runtime.toJSON();
     const message: KernelSelectionMessage = {
       type: "kernel-selected",
