@@ -49,7 +49,27 @@ jobs:
           node-version: ${{ matrix.node-version }}
 
       - name: Install dependencies
-        run: npm install --ignore-engines
+        run: |
+          npm install --ignore-engines
+          echo ""
+          echo "📂 Workspace root after install:"
+          ls -la
+          echo ""
+          echo "📦 node_modules/@datalayer:"
+          ls -la node_modules/@datalayer/ || echo "Directory not found"
+          echo ""
+          echo "🔍 Searching for jupyter-lexical:"
+          find node_modules -name "*jupyter-lexical*" -type d 2>/dev/null || echo "Not found"
+          echo ""
+          echo "🔍 Searching for jupyter-react:"
+          find node_modules -name "*jupyter-react*" -type d 2>/dev/null || echo "Not found"
+        shell: bash
+
+      - name: Debug - Show package.json dependencies
+        run: |
+          echo "📄 package.json dependencies:"
+          cat package.json | grep -A 50 '"dependencies"' | head -60
+        shell: bash
 
       - name: Build VS Code extension
         run: npm run compile

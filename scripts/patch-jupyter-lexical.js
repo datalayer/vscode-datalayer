@@ -42,10 +42,12 @@ const filesToCopy = [
 const targetDir = CANDIDATE_TARGET_DIRS.find(dir => fs.existsSync(dir));
 
 if (!targetDir) {
-  console.warn(
-    '⚠️  Target plugin directory not found. Skipping patch; package layout may have changed or dependency is missing.',
+  console.error(
+    '❌ Target plugin directory not found. Thel @datalayer/jupyter-lexical dependency is missing or has an unexpected layout.',
   );
-  process.exit(0);
+  console.error('Searched in:');
+  CANDIDATE_TARGET_DIRS.forEach(dir => console.error(`  - ${dir}`));
+  process.exit(1);
 }
 
 try {
