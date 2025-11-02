@@ -15,7 +15,7 @@ import { SDKAuthProvider } from "../../services/core/authProvider";
 import { LoggerManager } from "../../services/logging/loggerManager";
 import { ServiceLoggers } from "../../services/logging/loggers";
 import type { DatalayerClient } from "@datalayer/core/lib/client";
-import type { User3 } from "@datalayer/core/lib/models/User3";
+import type { UserDTO } from "@datalayer/core/lib/models/UserDTO";
 import {
   createMockSDK,
   createMockExtensionContext,
@@ -93,7 +93,7 @@ suite("EnvironmentCache Tests", () => {
       // Mock authenticated
       authProvider["_authState"] = {
         isAuthenticated: true,
-        user: { uid: "test-user" } as unknown as User3,
+        user: { uid: "test-user" } as unknown as UserDTO,
         error: null,
       };
 
@@ -117,7 +117,7 @@ suite("EnvironmentCache Tests", () => {
     test("returns cached environments on second call", async () => {
       authProvider["_authState"] = {
         isAuthenticated: true,
-        user: { uid: "test-user" } as unknown as User3,
+        user: { uid: "test-user" } as unknown as UserDTO,
         error: null,
       };
 
@@ -148,7 +148,7 @@ suite("EnvironmentCache Tests", () => {
     test("forceRefresh bypasses cache", async () => {
       authProvider["_authState"] = {
         isAuthenticated: true,
-        user: { uid: "test-user" } as unknown as User3,
+        user: { uid: "test-user" } as unknown as UserDTO,
         error: null,
       };
 
@@ -188,7 +188,7 @@ suite("EnvironmentCache Tests", () => {
     test("handles SDK errors gracefully", async () => {
       authProvider["_authState"] = {
         isAuthenticated: true,
-        user: { uid: "test-user" } as unknown as User3,
+        user: { uid: "test-user" } as unknown as UserDTO,
         error: null,
       };
 

@@ -14,14 +14,14 @@
 import * as vscode from "vscode";
 import * as path from "path";
 import { ItemTypes } from "@datalayer/core/lib/client/constants";
-import type { Space3 } from "@datalayer/core/lib/models/Space3";
-import type { Notebook2 } from "@datalayer/core/lib/models/Notebook2";
-import type { Lexical2 } from "@datalayer/core/lib/models/Lexical2";
+import type { SpaceDTO } from "@datalayer/core/lib/models/SpaceDTO";
+import type { NotebookDTO } from "@datalayer/core/lib/models/NotebookDTO";
+import type { LexicalDTO } from "@datalayer/core/lib/models/LexicalDTO";
 
 /**
  * Type alias for any SDK document model (Notebook or Lexical).
  */
-export type Document = Notebook2 | Lexical2;
+export type Document = NotebookDTO | LexicalDTO;
 
 /**
  * Types of items that can appear in the spaces tree.
@@ -53,7 +53,7 @@ export interface SpaceItemData {
   /** Type of the tree item */
   type: ItemType;
   /** SDK Space model instance (for SPACE type) */
-  space?: Space3;
+  space?: SpaceDTO;
   /** SDK Notebook or Lexical model instance (for NOTEBOOK/DOCUMENT types) */
   document?: Document;
   /** Error message (for ERROR type) */

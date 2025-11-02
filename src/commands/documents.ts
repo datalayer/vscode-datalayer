@@ -34,7 +34,7 @@ import {
   showTwoStepConfirmation,
   CommonConfirmations,
 } from "../ui/dialogs/confirmationDialog";
-import type { Space3 } from "@datalayer/core/lib/models/Space3";
+import type { SpaceDTO } from "@datalayer/core/lib/models/SpaceDTO";
 
 /**
  * Registers all document-related VS Code commands for the Datalayer extension.
@@ -185,12 +185,12 @@ export function registerDocumentCommands(
       "datalayer.newRemoteDatalayerNotebookPrompt",
       async (spaceItem?: unknown) => {
         try {
-          let space: Space3;
+          let space: SpaceDTO;
 
           // Check if called from context menu with spaceItem
           const itemWithData = spaceItem as {
-            data?: { space?: Space3 };
-            parent?: { data?: { space?: Space3 } };
+            data?: { space?: SpaceDTO };
+            parent?: { data?: { space?: SpaceDTO } };
           };
 
           if (itemWithData?.data?.space) {
@@ -291,12 +291,12 @@ export function registerDocumentCommands(
       "datalayer.newRemoteLexicalDocumentPrompt",
       async (spaceItem?: unknown) => {
         try {
-          let space: Space3;
+          let space: SpaceDTO;
 
           // Check if called from context menu with spaceItem
           const itemWithData = spaceItem as {
-            data?: { space?: Space3 };
-            parent?: { data?: { space?: Space3 } };
+            data?: { space?: SpaceDTO };
+            parent?: { data?: { space?: SpaceDTO } };
           };
 
           if (itemWithData?.data?.space) {

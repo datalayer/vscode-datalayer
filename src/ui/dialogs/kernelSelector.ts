@@ -14,7 +14,7 @@
 import * as vscode from "vscode";
 import { selectDatalayerRuntime, setRuntime } from "./runtimeSelector";
 import type { DatalayerClient } from "@datalayer/core/lib/client";
-import type { Runtime3 } from "@datalayer/core/lib/models/Runtime3";
+import type { RuntimeDTO } from "@datalayer/core/lib/models/RuntimeDTO";
 import { SDKAuthProvider } from "../../services/core/authProvider";
 import type { IKernelBridge } from "../../services/interfaces/IKernelBridge";
 
@@ -94,7 +94,7 @@ export async function showKernelSelector(
             if (documentUri) {
               await kernelBridge.connectWebviewDocument(
                 documentUri,
-                jupyterRuntime as unknown as Runtime3,
+                jupyterRuntime as unknown as RuntimeDTO,
               );
             }
 

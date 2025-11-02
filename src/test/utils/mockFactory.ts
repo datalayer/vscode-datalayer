@@ -14,7 +14,7 @@
 import * as vscode from "vscode";
 import type { DatalayerClient as _DatalayerClient } from "@datalayer/core/lib/client";
 import type { User as _User } from "@datalayer/core/lib/models/User";
-import type { Runtime3 as _Runtime } from "@datalayer/core/lib/models/Runtime3";
+import type { RuntimeDTO as _Runtime } from "@datalayer/core/lib/models/RuntimeDTO";
 import type { ILogger } from "../../services/interfaces/ILogger";
 
 /**

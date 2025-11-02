@@ -22,7 +22,7 @@ import {
   LexicalCollaborationConfig,
 } from "../services/collaboration/lexicalCollaboration";
 import { getServiceContainer } from "../extension";
-import type { Runtime3 } from "@datalayer/core/lib/models/Runtime3";
+import type { RuntimeDTO } from "@datalayer/core/lib/models/RuntimeDTO";
 import { BaseDocumentProvider } from "./baseDocumentProvider";
 import { LoroWebSocketAdapter } from "../services/collaboration/loroWebSocketAdapter";
 
@@ -79,7 +79,7 @@ export class LexicalProvider extends BaseDocumentProvider<LexicalDocument> {
           // via datalayer.internal.runtimeConnected command called by KernelBridge
 
           // Broadcast using centralized KernelBridge
-          await kernelBridge.broadcastKernelSelected(runtime as Runtime3);
+          await kernelBridge.broadcastKernelSelected(runtime as RuntimeDTO);
         },
       ),
     );

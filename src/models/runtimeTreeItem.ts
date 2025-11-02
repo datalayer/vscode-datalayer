@@ -12,7 +12,7 @@
  */
 
 import * as vscode from "vscode";
-import type { Runtime3 } from "@datalayer/core/lib/models/Runtime3";
+import type { RuntimeDTO } from "@datalayer/core/lib/models/RuntimeDTO";
 
 /**
  * Tree item for displaying a runtime in the VS Code tree view.
@@ -31,7 +31,7 @@ export class RuntimeTreeItem extends vscode.TreeItem {
    *
    * @param runtime - The Runtime model instance to display
    */
-  constructor(public readonly runtime: Runtime3) {
+  constructor(public readonly runtime: RuntimeDTO) {
     super(
       runtime.givenName || runtime.podName,
       vscode.TreeItemCollapsibleState.None,
