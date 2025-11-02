@@ -453,7 +453,7 @@
     "vscode:prepublish": "npm run clean && npm run package",
     "compile": "npm run clean:dist && webpack",
     "watch": "npm run clean:dist && webpack --watch",
-    "watch:lib": "tsc --project tsconfig.json --watch --preserveWatchOutput",
+    "watch:lib": "tsc --project tsconfig.json --rootDir src --outDir lib --declaration --declarationDir lib --watch --preserveWatchOutput",
     "package": "npm run clean:dist && webpack --mode production --devtool hidden-source-map",
     "compile-tests": "npm run clean:out && tsc -p tsconfig.test.json",
     "watch-tests": "tsc -p . -w --outDir out",
