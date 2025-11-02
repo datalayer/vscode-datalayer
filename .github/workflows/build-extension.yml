@@ -62,11 +62,32 @@ jobs:
           echo "📦 node_modules/@datalayer:"
           ls -la node_modules/@datalayer/ || echo "Directory not found"
           echo ""
-          echo "🔍 Searching for jupyter-lexical:"
-          find node_modules -name "*jupyter-lexical*" -type d 2>/dev/null || echo "Not found"
-          echo ""
-          echo "🔍 Searching for jupyter-react:"
-          find node_modules -name "*jupyter-react*" -type d 2>/dev/null || echo "Not found"
+          echo "🔍 Checking @datalayer/jupyter-lexical structure:"
+          if [ -d "node_modules/@datalayer/jupyter-lexical" ]; then
+            echo "✓ Package directory exists"
+            PACKAGE_VERSION=$(cat node_modules/@datalayer/jupyter-lexical/package.json | grep '"version"' | head -1)
+            echo "  Version: $PACKAGE_VERSION"
+            echo ""
+            echo "  Top-level contents:"
+            ls -la node_modules/@datalayer/jupyter-lexical/ | head -20
+            echo ""
+            if [ -d "node_modules/@datalayer/jupyter-lexical/lib" ]; then
+              echo "  ✓ lib/ directory exists"
+              if [ -d "node_modules/@datalayer/jupyter-lexical/lib/plugins" ]; then
+                echo "  ✓ lib/plugins/ directory exists"
+                echo "    Plugin files:"
+                ls node_modules/@datalayer/jupyter-lexical/lib/plugins/*.js 2>/dev/null | head -10
+              else
+                echo "  ✗ lib/plugins/ directory NOT FOUND"
+                echo "    lib/ contents:"
+                ls -la node_modules/@datalayer/jupyter-lexical/lib/
+              fi
+            else
+              echo "  ✗ lib/ directory NOT FOUND"
+            fi
+          else
+            echo "✗ Package NOT installed"
+          fi
           echo ""
           if [ $NPM_EXIT_CODE -ne 0 ]; then
             echo "❌ npm install failed with exit code $NPM_EXIT_CODE"
