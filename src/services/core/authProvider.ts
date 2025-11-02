@@ -13,7 +13,7 @@
 
 import * as vscode from "vscode";
 import type { DatalayerClient } from "@datalayer/core/lib/client";
-import type { User } from "@datalayer/core/lib/client/models/User";
+import type { User3 } from "@datalayer/core/lib/models/User3";
 import type { ILogger } from "../interfaces/ILogger";
 import type {
   IAuthProvider,
@@ -102,7 +102,7 @@ export class SDKAuthProvider extends BaseService implements IAuthProvider {
 
       this._authState = {
         isAuthenticated: true,
-        user: user as User,
+        user: user as User3,
         error: null,
       };
 
@@ -182,7 +182,7 @@ export class SDKAuthProvider extends BaseService implements IAuthProvider {
 
       this._authState = {
         isAuthenticated: true,
-        user: user as User,
+        user: user as User3,
         error: null,
       };
 
@@ -385,7 +385,7 @@ export class SDKAuthProvider extends BaseService implements IAuthProvider {
   /**
    * Get current user (null if not authenticated).
    */
-  getCurrentUser(): User | null {
+  getCurrentUser(): User3 | null {
     return this._authState.user;
   }
 

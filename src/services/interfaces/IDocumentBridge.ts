@@ -13,7 +13,7 @@
 
 import * as vscode from "vscode";
 import type { Document } from "../../models/spaceItem";
-import type { Runtime } from "@datalayer/core/lib/client/models/Runtime";
+import type { Runtime3 } from "@datalayer/core/lib/models/Runtime3";
 
 /**
  * Metadata for a downloaded document.
@@ -30,7 +30,7 @@ export interface DocumentMetadata {
   /** When the document was last downloaded */
   lastDownloaded: Date;
   /** Associated runtime for notebooks */
-  runtime?: Runtime;
+  runtime?: Runtime3;
 }
 
 /**
@@ -93,7 +93,7 @@ export interface IDocumentBridge {
    * @param documentId - Document UID needing runtime
    * @returns Runtime instance or undefined if creation fails
    */
-  ensureRuntime(documentId: string): Promise<Runtime | undefined>;
+  ensureRuntime(documentId: string): Promise<Runtime3 | undefined>;
 
   /**
    * Gets list of active runtime pod names.

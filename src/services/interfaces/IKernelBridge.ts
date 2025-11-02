@@ -12,7 +12,7 @@
  */
 
 import * as vscode from "vscode";
-import type { Runtime } from "@datalayer/core/lib/client/models/Runtime";
+import type { Runtime3 } from "@datalayer/core/lib/models/Runtime3";
 
 /**
  * Kernel bridge interface for managing kernel connections.
@@ -41,7 +41,7 @@ export interface IKernelBridge {
    * @param uri - Document URI
    * @param runtime - Selected runtime
    */
-  connectWebviewDocument(uri: vscode.Uri, runtime: Runtime): Promise<void>;
+  connectWebviewDocument(uri: vscode.Uri, runtime: Runtime3): Promise<void>;
 
   /**
    * Detects the type of notebook (native vs webview).
@@ -57,7 +57,7 @@ export interface IKernelBridge {
    *
    * @param runtime - Selected runtime to broadcast
    */
-  broadcastKernelSelected(runtime: Runtime): Promise<void>;
+  broadcastKernelSelected(runtime: Runtime3): Promise<void>;
 
   /**
    * Broadcasts kernel termination to all registered webviews.

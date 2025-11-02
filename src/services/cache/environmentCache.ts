@@ -12,7 +12,7 @@
  */
 
 import type { DatalayerClient } from "@datalayer/core/lib/client";
-import type { Environment } from "@datalayer/core/lib/client/models/Environment";
+import type { Environment2 } from "@datalayer/core/lib/models/Environment2";
 import type { IAuthProvider } from "../interfaces/IAuthProvider";
 
 /**
@@ -21,7 +21,7 @@ import type { IAuthProvider } from "../interfaces/IAuthProvider";
  */
 export class EnvironmentCache {
   private static _instance: EnvironmentCache;
-  private _environments: Environment[] = [];
+  private _environments: Environment2[] = [];
   private _lastFetch: number = 0;
   private _cacheTimeout = 3600000; // 1 hour cache
   private _fetching = false;
@@ -55,7 +55,7 @@ export class EnvironmentCache {
     sdk: DatalayerClient,
     authProvider: IAuthProvider,
     forceRefresh = false,
-  ): Promise<Environment[]> {
+  ): Promise<Environment2[]> {
     const now = Date.now();
     const cacheValid = now - this._lastFetch < this._cacheTimeout;
 

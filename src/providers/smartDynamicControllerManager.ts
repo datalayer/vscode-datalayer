@@ -13,7 +13,7 @@
 
 import * as vscode from "vscode";
 import type { DatalayerClient } from "@datalayer/core/lib/client";
-import type { Runtime } from "@datalayer/core/lib/client/models/Runtime";
+import type { Runtime3 } from "@datalayer/core/lib/models/Runtime3";
 import { SDKAuthProvider } from "../services/core/authProvider";
 import { selectDatalayerRuntime } from "../ui/dialogs/runtimeSelector";
 import { WebSocketKernelClient } from "../kernel/clients/websocketKernelClient";
@@ -29,15 +29,15 @@ export class SmartDynamicControllerManager implements vscode.Disposable {
   private readonly _authProvider: SDKAuthProvider;
   private readonly _kernelBridge: KernelBridge;
   private readonly _controllers = new Map<string, vscode.NotebookController>();
-  private readonly _runtimes = new Map<string, Runtime>();
+  private readonly _runtimes = new Map<string, Runtime3>();
   private readonly _activeKernels = new Map<string, WebSocketKernelClient>();
-  private readonly _notebookRuntimes = new Map<string, Runtime>();
+  private readonly _notebookRuntimes = new Map<string, Runtime3>();
   private _executionOrder = 0;
   private _disposed = false;
   private _selectingRuntime = false; // Guard flag to prevent re-entry
 
   // Event emitter for runtime changes - allows tree view to refresh
-  private readonly _onRuntimeCreated = new vscode.EventEmitter<Runtime>();
+  private readonly _onRuntimeCreated = new vscode.EventEmitter<Runtime3>();
   public readonly onRuntimeCreated = this._onRuntimeCreated.event;
 
   constructor(
@@ -98,7 +98,7 @@ export class SmartDynamicControllerManager implements vscode.Disposable {
    * Creates or gets a runtime-specific controller.
    */
   private async ensureRuntimeController(
-    runtime: Runtime,
+    runtime: Runtime3,
   ): Promise<vscode.NotebookController | undefined> {
     const controllerId = `datalayer-runtime-${runtime.uid}`;
 
@@ -175,7 +175,7 @@ export class SmartDynamicControllerManager implements vscode.Disposable {
   /**
    * Shows runtime selector and returns selected runtime.
    */
-  private async selectRuntime(): Promise<Runtime | undefined> {
+  private async selectRuntime(): Promise<Runtime3 | undefined> {
     if (!this._authProvider.isAuthenticated()) {
       await promptAndLogin("Datalayer Platform");
       return undefined;
@@ -261,7 +261,7 @@ export class SmartDynamicControllerManager implements vscode.Disposable {
   private async executeCells(
     cells: vscode.NotebookCell[],
     notebook: vscode.NotebookDocument,
-    runtime: Runtime,
+    runtime: Runtime3,
     executingController?: vscode.NotebookController,
   ): Promise<void> {
     const notebookUri = notebook.uri.toString();
@@ -382,7 +382,7 @@ export class SmartDynamicControllerManager implements vscode.Disposable {
   /**
    * Gets the controller ID for a specific runtime.
    */
-  private getRuntimeControllerId(runtime: Runtime): string {
+  private getRuntimeControllerId(runtime: Runtime3): string {
     return `datalayer-runtime-${runtime.uid}`;
   }
 
