@@ -49,9 +49,7 @@ jobs:
           node-version: ${{ matrix.node-version }}
 
       - name: Install dependencies
-        run: npm install
-        env:
-          npm_config_engine_strict: "false"
+        run: npm install --ignore-engines
 
       - name: Build VS Code extension
         run: npm run compile
