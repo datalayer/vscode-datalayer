@@ -283,7 +283,32 @@ export class NotebookProvider extends BaseDocumentProvider<NotebookDocument> {
 
     // Wait for the webview to be properly ready before we init
     webviewPanel.webview.onDidReceiveMessage(async (e) => {
-      if (e.type === "ready") {
+      if (e.type === "llm-completion-request") {
+        console.log("[NotebookProvider] LLM completion request received", {
+          requestId: e.requestId,
+          prefixLength: e.prefix?.length,
+          suffixLength: e.suffix?.length,
+          language: e.language,
+        });
+
+        // Handle LLM completion request from webview
+        const completion = await this.getLLMCompletion(
+          e.prefix,
+          e.suffix,
+          e.language,
+        );
+
+        console.log("[NotebookProvider] Sending LLM completion response", {
+          requestId: e.requestId,
+          completionLength: completion?.length,
+        });
+
+        webviewPanel.webview.postMessage({
+          type: "llm-completion-response",
+          requestId: e.requestId,
+          completion,
+        });
+      } else if (e.type === "ready") {
         // Detect VS Code theme
         const theme =
           vscode.window.activeColorTheme.kind === vscode.ColorThemeKind.Dark
@@ -381,6 +406,89 @@ export class NotebookProvider extends BaseDocumentProvider<NotebookDocument> {
         }
       }
     });
+  }
+
+  /**
+   * Get LLM completion from VS Code Language Model API.
+   *
+   * @param prefix - Code before cursor
+   * @param suffix - Code after cursor
+   * @param language - Programming language
+   * @returns Completion string or null
+   */
+  private async getLLMCompletion(
+    prefix: string,
+    suffix: string,
+    language: string,
+  ): Promise<string | null> {
+    try {
+      // Check if Language Model API is available (VS Code 1.90+)
+      if (!vscode.lm) {
+        console.warn("[NotebookProvider] Language Model API not available");
+        return null;
+      }
+
+      // Select available chat models (prefer Copilot)
+      let models = await vscode.lm.selectChatModels({ vendor: "copilot" });
+
+      // Fallback to any available model
+      if (models.length === 0) {
+        models = await vscode.lm.selectChatModels();
+      }
+
+      if (models.length === 0) {
+        console.warn("[NotebookProvider] No language models available");
+        return null;
+      }
+
+      const model = models[0];
+
+      // Build prompt
+      const prompt = `Complete the following ${language} code. Only return the completion, no explanations or markdown.
+
+\`\`\`${language}
+${prefix}<CURSOR>${suffix}
+\`\`\`
+
+Complete the code at <CURSOR>:`;
+
+      // Send request to LLM
+      const messages = [vscode.LanguageModelChatMessage.User(prompt)];
+      const response = await model.sendRequest(messages, {
+        justification: "Code completion for Jupyter notebook cell",
+      });
+
+      // Collect streamed response
+      let completion = "";
+      for await (const chunk of response.text) {
+        completion += chunk;
+      }
+
+      // Clean up (remove markdown blocks if present)
+      return this.cleanCompletion(completion);
+    } catch (error) {
+      console.error("[NotebookProvider] LLM completion error:", error);
+      return null;
+    }
+  }
+
+  /**
+   * Clean LLM completion output by removing markdown code blocks.
+   *
+   * @param completion - Raw completion from LLM
+   * @returns Cleaned completion
+   */
+  private cleanCompletion(completion: string): string {
+    completion = completion.trim();
+
+    // Remove markdown code blocks if LLM wrapped response
+    const codeBlockRegex = /^```[a-z]*\n([\s\S]*?)\n```$/;
+    const match = completion.match(codeBlockRegex);
+    if (match) {
+      return match[1].trim();
+    }
+
+    return completion;
   }
 
   /**

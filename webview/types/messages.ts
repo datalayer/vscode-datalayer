@@ -81,6 +81,13 @@ export interface SetRuntimeMessage {
   };
 }
 
+/** LLM completion response from extension */
+export interface LLMCompletionResponseMessage {
+  type: "llm-completion-response";
+  requestId: string;
+  completion: string | null;
+}
+
 /** Request file data from webview */
 export interface GetFileDataRequestMessage {
   type: "getFileData";
@@ -111,7 +118,8 @@ export type ExtensionToWebviewMessage =
   | WebSocketOpenMessage
   | WebSocketCloseMessage
   | HttpResponseMessage
-  | RuntimeExpiredMessage;
+  | RuntimeExpiredMessage
+  | LLMCompletionResponseMessage;
 
 /**
  * Webview → Extension Messages
@@ -219,6 +227,15 @@ export interface WebviewErrorMessage {
   };
 }
 
+/** LLM completion request from webview */
+export interface LLMCompletionRequestMessage {
+  type: "llm-completion-request";
+  requestId: string;
+  prefix: string;
+  suffix: string;
+  language: string;
+}
+
 /**
  * Union of all Webview → Extension messages
  */
@@ -233,7 +250,8 @@ export type WebviewToExtensionMessage =
   | WebSocketCloseMessage
   | WebSocketProxyMessage
   | HttpRequestMessage
-  | WebviewErrorMessage;
+  | WebviewErrorMessage
+  | LLMCompletionRequestMessage;
 
 /**
  * Bidirectional message type (for backward compatibility)
