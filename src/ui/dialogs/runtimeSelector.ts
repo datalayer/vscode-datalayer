@@ -443,7 +443,9 @@ async function createRuntime(
 
           // Fetch the updated runtime list
           const runtimes = await sdk.listRuntimes();
-          readyRuntime = runtimes.find((r: RuntimeDTO) => r.uid === runtime.uid);
+          readyRuntime = runtimes.find(
+            (r: RuntimeDTO) => r.uid === runtime.uid,
+          );
 
           // Check if runtime has connection info
           if (readyRuntime && readyRuntime.ingress) {
