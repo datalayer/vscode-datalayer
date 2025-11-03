@@ -84,7 +84,7 @@
     "@vscode/codicons": "^0.0.41",
     "buffer": "^6.0.3",
     "codemirror": "^6.0.2",
-    "lexical": "^0.35.0",
+    "lexical": "^0.38.2",
     "react": "18.3.1",
     "react-dom": "18.3.1",
     "typestyle": "^2.0.4",
