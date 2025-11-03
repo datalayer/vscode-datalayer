@@ -15,9 +15,9 @@ import { WebSocket } from "ws";
 import { v4 as uuidv4 } from "uuid";
 import type { DatalayerClient } from "@datalayer/core/lib/client";
 import type {
-  Runtime,
+  RuntimeDTO,
   RuntimeJSON,
-} from "@datalayer/core/lib/client/models/Runtime";
+} from "@datalayer/core/lib/models/RuntimeDTO";
 
 /**
  * Jupyter message structure according to the protocol.
@@ -85,7 +85,7 @@ export class WebSocketKernelClient {
    * @param runtime - The Datalayer runtime to connect to
    */
   constructor(
-    runtime: Runtime | RuntimeJSON,
+    runtime: RuntimeDTO | RuntimeJSON,
     /** @internal - Used in runtime connection methods */
     // @ts-ignore - TS6138
     private readonly _sdk: DatalayerClient,

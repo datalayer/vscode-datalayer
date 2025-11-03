@@ -17,9 +17,9 @@ import { SpaceItem, ItemType } from "../models/spaceItem";
 import { SDKAuthProvider } from "../services/core/authProvider";
 import { getServiceContainer } from "../extension";
 import { ItemTypes } from "@datalayer/core/lib/client/constants";
-import type { Space } from "@datalayer/core/lib/client/models/Space";
-import type { Notebook } from "@datalayer/core/lib/client/models/Notebook";
-import type { Lexical } from "@datalayer/core/lib/client/models/Lexical";
+import type { SpaceDTO } from "@datalayer/core/lib/models/SpaceDTO";
+import type { NotebookDTO } from "@datalayer/core/lib/models/NotebookDTO";
+import type { LexicalDTO } from "@datalayer/core/lib/models/LexicalDTO";
 
 /**
  * Tree data provider for the Datalayer Spaces view.
@@ -42,8 +42,8 @@ export class SpacesTreeProvider implements vscode.TreeDataProvider<SpaceItem> {
   > = this._onDidChangeTreeData.event;
 
   private authService: SDKAuthProvider;
-  private spacesCache: Map<string, Space[]> = new Map();
-  private itemsCache: Map<string, (Notebook | Lexical)[]> = new Map();
+  private spacesCache: Map<string, SpaceDTO[]> = new Map();
+  private itemsCache: Map<string, (NotebookDTO | LexicalDTO)[]> = new Map();
 
   /**
    * Creates a new SpacesTreeProvider.
@@ -164,7 +164,7 @@ export class SpacesTreeProvider implements vscode.TreeDataProvider<SpaceItem> {
   private async getSpaces(): Promise<SpaceItem[]> {
     try {
       // Check cache first
-      let spaces: Space[];
+      let spaces: SpaceDTO[];
       if (this.spacesCache.has("user")) {
         spaces = this.spacesCache.get("user")!;
       } else {
@@ -249,7 +249,7 @@ export class SpacesTreeProvider implements vscode.TreeDataProvider<SpaceItem> {
    */
   private async getSpaceItems(space: unknown): Promise<SpaceItem[]> {
     try {
-      const spaceObj = space as Space;
+      const spaceObj = space as SpaceDTO;
       const spaceId = spaceObj.uid;
 
       if (!spaceId) {
@@ -265,7 +265,7 @@ export class SpacesTreeProvider implements vscode.TreeDataProvider<SpaceItem> {
         ];
       }
 
-      let items: (Notebook | Lexical)[] = [];
+      let items: (NotebookDTO | LexicalDTO)[] = [];
 
       if (this.itemsCache.has(spaceId)) {
         items = this.itemsCache.get(spaceId)!;
@@ -274,14 +274,14 @@ export class SpacesTreeProvider implements vscode.TreeDataProvider<SpaceItem> {
 
         // Get the space to access its items
         const spaces = await sdk.getMySpaces();
-        const targetSpace = spaces.find((s: Space) => s.uid === spaceId);
+        const targetSpace = spaces.find((s: SpaceDTO) => s.uid === spaceId);
 
         if (targetSpace) {
           // Get items from the space - returns Notebook, Lexical, and Cell model instances
           const allItems = (await targetSpace.getItems()) ?? [];
           // Filter to only notebooks and lexicals
           items = allItems.filter(
-            (item): item is Notebook | Lexical =>
+            (item): item is NotebookDTO | LexicalDTO =>
               item.type === ItemTypes.NOTEBOOK ||
               item.type === ItemTypes.LEXICAL,
           );
