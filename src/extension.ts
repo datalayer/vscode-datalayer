@@ -23,6 +23,9 @@ import type { ILogger } from "./services/interfaces/ILogger";
 import { DocumentBridge } from "./services/bridges/documentBridge";
 import { DatalayerFileSystemProvider } from "./providers/documentsFileSystemProvider";
 import { RuntimesTreeProvider } from "./providers/runtimesTreeProvider";
+import { NotebookSymbolProvider } from "./providers/notebookSymbolProvider";
+import { LexicalSymbolProvider } from "./providers/lexicalSymbolProvider";
+import { DocumentOutlineProvider } from "./providers/documentOutlineProvider";
 
 // Global service container instance
 let services: ServiceContainer | undefined;
@@ -89,6 +92,25 @@ export async function activate(
     );
     activationTimer.checkpoint("filesystem_provider_registered");
 
+    // Register document symbol providers for Outline view
+    const notebookSymbolProvider = new NotebookSymbolProvider();
+    const lexicalSymbolProvider = new LexicalSymbolProvider();
+
+    context.subscriptions.push(
+      vscode.languages.registerDocumentSymbolProvider(
+        { language: "json", pattern: "**/*.ipynb" },
+        notebookSymbolProvider,
+      ),
+    );
+
+    context.subscriptions.push(
+      vscode.languages.registerDocumentSymbolProvider(
+        { pattern: "**/*.lexical" },
+        lexicalSymbolProvider,
+      ),
+    );
+    activationTimer.checkpoint("symbol_providers_registered");
+
     // Now logger is available
     const logger = services.logger;
     logger.info("Datalayer extension activation started", {
@@ -123,6 +145,40 @@ export async function activate(
       }),
     );
     activationTimer.checkpoint("runtimes_tree_created");
+
+    // Create document outline provider for sidebar
+    const documentOutlineProvider = new DocumentOutlineProvider();
+    context.subscriptions.push(
+      vscode.window.createTreeView("datalayerDocumentOutline", {
+        treeDataProvider: documentOutlineProvider,
+        showCollapseAll: true,
+      }),
+    );
+
+    // Update outline when active editor changes
+    context.subscriptions.push(
+      vscode.window.onDidChangeActiveTextEditor((editor) => {
+        if (editor) {
+          const uri = editor.document.uri;
+          if (uri.fsPath.endsWith(".ipynb") || uri.fsPath.endsWith(".lexical")) {
+            documentOutlineProvider.refresh(uri);
+          } else {
+            documentOutlineProvider.clear();
+          }
+        } else {
+          documentOutlineProvider.clear();
+        }
+      }),
+    );
+
+    // Initial outline for currently active editor
+    if (vscode.window.activeTextEditor) {
+      const uri = vscode.window.activeTextEditor.document.uri;
+      if (uri.fsPath.endsWith(".ipynb") || uri.fsPath.endsWith(".lexical")) {
+        documentOutlineProvider.refresh(uri);
+      }
+    }
+    activationTimer.checkpoint("document_outline_created");
 
     // Subscribe to runtime creation events from controller manager to refresh tree
     context.subscriptions.push(

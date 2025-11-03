@@ -258,6 +258,13 @@
           "icon": "$(vm)",
           "contextualTitle": "Datalayer Runtimes",
           "when": "true"
+        },
+        {
+          "id": "datalayerDocumentOutline",
+          "name": "Document Outline",
+          "icon": "$(list-tree)",
+          "contextualTitle": "Document Outline",
+          "when": "resourceExtname == .ipynb || resourceExtname == .lexical"
         }
       ]
     },
