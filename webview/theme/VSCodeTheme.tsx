@@ -120,26 +120,30 @@ function VSCodeCSSInjector({ colorMode }: { colorMode: "light" | "dark" }) {
         border-color: var(--vscode-panel-border) !important;
       }
 
-      /* Cell Sidebar - the sidebar that appears on the right of each cell */
-      .jp-Notebook-cellSidebar,
-      .jp-Cell-Sidebar {
+      /* Cell Sidebar - NUCLEAR OPTION - target ALL lm-Widgets inside cells */
+      .jp-Cell .lm-Widget {
+        background-color: var(--vscode-editor-background) !important;
+      }
+
+      /* The actual sidebar container inside the ReactWidget */
+      .dla-CellSidebar-Container {
         background-color: var(--vscode-editor-background) !important;
         color: var(--vscode-editor-foreground) !important;
       }
 
-      /* Target all Lumino widgets - they inherit the black background otherwise */
-      .lm-Widget {
-        background: transparent !important;
+      /* All children should inherit */
+      .dla-CellSidebar-Container * {
+        background-color: inherit !important;
       }
 
       /* Cell sidebar buttons */
-      .jp-Cell-Sidebar button {
+      .dla-CellSidebar-Container button {
         background-color: transparent !important;
         color: var(--vscode-editor-foreground) !important;
         border: none !important;
       }
 
-      .jp-Cell-Sidebar button:hover {
+      .dla-CellSidebar-Container button:hover {
         background-color: var(--vscode-list-hoverBackground) !important;
       }
     `;
