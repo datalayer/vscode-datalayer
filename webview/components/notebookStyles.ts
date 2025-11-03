@@ -73,20 +73,16 @@ export const notebookCellStyles = {
   "& .jp-Cell-Sidebar button:hover": {
     backgroundColor: "var(--vscode-list-hoverBackground) !important",
   },
-  // Target the positioned ReactWidget sidebar container (positioned absolutely on the right)
-  "& .jp-Cell > .lm-Widget[style*='position: absolute']": {
+  // NUCLEAR OPTION - ALL lm-Widgets in cells get the background
+  "& .jp-Cell .lm-Widget": {
     backgroundColor: "var(--vscode-editor-background) !important",
   },
-  // Also target nested elements in the sidebar
-  "& .jp-Cell > .lm-Widget[style*='position: absolute'] *": {
-    backgroundColor: "inherit",
-  },
-  // Also target the cell sidebar container itself
-  "& .dla-CellSidebar": {
+  // The dla-CellSidebar-Container
+  "& .dla-CellSidebar-Container": {
     backgroundColor: "var(--vscode-editor-background) !important",
   },
-  "& .datalayer-CellSidebar": {
-    backgroundColor: "var(--vscode-editor-background) !important",
+  "& .dla-CellSidebar-Container *": {
+    backgroundColor: "inherit !important",
   },
   ".dla-Box-Notebook": {
     position: "relative",
