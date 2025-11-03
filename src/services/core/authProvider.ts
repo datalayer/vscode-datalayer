@@ -355,18 +355,18 @@ export class SDKAuthProvider extends BaseService implements IAuthProvider {
   }
 
   /**
-   * Prompt user for their Datalayer access token.
+   * Prompt user for their Datalayer API Key.
    */
   private async promptForToken(): Promise<string | undefined> {
     const token = await vscode.window.showInputBox({
       title: "Datalayer Authentication",
-      prompt: "Enter your Datalayer access token",
-      placeHolder: "Paste your token here",
+      prompt: "Enter your Datalayer API Key",
+      placeHolder: "Paste your API Key here",
       password: true,
       ignoreFocusOut: true,
       validateInput: (value: string) => {
         if (!value || value.trim().length === 0) {
-          return "Token cannot be empty";
+          return "API Key cannot be empty";
         }
         return null;
       },

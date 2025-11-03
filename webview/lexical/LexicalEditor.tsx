@@ -58,7 +58,7 @@ import {
 } from "@datalayer/jupyter-lexical";
 import { LexicalToolbar } from "./LexicalToolbar";
 import { RuntimeProgressBar } from "../components/RuntimeProgressBar";
-import type { RuntimeJSON } from "@datalayer/core/lib/client/models/Runtime";
+import type { RuntimeJSON } from "@datalayer/core/lib/client";
 import { LoroCollaborationPlugin } from "@datalayer/lexical-loro";
 import { createVSCodeLoroProvider } from "../services/loro/providerFactory";
 

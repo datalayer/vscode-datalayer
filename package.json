@@ -549,6 +549,95 @@
           }
         ]
       }
+    ],
+    "walkthroughs": [
+      {
+        "id": "datalayer.gettingStarted",
+        "title": "Getting Started with Datalayer",
+        "description": "Learn how to use Datalayer to create cloud-powered Jupyter notebooks and collaborative documents in VS Code.",
+        "steps": [
+          {
+            "id": "loginApp",
+            "title": "Login to Datalayer App",
+            "description": "Create your Datalayer account to access cloud-powered Jupyter notebooks with GPU support and real-time collaboration.\n\nVisit [datalayer.app](https://datalayer.app/) and login with **GitHub** or **LinkedIn** to get started.",
+            "media": {
+              "svg": "walkthroughs/getting-started/media/datalayer-app-login.svg",
+              "altText": "Login to Datalayer App with GitHub or LinkedIn"
+            }
+          },
+          {
+            "id": "generateApiKey",
+            "title": "Generate Your API Key",
+            "description": "Your API Key is required to securely connect VS Code to your Datalayer account.\n\nAfter logging in, go to [Settings > IAM > Tokens](https://datalayer.app/settings/iam/tokens) to create your **API Key**. Keep it secure as you'll use it to authenticate VS Code.",
+            "media": {
+              "svg": "walkthroughs/getting-started/media/datalayer-iam-tokens.svg",
+              "altText": "Generate API Key in Datalayer Settings"
+            }
+          },
+          {
+            "id": "loginVSCode",
+            "title": "Connect VS Code to Datalayer",
+            "description": "Connect VS Code to your Datalayer account to access cloud runtimes, shared workspaces, and collaboration features.\n\nClick the button below and paste your **API Key** when prompted.\n\n[Login to Datalayer](command:datalayer.login)",
+            "media": {
+              "svg": "walkthroughs/getting-started/media/datalayer-vscode-login.svg",
+              "altText": "Connect VS Code to Datalayer - API Key Input Dialog"
+            },
+            "completionEvents": [
+              "onCommand:datalayer.login"
+            ]
+          },
+          {
+            "id": "createNotebook",
+            "title": "Create Your First Notebook",
+            "description": "Jupyter notebooks combine code, visualizations, and documentation in one interactive document. Perfect for data analysis, machine learning, and scientific computing.\n\n[Create Local Notebook](command:datalayer.newLocalDatalayerNotebook)\n\n[Create Notebook in Space](command:datalayer.newRemoteDatalayerNotebookPrompt)",
+            "media": {
+              "svg": "walkthroughs/getting-started/media/datalayer-notebook-editor.svg",
+              "altText": "Jupyter notebook editor with code cells and outputs"
+            },
+            "completionEvents": [
+              "onCommand:datalayer.newLocalDatalayerNotebook",
+              "onCommand:datalayer.newRemoteDatalayerNotebookPrompt"
+            ]
+          },
+          {
+            "id": "selectRuntime",
+            "title": "Select a Cloud Runtime",
+            "description": "Cloud runtimes provide powerful computational environments with CPU and GPU support. Execute your notebooks on scalable infrastructure without local setup.\n\n[Select Runtime](command:datalayer.selectRuntime)",
+            "media": {
+              "svg": "walkthroughs/getting-started/media/datalayer-runtime-selector.svg",
+              "altText": "Kernel source selection dialog with Datalayer Platform option"
+            },
+            "completionEvents": [
+              "onCommand:datalayer.selectRuntime"
+            ]
+          },
+          {
+            "id": "exploreSpaces",
+            "title": "Explore Datalayer Spaces",
+            "description": "Datalayer Spaces are collaborative workspaces where teams can share notebooks, documents, and data. Access your spaces from the Explorer sidebar.\n\n[Refresh Spaces](command:datalayer.refreshSpaces)",
+            "media": {
+              "svg": "walkthroughs/getting-started/media/datalayer-spaces-explorer.svg",
+              "altText": "Datalayer Spaces tree view showing notebooks and lexical documents"
+            },
+            "completionEvents": [
+              "onView:datalayerSpaces"
+            ]
+          },
+          {
+            "id": "createLexical",
+            "title": "Create a Collaborative Document",
+            "description": "Lexical documents are Notion-like rich text editors with real-time collaboration. Perfect for reports, documentation, and team knowledge sharing.\n\n[Create Local Lexical Document](command:datalayer.newLocalLexicalDocument)\n\n[Create Lexical Document in Space](command:datalayer.newRemoteLexicalDocumentPrompt)",
+            "media": {
+              "svg": "walkthroughs/getting-started/media/datalayer-lexical-editor.svg",
+              "altText": "Lexical rich text editor with formatting toolbar and document content"
+            },
+            "completionEvents": [
+              "onCommand:datalayer.newLocalLexicalDocument",
+              "onCommand:datalayer.newRemoteLexicalDocumentPrompt"
+            ]
+          }
+        ]
+      }
     ]
   }
 }

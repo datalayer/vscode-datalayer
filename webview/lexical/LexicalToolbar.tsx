@@ -61,7 +61,7 @@ import {
   $isJupyterInputHighlightNode,
 } from "@datalayer/jupyter-lexical";
 import { useJupyter } from "@datalayer/jupyter-react";
-import type { RuntimeJSON } from "@datalayer/core/lib/client/models/Runtime";
+import type { RuntimeJSON } from "@datalayer/core/lib/client";
 import { MessageHandlerContext } from "../services/messageHandler";
 import {
   BaseToolbar,
