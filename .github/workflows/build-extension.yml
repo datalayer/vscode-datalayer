@@ -114,7 +114,7 @@ jobs:
           ls -la *.vsix || echo "No .vsix files found"
         shell: bash
 
-      - name: Get version info
+      - name: Get version info and rename .vsix
         if: matrix.os == 'ubuntu-latest'
         id: version-info
         run: |
@@ -127,7 +127,21 @@ jobs:
             COMMIT_HASH_FULL="${{ github.sha }}"
           fi
           COMMIT_HASH="${COMMIT_HASH_FULL:0:$COMMIT_HASH_LENGTH}"
-          ARTIFACT_NAME="vscode-datalayer-node${{ matrix.node-version }}-${VERSION}-${COMMIT_HASH}"
+
+          # Rename .vsix file with version and commit hash
+          OLD_NAME="datalayer-jupyter-vscode-${VERSION}.vsix"
+          NEW_NAME="vscode-datalayer-extension-${VERSION}-${COMMIT_HASH}-node${{ matrix.node-version }}.vsix"
+
+          if [ -f "$OLD_NAME" ]; then
+            mv "$OLD_NAME" "$NEW_NAME"
+            echo "✅ Renamed: $OLD_NAME → $NEW_NAME"
+          else
+            echo "❌ Error: Expected file $OLD_NAME not found"
+            ls -la *.vsix
+            exit 1
+          fi
+
+          ARTIFACT_NAME="vscode-datalayer-extension-${VERSION}-${COMMIT_HASH}-node${{ matrix.node-version }}"
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "commit_hash=$COMMIT_HASH" >> $GITHUB_OUTPUT
           echo "commit_hash_full=$COMMIT_HASH_FULL" >> $GITHUB_OUTPUT
