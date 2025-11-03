@@ -2,7 +2,7 @@
   "name": "datalayer-jupyter-vscode",
   "publisher": "datalayer",
   "displayName": "Datalayer",
-  "description": "Add ✨ AI ⚡ GPU and 👥 Collaboration to 🪐 Jupyter Notebooks - 📄 Notion-like editor included.",
+  "description": "✨ AI ⚡ GPU 👥 Collaboration for 🪐 Jupyter Notebooks - 📄 Notion-like editor included.",
   "version": "0.0.5",
   "cache_version": "2",
   "icon": "images/datalayer-logo.png",
