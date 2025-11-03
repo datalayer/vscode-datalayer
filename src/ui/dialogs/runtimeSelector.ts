@@ -18,6 +18,7 @@ import type { Environment } from "@datalayer/core/lib/client/models/Environment"
 import type { IAuthProvider } from "../../services/interfaces/IAuthProvider";
 import { EnvironmentCache } from "../../services/cache/environmentCache";
 import { promptAndLogin } from "./authDialog";
+import { generateRuntimeName } from "../../utils/runtimeNameGenerator";
 
 /**
  * QuickPick item for runtime selection.
@@ -257,11 +258,15 @@ async function createRuntime(
   sdk: DatalayerClient,
   environment: Environment,
 ): Promise<Runtime | undefined> {
-  // Prompt for runtime name (human-readable)
+  // Generate a unique name suggestion
+  const suggestedName = generateRuntimeName();
+
+  // Prompt for runtime name (human-readable) with generated name as default
   const name = await vscode.window.showInputBox({
     title: `Create ${environment.title ?? environment.name} Runtime`,
     prompt: "Enter a friendly name for the new runtime",
-    placeHolder: `My ${environment.title ?? environment.name} Runtime`,
+    placeHolder: `e.g., ${suggestedName}`,
+    value: suggestedName, // Pre-populate with generated name
     validateInput: (value) => {
       if (!value || value.trim().length === 0) {
         return "Runtime name cannot be empty";
