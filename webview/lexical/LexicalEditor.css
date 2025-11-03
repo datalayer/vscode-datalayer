@@ -501,8 +501,11 @@ code[data-highlight-language] {
   /* Use checkbox border color for maximum visibility */
   border: 1.5px solid
     var(--vscode-checkbox-border, var(--vscode-input-border, #8b8b8b));
-  /* Light background to ensure checkbox is visible against dark editor background */
-  background-color: var(--vscode-input-background, rgba(255, 255, 255, 0.1));
+  /* Use same background as checked checkbox for consistency across all themes */
+  background-color: var(
+    --vscode-checkbox-selectBackground,
+    var(--vscode-inputOption-activeBackground, #3d87f5)
+  );
   /* Ensure it stands out with full opacity */
   opacity: 1;
 }
