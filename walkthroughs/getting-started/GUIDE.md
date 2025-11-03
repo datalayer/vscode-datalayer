@@ -179,7 +179,7 @@ Every image needs descriptive alt text. Write as if describing to someone who ca
 
 When updating walkthrough content:
 
-1. **Update both files**: Modify [WALKTHROUGH-CONTENT.md](./WALKTHROUGH-CONTENT.md) and [package.json](../../../package.json) to keep them synchronized
+1. **Update both files**: Modify [CONTENT.md](./CONTENT.md) and [package.json](../../../package.json) to keep them synchronized
 2. **Keep descriptions concise**: 2-3 sentences maximum per step
 3. **Use action-oriented language**: Start with action verbs, explain benefits
 4. **Maintain VS Code theme compatibility**: Use CSS variables in SVGs
@@ -191,4 +191,4 @@ When updating walkthrough content:
 - [VS Code Walkthrough UX Guidelines](https://code.visualstudio.com/api/ux-guidelines/walkthroughs)
 - [Getting Started Sample Extension](https://github.com/microsoft/vscode-extension-samples/tree/main/getting-started-sample)
 - [VS Code Theme Colors Reference](https://code.visualstudio.com/api/references/theme-color)
-- [Actual Walkthrough Content](./WALKTHROUGH-CONTENT.md)
+- [Actual Walkthrough Content](./CONTENT.md)
