@@ -1,0 +1,125 @@
+<!--
+  Datalayer App Login Screen
+  Themed SVG for walkthrough showing GitHub/LinkedIn login options
+  Modern VS Code interface style with rounded corners and shadows on entire screenshot
+-->
+
+<svg width="600" height="400" viewBox="0 0 600 400" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <!-- Purple gradient for header -->
+    <linearGradient id="headerGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#4c3f91;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#3d3278;stop-opacity:1" />
+    </linearGradient>
+
+    <!-- Shadow filters -->
+    <filter id="buttonShadow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="2"/>
+      <feOffset dx="0" dy="1" result="offsetblur"/>
+      <feComponentTransfer>
+        <feFuncA type="linear" slope="0.3"/>
+      </feComponentTransfer>
+      <feMerge>
+        <feMergeNode/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+
+    <filter id="cardShadow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="4"/>
+      <feOffset dx="0" dy="2" result="offsetblur"/>
+      <feComponentTransfer>
+        <feFuncA type="linear" slope="0.2"/>
+      </feComponentTransfer>
+      <feMerge>
+        <feMergeNode/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+
+    <!-- Outer shadow for entire screenshot -->
+    <filter id="screenshotShadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="8"/>
+      <feOffset dx="0" dy="4" result="offsetblur"/>
+      <feComponentTransfer>
+        <feFuncA type="linear" slope="0.25"/>
+      </feComponentTransfer>
+      <feMerge>
+        <feMergeNode/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- Outer container with shadow and rounded corners -->
+  <g filter="url(#screenshotShadow)">
+    <!-- Main background with rounded corners -->
+    <rect x="10" y="10" width="580" height="380" rx="12"
+          fill="var(--vscode-editor-background)"
+          stroke="var(--vscode-panel-border)"
+          stroke-width="1" />
+
+    <!-- Purple header section with rounded top corners -->
+    <rect x="10" y="10" width="580" height="135" rx="12" ry="0"
+          fill="url(#headerGradient)" />
+
+    <!-- Title text -->
+    <text x="300" y="90"
+          font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
+          font-size="36"
+          font-weight="300"
+          fill="#ffffff"
+          text-anchor="middle">
+      AI Platform for Data Analysis
+    </text>
+
+    <!-- Content area with subtle background -->
+    <rect x="10" y="145" width="580" height="245"
+          fill="var(--vscode-sideBar-background)" />
+
+    <!-- Login card container with shadow -->
+    <g filter="url(#cardShadow)">
+      <rect x="150" y="190" width="300" height="140" rx="8"
+            fill="var(--vscode-editor-background)"
+            opacity="0.6" />
+    </g>
+
+    <!-- Login with GitHub button -->
+    <g id="github-button" filter="url(#buttonShadow)">
+      <!-- Button background with rounded corners -->
+      <rect x="180" y="210" width="240" height="40" rx="6"
+            fill="var(--vscode-button-secondaryBackground)"
+            stroke="var(--vscode-button-border)"
+            stroke-width="1" />
+
+      <!-- Button text -->
+      <text x="300" y="236"
+            font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
+            font-size="14"
+            font-weight="400"
+            fill="var(--vscode-button-secondaryForeground)"
+            text-anchor="middle">
+        Login with GitHub
+      </text>
+    </g>
+
+    <!-- Login with LinkedIn button -->
+    <g id="linkedin-button" filter="url(#buttonShadow)">
+      <!-- Button background with rounded corners -->
+      <rect x="180" y="270" width="240" height="40" rx="6"
+            fill="var(--vscode-button-secondaryBackground)"
+            stroke="var(--vscode-button-border)"
+            stroke-width="1" />
+
+      <!-- Button text -->
+      <text x="300" y="296"
+            font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
+            font-size="14"
+            font-weight="400"
+            fill="var(--vscode-button-secondaryForeground)"
+            text-anchor="middle">
+        Login with LinkedIn
+      </text>
+    </g>
+  </g>
+</svg>

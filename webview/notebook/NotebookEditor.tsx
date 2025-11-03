@@ -37,7 +37,7 @@ import { RuntimeProgressBar } from "../components/RuntimeProgressBar";
 initializeRequireJSStub();
 import { NotebookToolbar } from "./NotebookToolbar";
 import { VSCodeTheme } from "../theme/VSCodeTheme";
-import type { RuntimeJSON } from "@datalayer/core/lib/client/models/Runtime";
+import type { RuntimeJSON } from "@datalayer/core/lib/client";
 
 // Import our new hooks and stores
 import { createNotebookStore } from "../stores/notebookStore";

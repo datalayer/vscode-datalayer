@@ -16,7 +16,7 @@ import ReactDOM from "react-dom/client";
 import { Jupyter } from "@datalayer/jupyter-react";
 import { LexicalEditor } from "./LexicalEditor";
 import { vsCodeAPI } from "../services/messageHandler";
-import type { RuntimeJSON } from "@datalayer/core/lib/client/models/Runtime";
+import type { RuntimeJSON } from "@datalayer/core/lib/client";
 import { useRuntimeManager } from "../hooks/useRuntimeManager";
 import {
   createLexicalStore,

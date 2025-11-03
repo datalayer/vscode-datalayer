@@ -1,0 +1,294 @@
+<!--
+  Datalayer Jupyter Notebook Editor
+  Themed SVG for walkthrough showing notebook interface with cells
+  Modern VS Code interface style with rounded corners and shadows on entire screenshot
+-->
+
+<svg width="600" height="400" viewBox="0 0 600 400" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <!-- Shadow filters -->
+    <filter id="cellShadow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="2"/>
+      <feOffset dx="0" dy="1" result="offsetblur"/>
+      <feComponentTransfer>
+        <feFuncA type="linear" slope="0.2"/>
+      </feComponentTransfer>
+      <feMerge>
+        <feMergeNode/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+
+    <filter id="toolbarShadow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="3"/>
+      <feOffset dx="0" dy="1" result="offsetblur"/>
+      <feComponentTransfer>
+        <feFuncA type="linear" slope="0.25"/>
+      </feComponentTransfer>
+      <feMerge>
+        <feMergeNode/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+
+    <!-- Outer shadow for entire screenshot -->
+    <filter id="screenshotShadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="8"/>
+      <feOffset dx="0" dy="4" result="offsetblur"/>
+      <feComponentTransfer>
+        <feFuncA type="linear" slope="0.25"/>
+      </feComponentTransfer>
+      <feMerge>
+        <feMergeNode/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- Outer container with shadow and rounded corners -->
+  <g filter="url(#screenshotShadow)">
+    <!-- Main background with rounded corners -->
+    <rect x="10" y="10" width="580" height="380" rx="12"
+          fill="var(--vscode-editor-background)"
+          stroke="var(--vscode-panel-border)"
+          stroke-width="1" />
+
+    <!-- Top toolbar area -->
+    <g filter="url(#toolbarShadow)">
+      <rect x="10" y="10" width="580" height="50" rx="12" ry="0"
+            fill="var(--vscode-sideBar-background)"
+            stroke="var(--vscode-panel-border)"
+            stroke-width="1" />
+    </g>
+
+    <!-- Notebook filename -->
+    <text x="25" y="35"
+          font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
+          font-size="14"
+          font-weight="400"
+          fill="var(--vscode-foreground)">
+      vscode.ipynb
+    </text>
+
+    <!-- Toolbar buttons -->
+    <!-- Code button -->
+    <rect x="145" y="23" width="60" height="24" rx="4"
+          fill="var(--vscode-button-secondaryBackground)"
+          stroke="var(--vscode-button-border)"
+          stroke-width="1" />
+    <text x="175" y="39"
+          font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
+          font-size="12"
+          font-weight="400"
+          fill="var(--vscode-button-secondaryForeground)"
+          text-anchor="middle">
+      Code
+    </text>
+
+    <!-- Markdown button -->
+    <rect x="215" y="23" width="85" height="24" rx="4"
+          fill="var(--vscode-button-secondaryBackground)"
+          stroke="var(--vscode-button-border)"
+          stroke-width="1" />
+    <text x="257" y="39"
+          font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
+          font-size="12"
+          font-weight="400"
+          fill="var(--vscode-button-secondaryForeground)"
+          text-anchor="middle">
+      Markdown
+    </text>
+
+    <!-- Run All button -->
+    <rect x="345" y="23" width="70" height="24" rx="4"
+          fill="var(--vscode-button-secondaryBackground)"
+          stroke="var(--vscode-button-border)"
+          stroke-width="1" />
+    <text x="380" y="39"
+          font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
+          font-size="12"
+          font-weight="400"
+          fill="var(--vscode-button-secondaryForeground)"
+          text-anchor="middle">
+      Run All
+    </text>
+
+    <!-- Select Kernel button (right side) -->
+    <rect x="460" y="23" width="110" height="24" rx="4"
+          fill="var(--vscode-button-secondaryBackground)"
+          stroke="var(--vscode-button-border)"
+          stroke-width="1" />
+    <text x="515" y="39"
+          font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
+          font-size="12"
+          font-weight="400"
+          fill="var(--vscode-button-secondaryForeground)"
+          text-anchor="middle">
+      Select Kernel
+    </text>
+
+    <!-- Notebook content area -->
+    <rect x="10" y="60" width="580" height="330"
+          fill="var(--vscode-editor-background)" />
+
+    <!-- Cell 1: Code cell with execution count [1] -->
+    <g filter="url(#cellShadow)">
+      <rect x="30" y="80" width="540" height="70" rx="6"
+            fill="var(--vscode-input-background)"
+            stroke="var(--vscode-panel-border)"
+            stroke-width="1" />
+    </g>
+
+    <!-- Cell execution count -->
+    <text x="45" y="105"
+          font-family="'SF Mono', Monaco, 'Courier New', monospace"
+          font-size="12"
+          font-weight="400"
+          fill="var(--vscode-descriptionForeground)">
+      [1]:
+    </text>
+
+    <!-- Cell code content -->
+    <text x="80" y="105"
+          font-family="'SF Mono', Monaco, 'Courier New', monospace"
+          font-size="12"
+          font-weight="400"
+          fill="#9CDCFE">
+      import
+    </text>
+    <text x="140" y="105"
+          font-family="'SF Mono', Monaco, 'Courier New', monospace"
+          font-size="12"
+          font-weight="400"
+          fill="var(--vscode-foreground)">
+      platform
+    </text>
+
+    <text x="80" y="125"
+          font-family="'SF Mono', Monaco, 'Courier New', monospace"
+          font-size="12"
+          font-weight="400"
+          fill="#DCDCAA">
+      print
+    </text>
+    <text x="120" y="125"
+          font-family="'SF Mono', Monaco, 'Courier New', monospace"
+          font-size="12"
+          font-weight="400"
+          fill="var(--vscode-foreground)">
+      (platform.
+    </text>
+    <text x="210" y="125"
+          font-family="'SF Mono', Monaco, 'Courier New', monospace"
+          font-size="12"
+          font-weight="400"
+          fill="#DCDCAA">
+      node
+    </text>
+    <text x="250" y="125"
+          font-family="'SF Mono', Monaco, 'Courier New', monospace"
+          font-size="12"
+          font-weight="400"
+          fill="var(--vscode-foreground)">
+      ())
+    </text>
+
+    <!-- Runtime label -->
+    <text x="80" y="142"
+          font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
+          font-size="11"
+          font-weight="400"
+          fill="var(--vscode-descriptionForeground)">
+      runtime-01k6pat9zep6j6qwkpr653c4ps
+    </text>
+
+    <!-- Cell 2: Code cell with execution count [2] -->
+    <g filter="url(#cellShadow)">
+      <rect x="30" y="165" width="540" height="60" rx="6"
+            fill="var(--vscode-input-background)"
+            stroke="var(--vscode-panel-border)"
+            stroke-width="1" />
+    </g>
+
+    <text x="45" y="190"
+          font-family="'SF Mono', Monaco, 'Courier New', monospace"
+          font-size="12"
+          font-weight="400"
+          fill="var(--vscode-descriptionForeground)">
+      [2]:
+    </text>
+
+    <text x="80" y="190"
+          font-family="'SF Mono', Monaco, 'Courier New', monospace"
+          font-size="12"
+          font-weight="400"
+          fill="#DCDCAA">
+      print
+    </text>
+    <text x="120" y="190"
+          font-family="'SF Mono', Monaco, 'Courier New', monospace"
+          font-size="12"
+          font-weight="400"
+          fill="var(--vscode-foreground)">
+      (1)
+    </text>
+
+    <!-- Output -->
+    <text x="80" y="210"
+          font-family="'SF Mono', Monaco, 'Courier New', monospace"
+          font-size="12"
+          font-weight="400"
+          fill="var(--vscode-foreground)">
+      1
+    </text>
+
+    <!-- Cell 3: Code cell with execution count [5] -->
+    <g filter="url(#cellShadow)">
+      <rect x="30" y="240" width="540" height="60" rx="6"
+            fill="var(--vscode-input-background)"
+            stroke="var(--vscode-panel-border)"
+            stroke-width="1" />
+    </g>
+
+    <text x="45" y="265"
+          font-family="'SF Mono', Monaco, 'Courier New', monospace"
+          font-size="12"
+          font-weight="400"
+          fill="var(--vscode-descriptionForeground)">
+      [5]:
+    </text>
+
+    <text x="80" y="265"
+          font-family="'SF Mono', Monaco, 'Courier New', monospace"
+          font-size="12"
+          font-weight="400"
+          fill="#CE9178">
+      1+4
+    </text>
+
+    <!-- Output -->
+    <text x="80" y="285"
+          font-family="'SF Mono', Monaco, 'Courier New', monospace"
+          font-size="12"
+          font-weight="400"
+          fill="var(--vscode-foreground)">
+      5
+    </text>
+
+    <!-- Cell 4: Empty code cell [ ] -->
+    <g filter="url(#cellShadow)">
+      <rect x="30" y="315" width="540" height="50" rx="6"
+            fill="var(--vscode-input-background)"
+            stroke="var(--vscode-panel-border)"
+            stroke-width="1" />
+    </g>
+
+    <text x="45" y="343"
+          font-family="'SF Mono', Monaco, 'Courier New', monospace"
+          font-size="12"
+          font-weight="400"
+          fill="var(--vscode-descriptionForeground)">
+      [ ]:
+    </text>
+  </g>
+</svg>

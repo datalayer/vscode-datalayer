@@ -1,0 +1,124 @@
+<!--
+  Datalayer Authentication Dialog
+  Themed SVG for walkthrough showing API Key input dialog
+  Modern VS Code interface style with rounded corners and shadows on entire screenshot
+-->
+
+<svg width="600" height="400" viewBox="0 0 600 400" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <!-- Shadow filters -->
+    <filter id="inputShadow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="2"/>
+      <feOffset dx="0" dy="1" result="offsetblur"/>
+      <feComponentTransfer>
+        <feFuncA type="linear" slope="0.3"/>
+      </feComponentTransfer>
+      <feMerge>
+        <feMergeNode/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+
+    <filter id="dialogShadow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="4"/>
+      <feOffset dx="0" dy="2" result="offsetblur"/>
+      <feComponentTransfer>
+        <feFuncA type="linear" slope="0.2"/>
+      </feComponentTransfer>
+      <feMerge>
+        <feMergeNode/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+
+    <!-- Outer shadow for entire screenshot -->
+    <filter id="screenshotShadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="8"/>
+      <feOffset dx="0" dy="4" result="offsetblur"/>
+      <feComponentTransfer>
+        <feFuncA type="linear" slope="0.25"/>
+      </feComponentTransfer>
+      <feMerge>
+        <feMergeNode/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- Outer container with shadow and rounded corners -->
+  <g filter="url(#screenshotShadow)">
+    <!-- Main background with rounded corners -->
+    <rect x="10" y="10" width="580" height="380" rx="12"
+          fill="var(--vscode-editor-background)"
+          stroke="var(--vscode-panel-border)"
+          stroke-width="1" />
+
+    <!-- Subtle background overlay -->
+    <rect x="10" y="10" width="580" height="380" rx="12"
+          fill="var(--vscode-sideBar-background)"
+          opacity="0.3" />
+
+    <!-- Dialog container with shadow -->
+    <g filter="url(#dialogShadow)">
+      <rect x="100" y="120" width="400" height="160" rx="8"
+            fill="var(--vscode-input-background)"
+            stroke="var(--vscode-panel-border)"
+            stroke-width="1" />
+    </g>
+
+    <!-- Dialog title -->
+    <text x="300" y="155"
+          font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
+          font-size="16"
+          font-weight="400"
+          fill="var(--vscode-foreground)"
+          text-anchor="middle">
+      Datalayer Authentication
+    </text>
+
+    <!-- Input field with focus border -->
+    <g filter="url(#inputShadow)">
+      <!-- Blue focus border -->
+      <rect x="118" y="178" width="364" height="34" rx="3"
+            fill="none"
+            stroke="var(--vscode-focusBorder)"
+            stroke-width="2" />
+
+      <!-- Input background -->
+      <rect x="120" y="180" width="360" height="30" rx="2"
+            fill="var(--vscode-input-background)"
+            stroke="var(--vscode-input-border)"
+            stroke-width="1" />
+    </g>
+
+    <!-- Placeholder text -->
+    <text x="135" y="200"
+          font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
+          font-size="13"
+          font-weight="400"
+          fill="var(--vscode-input-placeholderForeground)"
+          text-anchor="start">
+      Paste your API Key here
+    </text>
+
+    <!-- Helper text line 1 -->
+    <text x="300" y="238"
+          font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
+          font-size="12"
+          font-weight="400"
+          fill="var(--vscode-descriptionForeground)"
+          text-anchor="middle">
+      Enter your Datalayer API Key
+    </text>
+
+    <!-- Helper text line 2 -->
+    <text x="300" y="258"
+          font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
+          font-size="12"
+          font-weight="400"
+          fill="var(--vscode-descriptionForeground)"
+          text-anchor="middle">
+      (Press 'Enter' to confirm or 'Escape' to cancel)
+    </text>
+  </g>
+</svg>
