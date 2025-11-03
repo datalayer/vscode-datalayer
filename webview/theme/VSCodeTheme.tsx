@@ -146,6 +146,61 @@ function VSCodeCSSInjector({ colorMode }: { colorMode: "light" | "dark" }) {
       .dla-CellSidebar-Container button:hover {
         background-color: var(--vscode-list-hoverBackground) !important;
       }
+
+      /* CodeMirror 6 text selection fix - ULTRA NUCLEAR OPTION */
+      /* Override EVERYTHING - selection layer AND ::selection on all syntax tokens */
+
+      /* Selection background layer elements */
+      .cm-selectionBackground {
+        background: var(--vscode-editor-selectionBackground) !important;
+      }
+
+      .cm-editor .cm-selectionBackground {
+        background: var(--vscode-editor-selectionBackground) !important;
+      }
+
+      .cm-editor > .cm-scroller > .cm-selectionLayer .cm-selectionBackground {
+        background: var(--vscode-editor-selectionBackground) !important;
+      }
+
+      .cm-editor.cm-focused > .cm-scroller > .cm-selectionLayer .cm-selectionBackground {
+        background: var(--vscode-editor-selectionBackground) !important;
+      }
+
+      /* CRITICAL: Override ::selection on ALL syntax highlighting tokens */
+      /* Each syntax token class needs explicit ::selection override */
+      .cm-editor .cm-line ::selection,
+      .cm-editor .cm-line > *::selection,
+      .cm-editor .cm-line span::selection,
+      .cm-editor .cm-content ::selection,
+      .cm-editor .cm-activeLine ::selection,
+      .cm-editor .cm-keyword::selection,
+      .cm-editor .cm-operator::selection,
+      .cm-editor .cm-variable::selection,
+      .cm-editor .cm-variableName::selection,
+      .cm-editor .cm-string::selection,
+      .cm-editor .cm-number::selection,
+      .cm-editor .cm-comment::selection,
+      .cm-editor .cm-meta::selection,
+      .cm-editor .cm-tag::selection,
+      .cm-editor .cm-attribute::selection,
+      .cm-editor .cm-property::selection,
+      .cm-editor .cm-qualifier::selection,
+      .cm-editor .cm-type::selection,
+      .cm-editor .cm-builtin::selection,
+      .cm-editor .cm-bracket::selection,
+      .cm-editor .cm-atom::selection,
+      .cm-editor .cm-def::selection,
+      .cm-editor .cm-punctuation::selection {
+        background: var(--vscode-editor-selectionBackground) !important;
+        background-color: var(--vscode-editor-selectionBackground) !important;
+      }
+
+      /* Catch-all for ANY element inside editor */
+      .cm-editor *::selection {
+        background: var(--vscode-editor-selectionBackground) !important;
+        background-color: var(--vscode-editor-selectionBackground) !important;
+      }
     `;
 
     return () => {
