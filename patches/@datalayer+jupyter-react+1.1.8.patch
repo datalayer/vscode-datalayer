@@ -1,0 +1,66 @@
+diff --git a/node_modules/@datalayer/jupyter-react/lib/components/notebook/Notebook2Adapter.js b/node_modules/@datalayer/jupyter-react/lib/components/notebook/Notebook2Adapter.js
+index 53144a3..3dfeb0d 100644
+--- a/node_modules/@datalayer/jupyter-react/lib/components/notebook/Notebook2Adapter.js
++++ b/node_modules/@datalayer/jupyter-react/lib/components/notebook/Notebook2Adapter.js
+@@ -119,7 +119,19 @@ export class Notebook2Adapter {
+      * properly initialized for this operation to succeed.
+      */
+     undo() {
+-        NotebookActions.undo(this._notebook);
++        const notebook = this._notebook;
++        // If we're in edit mode and have an active cell with an editor,
++        // try to undo in the cell editor first
++        if (notebook.mode === 'edit' && notebook.activeCell?.editor) {
++            const editor = notebook.activeCell.editor;
++            // CodeMirror editor has an undo method
++            if (editor && typeof editor.undo === 'function') {
++                editor.undo();
++                return;
++            }
++        }
++        // Otherwise, undo at the notebook level (add/remove cells, etc.)
++        NotebookActions.undo(notebook);
+     }
+     /**
+      * Redo the last undone change in the notebook.
+@@ -130,7 +142,19 @@ export class Notebook2Adapter {
+      * must be available and properly initialized for this operation to succeed.
+      */
+     redo() {
+-        NotebookActions.redo(this._notebook);
++        const notebook = this._notebook;
++        // If we're in edit mode and have an active cell with an editor,
++        // try to redo in the cell editor first
++        if (notebook.mode === 'edit' && notebook.activeCell?.editor) {
++            const editor = notebook.activeCell.editor;
++            // CodeMirror editor has a redo method
++            if (editor && typeof editor.redo === 'function') {
++                editor.redo();
++                return;
++            }
++        }
++        // Otherwise, redo at the notebook level (add/remove cells, etc.)
++        NotebookActions.redo(notebook);
+     }
+     /**
+      * Dispose of the adapter.
+diff --git a/node_modules/@datalayer/jupyter-react/lib/components/notebook/index.d.ts b/node_modules/@datalayer/jupyter-react/lib/components/notebook/index.d.ts
+index 1a66879..b75be50 100644
+--- a/node_modules/@datalayer/jupyter-react/lib/components/notebook/index.d.ts
++++ b/node_modules/@datalayer/jupyter-react/lib/components/notebook/index.d.ts
+@@ -12,3 +12,4 @@ export * from './content';
+ export * from './marked';
+ export * from './model';
+ export * from './toolbar';
++export { notebookStore2 } from './Notebook2State';
+diff --git a/node_modules/@datalayer/jupyter-react/lib/components/notebook/index.js b/node_modules/@datalayer/jupyter-react/lib/components/notebook/index.js
+index 4fa0a3c..fd80d6c 100644
+--- a/node_modules/@datalayer/jupyter-react/lib/components/notebook/index.js
++++ b/node_modules/@datalayer/jupyter-react/lib/components/notebook/index.js
+@@ -17,4 +17,5 @@ export * from './content';
+ export * from './marked';
+ export * from './model';
+ export * from './toolbar';
++export { notebookStore2 } from './Notebook2State';
+ //# sourceMappingURL=index.js.map
+\ No newline at end of file

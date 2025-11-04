@@ -19,6 +19,7 @@ import {
   type ICollaborationProvider,
   useJupyterReactStore,
   CellSidebarExtension,
+  notebookStore2,
 } from "@datalayer/jupyter-react";
 import { DatalayerCollaborationProvider } from "@datalayer/core/lib/collaboration";
 import {
@@ -313,26 +314,26 @@ function NotebookEditorCore({
 
   // Handle Cmd+Z/Ctrl+Z (undo) and Cmd+Shift+Z/Ctrl+Y (redo)
   useEffect(() => {
-    const handleKeyDown = (_e: KeyboardEvent) => {
+    const handleKeyDown = (e: KeyboardEvent) => {
       const currentNotebookId = documentId || notebookId;
       if (!currentNotebookId) return;
 
       // Cmd+Z (macOS) or Ctrl+Z (Windows/Linux) - Undo
-      // if ((e.metaKey || e.ctrlKey) && e.key === "z" && !e.shiftKey) {
-      //   e.preventDefault();
-      //   notebookStore2.getState().undo(currentNotebookId);
-      //   return;
-      // }
+      if ((e.metaKey || e.ctrlKey) && e.key === "z" && !e.shiftKey) {
+        e.preventDefault();
+        notebookStore2.getState().undo(currentNotebookId);
+        return;
+      }
 
       // Cmd+Shift+Z (macOS) or Ctrl+Y (Windows/Linux) - Redo
-      // if (
-      //   ((e.metaKey || e.ctrlKey) && e.key === "z" && e.shiftKey) ||
-      //   (e.ctrlKey && e.key === "y" && !e.metaKey)
-      // ) {
-      //   e.preventDefault();
-      //   notebookStore2.getState().redo(currentNotebookId);
-      //   return;
-      // }
+      if (
+        ((e.metaKey || e.ctrlKey) && e.key === "z" && e.shiftKey) ||
+        (e.ctrlKey && e.key === "y" && !e.metaKey)
+      ) {
+        e.preventDefault();
+        notebookStore2.getState().redo(currentNotebookId);
+        return;
+      }
     };
 
     document.addEventListener("keydown", handleKeyDown, true);
