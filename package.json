@@ -23,7 +23,6 @@
   },
   "main": "./dist/extension.js",
   "scripts": {
-    "postinstall": "node scripts/patch-jupyter-lexical.js && patch-package",
     "clean": "rm -rf dist out *.vsix",
     "clean:dist": "rm -rf dist",
     "clean:out": "rm -rf out",
@@ -50,7 +49,8 @@
     "docs": "typedoc",
     "docs:watch": "typedoc --watch",
     "docs:markdown": "typedoc --plugin typedoc-plugin-markdown --out docs-markdown",
-    "docs:coverage": "typedoc --validation"
+    "docs:coverage": "typedoc --validation",
+    "postinstall": "patch-package"
   },
   "dependencies": {
     "@codemirror/autocomplete": "^6.18.7",
@@ -82,6 +82,7 @@
     "@primer/react": "^37.19.0",
     "@primer/react-brand": "^0.58.1",
     "@vscode/codicons": "^0.0.41",
+    "ansi-to-html": "^0.7.2",
     "buffer": "^6.0.3",
     "codemirror": "^6.0.2",
     "lexical": "^0.35.0",
@@ -95,6 +96,7 @@
     "yjs": "^13.6.18"
   },
   "devDependencies": {
+    "@jupyterlab/theme-light-extension": "^4.4.10",
     "@types/jest": "^30.0.0",
     "@types/mocha": "^10.0.10",
     "@types/node": "^24.8.1",

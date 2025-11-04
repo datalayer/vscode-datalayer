@@ -47,13 +47,10 @@ import { $setBlocksType } from "@lexical/selection";
 import { $findMatchingParent } from "@lexical/utils";
 import { INSERT_HORIZONTAL_RULE_COMMAND } from "@lexical/react/LexicalHorizontalRuleNode";
 import { TOGGLE_LINK_COMMAND, $isLinkNode } from "@lexical/link";
+import { createCommand, LexicalCommand } from "lexical";
 import {
   INSERT_YOUTUBE_COMMAND,
   INSERT_JUPYTER_INPUT_OUTPUT_COMMAND,
-  RUN_JUPYTER_CELL_COMMAND,
-  RUN_ALL_JUPYTER_CELLS_COMMAND,
-  RESTART_JUPYTER_KERNEL_COMMAND,
-  CLEAR_ALL_OUTPUTS_COMMAND,
   InsertImageDialog,
   InsertEquationDialog,
   useModal,
@@ -63,6 +60,20 @@ import {
 import { useJupyter } from "@datalayer/jupyter-react";
 import type { RuntimeJSON } from "@datalayer/core/lib/client";
 import { MessageHandlerContext } from "../services/messageHandler";
+
+// Define Jupyter commands locally (not exported from jupyter-lexical)
+const RUN_JUPYTER_CELL_COMMAND: LexicalCommand<undefined> = createCommand(
+  "RUN_JUPYTER_CELL_COMMAND",
+);
+const RUN_ALL_JUPYTER_CELLS_COMMAND: LexicalCommand<undefined> = createCommand(
+  "RUN_ALL_JUPYTER_CELLS_COMMAND",
+);
+const RESTART_JUPYTER_KERNEL_COMMAND: LexicalCommand<undefined> = createCommand(
+  "RESTART_JUPYTER_KERNEL_COMMAND",
+);
+const CLEAR_ALL_OUTPUTS_COMMAND: LexicalCommand<undefined> = createCommand(
+  "CLEAR_ALL_OUTPUTS_COMMAND",
+);
 import {
   BaseToolbar,
   ToolbarButton,

@@ -27,10 +27,12 @@ export function getNotebookHtml(
   extensionUri: vscode.Uri,
 ): string {
   // Local path to script and css for the webview with cache busting
+  // Use build timestamp to ensure fresh cache after rebuild
+  const buildTimestamp = Date.now();
   const scriptUri =
     webview.asWebviewUri(
       vscode.Uri.joinPath(extensionUri, "dist", "webview.js"),
-    ) + `?t=${Date.now()}`;
+    ) + `?v=${buildTimestamp}`;
 
   // Get the codicon CSS file from dist folder
   const codiconCssUri = webview.asWebviewUri(
@@ -165,7 +167,7 @@ export function getNotebookHtml(
           Note: 'unsafe-eval' is required for AJV (JSON schema validator used by Jupyter dependencies).
           This is acceptable as we control the extension code and use nonces for scripts.
           -->
-          <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src ${webview.cspSource} blob: data:; style-src ${webview.cspSource} 'unsafe-inline'; font-src ${webview.cspSource}; script-src 'nonce-${nonce}' 'unsafe-eval'; connect-src ${webview.cspSource} https: wss:; worker-src ${webview.cspSource} blob:;" />
+          <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src ${webview.cspSource} blob: data:; style-src ${webview.cspSource} 'unsafe-inline'; font-src ${webview.cspSource}; script-src 'nonce-${nonce}' 'unsafe-eval'; connect-src ${webview.cspSource} https: wss:; worker-src blob:;" />
 
         </head>
 

@@ -19,8 +19,6 @@ import {
   type ICollaborationProvider,
   useJupyterReactStore,
   CellSidebarExtension,
-  resetJupyterConfig,
-  notebookStore2,
 } from "@datalayer/jupyter-react";
 import { DatalayerCollaborationProvider } from "@datalayer/core/lib/collaboration";
 import {
@@ -49,6 +47,7 @@ import {
   notebookHeight,
   cellSidebarMargin,
 } from "../components/notebookStyles";
+import { VSCodeLLMProvider } from "../services/completion/vscodeLLMProvider";
 
 // Extended interface for runtime with credits information
 interface RuntimeWithCredits extends RuntimeJSON {
@@ -101,6 +100,12 @@ function NotebookEditorCore({
   // Create notebook extensions (sidebar)
   const extensions = useMemo(() => [new CellSidebarExtension({})], []);
 
+  // Create LLM completion provider for VS Code
+  const llmProvider = useMemo(() => {
+    console.log("[NotebookEditor] Creating VSCodeLLMProvider");
+    return new VSCodeLLMProvider();
+  }, []);
+
   // Create collaboration provider for Datalayer notebooks
   const collaborationProvider = useMemo(() => {
     if (isDatalayerNotebook && serverUrl && token && documentId) {
@@ -150,7 +155,7 @@ function NotebookEditorCore({
 
           // Reset JupyterConfig singleton (applied via patch)
           // This ensures fresh config with correct serverUrl/token when webview is reused
-          resetJupyterConfig();
+          // resetJupyterConfig(); // TODO: Re-enable when function is exported
 
           // Handle theme
           if (body.theme) {
@@ -308,26 +313,26 @@ function NotebookEditorCore({
 
   // Handle Cmd+Z/Ctrl+Z (undo) and Cmd+Shift+Z/Ctrl+Y (redo)
   useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
+    const handleKeyDown = (_e: KeyboardEvent) => {
       const currentNotebookId = documentId || notebookId;
       if (!currentNotebookId) return;
 
       // Cmd+Z (macOS) or Ctrl+Z (Windows/Linux) - Undo
-      if ((e.metaKey || e.ctrlKey) && e.key === "z" && !e.shiftKey) {
-        e.preventDefault();
-        notebookStore2.getState().undo(currentNotebookId);
-        return;
-      }
+      // if ((e.metaKey || e.ctrlKey) && e.key === "z" && !e.shiftKey) {
+      //   e.preventDefault();
+      //   notebookStore2.getState().undo(currentNotebookId);
+      //   return;
+      // }
 
       // Cmd+Shift+Z (macOS) or Ctrl+Y (Windows/Linux) - Redo
-      if (
-        ((e.metaKey || e.ctrlKey) && e.key === "z" && e.shiftKey) ||
-        (e.ctrlKey && e.key === "y" && !e.metaKey)
-      ) {
-        e.preventDefault();
-        notebookStore2.getState().redo(currentNotebookId);
-        return;
-      }
+      // if (
+      //   ((e.metaKey || e.ctrlKey) && e.key === "z" && e.shiftKey) ||
+      //   (e.ctrlKey && e.key === "y" && !e.metaKey)
+      // ) {
+      //   e.preventDefault();
+      //   notebookStore2.getState().redo(currentNotebookId);
+      //   return;
+      // }
     };
 
     document.addEventListener("keydown", handleKeyDown, true);
@@ -416,6 +421,13 @@ function NotebookEditorCore({
             height={notebookHeight}
             cellSidebarMargin={cellSidebarMargin}
             extensions={extensions}
+            inlineProviders={(() => {
+              console.log(
+                "[NotebookEditor] Passing inlineProviders to Notebook2:",
+                [llmProvider],
+              );
+              return [llmProvider];
+            })()}
             onNotebookModelChanged={
               !isDatalayerNotebook ? handleNotebookModelChanged : undefined
             }
