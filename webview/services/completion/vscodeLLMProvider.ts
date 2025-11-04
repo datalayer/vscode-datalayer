@@ -4,15 +4,29 @@
  * MIT License
  */
 
-import type {
-  IInlineCompletionProvider,
-  IInlineCompletionContext,
-  IInlineCompletionItem,
-  IInlineCompletionList,
-  CompletionHandler,
-  NotebookPanel,
-  Cell,
-} from "@datalayer/jupyter-react";
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
+// Type definitions for inline completion (not exported from published package)
+interface IInlineCompletionProvider<T = any> {
+  readonly name: string;
+  readonly schema?: any;
+  fetch(request: any, context: any): Promise<IInlineCompletionList<T>>;
+}
+
+interface IInlineCompletionContext {
+  widget?: any;
+  triggerKind?: any;
+}
+
+interface IInlineCompletionItem {
+  insertText: string;
+  [key: string]: any;
+}
+
+interface IInlineCompletionList<T = IInlineCompletionItem> {
+  items: T[];
+}
+
 import { vsCodeAPI } from "../messageHandler";
 
 /**
@@ -52,7 +66,7 @@ export class VSCodeLLMProvider
    * @returns Promise resolving to list of completion items
    */
   async fetch(
-    request: CompletionHandler.IRequest,
+    request: any, // CompletionHandler.IRequest
     context: IInlineCompletionContext,
   ): Promise<IInlineCompletionList<IInlineCompletionItem>> {
     try {
@@ -144,7 +158,7 @@ export class VSCodeLLMProvider
    * @returns Prefix, suffix, and language for LLM prompt
    */
   private extractContext(
-    request: CompletionHandler.IRequest,
+    request: any, // CompletionHandler.IRequest
     context: IInlineCompletionContext,
   ): { prefix: string; suffix: string; language: string } {
     let prefix = "";
@@ -163,7 +177,7 @@ export class VSCodeLLMProvider
       typeof context.widget.content === "object" &&
       "widgets" in context.widget.content
     ) {
-      const notebook = context.widget as NotebookPanel;
+      const notebook = context.widget as any; // NotebookPanel
       const activeCell = notebook.content.activeCell;
 
       if (!activeCell) {
@@ -178,7 +192,7 @@ export class VSCodeLLMProvider
       let activeCellReached = false;
 
       // Include ALL cells (same as notebook-intelligence)
-      for (const cell of notebook.content.widgets as Cell[]) {
+      for (const cell of notebook.content.widgets as any[]) {
         if (cell === activeCell) {
           activeCellReached = true;
         } else if (!activeCellReached) {
@@ -211,7 +225,7 @@ export class VSCodeLLMProvider
    * @param cell - Notebook cell
    * @returns Cell content as text
    */
-  private cellToText(cell: Cell): string {
+  private cellToText(cell: any): string {
     const cellModel = cell.model.sharedModel;
     const source = cellModel.source;
 
@@ -221,7 +235,7 @@ export class VSCodeLLMProvider
       // Convert markdown to comments (same as notebook-intelligence)
       return source
         .split("\n")
-        .map((line) => `# ${line}`)
+        .map((line: string) => `# ${line}`)
         .join("\n");
     }
 
