@@ -32,6 +32,40 @@ npm run package
 npm run vsix
 ```
 
+## Working with Jupyter Packages
+
+The extension depends on local `@datalayer/jupyter-lexical` and `@datalayer/jupyter-react` packages from the monorepo. During development, you may need to sync changes from the jupyter-ui repository.
+
+### Development Scripts
+
+```bash
+# Sync latest changes from jupyter-ui packages
+npm run sync:jupyter
+# Builds jupyter-lexical and jupyter-react, copies lib/ to node_modules
+
+# Watch mode - auto-sync on file changes
+npm run sync:jupyter:watch
+# Monitors src/ folders and automatically rebuilds/syncs when files change
+
+# Create patches for modified packages
+npm run create:patches
+# Auto-syncs first, then generates patch files in patches/
+
+# Apply patches manually (if needed)
+npm run apply:patches
+# Normally runs automatically via postinstall hook
+```
+
+### Workflow
+
+1. **Make changes** in `../jupyter-ui/packages/lexical` or `../jupyter-ui/packages/react`
+2. **Option A - Manual sync**: `npm run sync:jupyter` when ready to test
+3. **Option B - Auto sync**: `npm run sync:jupyter:watch` in a separate terminal for live updates
+4. **Test changes**: Compile and run extension (`npm run compile` then F5)
+5. **Create patches**: `npm run create:patches` (when ready to commit)
+
+The patches in `patches/` directory are automatically applied when anyone runs `npm install`, ensuring all contributors get your modifications.
+
 ## Code Quality & Validation
 
 The project enforces strict quality standards with zero-tolerance for errors.
@@ -185,6 +219,7 @@ suite("My Feature Tests", () => {
 4. **Test in Extension Host** - open `.ipynb` files
 
 5. **Before committing**:
+
    ```bash
    npm run check         # Run all validations
    npm test              # Run all tests
@@ -341,7 +376,7 @@ The editor is encapsulated within an iframe. All communications between the edit
 
 ## Project Structure
 
-```
+```bash
 src/
 ├── extension.ts                 # Main entry point
 ├── commands/                    # Command handlers
@@ -546,7 +581,7 @@ All code should include proper JSDoc comments for TypeScript interfaces, classes
 
 ## Resources
 
-### Documentation
+### Project Documentation
 
 - **Development Guide**: This document
 - **Testing Guide**: [TESTING.md](./TESTING.md)

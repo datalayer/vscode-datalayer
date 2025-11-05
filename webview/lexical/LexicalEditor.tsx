@@ -41,11 +41,13 @@ import {
   JupyterInputHighlightNode,
   JupyterOutputNode,
   JupyterCellNode,
+  InlineCompletionNode,
   ComponentPickerMenuPlugin,
   JupyterCellPlugin,
   JupyterInputOutputPlugin,
   DraggableBlockPlugin,
   registerCodeHighlighting,
+  LexicalInlineCompletionPlugin,
   EquationNode,
   ImageNode,
   YouTubeNode,
@@ -61,6 +63,7 @@ import { RuntimeProgressBar } from "../components/RuntimeProgressBar";
 import type { RuntimeJSON } from "@datalayer/core/lib/client";
 import { LoroCollaborationPlugin } from "@datalayer/lexical-loro";
 import { createVSCodeLoroProvider } from "../services/loro/providerFactory";
+import { LexicalVSCodeLLMProvider } from "../services/completion/lexicalLLMProvider";
 
 /**
  * Collaboration configuration for Lexical documents
@@ -120,6 +123,26 @@ function SavePlugin({ onSave }: { onSave?: (content: string) => void }) {
     const handleKeyDown = (event: KeyboardEvent) => {
       if ((event.metaKey || event.ctrlKey) && event.key === "s") {
         event.preventDefault();
+
+        // REMOVE ALL COMPLETION NODES BEFORE SAVING
+        editor.update(() => {
+          const root = $getRoot();
+          root.getChildren().forEach((child) => {
+            if (child.getType() === "jupyter-input") {
+              // Cast to any to access getChildren - we know it's a JupyterInputNode
+              const jupyterNode = child as any;
+              jupyterNode.getChildren().forEach((grandchild: any) => {
+                if (grandchild.getType() === "inline-completion") {
+                  grandchild.remove();
+                  console.warn(
+                    "[SavePlugin] 🧹 Removed inline completion node before save",
+                  );
+                }
+              });
+            }
+          });
+        });
+
         const editorState = editor.getEditorState();
         const jsonString = JSON.stringify(editorState);
         if (onSave) {
@@ -278,6 +301,14 @@ export function LexicalEditor({
     }
   };
 
+  /**
+   * LLM completion provider instance for inline code suggestions.
+   * Integrates VS Code Language Model API (Copilot) with Lexical editor.
+   */
+  const lexicalLLMProvider = React.useMemo(() => {
+    return new LexicalVSCodeLLMProvider();
+  }, []);
+
   // DEBUG: Log element positions and styles to find the gap
   React.useEffect(() => {
     const debugElements = () => {
@@ -322,6 +353,7 @@ export function LexicalEditor({
       JupyterInputNode,
       JupyterInputHighlightNode,
       JupyterOutputNode,
+      InlineCompletionNode,
     ],
     theme: {
       root: "lexical-editor-root",
@@ -478,6 +510,11 @@ export function LexicalEditor({
           <JupyterCellPlugin />
           <ComponentPickerMenuPlugin kernel={activeKernel} />
           <JupyterInputOutputPlugin kernel={activeKernel} />
+          <LexicalInlineCompletionPlugin
+            providers={[lexicalLLMProvider]}
+            debounceMs={200}
+            enabled={editable}
+          />
           {floatingAnchorElem && (
             <DraggableBlockPlugin anchorElem={floatingAnchorElem} />
           )}
