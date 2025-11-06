@@ -89,6 +89,41 @@ export async function activate(
     );
     activationTimer.checkpoint("filesystem_provider_registered");
 
+    // Register URI handler for OAuth callbacks
+    context.subscriptions.push(
+      vscode.window.registerUriHandler({
+        handleUri: async (uri: vscode.Uri) => {
+          // Handle OAuth callback from browser
+          if (uri.path === "/auth/callback") {
+            const query = new URLSearchParams(uri.query);
+            const token = query.get("token");
+            const state = query.get("state");
+            const error = query.get("error");
+
+            if (error) {
+              vscode.window.showErrorMessage(`Authentication failed: ${error}`);
+              return;
+            }
+
+            if (token) {
+              // Store the token for the auth provider to pick up
+              await context.globalState.update("pendingAuthToken", {
+                token,
+                state,
+                timestamp: Date.now(),
+              });
+
+              // Notify that callback was received
+              vscode.window.showInformationMessage(
+                "Authentication callback received. Completing login...",
+              );
+            }
+          }
+        },
+      }),
+    );
+    activationTimer.checkpoint("uri_handler_registered");
+
     // Now logger is available
     const logger = services.logger;
     logger.info("Datalayer extension activation started", {

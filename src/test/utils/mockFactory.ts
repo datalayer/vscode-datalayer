@@ -241,6 +241,9 @@ export interface MockSDK {
   logout: MockSpyFunction;
   setToken: MockSpyFunction;
   getToken: MockSpyFunction;
+  getIamRunUrl: MockSpyFunction;
+  getRuntimesRunUrl: MockSpyFunction;
+  getSpacerRunUrl: MockSpyFunction;
   listEnvironments: MockSpyFunction;
   ensureRuntime: MockSpyFunction;
   createRuntime: MockSpyFunction;
@@ -323,6 +326,11 @@ export function createMockSDK(): MockSDK {
     logout: createSpy(),
     setToken: createSpy(),
     getToken: createSpy(),
+    getIamRunUrl: createSpy().mockReturnValue("https://prod1.datalayer.run"),
+    getRuntimesRunUrl: createSpy().mockReturnValue(
+      "https://prod1.datalayer.run",
+    ),
+    getSpacerRunUrl: createSpy().mockReturnValue("https://prod1.datalayer.run"),
     listEnvironments: createSpy(),
     ensureRuntime: createSpy(),
     createRuntime: createSpy(),

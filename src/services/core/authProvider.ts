@@ -57,12 +57,12 @@ export class SDKAuthProvider extends BaseService implements IAuthProvider {
     logger: ILogger,
   ) {
     super("SDKAuthProvider", logger);
-    
+
     // Create multi-storage with VS Code SecretStorage as primary and keyring as fallback
     const vscodeStorage = new VSCodeAuthStorage(context.secrets);
     const keyringStorage = new KeyringAuthStorage();
     this.multiStorage = new MultiAuthStorage(vscodeStorage, keyringStorage);
-    
+
     this.logger.debug("SDKAuthProvider instance created", {
       contextId: context.extension.id,
       hasSDK: !!sdk,
@@ -85,7 +85,9 @@ export class SDKAuthProvider extends BaseService implements IAuthProvider {
    */
   protected async onInitialize(): Promise<void> {
     // Load token from multi-storage (VS Code SecretStorage -> keyring -> env vars)
-    const storedToken = await this.multiStorage.getToken(this.sdk.getIamRunUrl());
+    const storedToken = await this.multiStorage.getToken(
+      this.sdk.getIamRunUrl(),
+    );
 
     if (!storedToken) {
       this.logger.debug(
@@ -158,20 +160,15 @@ export class SDKAuthProvider extends BaseService implements IAuthProvider {
 
   /**
    * Prompts user to select a login method and authenticates with the platform.
-   * Displays a quick pick menu to choose between browser, password, or token login.
+   * Displays a quick pick menu to choose between browser OAuth or API token.
    */
   async login(): Promise<void> {
     const method = await vscode.window.showQuickPick(
       [
         {
           label: "$(globe) Login with Browser",
-          description: "OAuth via browser",
+          description: "OAuth via GitHub (recommended)",
           value: "browser" as const,
-        },
-        {
-          label: "$(person) Login with Username/Password",
-          description: "Authenticate with credentials",
-          value: "password" as const,
         },
         {
           label: "$(key) Login with API Token",
@@ -194,9 +191,6 @@ export class SDKAuthProvider extends BaseService implements IAuthProvider {
       case "browser":
         await this.loginBrowser();
         break;
-      case "password":
-        await this.loginPassword();
-        break;
       case "token":
         await this.loginToken();
         break;
@@ -204,69 +198,65 @@ export class SDKAuthProvider extends BaseService implements IAuthProvider {
   }
 
   /**
-   * Login with browser OAuth flow.
-   * Opens browser for authentication and waits for callback.
+   * Login with browser OAuth flow using SDK's localhost server.
+   * Uses the cross-platform browser OAuth implementation from the SDK.
    */
   async loginBrowser(): Promise<void> {
     this.logger.info("Starting browser OAuth login");
-    
-    // Generate state token for CSRF protection
-    const state = Math.random().toString(36).substring(2, 15);
-    
-    // Construct OAuth URL
-    const authUrl = `${this.sdk.getIamRunUrl()}/api/iam/v1/auth/github?state=${state}&redirect_uri=vscode://datalayer.datalayer-jupyter-vscode/auth/callback`;
-    
-    this.logger.debug("Opening browser for OAuth", { authUrl });
-    
-    // Open browser
-    await vscode.env.openExternal(vscode.Uri.parse(authUrl));
-    
-    // Show information message
-    await vscode.window.showInformationMessage(
-      "Opening browser for authentication. Please complete the login in your browser.",
-    );
-    
-    // TODO: Implement URI handler to catch callback with token
-    // For now, prompt user to paste token from browser
-    await vscode.window.showWarningMessage(
-      "Browser OAuth callback not yet implemented. Please use 'Login with API Token' instead.",
-    );
-  }
 
-  /**
-   * Login with username and password.
-   * Prompts for credentials and authenticates via API.
-   */
-  async loginPassword(): Promise<void> {
-    this.logger.info("Starting password login");
-    
-    const username = await vscode.window.showInputBox({
-      prompt: "Enter your username or email",
-      placeHolder: "username@example.com",
-      ignoreFocusOut: true,
-    });
-    
-    if (!username) {
-      this.logger.debug("Password login cancelled - no username");
-      return;
+    try {
+      // Use SDK's browser OAuth
+      const user = await this.logger.timeAsync(
+        "sdk_login_browser",
+        () => this.sdk.loginBrowser(),
+        { operation: "browser_login" },
+      );
+
+      // Get the token from SDK (it was set by loginBrowser)
+      const token = this.sdk.getToken();
+
+      if (!token) {
+        throw new Error("SDK login successful but token not set");
+      }
+
+      // Store token in multi-storage
+      await this.multiStorage.setToken(this.sdk.getIamRunUrl(), token);
+      this.logger.debug("Token stored in multi-storage");
+
+      this._authState = {
+        isAuthenticated: true,
+        user: user as UserDTO,
+        error: null,
+      };
+
+      this.logger.info("Browser OAuth login successful", {
+        userId: user.uid,
+        displayName: user.displayName,
+      });
+
+      this._onAuthStateChanged.fire(this._authState);
+
+      await vscode.window.showInformationMessage(
+        `Successfully logged in as ${user.displayName}`,
+      );
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : "Unknown login error";
+
+      this.logger.error("Browser OAuth login failed", error as Error, {
+        operation: "browser_login",
+      });
+
+      this._authState = {
+        isAuthenticated: false,
+        user: null,
+        error: errorMessage,
+      };
+
+      this._onAuthStateChanged.fire(this._authState);
+      await vscode.window.showErrorMessage(`Login failed: ${errorMessage}`);
+      throw error;
     }
-    
-    const password = await vscode.window.showInputBox({
-      prompt: "Enter your password",
-      password: true,
-      ignoreFocusOut: true,
-    });
-    
-    if (!password) {
-      this.logger.debug("Password login cancelled - no password");
-      return;
-    }
-    
-    // TODO: Implement password login via SDK
-    // For now, show not implemented message
-    await vscode.window.showWarningMessage(
-      "Password authentication not yet implemented in TypeScript SDK. Please use 'Login with API Token' instead.",
-    );
   }
 
   /**
@@ -288,16 +278,11 @@ export class SDKAuthProvider extends BaseService implements IAuthProvider {
     });
 
     try {
-      // Set token in SDK
-      await this.logger.timeAsync("sdk_login", () => this.sdk.setToken(token), {
-        operation: "set_token",
-      });
-
-      // Verify token by fetching user
+      // Use SDK loginToken method
       const user = await this.logger.timeAsync(
-        "user_verification",
-        () => this.sdk.whoami(),
-        { operation: "verify_new_token" },
+        "sdk_login_token",
+        () => this.sdk.loginToken(token),
+        { operation: "token_login" },
       );
 
       // Persist token to multi-storage AFTER successful verification
