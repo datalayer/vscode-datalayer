@@ -1,0 +1,260 @@
+/*
+ * Copyright (c) 2024-2025 Datalayer, Inc.
+ *
+ * MIT License
+ */
+
+/**
+ * VS Code native styling for JupyterLab completion dropdown.
+ * Overrides JupyterLab's colorful badges and styling to match VS Code's suggest widget.
+ *
+ * Issue: https://github.com/datalayer/vscode-datalayer/issues/22
+ */
+
+/* ============================================
+   Main Completer Container
+   ============================================ */
+
+.jp-Completer {
+  /* VS Code suggest widget styling */
+  background: var(--vscode-editorSuggestWidget-background) !important;
+  color: var(--vscode-editorSuggestWidget-foreground) !important;
+  border: 1px solid var(--vscode-editorSuggestWidget-border) !important;
+  box-shadow: 0 2px 8px var(--vscode-widget-shadow) !important;
+  font-family: var(--vscode-editor-font-family) !important;
+  font-size: var(--vscode-editor-font-size) !important;
+  border-radius: 4px !important;
+
+  /* Remove JupyterLab positioning offset */
+  margin: 4px 0 0 0 !important;
+}
+
+/* ============================================
+   Completion List
+   ============================================ */
+
+.jp-Completer-list {
+  background: var(--vscode-editorSuggestWidget-background) !important;
+  color: var(--vscode-editorSuggestWidget-foreground) !important;
+}
+
+/* ============================================
+   Completion Items
+   ============================================ */
+
+.jp-Completer-item {
+  background: transparent !important;
+  color: var(--vscode-editorSuggestWidget-foreground) !important;
+  height: 22px !important;
+  line-height: 22px !important;
+  padding: 0 4px !important;
+  border: none !important;
+  font-family: var(--vscode-editor-font-family) !important;
+  font-size: var(--vscode-editor-font-size) !important;
+}
+
+/* Hover state - VS Code style */
+.jp-Completer-item:hover {
+  background: var(--vscode-list-hoverBackground) !important;
+  color: var(--vscode-list-hoverForeground) !important;
+  opacity: 1 !important;
+}
+
+/* Selected/Active state - VS Code style */
+.jp-Completer-item.jp-mod-active {
+  background: var(--vscode-list-activeSelectionBackground) !important;
+  color: var(--vscode-list-activeSelectionForeground) !important;
+}
+
+/* ============================================
+   Completion Item Text
+   ============================================ */
+
+.jp-Completer-item .jp-Completer-match {
+  font-family: var(--vscode-editor-font-family) !important;
+  font-size: var(--vscode-editor-font-size) !important;
+  line-height: 22px !important;
+  height: 22px !important;
+  padding: 0 6px !important;
+  color: inherit !important;
+}
+
+/* Highlighted match text */
+.jp-Completer-item .jp-Completer-match mark {
+  font-weight: 600 !important;
+  background: transparent !important;
+  color: var(--vscode-editorSuggestWidget-highlightForeground) !important;
+}
+
+/* Deprecated items */
+.jp-Completer-deprecated .jp-Completer-match {
+  text-decoration: line-through !important;
+  opacity: 0.6 !important;
+}
+
+/* ============================================
+   Type Icons - VS Code Style (No Colored Badges!)
+   ============================================ */
+
+.jp-Completer-item .jp-Completer-type {
+  background: transparent !important;
+  width: 16px !important;
+  height: 22px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  margin-right: 4px !important;
+}
+
+/* REMOVE all colored backgrounds from type indicators */
+.jp-Completer-type[data-color-index="0"],
+.jp-Completer-type[data-color-index="1"],
+.jp-Completer-type[data-color-index="2"],
+.jp-Completer-type[data-color-index="3"],
+.jp-Completer-type[data-color-index="4"],
+.jp-Completer-type[data-color-index="5"],
+.jp-Completer-type[data-color-index="6"],
+.jp-Completer-type[data-color-index="7"],
+.jp-Completer-type[data-color-index="8"],
+.jp-Completer-type[data-color-index="9"],
+.jp-Completer-type[data-color-index="10"] {
+  background: transparent !important;
+}
+
+/* Type monogram (single letter like "m", "f", "c") */
+.jp-Completer-item .jp-Completer-monogram {
+  color: var(
+    --vscode-symbolIcon-textForeground,
+    var(--vscode-editorSuggestWidget-foreground)
+  ) !important;
+  font-family: var(--vscode-editor-font-family) !important;
+  font-size: 12px !important;
+  line-height: 22px !important;
+  width: 16px !important;
+  text-align: center !important;
+  font-weight: 400 !important;
+  background: transparent !important;
+  padding: 0 !important;
+}
+
+/* VS Code icon styling */
+.jp-Completer-item .jp-Completer-icon {
+  color: var(
+    --vscode-symbolIcon-textForeground,
+    var(--vscode-editorSuggestWidget-foreground)
+  ) !important;
+  opacity: 0.8 !important;
+}
+
+/* Type extended label (like "module", "function", "class") */
+.jp-Completer-item .jp-Completer-typeExtended {
+  color: var(--vscode-editorSuggestWidget-foreground) !important;
+  opacity: 0.6 !important;
+  font-family: var(--vscode-editor-font-family) !important;
+  font-size: 12px !important;
+  line-height: 22px !important;
+  height: 22px !important;
+  padding-right: 6px !important;
+}
+
+/* ============================================
+   Documentation Panel
+   ============================================ */
+
+.jp-Completer-docpanel {
+  background: var(--vscode-editorHoverWidget-background) !important;
+  color: var(--vscode-editorHoverWidget-foreground) !important;
+  border-left: 1px solid var(--vscode-editorHoverWidget-border) !important;
+  font-family: var(--vscode-editor-font-family) !important;
+  font-size: var(--vscode-editor-font-size) !important;
+  padding: 8px !important;
+}
+
+.jp-Completer-docpanel pre {
+  background: var(--vscode-textCodeBlock-background) !important;
+  color: var(--vscode-editor-foreground) !important;
+  border: none !important;
+  padding: 8px !important;
+  border-radius: 3px !important;
+  font-family: var(--vscode-editor-font-family) !important;
+  font-size: var(--vscode-editor-font-size) !important;
+}
+
+/* ============================================
+   Loading Bar
+   ============================================ */
+
+.jp-Completer-loading-bar {
+  background-color: var(--vscode-progressBar-background) !important;
+}
+
+.jp-Completer-loading-bar-container {
+  background: transparent !important;
+}
+
+/* ============================================
+   Scrollbar Styling (VS Code style)
+   ============================================ */
+
+.jp-Completer-list::-webkit-scrollbar {
+  width: 10px !important;
+}
+
+.jp-Completer-list::-webkit-scrollbar-track {
+  background: var(--vscode-scrollbarSlider-background) !important;
+}
+
+.jp-Completer-list::-webkit-scrollbar-thumb {
+  background: var(--vscode-scrollbarSlider-background) !important;
+  border-radius: 5px !important;
+}
+
+.jp-Completer-list::-webkit-scrollbar-thumb:hover {
+  background: var(--vscode-scrollbarSlider-hoverBackground) !important;
+}
+
+.jp-Completer-list::-webkit-scrollbar-thumb:active {
+  background: var(--vscode-scrollbarSlider-activeBackground) !important;
+}
+
+/* ============================================
+   Inline Completer Widget (Ghost Text Container)
+   ============================================ */
+
+.jp-InlineCompleter {
+  background: var(--vscode-editorSuggestWidget-background) !important;
+  color: var(--vscode-editorSuggestWidget-foreground) !important;
+  border: 1px solid var(--vscode-editorSuggestWidget-border) !important;
+  box-shadow: 0 2px 8px var(--vscode-widget-shadow) !important;
+  font-family: var(--vscode-editor-font-family) !important;
+  font-size: var(--vscode-editor-font-size) !important;
+}
+
+.jp-InlineCompleter-progressBar {
+  background-color: var(--vscode-progressBar-background) !important;
+}
+
+/* ============================================
+   Ghost Text (Inline Suggestions)
+   ============================================ */
+
+.jp-GhostText {
+  color: var(--vscode-editorGhostText-foreground) !important;
+  opacity: 0.6 !important;
+  font-family: var(--vscode-editor-font-family) !important;
+  font-size: var(--vscode-editor-font-size) !important;
+}
+
+.jp-GhostText-expandHidden {
+  border: 1px solid var(--vscode-editorSuggestWidget-border) !important;
+  background: var(--vscode-editorSuggestWidget-background) !important;
+  color: var(--vscode-editorSuggestWidget-foreground) !important;
+}
+
+.jp-GhostText-streamingIndicator::after {
+  background: var(--vscode-editorCursor-foreground) !important;
+}
+
+.jp-GhostText-errorIndicator::after {
+  color: var(--vscode-errorForeground) !important;
+}
