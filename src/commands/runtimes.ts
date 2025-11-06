@@ -698,7 +698,7 @@ export function registerRuntimeCommands(
         }
 
         // Generate a suggested snapshot name based on the runtime name
-        const timestamp = formatDateForName();
+        const timestamp = formatDateForName(new Date());
         const suggestedName =
           `snapshot-${runtimeName}-${timestamp}`.toLowerCase();
 

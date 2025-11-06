@@ -19,6 +19,7 @@ import { registerRuntimeCommands } from "./runtimes";
 import { registerSnapshotCommands } from "./snapshots";
 import { registerInternalCommands, getConnectedRuntime } from "./internal";
 import { registerCreateCommands } from "./create";
+import { registerThemeCommands } from "./theme";
 import { SDKAuthProvider } from "../services/core/authProvider";
 import { DocumentBridge } from "../services/bridges/documentBridge";
 import { SpacesTreeProvider } from "../providers/spacesTreeProvider";
@@ -81,4 +82,7 @@ export function registerAllCommands(
 
   // Register smart create commands (context-aware notebook/lexical creation)
   registerCreateCommands(context);
+
+  // Register theme commands (Primer showcase)
+  registerThemeCommands(context);
 }
