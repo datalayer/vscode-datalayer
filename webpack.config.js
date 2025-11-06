@@ -401,4 +401,59 @@ const lexicalWebviewConfig = {
   plugins: [...webviewConfig.plugins],
 };
 
-module.exports = [extensionConfig, webviewConfig, lexicalWebviewConfig];
+// Config for Primer Showcase webview
+const showcaseWebviewConfig = {
+  target: "web",
+  mode: "none",
+  devtool: "inline-source-map",
+  entry: "./webview/showcase/index.tsx",
+  output: {
+    path: path.resolve(__dirname, "dist"),
+    filename: "showcase.js",
+  },
+  resolve: {
+    extensions: [".ts", ".tsx", ".js", ".jsx", ".json"],
+    symlinks: true,
+    fallback: {
+      process: require.resolve("process/browser"),
+      buffer: require.resolve("buffer/"),
+    },
+    alias: {
+      react: path.resolve(__dirname, "./node_modules/react"),
+      "react-dom": path.resolve(__dirname, "./node_modules/react-dom"),
+    },
+  },
+  module: {
+    rules: [
+      {
+        test: /\.tsx?$/,
+        exclude: /node_modules/,
+        use: {
+          loader: "ts-loader",
+          options: {
+            configFile: path.join(__dirname, "tsconfig.webview.json"),
+            experimentalWatchApi: true,
+            transpileOnly: true,
+          },
+        },
+      },
+      {
+        test: /\.css$/,
+        use: [require.resolve("style-loader"), require.resolve("css-loader")],
+      },
+      {
+        test: /\.(c|m)?js/,
+        resolve: {
+          fullySpecified: false,
+        },
+      },
+    ],
+  },
+  plugins: [
+    new webpack.ProvidePlugin({
+      process: "process/browser",
+    }),
+  ],
+};
+
+module.exports = [extensionConfig, webviewConfig, lexicalWebviewConfig, showcaseWebviewConfig];

@@ -13,6 +13,7 @@
 
 import React, { useEffect, type ReactNode } from "react";
 import { JupyterReactTheme } from "@datalayer/jupyter-react";
+import { PrimerVSCodeTheme } from "./PrimerVSCodeTheme";
 
 export interface VSCodeThemeProps {
   colorMode: "light" | "dark";
@@ -230,20 +231,21 @@ export function VSCodeTheme({
   loadJupyterLabCss = true,
   children,
 }: VSCodeThemeProps) {
-  // Create minimal Primer theme config
-
   return (
     <>
       {/* Inject VS Code CSS mappings */}
       <VSCodeCSSInjector colorMode={colorMode} />
 
-      {/* Wrap with JupyterReactTheme for Primer integration */}
-      <JupyterReactTheme
-        colormode={colorMode}
-        loadJupyterLabCss={loadJupyterLabCss}
-      >
-        {children}
-      </JupyterReactTheme>
+      {/* Wrap with Primer theme provider for Primer React components */}
+      <PrimerVSCodeTheme colorMode={colorMode}>
+        {/* Wrap with JupyterReactTheme for Jupyter components */}
+        <JupyterReactTheme
+          colormode={colorMode}
+          loadJupyterLabCss={loadJupyterLabCss}
+        >
+          {children}
+        </JupyterReactTheme>
+      </PrimerVSCodeTheme>
     </>
   );
 }
