@@ -30,6 +30,7 @@ import {
 
 import type { RuntimeDTO } from "@datalayer/core/lib/models/RuntimeDTO";
 import type { DatalayerClient } from "@datalayer/core/lib/client";
+import { formatDateForName } from "../utils/dateFormatter";
 
 interface RuntimeQuickPickItem extends vscode.QuickPickItem {
   runtime?: RuntimeDTO;
@@ -697,10 +698,7 @@ export function registerRuntimeCommands(
         }
 
         // Generate a suggested snapshot name based on the runtime name
-        const timestamp = new Date()
-          .toISOString()
-          .split("T")[0]
-          .replace(/-/g, "");
+        const timestamp = formatDateForName();
         const suggestedName =
           `snapshot-${runtimeName}-${timestamp}`.toLowerCase();
 

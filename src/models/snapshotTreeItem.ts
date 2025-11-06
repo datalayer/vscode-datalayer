@@ -13,6 +13,7 @@
 
 import * as vscode from "vscode";
 import type { RuntimeSnapshotDTO } from "@datalayer/core/lib/models/RuntimeSnapshotDTO";
+import { formatRelativeTime } from "../utils/dateFormatter";
 
 /**
  * Tree item for displaying a snapshot in the VS Code tree view.
@@ -63,27 +64,6 @@ export class SnapshotTreeItem extends vscode.TreeItem {
   private getTimeAgo(): string {
     const snapshotData = this.snapshot.toJSON();
     const created = new Date(snapshotData.updatedAt);
-    const now = new Date();
-    const diffMs = now.getTime() - created.getTime();
-
-    const diffMinutes = Math.floor(diffMs / (1000 * 60));
-    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
-    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-    const diffWeeks = Math.floor(diffDays / 7);
-    const diffMonths = Math.floor(diffDays / 30);
-
-    if (diffMonths > 0) {
-      return `${diffMonths} month${diffMonths > 1 ? "s" : ""} ago`;
-    } else if (diffWeeks > 0) {
-      return `${diffWeeks} week${diffWeeks > 1 ? "s" : ""} ago`;
-    } else if (diffDays > 0) {
-      return `${diffDays} day${diffDays > 1 ? "s" : ""} ago`;
-    } else if (diffHours > 0) {
-      return `${diffHours} hour${diffHours > 1 ? "s" : ""} ago`;
-    } else if (diffMinutes > 0) {
-      return `${diffMinutes} minute${diffMinutes > 1 ? "s" : ""} ago`;
-    } else {
-      return "Just now";
-    }
+    return formatRelativeTime(created);
   }
 }

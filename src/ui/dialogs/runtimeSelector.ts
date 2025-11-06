@@ -15,10 +15,12 @@ import * as vscode from "vscode";
 import type { DatalayerClient } from "@datalayer/core/lib/client";
 import type { RuntimeDTO } from "@datalayer/core/lib/models/RuntimeDTO";
 import type { EnvironmentDTO } from "@datalayer/core/lib/models/EnvironmentDTO";
+import type { RuntimeSnapshotDTO } from "@datalayer/core/lib/models/RuntimeSnapshotDTO";
 import type { IAuthProvider } from "../../services/interfaces/IAuthProvider";
 import { EnvironmentCache } from "../../services/cache/environmentCache";
 import { promptAndLogin } from "./authDialog";
 import { generateRuntimeName } from "../../utils/runtimeNameGenerator";
+import { formatRelativeTime } from "../../utils/dateFormatter";
 
 /**
  * QuickPick item for runtime selection.
@@ -253,11 +255,11 @@ export async function selectDatalayerRuntime(
  * null if user cancelled,
  * or the snapshot ID if user selected a snapshot.
  *
- * @param sdk - Datalayer SDK instance
+ * @param snapshots - Array of available snapshots (already filtered for deleted)
  * @returns Snapshot ID, undefined (fresh start), or null (cancelled)
  */
 async function selectSnapshot(
-  sdk: DatalayerClient,
+  snapshots: RuntimeSnapshotDTO[],
 ): Promise<string | undefined | null> {
   // Interface for snapshot QuickPick items
   interface SnapshotQuickPickItem extends vscode.QuickPickItem {
@@ -266,26 +268,6 @@ async function selectSnapshot(
   }
 
   try {
-    // Fetch available snapshots with progress
-    const snapshots = await vscode.window.withProgress(
-      {
-        location: vscode.ProgressLocation.Notification,
-        title: "Loading available snapshots...",
-        cancellable: true,
-      },
-      async (_progress, token) => {
-        if (token.isCancellationRequested) {
-          return null;
-        }
-        return await sdk.listSnapshots();
-      },
-    );
-
-    // If loading was cancelled
-    if (snapshots === null) {
-      return null;
-    }
-
     // Build QuickPick items
     const items: SnapshotQuickPickItem[] = [];
 
@@ -306,22 +288,12 @@ async function selectSnapshot(
 
       // Add snapshot items
       for (const snapshot of snapshots) {
-        // Check if snapshot has been deleted by examining raw data
-        const rawData = snapshot.rawData();
-
-        // Debug: Log snapshot status to help diagnose deleted snapshots issue
-        console.log(
-          `[Snapshot Debug] ${rawData.name}: status="${rawData.status}"`,
-        );
-
         // Skip deleted snapshots (status might be "deleted", "DELETED", or similar)
+        const rawData = snapshot.rawData();
         if (
           rawData.status &&
           rawData.status.toLowerCase().includes("deleted")
         ) {
-          console.log(
-            `[Snapshot Debug] Skipping deleted snapshot: ${rawData.name}`,
-          );
           continue;
         }
 
@@ -331,18 +303,7 @@ async function selectSnapshot(
           const snapshotData = snapshot.toJSON();
           if (snapshotData.updatedAt) {
             const date = new Date(snapshotData.updatedAt);
-            const now = new Date();
-            const diffMs = now.getTime() - date.getTime();
-            const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-            const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
-
-            if (diffDays > 0) {
-              dateInfo = `${diffDays} day${diffDays > 1 ? "s" : ""} ago`;
-            } else if (diffHours > 0) {
-              dateInfo = `${diffHours} hour${diffHours > 1 ? "s" : ""} ago`;
-            } else {
-              dateInfo = "Recently created";
-            }
+            dateInfo = formatRelativeTime(date);
           }
 
           items.push({
@@ -381,18 +342,8 @@ async function selectSnapshot(
     // Return the selected snapshot ID
     return selected.snapshotId;
   } catch (error) {
-    // If snapshot loading fails, ask user if they want to continue without snapshot
-    const choice = await vscode.window.showWarningMessage(
-      `Failed to load snapshots: ${error}. Continue without snapshot?`,
-      "Yes, start fresh",
-      "Cancel",
-    );
-
-    if (choice === "Yes, start fresh") {
-      return undefined;
-    }
-
-    return null;
+    // If there's an error building the picker, skip snapshots
+    return undefined;
   }
 }
 
@@ -420,7 +371,7 @@ export async function createRuntime(
 
       // Only show snapshot selection dialog if there are snapshots
       if (availableSnapshots && availableSnapshots.length > 0) {
-        const selectedSnapshotId = await selectSnapshot(sdk);
+        const selectedSnapshotId = await selectSnapshot(availableSnapshots);
 
         // If user cancelled snapshot selection, abort runtime creation
         if (selectedSnapshotId === null) {
@@ -431,8 +382,7 @@ export async function createRuntime(
       }
       // If no snapshots available, continue with undefined (fresh start)
     } catch (error) {
-      // If snapshot fetching fails, continue without snapshots
-      console.warn("Failed to fetch snapshots:", error);
+      // If snapshot fetching fails, continue without snapshots (silent failure)
     }
   }
 
