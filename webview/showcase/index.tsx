@@ -14,7 +14,8 @@ import { PrimerShowcase } from "./PrimerShowcase";
 
 // Get initial theme from VS Code
 const getInitialTheme = (): "light" | "dark" => {
-  const isDark = document.body.classList.contains("vscode-dark") ||
+  const isDark =
+    document.body.classList.contains("vscode-dark") ||
     document.body.classList.contains("vscode-high-contrast");
   return isDark ? "dark" : "light";
 };

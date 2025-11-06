@@ -50,23 +50,25 @@ interface PrimerShowcaseProps {
 
 export function PrimerShowcase({ colorMode }: PrimerShowcaseProps) {
   console.log("PrimerShowcase rendering with colorMode:", colorMode);
-  
+
   const [textValue, setTextValue] = useState("");
   const [selectValue, setSelectValue] = useState("option1");
   const [checkboxChecked, setCheckboxChecked] = useState(true);
   const [radioValue, setRadioValue] = useState("option1");
   const [toggleEnabled, setToggleEnabled] = useState(false);
-  
+
   return (
     <PrimerVSCodeTheme colorMode={colorMode}>
-      <Box sx={{ 
-        maxWidth: 1200, 
-        margin: "0 auto", 
-        padding: 4,
-        bg: "canvas.default",
-        color: "fg.default",
-        minHeight: "100vh"
-      }}>
+      <Box
+        sx={{
+          maxWidth: 1200,
+          margin: "0 auto",
+          padding: 4,
+          bg: "canvas.default",
+          color: "fg.default",
+          minHeight: "100vh",
+        }}
+      >
         <Heading sx={{ fontSize: 5, mb: 3, color: "fg.default" }}>
           Primer VSCode Theme Showcase
         </Heading>
@@ -75,7 +77,9 @@ export function PrimerShowcase({ colorMode }: PrimerShowcaseProps) {
         </Text>
 
         <Box sx={{ mb: 4 }}>
-          <Heading as="h2" sx={{ fontSize: 3, mb: 2, color: "fg.default" }}>Buttons</Heading>
+          <Heading as="h2" sx={{ fontSize: 3, mb: 2, color: "fg.default" }}>
+            Buttons
+          </Heading>
           <Box sx={{ display: "flex", gap: 2, flexWrap: "wrap", mb: 2 }}>
             <Button variant="primary">Primary</Button>
             <Button variant="default">Default</Button>
@@ -83,16 +87,33 @@ export function PrimerShowcase({ colorMode }: PrimerShowcaseProps) {
             <Button variant="invisible">Invisible</Button>
           </Box>
           <Box sx={{ display: "flex", gap: 2, flexWrap: "wrap" }}>
-            <Button variant="primary" leadingVisual={SearchIcon}>With Icon</Button>
-            <Button variant="default" trailingVisual={GitBranchIcon}>Trailing Icon</Button>
-            <Button variant="primary" size="small">Small</Button>
-            <Button variant="primary" size="large">Large</Button>
+            <Button variant="primary" leadingVisual={SearchIcon}>
+              With Icon
+            </Button>
+            <Button variant="default" trailingVisual={GitBranchIcon}>
+              Trailing Icon
+            </Button>
+            <Button variant="primary" size="small">
+              Small
+            </Button>
+            <Button variant="primary" size="large">
+              Large
+            </Button>
           </Box>
         </Box>
 
         <Box sx={{ mb: 4 }}>
-          <Heading as="h2" sx={{ fontSize: 3, mb: 2, color: "fg.default" }}>Form Inputs</Heading>
-          <Box sx={{ display: "flex", flexDirection: "column", gap: 3, maxWidth: 500 }}>
+          <Heading as="h2" sx={{ fontSize: 3, mb: 2, color: "fg.default" }}>
+            Form Inputs
+          </Heading>
+          <Box
+            sx={{
+              display: "flex",
+              flexDirection: "column",
+              gap: 3,
+              maxWidth: 500,
+            }}
+          >
             <FormControl>
               <FormControl.Label>Text Input</FormControl.Label>
               <TextInput
@@ -102,21 +123,24 @@ export function PrimerShowcase({ colorMode }: PrimerShowcaseProps) {
                 onChange={(e) => setTextValue(e.target.value)}
               />
             </FormControl>
-            
+
             <FormControl>
               <FormControl.Label>Textarea</FormControl.Label>
               <Textarea placeholder="Enter description..." rows={3} />
             </FormControl>
-            
+
             <FormControl>
               <FormControl.Label>Select</FormControl.Label>
-              <Select value={selectValue} onChange={(e) => setSelectValue(e.target.value)}>
+              <Select
+                value={selectValue}
+                onChange={(e) => setSelectValue(e.target.value)}
+              >
                 <Select.Option value="option1">Option 1</Select.Option>
                 <Select.Option value="option2">Option 2</Select.Option>
                 <Select.Option value="option3">Option 3</Select.Option>
               </Select>
             </FormControl>
-            
+
             <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
               <Checkbox
                 checked={checkboxChecked}
@@ -124,7 +148,7 @@ export function PrimerShowcase({ colorMode }: PrimerShowcaseProps) {
               />
               <Text>Enable notifications</Text>
             </Box>
-            
+
             <FormControl>
               <FormControl.Label>Radio Group</FormControl.Label>
               <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
@@ -148,20 +172,24 @@ export function PrimerShowcase({ colorMode }: PrimerShowcaseProps) {
                 </Box>
               </Box>
             </FormControl>
-            
+
             <FormControl>
               <ToggleSwitch
                 checked={toggleEnabled}
                 onChange={(checked) => setToggleEnabled(checked)}
                 aria-labelledby="toggle-label"
               />
-              <FormControl.Label id="toggle-label">Toggle Switch</FormControl.Label>
+              <FormControl.Label id="toggle-label">
+                Toggle Switch
+              </FormControl.Label>
             </FormControl>
           </Box>
         </Box>
 
         <Box sx={{ mb: 4 }}>
-          <Heading as="h2" sx={{ fontSize: 3, mb: 2, color: "fg.default" }}>Action List & Menu</Heading>
+          <Heading as="h2" sx={{ fontSize: 3, mb: 2, color: "fg.default" }}>
+            Action List & Menu
+          </Heading>
           <Box sx={{ maxWidth: 400 }}>
             <ActionList>
               <ActionList.Item>
@@ -200,7 +228,9 @@ export function PrimerShowcase({ colorMode }: PrimerShowcaseProps) {
         </Box>
 
         <Box sx={{ mb: 4 }}>
-          <Heading as="h2" sx={{ fontSize: 3, mb: 2, color: "fg.default" }}>Flash Messages</Heading>
+          <Heading as="h2" sx={{ fontSize: 3, mb: 2, color: "fg.default" }}>
+            Flash Messages
+          </Heading>
           <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
             <Flash variant="success">
               <CheckIcon /> Success message with icon
@@ -233,24 +263,53 @@ export function PrimerShowcase({ colorMode }: PrimerShowcaseProps) {
 
         <Box sx={{ mb: 4 }}>
           <Heading sx={{ fontSize: 3, mb: 2 }}>Avatars & Links</Heading>
-          <Box sx={{ display: "flex", gap: 3, alignItems: "center", flexWrap: "wrap", mb: 2 }}>
-            <Avatar src="https://avatars.githubusercontent.com/primer" size={32} />
-            <Avatar src="https://avatars.githubusercontent.com/github" size={48} />
-            <Avatar src="https://avatars.githubusercontent.com/octocat" size={64} />
+          <Box
+            sx={{
+              display: "flex",
+              gap: 3,
+              alignItems: "center",
+              flexWrap: "wrap",
+              mb: 2,
+            }}
+          >
+            <Avatar
+              src="https://avatars.githubusercontent.com/primer"
+              size={32}
+            />
+            <Avatar
+              src="https://avatars.githubusercontent.com/github"
+              size={48}
+            />
+            <Avatar
+              src="https://avatars.githubusercontent.com/octocat"
+              size={64}
+            />
           </Box>
           <Box sx={{ display: "flex", gap: 3, flexWrap: "wrap" }}>
-            <Link href="#" muted>Muted link</Link>
+            <Link href="#" muted>
+              Muted link
+            </Link>
             <Link href="#">Regular link</Link>
-            <Link href="#" sx={{ fontWeight: "bold" }}>Bold link</Link>
+            <Link href="#" sx={{ fontWeight: "bold" }}>
+              Bold link
+            </Link>
           </Box>
         </Box>
 
         <Box sx={{ mb: 4 }}>
           <Heading sx={{ fontSize: 3, mb: 2 }}>Progress & Loading</Heading>
           <Box sx={{ mb: 3 }}>
-            <Text sx={{ fontSize: 1, color: "fg.muted", mb: 1, display: "block" }}>Progress: 66%</Text>
+            <Text
+              sx={{ fontSize: 1, color: "fg.muted", mb: 1, display: "block" }}
+            >
+              Progress: 66%
+            </Text>
             <ProgressBar progress={66} sx={{ mb: 2 }} />
-            <Text sx={{ fontSize: 1, color: "fg.muted", mb: 1, display: "block" }}>Progress: 33%</Text>
+            <Text
+              sx={{ fontSize: 1, color: "fg.muted", mb: 1, display: "block" }}
+            >
+              Progress: 33%
+            </Text>
             <ProgressBar progress={33} />
           </Box>
           <Box sx={{ display: "flex", gap: 3, alignItems: "center" }}>
@@ -265,21 +324,27 @@ export function PrimerShowcase({ colorMode }: PrimerShowcaseProps) {
           <Heading sx={{ fontSize: 3, mb: 2 }}>Text Utilities</Heading>
           <Box sx={{ maxWidth: 300 }}>
             <Truncate title="This is a very long text that will be truncated">
-              This is a very long text that will be truncated when it exceeds the container width
+              This is a very long text that will be truncated when it exceeds
+              the container width
             </Truncate>
           </Box>
         </Box>
 
         <Box sx={{ mb: 4 }}>
-          <Heading sx={{ fontSize: 3, mb: 2, color: "fg.default" }}>Primer Addons - Cards</Heading>
+          <Heading sx={{ fontSize: 3, mb: 2, color: "fg.default" }}>
+            Primer Addons - Cards
+          </Heading>
           <Box sx={{ display: "flex", gap: 3, flexWrap: "wrap" }}>
             <Card border shadow="medium" rounded="medium" sx={{ width: 280 }}>
               <Card.Header title="Card Title" description="Subtitle" />
               <Card.Content>
-                This is a card component from @datalayer/primer-addons. Cards are great for grouping related content.
+                This is a card component from @datalayer/primer-addons. Cards
+                are great for grouping related content.
               </Card.Content>
               <Card.Actions>
-                <Button variant="primary" size="small">Action</Button>
+                <Button variant="primary" size="small">
+                  Action
+                </Button>
               </Card.Actions>
             </Card>
 
@@ -287,7 +352,10 @@ export function PrimerShowcase({ colorMode }: PrimerShowcaseProps) {
               <Card.Header title="With Icon" leadingVisual={CodeIcon} />
               <Card.Content>
                 <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-                  <Text>Cards can contain any Primer components including icons, buttons, and more.</Text>
+                  <Text>
+                    Cards can contain any Primer components including icons,
+                    buttons, and more.
+                  </Text>
                 </Box>
               </Card.Content>
             </Card>
@@ -295,29 +363,51 @@ export function PrimerShowcase({ colorMode }: PrimerShowcaseProps) {
         </Box>
 
         <Box sx={{ mb: 4 }}>
-          <Heading sx={{ fontSize: 3, mb: 2, color: "fg.default" }}>Primer Addons - Closeable Flash</Heading>
+          <Heading sx={{ fontSize: 3, mb: 2, color: "fg.default" }}>
+            Primer Addons - Closeable Flash
+          </Heading>
           <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-            <CloseableFlash variant="success" onClose={() => console.log("Success flash closed")}>
-              <CheckIcon /> This is a closeable success message from primer-addons
+            <CloseableFlash
+              variant="success"
+              onClose={() => console.log("Success flash closed")}
+            >
+              <CheckIcon /> This is a closeable success message from
+              primer-addons
             </CloseableFlash>
-            <CloseableFlash variant="warning" onClose={() => console.log("Warning flash closed")}>
+            <CloseableFlash
+              variant="warning"
+              onClose={() => console.log("Warning flash closed")}
+            >
               <AlertIcon /> This warning message can be dismissed
             </CloseableFlash>
           </Box>
         </Box>
 
         <Box sx={{ mb: 4 }}>
-          <Heading sx={{ fontSize: 3, mb: 2, color: "fg.default" }}>Primer Addons - Content Loader</Heading>
-          <Text sx={{ fontSize: 1, color: "fg.muted", mb: 2 }}>Skeleton loading placeholders for better UX</Text>
+          <Heading sx={{ fontSize: 3, mb: 2, color: "fg.default" }}>
+            Primer Addons - Content Loader
+          </Heading>
+          <Text sx={{ fontSize: 1, color: "fg.muted", mb: 2 }}>
+            Skeleton loading placeholders for better UX
+          </Text>
           <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
             <ContentLoader count={3} />
             <ContentLoader count={2} />
           </Box>
         </Box>
 
-        <Box sx={{ mt: 5, pt: 4, borderTop: "1px solid", borderColor: "border.default", textAlign: "center" }}>
+        <Box
+          sx={{
+            mt: 5,
+            pt: 4,
+            borderTop: "1px solid",
+            borderColor: "border.default",
+            textAlign: "center",
+          }}
+        >
           <Text sx={{ color: "fg.muted", fontSize: 1 }}>
-            Primer VSCode Theme Showcase • Built with @primer/react & @datalayer/primer-addons
+            Primer VSCode Theme Showcase • Built with @primer/react &
+            @datalayer/primer-addons
           </Text>
         </Box>
       </Box>

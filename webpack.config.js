@@ -456,4 +456,9 @@ const showcaseWebviewConfig = {
   ],
 };
 
-module.exports = [extensionConfig, webviewConfig, lexicalWebviewConfig, showcaseWebviewConfig];
+module.exports = [
+  extensionConfig,
+  webviewConfig,
+  lexicalWebviewConfig,
+  showcaseWebviewConfig,
+];

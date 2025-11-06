@@ -20,9 +20,8 @@ import * as path from "path";
  */
 export function registerThemeCommands(context: vscode.ExtensionContext): void {
   context.subscriptions.push(
-    vscode.commands.registerCommand(
-      "datalayer.showPrimerThemeShowcase",
-      () => showPrimerThemeShowcase(context),
+    vscode.commands.registerCommand("datalayer.showPrimerThemeShowcase", () =>
+      showPrimerThemeShowcase(context),
     ),
   );
 }
@@ -54,7 +53,7 @@ function showPrimerThemeShowcase(context: vscode.ExtensionContext): void {
   const updateContent = () => {
     panel.webview.html = getWebviewContent(panel.webview, webviewUri);
   };
-  
+
   updateContent();
 
   // Handle theme changes
