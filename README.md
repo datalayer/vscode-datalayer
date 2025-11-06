@@ -187,10 +187,25 @@ Open settings (`Ctrl+,` / `Cmd+,`) and search "Datalayer":
 
 ## Developer Resources
 
-- [DEVELOPMENT.md](./DEVELOPMENT.md) - Setup, debugging, architecture
+- [DEVELOPMENT.md](./DEVELOPMENT.md) - Setup, debugging, architecture, jupyter package workflow
 - [CONTRIBUTING.md](./CONTRIBUTING.md) - Contribution guidelines
 - [TESTING.md](./TESTING.md) - Test infrastructure (41 tests, 100% pass)
 - [CHANGELOG.md](./CHANGELOG.md) - Version history
+- [API Documentation](https://datalayer-desktop.netlify.app) - Complete TypeScript API reference
+
+### Development Workflow
+
+When working with changes to `@datalayer/jupyter-lexical` or `@datalayer/jupyter-react`:
+
+```bash
+# Sync latest changes from jupyter-ui monorepo
+npm run sync:jupyter
+
+# Create patches for your modifications
+npm run create:patches
+```
+
+Patches are automatically applied when contributors run `npm install` via the postinstall hook.
 
 ## Support & Community
 

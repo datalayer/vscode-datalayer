@@ -1055,6 +1055,10 @@
           {
             "type": "linebreak",
             "version": 1
+          },
+          {
+            "type": "linebreak",
+            "version": 1
           }
         ],
         "direction": null,
@@ -1063,20 +1067,20 @@
         "type": "jupyter-input",
         "version": 1,
         "language": "python",
-        "jupyterInputNodeUuid": "13bfaed3-d7d7-434d-9aa8-0c49986cb64a"
+        "jupyterInputNodeUuid": "00a63edd-20db-41ba-a6af-311b0d09df67"
       },
       {
         "type": "jupyter-output",
-        "source": "# This is a test cell that can be executed when connected to a runtime!\n\nimport platform\n\n\ndef plus(x, y):\n   \"\"\"Sum two number.\"\"\"\n   return x + y\n\n\nprint(plus(1, 2))\nprint(platform.node())\n\n",
+        "source": "# This is a test cell that can be executed when connected to a runtime!\n\nimport platform\n\n\ndef plus(x, y):\n   \"\"\"Sum two number.\"\"\"\n   return x + y\n\n\nprint(plus(1, 2))\nprint(platform.node())",
         "outputs": [
           {
-            "name": "stdout",
-            "text": "3\nruntime-01k7taz7hm1hby1emsdm3rtbwh\n",
-            "output_type": "stream"
+            "output_type": "stream",
+            "name": "stderr",
+            "text": "⚠️  No kernel connected. Please connect to execute code.\n"
           }
         ],
-        "jupyterInputNodeUuid": "13bfaed3-d7d7-434d-9aa8-0c49986cb64a",
-        "jupyterOutputNodeUuid": "f2e44981-b74c-472f-b764-eeba4a029886",
+        "jupyterInputNodeUuid": "00a63edd-20db-41ba-a6af-311b0d09df67",
+        "jupyterOutputNodeUuid": "445eeacf-7ed6-4737-95eb-77931a5a250a",
         "version": 1
       },
       {

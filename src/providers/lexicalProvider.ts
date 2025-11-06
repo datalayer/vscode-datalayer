@@ -290,8 +290,33 @@ export class LexicalProvider extends BaseDocumentProvider<LexicalDocument> {
 
     webviewPanel.webview.html = this.getHtmlForWebview(webviewPanel.webview);
 
-    webviewPanel.webview.onDidReceiveMessage((e) => {
-      if (e.type === "ready") {
+    webviewPanel.webview.onDidReceiveMessage(async (e) => {
+      if (e.type === "llm-completion-request") {
+        console.log("[LexicalProvider] LLM completion request received", {
+          requestId: e.requestId,
+          prefixLength: e.prefix?.length,
+          suffixLength: e.suffix?.length,
+          language: e.language,
+        });
+
+        // Handle LLM completion request from webview
+        const completion = await this.getLLMCompletion(
+          e.prefix,
+          e.suffix,
+          e.language,
+        );
+
+        console.log("[LexicalProvider] Sending LLM completion response", {
+          requestId: e.requestId,
+          completionLength: completion?.length,
+        });
+
+        webviewPanel.webview.postMessage({
+          type: "llm-completion-response",
+          requestId: e.requestId,
+          completion,
+        });
+      } else if (e.type === "ready") {
         // Send content when webview signals it's ready
         // NOTE: This can be called multiple times if webview is reused for different documents
         // The webview will detect document URI changes and reset its store appropriately
@@ -662,5 +687,104 @@ export class LexicalProvider extends BaseDocumentProvider<LexicalDocument> {
         });
       }
     }
+  }
+
+  /**
+   * Get LLM completion for inline code completion in Lexical cells.
+   *
+   * @param prefix - Code before cursor
+   * @param suffix - Code after cursor
+   * @param language - Programming language
+   * @returns Completion string or null if no models available
+   */
+  /**
+   * Requests code completion from VS Code's Language Model API.
+   * Uses GitHub Copilot if available, falls back to other models.
+   *
+   * @param prefix - Code before cursor position
+   * @param suffix - Code after cursor position
+   * @param language - Programming language (e.g., 'python')
+   * @returns Completion text or null if unavailable
+   *
+   * @remarks
+   * Requires VS Code 1.90+ with Language Model API enabled.
+   * Automatically cleans markdown formatting from LLM responses.
+   */
+  private async getLLMCompletion(
+    prefix: string,
+    suffix: string,
+    language: string,
+  ): Promise<string | null> {
+    try {
+      // Check if Language Model API is available (VS Code 1.90+)
+      if (!vscode.lm) {
+        console.warn("[LexicalProvider] Language Model API not available");
+        return null;
+      }
+
+      // Select available chat models (prefer Copilot)
+      let models = await vscode.lm.selectChatModels({ vendor: "copilot" });
+
+      // Fallback to any available model
+      if (models.length === 0) {
+        models = await vscode.lm.selectChatModels();
+      }
+
+      if (models.length === 0) {
+        console.warn("[LexicalProvider] No language models available");
+        return null;
+      }
+
+      const model = models[0];
+
+      // Build prompt
+      const prompt = `Complete the following ${language} code. Only return the completion, no explanations or markdown.
+
+\`\`\`${language}
+${prefix}<CURSOR>${suffix}
+\`\`\`
+
+Complete the code at <CURSOR>:`;
+
+      // Send request to LLM
+      const messages = [vscode.LanguageModelChatMessage.User(prompt)];
+      const response = await model.sendRequest(messages, {
+        justification: "Code completion for Lexical Jupyter cell",
+      });
+
+      // Collect streamed response
+      let completion = "";
+      for await (const chunk of response.text) {
+        completion += chunk;
+      }
+
+      // Clean up (remove markdown blocks if present)
+      return this.cleanCompletion(completion);
+    } catch (error) {
+      console.error("[LexicalProvider] LLM completion error:", error);
+      return null;
+    }
+  }
+
+  /**
+   * Clean LLM completion output by removing markdown code blocks.
+   *
+   * @param completion - Raw completion from LLM
+   * @returns Cleaned completion
+   */
+  private cleanCompletion(completion: string): string {
+    // Trim leading/trailing whitespace first
+    completion = completion.trim();
+
+    // Remove markdown code blocks if LLM wrapped response
+    const codeBlockRegex = /^```[a-z]*\n([\s\S]*?)\n```$/;
+    const match = completion.match(codeBlockRegex);
+    if (match) {
+      // Extract code and trim trailing newlines only (preserve meaningful spaces)
+      return match[1].replace(/\n+$/, "");
+    }
+
+    // Remove trailing newlines from direct completions
+    return completion.replace(/\n+$/, "");
   }
 }

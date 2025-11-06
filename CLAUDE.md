@@ -34,7 +34,15 @@ runtimesTreeProvider?.refresh();
 ```bash
 # Setup
 npm install
+
+# Watch for changes
 npm run watch
+
+# Sync jupyter packages from monorepo
+npm run sync:jupyter
+
+# Create patches for modified packages
+npm run create:patches
 
 # Debug
 Press F5 in VS Code to launch Extension Development Host
@@ -43,6 +51,53 @@ Press F5 in VS Code to launch Extension Development Host
 npm run compile
 npm run vsix
 ```
+
+## Development Scripts
+
+### Jupyter Package Workflow
+
+The extension depends on local `@datalayer/jupyter-lexical` and `@datalayer/jupyter-react` packages. Use these scripts to sync changes:
+
+```bash
+# Sync latest changes from jupyter-ui monorepo (one-time)
+npm run sync:jupyter
+# - Builds jupyter-lexical and jupyter-react (tsc)
+# - Copies lib/ outputs to vscode-datalayer/node_modules
+
+# Watch mode - auto-sync on changes
+npm run sync:jupyter:watch
+# - Monitors src/ folders in jupyter-ui packages
+# - Automatically rebuilds and syncs on file changes
+# - Requires fswatch (auto-installed via Homebrew on macOS)
+
+# Create patches for your modifications
+npm run create:patches
+# - Automatically syncs first
+# - Generates patch files in patches/
+# - Patches applied automatically via postinstall hook
+
+# Apply patches manually (if needed)
+npm run apply:patches
+# - Usually runs automatically during npm install
+```
+
+### Workflow
+
+1. **Make changes** in `../jupyter-ui/packages/lexical` or `../jupyter-ui/packages/react`
+2. **Option A - Manual**: Run `npm run sync:jupyter` after each change
+3. **Option B - Watch mode**: Run `npm run sync:jupyter:watch` once, changes auto-sync
+4. **Test changes**: Compile and run extension (`npm run compile` then F5)
+5. **Create patches**: `npm run create:patches` (when ready to commit)
+
+The patches in `patches/` directory ensure all contributors automatically get your modifications when they run `npm install`.
+
+### Script Implementation
+
+Scripts are in `scripts/` directory to keep package.json clean:
+
+- `scripts/sync-jupyter.sh` - Build and sync jupyter packages
+- `scripts/create-patches.sh` - Generate patch-package patches
+- `scripts/apply-patches.sh` - Apply existing patches
 
 ## Architecture Overview
 
@@ -515,6 +570,39 @@ const serviceManager = mutableServiceManager.createProxy();
 - ✅ **Unified Kernel Selection** (January 2025) - Single picker for all kernel sources
 - ✅ **Runtime Hot-Swapping** - Change kernels without notebook re-render
 - ✅ **Kernel Bridge Architecture** - Unified routing for webview and native notebooks
+- ✅ **LLM Inline Completions** (January 2025) - Copilot-like ghost text suggestions in Lexical editor
+
+### LLM Inline Completions (January 2025)
+
+**Feature**: Copilot-style inline code completions in Lexical editor using VS Code Language Model API.
+
+**Implementation**:
+
+- **DecoratorNode**: `InlineCompletionNode` renders ghost text with low opacity
+- **Plugin**: `LexicalInlineCompletionPlugin` manages completion lifecycle
+- **Provider**: `LexicalVSCodeLLMProvider` (webview) communicates with extension host
+- **Extension Integration**: Uses `vscode.lm.selectChatModels()` API for LLM access
+
+**Key Features**:
+
+- **Ghost text rendering**: Low opacity, VS Code theme-aware suggestions
+- **Smart triggering**: Only shows in active cell with non-empty content and current line
+- **No blank line completions**: Prevents showing completions when just pressing Enter (empty line)
+- **Trailing newline cleanup**: Strips extra newlines to prevent spacing issues
+- **Debounced requests**: 200ms debounce to reduce API calls
+- **Tab to accept**: Press Tab to insert completion
+- **Escape to dismiss**: Press Escape to clear suggestion
+- **NodeTransform resilience**: Automatically re-adds completion node when parent recreated
+
+**Files Modified**:
+
+- `jupyter-ui/packages/lexical/src/nodes/InlineCompletionNode.tsx` - DecoratorNode implementation
+- `jupyter-ui/packages/lexical/src/plugins/LexicalInlineCompletionPlugin.tsx` - Plugin logic
+- `vscode-datalayer/webview/services/completion/lexicalLLMProvider.ts` - Webview provider
+- `vscode-datalayer/src/providers/lexicalProvider.ts` - Extension LLM integration
+- `vscode-datalayer/webview/lexical/LexicalEditor.tsx` - Plugin instantiation
+
+**Patches**: Changes maintained via patch-package in `patches/@datalayer+jupyter-lexical+1.0.6.patch`
 
 ## Current State Summary (January 2025)
 

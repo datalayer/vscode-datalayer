@@ -104,6 +104,7 @@ const webviewConfig = {
   ],
   resolve: {
     extensions: [".ts", ".tsx", ".js", ".jsx", ".json", ".svg"],
+    symlinks: true,
     fallback: {
       process: require.resolve("process/browser"),
       stream: false,
@@ -352,6 +353,7 @@ const lexicalWebviewConfig = {
   },
   resolve: {
     extensions: [".ts", ".tsx", ".js", ".jsx", ".json", ".svg", ".wasm"],
+    symlinks: true,
     fallback: {
       process: require.resolve("process/browser"),
       stream: false,
