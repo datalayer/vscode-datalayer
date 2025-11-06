@@ -41,6 +41,70 @@ export interface DocumentMetadata {
 }
 
 /**
+ * Promise that resolves when the extension is fully initialized.
+ * Used to queue document operations during startup.
+ */
+let extensionReadyPromise: Promise<void> | null = null;
+let extensionReadyResolve: (() => void) | null = null;
+
+/**
+ * Notifies DocumentBridge that the extension is ready.
+ * Called from extension.ts after successful activation.
+ */
+export function notifyExtensionReady(): void {
+  if (extensionReadyResolve) {
+    extensionReadyResolve();
+    // Don't nullify the promise - allow it to remain resolved for future waiters
+    extensionReadyResolve = null;
+  } else if (!extensionReadyPromise) {
+    // Extension is ready but promise was never created - create a pre-resolved one
+    extensionReadyPromise = Promise.resolve();
+  }
+}
+
+/**
+ * Waits for the extension to be fully initialized.
+ * Returns immediately if already ready.
+ * Shows progress notification to user during wait.
+ *
+ * @param timeout - Maximum time to wait in milliseconds (default: 30000)
+ * @returns Promise that resolves when extension is ready or rejects on timeout
+ */
+async function waitForExtensionReady(timeout = 30000): Promise<void> {
+  if (!extensionReadyPromise) {
+    extensionReadyPromise = new Promise((resolve) => {
+      extensionReadyResolve = resolve;
+    });
+  }
+
+  // Show progress notification to user
+  return vscode.window.withProgress(
+    {
+      location: vscode.ProgressLocation.Notification,
+      title: "Loading Datalayer document...",
+      cancellable: false,
+    },
+    async () => {
+      // Race between ready promise and timeout
+      return Promise.race([
+        extensionReadyPromise!,
+        new Promise<void>((_, reject) =>
+          setTimeout(
+            () =>
+              reject(
+                new Error(
+                  "Extension initialization timeout. Please try reopening the document.",
+                ),
+              ),
+            timeout,
+          ),
+        ),
+      ]);
+    },
+  );
+}
+
+/**
  * Manages document lifecycle between Datalayer platform and local filesystem.
  * Singleton service that handles document caching and runtime association.
  *
@@ -53,19 +117,26 @@ export interface DocumentMetadata {
 export class DocumentBridge {
   private static instance: DocumentBridge;
   private static sdk: DatalayerClient;
+  private static readonly METADATA_STORAGE_KEY = "datalayer.documentMetadata";
+  private static context?: vscode.ExtensionContext;
+
   private documentMetadata: Map<string, DocumentMetadata> = new Map();
   private tempDir: string;
   private activeRuntimes: Set<string> = new Set();
 
   private constructor(
-    _context?: vscode.ExtensionContext,
+    context?: vscode.ExtensionContext,
     sdk?: DatalayerClient,
   ) {
     if (!sdk) {
       throw new Error("SDK is required for DocumentBridge");
     }
-    // Store SDK for later use
+    // Store SDK and context for later use
     DocumentBridge.sdk = sdk;
+    if (context) {
+      DocumentBridge.context = context;
+      this.loadMetadata();
+    }
 
     // Create a temp directory for Datalayer documents
     this.tempDir = path.join(os.tmpdir(), "datalayer-vscode");
@@ -75,11 +146,97 @@ export class DocumentBridge {
   }
 
   /**
+   * Load persisted document metadata from storage.
+   * Only restores metadata where the local file still exists.
+   */
+  private loadMetadata(): void {
+    if (!DocumentBridge.context) {
+      return;
+    }
+
+    const saved = DocumentBridge.context.globalState.get<
+      Record<string, DocumentMetadata>
+    >(DocumentBridge.METADATA_STORAGE_KEY, {});
+
+    // Restore metadata for documents whose files still exist
+    for (const [key, value] of Object.entries(saved)) {
+      if (value && value.localPath && fs.existsSync(value.localPath)) {
+        this.documentMetadata.set(key, value as DocumentMetadata);
+      }
+    }
+  }
+
+  /**
+   * Persist document metadata to storage.
+   */
+  private async saveMetadata(): Promise<void> {
+    if (!DocumentBridge.context) {
+      return;
+    }
+
+    // Convert Map to plain object for storage
+    const toSave: Record<string, DocumentMetadata> = {};
+    for (const [key, value] of this.documentMetadata.entries()) {
+      toSave[key] = value;
+    }
+
+    await DocumentBridge.context.globalState.update(
+      DocumentBridge.METADATA_STORAGE_KEY,
+      toSave,
+    );
+  }
+
+  /**
    * Gets the singleton instance of DocumentBridge.
+   * Waits for extension initialization if necessary.
    *
    * @param context - Extension context (required on first call)
    * @param sdk - SDK instance (required on first call)
    * @returns The singleton instance
+   */
+  static async getInstanceAsync(
+    context?: vscode.ExtensionContext,
+    sdk?: DatalayerClient,
+  ): Promise<DocumentBridge> {
+    // If called during VS Code startup before extension is ready, wait for it
+    if (!DocumentBridge.instance && !sdk && !DocumentBridge.sdk) {
+      try {
+        await waitForExtensionReady();
+        // After extension is ready, try to get SDK from service container
+        try {
+          const container = getServiceContainer();
+          sdk = container.sdk;
+        } catch {
+          // Service container not ready yet, will retry
+        }
+      } catch (error) {
+        throw new Error(
+          "Extension failed to initialize in time. Please try reopening the document.",
+        );
+      }
+    }
+
+    if (!DocumentBridge.instance) {
+      // Use provided SDK or fall back to stored SDK
+      const sdkToUse = sdk || DocumentBridge.sdk;
+      if (!sdkToUse) {
+        throw new Error(
+          "SDK not available. Please ensure you are logged in to Datalayer.",
+        );
+      }
+      DocumentBridge.instance = new DocumentBridge(context, sdkToUse);
+    }
+    return DocumentBridge.instance;
+  }
+
+  /**
+   * Gets the singleton instance of DocumentBridge (synchronous).
+   * Use getInstanceAsync() for better reliability during startup.
+   *
+   * @param context - Extension context (required on first call)
+   * @param sdk - SDK instance (required on first call)
+   * @returns The singleton instance
+   * @deprecated Use getInstanceAsync() for documents opened during VS Code startup
    */
   static getInstance(
     context?: vscode.ExtensionContext,
@@ -311,6 +468,9 @@ export class DocumentBridge {
       // The UID is embedded in the path, making each URI globally unique
       // This enables direct lookup via getDocumentMetadata(uri)
       this.documentMetadata.set(virtualUri.toString(), metadata);
+
+      // Persist metadata to storage (fire and forget)
+      this.saveMetadata();
 
       // Virtual URI created successfully (UID is embedded in path, no query params needed)
       return virtualUri;

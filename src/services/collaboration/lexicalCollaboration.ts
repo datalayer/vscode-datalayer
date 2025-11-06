@@ -75,24 +75,32 @@ export class LexicalCollaborationService {
 
       // Extract document ID from URI query parameter (embedded by DocumentBridge)
       const queryParams = new URLSearchParams(document.uri.query);
-      const documentId = queryParams.get("docId");
+      let documentId = queryParams.get("docId");
 
       if (!documentId) {
-        // Fallback to metadata lookup
-        const documentBridge = DocumentBridge.getInstance();
-        const metadata = documentBridge.getDocumentMetadata(document.uri);
+        // Try to extract from URI path: datalayer://Space/DOCUMENT_UID/Document.lexical
+        const pathParts = document.uri.path.split("/").filter((p) => p);
+        if (pathParts.length >= 2) {
+          // Second to last part is the document UID
+          documentId = pathParts[pathParts.length - 2];
+        }
 
-        if (!metadata?.document?.uid) {
-          return undefined;
+        // Fallback to metadata lookup as last resort
+        if (!documentId) {
+          try {
+            const documentBridge = await DocumentBridge.getInstanceAsync();
+            const metadata = documentBridge.getDocumentMetadata(document.uri);
+
+            if (metadata?.document?.uid) {
+              documentId = metadata.document.uid;
+            }
+          } catch (error) {
+            // DocumentBridge not ready or metadata not found
+          }
         }
       }
 
-      const finalDocumentId =
-        documentId ||
-        DocumentBridge.getInstance().getDocumentMetadata(document.uri)?.document
-          ?.uid;
-
-      if (!finalDocumentId) {
+      if (!documentId) {
         return undefined;
       }
 
@@ -105,7 +113,7 @@ export class LexicalCollaborationService {
       );
 
       // Convert http(s) to ws(s)
-      const websocketUrl = `${spacerUrl.replace(/^http/, "ws")}/api/spacer/v1/lexical/ws/${finalDocumentId}`;
+      const websocketUrl = `${spacerUrl.replace(/^http/, "ws")}/api/spacer/v1/lexical/ws/${documentId}`;
 
       const user = authState.user;
       const baseUsername =
@@ -115,8 +123,8 @@ export class LexicalCollaborationService {
       return {
         enabled: true,
         websocketUrl,
-        documentId: finalDocumentId,
-        sessionId: finalDocumentId, // Use UID as session ID
+        documentId: documentId,
+        sessionId: documentId, // Use UID as session ID
         username,
         userColor: this.generateUserColor(),
       };

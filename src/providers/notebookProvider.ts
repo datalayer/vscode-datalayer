@@ -376,15 +376,31 @@ export class NotebookProvider extends BaseDocumentProvider<NotebookDocument> {
             if (docIdFromQuery) {
               documentId = docIdFromQuery;
             } else {
-              // Fallback: try to get from metadata lookup
-              const { DocumentBridge } = await import(
-                "../services/bridges/documentBridge"
-              );
-              const documentBridge = DocumentBridge.getInstance();
-              const metadata = documentBridge.getDocumentMetadata(document.uri);
+              // Try to extract from URI path: datalayer://Space/DOCUMENT_UID/Document.ipynb
+              const pathParts = document.uri.path.split("/").filter((p) => p);
+              if (pathParts.length >= 2) {
+                // Second to last part is the document UID
+                documentId = pathParts[pathParts.length - 2];
+              }
 
-              if (metadata && metadata.document.uid) {
-                documentId = metadata.document.uid;
+              // If still no document ID, try metadata lookup as last resort
+              if (!documentId) {
+                try {
+                  const { DocumentBridge } = await import(
+                    "../services/bridges/documentBridge"
+                  );
+                  const documentBridge =
+                    await DocumentBridge.getInstanceAsync();
+                  const metadata = documentBridge.getDocumentMetadata(
+                    document.uri,
+                  );
+
+                  if (metadata && metadata.document.uid) {
+                    documentId = metadata.document.uid;
+                  }
+                } catch (error) {
+                  // DocumentBridge not ready or metadata not found
+                }
               }
             }
           }
