@@ -15,10 +15,12 @@ import * as vscode from "vscode";
 import type { DatalayerClient } from "@datalayer/core/lib/client";
 import type { RuntimeDTO } from "@datalayer/core/lib/models/RuntimeDTO";
 import type { EnvironmentDTO } from "@datalayer/core/lib/models/EnvironmentDTO";
+import type { RuntimeSnapshotDTO } from "@datalayer/core/lib/models/RuntimeSnapshotDTO";
 import type { IAuthProvider } from "../../services/interfaces/IAuthProvider";
 import { EnvironmentCache } from "../../services/cache/environmentCache";
 import { promptAndLogin } from "./authDialog";
 import { generateRuntimeName } from "../../utils/runtimeNameGenerator";
+import { formatRelativeTime } from "../../utils/dateFormatter";
 
 /**
  * QuickPick item for runtime selection.
@@ -248,17 +250,143 @@ export async function selectDatalayerRuntime(
 }
 
 /**
+ * Shows a QuickPick dialog for selecting a snapshot to start runtime from.
+ * Returns undefined if user wants to start fresh (no snapshot),
+ * null if user cancelled,
+ * or the snapshot ID if user selected a snapshot.
+ *
+ * @param snapshots - Array of available snapshots (already filtered for deleted)
+ * @returns Snapshot ID, undefined (fresh start), or null (cancelled)
+ */
+async function selectSnapshot(
+  snapshots: RuntimeSnapshotDTO[],
+): Promise<string | undefined | null> {
+  // Interface for snapshot QuickPick items
+  interface SnapshotQuickPickItem extends vscode.QuickPickItem {
+    snapshotId?: string;
+    action?: "fresh";
+  }
+
+  try {
+    // Build QuickPick items
+    const items: SnapshotQuickPickItem[] = [];
+
+    // Add "Start fresh" option at the top
+    items.push({
+      label: "$(file-directory) Start with fresh environment",
+      description: "No snapshot",
+      detail: "Create runtime from scratch without any saved state",
+      action: "fresh",
+    });
+
+    // Add separator if there are snapshots
+    if (snapshots.length > 0) {
+      items.push({
+        label: "Start from Snapshot",
+        kind: vscode.QuickPickItemKind.Separator,
+      });
+
+      // Add snapshot items
+      for (const snapshot of snapshots) {
+        // Skip deleted snapshots (status might be "deleted", "DELETED", or similar)
+        const rawData = snapshot.rawData();
+        if (
+          rawData.status &&
+          rawData.status.toLowerCase().includes("deleted")
+        ) {
+          continue;
+        }
+
+        // Format the snapshot date
+        let dateInfo = "";
+        try {
+          const snapshotData = snapshot.toJSON();
+          if (snapshotData.updatedAt) {
+            const date = new Date(snapshotData.updatedAt);
+            dateInfo = formatRelativeTime(date);
+          }
+
+          items.push({
+            label: `$(archive) ${snapshotData.name || `Snapshot ${snapshotData.uid?.slice(0, 8)}`}`,
+            description: dateInfo,
+            detail: snapshotData.description || "Saved runtime state",
+            snapshotId: snapshotData.uid,
+          });
+        } catch (error) {
+          // Skip malformed snapshots
+          continue;
+        }
+      }
+    }
+
+    // Show QuickPick
+    const selected = await vscode.window.showQuickPick(items, {
+      title: "Start Runtime from Snapshot?",
+      placeHolder:
+        snapshots.length > 0
+          ? "Choose a snapshot or start fresh"
+          : "No snapshots available - will start fresh",
+      ignoreFocusOut: true,
+    });
+
+    // Handle cancellation
+    if (!selected) {
+      return null;
+    }
+
+    // Handle "fresh start" selection
+    if (selected.action === "fresh") {
+      return undefined;
+    }
+
+    // Return the selected snapshot ID
+    return selected.snapshotId;
+  } catch (error) {
+    // If there's an error building the picker, skip snapshots
+    return undefined;
+  }
+}
+
+/**
  * Creates a new runtime with the specified environment.
  *
  * @param sdk - Datalayer SDK instance
  * @param environment - Environment to use
+ * @param preSelectedSnapshotId - Optional snapshot ID to restore from (skips snapshot selection)
  * @returns Created runtime or undefined if failed
  */
-async function createRuntime(
+export async function createRuntime(
   sdk: DatalayerClient,
   environment: EnvironmentDTO,
+  preSelectedSnapshotId?: string,
 ): Promise<RuntimeDTO | undefined> {
-  // Prompt for runtime name (human-readable)
+  // Step 1: Determine snapshot to use
+  let snapshotId: string | undefined = preSelectedSnapshotId;
+
+  // Only show snapshot selection dialog if no snapshot was pre-selected
+  if (!preSelectedSnapshotId) {
+    try {
+      // Fetch available snapshots (deleted snapshots are not returned by API)
+      const availableSnapshots = await sdk.listSnapshots();
+
+      // Only show snapshot selection dialog if there are snapshots
+      if (availableSnapshots && availableSnapshots.length > 0) {
+        const selectedSnapshotId = await selectSnapshot(availableSnapshots);
+
+        // If user cancelled snapshot selection, abort runtime creation
+        if (selectedSnapshotId === null) {
+          return undefined;
+        }
+
+        snapshotId = selectedSnapshotId;
+      }
+      // If no snapshots available, continue with undefined (fresh start)
+    } catch (error) {
+      // If snapshot fetching fails, continue without snapshots (silent failure)
+    }
+  }
+
+  // Step 2: Prompt for runtime name (human-readable)
   const suggestedName = generateRuntimeName();
   const name = await vscode.window.showInputBox({
     title: `Create ${environment.title ?? environment.name} Runtime`,
@@ -421,6 +549,7 @@ async function createRuntime(
           "notebook",
           name,
           creditsLimit,
+          snapshotId, // Pass snapshot ID (undefined if starting fresh)
         );
 
         progress.report({

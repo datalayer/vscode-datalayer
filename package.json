@@ -247,6 +247,26 @@
       {
         "command": "datalayer.runtimes.delete",
         "title": "Delete"
+      },
+      {
+        "command": "datalayer.snapshots.refresh",
+        "title": "Refresh Snapshots",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "datalayer.snapshots.restore",
+        "title": "Restore from Snapshot",
+        "icon": "$(debug-restart)"
+      },
+      {
+        "command": "datalayer.snapshots.delete",
+        "title": "Delete Snapshot",
+        "icon": "$(trash)"
+      },
+      {
+        "command": "datalayer.snapshots.viewDetails",
+        "title": "View Snapshot Details",
+        "icon": "$(info)"
       }
     ],
     "views": {
@@ -340,6 +360,22 @@
         },
         {
           "command": "datalayer.runtimes.delete",
+          "when": "false"
+        },
+        {
+          "command": "datalayer.snapshots.refresh",
+          "when": "false"
+        },
+        {
+          "command": "datalayer.snapshots.restore",
+          "when": "false"
+        },
+        {
+          "command": "datalayer.snapshots.delete",
+          "when": "false"
+        },
+        {
+          "command": "datalayer.snapshots.viewDetails",
           "when": "false"
         }
       ],
@@ -437,9 +473,24 @@
           "group": "inline"
         },
         {
+          "command": "datalayer.runtimes.createSnapshot",
+          "when": "view == datalayerRuntimes && viewItem == runtime",
+          "group": "1_snapshot"
+        },
+        {
           "command": "datalayer.runtimes.delete",
           "when": "view == datalayerRuntimes && viewItem == runtime",
           "group": "2_delete"
+        },
+        {
+          "command": "datalayer.snapshots.restore",
+          "when": "view == datalayerRuntimes && viewItem == snapshot",
+          "group": "1_restore"
+        },
+        {
+          "command": "datalayer.snapshots.delete",
+          "when": "view == datalayerRuntimes && viewItem == snapshot",
+          "group": "3_delete"
         }
       ],
       "explorer/context": [
