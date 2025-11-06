@@ -681,14 +681,116 @@ export function registerRuntimeCommands(
       "datalayer.runtimes.createSnapshot",
       async (item: RuntimeTreeItem) => {
         if (!item || !item.runtime) {
+          vscode.window.showErrorMessage("No runtime selected");
           return;
         }
 
-        // TODO: Implement snapshot creation
-        // User will provide the implementation details
-        vscode.window.showInformationMessage(
-          `Create Snapshot for runtime "${item.runtime.givenName || item.runtime.podName}" - Implementation pending`,
+        const runtime = item.runtime;
+        const runtimeName = runtime.givenName || runtime.podName;
+
+        // Check if runtime is running (has ingress URL)
+        if (!runtime.ingress) {
+          vscode.window.showErrorMessage(
+            `Runtime "${runtimeName}" must be running to create a snapshot`,
+          );
+          return;
+        }
+
+        // Generate a suggested snapshot name based on the runtime name
+        const timestamp = new Date()
+          .toISOString()
+          .split("T")[0]
+          .replace(/-/g, "");
+        const suggestedName =
+          `snapshot-${runtimeName}-${timestamp}`.toLowerCase();
+
+        // Prompt for snapshot name
+        const snapshotName = await vscode.window.showInputBox({
+          title: `Create Snapshot from "${runtimeName}"`,
+          prompt: "Enter a name for the snapshot",
+          placeHolder: "e.g., my-checkpoint",
+          value: suggestedName,
+          validateInput: (value) => {
+            if (!value || value.trim().length === 0) {
+              return "Snapshot name cannot be empty";
+            }
+            // Basic validation - alphanumeric, hyphens, underscores
+            if (!/^[a-zA-Z0-9_-]+$/.test(value)) {
+              return "Snapshot name can only contain letters, numbers, hyphens, and underscores";
+            }
+            return undefined;
+          },
+        });
+
+        if (!snapshotName) {
+          return; // User cancelled
+        }
+
+        // Prompt for snapshot description
+        const description = await vscode.window.showInputBox({
+          title: `Create Snapshot from "${runtimeName}"`,
+          prompt: "Enter a description for the snapshot (optional)",
+          placeHolder: "e.g., Checkpoint after training model",
+        });
+
+        if (description === undefined) {
+          return; // User cancelled
+        }
+
+        // Ask if runtime should be stopped after snapshot
+        const stopAfterSnapshot = await vscode.window.showQuickPick(
+          [
+            {
+              label: "$(debug-continue) Keep runtime running",
+              description: "Continue using the runtime after creating snapshot",
+              picked: true,
+              stop: false,
+            },
+            {
+              label: "$(debug-stop) Stop runtime after snapshot",
+              description: "Terminate the runtime after snapshot is created",
+              stop: true,
+            },
+          ],
+          {
+            title: `Create Snapshot from "${runtimeName}"`,
+            placeHolder: "What should happen to the runtime after snapshot?",
+          },
         );
+
+        if (!stopAfterSnapshot) {
+          return; // User cancelled
+        }
+
+        try {
+          // Create snapshot with progress
+          await vscode.window.withProgress(
+            {
+              location: vscode.ProgressLocation.Notification,
+              title: `Creating snapshot "${snapshotName}"...`,
+              cancellable: false,
+            },
+            async () => {
+              const snapshot = await sdk.createSnapshot(
+                runtime.podName,
+                snapshotName,
+                description || "",
+                stopAfterSnapshot.stop,
+              );
+
+              vscode.window.showInformationMessage(
+                `Snapshot "${snapshotName}" created successfully!`,
+              );
+
+              // Refresh the runtime tree
+              vscode.commands.executeCommand("datalayer.runtimes.refresh");
+
+              return snapshot;
+            },
+          );
+        } catch (error) {
+          vscode.window.showErrorMessage(`Failed to create snapshot: ${error}`);
+        }
       },
     ),
   );

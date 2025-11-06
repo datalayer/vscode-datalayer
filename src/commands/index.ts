@@ -16,6 +16,7 @@ import * as vscode from "vscode";
 import { registerAuthCommands } from "./auth";
 import { registerDocumentCommands } from "./documents";
 import { registerRuntimeCommands } from "./runtimes";
+import { registerSnapshotCommands } from "./snapshots";
 import { registerInternalCommands, getConnectedRuntime } from "./internal";
 import { registerCreateCommands } from "./create";
 import { SDKAuthProvider } from "../services/core/authProvider";
@@ -74,6 +75,9 @@ export function registerAllCommands(
     services.controllerManager,
     services.runtimesTreeProvider,
   );
+
+  // Register snapshot management commands
+  registerSnapshotCommands(context, services.runtimesTreeProvider);
 
   // Register smart create commands (context-aware notebook/lexical creation)
   registerCreateCommands(context);

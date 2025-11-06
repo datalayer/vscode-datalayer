@@ -248,17 +248,195 @@ export async function selectDatalayerRuntime(
 }
 
 /**
+ * Shows a QuickPick dialog for selecting a snapshot to start runtime from.
+ * Returns undefined if user wants to start fresh (no snapshot),
+ * null if user cancelled,
+ * or the snapshot ID if user selected a snapshot.
+ *
+ * @param sdk - Datalayer SDK instance
+ * @returns Snapshot ID, undefined (fresh start), or null (cancelled)
+ */
+async function selectSnapshot(
+  sdk: DatalayerClient,
+): Promise<string | undefined | null> {
+  // Interface for snapshot QuickPick items
+  interface SnapshotQuickPickItem extends vscode.QuickPickItem {
+    snapshotId?: string;
+    action?: "fresh";
+  }
+
+  try {
+    // Fetch available snapshots with progress
+    const snapshots = await vscode.window.withProgress(
+      {
+        location: vscode.ProgressLocation.Notification,
+        title: "Loading available snapshots...",
+        cancellable: true,
+      },
+      async (_progress, token) => {
+        if (token.isCancellationRequested) {
+          return null;
+        }
+        return await sdk.listSnapshots();
+      },
+    );
+
+    // If loading was cancelled
+    if (snapshots === null) {
+      return null;
+    }
+
+    // Build QuickPick items
+    const items: SnapshotQuickPickItem[] = [];
+
+    // Add "Start fresh" option at the top
+    items.push({
+      label: "$(file-directory) Start with fresh environment",
+      description: "No snapshot",
+      detail: "Create runtime from scratch without any saved state",
+      action: "fresh",
+    });
+
+    // Add separator if there are snapshots
+    if (snapshots.length > 0) {
+      items.push({
+        label: "Start from Snapshot",
+        kind: vscode.QuickPickItemKind.Separator,
+      });
+
+      // Add snapshot items
+      for (const snapshot of snapshots) {
+        // Check if snapshot has been deleted by examining raw data
+        const rawData = snapshot.rawData();
+
+        // Debug: Log snapshot status to help diagnose deleted snapshots issue
+        console.log(
+          `[Snapshot Debug] ${rawData.name}: status="${rawData.status}"`,
+        );
+
+        // Skip deleted snapshots (status might be "deleted", "DELETED", or similar)
+        if (
+          rawData.status &&
+          rawData.status.toLowerCase().includes("deleted")
+        ) {
+          console.log(
+            `[Snapshot Debug] Skipping deleted snapshot: ${rawData.name}`,
+          );
+          continue;
+        }
+
+        // Format the snapshot date
+        let dateInfo = "";
+        try {
+          const snapshotData = snapshot.toJSON();
+          if (snapshotData.updatedAt) {
+            const date = new Date(snapshotData.updatedAt);
+            const now = new Date();
+            const diffMs = now.getTime() - date.getTime();
+            const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+            const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+
+            if (diffDays > 0) {
+              dateInfo = `${diffDays} day${diffDays > 1 ? "s" : ""} ago`;
+            } else if (diffHours > 0) {
+              dateInfo = `${diffHours} hour${diffHours > 1 ? "s" : ""} ago`;
+            } else {
+              dateInfo = "Recently created";
+            }
+          }
+
+          items.push({
+            label: `$(archive) ${snapshotData.name || `Snapshot ${snapshotData.uid?.slice(0, 8)}`}`,
+            description: dateInfo,
+            detail: snapshotData.description || "Saved runtime state",
+            snapshotId: snapshotData.uid,
+          });
+        } catch (error) {
+          // Skip malformed snapshots
+          continue;
+        }
+      }
+    }
+
+    // Show QuickPick
+    const selected = await vscode.window.showQuickPick(items, {
+      title: "Start Runtime from Snapshot?",
+      placeHolder:
+        snapshots.length > 0
+          ? "Choose a snapshot or start fresh"
+          : "No snapshots available - will start fresh",
+      ignoreFocusOut: true,
+    });
+
+    // Handle cancellation
+    if (!selected) {
+      return null;
+    }
+
+    // Handle "fresh start" selection
+    if (selected.action === "fresh") {
+      return undefined;
+    }
+
+    // Return the selected snapshot ID
+    return selected.snapshotId;
+  } catch (error) {
+    // If snapshot loading fails, ask user if they want to continue without snapshot
+    const choice = await vscode.window.showWarningMessage(
+      `Failed to load snapshots: ${error}. Continue without snapshot?`,
+      "Yes, start fresh",
+      "Cancel",
+    );
+
+    if (choice === "Yes, start fresh") {
+      return undefined;
+    }
+
+    return null;
+  }
+}
+
+/**
  * Creates a new runtime with the specified environment.
  *
  * @param sdk - Datalayer SDK instance
  * @param environment - Environment to use
+ * @param preSelectedSnapshotId - Optional snapshot ID to restore from (skips snapshot selection)
  * @returns Created runtime or undefined if failed
  */
-async function createRuntime(
+export async function createRuntime(
   sdk: DatalayerClient,
   environment: EnvironmentDTO,
+  preSelectedSnapshotId?: string,
 ): Promise<RuntimeDTO | undefined> {
-  // Prompt for runtime name (human-readable)
+  // Step 1: Determine snapshot to use
+  let snapshotId: string | undefined = preSelectedSnapshotId;
+
+  // Only show snapshot selection dialog if no snapshot was pre-selected
+  if (!preSelectedSnapshotId) {
+    try {
+      // Fetch available snapshots (deleted snapshots are not returned by API)
+      const availableSnapshots = await sdk.listSnapshots();
+
+      // Only show snapshot selection dialog if there are snapshots
+      if (availableSnapshots && availableSnapshots.length > 0) {
+        const selectedSnapshotId = await selectSnapshot(sdk);
+
+        // If user cancelled snapshot selection, abort runtime creation
+        if (selectedSnapshotId === null) {
+          return undefined;
+        }
+
+        snapshotId = selectedSnapshotId;
+      }
+      // If no snapshots available, continue with undefined (fresh start)
+    } catch (error) {
+      // If snapshot fetching fails, continue without snapshots
+      console.warn("Failed to fetch snapshots:", error);
+    }
+  }
+
+  // Step 2: Prompt for runtime name (human-readable)
   const suggestedName = generateRuntimeName();
   const name = await vscode.window.showInputBox({
     title: `Create ${environment.title ?? environment.name} Runtime`,
@@ -421,6 +599,7 @@ async function createRuntime(
           "notebook",
           name,
           creditsLimit,
+          snapshotId, // Pass snapshot ID (undefined if starting fresh)
         );
 
         progress.report({
