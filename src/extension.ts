@@ -20,7 +20,10 @@ import { ServiceLoggers } from "./services/logging/loggers";
 import { PerformanceLogger } from "./services/logging/performanceLogger";
 import type { SDKAuthProvider } from "./services/core/authProvider";
 import type { ILogger } from "./services/interfaces/ILogger";
-import { DocumentBridge } from "./services/bridges/documentBridge";
+import {
+  DocumentBridge,
+  notifyExtensionReady,
+} from "./services/bridges/documentBridge";
 import { DatalayerFileSystemProvider } from "./providers/documentsFileSystemProvider";
 import { RuntimesTreeProvider } from "./providers/runtimesTreeProvider";
 
@@ -77,6 +80,7 @@ export async function activate(
 
     // Register file system provider for virtual datalayer:// URIs
     const fileSystemProvider = DatalayerFileSystemProvider.getInstance();
+    fileSystemProvider.initialize(context); // Restore persisted mappings
     context.subscriptions.push(
       vscode.workspace.registerFileSystemProvider(
         "datalayer",
@@ -174,6 +178,9 @@ export async function activate(
 
     // Prompt user to set Datalayer as default notebook editor (only once)
     await promptSetDefaultNotebookEditor(context, logger);
+
+    // Notify that extension is ready (unblocks document loading during startup)
+    notifyExtensionReady();
 
     // End activation timer
     activationTimer.end("success");

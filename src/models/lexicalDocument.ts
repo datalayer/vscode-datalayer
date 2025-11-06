@@ -134,17 +134,32 @@ export class LexicalDocument
   }
 
   private static async readDatalayerFile(uri: vscode.Uri): Promise<Uint8Array> {
-    const documentBridge = DocumentBridge.getInstance();
-    const metadata = documentBridge.getDocumentMetadata(uri);
-
-    if (metadata?.localPath && fs.existsSync(metadata.localPath)) {
-      const fileContent = fs.readFileSync(metadata.localPath);
-      return new Uint8Array(fileContent);
-    }
-
     try {
-      return new Uint8Array(await vscode.workspace.fs.readFile(uri));
+      // Use async getInstance to wait for extension readiness
+      const documentBridge = await DocumentBridge.getInstanceAsync();
+      const metadata = documentBridge.getDocumentMetadata(uri);
+
+      if (metadata?.localPath && fs.existsSync(metadata.localPath)) {
+        const fileContent = fs.readFileSync(metadata.localPath);
+        return new Uint8Array(fileContent);
+      }
+
+      // Try reading from virtual filesystem
+      try {
+        return new Uint8Array(await vscode.workspace.fs.readFile(uri));
+      } catch (error) {
+        // Fallback to default content if file doesn't exist
+        return LexicalDocument.getDefaultContent();
+      }
     } catch (error) {
+      // If extension isn't ready or SDK not available, show user-friendly message
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Failed to load remote document";
+      vscode.window.showWarningMessage(
+        `${message}. Loading with default content.`,
+      );
       return LexicalDocument.getDefaultContent();
     }
   }

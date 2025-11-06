@@ -19,18 +19,22 @@ import * as path from "path";
 /**
  * Virtual file system provider that maps Datalayer documents to clean URI scheme.
  * Allows VS Code to display "datalayer://Space Name/Notebook.ipynb" instead of temp paths.
+ * Persists mappings across VS Code restarts using globalState.
  *
  * @example
  * ```typescript
  * const provider = DatalayerFileSystemProvider.getInstance();
+ * provider.initialize(context);
  * const virtualUri = provider.registerMapping('My Space/notebook.ipynb', '/tmp/real-path.ipynb');
  * ```
  */
 export class DatalayerFileSystemProvider implements vscode.FileSystemProvider {
   private static instance: DatalayerFileSystemProvider;
+  private static readonly STORAGE_KEY = "datalayer.documentMappings";
 
   private virtualToReal: Map<string, string> = new Map();
   private realToVirtual: Map<string, vscode.Uri> = new Map();
+  private context?: vscode.ExtensionContext;
 
   private _emitter = new vscode.EventEmitter<vscode.FileChangeEvent[]>();
   /**
@@ -53,7 +57,67 @@ export class DatalayerFileSystemProvider implements vscode.FileSystemProvider {
   }
 
   /**
+   * Initialize the provider with extension context for persistent storage.
+   * Restores any previously saved mappings from globalState.
+   *
+   * @param context - Extension context for accessing globalState
+   */
+  initialize(context: vscode.ExtensionContext): void {
+    this.context = context;
+    this.loadMappings();
+  }
+
+  /**
+   * Load saved mappings from persistent storage.
+   * Only restores mappings where the real file still exists.
+   */
+  private loadMappings(): void {
+    if (!this.context) {
+      return;
+    }
+
+    const saved = this.context.globalState.get<Record<string, string>>(
+      DatalayerFileSystemProvider.STORAGE_KEY,
+      {},
+    );
+
+    // Restore mappings, but only if the real file still exists
+    for (const [virtualUriString, realPath] of Object.entries(saved)) {
+      if (fs.existsSync(realPath)) {
+        this.virtualToReal.set(virtualUriString, realPath);
+        try {
+          const virtualUri = vscode.Uri.parse(virtualUriString);
+          this.realToVirtual.set(realPath, virtualUri);
+        } catch (error) {
+          // Skip invalid URIs
+        }
+      }
+    }
+  }
+
+  /**
+   * Save current mappings to persistent storage.
+   */
+  private async saveMappings(): Promise<void> {
+    if (!this.context) {
+      return;
+    }
+
+    // Convert Map to plain object for storage
+    const toSave: Record<string, string> = {};
+    for (const [key, value] of this.virtualToReal.entries()) {
+      toSave[key] = value;
+    }
+
+    await this.context.globalState.update(
+      DatalayerFileSystemProvider.STORAGE_KEY,
+      toSave,
+    );
+  }
+
+  /**
    * Register a mapping between a virtual URI and a real file path.
+   * Persists the mapping to globalState for restoration after restart.
    *
    * @param virtualPath - Clean path for the virtual URI (e.g., "Space Name/Notebook.ipynb")
    * @param realPath - Actual file system path to the document
@@ -77,6 +141,9 @@ export class DatalayerFileSystemProvider implements vscode.FileSystemProvider {
 
     this.virtualToReal.set(key, realPath);
     this.realToVirtual.set(realPath, virtualUri);
+
+    // Persist mapping to storage (fire and forget)
+    this.saveMappings();
 
     return virtualUri;
   }
@@ -102,6 +169,25 @@ export class DatalayerFileSystemProvider implements vscode.FileSystemProvider {
    */
   getVirtualUri(realPath: string): vscode.Uri | undefined {
     return this.realToVirtual.get(realPath);
+  }
+
+  /**
+   * Remove a mapping for a closed document.
+   * Updates persistent storage.
+   *
+   * @param uri - Virtual URI to remove
+   */
+  removeMapping(uri: vscode.Uri): void {
+    const key = uri.toString();
+    const realPath = this.virtualToReal.get(key);
+
+    if (realPath) {
+      this.realToVirtual.delete(realPath);
+    }
+    this.virtualToReal.delete(key);
+
+    // Persist the change (fire and forget)
+    this.saveMappings();
   }
 
   /**
@@ -182,6 +268,8 @@ export class DatalayerFileSystemProvider implements vscode.FileSystemProvider {
 
   /**
    * Read the contents of a file.
+   * Mappings are restored from persistent storage during initialization,
+   * so this should always find the real path for valid documents.
    *
    * @param uri - The URI of the file to read
    * @returns The file contents as a byte array

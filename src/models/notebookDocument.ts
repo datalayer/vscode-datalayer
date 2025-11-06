@@ -14,6 +14,7 @@
 
 import * as vscode from "vscode";
 import { Disposable } from "../utils/dispose";
+import { DocumentBridge } from "../services/bridges/documentBridge";
 
 /**
  * Represents an edit operation performed on a notebook document.
@@ -123,6 +124,7 @@ export class NotebookDocument
    *
    * Handles different URI schemes:
    * - `untitled`: Returns empty content for new notebooks
+   * - `datalayer`: Returns empty notebook, content will sync via collaboration
    * - Other schemes: Reads from VS Code file system
    *
    * @param uri - URI to read notebook content from
@@ -133,6 +135,28 @@ export class NotebookDocument
       return new Uint8Array();
     }
 
+    // For datalayer:// URIs, these are collaborative documents
+    // Content will be synced from the collaboration server (Y.js) once the editor connects
+    if (uri.scheme === "datalayer") {
+      try {
+        // Wait for extension to be ready
+        await DocumentBridge.getInstanceAsync();
+
+        // Try reading from cached file
+        try {
+          return new Uint8Array(await vscode.workspace.fs.readFile(uri));
+        } catch (readError) {
+          // Cache miss - this is expected after VS Code restart if temp files were cleaned
+          // Return empty notebook structure - collaboration will sync the real content
+          return NotebookDocument.getEmptyNotebook();
+        }
+      } catch (error) {
+        // Extension not ready or other error
+        return NotebookDocument.getEmptyNotebook();
+      }
+    }
+
+    // For regular file:// URIs, read directly
     const fileData = new Uint8Array(await vscode.workspace.fs.readFile(uri));
 
     // Handle empty files gracefully - return minimal valid notebook
