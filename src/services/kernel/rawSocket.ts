@@ -100,10 +100,20 @@ export class RawSocket {
   ) {
     this.channels = this.generateChannels(connection);
 
-    // DON'T automatically emit "open" event here!
-    // The KernelConnection will auto-send kernel_info_request when it gets "open"
-    // We only want to send messages when the webview explicitly requests them
-    // The connection is ready as soon as channels are created (ZMQ connects immediately)
+    // IMPORTANT: The 'open' event is NOT emitted automatically here
+    //
+    // Initialization flow:
+    // 1. RawSocket creates ZMQ channels (DEALER for shell/control/stdin, SUBSCRIBER for iopub)
+    // 2. ZMQ sockets connect immediately to kernel ports
+    // 3. The connection is ready as soon as channels are created
+    // 4. The 'open' event should be emitted by LocalKernelProxy when:
+    //    - The webview requests a WebSocket connection
+    //    - After the kernel_info_request/reply handshake completes
+    //
+    // Why we don't emit 'open' here:
+    // - KernelConnection auto-sends kernel_info_request when it receives 'open' event
+    // - We want explicit control over when messages are sent to the kernel
+    // - The webview should trigger the kernel_info_request flow via LocalKernelProxy
   }
 
   public dispose() {

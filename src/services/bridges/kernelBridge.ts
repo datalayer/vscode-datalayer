@@ -180,6 +180,18 @@ export class KernelBridge implements vscode.Disposable {
       throw new Error("Failed to get webview panel for document");
     }
 
+    // Check if a kernel client already exists for this kernel ID
+    const existingClient = this._localKernels.get(kernelInfo.id);
+    if (existingClient) {
+      console.log(
+        `[KernelBridge] Disposing existing kernel client for ${kernelInfo.id}`,
+      );
+      existingClient.dispose();
+      this._localKernels.delete(kernelInfo.id);
+      // Wait a bit for ports to be released
+      await new Promise((resolve) => setTimeout(resolve, 500));
+    }
+
     // Create and start the local kernel client
     const kernelClient = new LocalKernelClient(kernelInfo);
     await kernelClient.start();

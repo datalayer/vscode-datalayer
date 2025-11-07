@@ -46,9 +46,10 @@ export class LocalKernelProxy {
       throw new Error("Kernel not started");
     }
 
-    // Get the underlying RawSocket to bypass KernelConnection's state management
-    // @ts-ignore - accessing private _ws property
-    this._rawSocket = this._kernel._ws;
+    // Get the underlying RawSocket via public method
+    // This is necessary to bypass KernelConnection's state management
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    this._rawSocket = this._kernelClient.getRawSocket() as any;
 
     if (!this._rawSocket) {
       throw new Error("RawSocket not available");

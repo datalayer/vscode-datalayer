@@ -15,6 +15,10 @@ import * as vscode from "vscode";
 import { ExtensionMessage } from "../../types/vscode/messages";
 import type { IKernelBridge } from "../interfaces/IKernelBridge";
 import { LocalKernelProxy } from "./localKernelProxy";
+import {
+  LOCAL_KERNEL_URL_PREFIX,
+  isLocalKernelUrl,
+} from "../../constants/kernelConstants";
 
 /**
  * Handles network communications between webview and Jupyter servers.
@@ -61,11 +65,8 @@ export class NotebookNetworkService {
       method: string;
     };
 
-    // Check if this is a local kernel REST API request
-    if (
-      requestBody.url.includes("local-kernel-") &&
-      requestBody.url.includes(".localhost")
-    ) {
+    // Check if this is a local kernel REST API request using shared utility
+    if (isLocalKernelUrl(requestBody.url)) {
       this._handleLocalKernelRequest(message, webview);
       return;
     }
@@ -128,8 +129,10 @@ export class NotebookNetworkService {
       method: string;
     };
 
-    // Extract kernel ID from URL: http://local-kernel-{kernelId}.localhost
-    const match = requestBody.url.match(/local-kernel-([^.]+)\.localhost/);
+    // Extract kernel ID from URL using regex pattern
+    const match = requestBody.url.match(
+      new RegExp(`${LOCAL_KERNEL_URL_PREFIX}([^.]+)\\.localhost`),
+    );
     if (!match) {
       this.postMessage(
         webview,
@@ -168,7 +171,7 @@ export class NotebookNetworkService {
           name: "python3",
           last_activity: new Date().toISOString(),
           execution_state: "idle",
-          connections: 1, // Mark as connected (was 0)
+          connections: 1,
         },
       };
       console.log(
@@ -316,12 +319,8 @@ export class NotebookNetworkService {
 
     console.log(`[NotebookNetwork] openWebsocket called: ${wsBody.origin}`);
 
-    // Check if this is a local kernel connection
-    // URL pattern: ws://local-kernel-{kernelId}.localhost/...
-    if (
-      wsBody.origin.includes("local-kernel-") &&
-      wsBody.origin.includes(".localhost")
-    ) {
+    // Check if this is a local kernel connection using shared utility
+    if (isLocalKernelUrl(wsBody.origin)) {
       console.log(`[NotebookNetwork] Detected local kernel WebSocket request`);
       this._openLocalKernel(message, webview);
       return;
@@ -402,8 +401,10 @@ export class NotebookNetworkService {
       origin: string;
     };
 
-    // Extract kernel ID from URL: ws://local-kernel-{kernelId}.localhost/...
-    const match = wsBody.origin.match(/local-kernel-([^.]+)\.localhost/);
+    // Extract kernel ID from URL using regex pattern
+    const match = wsBody.origin.match(
+      new RegExp(`${LOCAL_KERNEL_URL_PREFIX}([^.]+)\\.localhost`),
+    );
     if (!match) {
       console.error(
         "[NotebookNetwork] Could not extract kernel ID from URL:",

@@ -20,6 +20,13 @@
 
 import { ServiceManager, ServerConnection } from "@jupyterlab/services";
 import { MessageHandler, type ExtensionMessage } from "./messageHandler";
+import { isLocalKernelUrl } from "../../src/constants/kernelConstants";
+
+/**
+ * Enable verbose debug logging for WebSocket messages.
+ * Set to true during development, false in production.
+ */
+const DEBUG_WEBSOCKET = false;
 
 /**
  * Forward HTTP request through postMessage to the extension.
@@ -367,7 +374,7 @@ export class ProxiedWebSocket extends EventTarget {
     // This prevents race conditions where JupyterLab checks for kernel connection
     // before the async websocket-open message can arrive from the extension
     // We must do this synchronously because JupyterLab checks immediately in the same call stack
-    if (this.url.includes("local-kernel-") && this.url.includes(".localhost")) {
+    if (isLocalKernelUrl(this.url)) {
       console.log(
         `[ProxiedWebSocket] Local kernel detected, SYNCHRONOUSLY opening: ${this.url}`,
       );
@@ -562,11 +569,13 @@ export class ProxiedWebSocket extends EventTarget {
             );
           }
           // MessageEvent constructor expects { data: ... } not the body directly
-          console.log(
-            `[WebviewWebSocket] Dispatching message event for clientId=${this.clientId}:`,
-            typeof bodyData.data === "string" ? "JSON string" : "object",
-          );
-          if (typeof bodyData.data === "string") {
+          if (DEBUG_WEBSOCKET) {
+            console.log(
+              `[WebviewWebSocket] Dispatching message event for clientId=${this.clientId}:`,
+              typeof bodyData.data === "string" ? "JSON string" : "object",
+            );
+          }
+          if (DEBUG_WEBSOCKET && typeof bodyData.data === "string") {
             try {
               const parsed = JSON.parse(bodyData.data);
               console.log(
@@ -592,14 +601,18 @@ export class ProxiedWebSocket extends EventTarget {
           );
           break;
         case "websocket-open": {
-          console.log(
-            `[WebviewWebSocket] Received websocket-open for clientId=${this.clientId}, url=${this.url}`,
-          );
+          if (DEBUG_WEBSOCKET) {
+            console.log(
+              `[WebviewWebSocket] Received websocket-open for clientId=${this.clientId}, url=${this.url}`,
+            );
+          }
           this._readyState = WebSocket.OPEN;
           this.dispatchEvent(new Event("open"));
-          console.log(
-            `[WebviewWebSocket] Dispatched 'open' event, readyState=${this._readyState}`,
-          );
+          if (DEBUG_WEBSOCKET) {
+            console.log(
+              `[WebviewWebSocket] Dispatched 'open' event, readyState=${this._readyState}`,
+            );
+          }
           break;
         }
         case "websocket-close":

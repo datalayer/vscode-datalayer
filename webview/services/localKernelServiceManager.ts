@@ -286,7 +286,7 @@ class LocalSessionManager implements Session.IManager {
         void
       >,
       kernel: kernelConnection,
-      propertyChanged: kernelConnection.statusChanged as unknown as ISignal<
+      propertyChanged: kernelConnection.propertyChanged as unknown as ISignal<
         Session.ISessionConnection,
         "path" | "name" | "type"
       >,

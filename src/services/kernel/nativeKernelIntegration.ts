@@ -149,65 +149,149 @@ export async function showPythonEnvironmentPicker(): Promise<
       });
     }
 
-    // Show the quick pick
-    const selected = await vscode.window.showQuickPick(items, {
-      placeHolder: "Select a Python environment",
-      matchOnDescription: true,
-      matchOnDetail: true,
-    });
+    // Use a loop instead of recursion to prevent stack overflow
+    // Maximum 5 attempts to handle repeated environment creation
+    const MAX_ATTEMPTS = 5;
+    for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
+      // Show the quick pick
+      const selected = await vscode.window.showQuickPick(items, {
+        placeHolder: "Select a Python environment",
+        matchOnDescription: true,
+        matchOnDetail: true,
+      });
 
-    if (!selected) {
-      return undefined;
-    }
-
-    // Check if user selected "Create New Environment"
-    if (selected.isCreateNew) {
-      // Trigger Python extension's create environment command
-      try {
-        await vscode.commands.executeCommand("python.createEnvironment");
-
-        // After creation, refresh environments and let user select again
-        await pythonApi.environments.refreshEnvironments();
-        await new Promise((resolve) => setTimeout(resolve, 1000));
-
-        // Recursively call this function to show updated environment list
-        return await showPythonEnvironmentPicker();
-      } catch (error) {
-        console.error("[showPythonEnvironmentPicker] Create env error:", error);
-        vscode.window.showErrorMessage(
-          `Failed to create environment: ${error}`,
-        );
+      if (!selected) {
         return undefined;
       }
+
+      // Check if user selected "Create New Environment"
+      if (selected.isCreateNew) {
+        // Trigger Python extension's create environment command
+        try {
+          await vscode.commands.executeCommand("python.createEnvironment");
+
+          // After creation, refresh environments and rebuild the list
+          await pythonApi.environments.refreshEnvironments();
+          await new Promise((resolve) => setTimeout(resolve, 1000));
+
+          // Rebuild environment list
+          environments = pythonApi.environments.known;
+          items.length = 0; // Clear items array
+
+          // Re-add "Create New Environment" option
+          items.push({
+            label: "$(add) Create Python Environment",
+            description:
+              "Create a new virtual environment or Conda environment",
+            detail: "Opens the Python environment creation wizard",
+            isCreateNew: true,
+          });
+
+          // Re-add separator
+          items.push({
+            label: "Existing Environments",
+            kind: vscode.QuickPickItemKind.Separator,
+          });
+
+          // Re-add existing environments
+          if (environments && environments.length > 0) {
+            const envItems = environments.map((env) => {
+              const path = env.path;
+              const version = env.version
+                ? `${env.version.major}.${env.version.minor}.${env.version.micro}`
+                : "unknown";
+              const envType = env.environment?.type || "global";
+              const envName = env.environment?.name || "";
+
+              return {
+                label: envName
+                  ? `${envName} (Python ${version})`
+                  : `Python ${version}`,
+                description: envType,
+                detail: path,
+                env: env,
+              };
+            });
+            items.push(...envItems);
+          } else {
+            items.push({
+              label: "No Python environments found",
+              description: "Create one using the option above",
+            });
+          }
+
+          // Continue loop to show picker again
+          continue;
+        } catch (error) {
+          console.error(
+            "[showPythonEnvironmentPicker] Create env error:",
+            error,
+          );
+          vscode.window.showErrorMessage(
+            `Failed to create environment: ${error}`,
+          );
+          return undefined;
+        }
+      }
+
+      // User selected an existing environment
+      if (!selected.env) {
+        return undefined;
+      }
+
+      // Break out of loop - we have a valid selection
+      return await processSelectedEnvironment(selected.env, selected.label);
     }
 
-    // User selected an existing environment
-    if (!selected.env) {
-      return undefined;
+    // If we exhausted all attempts
+    vscode.window.showWarningMessage(
+      "Maximum environment creation attempts reached. Please try again.",
+    );
+    return undefined;
+  } catch (error) {
+    vscode.window.showErrorMessage(
+      `Failed to select Python environment: ${error}`,
+    );
+    return undefined;
+  }
+}
+
+/**
+ * Helper function to process the selected Python environment
+ */
+async function processSelectedEnvironment(
+  env: Environment,
+  label: string,
+): Promise<NativeKernelInfo | undefined> {
+  try {
+    const pythonExt = vscode.extensions.getExtension("ms-python.python");
+    if (!pythonExt?.isActive) {
+      throw new Error("Python extension is not active");
     }
+    const pythonApi: PythonExtension = pythonExt.exports as PythonExtension;
 
     // Resolve the full environment details
     const resolvedEnv = await pythonApi.environments.resolveEnvironment(
-      selected.env.path,
+      env.path,
     );
     if (!resolvedEnv) {
       vscode.window.showErrorMessage(
-        `Failed to resolve environment: ${selected.env.path}`,
+        `Failed to resolve environment: ${env.path}`,
       );
       return undefined;
     }
 
     // Get the Python executable path
-    let pythonPath = selected.env.path;
+    const pythonPath = env.path;
     return {
       type: "python-environment",
       id: `python-env-${Date.now()}`,
-      displayName: selected.label,
+      displayName: label,
       pythonPath: pythonPath,
-      environment: selected.env,
+      environment: env,
       kernelSpec: {
         name: "python3",
-        display_name: selected.label,
+        display_name: label,
         language: "python",
         argv: [
           pythonPath,
@@ -224,9 +308,7 @@ export async function showPythonEnvironmentPicker(): Promise<
       },
     };
   } catch (error) {
-    vscode.window.showErrorMessage(
-      `Failed to select Python environment: ${error}`,
-    );
+    vscode.window.showErrorMessage(`Failed to process environment: ${error}`);
     return undefined;
   }
 }

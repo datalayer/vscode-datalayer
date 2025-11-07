@@ -127,6 +127,36 @@ export class MutableServiceManager {
   }
 
   /**
+   * Update the underlying service manager directly.
+   * This is useful when you need to replace the service manager with a custom one
+   * (e.g., LocalKernelServiceManager for local kernel connections).
+   *
+   * @param serviceManager - The new service manager to use
+   */
+  updateServiceManager(serviceManager: ServiceManager.IManager): void {
+    // Dispose the old service manager if it has a dispose method
+    if (this._serviceManager && hasDispose(this._serviceManager)) {
+      const oldSm = this._serviceManager;
+      try {
+        setTimeout(() => {
+          try {
+            oldSm.dispose();
+          } catch (error) {
+            // Error during delayed disposal
+          }
+        }, 50);
+      } catch (error) {
+        // Continue with update anyway
+      }
+    }
+
+    this._serviceManager = serviceManager;
+
+    // Notify listeners
+    this._listeners.forEach((listener) => listener());
+  }
+
+  /**
    * Add a listener for service manager changes.
    *
    * @param listener - Callback to invoke when service manager changes

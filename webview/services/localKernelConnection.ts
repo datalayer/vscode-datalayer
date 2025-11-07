@@ -48,6 +48,7 @@ export class LocalKernelConnection implements Kernel.IKernelConnection {
   private _unhandledMessage = new Signal<this, KernelMessage.IMessage>(this);
   private _anyMessage = new Signal<this, Kernel.IAnyMessageArgs>(this);
   private _pendingMessages = new Signal<this, boolean>(this);
+  private _propertyChanged = new Signal<this, "path" | "name" | "type">(this);
 
   private _status: Kernel.Status = "unknown";
   private _connectionStatus: Kernel.ConnectionStatus = "connected";
@@ -233,6 +234,10 @@ export class LocalKernelConnection implements Kernel.IKernelConnection {
 
   get anyMessage(): ISignal<this, Kernel.IAnyMessageArgs> {
     return this._anyMessage;
+  }
+
+  get propertyChanged(): ISignal<this, "path" | "name" | "type"> {
+    return this._propertyChanged;
   }
 
   get hasPendingInput(): boolean {

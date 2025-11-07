@@ -14,6 +14,7 @@
 import React from "react";
 import { ToolbarButton } from "./ToolbarButton";
 import type { RuntimeJSON } from "@datalayer/core/lib/client";
+import { isLocalKernelUrl } from "../../../src/constants/kernelConstants";
 
 export interface KernelSelectorProps {
   /** Currently selected Datalayer runtime */
@@ -60,8 +61,10 @@ export const KernelSelector: React.FC<KernelSelectorProps> = ({
         selectedRuntime.environmentName ||
         selectedRuntime.uid ||
         "Runtime";
-      // Check if this is a local kernel (URL contains "local-kernel-")
-      const isLocalKernel = selectedRuntime.ingress?.includes("local-kernel-");
+      // Check if this is a local kernel using shared utility
+      const isLocalKernel = selectedRuntime.ingress
+        ? isLocalKernelUrl(selectedRuntime.ingress)
+        : false;
       // Don't show "Datalayer: " prefix for local kernels
       return isLocalKernel ? runtimeName : `Datalayer: ${runtimeName}`;
     }

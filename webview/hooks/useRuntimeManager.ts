@@ -15,6 +15,7 @@ import type { ServiceManager } from "@jupyterlab/services";
 import type { RuntimeJSON } from "@datalayer/core/lib/client";
 import { MutableServiceManager } from "../services/mutableServiceManager";
 import { createLocalKernelServiceManager } from "../services/localKernelServiceManager";
+import { isLocalKernelUrl } from "../../src/constants/kernelConstants";
 
 /**
  * Hook to manage runtime selection and service manager lifecycle.
@@ -68,8 +69,8 @@ export function useRuntimeManager(initialRuntime?: RuntimeJSON) {
     setSelectedRuntime(runtime);
 
     if (runtime?.ingress) {
-      // Detect local kernel runtimes (URL starts with "local-kernel-")
-      const isLocalKernel = runtime.ingress.includes("local-kernel-");
+      // Detect local kernel runtimes using shared utility
+      const isLocalKernel = isLocalKernelUrl(runtime.ingress);
 
       if (isLocalKernel) {
         console.log(
@@ -101,11 +102,9 @@ export function useRuntimeManager(initialRuntime?: RuntimeJSON) {
           `[useRuntimeManager] LocalKernelServiceManager created successfully`,
         );
 
-        // Update the MutableServiceManager with the local service manager
-        // Use the internal method to properly replace the service manager
+        // Update the MutableServiceManager with the local service manager using public method
         if (mutableManagerRef.current) {
-          // @ts-ignore - accessing private property
-          mutableManagerRef.current._serviceManager = localServiceManager;
+          mutableManagerRef.current.updateServiceManager(localServiceManager);
           console.log(
             `[useRuntimeManager] MutableServiceManager updated with LocalKernelServiceManager`,
           );

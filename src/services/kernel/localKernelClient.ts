@@ -151,13 +151,13 @@ export class LocalKernelClient {
     const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "datalayer-kernel-"));
     const connectionFile = path.join(tempDir, "kernel.json");
 
-    // Find free ports
+    // Use port 0 to let OS assign available ports
     const ports = {
-      shell_port: await this.findFreePort(50000),
-      iopub_port: await this.findFreePort(50001),
-      stdin_port: await this.findFreePort(50002),
-      control_port: await this.findFreePort(50003),
-      hb_port: await this.findFreePort(50004),
+      shell_port: await this.findFreePort(),
+      iopub_port: await this.findFreePort(),
+      stdin_port: await this.findFreePort(),
+      control_port: await this.findFreePort(),
+      hb_port: await this.findFreePort(),
     };
 
     const connection: IKernelConnection = {
@@ -175,24 +175,21 @@ export class LocalKernelClient {
   }
 
   /**
-   * Find a free port starting from the given port.
+   * Find a free port by letting the OS assign one.
    */
-  private async findFreePort(startPort: number): Promise<number> {
+  private async findFreePort(): Promise<number> {
     return new Promise((resolve, reject) => {
       const net = require("net");
       const server = net.createServer();
 
-      server.listen(startPort, () => {
+      // Use port 0 to let OS assign any available port
+      server.listen(0, () => {
         const port = server.address().port;
         server.close(() => resolve(port));
       });
 
       server.on("error", (err: NodeJS.ErrnoException) => {
-        if (err.code === "EADDRINUSE") {
-          resolve(this.findFreePort(startPort + 1));
-        } else {
-          reject(err);
-        }
+        reject(err);
       });
     });
   }
@@ -225,10 +222,24 @@ export class LocalKernelClient {
   }
 
   /**
-   * Get the underlying @jupyterlab/services kernel connection.
+   * Get the underlying kernel connection.
    */
   public getKernel(): Kernel.IKernelConnection | undefined {
     return this._realKernel;
+  }
+
+  /**
+   * Get the raw WebSocket for proxying (internal use by LocalKernelProxy).
+   * @internal
+   */
+  public getRawSocket(): unknown {
+    if (!this._realKernel) {
+      return undefined;
+    }
+    // Access the private _ws property for LocalKernelProxy
+    // This is necessary because @jupyterlab/services doesn't expose the socket
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return (this._realKernel as any)._ws;
   }
 
   /**
