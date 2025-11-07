@@ -245,6 +245,10 @@ const webviewConfig = {
           from: "node_modules/@vscode/codicons/dist/codicon.ttf",
           to: "codicon.ttf",
         },
+        {
+          from: "webview/styles/vscode-completion-theme.css",
+          to: "vscode-completion-theme.css",
+        },
       ],
     }),
   ],

@@ -39,6 +39,11 @@ export function getNotebookHtml(
     vscode.Uri.joinPath(extensionUri, "dist", "codicon.css"),
   );
 
+  // Get the VS Code completion theme CSS file from dist folder
+  const completionThemeCssUri = webview.asWebviewUri(
+    vscode.Uri.joinPath(extensionUri, "dist", "vscode-completion-theme.css"),
+  );
+
   // Use a nonce to whitelist which scripts can be run
   const nonce = getNonce();
 
@@ -69,6 +74,9 @@ export function getNotebookHtml(
 
           <!-- Import Codicon CSS -->
           <link href="${codiconCssUri}" rel="stylesheet" />
+
+          <!-- Import VS Code Completion Theme CSS -->
+          <link href="${completionThemeCssUri}" rel="stylesheet" />
 
           <!-- Custom animation styles -->
           <style nonce="${nonce}">
