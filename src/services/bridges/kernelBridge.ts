@@ -16,6 +16,8 @@ import type { DatalayerClient } from "@datalayer/core/lib/client";
 import type { RuntimeDTO } from "@datalayer/core/lib/models/RuntimeDTO";
 import type { RuntimeJSON } from "@datalayer/core/lib/models/RuntimeDTO";
 import { SDKAuthProvider } from "../core/authProvider";
+import { LocalKernelClient } from "../kernel/localKernelClient";
+import type { NativeKernelInfo } from "../kernel/nativeKernelIntegration";
 
 /**
  * Extended runtime interface for webview communication.
@@ -45,6 +47,8 @@ interface KernelSelectionMessage {
  */
 export class KernelBridge implements vscode.Disposable {
   private readonly _webviews = new Map<string, vscode.WebviewPanel>();
+  private readonly _localKernels = new Map<string, LocalKernelClient>();
+  private readonly _documentKernels = new Map<string, string>(); // documentUri -> kernelId
   private _disposed = false;
 
   /**
@@ -143,6 +147,95 @@ export class KernelBridge implements vscode.Disposable {
     };
 
     // Post message to webview
+    await targetWebview.webview.postMessage(message);
+  }
+
+  /**
+   * Connects a webview document to a local kernel (Python environment, Jupyter kernel, or Jupyter server).
+   * Starts the kernel and sends kernel information to the webview.
+   *
+   * @param uri - Document URI
+   * @param kernelInfo - Native kernel information
+   */
+  public async connectWebviewDocumentToLocalKernel(
+    uri: vscode.Uri,
+    kernelInfo: NativeKernelInfo,
+  ): Promise<void> {
+    const key = uri.toString();
+    const webview = this._webviews.get(key);
+
+    if (!webview) {
+      // Try to find webview by searching active panels
+      const allWebviews = this.findWebviewsForUri(uri);
+      if (allWebviews.length === 0) {
+        throw new Error("No webview found for document");
+      }
+      // Use first matching webview
+      const webviewPanel = allWebviews[0];
+      this._webviews.set(key, webviewPanel);
+    }
+
+    const targetWebview = this._webviews.get(key);
+    if (!targetWebview) {
+      throw new Error("Failed to get webview panel for document");
+    }
+
+    // Create and start the local kernel client
+    const kernelClient = new LocalKernelClient(kernelInfo);
+    await kernelClient.start();
+
+    // Store the kernel client for later use
+    this._localKernels.set(kernelInfo.id, kernelClient);
+    this._documentKernels.set(key, kernelInfo.id);
+
+    // Create a mock runtime object that matches the RuntimeJSON interface
+    // For Jupyter servers, use the server URL from kernelInfo
+    // For local kernels, use a special URL that signals to networkProxy
+    // to route messages through the extension instead of making real HTTP/WebSocket requests
+    // We use http:// (not local://) so @jupyterlab/services accepts it as a valid base URL
+    const isJupyterServer =
+      kernelInfo.type === "jupyter-server" && kernelInfo.serverUrl;
+    const mockRuntime: ExtendedRuntimeJSON = {
+      uid: kernelInfo.id,
+      podName: `local-kernel-${kernelInfo.id}`,
+      givenName: kernelInfo.displayName,
+      environmentName: kernelInfo.type,
+      environmentTitle: kernelInfo.displayName,
+      type: "notebook",
+      burningRate: 0,
+      // Use special marker in URL for local kernels, real URL for Jupyter servers
+      // Format: http://local-kernel-{kernelId}.localhost
+      ingress: isJupyterServer
+        ? kernelInfo.serverUrl!
+        : `http://local-kernel-${kernelInfo.id}.localhost`,
+      token: kernelInfo.token || "", // Use token from kernel info if available
+      startedAt: new Date().toISOString(),
+      expiredAt: new Date(Date.now() + 86400000).toISOString(), // 24 hours from now
+    };
+
+    // Fire event so providers can track the local kernel
+    await vscode.commands.executeCommand(
+      "datalayer.internal.runtimeConnected",
+      uri,
+      mockRuntime,
+    );
+
+    // For local kernels, send a special message that directly injects the kernel
+    // instead of going through the runtime/session creation flow
+    const message = {
+      type: "local-kernel-connected",
+      body: {
+        kernelId: kernelInfo.id,
+        kernelInfo: {
+          id: kernelInfo.id,
+          name: "python3",
+          displayName: kernelInfo.displayName,
+        },
+        // Also send runtime for backward compatibility
+        runtime: mockRuntime,
+      },
+    };
+
     await targetWebview.webview.postMessage(message);
   }
 
@@ -329,6 +422,17 @@ export class KernelBridge implements vscode.Disposable {
   }
 
   /**
+   * Gets a local kernel client by ID.
+   * Used by network proxy to route messages to local ZMQ kernels.
+   *
+   * @param kernelId - Kernel identifier
+   * @returns Local kernel client or undefined
+   */
+  public getLocalKernel(kernelId: string): LocalKernelClient | undefined {
+    return this._localKernels.get(kernelId);
+  }
+
+  /**
    * Disposes of the bridge and cleans up resources.
    */
   public dispose(): void {
@@ -338,5 +442,16 @@ export class KernelBridge implements vscode.Disposable {
 
     this._disposed = true;
     this._webviews.clear();
+
+    // Dispose all local kernels
+    for (const kernel of this._localKernels.values()) {
+      try {
+        kernel.dispose();
+      } catch (err) {
+        console.error("Error disposing local kernel:", err);
+      }
+    }
+    this._localKernels.clear();
+    this._documentKernels.clear();
   }
 }

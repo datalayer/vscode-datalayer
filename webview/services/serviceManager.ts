@@ -333,7 +333,7 @@ class EventTarget {
  * Implements the standard WebSocket API but communicates with the VS Code extension
  * instead of directly connecting to a server.
  */
-class ProxiedWebSocket extends EventTarget {
+export class ProxiedWebSocket extends EventTarget {
   /** WebSocket is connecting */
   static readonly CONNECTING = 0;
   /** WebSocket connection is open and ready */
@@ -362,6 +362,22 @@ class ProxiedWebSocket extends EventTarget {
       this._onExtensionMessage.bind(this) as (message: unknown) => void,
     );
     this._open();
+
+    // For local kernel connections, SYNCHRONOUSLY transition to OPEN state
+    // This prevents race conditions where JupyterLab checks for kernel connection
+    // before the async websocket-open message can arrive from the extension
+    // We must do this synchronously because JupyterLab checks immediately in the same call stack
+    if (this.url.includes("local-kernel-") && this.url.includes(".localhost")) {
+      console.log(
+        `[ProxiedWebSocket] Local kernel detected, SYNCHRONOUSLY opening: ${this.url}`,
+      );
+      this._readyState = ProxiedWebSocket.OPEN;
+      // Dispatch open event synchronously - JupyterLab is checking in the same call stack
+      this.dispatchEvent(new Event("open"));
+      console.log(
+        `[ProxiedWebSocket] Dispatched SYNCHRONOUS 'open' event for local kernel, readyState=${this._readyState}`,
+      );
+    }
   }
 
   /** Current connection state */
@@ -534,19 +550,58 @@ class ProxiedWebSocket extends EventTarget {
           // https://github.com/jupyterlab/jupyterlab/blob/85c82eba1caa7e28a0d818c0840e13756c1b1256/packages/services/src/kernel/default.ts#L1468
           const { body } = message;
           const bodyData = body as {
-            data?: { type?: string; data?: number[] };
+            data?: { type?: string; data?: number[] } | string;
           };
-          if (bodyData.data?.type === "Buffer" && bodyData.data?.data) {
+          if (
+            typeof bodyData.data === "object" &&
+            bodyData.data?.type === "Buffer" &&
+            bodyData.data?.data
+          ) {
             (bodyData.data as unknown) = new ArrayBuffer(
               bodyData.data.data.length,
             );
           }
-          this.dispatchEvent(new MessageEvent("message", body));
+          // MessageEvent constructor expects { data: ... } not the body directly
+          console.log(
+            `[WebviewWebSocket] Dispatching message event for clientId=${this.clientId}:`,
+            typeof bodyData.data === "string" ? "JSON string" : "object",
+          );
+          if (typeof bodyData.data === "string") {
+            try {
+              const parsed = JSON.parse(bodyData.data);
+              console.log(
+                `[WebviewWebSocket] Message type: ${parsed.header?.msg_type}, channel: ${parsed.channel}`,
+              );
+
+              // Extra logging for kernel_info_reply
+              if (parsed.header?.msg_type === "kernel_info_reply") {
+                console.log(`[WebviewWebSocket] kernel_info_reply details:`, {
+                  msg_id: parsed.header?.msg_id,
+                  parent_msg_id: parsed.parent_header?.msg_id,
+                  session: parsed.header?.session,
+                  status: parsed.content?.status,
+                  hasLanguageInfo: !!parsed.content?.language_info,
+                });
+              }
+            } catch (e) {
+              // Ignore parse errors
+            }
+          }
+          this.dispatchEvent(
+            new MessageEvent("message", { data: bodyData.data }),
+          );
           break;
-        case "websocket-open":
+        case "websocket-open": {
+          console.log(
+            `[WebviewWebSocket] Received websocket-open for clientId=${this.clientId}, url=${this.url}`,
+          );
           this._readyState = WebSocket.OPEN;
           this.dispatchEvent(new Event("open"));
+          console.log(
+            `[WebviewWebSocket] Dispatched 'open' event, readyState=${this._readyState}`,
+          );
           break;
+        }
         case "websocket-close":
           this.close();
           break;

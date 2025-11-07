@@ -152,11 +152,22 @@ Scripts are in `scripts/` directory to keep package.json clean:
 - **Unified kernel picker**: Shows all available kernel sources when clicking "Select Kernel"
 - **Three kernel sources**:
   - Datalayer Platform (connects to cloud runtimes)
-  - Python Environments (coming soon - local Python kernels)
+  - Python Environments (local Python kernels via Python extension)
   - Existing Jupyter Server (connect to any running Jupyter server)
 - **Kernel Bridge**: Routes connections to appropriate handlers (webview or native)
 - **Runtime display**: Shows "Datalayer: {Runtime name}" in notebook toolbar
 - **Zero re-render**: Runtime changes use MutableServiceManager to prevent component unmount/remount
+
+### ⚡ Local Kernel Execution (January 2025)
+
+- **Native ZMQ Integration**: Direct kernel communication using @nteract/messaging and zeromq
+- **RawSocket Implementation**: WebSocket-like wrapper over ZMQ channels (shell, iopub, stdin, control)
+- **LocalKernelClient**: Manages kernel lifecycle (start, stop, restart, interrupt)
+- **LocalKernelProxy**: Simulates WebSocket connection for webview integration
+- **Session ID Translation**: Maps between kernel's session ID and JupyterLab's expected session ID
+- **Python Extension Integration**: Uses VS Code Python extension's environment picker
+- **LocalKernelServiceManager**: ServiceManager implementation for local kernels
+- **Network Proxy Routing**: Detects `local-kernel-*` URLs and routes to LocalKernelClient
 
 ## Configuration (Settings)
 
@@ -323,6 +334,12 @@ src/
 ├── kernel/                # Kernel communication
 │   └── clients/
 │       └── websocketKernelClient.ts # WebSocket kernel protocol client
+├── services/kernel/       # Local kernel integration
+│   ├── localKernelClient.ts           # Kernel lifecycle management
+│   ├── rawSocket.ts                   # ZMQ socket wrapper
+│   └── nativeKernelIntegration.ts     # Python extension integration
+├── services/network/
+│   └── localKernelProxy.ts            # WebSocket simulation for local kernels
 ├── utils/                 # Utility functions
 │   ├── dispose.ts               # Disposable utilities
 │   ├── webviewSecurity.ts       # CSP nonce generation
@@ -354,10 +371,15 @@ webview/
 │   ├── components/              # Themed components
 │   ├── mapping/                 # Color mappers
 │   └── providers/               # Theme providers
+├── hooks/                 # React hooks
+│   └── useRuntimeManager.ts     # Runtime selection and ServiceManager lifecycle
 └── services/              # Webview services
-    ├── messageHandler.ts        # Extension communication
-    ├── mockServiceManager.ts    # Development mock
-    └── serviceManager.ts        # JupyterLab service management
+    ├── messageHandler.ts            # Extension communication
+    ├── mockServiceManager.ts        # Development mock
+    ├── serviceManager.ts            # JupyterLab service management
+    ├── mutableServiceManager.ts     # Stable ServiceManager wrapper
+    ├── localKernelConnection.ts     # Local kernel connection protocol
+    └── localKernelServiceManager.ts # ServiceManager for local kernels
 ```
 
 ### Service Organization Rationale
@@ -604,6 +626,10 @@ const serviceManager = mutableServiceManager.createProxy();
 
 **Patches**: Changes maintained via patch-package in `patches/@datalayer+jupyter-lexical+1.0.6.patch`
 
+- ✅ **Local Kernel Execution** (January 2025) - Native Python kernels with ZMQ integration
+- ✅ **Python Extension Integration** - Seamless environment selection from Python extension
+- ✅ **LocalKernelServiceManager** - Full ServiceManager implementation for local kernels
+
 ## Current State Summary (January 2025)
 
 ### Version Information
@@ -625,13 +651,14 @@ const serviceManager = mutableServiceManager.createProxy();
 ### Key Capabilities
 
 1. **Authentication**: Token-based login with Datalayer platform
-2. **Jupyter Notebooks**: Edit `.ipynb` files with cloud runtimes
-3. **Lexical Documents**: Edit `.lexical` rich text files
-4. **Datalayer Spaces**: Browse and manage cloud documents in tree view
-5. **Runtime Management**: Create, terminate, and monitor cloud runtimes in tree view
-6. **Virtual File System**: `datalayer://` URIs for seamless document access
-7. **Real-time Collaboration**: Y.js-based sync for lexical documents
-8. **Theme Integration**: Complete VS Code theme matching
+2. **Jupyter Notebooks**: Edit `.ipynb` files with cloud runtimes or local Python kernels
+3. **Local Kernel Execution**: Native Python kernels via ZMQ with Python extension integration
+4. **Lexical Documents**: Edit `.lexical` rich text files
+5. **Datalayer Spaces**: Browse and manage cloud documents in tree view
+6. **Runtime Management**: Create, terminate, and monitor cloud runtimes in tree view
+7. **Virtual File System**: `datalayer://` URIs for seamless document access
+8. **Real-time Collaboration**: Y.js-based sync for lexical documents
+9. **Theme Integration**: Complete VS Code theme matching
 
 ### Known Limitations
 

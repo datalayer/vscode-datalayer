@@ -203,10 +203,39 @@ function NotebookEditorCore({
           break;
         }
 
+        case "local-kernel-connected": {
+          // Handle local kernel connection - bypass runtime/session creation
+          const { body } = message;
+          console.log(
+            `[NotebookEditor] Local kernel connected:`,
+            body?.kernelInfo,
+          );
+
+          // For local kernels, we MUST still set the runtime because the notebook
+          // component needs a serviceManager, but JupyterLab will handle the kernel
+          // connection directly via the LocalKernelProxy without going through
+          // the full session creation flow
+          if (body?.runtime) {
+            console.log(
+              `[NotebookEditor] Setting runtime for local kernel: ${body.runtime.ingress}`,
+            );
+            selectRuntime(body.runtime);
+            store.getState().setRuntime(body.runtime);
+          }
+          break;
+        }
+
         case "runtime-selected":
         case "kernel-selected": {
           const { body } = message;
+          console.log(
+            `[NotebookEditor] Received ${message.type}:`,
+            body?.runtime,
+          );
           if (body?.runtime) {
+            console.log(
+              `[NotebookEditor] Setting runtime with ingress: ${body.runtime.ingress}`,
+            );
             selectRuntime(body.runtime);
             store.getState().setRuntime(body.runtime);
           }

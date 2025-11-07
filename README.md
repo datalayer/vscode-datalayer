@@ -54,8 +54,9 @@
 **Jupyter Notebooks**
 
 - Full-featured notebook editing with syntax highlighting and IntelliSense
-- Execute on cloud GPUs/CPUs or local Python environments
-- Seamless kernel switching between local and remote runtimes
+- Execute on cloud GPUs/CPUs, local Python kernels, or remote Jupyter servers
+- Seamless kernel switching between cloud, local, and remote runtimes
+- Native ZMQ integration for local Python execution (no Jupyter server required)
 
 **Lexical Documents**
 
@@ -90,7 +91,8 @@
 ### 🎨 **Native VS Code Integration**
 
 - **Theme synchronization** - Documents automatically match your VS Code theme
-- **Unified kernel picker** - Access Datalayer cloud, local Python, and Jupyter servers
+- **Unified kernel picker** - Access Datalayer cloud runtimes, local Python environments (via Python extension), and existing Jupyter servers
+- **Native local execution** - Direct ZMQ kernel communication without Jupyter server
 - **Rich status indicators** - Connection status and runtime info in status bar
 - **Command palette integration** - All features accessible via `Ctrl+Shift+P`
 
