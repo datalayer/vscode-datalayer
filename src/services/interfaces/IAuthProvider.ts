@@ -42,8 +42,21 @@ export interface IAuthProvider {
   /**
    * Performs user login flow.
    * Should prompt for credentials and authenticate with platform.
+   * Displays method picker for browser or token authentication.
    */
   login(): Promise<void>;
+
+  /**
+   * Authenticate using browser-based OAuth flow.
+   * Opens browser for OAuth authentication with automatic token storage.
+   */
+  loginBrowser(): Promise<void>;
+
+  /**
+   * Authenticate using API token.
+   * Prompts for token and validates with platform.
+   */
+  loginToken(): Promise<void>;
 
   /**
    * Logs out the current user and clears authentication state.

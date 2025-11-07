@@ -20,6 +20,11 @@ import type {
   VSCodeAuthState,
 } from "../interfaces/IAuthProvider";
 import { BaseService } from "./baseService";
+import {
+  VSCodeAuthStorage,
+  KeyringAuthStorage,
+  MultiAuthStorage,
+} from "./authStorage";
 
 /**
  * SDK-based authentication provider for VS Code.
@@ -44,6 +49,7 @@ export class SDKAuthProvider extends BaseService implements IAuthProvider {
   readonly onAuthStateChanged = this._onAuthStateChanged.event;
 
   private static readonly TOKEN_SECRET_KEY = "datalayer.token";
+  private multiStorage: MultiAuthStorage;
 
   constructor(
     private sdk: DatalayerClient,
@@ -51,6 +57,12 @@ export class SDKAuthProvider extends BaseService implements IAuthProvider {
     logger: ILogger,
   ) {
     super("SDKAuthProvider", logger);
+
+    // Create multi-storage with VS Code SecretStorage as primary and keyring as fallback
+    const vscodeStorage = new VSCodeAuthStorage(context.secrets);
+    const keyringStorage = new KeyringAuthStorage();
+    this.multiStorage = new MultiAuthStorage(vscodeStorage, keyringStorage);
+
     this.logger.debug("SDKAuthProvider instance created", {
       contextId: context.extension.id,
       hasSDK: !!sdk,
@@ -69,16 +81,17 @@ export class SDKAuthProvider extends BaseService implements IAuthProvider {
   /**
    * Implementation of BaseService lifecycle initialization.
    * Verifies existing authentication with the platform.
+   * Uses multi-storage to discover tokens from VS Code SecretStorage or system keyring.
    */
   protected async onInitialize(): Promise<void> {
-    // Load token from secret storage
-    const storedToken = await this.context.secrets.get(
-      SDKAuthProvider.TOKEN_SECRET_KEY,
+    // Load token from multi-storage (VS Code SecretStorage -> keyring -> env vars)
+    const storedToken = await this.multiStorage.getToken(
+      this.sdk.getIamRunUrl(),
     );
 
     if (!storedToken) {
       this.logger.debug(
-        "No stored authentication token found in secret storage",
+        "No stored authentication token found in any storage location",
       );
       this._authState = {
         isAuthenticated: false,
@@ -89,8 +102,8 @@ export class SDKAuthProvider extends BaseService implements IAuthProvider {
       return;
     }
 
-    // Set token in SDK from secret storage
-    this.logger.debug("Loading token from secret storage");
+    // Set token in SDK from multi-storage
+    this.logger.debug("Loading token from multi-storage");
     await this.sdk.setToken(storedToken);
 
     try {
@@ -146,15 +159,116 @@ export class SDKAuthProvider extends BaseService implements IAuthProvider {
   }
 
   /**
-   * Prompts user for token and authenticates with the platform.
-   * Updates authentication state based on the result.
+   * Prompts user to select a login method and authenticates with the platform.
+   * Displays a quick pick menu to choose between browser OAuth or API token.
    */
   async login(): Promise<void> {
-    this.logger.info("Starting login process");
+    const method = await vscode.window.showQuickPick(
+      [
+        {
+          label: "$(globe) Login with Browser",
+          description: "OAuth via GitHub (recommended)",
+          value: "browser" as const,
+        },
+        {
+          label: "$(key) Login with API Token",
+          description: "Manual token entry",
+          value: "token" as const,
+        },
+      ],
+      {
+        placeHolder: "Select a login method",
+        title: "Datalayer Authentication",
+      },
+    );
+
+    if (!method) {
+      this.logger.debug("Login cancelled - no method selected");
+      return;
+    }
+
+    switch (method.value) {
+      case "browser":
+        await this.loginBrowser();
+        break;
+      case "token":
+        await this.loginToken();
+        break;
+    }
+  }
+
+  /**
+   * Login with browser OAuth flow using SDK's localhost server.
+   * Uses the cross-platform browser OAuth implementation from the SDK.
+   */
+  async loginBrowser(): Promise<void> {
+    this.logger.info("Starting browser OAuth login");
+
+    try {
+      // Use SDK's browser OAuth
+      const user = await this.logger.timeAsync(
+        "sdk_login_browser",
+        () => this.sdk.loginBrowser(),
+        { operation: "browser_login" },
+      );
+
+      // Get the token from SDK (it was set by loginBrowser)
+      const token = this.sdk.getToken();
+
+      if (!token) {
+        throw new Error("SDK login successful but token not set");
+      }
+
+      // Store token in multi-storage
+      await this.multiStorage.setToken(this.sdk.getIamRunUrl(), token);
+      this.logger.debug("Token stored in multi-storage");
+
+      this._authState = {
+        isAuthenticated: true,
+        user: user as UserDTO,
+        error: null,
+      };
+
+      this.logger.info("Browser OAuth login successful", {
+        userId: user.uid,
+        displayName: user.displayName,
+      });
+
+      this._onAuthStateChanged.fire(this._authState);
+
+      await vscode.window.showInformationMessage(
+        `Successfully logged in as ${user.displayName}`,
+      );
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : "Unknown login error";
+
+      this.logger.error("Browser OAuth login failed", error as Error, {
+        operation: "browser_login",
+      });
+
+      this._authState = {
+        isAuthenticated: false,
+        user: null,
+        error: errorMessage,
+      };
+
+      this._onAuthStateChanged.fire(this._authState);
+      await vscode.window.showErrorMessage(`Login failed: ${errorMessage}`);
+      throw error;
+    }
+  }
+
+  /**
+   * Login with API token.
+   * Prompts for token and validates with the platform.
+   */
+  async loginToken(): Promise<void> {
+    this.logger.info("Starting token login");
 
     const token = await this.promptForToken();
     if (!token) {
-      this.logger.debug("Login cancelled by user");
+      this.logger.debug("Token login cancelled by user");
       return;
     }
 
@@ -164,21 +278,16 @@ export class SDKAuthProvider extends BaseService implements IAuthProvider {
     });
 
     try {
-      // Set token in SDK
-      await this.logger.timeAsync("sdk_login", () => this.sdk.setToken(token), {
-        operation: "set_token",
-      });
-
-      // Verify token by fetching user
+      // Use SDK loginToken method
       const user = await this.logger.timeAsync(
-        "user_verification",
-        () => this.sdk.whoami(),
-        { operation: "verify_new_token" },
+        "sdk_login_token",
+        () => this.sdk.loginToken(token),
+        { operation: "token_login" },
       );
 
-      // Persist token to secret storage AFTER successful verification
-      await this.context.secrets.store(SDKAuthProvider.TOKEN_SECRET_KEY, token);
-      this.logger.debug("Token stored in secret storage");
+      // Persist token to multi-storage AFTER successful verification
+      await this.multiStorage.setToken(this.sdk.getIamRunUrl(), token);
+      this.logger.debug("Token stored in multi-storage");
 
       this._authState = {
         isAuthenticated: true,
@@ -234,9 +343,9 @@ export class SDKAuthProvider extends BaseService implements IAuthProvider {
         operation: "clear_server_session",
       });
 
-      // Delete token from secret storage
-      await this.context.secrets.delete(SDKAuthProvider.TOKEN_SECRET_KEY);
-      this.logger.debug("Token deleted from secret storage");
+      // Delete token from multi-storage
+      await this.multiStorage.deleteToken(this.sdk.getIamRunUrl());
+      this.logger.debug("Token deleted from multi-storage");
 
       this._authState = {
         isAuthenticated: false,

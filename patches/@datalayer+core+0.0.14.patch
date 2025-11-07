@@ -1,0 +1,2299 @@
+diff --git a/node_modules/@datalayer/core/lib/README.md b/node_modules/@datalayer/core/lib/README.md
+new file mode 100644
+index 0000000..911ff75
+--- /dev/null
++++ b/node_modules/@datalayer/core/lib/README.md
+@@ -0,0 +1,1021 @@
++# Datalayer Core - TypeScript/React Components
++
++This directory contains the comprehensive TypeScript/React frontend architecture for Datalayer Core. It provides a complete component library, state management, hooks, utilities, and API integration for building modern web applications on the Datalayer platform.
++
++## 📁 Directory Structure
++
++```
++src/
++├── api/                    # API layer and Jupyter integration
++├── components/             # React component library (70+ components)
++├── config/                 # Configuration utilities
++├── examples/              # Usage examples
++├── hooks/                 # Custom React hooks (25+ hooks)
++├── i18n/                  # Internationalization
++├── models/                # TypeScript type definitions (70+ models)
++├── routes/                # Routing configuration
++├── state/                 # Zustand state management
++├── stories/               # Storybook stories
++├── theme/                 # Theme and styling
++├── utils/                 # Utility functions (20+ utilities)
++└── mocks/                 # Testing mocks
++```
++
++## 🚀 Getting Started
++
++### Installation
++
++```bash
++npm install
++```
++
++### Development
++
++```bash
++# Start development server
++npm run dev
++
++# Run Storybook for component development
++npm run storybook
++
++# Run tests
++npm run test
++
++# Build for production
++npm run build
++```
++
++## 🧩 Components
++
++### UI Components
++
++#### Avatars
++
++```tsx
++import { BoringAvatar, UserProfileAvatar } from '@datalayer/core';
++
++// Generate unique avatars
++<BoringAvatar
++  size={40}
++  name="John Doe"
++  variant="marble"
++  colors={["#92A1C6", "#146A7C", "#F0AB3D"]}
++/>
++
++// User profile avatar with fallback
++<UserProfileAvatar
++  user={{ name: "John Doe", avatarUrl: "https://..." }}
++  size="large"
++/>
++```
++
++#### Buttons
++
++```tsx
++import {
++  LongActionButton,
++  DownloadCSVButton,
++  UploadButton
++} from '@datalayer/core';
++
++// Long-running action with loading state
++<LongActionButton
++  onClick={async () => await longRunningTask()}
++  loadingText="Processing..."
++  variant="primary"
++>
++  Start Analysis
++</LongActionButton>
++
++// CSV download functionality
++<DownloadCSVButton
++  data={[
++    { name: "John", age: 30 },
++    { name: "Jane", age: 25 }
++  ]}
++  filename="users.csv"
++/>
++
++// File upload with validation
++<UploadButton
++  accept=".csv,.json"
++  maxSize={10 * 1024 * 1024} // 10MB
++  onUpload={(files) => handleFiles(files)}
++  multiple
++>
++  Upload Files
++</UploadButton>
++```
++
++#### Display Components
++
++```tsx
++import {
++  CenteredSpinner,
++  DatalayerBox,
++  CodePreview,
++  Markdown
++} from '@datalayer/core';
++
++// Loading spinner
++<CenteredSpinner size="large" />
++
++// Branded container
++<DatalayerBox variant="elevated">
++  <h2>Dashboard Content</h2>
++</DatalayerBox>
++
++// Syntax-highlighted code
++<CodePreview
++  code={`
++    const hello = (name: string) => {
++      console.log(\`Hello, \${name}!\`);
++    };
++  `}
++  language="typescript"
++  showLineNumbers
++/>
++
++// Markdown rendering
++<Markdown content="# Hello World\nThis is **bold** text." />
++```
++
++### Data Visualization
++
++#### Charts (ECharts Integration)
++
++```tsx
++import { EChartsReact } from '@datalayer/core';
++
++const chartOptions = {
++  title: { text: 'Sample Chart' },
++  xAxis: { type: 'category', data: ['Mon', 'Tue', 'Wed'] },
++  yAxis: { type: 'value' },
++  series: [
++    {
++      data: [120, 200, 150],
++      type: 'line',
++    },
++  ],
++};
++
++<EChartsReact option={chartOptions} style={{ height: '400px' }} />;
++```
++
++#### Progress Components
++
++```tsx
++import {
++  ProgressBar,
++  ProgressRing,
++  ConsumptionBar,
++  CreditsIndicator
++} from '@datalayer/core';
++
++// Linear progress bar
++<ProgressBar value={75} max={100} label="Upload Progress" />
++
++// Circular progress ring
++<ProgressRing
++  value={60}
++  size={80}
++  strokeWidth={8}
++  color="#0066CC"
++/>
++
++// Resource consumption
++<ConsumptionBar
++  used={750}
++  total={1000}
++  unit="MB"
++  warningThreshold={0.8}
++/>
++
++// Credits display
++<CreditsIndicator
++  current={150}
++  total={500}
++  showUsage
++/>
++```
++
++### Jupyter Integration
++
++#### Notebook Components
++
++```tsx
++import {
++  JupyterNotebook,
++  JupyterNotebookToolbar,
++  RuntimePickerNotebook
++} from '@datalayer/core';
++
++// Full notebook viewer
++<JupyterNotebook
++  notebookId="notebook-123"
++  readonly={false}
++  showLineNumbers
++  theme="light"
++/>
++
++// Notebook toolbar
++<JupyterNotebookToolbar
++  notebook={notebookData}
++  onSave={handleSave}
++  onRun={handleRun}
++  onExport={handleExport}
++/>
++
++// Runtime selection for notebooks
++<RuntimePickerNotebook
++  currentRuntime="python-runtime-1"
++  onRuntimeChange={handleRuntimeChange}
++  availableRuntimes={runtimes}
++/>
++```
++
++#### Runtime Management
++
++```tsx
++import {
++  RuntimePickerBase,
++  RuntimeLauncherDialog,
++  RuntimeVariables,
++  RuntimeReservationControl
++} from '@datalayer/core';
++
++// Basic runtime picker
++<RuntimePickerBase
++  runtimes={availableRuntimes}
++  selectedRuntime={currentRuntime}
++  onSelect={setCurrentRuntime}
++/>
++
++// Runtime launcher modal
++<RuntimeLauncherDialog
++  isOpen={showLauncher}
++  onClose={() => setShowLauncher(false)}
++  onLaunch={handleRuntimeLaunch}
++  environments={environments}
++/>
++
++// Runtime variables inspector
++<RuntimeVariables
++  runtimeId="runtime-123"
++  variables={runtimeVariables}
++  onVariableUpdate={handleVariableUpdate}
++/>
++```
++
++### Navigation & Layout
++
++#### Navigation Bar
++
++```tsx
++import { SubdomainNavBar } from '@datalayer/core';
++
++<SubdomainNavBar
++  user={currentUser}
++  organization={currentOrg}
++  navigation={[
++    { label: 'Dashboard', href: '/dashboard' },
++    { label: 'Notebooks', href: '/notebooks' },
++    { label: 'Runtimes', href: '/runtimes' },
++  ]}
++  onSignOut={handleSignOut}
++/>;
++```
++
++#### Sub Navigation
++
++```tsx
++import { SubNav } from '@datalayer/core';
++
++<SubNav
++  items={[
++    { key: 'overview', label: 'Overview', href: '/overview' },
++    { key: 'settings', label: 'Settings', href: '/settings' },
++    { key: 'members', label: 'Members', href: '/members' },
++  ]}
++  activeKey="overview"
++/>;
++```
++
++### Forms & Inputs
++
++#### Context Selectors
++
++```tsx
++import { OrganizationSelect, SpaceSelect } from '@datalayer/core';
++
++// Organization selector
++<OrganizationSelect
++  organizations={userOrganizations}
++  selected={currentOrganization}
++  onSelect={setCurrentOrganization}
++/>
++
++// Space selector
++<SpaceSelect
++  spaces={availableSpaces}
++  selected={currentSpace}
++  onSelect={setCurrentSpace}
++  organization={currentOrganization}
++/>
++```
++
++### Storage & File Management
++
++```tsx
++import { ContentsBrowser, ContentsItems } from '@datalayer/core';
++
++// File browser component
++<ContentsBrowser
++  path="/notebooks"
++  onNavigate={handlePathChange}
++  onFileSelect={handleFileSelect}
++  allowUpload
++  allowNewFolder
++/>
++
++// File list component
++<ContentsItems
++  items={fileItems}
++  selectedItems={selectedFiles}
++  onSelectionChange={setSelectedFiles}
++  onItemAction={handleItemAction}
++/>
++```
++
++## 🎣 Custom Hooks
++
++### Authentication Hooks
++
++```tsx
++import { useUser, useIAM, useAuthorization } from '@datalayer/core';
++
++function UserProfile() {
++  const { user, loading, error } = useUser();
++  const { isAuthenticated, login, logout } = useIAM();
++  const { hasPermission } = useAuthorization();
++
++  if (loading) return <div>Loading...</div>;
++  if (!isAuthenticated) return <button onClick={login}>Login</button>;
++
++  return (
++    <div>
++      <h1>Welcome, {user?.name}</h1>
++      {hasPermission('admin') && <AdminPanel />}
++      <button onClick={logout}>Logout</button>
++    </div>
++  );
++}
++```
++
++### Platform Integration Hooks
++
++```tsx
++import { useDatalayer, useRuntimes, useNotebookAIAgent } from '@datalayer/core';
++
++function RuntimeDashboard() {
++  // Main Datalayer platform integration
++  const { client, isConnected } = useDatalayer();
++
++  // Runtime management
++  const {
++    runtimes,
++    loading,
++    createRuntime,
++    deleteRuntime,
++    startRuntime,
++    stopRuntime,
++  } = useRuntimes();
++
++  // AI agent for notebooks
++  const { agent, executeCode, getCompletion } = useNotebookAIAgent();
++
++  const handleCreateRuntime = async () => {
++    await createRuntime({
++      name: 'new-runtime',
++      environment: 'python-3.11',
++    });
++  };
++
++  return (
++    <div>
++      <h2>Runtimes ({runtimes.length})</h2>
++      <button onClick={handleCreateRuntime}>Create Runtime</button>
++      {runtimes.map(runtime => (
++        <div key={runtime.id}>
++          <span>
++            {runtime.name} - {runtime.status}
++          </span>
++          <button onClick={() => startRuntime(runtime.id)}>Start</button>
++          <button onClick={() => stopRuntime(runtime.id)}>Stop</button>
++        </div>
++      ))}
++    </div>
++  );
++}
++```
++
++### UI/UX Hooks
++
++```tsx
++import {
++  useToast,
++  useBackdrop,
++  useScreenshot,
++  useUpload,
++  useVisibilityObserver,
++} from '@datalayer/core';
++
++function InteractiveComponent() {
++  const { showToast } = useToast();
++  const { showBackdrop, hideBackdrop } = useBackdrop();
++  const { takeScreenshot } = useScreenshot();
++  const { uploadFiles, uploading, progress } = useUpload();
++  const { ref, isVisible } = useVisibilityObserver();
++
++  const handleAction = async () => {
++    showBackdrop('Processing...');
++    try {
++      await someAsyncAction();
++      showToast('Success!', 'success');
++    } catch (error) {
++      showToast('Error occurred', 'error');
++    } finally {
++      hideBackdrop();
++    }
++  };
++
++  const handleScreenshot = async () => {
++    const screenshot = await takeScreenshot(ref.current);
++    // Use screenshot data
++  };
++
++  return (
++    <div ref={ref}>
++      <button onClick={handleAction}>Perform Action</button>
++      <button onClick={handleScreenshot}>Take Screenshot</button>
++      {isVisible && <div>Component is visible!</div>}
++
++      <input type="file" onChange={e => uploadFiles(e.target.files)} multiple />
++      {uploading && <div>Upload progress: {progress}%</div>}
++    </div>
++  );
++}
++```
++
++### Cache and Performance Hooks
++
++```tsx
++import { useCache, useWindowSize } from '@datalayer/core';
++
++function CachedDataComponent() {
++  const { width, height } = useWindowSize();
++
++  const { data, loading, error, refresh } = useCache(
++    'expensive-data',
++    async () => {
++      const response = await fetch('/api/expensive-data');
++      return response.json();
++    },
++    { ttl: 5 * 60 * 1000 }, // 5 minutes cache
++  );
++
++  // Responsive behavior based on window size
++  const isMobile = width < 768;
++
++  return (
++    <div className={isMobile ? 'mobile-layout' : 'desktop-layout'}>
++      {loading ? (
++        <div>Loading...</div>
++      ) : error ? (
++        <div>Error: {error.message}</div>
++      ) : (
++        <div>
++          <pre>{JSON.stringify(data, null, 2)}</pre>
++          <button onClick={refresh}>Refresh</button>
++        </div>
++      )}
++    </div>
++  );
++}
++```
++
++## 🗂️ State Management (Zustand)
++
++### Core State
++
++```tsx
++import { useCoreState } from '@datalayer/core';
++
++function AppHeader() {
++  const {
++    theme,
++    setTheme,
++    sidebarOpen,
++    setSidebarOpen,
++    notifications,
++    addNotification,
++  } = useCoreState();
++
++  return (
++    <header>
++      <button onClick={() => setSidebarOpen(!sidebarOpen)}>
++        Toggle Sidebar
++      </button>
++      <button onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}>
++        Toggle Theme
++      </button>
++      <div className="notifications">
++        {notifications.map(notification => (
++          <div key={notification.id}>{notification.message}</div>
++        ))}
++      </div>
++    </header>
++  );
++}
++```
++
++### Organization & Space State
++
++```tsx
++import { useOrganizationState, useSpaceState } from '@datalayer/core';
++
++function OrganizationDashboard() {
++  const {
++    currentOrganization,
++    setCurrentOrganization,
++    organizations,
++    fetchOrganizations,
++  } = useOrganizationState();
++
++  const { spaces, currentSpace, setCurrentSpace, createSpace, deleteSpace } =
++    useSpaceState();
++
++  useEffect(() => {
++    fetchOrganizations();
++  }, []);
++
++  const handleCreateSpace = async () => {
++    await createSpace({
++      name: 'New Space',
++      description: 'A new workspace',
++      organizationId: currentOrganization?.id,
++    });
++  };
++
++  return (
++    <div>
++      <h1>{currentOrganization?.name}</h1>
++      <div>
++        <h2>Spaces</h2>
++        <button onClick={handleCreateSpace}>Create Space</button>
++        {spaces.map(space => (
++          <div key={space.id}>
++            <span>{space.name}</span>
++            <button onClick={() => setCurrentSpace(space)}>Select</button>
++            <button onClick={() => deleteSpace(space.id)}>Delete</button>
++          </div>
++        ))}
++      </div>
++    </div>
++  );
++}
++```
++
++### Runtime State
++
++```tsx
++import { useRuntimesState } from '@datalayer/core';
++
++function RuntimeManager() {
++  const {
++    runtimes,
++    loading,
++    error,
++    selectedRuntime,
++    setSelectedRuntime,
++    createRuntime,
++    updateRuntime,
++    deleteRuntime,
++    fetchRuntimes,
++  } = useRuntimesState();
++
++  const handleRuntimeAction = async (runtimeId: string, action: string) => {
++    try {
++      await updateRuntime(runtimeId, { action });
++    } catch (error) {
++      console.error('Runtime action failed:', error);
++    }
++  };
++
++  return (
++    <div>
++      <h2>Runtime Management</h2>
++      {loading && <div>Loading runtimes...</div>}
++      {error && <div>Error: {error}</div>}
++
++      {runtimes.map(runtime => (
++        <div key={runtime.id} className="runtime-card">
++          <h3>{runtime.name}</h3>
++          <p>Status: {runtime.status}</p>
++          <p>Environment: {runtime.environment}</p>
++
++          <div className="runtime-actions">
++            <button onClick={() => handleRuntimeAction(runtime.id, 'start')}>
++              Start
++            </button>
++            <button onClick={() => handleRuntimeAction(runtime.id, 'stop')}>
++              Stop
++            </button>
++            <button onClick={() => handleRuntimeAction(runtime.id, 'restart')}>
++              Restart
++            </button>
++            <button onClick={() => deleteRuntime(runtime.id)}>Delete</button>
++          </div>
++        </div>
++      ))}
++    </div>
++  );
++}
++```
++
++## 🛠️ Utilities
++
++### Array Utilities
++
++```tsx
++import {
++  uniqueBy,
++  groupBy,
++  sortBy,
++  chunk,
++  flatten,
++} from '@datalayer/core/utils';
++
++// Remove duplicates by property
++const uniqueUsers = uniqueBy(users, 'id');
++
++// Group items by property
++const usersByRole = groupBy(users, 'role');
++
++// Sort with multiple criteria
++const sortedUsers = sortBy(users, ['lastName', 'firstName']);
++
++// Split array into chunks
++const batches = chunk(largeArray, 10);
++
++// Flatten nested arrays
++const flatList = flatten(nestedArrays);
++```
++
++### Date Utilities
++
++```tsx
++import {
++  formatRelativeTime,
++  formatDate,
++  parseDate,
++  addDays,
++  isToday,
++} from '@datalayer/core/utils';
++
++// Relative time formatting
++const relativeTime = formatRelativeTime(new Date('2023-01-01'));
++// "2 months ago"
++
++// Date formatting
++const formattedDate = formatDate(new Date(), 'yyyy-MM-dd');
++// "2023-03-15"
++
++// Date parsing
++const parsedDate = parseDate('2023-03-15');
++
++// Date arithmetic
++const futureDate = addDays(new Date(), 7);
++
++// Date checks
++const checkToday = isToday(someDate);
++```
++
++### File Utilities
++
++```tsx
++import {
++  downloadFile,
++  readFileAsText,
++  validateFileType,
++  formatFileSize,
++  getFileExtension,
++} from '@datalayer/core/utils';
++
++// Download file
++downloadFile(data, 'report.csv', 'text/csv');
++
++// Read file content
++const content = await readFileAsText(file);
++
++// Validate file type
++const isValidImage = validateFileType(file, ['image/png', 'image/jpeg']);
++
++// Format file size
++const sizeString = formatFileSize(file.size);
++// "2.5 MB"
++
++// Get file extension
++const extension = getFileExtension(file.name);
++// "png"
++```
++
++### String Utilities
++
++```tsx
++import {
++  capitalize,
++  camelCase,
++  kebabCase,
++  truncate,
++  stripHtml,
++  generateSlug,
++} from '@datalayer/core/utils';
++
++// String transformations
++const title = capitalize('hello world');
++// "Hello world"
++
++const camelCased = camelCase('hello-world-test');
++// "helloWorldTest"
++
++const kebabCased = kebabCase('HelloWorldTest');
++// "hello-world-test"
++
++// String manipulation
++const truncated = truncate('Long text here...', 10);
++// "Long text..."
++
++const plainText = stripHtml('<p>Hello <strong>world</strong></p>');
++// "Hello world"
++
++const slug = generateSlug('Hello World! 123');
++// "hello-world-123"
++```
++
++### Number Utilities
++
++```tsx
++import {
++  formatNumber,
++  formatCurrency,
++  formatPercentage,
++  clamp,
++  randomBetween,
++} from '@datalayer/core/utils';
++
++// Number formatting
++const formattedNum = formatNumber(1234567);
++// "1,234,567"
++
++const currency = formatCurrency(99.99, 'USD');
++// "$99.99"
++
++const percentage = formatPercentage(0.756, 2);
++// "75.60%"
++
++// Number manipulation
++const clamped = clamp(15, 0, 10);
++// 10
++
++const random = randomBetween(1, 100);
++// Random number between 1 and 100
++```
++
++## 🎨 Theme & Styling
++
++### Theme Provider
++
++```tsx
++import { DatalayerThemeProvider } from '@datalayer/core';
++
++function App() {
++  return (
++    <DatalayerThemeProvider theme="light">
++      <YourAppContent />
++    </DatalayerThemeProvider>
++  );
++}
++```
++
++### Theme Configuration
++
++```tsx
++import { createDatalayerTheme } from '@datalayer/core';
++
++const customTheme = createDatalayerTheme({
++  palette: {
++    primary: {
++      main: '#1976d2',
++      light: '#42a5f5',
++      dark: '#1565c0',
++    },
++    secondary: {
++      main: '#dc004e',
++    },
++  },
++  typography: {
++    fontFamily: '"Roboto", "Helvetica", "Arial", sans-serif',
++  },
++  spacing: 8,
++  breakpoints: {
++    xs: 0,
++    sm: 600,
++    md: 960,
++    lg: 1280,
++    xl: 1920,
++  },
++});
++```
++
++## 🧪 Testing
++
++### Component Testing
++
++```tsx
++import { render, screen, fireEvent } from '@testing-library/react';
++import { MyComponent } from './MyComponent';
++
++describe('MyComponent', () => {
++  it('renders correctly', () => {
++    render(<MyComponent title="Test" />);
++    expect(screen.getByText('Test')).toBeInTheDocument();
++  });
++
++  it('handles click events', () => {
++    const handleClick = jest.fn();
++    render(<MyComponent onClick={handleClick} />);
++
++    fireEvent.click(screen.getByRole('button'));
++    expect(handleClick).toHaveBeenCalled();
++  });
++});
++```
++
++### Hook Testing
++
++```tsx
++import { renderHook, act } from '@testing-library/react';
++import { useCounter } from './useCounter';
++
++describe('useCounter', () => {
++  it('increments counter', () => {
++    const { result } = renderHook(() => useCounter(0));
++
++    act(() => {
++      result.current.increment();
++    });
++
++    expect(result.current.count).toBe(1);
++  });
++});
++```
++
++## 📚 Storybook
++
++### Component Stories
++
++```tsx
++import type { Meta, StoryObj } from '@storybook/react';
++import { Button } from './Button';
++
++const meta: Meta<typeof Button> = {
++  title: 'Components/Button',
++  component: Button,
++  parameters: {
++    layout: 'centered',
++  },
++  tags: ['autodocs'],
++};
++
++export default meta;
++type Story = StoryObj<typeof meta>;
++
++export const Primary: Story = {
++  args: {
++    variant: 'primary',
++    children: 'Button',
++  },
++};
++
++export const Secondary: Story = {
++  args: {
++    variant: 'secondary',
++    children: 'Button',
++  },
++};
++```
++
++## 🔧 Configuration
++
++### Development Configuration
++
++```typescript
++// vite.config.ts
++import { defineConfig } from 'vite';
++import react from '@vitejs/plugin-react';
++
++export default defineConfig({
++  plugins: [react()],
++  resolve: {
++    alias: {
++      '@': resolve(__dirname, 'src'),
++    },
++  },
++});
++```
++
++### TypeScript Configuration
++
++```json
++// tsconfig.json
++{
++  "compilerOptions": {
++    "target": "ES2020",
++    "lib": ["ES2020", "DOM", "DOM.Iterable"],
++    "module": "ESNext",
++    "skipLibCheck": true,
++    "moduleResolution": "bundler",
++    "allowImportingTsExtensions": true,
++    "resolveJsonModule": true,
++    "isolatedModules": true,
++    "noEmit": true,
++    "jsx": "react-jsx",
++    "strict": true,
++    "noUnusedLocals": true,
++    "noUnusedParameters": true,
++    "noFallthroughCasesInSwitch": true
++  },
++  "include": ["src"],
++  "references": [{ "path": "./tsconfig.node.json" }]
++}
++```
++
++## 📦 Building & Distribution
++
++### Build Process
++
++```bash
++# Build library
++npm run build:lib
++
++# Build application
++npm run build
++
++# Generate TypeDoc documentation
++npm run typedoc
++```
++
++### Package Exports
++
++The package exports components, hooks, utilities, and types:
++
++```typescript
++import {
++  // Components
++  DatalayerBox,
++  UserProfileAvatar,
++  JupyterNotebook,
++
++  // Hooks
++  useUser,
++  useRuntimes,
++  useDatalayer,
++
++  // Utilities
++  formatDate,
++  downloadFile,
++  generateSlug,
++
++  // Types
++  User,
++  Runtime,
++  Organization,
++} from '@datalayer/core';
++```
++
++## 🤝 Contributing
++
++1. Follow the existing code structure and patterns
++2. Add comprehensive TypeScript types
++3. Include Storybook stories for new components
++4. Write tests for all functionality
++5. Update documentation as needed
++
++## 📄 License
++
++This project is licensed under the Modified BSD License.
++
++---
++
++Built with ❤️ using React, TypeScript, and modern web technologies.
+diff --git a/node_modules/@datalayer/core/lib/client/auth/browserAuth.d.ts b/node_modules/@datalayer/core/lib/client/auth/browserAuth.d.ts
+new file mode 100644
+index 0000000..7f7e6ff
+--- /dev/null
++++ b/node_modules/@datalayer/core/lib/client/auth/browserAuth.d.ts
+@@ -0,0 +1,41 @@
++import type { UserDTO } from '../../models/UserDTO';
++/**
++ * Configuration for browser-based OAuth login
++ */
++export interface BrowserLoginConfig {
++    /** IAM service URL */
++    iamUrl: string;
++    /** Port for local HTTP server (default: random available port) */
++    port?: number;
++    /** Timeout in milliseconds (default: 5 minutes) */
++    timeout?: number;
++    /** Callback to open browser URL (platform-specific) */
++    openBrowser?: (url: string) => Promise<void> | void;
++}
++/**
++ * Result from browser OAuth login
++ */
++export interface BrowserLoginResult {
++    /** Authentication token */
++    token: string;
++    /** User information */
++    user: UserDTO;
++}
++/**
++ * Perform browser-based OAuth login
++ *
++ * @param config - Configuration for browser login
++ * @returns Promise resolving to login result with token and user
++ * @throws Error if authentication fails or times out
++ *
++ * @example
++ * ```typescript
++ * const result = await loginWithBrowser({
++ *   iamUrl: 'https://iam.datalayer.run',
++ *   port: 8765,
++ * });
++ * console.log(`Logged in as ${result.user.displayName}`);
++ * console.log(`Token: ${result.token}`);
++ * ```
++ */
++export declare function loginWithBrowser(config: BrowserLoginConfig): Promise<BrowserLoginResult>;
+diff --git a/node_modules/@datalayer/core/lib/client/auth/browserAuth.js b/node_modules/@datalayer/core/lib/client/auth/browserAuth.js
+new file mode 100644
+index 0000000..aa03342
+--- /dev/null
++++ b/node_modules/@datalayer/core/lib/client/auth/browserAuth.js
+@@ -0,0 +1,275 @@
++/*
++ * Copyright (c) 2023-2025 Datalayer, Inc.
++ * Distributed under the terms of the Modified BSD License.
++ */
++/**
++ * Cross-platform browser-based OAuth authentication.
++ * Works in Node.js environments (CLI, VS Code extension, etc.)
++ *
++ * @module client/auth/browserAuth
++ */
++import * as http from 'http';
++/**
++ * HTML page served to handle OAuth callback
++ */
++const OAUTH_CALLBACK_PAGE = `
++<!DOCTYPE html>
++<html>
++<head>
++  <title>Datalayer Authentication</title>
++  <style>
++    body {
++      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
++      display: flex;
++      align-items: center;
++      justify-content: center;
++      height: 100vh;
++      margin: 0;
++      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
++    }
++    .container {
++      background: white;
++      padding: 2rem;
++      border-radius: 8px;
++      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
++      text-align: center;
++      max-width: 400px;
++    }
++    .spinner {
++      border: 3px solid #f3f3f3;
++      border-top: 3px solid #667eea;
++      border-radius: 50%;
++      width: 40px;
++      height: 40px;
++      animation: spin 1s linear infinite;
++      margin: 20px auto;
++    }
++    @keyframes spin {
++      0% { transform: rotate(0deg); }
++      100% { transform: rotate(360deg); }
++    }
++    .success {
++      color: #10b981;
++      font-size: 48px;
++      margin: 20px 0;
++    }
++    .error {
++      color: #ef4444;
++    }
++  </style>
++</head>
++<body>
++  <div class="container">
++    <h1>Datalayer Authentication</h1>
++    <div id="status">
++      <div class="spinner"></div>
++      <p>Processing authentication...</p>
++    </div>
++  </div>
++  <script>
++    const params = new URLSearchParams(window.location.search);
++    const user = params.get('user');
++    const token = params.get('token');
++    const error = params.get('error');
++
++    if (error) {
++      document.getElementById('status').innerHTML = \`
++        <div class="error">✗</div>
++        <p class="error">Authentication failed: \${error}</p>
++        <p><small>You can close this window</small></p>
++      \`;
++    } else if (user && token) {
++      // Send token back to local server
++      fetch('/callback', {
++        method: 'POST',
++        headers: {
++          'Content-Type': 'application/json'
++        },
++        body: JSON.stringify({
++          user: JSON.parse(decodeURIComponent(user)),
++          token: token
++        })
++      })
++      .then(() => {
++        const userData = JSON.parse(decodeURIComponent(user));
++        document.getElementById('status').innerHTML = \`
++          <div class="success">✓</div>
++          <p>Successfully logged in as <strong>\${userData.displayName || userData.handle_s}</strong></p>
++          <p><small>You can close this window</small></p>
++        \`;
++        // Auto-close after 2 seconds
++        setTimeout(() => window.close(), 2000);
++      })
++      .catch(err => {
++        document.getElementById('status').innerHTML = \`
++          <div class="error">✗</div>
++          <p class="error">Failed to complete authentication</p>
++          <p><small>You can close this window</small></p>
++        \`;
++      });
++    } else {
++      // Initial page - redirect to OAuth
++      const iamUrl = '{{IAM_URL}}';
++      const port = '{{PORT}}';
++      const redirectUri = \`http://localhost:\${port}/oauth/callback\`;
++      const authUrl = \`\${iamUrl}/api/iam/v1/auth/github?redirect_uri=\${encodeURIComponent(redirectUri)}\`;
++      window.location.href = authUrl;
++    }
++  </script>
++</body>
++</html>
++`;
++/**
++ * Find an available port for the HTTP server
++ */
++function findAvailablePort() {
++    return new Promise((resolve, reject) => {
++        const server = http.createServer();
++        server.listen(0, () => {
++            const address = server.address();
++            if (address && typeof address !== 'string') {
++                const port = address.port;
++                server.close(() => resolve(port));
++            }
++            else {
++                server.close(() => reject(new Error('Failed to find available port')));
++            }
++        });
++        server.on('error', reject);
++    });
++}
++/**
++ * Default browser opener using platform-specific commands
++ */
++async function defaultOpenBrowser(url) {
++    const { exec } = await import('child_process');
++    const platform = process.platform;
++    let command;
++    if (platform === 'darwin') {
++        command = `open "${url}"`;
++    }
++    else if (platform === 'win32') {
++        command = `start "" "${url}"`;
++    }
++    else {
++        // Linux and others
++        command = `xdg-open "${url}"`;
++    }
++    return new Promise((resolve, reject) => {
++        exec(command, error => {
++            if (error) {
++                reject(new Error(`Failed to open browser: ${error.message}`));
++            }
++            else {
++                resolve();
++            }
++        });
++    });
++}
++/**
++ * Perform browser-based OAuth login
++ *
++ * @param config - Configuration for browser login
++ * @returns Promise resolving to login result with token and user
++ * @throws Error if authentication fails or times out
++ *
++ * @example
++ * ```typescript
++ * const result = await loginWithBrowser({
++ *   iamUrl: 'https://iam.datalayer.run',
++ *   port: 8765,
++ * });
++ * console.log(`Logged in as ${result.user.displayName}`);
++ * console.log(`Token: ${result.token}`);
++ * ```
++ */
++export async function loginWithBrowser(config) {
++    const { iamUrl, port: requestedPort, timeout = 5 * 60 * 1000, // 5 minutes default
++    openBrowser = defaultOpenBrowser, } = config;
++    // Find available port if not specified
++    const port = requestedPort || (await findAvailablePort());
++    return new Promise((resolve, reject) => {
++        let resolved = false;
++        // Create HTTP server
++        const server = http.createServer((req, res) => {
++            const url = new URL(req.url || '', `http://localhost:${port}`);
++            if (url.pathname === '/' || url.pathname === '/login') {
++                // Serve initial page that redirects to OAuth
++                res.writeHead(200, { 'Content-Type': 'text/html' });
++                const html = OAUTH_CALLBACK_PAGE.replace('{{IAM_URL}}', iamUrl).replace('{{PORT}}', port.toString());
++                res.end(html);
++            }
++            else if (url.pathname === '/oauth/callback') {
++                // OAuth callback - serve same page which will POST token back
++                res.writeHead(200, { 'Content-Type': 'text/html' });
++                const html = OAUTH_CALLBACK_PAGE.replace('{{IAM_URL}}', iamUrl).replace('{{PORT}}', port.toString());
++                res.end(html);
++            }
++            else if (url.pathname === '/callback' && req.method === 'POST') {
++                // Receive token from browser
++                let body = '';
++                req.on('data', chunk => {
++                    body += chunk.toString();
++                });
++                req.on('end', () => {
++                    try {
++                        const data = JSON.parse(body);
++                        const { user, token } = data;
++                        if (!token || !user) {
++                            throw new Error('Invalid callback data');
++                        }
++                        // Send success response
++                        res.writeHead(200, { 'Content-Type': 'application/json' });
++                        res.end(JSON.stringify({ success: true }));
++                        // Resolve the promise
++                        if (!resolved) {
++                            resolved = true;
++                            clearTimeout(timeoutHandle);
++                            server.close();
++                            resolve({ token, user });
++                        }
++                    }
++                    catch (error) {
++                        res.writeHead(400, { 'Content-Type': 'application/json' });
++                        res.end(JSON.stringify({
++                            error: error instanceof Error ? error.message : 'Invalid request',
++                        }));
++                    }
++                });
++            }
++            else {
++                // 404 for other paths
++                res.writeHead(404);
++                res.end('Not Found');
++            }
++        });
++        // Set up timeout
++        const timeoutHandle = setTimeout(() => {
++            if (!resolved) {
++                resolved = true;
++                server.close();
++                reject(new Error('Authentication timeout - no response received'));
++            }
++        }, timeout);
++        // Start server
++        server.listen(port, () => {
++            const loginUrl = `http://localhost:${port}/login`;
++            // eslint-disable-next-line no-console
++            console.log(`\n🔐 Opening browser for authentication...\n📍 URL: ${loginUrl}\n`);
++            // Open browser (ensure we handle promise correctly)
++            Promise.resolve(openBrowser(loginUrl)).catch(error => {
++                console.error(`Failed to open browser automatically: ${error.message}`);
++                // eslint-disable-next-line no-console
++                console.log(`\nPlease open this URL manually: ${loginUrl}\n`);
++            });
++        });
++        // Handle server errors
++        server.on('error', error => {
++            if (!resolved) {
++                resolved = true;
++                clearTimeout(timeoutHandle);
++                reject(error);
++            }
++        });
++    });
++}
+diff --git a/node_modules/@datalayer/core/lib/client/base.d.ts b/node_modules/@datalayer/core/lib/client/base.d.ts
+index 6ec2033..f2dcb31 100644
+--- a/node_modules/@datalayer/core/lib/client/base.d.ts
++++ b/node_modules/@datalayer/core/lib/client/base.d.ts
+@@ -12,6 +12,8 @@ export interface SDKHandlers {
+ export interface DatalayerClientConfig {
+     /** Authentication token for API requests */
+     token?: string;
++    /** Auto-discover token from environment variables (DATALAYER_API_KEY, DATALAYER_EXTERNAL_TOKEN) */
++    autoDiscover?: boolean;
+     /** URL for the IAM service */
+     iamRunUrl?: string;
+     /** URL for the Runtimes service */
+diff --git a/node_modules/@datalayer/core/lib/client/base.js b/node_modules/@datalayer/core/lib/client/base.js
+index 72418a7..b1274fe 100644
+--- a/node_modules/@datalayer/core/lib/client/base.js
++++ b/node_modules/@datalayer/core/lib/client/base.js
+@@ -30,7 +30,17 @@ export class DatalayerClientBase {
+         this.runtimesRunUrl =
+             config.runtimesRunUrl || DEFAULT_SERVICE_URLS.RUNTIMES;
+         this.spacerRunUrl = config.spacerRunUrl || DEFAULT_SERVICE_URLS.SPACER;
+-        this.token = config.token;
++        // Auto-discover token from environment if enabled
++        let token = config.token;
++        if (!token && config.autoDiscover !== false) {
++            // Default to auto-discover unless explicitly disabled
++            token =
++                (typeof process !== 'undefined' && process.env?.DATALAYER_API_KEY) ||
++                    (typeof process !== 'undefined' &&
++                        process.env?.DATALAYER_EXTERNAL_TOKEN) ||
++                    undefined;
++        }
++        this.token = token;
+         this.handlers = config.handlers;
+     }
+     /**
+diff --git a/node_modules/@datalayer/core/lib/client/index.d.ts b/node_modules/@datalayer/core/lib/client/index.d.ts
+index 0b25e5d..5bff268 100644
+--- a/node_modules/@datalayer/core/lib/client/index.d.ts
++++ b/node_modules/@datalayer/core/lib/client/index.d.ts
+@@ -73,6 +73,9 @@ export interface DatalayerClient {
+     setToken(token: string): Promise<void>;
+     whoami(): Promise<UserDTO>;
+     login(token: string): Promise<UserDTO>;
++    loginBrowser(redirectUri?: string, port?: number): Promise<UserDTO>;
++    loginPassword(handle: string, password: string): Promise<UserDTO>;
++    loginToken(token: string): Promise<UserDTO>;
+     logout(): Promise<void>;
+     getCredits(): Promise<CreditsDTO>;
+     calculateMaxRuntimeMinutes(availableCredits: number, burningRate: number): number;
+diff --git a/node_modules/@datalayer/core/lib/client/mixins/IAMMixin.d.ts b/node_modules/@datalayer/core/lib/client/mixins/IAMMixin.d.ts
+index 6444fc6..d09441e 100644
+--- a/node_modules/@datalayer/core/lib/client/mixins/IAMMixin.d.ts
++++ b/node_modules/@datalayer/core/lib/client/mixins/IAMMixin.d.ts
+@@ -18,6 +18,73 @@ export declare function IAMMixin<TBase extends Constructor>(Base: TBase): {
+          * @throws Error if token is invalid
+          */
+         login(token: string): Promise<UserDTO>;
++        /**
++         * Login using browser OAuth flow (GitHub).
++         * Opens a local HTTP server and browser for cross-platform OAuth authentication.
++         *
++         * @param _redirectUri - Not used in base implementation (kept for interface compatibility)
++         * @param port - Optional port for local HTTP server (default: random available port)
++         * @returns Promise resolving to authenticated user
++         * @throws Error if authentication fails or times out
++         *
++         * @remarks
++         * This implementation works cross-platform in Node.js environments:
++         * - Starts local HTTP server on available port
++         * - Opens system browser to OAuth URL
++         * - Waits for callback with token
++         * - Returns authenticated user
++         *
++         * Platform-specific integrations (like VS Code) can override this to use custom redirect URIs.
++         *
++         * @example
++         * ```typescript
++         * const user = await client.loginBrowser();
++         * console.log(`Logged in as ${user.displayName}`);
++         * ```
++         *
++         * @example VS Code override:
++         * ```typescript
++         * class VSCodeDatalayerClient extends DatalayerClient {
++         *   async loginBrowser(redirectUri: string): Promise<UserDTO> {
++         *     // Use vscode:// URI scheme for callback
++         *     return super.loginBrowser(redirectUri);
++         *   }
++         * }
++         * ```
++         */
++        loginBrowser(_redirectUri?: string, port?: number): Promise<UserDTO>;
++        /**
++         * Login with username/email and password.
++         * Authenticates with Datalayer platform using credentials.
++         *
++         * @param handle - Username or email address
++         * @param password - User password
++         * @returns User object on successful login
++         * @throws Error if credentials are invalid or request fails
++         *
++         * @example
++         * ```typescript
++         * const user = await client.loginPassword('user@example.com', 'mypassword');
++         * console.log(`Logged in as ${user.displayName}`);
++         * ```
++         */
++        loginPassword(handle: string, password: string): Promise<UserDTO>;
++        /**
++         * Login with API token.
++         * Validates token with whoami endpoint and sets it in the client.
++         * This is an alias for the login() method for naming consistency.
++         *
++         * @param token - API authentication token
++         * @returns User object on successful login
++         * @throws Error if token is invalid
++         *
++         * @example
++         * ```typescript
++         * const user = await client.loginToken('dla_abc123...');
++         * console.log(`Logged in as ${user.displayName}`);
++         * ```
++         */
++        loginToken(token: string): Promise<UserDTO>;
+         /** Log out the current user. */
+         logout(): Promise<void>;
+         /**
+diff --git a/node_modules/@datalayer/core/lib/client/mixins/IAMMixin.js b/node_modules/@datalayer/core/lib/client/mixins/IAMMixin.js
+index cbd157a..34dc76e 100644
+--- a/node_modules/@datalayer/core/lib/client/mixins/IAMMixin.js
++++ b/node_modules/@datalayer/core/lib/client/mixins/IAMMixin.js
+@@ -9,6 +9,7 @@
+ import * as authentication from '../../api/iam/authentication';
+ import * as profile from '../../api/iam/profile';
+ import * as usage from '../../api/iam/usage';
++import { loginWithBrowser } from '../auth/browserAuth';
+ import { UserDTO } from '../../models/UserDTO';
+ import { CreditsDTO } from '../../models/CreditsDTO';
+ import { HealthCheck } from '../../models/HealthCheck';
+@@ -76,12 +77,147 @@ export function IAMMixin(Base) {
+                 throw new Error(`Invalid token: ${error instanceof Error ? error.message : 'Unknown error'}`);
+             }
+         }
++        /**
++         * Login using browser OAuth flow (GitHub).
++         * Opens a local HTTP server and browser for cross-platform OAuth authentication.
++         *
++         * @param _redirectUri - Not used in base implementation (kept for interface compatibility)
++         * @param port - Optional port for local HTTP server (default: random available port)
++         * @returns Promise resolving to authenticated user
++         * @throws Error if authentication fails or times out
++         *
++         * @remarks
++         * This implementation works cross-platform in Node.js environments:
++         * - Starts local HTTP server on available port
++         * - Opens system browser to OAuth URL
++         * - Waits for callback with token
++         * - Returns authenticated user
++         *
++         * Platform-specific integrations (like VS Code) can override this to use custom redirect URIs.
++         *
++         * @example
++         * ```typescript
++         * const user = await client.loginBrowser();
++         * console.log(`Logged in as ${user.displayName}`);
++         * ```
++         *
++         * @example VS Code override:
++         * ```typescript
++         * class VSCodeDatalayerClient extends DatalayerClient {
++         *   async loginBrowser(redirectUri: string): Promise<UserDTO> {
++         *     // Use vscode:// URI scheme for callback
++         *     return super.loginBrowser(redirectUri);
++         *   }
++         * }
++         * ```
++         */
++        async loginBrowser(_redirectUri, port) {
++            // eslint-disable-next-line @typescript-eslint/no-explicit-any
++            const iamUrl = this.getIamRunUrl();
++            try {
++                // Use cross-platform browser auth
++                const result = await loginWithBrowser({
++                    iamUrl,
++                    port,
++                });
++                // Set token in SDK
++                // eslint-disable-next-line @typescript-eslint/no-explicit-any
++                await this.setToken(result.token);
++                // Return user (already in correct format from OAuth)
++                // eslint-disable-next-line @typescript-eslint/no-explicit-any
++                this.currentUserCache = new UserDTO(result.user, this);
++                return this.currentUserCache;
++            }
++            catch (error) {
++                // Clear token on failure
++                // eslint-disable-next-line @typescript-eslint/no-explicit-any
++                await this.setToken('');
++                throw new Error(`Browser login failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
++            }
++        }
++        /**
++         * Login with username/email and password.
++         * Authenticates with Datalayer platform using credentials.
++         *
++         * @param handle - Username or email address
++         * @param password - User password
++         * @returns User object on successful login
++         * @throws Error if credentials are invalid or request fails
++         *
++         * @example
++         * ```typescript
++         * const user = await client.loginPassword('user@example.com', 'mypassword');
++         * console.log(`Logged in as ${user.displayName}`);
++         * ```
++         */
++        async loginPassword(handle, password) {
++            // eslint-disable-next-line @typescript-eslint/no-explicit-any
++            const iamRunUrl = this.getIamRunUrl();
++            try {
++                // Call login API with credentials
++                const response = await authentication.login({ handle, password }, iamRunUrl);
++                if (!response.token) {
++                    throw new Error('Login response did not contain a token');
++                }
++                // Set token in SDK
++                // eslint-disable-next-line @typescript-eslint/no-explicit-any
++                await this.setToken(response.token);
++                // Return user from login response or fetch via whoami
++                if (response.user) {
++                    // Transform user data to UserDTO
++                    const userData = {
++                        id: response.user.id,
++                        uid: response.user.uid,
++                        handle_s: response.user.handle_s || response.user.handle,
++                        email_s: response.user.email_s || response.user.email,
++                        first_name_t: response.user.first_name_t || response.user.first_name || '',
++                        last_name_t: response.user.last_name_t || response.user.last_name || '',
++                        avatar_url_s: response.user.avatar_url_s || response.user.avatar_url,
++                    };
++                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
++                    this.currentUserCache = new UserDTO(userData, this);
++                    return this.currentUserCache;
++                }
++                else {
++                    // Fallback: verify token with whoami
++                    return await this.whoami();
++                }
++            }
++            catch (error) {
++                // Clear token on failure
++                // eslint-disable-next-line @typescript-eslint/no-explicit-any
++                await this.setToken('');
++                throw new Error(`Password login failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
++            }
++        }
++        /**
++         * Login with API token.
++         * Validates token with whoami endpoint and sets it in the client.
++         * This is an alias for the login() method for naming consistency.
++         *
++         * @param token - API authentication token
++         * @returns User object on successful login
++         * @throws Error if token is invalid
++         *
++         * @example
++         * ```typescript
++         * const user = await client.loginToken('dla_abc123...');
++         * console.log(`Logged in as ${user.displayName}`);
++         * ```
++         */
++        async loginToken(token) {
++            // Delegate to existing login() method
++            return this.login(token);
++        }
+         /** Log out the current user. */
+         async logout() {
++            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+             const token = this.getToken();
++            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+             const iamRunUrl = this.getIamRunUrl();
+             await authentication.logout(token, iamRunUrl);
+             // Clear the token from the SDK and cached user
++            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+             this.setToken('');
+             this.currentUserCache = undefined;
+         }
+@@ -90,7 +226,9 @@ export function IAMMixin(Base) {
+          * @returns Credits model instance
+          */
+         async getCredits() {
++            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+             const token = this.getToken();
++            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+             const iamRunUrl = this.getIamRunUrl();
+             const response = await usage.getCredits(token, iamRunUrl);
+             if (!response || !response.credits) {
+@@ -162,7 +300,9 @@ export function IAMMixin(Base) {
+                     responseTime,
+                     errors,
+                     timestamp: new Date(),
+-                }, this);
++                }, 
++                // eslint-disable-next-line @typescript-eslint/no-explicit-any
++                this);
+             }
+             catch (error) {
+                 const responseTime = Date.now() - startTime;
+@@ -174,7 +314,9 @@ export function IAMMixin(Base) {
+                     responseTime,
+                     errors,
+                     timestamp: new Date(),
+-                }, this);
++                }, 
++                // eslint-disable-next-line @typescript-eslint/no-explicit-any
++                this);
+             }
+         }
+     };
+diff --git a/node_modules/@datalayer/core/lib/components/display/VisuallyHidden.d.ts b/node_modules/@datalayer/core/lib/components/display/VisuallyHidden.d.ts
+index 9814d57..23d68bc 100644
+--- a/node_modules/@datalayer/core/lib/components/display/VisuallyHidden.d.ts
++++ b/node_modules/@datalayer/core/lib/components/display/VisuallyHidden.d.ts
+@@ -1,5 +1,4 @@
+-import { SxProp } from '@primer/react';
+ export interface IVisuallyHiddenProps {
+     isVisible?: boolean;
+ }
+-export declare const VisuallyHidden: import("styled-components").StyledComponent<"span", any, IVisuallyHiddenProps & SxProp, never>;
++export declare const VisuallyHidden: any;
+diff --git a/node_modules/@datalayer/core/lib/components/subnav/SubNav.d.ts b/node_modules/@datalayer/core/lib/components/subnav/SubNav.d.ts
+index c21cad7..9e3947b 100644
+--- a/node_modules/@datalayer/core/lib/components/subnav/SubNav.d.ts
++++ b/node_modules/@datalayer/core/lib/components/subnav/SubNav.d.ts
+@@ -68,7 +68,7 @@ export declare const SubNav: React.NamedExoticComponent<{
+     readonly type: ({ id, children, className, "data-testid": testId, fullWidth, hasShadow, }: SubNavProps) => import("react/jsx-runtime").JSX.Element;
+ } & {
+     Heading: ({ href, children, className, "data-testid": testID, ...props }: SubNavHeadingProps) => import("react/jsx-runtime").JSX.Element;
+-    Link: React.ForwardRefExoticComponent<Omit<SubNavLinkProps, "ref"> & React.RefAttributes<HTMLDivElement | HTMLAnchorElement>>;
++    Link: React.ForwardRefExoticComponent<Omit<SubNavLinkProps, "ref"> & React.RefAttributes<HTMLAnchorElement | HTMLDivElement>>;
+     Action: typeof _SubNavAction;
+     SubMenu: typeof SubMenu;
+     testIds: {
+diff --git a/node_modules/@datalayer/core/lib/examples/README.md b/node_modules/@datalayer/core/lib/examples/README.md
+new file mode 100644
+index 0000000..416da27
+--- /dev/null
++++ b/node_modules/@datalayer/core/lib/examples/README.md
+@@ -0,0 +1,209 @@
++# Datalayer Core TypeScript/React Examples
++
++This directory contains interactive examples demonstrating how to use Datalayer Core's TypeScript/React components and services.
++
++## Getting Started
++
++### Prerequisites
++
++1. **Datalayer API Token**: Get your token from [Datalayer Platform](https://datalayer.app/)
++2. **Node.js**: Version 18+ recommended
++3. **npm**: Comes with Node.js
++
++### Setup
++
++1. Install dependencies:
++
++```bash
++npm install
++```
++
++2. Configure your environment:
++
++```bash
++# Create .env file with your token
++echo "VITE_DATALAYER_API_KEY=your-token-here" > .env
++```
++
++3. Start the examples server:
++
++```bash
++npm run example
++```
++
++4. Open http://localhost:3000/ in your browser
++
++## Available Examples
++
++### DatalayerNotebookExample
++
++**File**: `DatalayerNotebookExample.tsx`
++
++Demonstrates full integration with Datalayer services:
++
++- **DatalayerServiceManager**: Connects to Datalayer infrastructure for kernel management
++- **DatalayerCollaborationProvider**: Enables real-time collaboration
++- **Runtime creation**: Automatically provisions compute resources
++- **Graceful fallback**: Works with limited functionality when credentials are missing
++
++Key features:
++
++- Toggle collaboration on/off
++- Switch between read-only and edit modes
++- Automatic kernel provisioning with Datalayer credits
++- WebSocket connections for real-time updates
++
++### NotebookExample
++
++**File**: `NotebookExample.tsx`
++
++Basic Jupyter notebook implementation:
++
++- Standard notebook interface
++- Local or remote kernel support
++- Cell execution and output display
++- Markdown and code cell support
++
++### CellExample
++
++**File**: `CellExample.tsx`
++
++Individual code cell execution:
++
++- Standalone cell component
++- Syntax highlighting
++- Output rendering
++- Error handling
++
++## Configuration
++
++### Selecting an Example
++
++Edit `vite.examples.config.ts` to choose which example to run:
++
++```typescript
++const EXAMPLE =
++  // 'CellExample';
++  'DatalayerNotebookExample'; // Current selection
++// 'NotebookExample';
++```
++
++### Environment Variables
++
++The examples support these environment variables:
++
++- `VITE_DATALAYER_API_KEY`: Your Datalayer authentication token (required for full functionality)
++- `EXAMPLE`: Override the selected example via command line
++
++### Vite Configuration
++
++The `vite.examples.config.ts` file includes:
++
++- Proxy configuration for CORS handling
++- Environment variable injection
++- Hot module replacement
++- TypeScript/React support
++
++## Architecture
++
++### Services
++
++**DatalayerServiceManager** (`src/services/DatalayerServiceManager.ts`)
++
++- Creates and manages Jupyter service connections
++- Handles runtime provisioning via Datalayer API
++- Manages authentication and token handling
++- Returns configured ServiceManager for notebook use
++
++**DatalayerCollaborationProvider** (`src/collaboration/DatalayerCollaborationProvider.ts`)
++
++- Implements real-time collaboration using WebSockets
++- Manages shared document state
++- Handles user presence and cursors
++- Integrates with Jupyter's collaboration framework
++
++### State Management
++
++Uses Zustand for state management:
++
++- `DatalayerState`: Main application state
++- `datalayerConfig`: Configuration including tokens and URLs
++- `serviceManager`: Active service connections
++
++### API Integration
++
++The examples use the Datalayer Runtime API:
++
++- Endpoint: `/api/runtimes/v1/runtimes`
++- Authentication: Bearer token in Authorization header
++- Creates compute runtimes with specified resources
++- Returns ingress URLs for kernel connections
++
++## Troubleshooting
++
++### CORS Issues
++
++The Vite dev server includes a proxy configuration to handle CORS:
++
++```javascript
++proxy: {
++  '/api': {
++    target: 'https://prod1.datalayer.run',
++    changeOrigin: true,
++    secure: true,
++  },
++}
++```
++
++### Missing Token
++
++If you see "Datalayer configuration is missing" warning:
++
++1. Check your `.env` file has `VITE_DATALAYER_API_KEY` set
++2. Restart the dev server after adding the token
++3. Verify the token is valid at [Datalayer Platform](https://datalayer.app/)
++
++### Server Errors
++
++If you get 500 errors from the API:
++
++- Check the Datalayer platform status
++- Verify your token has sufficient permissions
++- Ensure you have available credits
++- Try a different environment (e.g., `python-cpu-env`)
++
++## Development
++
++### Adding a New Example
++
++1. Create a new component in `src/examples/`
++2. Import and register it in `main.tsx`
++3. Add to the example selector in `vite.examples.config.ts`
++4. Update this README with documentation
++
++### Testing
++
++Run the test suite:
++
++```bash
++npm run test
++```
++
++Type checking:
++
++```bash
++npm run type-check
++```
++
++Linting:
++
++```bash
++npm run lint
++```
++
++## Resources
++
++- [Datalayer Documentation](https://docs.datalayer.app/)
++- [Jupyter React Components](https://jupyter-react.datalayer.tech/)
++- [TypeScript API Reference](https://core.datalayer.tech/typescript/)
++- [Platform API Reference](https://prod1.datalayer.run/api/runtimes/v1/ui/)
+diff --git a/node_modules/@datalayer/core/lib/models/PageTag.d.ts b/node_modules/@datalayer/core/lib/models/PageTag.d.ts
+index d98c76b..6659cdb 100644
+--- a/node_modules/@datalayer/core/lib/models/PageTag.d.ts
++++ b/node_modules/@datalayer/core/lib/models/PageTag.d.ts
+@@ -15,5 +15,5 @@ export type PageTag = {
+ export declare const PAGE_TAGE_NONE: PageTag;
+ export declare const PAGE_TAGS: PageTag[];
+ export declare const PAGE_TAGS_BY_NAME_MAP: Map<PageTagName | undefined, PageTag>;
+-export declare const PAGE_TAGS_BY_COLOR_MAP: Map<"blue" | "coral" | "gray" | "green" | "indigo" | "lime" | "orange" | "pink" | "purple" | "red" | "teal" | "yellow" | "default" | "lemon", PageTag>;
++export declare const PAGE_TAGS_BY_COLOR_MAP: Map<"default" | "yellow" | "blue" | "coral" | "green" | "gray" | "indigo" | "lemon" | "lime" | "orange" | "pink" | "purple" | "red" | "teal", PageTag>;
+ export {};
+diff --git a/node_modules/@datalayer/core/lib/stories/Configure.mdx b/node_modules/@datalayer/core/lib/stories/Configure.mdx
+new file mode 100644
+index 0000000..55c21a8
+--- /dev/null
++++ b/node_modules/@datalayer/core/lib/stories/Configure.mdx
+@@ -0,0 +1,364 @@
++import { Meta } from "@storybook/addon-docs/blocks";
++
++import Github from "./assets/github.svg";
++import Discord from "./assets/discord.svg";
++import Youtube from "./assets/youtube.svg";
++import Tutorials from "./assets/tutorials.svg";
++import Styling from "./assets/styling.png";
++import Context from "./assets/context.png";
++import Assets from "./assets/assets.png";
++import Docs from "./assets/docs.png";
++import Share from "./assets/share.png";
++import FigmaPlugin from "./assets/figma-plugin.png";
++import Testing from "./assets/testing.png";
++import Accessibility from "./assets/accessibility.png";
++import Theming from "./assets/theming.png";
++import AddonLibrary from "./assets/addon-library.png";
++
++export const RightArrow = () => <svg 
++    viewBox="0 0 14 14" 
++    width="8px" 
++    height="14px" 
++    style={{ 
++      marginLeft: '4px',
++      display: 'inline-block',
++      shapeRendering: 'inherit',
++      verticalAlign: 'middle',
++      fill: 'currentColor',
++      'path fill': 'currentColor'
++    }}
++>
++  <path d="m11.1 7.35-5.5 5.5a.5.5 0 0 1-.7-.7L10.04 7 4.9 1.85a.5.5 0 1 1 .7-.7l5.5 5.5c.2.2.2.5 0 .7Z" />
++</svg>
++
++<Meta title="Configure your project" />
++
++<div className="sb-container">
++  <div className='sb-section-title'>
++    # Configure your project
++
++    Because Storybook works separately from your app, you'll need to configure it for your specific stack and setup. Below, explore guides for configuring Storybook with popular frameworks and tools. If you get stuck, learn how you can ask for help from our community.
++  </div>
++  <div className="sb-section">
++    <div className="sb-section-item">
++      <img
++        src={Styling}
++        alt="A wall of logos representing different styling technologies"
++      />
++      <h4 className="sb-section-item-heading">Add styling and CSS</h4>
++      <p className="sb-section-item-paragraph">Like with web applications, there are many ways to include CSS within Storybook. Learn more about setting up styling within Storybook.</p>
++      <a
++        href="https://storybook.js.org/docs/configure/styling-and-css/?renderer=react"
++        target="_blank"
++      >Learn more<RightArrow /></a>
++    </div>
++    <div className="sb-section-item">
++      <img
++        src={Context}
++        alt="An abstraction representing the composition of data for a component"
++      />
++      <h4 className="sb-section-item-heading">Provide context and mocking</h4>
++      <p className="sb-section-item-paragraph">Often when a story doesn't render, it's because your component is expecting a specific environment or context (like a theme provider) to be available.</p>
++      <a
++        href="https://storybook.js.org/docs/writing-stories/decorators/?renderer=react#context-for-mocking"
++        target="_blank"
++      >Learn more<RightArrow /></a>
++    </div>
++    <div className="sb-section-item">
++      <img src={Assets} alt="A representation of typography and image assets" />
++      <div>
++        <h4 className="sb-section-item-heading">Load assets and resources</h4>
++        <p className="sb-section-item-paragraph">To link static files (like fonts) to your projects and stories, use the
++        `staticDirs` configuration option to specify folders to load when
++        starting Storybook.</p>
++        <a
++          href="https://storybook.js.org/docs/configure/images-and-assets/?renderer=react"
++          target="_blank"
++        >Learn more<RightArrow /></a>
++      </div>
++    </div>
++  </div>
++</div>
++<div className="sb-container">
++  <div className='sb-section-title'>
++    # Do more with Storybook
++
++    Now that you know the basics, let's explore other parts of Storybook that will improve your experience. This list is just to get you started. You can customise Storybook in many ways to fit your needs.
++  </div>
++
++  <div className="sb-section">
++    <div className="sb-features-grid">
++      <div className="sb-grid-item">
++        <img src={Docs} alt="A screenshot showing the autodocs tag being set, pointing a docs page being generated" />
++        <h4 className="sb-section-item-heading">Autodocs</h4>
++        <p className="sb-section-item-paragraph">Auto-generate living,
++          interactive reference documentation from your components and stories.</p>
++        <a
++          href="https://storybook.js.org/docs/writing-docs/autodocs/?renderer=react"
++          target="_blank"
++        >Learn more<RightArrow /></a>
++      </div>
++      <div className="sb-grid-item">
++        <img src={Share} alt="A browser window showing a Storybook being published to a chromatic.com URL" />
++        <h4 className="sb-section-item-heading">Publish to Chromatic</h4>
++        <p className="sb-section-item-paragraph">Publish your Storybook to review and collaborate with your entire team.</p>
++        <a
++          href="https://storybook.js.org/docs/sharing/publish-storybook/?renderer=react#publish-storybook-with-chromatic"
++          target="_blank"
++        >Learn more<RightArrow /></a>
++      </div>
++      <div className="sb-grid-item">
++        <img src={FigmaPlugin} alt="Windows showing the Storybook plugin in Figma" />
++        <h4 className="sb-section-item-heading">Figma Plugin</h4>
++        <p className="sb-section-item-paragraph">Embed your stories into Figma to cross-reference the design and live
++          implementation in one place.</p>
++        <a
++          href="https://storybook.js.org/docs/sharing/design-integrations/?renderer=react#embed-storybook-in-figma-with-the-plugin"
++          target="_blank"
++        >Learn more<RightArrow /></a>
++      </div>
++      <div className="sb-grid-item">
++        <img src={Testing} alt="Screenshot of tests passing and failing" />
++        <h4 className="sb-section-item-heading">Testing</h4>
++        <p className="sb-section-item-paragraph">Use stories to test a component in all its variations, no matter how
++          complex.</p>
++        <a
++          href="https://storybook.js.org/docs/writing-tests/?renderer=react"
++          target="_blank"
++        >Learn more<RightArrow /></a>
++      </div>
++      <div className="sb-grid-item">
++        <img src={Accessibility} alt="Screenshot of accessibility tests passing and failing" />
++        <h4 className="sb-section-item-heading">Accessibility</h4>
++        <p className="sb-section-item-paragraph">Automatically test your components for a11y issues as you develop.</p>
++        <a
++          href="https://storybook.js.org/docs/writing-tests/accessibility-testing/?renderer=react"
++          target="_blank"
++        >Learn more<RightArrow /></a>
++      </div>
++      <div className="sb-grid-item">
++        <img src={Theming} alt="Screenshot of Storybook in light and dark mode" />
++        <h4 className="sb-section-item-heading">Theming</h4>
++        <p className="sb-section-item-paragraph">Theme Storybook's UI to personalize it to your project.</p>
++        <a
++          href="https://storybook.js.org/docs/configure/theming/?renderer=react"
++          target="_blank"
++        >Learn more<RightArrow /></a>
++      </div>
++    </div>
++  </div>
++</div>
++<div className='sb-addon'>
++  <div className='sb-addon-text'>
++    <h4>Addons</h4>
++    <p className="sb-section-item-paragraph">Integrate your tools with Storybook to connect workflows.</p>
++    <a
++        href="https://storybook.js.org/addons/"
++        target="_blank"
++      >Discover all addons<RightArrow /></a>
++  </div>
++  <div className='sb-addon-img'>
++    <img src={AddonLibrary} alt="Integrate your tools with Storybook to connect workflows." />
++  </div>
++</div>
++
++<div className="sb-section sb-socials">
++    <div className="sb-section-item">
++      <img src={Github} alt="Github logo" className="sb-explore-image"/>
++      Join our contributors building the future of UI development.
++
++      <a
++        href="https://github.com/storybookjs/storybook"
++        target="_blank"
++      >Star on GitHub<RightArrow /></a>
++    </div>
++    <div className="sb-section-item">
++      <img src={Discord} alt="Discord logo" className="sb-explore-image"/>
++      <div>
++        Get support and chat with frontend developers.
++
++        <a
++          href="https://discord.gg/storybook"
++          target="_blank"
++        >Join Discord server<RightArrow /></a>
++      </div>
++    </div>
++    <div className="sb-section-item">
++      <img src={Youtube} alt="Youtube logo" className="sb-explore-image"/>
++      <div>
++        Watch tutorials, feature previews and interviews.
++
++        <a
++          href="https://www.youtube.com/@chromaticui"
++          target="_blank"
++        >Watch on YouTube<RightArrow /></a>
++      </div>
++    </div>
++    <div className="sb-section-item">
++      <img src={Tutorials} alt="A book" className="sb-explore-image"/>
++      <p>Follow guided walkthroughs on for key workflows.</p>
++
++      <a
++          href="https://storybook.js.org/tutorials/"
++          target="_blank"
++        >Discover tutorials<RightArrow /></a>
++    </div>
++</div>
++
++<style>
++  {`
++  .sb-container {
++    margin-bottom: 48px;
++  }
++
++  .sb-section {
++    width: 100%;
++    display: flex;
++    flex-direction: row;
++    gap: 20px;
++  }
++
++  img {
++    object-fit: cover;
++  }
++
++  .sb-section-title {
++    margin-bottom: 32px;
++  }
++
++  .sb-section a:not(h1 a, h2 a, h3 a) {
++    font-size: 14px;
++  }
++
++  .sb-section-item, .sb-grid-item {
++    flex: 1;
++    display: flex;
++    flex-direction: column;
++  }
++
++  .sb-section-item-heading {
++    padding-top: 20px !important;
++    padding-bottom: 5px !important;
++    margin: 0 !important;
++  }
++  .sb-section-item-paragraph {
++    margin: 0;
++    padding-bottom: 10px;
++  }
++
++  .sb-chevron {
++    margin-left: 5px;
++  }
++
++  .sb-features-grid {
++    display: grid;
++    grid-template-columns: repeat(2, 1fr);
++    grid-gap: 32px 20px;
++  }
++
++  .sb-socials {
++    display: grid;
++    grid-template-columns: repeat(4, 1fr);
++  }
++
++  .sb-socials p {
++    margin-bottom: 10px;
++  }
++
++  .sb-explore-image {
++    max-height: 32px;
++    align-self: flex-start;
++  }
++
++  .sb-addon {
++    width: 100%;
++    display: flex;
++    align-items: center;
++    position: relative;
++    background-color: #EEF3F8;
++    border-radius: 5px;
++    border: 1px solid rgba(0, 0, 0, 0.05);
++    background: #EEF3F8;
++    height: 180px;
++    margin-bottom: 48px;
++    overflow: hidden;
++  }
++
++  .sb-addon-text {
++    padding-left: 48px;
++    max-width: 240px;
++  }
++
++  .sb-addon-text h4 {
++    padding-top: 0px;
++  }
++
++  .sb-addon-img {
++    position: absolute;
++    left: 345px;
++    top: 0;
++    height: 100%;
++    width: 200%;
++    overflow: hidden;
++  }
++
++  .sb-addon-img img {
++    width: 650px;
++    transform: rotate(-15deg);
++    margin-left: 40px;
++    margin-top: -72px;
++    box-shadow: 0 0 1px rgba(255, 255, 255, 0);
++    backface-visibility: hidden;
++  }
++
++  @media screen and (max-width: 800px) {
++    .sb-addon-img {
++      left: 300px;
++    }
++  }
++
++  @media screen and (max-width: 600px) {
++    .sb-section {
++      flex-direction: column;
++    }
++
++    .sb-features-grid {
++      grid-template-columns: repeat(1, 1fr);
++    }
++
++    .sb-socials {
++      grid-template-columns: repeat(2, 1fr);
++    }
++
++    .sb-addon {
++      height: 280px;
++      align-items: flex-start;
++      padding-top: 32px;
++      overflow: hidden;
++    }
++
++    .sb-addon-text {
++      padding-left: 24px;
++    }
++
++    .sb-addon-img {
++      right: 0;
++      left: 0;
++      top: 130px;
++      bottom: 0;
++      overflow: hidden;
++      height: auto;
++      width: 124%;
++    }
++
++    .sb-addon-img img {
++      width: 1200px;
++      transform: rotate(-12deg);
++      margin-left: 0;
++      margin-top: 48px;
++      margin-bottom: -40px;
++      margin-left: -24px;
++    }
++  }
++  `}
++</style>
+diff --git a/node_modules/@datalayer/core/lib/stories/assets/avif-test-image.avif b/node_modules/@datalayer/core/lib/stories/assets/avif-test-image.avif
+new file mode 100644
+index 0000000..530709b
+Binary files /dev/null and b/node_modules/@datalayer/core/lib/stories/assets/avif-test-image.avif differ
