@@ -278,21 +278,34 @@
         "icon": "$(info)"
       }
     ],
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "datalayer",
+          "title": "Datalayer",
+          "icon": "images/datalayer-sidebar-icon.svg"
+        }
+      ]
+    },
     "views": {
-      "explorer": [
+      "datalayer": [
         {
           "id": "datalayerSpaces",
-          "name": "Datalayer Spaces",
-          "icon": "$(menu)",
-          "contextualTitle": "Datalayer Spaces",
-          "when": "true"
+          "name": "Spaces",
+          "icon": "$(cloud)",
+          "contextualTitle": "Datalayer Spaces"
         },
         {
           "id": "datalayerRuntimes",
-          "name": "Datalayer Runtimes",
+          "name": "Runtimes",
           "icon": "$(vm)",
-          "contextualTitle": "Datalayer Runtimes",
-          "when": "true"
+          "contextualTitle": "Datalayer Runtimes"
+        },
+        {
+          "id": "datalayerSnapshots",
+          "name": "Snapshots",
+          "icon": "$(archive)",
+          "contextualTitle": "Datalayer Snapshots"
         }
       ]
     },
@@ -418,6 +431,11 @@
           "command": "datalayer.runtimes.terminateAll",
           "when": "view == datalayerRuntimes",
           "group": "navigation@3"
+        },
+        {
+          "command": "datalayer.snapshots.refresh",
+          "when": "view == datalayerSnapshots",
+          "group": "navigation@1"
         }
       ],
       "view/item/context": [
@@ -493,13 +511,13 @@
         },
         {
           "command": "datalayer.snapshots.restore",
-          "when": "view == datalayerRuntimes && viewItem == snapshot",
+          "when": "view == datalayerSnapshots && viewItem == snapshot",
           "group": "1_restore"
         },
         {
           "command": "datalayer.snapshots.delete",
-          "when": "view == datalayerRuntimes && viewItem == snapshot",
-          "group": "3_delete"
+          "when": "view == datalayerSnapshots && viewItem == snapshot",
+          "group": "2_delete"
         }
       ],
       "explorer/context": [

@@ -26,12 +26,12 @@ import {
 } from "./services/bridges/documentBridge";
 import { DatalayerFileSystemProvider } from "./providers/documentsFileSystemProvider";
 import { RuntimesTreeProvider } from "./providers/runtimesTreeProvider";
+import { SnapshotsTreeProvider } from "./providers/snapshotsTreeProvider";
 
 // Global service container instance
 let services: ServiceContainer | undefined;
-
-// Global runtimes tree provider for refreshing
 let runtimesTreeProvider: RuntimesTreeProvider | undefined;
+let snapshotsTreeProvider: SnapshotsTreeProvider | undefined;
 
 /**
  * Get the global service container instance.
@@ -128,6 +128,20 @@ export async function activate(
     );
     activationTimer.checkpoint("runtimes_tree_created");
 
+    // Create snapshots tree provider
+    snapshotsTreeProvider = new SnapshotsTreeProvider(
+      services.authProvider as SDKAuthProvider,
+    );
+    context.subscriptions.push(
+      vscode.window.createTreeView("datalayerSnapshots", {
+        treeDataProvider: snapshotsTreeProvider,
+      }),
+    );
+    activationTimer.checkpoint("snapshots_tree_created");
+
+    // Open Datalayer sidebar on first run
+    await openSidebarOnFirstRun(context, logger);
+
     // Subscribe to runtime creation events from controller manager to refresh tree
     context.subscriptions.push(
       ui.controllerManager.onRuntimeCreated(() => {
@@ -152,6 +166,7 @@ export async function activate(
         spacesTreeProvider: ui.spacesTreeProvider,
         controllerManager: ui.controllerManager,
         runtimesTreeProvider: runtimesTreeProvider,
+        snapshotsTreeProvider: snapshotsTreeProvider,
       },
       updateAuthState,
     );
@@ -218,6 +233,60 @@ export async function activate(
  */
 export function refreshRuntimesTree(): void {
   runtimesTreeProvider?.refresh();
+}
+
+/**
+ * Opens the Datalayer sidebar on first run and moves it to visible Activity Bar.
+ * Only runs once per installation.
+ *
+ * @param context - Extension context for storing state
+ * @param logger - Logger instance for tracking
+ */
+async function openSidebarOnFirstRun(
+  context: vscode.ExtensionContext,
+  logger: ILogger,
+): Promise<void> {
+  const SIDEBAR_OPENED_KEY = "datalayer.sidebarOpenedOnFirstRun";
+
+  // Check if we've already opened the sidebar on first run
+  const hasOpenedSidebar = context.globalState.get<boolean>(
+    SIDEBAR_OPENED_KEY,
+    false,
+  );
+
+  if (!hasOpenedSidebar) {
+    try {
+      // Move the Datalayer icon from overflow menu to visible Activity Bar
+      const config = vscode.workspace.getConfiguration();
+      const currentPinnedViews = config.get<string[]>(
+        "workbench.activityBar.pinnedViewlets",
+        [],
+      );
+
+      // Add Datalayer view container to pinned views if not already there
+      const datalayerViewId = "workbench.view.extension.datalayer";
+      if (!currentPinnedViews.includes(datalayerViewId)) {
+        const updatedPinnedViews = [...currentPinnedViews, datalayerViewId];
+        await config.update(
+          "workbench.activityBar.pinnedViewlets",
+          updatedPinnedViews,
+          vscode.ConfigurationTarget.Global,
+        );
+        logger.info("Pinned Datalayer icon to Activity Bar");
+      }
+
+      // Focus on the Datalayer view container (opens the sidebar)
+      await vscode.commands.executeCommand(datalayerViewId);
+      logger.info("Opened Datalayer sidebar on first run");
+
+      // Mark that we've opened the sidebar
+      await context.globalState.update(SIDEBAR_OPENED_KEY, true);
+    } catch (error) {
+      logger.warn("Failed to open Datalayer sidebar on first run", {
+        error: error instanceof Error ? error.message : String(error),
+      });
+    }
+  }
 }
 
 /**
