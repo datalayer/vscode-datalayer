@@ -97,7 +97,7 @@
     "react-dom": "18.3.1",
     "typestyle": "^2.0.4",
     "unique-names-generator": "^4.7.1",
-    "uuid": "^8.3.2",
+    "uuid": "^13.0.0",
     "ws": "^8.18.1",
     "y-websocket": "3.0.0",
     "yjs": "^13.6.18",
