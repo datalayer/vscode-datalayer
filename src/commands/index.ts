@@ -20,10 +20,13 @@ import { registerSnapshotCommands } from "./snapshots";
 import { registerInternalCommands, getConnectedRuntime } from "./internal";
 import { registerCreateCommands } from "./create";
 import { registerThemeCommands } from "./theme";
+import { registerOutlineCommands } from "./outline";
 import { SDKAuthProvider } from "../services/core/authProvider";
 import { DocumentBridge } from "../services/bridges/documentBridge";
 import { SpacesTreeProvider } from "../providers/spacesTreeProvider";
 import { RuntimesTreeProvider } from "../providers/runtimesTreeProvider";
+import { SnapshotsTreeProvider } from "../providers/snapshotsTreeProvider";
+import { OutlineTreeProvider } from "../providers/outlineTreeProvider";
 import { SmartDynamicControllerManager } from "../providers/smartDynamicControllerManager";
 
 // Re-export internal command helpers for use by providers
@@ -40,6 +43,8 @@ export interface CommandServices {
   /** Controller manager for native notebook controller integration */
   controllerManager: SmartDynamicControllerManager;
   runtimesTreeProvider: RuntimesTreeProvider;
+  snapshotsTreeProvider: SnapshotsTreeProvider;
+  outlineTreeProvider: OutlineTreeProvider;
 }
 
 /**
@@ -78,11 +83,18 @@ export function registerAllCommands(
   );
 
   // Register snapshot management commands
-  registerSnapshotCommands(context, services.runtimesTreeProvider);
+  registerSnapshotCommands(
+    context,
+    services.snapshotsTreeProvider,
+    services.runtimesTreeProvider,
+  );
 
   // Register smart create commands (context-aware notebook/lexical creation)
   registerCreateCommands(context);
 
   // Register theme commands (Primer showcase)
   registerThemeCommands(context);
+
+  // Register outline commands
+  registerOutlineCommands(context, services.outlineTreeProvider);
 }

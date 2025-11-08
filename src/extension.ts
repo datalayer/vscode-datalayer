@@ -25,13 +25,11 @@ import {
   notifyExtensionReady,
 } from "./services/bridges/documentBridge";
 import { DatalayerFileSystemProvider } from "./providers/documentsFileSystemProvider";
-import { RuntimesTreeProvider } from "./providers/runtimesTreeProvider";
+import type { ExtensionUI } from "./services/ui/uiSetup";
 
 // Global service container instance
 let services: ServiceContainer | undefined;
-
-// Global runtimes tree provider for refreshing
-let runtimesTreeProvider: RuntimesTreeProvider | undefined;
+let ui: ExtensionUI | undefined;
 
 /**
  * Get the global service container instance.
@@ -44,6 +42,14 @@ export function getServiceContainer(): ServiceContainer {
     );
   }
   return services;
+}
+
+/**
+ * Get the outline tree provider instance.
+ * @returns The outline tree provider or undefined if not initialized
+ */
+export function getOutlineTreeProvider() {
+  return ui?.outlineTreeProvider;
 }
 
 /**
@@ -78,6 +84,31 @@ export async function activate(
     await services.initialize();
     activationTimer.checkpoint("services_initialized");
 
+    // Now logger is available
+    const logger = services.logger;
+    logger.info("Datalayer extension activation started", {
+      version: vscode.extensions.getExtension(
+        "datalayer.datalayer-jupyter-vscode",
+      )?.packageJSON.version,
+      vscodeVersion: vscode.version,
+      extensionId: context.extension.id,
+      workspaceFolder: vscode.workspace.workspaceFolders?.[0]?.uri.toString(),
+    });
+
+    // Initialize UI with performance tracking (now that logger is available)
+    // This creates all tree providers in order: outline, spaces, runtimes, snapshots
+    ui = await PerformanceLogger.trackOperation(
+      "initialize_ui",
+      () =>
+        initializeUI(
+          context,
+          services!.authProvider as SDKAuthProvider,
+          services!.sdk,
+        ),
+      { stage: "extension_activation" },
+    );
+    activationTimer.checkpoint("ui_initialized");
+
     // Register file system provider for virtual datalayer:// URIs
     const fileSystemProvider = DatalayerFileSystemProvider.getInstance();
     fileSystemProvider.initialize(context); // Restore persisted mappings
@@ -93,45 +124,13 @@ export async function activate(
     );
     activationTimer.checkpoint("filesystem_provider_registered");
 
-    // Now logger is available
-    const logger = services.logger;
-    logger.info("Datalayer extension activation started", {
-      version: vscode.extensions.getExtension(
-        "datalayer.datalayer-jupyter-vscode",
-      )?.packageJSON.version,
-      vscodeVersion: vscode.version,
-      extensionId: context.extension.id,
-      workspaceFolder: vscode.workspace.workspaceFolders?.[0]?.uri.toString(),
-    });
-
-    // Initialize UI with performance tracking (now that logger is available)
-    const ui = await PerformanceLogger.trackOperation(
-      "initialize_ui",
-      () =>
-        initializeUI(
-          context,
-          services!.authProvider as SDKAuthProvider,
-          services!.sdk,
-        ),
-      { stage: "extension_activation" },
-    );
-    activationTimer.checkpoint("ui_initialized");
-
-    // Create runtimes tree provider
-    runtimesTreeProvider = new RuntimesTreeProvider(
-      services.authProvider as SDKAuthProvider,
-    );
-    context.subscriptions.push(
-      vscode.window.createTreeView("datalayerRuntimes", {
-        treeDataProvider: runtimesTreeProvider,
-      }),
-    );
-    activationTimer.checkpoint("runtimes_tree_created");
+    // Open Datalayer sidebar on first run
+    await openSidebarOnFirstRun(context, logger);
 
     // Subscribe to runtime creation events from controller manager to refresh tree
     context.subscriptions.push(
       ui.controllerManager.onRuntimeCreated(() => {
-        runtimesTreeProvider?.refresh();
+        ui?.runtimesTreeProvider.refresh();
       }),
     );
 
@@ -139,7 +138,7 @@ export async function activate(
       services.authProvider as SDKAuthProvider,
       ui.spacesTreeProvider,
       ui.controllerManager,
-      runtimesTreeProvider,
+      ui.runtimesTreeProvider,
     );
     activationTimer.checkpoint("auth_state_setup");
 
@@ -151,7 +150,9 @@ export async function activate(
         documentBridge: services.documentBridge as DocumentBridge,
         spacesTreeProvider: ui.spacesTreeProvider,
         controllerManager: ui.controllerManager,
-        runtimesTreeProvider: runtimesTreeProvider,
+        runtimesTreeProvider: ui.runtimesTreeProvider,
+        snapshotsTreeProvider: ui.snapshotsTreeProvider,
+        outlineTreeProvider: ui.outlineTreeProvider,
       },
       updateAuthState,
     );
@@ -165,7 +166,7 @@ export async function activate(
           cellCount: notebook.cellCount,
           isDirty: notebook.isDirty,
         });
-        ui.controllerManager.onDidCloseNotebook(notebook);
+        ui?.controllerManager.onDidCloseNotebook(notebook);
       }),
     );
 
@@ -217,7 +218,61 @@ export async function activate(
  * Called after runtime operations to update the tree.
  */
 export function refreshRuntimesTree(): void {
-  runtimesTreeProvider?.refresh();
+  ui?.runtimesTreeProvider.refresh();
+}
+
+/**
+ * Opens the Datalayer sidebar on first run and moves it to visible Activity Bar.
+ * Only runs once per installation.
+ *
+ * @param context - Extension context for storing state
+ * @param logger - Logger instance for tracking
+ */
+async function openSidebarOnFirstRun(
+  context: vscode.ExtensionContext,
+  logger: ILogger,
+): Promise<void> {
+  const SIDEBAR_OPENED_KEY = "datalayer.sidebarOpenedOnFirstRun";
+
+  // Check if we've already opened the sidebar on first run
+  const hasOpenedSidebar = context.globalState.get<boolean>(
+    SIDEBAR_OPENED_KEY,
+    false,
+  );
+
+  if (!hasOpenedSidebar) {
+    try {
+      // Move the Datalayer icon from overflow menu to visible Activity Bar
+      const config = vscode.workspace.getConfiguration();
+      const currentPinnedViews = config.get<string[]>(
+        "workbench.activityBar.pinnedViewlets",
+        [],
+      );
+
+      // Add Datalayer view container to pinned views if not already there
+      const datalayerViewId = "workbench.view.extension.datalayer";
+      if (!currentPinnedViews.includes(datalayerViewId)) {
+        const updatedPinnedViews = [...currentPinnedViews, datalayerViewId];
+        await config.update(
+          "workbench.activityBar.pinnedViewlets",
+          updatedPinnedViews,
+          vscode.ConfigurationTarget.Global,
+        );
+        logger.info("Pinned Datalayer icon to Activity Bar");
+      }
+
+      // Focus on the Datalayer view container (opens the sidebar)
+      await vscode.commands.executeCommand(datalayerViewId);
+      logger.info("Opened Datalayer sidebar on first run");
+
+      // Mark that we've opened the sidebar
+      await context.globalState.update(SIDEBAR_OPENED_KEY, true);
+    } catch (error) {
+      logger.warn("Failed to open Datalayer sidebar on first run", {
+        error: error instanceof Error ? error.message : String(error),
+      });
+    }
+  }
 }
 
 /**
@@ -310,7 +365,7 @@ export async function deactivate(): Promise<void> {
     }
 
     // Dispose runtimes tree provider
-    runtimesTreeProvider?.dispose();
+    ui?.runtimesTreeProvider.dispose();
 
     // Dispose service container
     await services?.dispose();

@@ -168,9 +168,7 @@ export class SpacesTreeProvider implements vscode.TreeDataProvider<SpaceItem> {
       if (this.spacesCache.has("user")) {
         spaces = this.spacesCache.get("user")!;
       } else {
-        // Show loading state
-        this._onDidChangeTreeData.fire();
-
+        // Fetch spaces from SDK
         const sdk = getServiceContainer().sdk;
         spaces = (await sdk.getMySpaces()) ?? [];
         this.spacesCache.set("user", spaces);

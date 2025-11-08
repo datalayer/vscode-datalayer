@@ -29,6 +29,7 @@ export interface NotebookState {
   nbformat: unknown;
   isDatalayerNotebook: boolean;
   documentId?: string;
+  documentUri: string; // VS Code document URI for outline tracking
   serverUrl?: string;
   token?: string;
   notebookId: string;
@@ -44,6 +45,7 @@ export interface NotebookState {
   setNbformat: (nbformat: unknown) => void;
   setIsDatalayerNotebook: (isDatalayer: boolean) => void;
   setDocumentId: (id: string) => void;
+  setDocumentUri: (uri: string) => void;
   setServerUrl: (url: string) => void;
   setToken: (token: string) => void;
   setNotebookId: (id: string) => void;
@@ -60,6 +62,7 @@ const initialState = {
   nbformat: undefined,
   isDatalayerNotebook: false,
   documentId: undefined,
+  documentUri: "", // Will be set from init message
   serverUrl: undefined,
   token: undefined,
   notebookId: "local-notebook",
@@ -85,6 +88,7 @@ export const createNotebookStore = () =>
     setIsDatalayerNotebook: (isDatalayer) =>
       set({ isDatalayerNotebook: isDatalayer }),
     setDocumentId: (id) => set({ documentId: id }),
+    setDocumentUri: (uri) => set({ documentUri: uri }),
     setServerUrl: (url) => set({ serverUrl: url }),
     setToken: (token) => set({ token }),
     setNotebookId: (id) => set({ notebookId: id }),

@@ -17,6 +17,8 @@ import { NetworkBridgeService } from "../services/bridges/networkBridge";
 import { RuntimeBridgeService } from "../services/bridges/runtimeBridge";
 import { ServiceLoggers } from "../services/logging/loggers";
 import type { ExtensionMessage } from "../types/vscode/messages";
+import { getOutlineTreeProvider } from "../extension";
+import type { OutlineUpdateMessage } from "../../webview/types/messages";
 
 /**
  * Abstract base class for document providers.
@@ -240,6 +242,34 @@ export abstract class BaseDocumentProvider<
 
     this._messageRouter.registerHandler("getFileData", async () => {
       // Handled differently via postMessageWithResponse
+    });
+
+    // Register outline-update handler
+    this._messageRouter.registerHandler("outline-update", async (message) => {
+      console.log("[BaseDocumentProvider] Received outline-update message", {
+        type: message.type,
+        hasOutlineProvider: !!getOutlineTreeProvider(),
+      });
+
+      const outlineProvider = getOutlineTreeProvider();
+      if (outlineProvider && message.type === "outline-update") {
+        const outlineMsg = message as unknown as OutlineUpdateMessage;
+        console.log("[BaseDocumentProvider] Calling updateOutline", {
+          documentUri: outlineMsg.documentUri,
+          itemCount: outlineMsg.items.length,
+          activeItemId: outlineMsg.activeItemId,
+        });
+        outlineProvider.updateOutline(
+          outlineMsg.documentUri,
+          outlineMsg.items,
+          outlineMsg.activeItemId,
+        );
+      } else {
+        console.warn("[BaseDocumentProvider] Skipping outline update", {
+          hasProvider: !!outlineProvider,
+          messageType: message.type,
+        });
+      }
     });
   }
 

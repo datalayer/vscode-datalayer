@@ -52,6 +52,7 @@ interface WebviewMessage {
   theme?: "light" | "dark";
   documentUri?: string; // For logging only
   documentId?: string; // Unique ID for document validation
+  itemId?: string; // For outline navigation
 }
 
 /**
@@ -100,6 +101,11 @@ function LexicalWebviewInner({
             documentIdRef.current = message.documentId;
           }
 
+          // Store the document URI for outline
+          if (message.documentUri) {
+            store.getState().setDocumentUri(message.documentUri);
+          }
+
           // Handle content (even if empty)
           let jsonString = "";
           if (message.content && message.content.length > 0) {
@@ -124,6 +130,18 @@ function LexicalWebviewInner({
         case "theme-change": {
           if (message.theme) {
             store.getState().setTheme(message.theme);
+          }
+          break;
+        }
+        case "outline-navigate": {
+          // Handle navigation to outline item
+          // Store the navigation request in the store so the editor can respond
+          if (message.itemId) {
+            store.getState().setNavigationTarget(message.itemId);
+            console.log(
+              "[LexicalWebview] Navigate to outline item:",
+              message.itemId,
+            );
           }
           break;
         }
@@ -223,6 +241,13 @@ function LexicalWebviewInner({
   const isEditable = store((state) => state.isEditable);
   const collaborationConfig = store((state) => state.collaborationConfig);
   const theme = store((state) => state.theme);
+  const documentUri = store((state) => state.documentUri);
+  const navigationTarget = store((state) => state.navigationTarget);
+
+  // Callback to clear navigation target after navigating
+  const handleNavigated = useCallback(() => {
+    store.getState().setNavigationTarget(null);
+  }, [store]);
 
   return (
     <div
@@ -250,6 +275,10 @@ function LexicalWebviewInner({
           collaboration={collaborationConfig}
           selectedRuntime={selectedRuntime}
           showRuntimeSelector={true}
+          documentUri={documentUri}
+          vscode={{ postMessage: (msg) => vscode.postMessage(msg) }}
+          navigationTarget={navigationTarget}
+          onNavigated={handleNavigated}
         />
       ) : (
         <div

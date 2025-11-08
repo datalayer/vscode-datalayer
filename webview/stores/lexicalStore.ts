@@ -33,6 +33,8 @@ export interface LexicalState {
   isEditable: boolean;
   isReady: boolean;
   isInitialLoad: boolean;
+  documentUri: string; // Document URI for outline and navigation
+  navigationTarget: string | null; // ID of outline item to navigate to
 
   // Theme state
   theme: "light" | "dark";
@@ -45,6 +47,8 @@ export interface LexicalState {
   setIsEditable: (editable: boolean) => void;
   setIsReady: (ready: boolean) => void;
   setIsInitialLoad: (isInitial: boolean) => void;
+  setDocumentUri: (uri: string) => void;
+  setNavigationTarget: (itemId: string | null) => void;
   setTheme: (theme: "light" | "dark") => void;
   setCollaborationConfig: (config: CollaborationConfig) => void;
   reset: () => void;
@@ -58,6 +62,8 @@ const initialState = {
   isEditable: true,
   isReady: false,
   isInitialLoad: true,
+  documentUri: "",
+  navigationTarget: null as string | null,
   theme: "dark" as const,
   collaborationConfig: {
     enabled: false,
@@ -81,6 +87,8 @@ export const createLexicalStore = () =>
     setIsEditable: (editable) => set({ isEditable: editable }),
     setIsReady: (ready) => set({ isReady: ready }),
     setIsInitialLoad: (isInitial) => set({ isInitialLoad: isInitial }),
+    setDocumentUri: (uri) => set({ documentUri: uri }),
+    setNavigationTarget: (itemId) => set({ navigationTarget: itemId }),
     setCollaborationConfig: (config) => set({ collaborationConfig: config }),
     reset: () => set(initialState),
   }));

@@ -12,6 +12,7 @@
  */
 
 import * as vscode from "vscode";
+import { SnapshotsTreeProvider } from "../providers/snapshotsTreeProvider";
 import { RuntimesTreeProvider } from "../providers/runtimesTreeProvider";
 import { SnapshotTreeItem } from "../models/snapshotTreeItem";
 import { showTwoStepConfirmation } from "../ui/dialogs/confirmationDialog";
@@ -22,10 +23,12 @@ import { getServiceContainer } from "../extension";
  * Registers all snapshot-related commands.
  *
  * @param context - Extension context for command subscriptions
- * @param runtimesTreeProvider - The Runtimes tree view provider for refresh
+ * @param snapshotsTreeProvider - The Snapshots tree view provider for refresh
+ * @param runtimesTreeProvider - The Runtimes tree view provider for refresh after restore
  */
 export function registerSnapshotCommands(
   context: vscode.ExtensionContext,
+  snapshotsTreeProvider?: SnapshotsTreeProvider,
   runtimesTreeProvider?: RuntimesTreeProvider,
 ): void {
   /**
@@ -34,8 +37,8 @@ export function registerSnapshotCommands(
    */
   context.subscriptions.push(
     vscode.commands.registerCommand("datalayer.snapshots.refresh", () => {
-      if (runtimesTreeProvider) {
-        runtimesTreeProvider.refresh();
+      if (snapshotsTreeProvider) {
+        snapshotsTreeProvider.refresh();
       }
     }),
   );
@@ -106,8 +109,9 @@ export function registerSnapshotCommands(
             vscode.window.showInformationMessage(
               `Runtime "${runtime.givenName}" created from snapshot "${snapshotName}"!`,
             );
-            // Refresh the runtime tree to show the new runtime
+            // Refresh both trees to show the new runtime and update snapshots
             runtimesTreeProvider?.refresh();
+            snapshotsTreeProvider?.refresh();
           }
         } catch (error) {
           vscode.window.showErrorMessage(
@@ -163,8 +167,8 @@ export function registerSnapshotCommands(
               vscode.window.showInformationMessage(
                 `Snapshot "${snapshotName}" deleted successfully`,
               );
-              // Refresh the tree
-              runtimesTreeProvider?.refresh();
+              // Refresh the snapshots tree
+              snapshotsTreeProvider?.refresh();
             },
           );
         } catch (error) {

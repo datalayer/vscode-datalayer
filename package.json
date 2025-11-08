@@ -276,23 +276,57 @@
         "command": "datalayer.snapshots.viewDetails",
         "title": "View Snapshot Details",
         "icon": "$(info)"
+      },
+      {
+        "command": "datalayer.outline.navigate",
+        "title": "Navigate to Outline Item",
+        "icon": "$(go-to-file)"
+      },
+      {
+        "command": "datalayer.outline.refresh",
+        "title": "Refresh Outline",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "datalayer.outline.collapseAll",
+        "title": "Collapse All",
+        "icon": "$(collapse-all)"
       }
     ],
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "datalayer",
+          "title": "Datalayer",
+          "icon": "images/datalayer-sidebar-icon.svg"
+        }
+      ]
+    },
     "views": {
-      "explorer": [
+      "datalayer": [
+        {
+          "id": "datalayerOutline",
+          "name": "Outline",
+          "icon": "$(list-tree)",
+          "contextualTitle": "Document Outline"
+        },
         {
           "id": "datalayerSpaces",
-          "name": "Datalayer Spaces",
-          "icon": "$(menu)",
-          "contextualTitle": "Datalayer Spaces",
-          "when": "true"
+          "name": "Spaces",
+          "icon": "$(cloud)",
+          "contextualTitle": "Datalayer Spaces"
         },
         {
           "id": "datalayerRuntimes",
-          "name": "Datalayer Runtimes",
+          "name": "Runtimes",
           "icon": "$(vm)",
-          "contextualTitle": "Datalayer Runtimes",
-          "when": "true"
+          "contextualTitle": "Datalayer Runtimes"
+        },
+        {
+          "id": "datalayerSnapshots",
+          "name": "Snapshots",
+          "icon": "$(archive)",
+          "contextualTitle": "Datalayer Snapshots"
         }
       ]
     },
@@ -386,6 +420,18 @@
         {
           "command": "datalayer.snapshots.viewDetails",
           "when": "false"
+        },
+        {
+          "command": "datalayer.outline.navigate",
+          "when": "false"
+        },
+        {
+          "command": "datalayer.outline.refresh",
+          "when": "false"
+        },
+        {
+          "command": "datalayer.outline.collapseAll",
+          "when": "false"
         }
       ],
       "view/title": [
@@ -418,6 +464,21 @@
           "command": "datalayer.runtimes.terminateAll",
           "when": "view == datalayerRuntimes",
           "group": "navigation@3"
+        },
+        {
+          "command": "datalayer.snapshots.refresh",
+          "when": "view == datalayerSnapshots",
+          "group": "navigation@1"
+        },
+        {
+          "command": "datalayer.outline.refresh",
+          "when": "view == datalayerOutline",
+          "group": "navigation@1"
+        },
+        {
+          "command": "datalayer.outline.collapseAll",
+          "when": "view == datalayerOutline",
+          "group": "navigation@2"
         }
       ],
       "view/item/context": [
@@ -493,13 +554,13 @@
         },
         {
           "command": "datalayer.snapshots.restore",
-          "when": "view == datalayerRuntimes && viewItem == snapshot",
+          "when": "view == datalayerSnapshots && viewItem == snapshot",
           "group": "1_restore"
         },
         {
           "command": "datalayer.snapshots.delete",
-          "when": "view == datalayerRuntimes && viewItem == snapshot",
-          "group": "3_delete"
+          "when": "view == datalayerSnapshots && viewItem == snapshot",
+          "group": "2_delete"
         }
       ],
       "explorer/context": [
