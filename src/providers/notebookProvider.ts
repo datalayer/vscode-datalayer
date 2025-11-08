@@ -19,7 +19,7 @@ import { getNotebookHtml } from "../ui/templates/notebookTemplate";
 import { WebviewCollection } from "../utils/webviewCollection";
 import { NotebookDocument, NotebookEdit } from "../models/notebookDocument";
 import { SDKAuthProvider } from "../services/core/authProvider";
-import { getServiceContainer } from "../extension";
+import { getServiceContainer, getOutlineTreeProvider } from "../extension";
 import { selectDatalayerRuntime } from "../ui/dialogs/runtimeSelector";
 import { BaseDocumentProvider } from "./baseDocumentProvider";
 
@@ -252,6 +252,15 @@ export class NotebookProvider extends BaseDocumentProvider<NotebookDocument> {
       document.uri,
       webviewPanel,
     );
+
+    // Register webview with outline provider for outline navigation
+    const outlineProvider = getOutlineTreeProvider();
+    if (outlineProvider) {
+      outlineProvider.registerWebviewPanel(
+        document.uri.toString(),
+        webviewPanel,
+      );
+    }
 
     // Setup initial content for the webview
     webviewPanel.webview.options = {

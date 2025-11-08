@@ -113,6 +113,12 @@ export interface LocalKernelConnectedMessage {
   };
 }
 
+/** Navigate to outline item (extension to webview) */
+export interface OutlineNavigateMessage {
+  type: "outline-navigate";
+  itemId: string;
+}
+
 /**
  * Union of all Extension → Webview messages
  */
@@ -132,7 +138,8 @@ export type ExtensionToWebviewMessage =
   | WebSocketCloseMessage
   | HttpResponseMessage
   | RuntimeExpiredMessage
-  | LLMCompletionResponseMessage;
+  | LLMCompletionResponseMessage
+  | OutlineNavigateMessage;
 
 /**
  * Webview → Extension Messages
@@ -249,6 +256,35 @@ export interface LLMCompletionRequestMessage {
   language: string;
 }
 
+/** Outline item structure */
+export interface OutlineItem {
+  id: string; // Unique identifier
+  label: string; // Display text
+  type:
+    | "heading"
+    | "h1"
+    | "h2"
+    | "h3"
+    | "h4"
+    | "h5"
+    | "h6"
+    | "code"
+    | "code-cell"
+    | "markdown-cell";
+  level?: number; // For headings: 1-6
+  line?: number; // Line/node index in editor
+  cellIndex?: number; // For notebooks: cell index
+  children?: OutlineItem[]; // Nested structure (optional)
+}
+
+/** Outline update from webview to extension */
+export interface OutlineUpdateMessage {
+  type: "outline-update";
+  documentUri: string;
+  items: OutlineItem[];
+  activeItemId?: string; // Currently focused/selected item
+}
+
 /**
  * Union of all Webview → Extension messages
  */
@@ -264,7 +300,8 @@ export type WebviewToExtensionMessage =
   | WebSocketProxyMessage
   | HttpRequestMessage
   | WebviewErrorMessage
-  | LLMCompletionRequestMessage;
+  | LLMCompletionRequestMessage
+  | OutlineUpdateMessage;
 
 /**
  * Bidirectional message type (for backward compatibility)

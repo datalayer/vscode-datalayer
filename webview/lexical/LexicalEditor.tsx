@@ -64,6 +64,9 @@ import type { RuntimeJSON } from "@datalayer/core/lib/client";
 import { LoroCollaborationPlugin } from "@datalayer/lexical-loro";
 import { createVSCodeLoroProvider } from "../services/loro/providerFactory";
 import { LexicalVSCodeLLMProvider } from "../services/completion/lexicalLLMProvider";
+import { OutlinePlugin } from "./plugins/OutlinePlugin";
+import { NavigationPlugin } from "./plugins/NavigationPlugin";
+import type { OutlineUpdateMessage } from "../types/messages";
 
 /**
  * Collaboration configuration for Lexical documents
@@ -104,6 +107,10 @@ export interface LexicalEditorProps {
   collaboration?: CollaborationConfig;
   selectedRuntime?: RuntimeJSON;
   showRuntimeSelector?: boolean;
+  documentUri?: string;
+  vscode?: { postMessage: (message: OutlineUpdateMessage) => void };
+  navigationTarget?: string | null;
+  onNavigated?: () => void;
 }
 
 /**
@@ -267,6 +274,10 @@ export function LexicalEditor({
   collaboration,
   selectedRuntime,
   showRuntimeSelector = false,
+  documentUri,
+  vscode,
+  navigationTarget,
+  onNavigated,
 }: LexicalEditorProps) {
   // Get ONLY the defaultKernel from Jupyter context
   // DO NOT use serviceManager from useJupyter - we already have our MutableServiceManager!
@@ -515,6 +526,15 @@ export function LexicalEditor({
             debounceMs={200}
             enabled={editable}
           />
+          {documentUri && vscode && (
+            <OutlinePlugin documentUri={documentUri} vscode={vscode} />
+          )}
+          {navigationTarget && onNavigated && (
+            <NavigationPlugin
+              navigationTarget={navigationTarget}
+              onNavigated={onNavigated}
+            />
+          )}
           {floatingAnchorElem && (
             <DraggableBlockPlugin anchorElem={floatingAnchorElem} />
           )}

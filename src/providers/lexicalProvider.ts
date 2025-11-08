@@ -21,7 +21,7 @@ import {
   LexicalCollaborationService,
   LexicalCollaborationConfig,
 } from "../services/collaboration/lexicalCollaboration";
-import { getServiceContainer } from "../extension";
+import { getServiceContainer, getOutlineTreeProvider } from "../extension";
 import type { RuntimeDTO } from "@datalayer/core/lib/models/RuntimeDTO";
 import { BaseDocumentProvider } from "./baseDocumentProvider";
 import { LoroWebSocketAdapter } from "../services/collaboration/loroWebSocketAdapter";
@@ -283,6 +283,15 @@ export class LexicalProvider extends BaseDocumentProvider<LexicalDocument> {
     // Register webview with KernelBridge for unified runtime handling
     const kernelBridge = getServiceContainer().kernelBridge;
     kernelBridge.registerWebview(document.uri, webviewPanel);
+
+    // Register webview with outline provider for outline navigation
+    const outlineProvider = getOutlineTreeProvider();
+    if (outlineProvider) {
+      outlineProvider.registerWebviewPanel(
+        document.uri.toString(),
+        webviewPanel,
+      );
+    }
 
     webviewPanel.webview.options = {
       enableScripts: true,

@@ -25,13 +25,11 @@ import {
   notifyExtensionReady,
 } from "./services/bridges/documentBridge";
 import { DatalayerFileSystemProvider } from "./providers/documentsFileSystemProvider";
-import { RuntimesTreeProvider } from "./providers/runtimesTreeProvider";
-import { SnapshotsTreeProvider } from "./providers/snapshotsTreeProvider";
+import type { ExtensionUI } from "./services/ui/uiSetup";
 
 // Global service container instance
 let services: ServiceContainer | undefined;
-let runtimesTreeProvider: RuntimesTreeProvider | undefined;
-let snapshotsTreeProvider: SnapshotsTreeProvider | undefined;
+let ui: ExtensionUI | undefined;
 
 /**
  * Get the global service container instance.
@@ -44,6 +42,14 @@ export function getServiceContainer(): ServiceContainer {
     );
   }
   return services;
+}
+
+/**
+ * Get the outline tree provider instance.
+ * @returns The outline tree provider or undefined if not initialized
+ */
+export function getOutlineTreeProvider() {
+  return ui?.outlineTreeProvider;
 }
 
 /**
@@ -78,6 +84,31 @@ export async function activate(
     await services.initialize();
     activationTimer.checkpoint("services_initialized");
 
+    // Now logger is available
+    const logger = services.logger;
+    logger.info("Datalayer extension activation started", {
+      version: vscode.extensions.getExtension(
+        "datalayer.datalayer-jupyter-vscode",
+      )?.packageJSON.version,
+      vscodeVersion: vscode.version,
+      extensionId: context.extension.id,
+      workspaceFolder: vscode.workspace.workspaceFolders?.[0]?.uri.toString(),
+    });
+
+    // Initialize UI with performance tracking (now that logger is available)
+    // This creates all tree providers in order: outline, spaces, runtimes, snapshots
+    ui = await PerformanceLogger.trackOperation(
+      "initialize_ui",
+      () =>
+        initializeUI(
+          context,
+          services!.authProvider as SDKAuthProvider,
+          services!.sdk,
+        ),
+      { stage: "extension_activation" },
+    );
+    activationTimer.checkpoint("ui_initialized");
+
     // Register file system provider for virtual datalayer:// URIs
     const fileSystemProvider = DatalayerFileSystemProvider.getInstance();
     fileSystemProvider.initialize(context); // Restore persisted mappings
@@ -93,59 +124,13 @@ export async function activate(
     );
     activationTimer.checkpoint("filesystem_provider_registered");
 
-    // Now logger is available
-    const logger = services.logger;
-    logger.info("Datalayer extension activation started", {
-      version: vscode.extensions.getExtension(
-        "datalayer.datalayer-jupyter-vscode",
-      )?.packageJSON.version,
-      vscodeVersion: vscode.version,
-      extensionId: context.extension.id,
-      workspaceFolder: vscode.workspace.workspaceFolders?.[0]?.uri.toString(),
-    });
-
-    // Initialize UI with performance tracking (now that logger is available)
-    const ui = await PerformanceLogger.trackOperation(
-      "initialize_ui",
-      () =>
-        initializeUI(
-          context,
-          services!.authProvider as SDKAuthProvider,
-          services!.sdk,
-        ),
-      { stage: "extension_activation" },
-    );
-    activationTimer.checkpoint("ui_initialized");
-
-    // Create runtimes tree provider
-    runtimesTreeProvider = new RuntimesTreeProvider(
-      services.authProvider as SDKAuthProvider,
-    );
-    context.subscriptions.push(
-      vscode.window.createTreeView("datalayerRuntimes", {
-        treeDataProvider: runtimesTreeProvider,
-      }),
-    );
-    activationTimer.checkpoint("runtimes_tree_created");
-
-    // Create snapshots tree provider
-    snapshotsTreeProvider = new SnapshotsTreeProvider(
-      services.authProvider as SDKAuthProvider,
-    );
-    context.subscriptions.push(
-      vscode.window.createTreeView("datalayerSnapshots", {
-        treeDataProvider: snapshotsTreeProvider,
-      }),
-    );
-    activationTimer.checkpoint("snapshots_tree_created");
-
     // Open Datalayer sidebar on first run
     await openSidebarOnFirstRun(context, logger);
 
     // Subscribe to runtime creation events from controller manager to refresh tree
     context.subscriptions.push(
       ui.controllerManager.onRuntimeCreated(() => {
-        runtimesTreeProvider?.refresh();
+        ui?.runtimesTreeProvider.refresh();
       }),
     );
 
@@ -153,7 +138,7 @@ export async function activate(
       services.authProvider as SDKAuthProvider,
       ui.spacesTreeProvider,
       ui.controllerManager,
-      runtimesTreeProvider,
+      ui.runtimesTreeProvider,
     );
     activationTimer.checkpoint("auth_state_setup");
 
@@ -165,8 +150,9 @@ export async function activate(
         documentBridge: services.documentBridge as DocumentBridge,
         spacesTreeProvider: ui.spacesTreeProvider,
         controllerManager: ui.controllerManager,
-        runtimesTreeProvider: runtimesTreeProvider,
-        snapshotsTreeProvider: snapshotsTreeProvider,
+        runtimesTreeProvider: ui.runtimesTreeProvider,
+        snapshotsTreeProvider: ui.snapshotsTreeProvider,
+        outlineTreeProvider: ui.outlineTreeProvider,
       },
       updateAuthState,
     );
@@ -180,7 +166,7 @@ export async function activate(
           cellCount: notebook.cellCount,
           isDirty: notebook.isDirty,
         });
-        ui.controllerManager.onDidCloseNotebook(notebook);
+        ui?.controllerManager.onDidCloseNotebook(notebook);
       }),
     );
 
@@ -232,7 +218,7 @@ export async function activate(
  * Called after runtime operations to update the tree.
  */
 export function refreshRuntimesTree(): void {
-  runtimesTreeProvider?.refresh();
+  ui?.runtimesTreeProvider.refresh();
 }
 
 /**
@@ -379,7 +365,7 @@ export async function deactivate(): Promise<void> {
     }
 
     // Dispose runtimes tree provider
-    runtimesTreeProvider?.dispose();
+    ui?.runtimesTreeProvider.dispose();
 
     // Dispose service container
     await services?.dispose();

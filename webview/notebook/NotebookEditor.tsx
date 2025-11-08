@@ -11,7 +11,14 @@
  * @module notebook/NotebookEditor
  */
 
-import React, { useContext, useEffect, useMemo, useRef } from "react";
+import React, {
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useCallback,
+  useState,
+} from "react";
 import { createRoot } from "react-dom/client";
 import { Box } from "@primer/react";
 import {
@@ -43,6 +50,7 @@ import { createNotebookStore } from "../stores/notebookStore";
 import { useRuntimeManager } from "../hooks/useRuntimeManager";
 import { useNotebookModel } from "../hooks/useNotebookModel";
 import { useNotebookResize } from "../hooks/useNotebookResize";
+import { useNotebookOutline } from "../hooks/useNotebookOutline";
 import {
   notebookCellStyles,
   notebookHeight,
@@ -68,6 +76,7 @@ function NotebookEditorCore({
   // Track this notebook's ID to detect when webview is reused for a different document
   // CRITICAL: Use ref instead of state to avoid stale closure issues!
   const notebookIdRef = useRef<string | null>(null);
+  const notebookModelRef = useRef<unknown>(null);
   const { setColormode } = useJupyterReactStore();
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -75,6 +84,7 @@ function NotebookEditorCore({
   const selectedRuntimeFromStore = store((state) => state.selectedRuntime);
   const isDatalayerNotebook = store((state) => state.isDatalayerNotebook);
   const documentId = store((state) => state.documentId);
+  const documentUri = store((state) => state.documentUri);
   const notebookId = store((state) => state.notebookId);
   const serverUrl = store((state) => state.serverUrl);
   const token = store((state) => state.token);
@@ -94,9 +104,46 @@ function NotebookEditorCore({
       messageHandler,
     });
 
+  // Track notebook model in state for outline hook reactivity
+  const [notebookModel, setNotebookModel] = useState<unknown>(null);
+
+  // Wrap handleNotebookModelChanged to capture the model for outline
+  const handleNotebookModelChangedWithOutline = useCallback(
+    (model: unknown) => {
+      console.log("[NotebookEditor] Model changed, updating state", {
+        hasModel: !!model,
+      });
+      notebookModelRef.current = model;
+      setNotebookModel(model); // Update state to trigger re-render
+      handleNotebookModelChanged(model);
+    },
+    [handleNotebookModelChanged],
+  );
+
   // Set up resize observer
   const notebookIdForResize = documentId || notebookId || "";
   useNotebookResize(notebookIdForResize, containerRef);
+
+  // Memoize vscode API object to prevent unnecessary re-renders
+  const vscodeApi = useMemo(
+    () => ({
+      postMessage: (msg: any) => messageHandler.send(msg),
+    }),
+    [messageHandler],
+  );
+
+  // Document URI for outline
+  // Outline extraction hook
+  useNotebookOutline({
+    notebookModel: notebookModel as any, // Use state, not ref, for reactivity
+    documentUri, // Use documentUri from store (set via init message)
+    vscode: vscodeApi,
+  });
+
+  // Log documentUri for debugging
+  useEffect(() => {
+    console.log("[NotebookEditor] documentUri from store:", documentUri);
+  }, [documentUri]);
 
   // Create notebook extensions (sidebar)
   const extensions = useMemo(() => [new CellSidebarExtension({})], []);
@@ -129,11 +176,18 @@ function NotebookEditorCore({
   }, [messageHandler]);
 
   // Handle messages from the extension
-  useEffect(() => {
-    const handleMessage = (message: ExtensionMessage) => {
+  // Memoize the handler to prevent re-registration on every render
+  const handleMessage = useCallback(
+    (message: ExtensionMessage) => {
       switch (message.type) {
         case "init": {
           const { body } = message;
+
+          console.log("[NotebookEditor] Received init message", {
+            hasDocumentUri: !!body.documentUri,
+            documentUri: body.documentUri,
+            notebookId: body.notebookId,
+          });
 
           // CRITICAL: Detect when webview is reused for a different document
           if (
@@ -170,6 +224,16 @@ function NotebookEditorCore({
 
           if (body.documentId) {
             store.getState().setDocumentId(body.documentId);
+          }
+
+          if (body.documentUri) {
+            console.log(
+              "[NotebookEditor] Setting documentUri in store",
+              body.documentUri,
+            );
+            store.getState().setDocumentUri(body.documentUri);
+          } else {
+            console.warn("[NotebookEditor] No documentUri in init message!");
           }
 
           if (body.serverUrl) {
@@ -301,23 +365,55 @@ function NotebookEditorCore({
             markClean();
           }
           break;
-      }
-    };
 
+        case "outline-navigate": {
+          // Handle navigation to outline item
+          if (message.itemId && notebookModelRef.current) {
+            // Extract cell index from itemId (format: "cell-X" or "cell-X-hY-Z" for headings)
+            const match = message.itemId.match(/cell-(\d+)/);
+            if (match) {
+              const cellIndex = parseInt(match[1], 10);
+
+              // Scroll to the cell
+              setTimeout(() => {
+                const notebookElement = document.querySelector(".jp-Notebook");
+
+                if (notebookElement) {
+                  const cells = notebookElement.querySelectorAll(".jp-Cell");
+                  const targetCell = cells[cellIndex] as HTMLElement;
+
+                  if (targetCell) {
+                    // Scroll into view
+                    targetCell.scrollIntoView({
+                      behavior: "smooth",
+                      block: "center",
+                    });
+                  }
+                }
+              }, 100);
+            }
+          }
+          break;
+        }
+      }
+    },
+    [
+      selectRuntime,
+      getNotebookData,
+      markClean,
+      theme,
+      isDatalayerNotebook,
+      nbformat,
+    ],
+  );
+
+  // Register message handler
+  useEffect(() => {
     const disposable = messageHandler.on(
       handleMessage as (message: unknown) => void,
     );
     return () => disposable.dispose();
-  }, [
-    messageHandler,
-    store,
-    selectRuntime,
-    getNotebookData,
-    markClean,
-    theme,
-    isDatalayerNotebook,
-    nbformat,
-  ]);
+  }, [messageHandler, handleMessage]);
 
   // Sync colormode with theme changes
   useEffect(() => {
@@ -458,9 +554,7 @@ function NotebookEditorCore({
               );
               return [llmProvider];
             })()}
-            onNotebookModelChanged={
-              !isDatalayerNotebook ? handleNotebookModelChanged : undefined
-            }
+            onNotebookModelChanged={handleNotebookModelChangedWithOutline}
           />
         </Box>
       </Box>
