@@ -531,6 +531,16 @@ export class DocumentBridge {
   }
 
   /**
+   * Gets document metadata by document UID.
+   *
+   * @param documentId - Document UID
+   * @returns Document metadata if found
+   */
+  getMetadataByDocumentId(documentId: string): DocumentMetadata | undefined {
+    return this.documentMetadata.get(documentId);
+  }
+
+  /**
    * Clears cached document from filesystem and memory.
    *
    * @param documentId - Document UID to clear
@@ -607,6 +617,16 @@ export class DocumentBridge {
    */
   getActiveRuntimes(): string[] {
     return Array.from(this.activeRuntimes);
+  }
+
+  /**
+   * Gets the DatalayerFileSystemProvider instance.
+   * Used to access virtual URI mapping functionality for tab renaming.
+   *
+   * @returns The singleton DatalayerFileSystemProvider instance
+   */
+  getFileSystemProvider(): DatalayerFileSystemProvider {
+    return DatalayerFileSystemProvider.getInstance();
   }
 
   /**

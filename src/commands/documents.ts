@@ -440,6 +440,56 @@ export function registerDocumentCommands(
                 const existingDescription = document.description;
                 await document.update(newName, existingDescription);
 
+                // Update the virtual file system mapping if the document is open
+                // Get metadata using the document UID to access spaceName
+                const metadata = documentBridge.getMetadataByDocumentId(
+                  document.uid,
+                );
+
+                if (metadata) {
+                  const fileSystemProvider =
+                    documentBridge.getFileSystemProvider();
+                  const extension =
+                    document.type === "notebook" ? ".ipynb" : ".lexical";
+
+                  // Sanitize space name for URI compatibility (matching openDocument logic)
+                  const sanitizedSpaceName = metadata.spaceName
+                    ? metadata.spaceName
+                        .replace(/:/g, "-")
+                        .replace(/[<>"\\|?*]/g, "_")
+                        .trim()
+                    : null;
+
+                  const currentNameClean = currentName.replace(/\.[^/.]+$/, "");
+                  const newNameClean = newName.replace(/\.[^/.]+$/, "");
+
+                  const oldVirtualPath = sanitizedSpaceName
+                    ? `${sanitizedSpaceName}/${currentNameClean}${extension}`
+                    : `${currentNameClean}${extension}`;
+
+                  const newVirtualPath = sanitizedSpaceName
+                    ? `${sanitizedSpaceName}/${newNameClean}${extension}`
+                    : `${newNameClean}${extension}`;
+
+                  const oldUri = vscode.Uri.file("/" + oldVirtualPath).with({
+                    scheme: "datalayer",
+                  });
+                  const newUri = vscode.Uri.file("/" + newVirtualPath).with({
+                    scheme: "datalayer",
+                  });
+
+                  // Check if the document is currently open
+                  const realPath = fileSystemProvider.getRealPath(oldUri);
+                  if (realPath) {
+                    // The file is open - update the mapping
+                    fileSystemProvider.updateMapping(oldUri, newUri);
+
+                    // Trigger VS Code to update the tab by firing rename event
+                    // This will cause VS Code to update the tab title
+                    fileSystemProvider.fireRename(oldUri, newUri);
+                  }
+                }
+
                 vscode.window.showInformationMessage(
                   `Successfully renamed to "${newName}"`,
                 );

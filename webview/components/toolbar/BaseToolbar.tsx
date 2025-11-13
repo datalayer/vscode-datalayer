@@ -24,6 +24,7 @@ export interface ToolbarAction {
   disabled?: boolean;
   priority: number;
   active?: boolean;
+  isSeparator?: boolean;
 }
 
 export interface BaseToolbarProps {
@@ -148,8 +149,25 @@ export const BaseToolbar: React.FC<BaseToolbarProps> = ({
         {leftContent}
         {actions.length > 0 && (
           <>
-            {visibleActions.map((action) =>
-              renderAction ? (
+            {visibleActions.map((action) => {
+              // Render separator
+              if (action.isSeparator) {
+                return (
+                  <div
+                    key={action.id}
+                    style={{
+                      width: "1px",
+                      height: "20px",
+                      backgroundColor: "var(--vscode-panel-border)",
+                      margin: "0 4px",
+                      opacity: 0.5,
+                    }}
+                  />
+                );
+              }
+
+              // Render action button
+              return renderAction ? (
                 <React.Fragment key={action.id}>
                   {renderAction(action)}
                 </React.Fragment>
@@ -174,8 +192,8 @@ export const BaseToolbar: React.FC<BaseToolbarProps> = ({
                   {action.icon && <i className={action.icon} />}
                   <span>{action.label}</span>
                 </button>
-              ),
-            )}
+              );
+            })}
             {overflowActions.length > 0 && (
               <OverflowMenu actions={overflowActions} />
             )}

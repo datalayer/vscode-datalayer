@@ -82,7 +82,7 @@ npm run lint
 # Zero warnings policy in production code
 
 # Documentation generation
-npm run doc
+npm run docs
 # Must have 100% documentation coverage
 
 # Run all checks
@@ -108,7 +108,7 @@ Before committing any code:
 
 1. `npm run type-check` - Must pass with zero errors
 2. `npm run lint` - Must pass with zero warnings
-3. `npm run doc` - Must generate without errors
+3. `npm run docs` - Must generate without errors
 4. `npm test` - All tests must pass
 
 ## Testing
@@ -280,7 +280,7 @@ export function myFunction(param1: string): string {
 }
 ````
 
-Run `npm run doc` to verify documentation.
+Run `npm run docs` to verify documentation.
 
 ## Architecture Overview
 
@@ -373,6 +373,94 @@ The editor is encapsulated within an iframe. All communications between the edit
 2. **Message Serialization**: Requests are serialized and posted to the extension
 3. **Extension Processing**: The extension deserializes and makes actual network requests
 4. **Response Handling**: Responses are serialized and posted back to the webview
+
+### Pyodide Integration (Working - October 2025)
+
+The extension supports offline Python execution via Pyodide (Python compiled to WebAssembly):
+
+**Status**: ✅ Production-ready with all core features working
+
+**Architecture:**
+
+1. **PyodideInlineKernel** (`webview/services/pyodideInlineKernel.ts`)
+   - Web Worker created from Blob URL (bypasses CSP)
+   - Pre-fetches pyodide.js (16KB) and pyodide.asm.js (1.1MB) in main thread
+   - Executes scripts via eval in worker context
+   - Overrides fetch() to route all Pyodide resources through main thread
+   - Implements complete Kernel.IKernelConnection interface with IAnyMessageArgs compliance
+
+2. **Message Protocol**
+   - Execute input messages for execution count display
+   - Parent header filtering for output isolation
+   - Property setters for onIOPub/onReply/onStdin (not methods)
+   - Lumino Signal wrappers with IAnyMessageArgs unwrapping
+   - Python-side stdout capture for streaming and line break preservation
+
+3. **Package Preloading** (`src/services/pyodide/pyodidePreloader.ts`)
+   - Configurable behavior modes: ask-once, ask-always, auto, disabled
+   - 24 default packages (numpy, pandas, matplotlib, etc.)
+   - IndexedDB caching for offline use
+   - Cache management command: `datalayer.pyodide.clearCache`
+
+4. **Key Technical Decisions**
+   - **asm.js required**: Defines `_createPyodideModule` (not optional)
+   - **Blob URL worker**: Only way to bypass VS Code CSP restrictions
+   - **Synchronous future return**: JupyterLab expects immediate future object
+   - **Parent header filtering**: Prevents output cross-contamination between cells
+   - **Message unwrapping**: `msgArgs.msg || msgArgs` for IAnyMessageArgs compliance
+   - **Python-side capture**: sys.stdout override for streaming and newlines
+
+**Implementation Challenges Solved:**
+
+- ✅ CSP restrictions (Blob URL worker)
+- ✅ Resource loading (fetch override + main thread proxy)
+- ✅ Output display (synchronous future return, property setters)
+- ✅ Execution counts (execute_input messages)
+- ✅ Output isolation (parent_header filtering)
+- ✅ Line breaks and streaming (Python-side stdout capture)
+- ✅ TypeScript strict mode (IAnyMessageArgs unwrapping)
+- ✅ Package preloading (configurable behavior with cache management)
+
+**How It Works:**
+
+```typescript
+// Main thread: Pre-fetch Pyodide scripts
+Promise.all([
+  fetch(`${pyodideBaseUrl}/pyodide.js`).then(r => r.text()),
+  fetch(`${pyodideBaseUrl}/pyodide.asm.js`).then(r => r.text())
+]).then(([pyodideScript, asmScript]) => {
+  worker.postMessage({ type: "init", pyodideScript, asmScript, baseUrl });
+});
+
+// Worker: Execute scripts and initialize
+eval(asmScript);  // Defines _createPyodideModule
+eval(pyodideScript);  // Defines loadPyodide
+pyodide = await loadPyodide({ indexURL: baseUrl });
+
+// Execution: Route through worker with Python-side capture
+worker.postMessage({ type: "execute", code: "print('Hello\\nWorld')" });
+
+// Output: Worker sends back stream messages with preserved newlines
+postMessage({ type: "stream", name: "stdout", text: "Hello\nWorld\n" });
+```
+
+**Configuration:**
+
+```json
+{
+  "datalayer.pyodide.preloadBehavior": "ask-once",  // ask-once|ask-always|auto|disabled
+  "datalayer.pyodide.preloadPackages": [
+    "numpy", "pandas", "matplotlib", "scipy", "scikit-learn",
+    // ... 24 packages total
+  ]
+}
+```
+
+**Known Limitations:**
+- No syntax highlighting in outputs (minor)
+- No interactive widgets support (future enhancement)
+
+See [PYODIDE.md](./PYODIDE.md) for complete implementation history and technical details.
 
 ## Project Structure
 
@@ -495,16 +583,16 @@ The codebase uses TypeDoc for comprehensive API documentation:
 
 ```bash
 # Generate HTML documentation
-npm run doc
+npm run docs
 
 # Generate markdown documentation
-npm run doc:markdown
+npm run docs:markdown
 
 # Watch mode for development (rebuilds on file changes)
-npm run doc:watch
+npm run docs:watch
 
 # Check documentation coverage
-npm run doc:coverage
+npm run docs:coverage
 ```
 
 ### Output Directories

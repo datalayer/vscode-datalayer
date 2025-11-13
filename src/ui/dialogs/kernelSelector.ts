@@ -51,7 +51,8 @@ export async function showKernelSelector(
 
   const options: KernelOption[] = [
     {
-      label: "Datalayer Platform",
+      label: "$(cloud) Datalayer Platform",
+      description: "Cloud runtimes",
       action: async () => {
         const runtime = await selectDatalayerRuntime(sdk, authProvider);
         if (runtime) {
@@ -63,7 +64,23 @@ export async function showKernelSelector(
       },
     },
     {
+      label: "$(globe) Pyodide (Offline Python)",
+      description: "No server required",
+      detail: "Runs Python locally in WebAssembly",
+      action: async () => {
+        if (documentUri) {
+          await kernelBridge.connectWebviewWithPyodide(documentUri);
+          vscode.window.showInformationMessage(
+            "Switched to Pyodide kernel - Python will run offline locally",
+          );
+        } else {
+          vscode.window.showWarningMessage("No active document to connect");
+        }
+      },
+    },
+    {
       label: "Python Environments...",
+      description: "Local Python kernels",
       action: async () => {
         const kernelInfo = await showPythonEnvironmentPicker();
         if (kernelInfo && documentUri) {

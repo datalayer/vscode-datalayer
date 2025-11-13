@@ -246,29 +246,14 @@ export abstract class BaseDocumentProvider<
 
     // Register outline-update handler
     this._messageRouter.registerHandler("outline-update", async (message) => {
-      console.log("[BaseDocumentProvider] Received outline-update message", {
-        type: message.type,
-        hasOutlineProvider: !!getOutlineTreeProvider(),
-      });
-
       const outlineProvider = getOutlineTreeProvider();
       if (outlineProvider && message.type === "outline-update") {
         const outlineMsg = message as unknown as OutlineUpdateMessage;
-        console.log("[BaseDocumentProvider] Calling updateOutline", {
-          documentUri: outlineMsg.documentUri,
-          itemCount: outlineMsg.items.length,
-          activeItemId: outlineMsg.activeItemId,
-        });
         outlineProvider.updateOutline(
           outlineMsg.documentUri,
           outlineMsg.items,
           outlineMsg.activeItemId,
         );
-      } else {
-        console.warn("[BaseDocumentProvider] Skipping outline update", {
-          hasProvider: !!outlineProvider,
-          messageType: message.type,
-        });
       }
     });
   }

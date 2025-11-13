@@ -33,6 +33,8 @@ export interface NotebookToolbarProps {
   isDatalayerNotebook?: boolean;
   /** Selected runtime information for Datalayer notebooks */
   selectedRuntime?: RuntimeJSON;
+  /** Kernel name (for non-runtime kernels like Pyodide) */
+  kernelName?: string;
 }
 
 /**
@@ -43,6 +45,7 @@ export const NotebookToolbar: React.FC<NotebookToolbarProps> = ({
   notebookId,
   isDatalayerNotebook = false,
   selectedRuntime,
+  kernelName,
 }) => {
   const messageHandler = useContext(MessageHandlerContext);
   const [kernelStatus, setKernelStatus] = useState<string>("disconnected");
@@ -196,6 +199,24 @@ export const NotebookToolbar: React.FC<NotebookToolbarProps> = ({
     }
   };
 
+  const handleClearAllOutputs = () => {
+    if (messageHandler) {
+      messageHandler.send({
+        type: "clear-all-outputs",
+        body: {},
+      });
+    }
+  };
+
+  const handleOpenOutline = () => {
+    if (messageHandler) {
+      messageHandler.send({
+        type: "open-outline",
+        body: {},
+      });
+    }
+  };
+
   const handleSelectRuntime = () => {
     if (messageHandler) {
       messageHandler.send({
@@ -226,12 +247,37 @@ export const NotebookToolbar: React.FC<NotebookToolbarProps> = ({
       priority: 2,
     },
     {
+      id: "separator-1",
+      icon: "",
+      label: "",
+      title: "",
+      onClick: () => {},
+      priority: 3,
+      isSeparator: true,
+    } as ToolbarAction & { isSeparator: boolean },
+    {
       id: "runAll",
       icon: "codicon codicon-run-all",
       label: "Run All",
       title: "Run All Cells",
       onClick: handleRunAll,
-      priority: 3,
+      priority: 4,
+    },
+    {
+      id: "clearAllOutputs",
+      icon: "codicon codicon-clear-all",
+      label: "Clear All Outputs",
+      title: "Clear All Outputs",
+      onClick: handleClearAllOutputs,
+      priority: 5,
+    },
+    {
+      id: "outline",
+      icon: "codicon codicon-list-tree",
+      label: "Outline",
+      title: "Open Outline",
+      onClick: handleOpenOutline,
+      priority: 6,
     },
   ];
 
@@ -255,15 +301,33 @@ export const NotebookToolbar: React.FC<NotebookToolbarProps> = ({
     >
       <BaseToolbar
         actions={actions}
-        renderAction={(action) => (
-          <ToolbarButton
-            icon={action.icon}
-            label={action.label}
-            onClick={action.onClick}
-            title={action.title}
-            disabled={action.disabled}
-          />
-        )}
+        renderAction={(action) => {
+          // Render separator
+          if ((action as any).isSeparator) {
+            return (
+              <div
+                style={{
+                  width: "1px",
+                  height: "20px",
+                  backgroundColor: "var(--vscode-panel-border)",
+                  margin: "0 4px",
+                  opacity: 0.5,
+                }}
+              />
+            );
+          }
+
+          // Render button
+          return (
+            <ToolbarButton
+              icon={action.icon}
+              label={action.label}
+              onClick={action.onClick}
+              title={action.title}
+              disabled={action.disabled}
+            />
+          );
+        }}
         estimatedButtonWidth={80}
         reservedRightWidth={reservedRightWidth}
         rightContent={
@@ -298,6 +362,7 @@ export const NotebookToolbar: React.FC<NotebookToolbarProps> = ({
 
             <KernelSelector
               selectedRuntime={selectedRuntime}
+              kernelName={kernelName}
               kernelStatus={
                 kernelStatus as "idle" | "busy" | "disconnected" | undefined
               }

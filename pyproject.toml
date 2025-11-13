@@ -1,0 +1,123 @@
+# Ruff configuration - replaces Black, isort, flake8, and pylint
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+exclude = [
+    ".git",
+    ".venv",
+    "venv",
+    "node_modules",
+    "dist",
+    "build",
+    "__pycache__",
+]
+
+[tool.ruff.lint]
+# Enable all recommended rules plus extras
+select = [
+    "E",     # pycodestyle errors
+    "W",     # pycodestyle warnings
+    "F",     # pyflakes
+    "I",     # isort (import sorting)
+    "B",     # flake8-bugbear
+    "C4",    # flake8-comprehensions
+    "UP",    # pyupgrade
+    "N",     # pep8-naming
+    "YTT",   # flake8-2020
+    "ANN",   # flake8-annotations
+    "ASYNC", # flake8-async
+    "S",     # flake8-bandit
+    "BLE",   # flake8-blind-except
+    "FBT",   # flake8-boolean-trap
+    "A",     # flake8-builtins
+    "COM",   # flake8-commas
+    "DTZ",   # flake8-datetimez
+    "T10",   # flake8-debugger
+    "ISC",   # flake8-implicit-str-concat
+    "ICN",   # flake8-import-conventions
+    "PIE",   # flake8-pie
+    "PT",    # flake8-pytest-style
+    "Q",     # flake8-quotes
+    "RSE",   # flake8-raise
+    "RET",   # flake8-return
+    "SLF",   # flake8-self
+    "SIM",   # flake8-simplify
+    "TCH",   # flake8-type-checking
+    "ARG",   # flake8-unused-arguments
+    "PTH",   # flake8-use-pathlib
+    "ERA",   # eradicate
+    "PL",    # pylint
+    "TRY",   # tryceratops
+    "RUF",   # Ruff-specific rules
+]
+
+ignore = [
+    "E501",    # line too long (handled by formatter)
+    "ANN101",  # missing type annotation for self
+    "ANN102",  # missing type annotation for cls
+    "ANN401",  # dynamically typed expressions (Any) are disallowed
+    "S101",    # use of assert detected
+    "PLR0913", # too many arguments
+    "PLR2004", # magic value used in comparison
+    "TRY003",  # avoid specifying long messages outside exception class
+    "COM812",  # trailing comma missing (conflicts with formatter)
+    "ISC001",  # implicit string concatenation (conflicts with formatter)
+]
+
+# Allow autofix for all enabled rules (when `--fix` is provided)
+fixable = ["ALL"]
+unfixable = []
+
+# Allow unused variables when underscore-prefixed
+dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
+
+[tool.ruff.format]
+# Use double quotes for strings
+quote-style = "double"
+# Indent with spaces
+indent-style = "space"
+# Respect magic trailing comma
+skip-magic-trailing-comma = false
+# Auto-detect line ending
+line-ending = "auto"
+
+[tool.ruff.lint.isort]
+# Combine multiple imports from same module
+combine-as-imports = true
+# Use parentheses for line continuation
+force-wrap-aliases = true
+# Sort imports in each section
+force-sort-within-sections = true
+
+[tool.ruff.lint.per-file-ignores]
+# Pyodide kernel has special requirements
+"webview/services/pyodide/pyodide_kernel.py" = [
+    "F821",    # undefined name (Pyodide globals like __user_code__)
+    "F704",    # await outside function (Pyodide runs this in async context)
+    "PLE1142", # await outside async function (same as F704)
+    "PLC0415", # import not at top level (needed for conditional imports)
+    "DTZ",     # datetime timezone (not applicable in Pyodide)
+    "S",       # security issues (not applicable in sandboxed Pyodide)
+    "BLE",     # blind except (needed for optional library imports)
+    "FBT",     # boolean trap (acceptable for configuration)
+    "PTH",     # use pathlib (not always available in Pyodide)
+    "ARG001",  # unused function argument (callbacks need exact signature)
+    "ARG002",  # unused method argument (same as ARG001)
+    "TRY300",  # use else block (early return pattern is clear)
+    "F401",    # imported but unused (import to check availability)
+    "ICN001",  # matplotlib import convention (not using full matplotlib)
+    "PLR0915", # too many statements (acceptable for complex setup)
+    "A002",    # shadowing builtin (format is common parameter name)
+    "E722",    # bare except (needed for optional libraries)
+    "B018",    # useless expression (None is intentional return value)
+]
+
+# mypy configuration
+[tool.mypy]
+python_version = "3.11"
+warn_return_any = true
+warn_unused_configs = true
+ignore_missing_imports = true
+check_untyped_defs = true
+disallow_untyped_defs = false  # Allow gradual typing
+
