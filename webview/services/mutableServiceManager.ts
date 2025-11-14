@@ -11,9 +11,11 @@
  * stable while swapping the internal service manager.
  */
 
-import { ServiceManager } from "@jupyterlab/services";
-import { createServiceManager } from "./serviceManager";
-import { createMockServiceManager } from "./mockServiceManager";
+import { ServiceManager, ServerConnection } from "@jupyterlab/services";
+import {
+  ServiceManagerFactory,
+  type ServiceManagerType,
+} from "./serviceManagerFactory";
 
 /**
  * Type guard to check if service manager has a dispose method
@@ -25,26 +27,17 @@ function hasDispose(
 }
 
 /**
- * Type guard to check if service manager is a mock
- */
-function isMockServiceManager(
-  sm: ServiceManager.IManager,
-): sm is ServiceManager.IManager & { __isMockServiceManager: boolean } {
-  return (
-    (sm as { __isMockServiceManager?: boolean }).__isMockServiceManager === true
-  );
-}
-
-/**
  * Mutable service manager wrapper that maintains a stable reference
  * while allowing the underlying service manager to be swapped.
  */
 export class MutableServiceManager {
   private _serviceManager: ServiceManager.IManager;
   private _listeners: Array<() => void> = [];
+  private _subProxies = new Map<string, unknown>();
 
   constructor(initialServiceManager?: ServiceManager.IManager) {
-    this._serviceManager = initialServiceManager || createMockServiceManager();
+    this._serviceManager =
+      initialServiceManager || ServiceManagerFactory.create({ type: "mock" });
   }
 
   /**
@@ -56,104 +49,66 @@ export class MutableServiceManager {
   }
 
   /**
-   * Update the service manager with new connection settings.
-   * This swaps the internal service manager without changing the wrapper reference.
-   *
-   * @param url - The base URL for the Jupyter server
-   * @param token - The authentication token
+   * Update to a mock service manager (no execution).
+   * Convenience method using ServiceManagerFactory.
    */
-  updateConnection(url: string, token: string): void {
-    // Updating connection
-
-    // Dispose the old service manager if it has a dispose method
-    if (this._serviceManager && hasDispose(this._serviceManager)) {
-      // Disposing old service manager
-      const oldSm = this._serviceManager;
-      try {
-        // Add a small delay to allow any pending operations to complete
-        setTimeout(() => {
-          try {
-            oldSm.dispose();
-          } catch (error) {
-            // Error during delayed disposal
-          }
-        }, 50);
-      } catch (error) {
-        // Continue with connection update anyway
-      }
-    }
-
-    // Create new service manager with new settings
-    this._serviceManager = createServiceManager(url, token);
-
-    // Notify listeners that the service manager has changed
-    this._listeners.forEach((listener) => listener());
+  updateToMock(): void {
+    this._disposeCurrentManager();
+    this._subProxies.clear();
+    this._serviceManager = ServiceManagerFactory.create({ type: "mock" });
+    this._notifyListeners();
   }
 
   /**
-   * Reset to mock service manager.
+   * Update to a local kernel service manager.
+   * Connects directly to VS Code Python environments via ZMQ.
+   *
+   * @param kernelId - Unique kernel identifier
+   * @param kernelName - Kernel spec name (e.g., 'python3')
+   * @param url - Base URL for kernel connection
    */
-  resetToMock(): void {
-    // Resetting to mock service manager
-
-    // Check if we're already using mock - if so, no need to change
-    if (isMockServiceManager(this._serviceManager)) {
-      // Already using mock service manager
-      return;
-    }
-
-    // Dispose the old service manager if it has a dispose method and it's not mock
-    if (this._serviceManager && hasDispose(this._serviceManager)) {
-      // Disposing old service manager
-      const oldSm = this._serviceManager;
-      try {
-        // Add a small delay to allow any pending operations to complete
-        setTimeout(() => {
-          try {
-            oldSm.dispose();
-          } catch (error) {
-            // Error during delayed disposal
-          }
-        }, 50);
-      } catch (error) {
-        // Continue with reset anyway
-      }
-    }
-
-    this._serviceManager = createMockServiceManager();
-
-    // Notify listeners
-    this._listeners.forEach((listener) => listener());
+  updateToLocal(kernelId: string, kernelName: string, url: string): void {
+    this._disposeCurrentManager();
+    this._subProxies.clear();
+    this._serviceManager = ServiceManagerFactory.create({
+      type: "local",
+      kernelId,
+      kernelName,
+      url,
+    });
+    this._notifyListeners();
   }
 
   /**
-   * Update the underlying service manager directly.
-   * This is useful when you need to replace the service manager with a custom one
-   * (e.g., LocalKernelServiceManager for local kernel connections).
+   * Update to a remote service manager.
+   * Connects to standard Jupyter server via HTTP/WebSocket.
    *
-   * @param serviceManager - The new service manager to use
+   * @param url - Base URL for the Jupyter server
+   * @param token - Authentication token
    */
-  updateServiceManager(serviceManager: ServiceManager.IManager): void {
-    // Dispose the old service manager if it has a dispose method
-    if (this._serviceManager && hasDispose(this._serviceManager)) {
-      const oldSm = this._serviceManager;
-      try {
-        setTimeout(() => {
-          try {
-            oldSm.dispose();
-          } catch (error) {
-            // Error during delayed disposal
-          }
-        }, 50);
-      } catch (error) {
-        // Continue with update anyway
-      }
-    }
+  updateToRemote(url: string, token: string): void {
+    this._disposeCurrentManager();
+    this._subProxies.clear();
+    const serverSettings = ServerConnection.makeSettings({
+      baseUrl: url,
+      token,
+      appendToken: true,
+      wsUrl: url.replace(/^http/, "ws"),
+    });
+    this._serviceManager = ServiceManagerFactory.create({
+      type: "remote",
+      serverSettings,
+    });
+    this._notifyListeners();
+  }
 
-    this._serviceManager = serviceManager;
-
-    // Notify listeners
-    this._listeners.forEach((listener) => listener());
+  /**
+   * Get the current service manager type.
+   *
+   * @returns Service manager type or 'unknown' if not created by factory
+   */
+  getType(): ServiceManagerType | "unknown" {
+    return ServiceManagerFactory.getType(this._serviceManager);
   }
 
   /**
@@ -175,6 +130,33 @@ export class MutableServiceManager {
   }
 
   /**
+   * Dispose the current service manager (internal helper).
+   */
+  private _disposeCurrentManager(): void {
+    if (this._serviceManager && hasDispose(this._serviceManager)) {
+      const oldSm = this._serviceManager;
+      try {
+        setTimeout(() => {
+          try {
+            oldSm.dispose();
+          } catch (error) {
+            // Error during delayed disposal
+          }
+        }, 50);
+      } catch (error) {
+        // Continue anyway
+      }
+    }
+  }
+
+  /**
+   * Notify all listeners of service manager change (internal helper).
+   */
+  private _notifyListeners(): void {
+    this._listeners.forEach((listener) => listener());
+  }
+
+  /**
    * Create a proxy that forwards all property access to the current service manager.
    * This allows the MutableServiceManager to be used as a drop-in replacement.
    *
@@ -184,9 +166,6 @@ export class MutableServiceManager {
    * old mock service manager's kernels/sessions even after we swap to a real one.
    */
   createProxy(): ServiceManager.IManager {
-    // Cache for sub-proxies (kernels, sessions, etc.) to maintain object identity
-    const subProxies = new Map<string, unknown>();
-
     return new Proxy({} as ServiceManager.IManager, {
       get: (_target, prop) => {
         const current = this._serviceManager as unknown as Record<
@@ -213,8 +192,8 @@ export class MutableServiceManager {
           ].includes(prop)
         ) {
           // Return cached proxy if exists to maintain object identity
-          if (subProxies.has(prop)) {
-            return subProxies.get(prop);
+          if (this._subProxies.has(prop)) {
+            return this._subProxies.get(prop);
           }
 
           // Create new proxy for this property
@@ -257,7 +236,7 @@ export class MutableServiceManager {
             },
           });
 
-          subProxies.set(prop, subProxy);
+          this._subProxies.set(prop, subProxy);
           return subProxy;
         }
 

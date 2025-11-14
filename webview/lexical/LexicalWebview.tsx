@@ -13,7 +13,7 @@
 
 import React, { useEffect, useState, useCallback, useRef } from "react";
 import ReactDOM from "react-dom/client";
-import { Jupyter } from "@datalayer/jupyter-react";
+import { ServiceManager } from "@jupyterlab/services";
 import { LexicalEditor } from "./LexicalEditor";
 import { vsCodeAPI } from "../services/messageHandler";
 import type { RuntimeJSON } from "@datalayer/core/lib/client";
@@ -22,6 +22,11 @@ import {
   createLexicalStore,
   type CollaborationConfig,
 } from "../stores/lexicalStore";
+import { createRuntimeMessageHandlers } from "../utils/runtimeMessageHandlers";
+import type {
+  KernelSelectedMessage,
+  RuntimeSelectedMessage,
+} from "../types/messages";
 import "@vscode/codicons/dist/codicon.css";
 import "@datalayer/jupyter-lexical/style/index.css";
 // Import Prism language grammars explicitly (webpack needs this!)
@@ -62,9 +67,11 @@ interface WebviewMessage {
 function LexicalWebviewInner({
   selectedRuntime,
   onRuntimeSelected,
+  serviceManager,
 }: {
   selectedRuntime?: RuntimeJSON;
   onRuntimeSelected: (runtime: RuntimeJSON | undefined) => void;
+  serviceManager: ServiceManager.IManager;
 }) {
   // Create per-instance store - prevents global state sharing
   const [store] = useState(() => createLexicalStore());
@@ -72,6 +79,12 @@ function LexicalWebviewInner({
   // CRITICAL: Use ref instead of state to avoid stale closure issues!
   // The messageHandler closure needs to see the LATEST value, not the value when useEffect ran.
   const documentIdRef = useRef<string | null>(null);
+
+  // Create runtime message handlers using shared utilities
+  const runtimeHandlers = React.useMemo(
+    () => createRuntimeMessageHandlers(onRuntimeSelected),
+    [onRuntimeSelected],
+  );
 
   useEffect(() => {
     const messageHandler = (event: MessageEvent<WebviewMessage>) => {
@@ -170,22 +183,21 @@ function LexicalWebviewInner({
           });
           break;
         }
-        case "kernel-selected": {
-          const body = message.body as { runtime?: RuntimeJSON } | undefined;
-          if (body?.runtime) {
-            onRuntimeSelected(body.runtime);
-          }
+        case "kernel-selected":
+        case "runtime-selected":
+          runtimeHandlers.onRuntimeSelected(
+            message as KernelSelectedMessage | RuntimeSelectedMessage,
+          );
           break;
-        }
-        case "kernel-terminated": {
-          onRuntimeSelected(undefined);
+
+        case "kernel-terminated":
+        case "runtime-terminated":
+          runtimeHandlers.onRuntimeTerminated();
           break;
-        }
-        case "runtime-expired": {
-          // Runtime has expired - reset to mock service manager
-          onRuntimeSelected(undefined);
+
+        case "runtime-expired":
+          runtimeHandlers.onRuntimeExpired();
           break;
-        }
       }
     };
 
@@ -202,7 +214,7 @@ function LexicalWebviewInner({
       window.removeEventListener("message", messageHandler);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [onRuntimeSelected]); // store access doesn't need to be in deps - Zustand handles reactivity
+  }, [runtimeHandlers]); // store access doesn't need to be in deps - Zustand handles reactivity
 
   const handleSave = useCallback(
     (newContent: string) => {
@@ -279,6 +291,7 @@ function LexicalWebviewInner({
           vscode={{ postMessage: (msg) => vscode.postMessage(msg) }}
           navigationTarget={navigationTarget}
           onNavigated={handleNavigated}
+          serviceManager={serviceManager}
         />
       ) : (
         <div
@@ -358,34 +371,17 @@ function LexicalWebview() {
   // No key prop = no forced remount! State is preserved.
   // IMPORTANT: We ALWAYS provide serviceManager (mock or real via useRuntimeManager)
   // MUST set lite=false to tell the library to use our serviceManager
-  // Start kernel when runtime is selected (selectedRuntime exists and has ingress)
-  const shouldStartKernel = !!selectedRuntime?.ingress;
+  // startDefaultKernel triggers kernel start when we have a runtime
 
-  // CRITICAL: Force remount when runtime URL changes!
-  // The Jupyter React library caches config in useMemo with empty deps [],
-  // so we MUST force a full remount to reload config with new URL.
-  const jupyterKey = selectedRuntime?.ingress || "no-runtime";
-
+  // Pass serviceManager and selectedRuntime to LexicalWebviewInner
+  // The Jupyter wrapper will be INSIDE LexicalEditor, wrapping only kernel plugins
+  // This prevents the entire editor from remounting when runtime changes
   return (
-    <Jupyter
-      key={jupyterKey}
-      // @ts-ignore - Type mismatch between @jupyterlab/services versions
+    <LexicalWebviewInner
+      selectedRuntime={selectedRuntime}
+      onRuntimeSelected={selectRuntime}
       serviceManager={serviceManager}
-      // IMPORTANT: DO NOT pass jupyterServerUrl and jupyterServerToken when using custom serviceManager!
-      // Passing these causes Jupyter React to create its OWN ServiceManager using native fetch/WebSocket,
-      // which bypasses our proxying system and causes CORS errors.
-      // The serviceManager already has the correct URL and token baked in.
-      startDefaultKernel={shouldStartKernel}
-      defaultKernelName="python"
-      lite={false}
-      collaborative={false}
-      terminals={false}
-    >
-      <LexicalWebviewInner
-        selectedRuntime={selectedRuntime}
-        onRuntimeSelected={selectRuntime}
-      />
-    </Jupyter>
+    />
   );
 }
 

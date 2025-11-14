@@ -232,18 +232,11 @@ export class KernelBridge implements vscode.Disposable {
       mockRuntime,
     );
 
-    // For local kernels, send a special message that directly injects the kernel
-    // instead of going through the runtime/session creation flow
+    // Send standard kernel-selected message (same as any other kernel type)
+    // No need for special local-kernel-connected message!
     const message = {
-      type: "local-kernel-connected",
+      type: "kernel-selected",
       body: {
-        kernelId: kernelInfo.id,
-        kernelInfo: {
-          id: kernelInfo.id,
-          name: "python3",
-          displayName: kernelInfo.displayName,
-        },
-        // Also send runtime for backward compatibility
         runtime: mockRuntime,
       },
     };
