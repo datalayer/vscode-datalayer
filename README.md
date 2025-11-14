@@ -189,9 +189,9 @@ Open settings (`Ctrl+,` / `Cmd+,`) and search "Datalayer":
 
 ## Developer Resources
 
-- [DEVELOPMENT.md](./DEVELOPMENT.md) - Setup, debugging, architecture, jupyter package workflow
-- [CONTRIBUTING.md](./CONTRIBUTING.md) - Contribution guidelines
-- [TESTING.md](./TESTING.md) - Test infrastructure (41 tests, 100% pass)
+- [DEVELOPMENT.md](./dev/docs/DEVELOPMENT.md) - Setup, debugging, architecture, jupyter package workflow
+- [CONTRIBUTING.md](./dev/docs/CONTRIBUTING.md) - Contribution guidelines
+- [TESTING.md](./dev/docs/TESTING.md) - Test infrastructure (41 tests, 100% pass)
 - [CHANGELOG.md](./CHANGELOG.md) - Version history
 - [API Documentation](https://datalayer-desktop.netlify.app) - Complete TypeScript API reference
 

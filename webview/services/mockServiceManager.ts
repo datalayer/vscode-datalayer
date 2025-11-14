@@ -11,7 +11,51 @@
  * allowing the notebook UI to function in read-only or demonstration modes.
  */
 
-import type { ServiceManager, ServerConnection } from "@jupyterlab/services";
+import type {
+  ServiceManager,
+  ServerConnection,
+  Kernel,
+  Session,
+} from "@jupyterlab/services";
+import {
+  serialize,
+  deserialize,
+} from "@jupyterlab/services/lib/kernel/serialize";
+import { BaseKernelManager, BaseSessionManager } from "./base";
+
+/**
+ * Mock kernel manager that throws errors on execution attempts.
+ * Used for read-only notebook viewing without kernel execution.
+ */
+class MockKernelManager extends BaseKernelManager {
+  readonly managerType = "mock" as const;
+
+  async startNew(): Promise<Kernel.IKernelConnection> {
+    throw new Error(
+      "To enable running cells, you must select a kernel. Cell execution is not yet available for Datalayer notebooks.",
+    );
+  }
+
+  override connectTo(): Kernel.IKernelConnection {
+    throw new Error(
+      "To enable running cells, you must select a kernel. Cell execution is not yet available for Datalayer notebooks.",
+    );
+  }
+}
+
+/**
+ * Mock session manager that throws errors on execution attempts.
+ * Used for read-only notebook viewing without session execution.
+ */
+class MockSessionManager extends BaseSessionManager {
+  readonly managerType = "mock" as const;
+
+  async startNew(): Promise<Session.ISessionConnection> {
+    throw new Error(
+      "To enable running cells, you must select a kernel. Cell execution is not yet available for Datalayer notebooks.",
+    );
+  }
+}
 
 /**
  * Creates a mock service manager that provides the JupyterLab service interfaces
@@ -42,13 +86,33 @@ import type { ServiceManager, ServerConnection } from "@jupyterlab/services";
  * ```
  */
 export function createMockServiceManager(): ServiceManager.IManager {
+  const serverSettings = {
+    baseUrl: "",
+    appUrl: "",
+    wsUrl: "",
+    token: "",
+    appendToken: false,
+    init: {} satisfies RequestInit,
+    fetch: globalThis.fetch.bind(globalThis),
+    Headers: Headers,
+    Request: Request,
+    WebSocket: WebSocket,
+    serializer: { serialize, deserialize },
+  } satisfies ServerConnection.ISettings;
+
+  const kernelManager = new MockKernelManager(serverSettings);
+  const sessionManager = new MockSessionManager(serverSettings);
+
   const mockServiceManager = {
     __isMockServiceManager: true, // Flag to identify mock service manager
     ready: Promise.resolve(),
     isReady: true,
     disposed: { connect: () => {}, disconnect: () => {} },
     isDisposed: false,
-    dispose: () => {},
+    dispose: () => {
+      kernelManager.dispose();
+      sessionManager.dispose();
+    },
 
     // Mock kernel spec manager
     kernelspecs: {
@@ -74,60 +138,11 @@ export function createMockServiceManager(): ServiceManager.IManager {
       specsChanged: { connect: () => {}, disconnect: () => {} },
     },
 
-    // Mock kernel manager
-    kernels: {
-      ready: Promise.resolve(),
-      isReady: true,
-      runningChanged: { connect: () => {}, disconnect: () => {} },
-      connectionFailure: { connect: () => {}, disconnect: () => {} },
-      disposed: { connect: () => {}, disconnect: () => {} },
-      isDisposed: false,
-      dispose: () => {},
-      running: () => [],
-      refreshRunning: () => Promise.resolve(),
-      startNew: async () => {
-        throw new Error(
-          "To enable running cells, you must select a kernel. Cell execution is not yet available for Datalayer notebooks.",
-        );
-      },
-      findById: () => undefined,
-      connectTo: () => {
-        throw new Error(
-          "To enable running cells, you must select a kernel. Cell execution is not yet available for Datalayer notebooks.",
-        );
-      },
-      shutdown: () => Promise.resolve(),
-      shutdownAll: () => Promise.resolve(),
-    },
+    // Use our mock kernel manager
+    kernels: kernelManager as unknown as ServiceManager.IManager["kernels"],
 
-    // Mock session manager
-    sessions: {
-      ready: Promise.resolve(),
-      isReady: true,
-      runningChanged: { connect: () => {}, disconnect: () => {} },
-      connectionFailure: { connect: () => {}, disconnect: () => {} },
-      disposed: { connect: () => {}, disconnect: () => {} },
-      isDisposed: false,
-      dispose: () => {},
-      running: () => [],
-      refreshRunning: () => Promise.resolve(),
-      startNew: async () => {
-        throw new Error(
-          "To enable running cells, you must select a kernel. Cell execution is not yet available for Datalayer notebooks.",
-        );
-      },
-      findById: () => undefined,
-      findByPath: () => undefined,
-      connectTo: () => {
-        throw new Error(
-          "To enable running cells, you must select a kernel. Cell execution is not yet available for Datalayer notebooks.",
-        );
-      },
-      shutdown: () => Promise.resolve(),
-      shutdownAll: () => Promise.resolve(),
-      stopIfNeeded: () => Promise.resolve(false),
-      getModel: () => undefined,
-    },
+    // Use our mock session manager
+    sessions: sessionManager as unknown as ServiceManager.IManager["sessions"],
 
     // Mock contents manager
     contents: {
@@ -259,21 +274,7 @@ export function createMockServiceManager(): ServiceManager.IManager {
     },
 
     // Server settings
-    serverSettings: (() => {
-      const settings: Partial<ServerConnection.ISettings> = {
-        baseUrl: "",
-        appUrl: "",
-        wsUrl: "",
-        token: "",
-        appendToken: false,
-        init: {} satisfies RequestInit,
-        fetch: globalThis.fetch.bind(globalThis),
-        Headers: Headers,
-        Request: Request,
-        WebSocket: WebSocket,
-      };
-      return settings;
-    })(),
+    serverSettings,
   } as unknown as ServiceManager.IManager;
 
   return mockServiceManager;

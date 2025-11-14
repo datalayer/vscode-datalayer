@@ -468,9 +468,16 @@ webview/
 │   ├── mapping/              # Color mappers
 │   └── providers/            # Theme providers
 └── services/                  # Webview services
-    ├── messageHandler.ts     # Extension communication
-    ├── mockServiceManager.ts # Development mock
-    └── serviceManager.ts     # Service management
+    ├── base/                 # Base manager classes (Template Method pattern)
+    │   ├── baseKernelManager.ts   # Base kernel lifecycle manager
+    │   ├── baseSessionManager.ts  # Base session lifecycle manager
+    │   └── index.ts               # Clean exports
+    ├── messageHandler.ts          # Extension communication
+    ├── mockServiceManager.ts      # Mock service manager (read-only mode)
+    ├── localKernelServiceManager.ts # Local kernel manager (VS Code Python)
+    ├── serviceManager.ts          # Remote service manager (Jupyter servers)
+    ├── mutableServiceManager.ts   # Dynamic runtime switching
+    └── serviceManagerFactory.ts   # Type-safe factory pattern
 ```
 
 ### Architecture Principles
@@ -486,6 +493,59 @@ webview/
 3. **Message Passing**: Extension and webview communicate via structured messages with JWT tokens
 
 4. **Virtual File System**: Datalayer documents are mapped to virtual URIs for seamless VS Code integration
+
+### Unified Kernel Architecture
+
+The extension uses a Template Method pattern for kernel management, eliminating ~174 lines of duplicate code across different kernel types.
+
+#### Base Manager Classes
+
+**BaseKernelManager** (`webview/services/base/baseKernelManager.ts`):
+- Abstract base class implementing common `Kernel.IManager` methods
+- Template Method pattern: subclasses only implement `startNew()`
+- Provides: `shutdown()`, `dispose()`, `running()`, `requestRunning()`, signal management
+- Type discriminator: `KernelManagerType = "mock" | "pyodide" | "local" | "remote"`
+
+**BaseSessionManager** (`webview/services/base/baseSessionManager.ts`):
+- Abstract base class implementing common `Session.IManager` methods
+- Template Method pattern: subclasses only implement `startNew()`
+- Provides: session lifecycle, disposal, signals, `requestRunning()`
+- Type discriminator: `SessionManagerType = "mock" | "pyodide" | "local" | "remote"`
+
+#### Service Manager Implementations
+
+**MockServiceManager** (`webview/services/mockServiceManager.ts`):
+- Extends base classes for read-only notebook viewing
+- Throws helpful errors when execution is attempted
+- Used when no kernel is selected
+
+**LocalKernelServiceManager** (`webview/services/localKernelServiceManager.ts`):
+- Extends base classes for direct ZMQ communication with VS Code Python environments
+- Creates `LocalKernelConnection` bypassing HTTP/WebSocket flow
+- Detects local kernel URLs: `http://local-kernel-<kernelId>.localhost`
+
+**Remote ServiceManager** (`webview/services/serviceManager.ts`):
+- Standard JupyterLab `ServiceManager` for remote Jupyter servers
+- Unchanged from JupyterLab implementation
+
+**ServiceManagerFactory** (`webview/services/serviceManagerFactory.ts`):
+- Type-safe factory with discriminated unions
+- Methods: `create(options)`, `isMock(manager)`, `getType(manager)`
+- Includes 'pyodide' type that throws "not yet implemented" for future PR
+
+**MutableServiceManager** (`webview/services/mutableServiceManager.ts`):
+- Enables hot-swapping between kernel types without re-rendering `Notebook2`
+- Uses Proxy pattern to forward calls to current underlying manager
+- Methods: `updateConnection()`, `updateServiceManager()`, `resetToMock()`
+- Prevents cell flickering and scroll position loss during runtime switches
+
+#### Benefits
+
+1. **Code Reuse**: ~174 lines eliminated through base classes
+2. **Type Safety**: Discriminated unions ensure correct options per manager type
+3. **Extensibility**: Adding new kernel types only requires implementing `startNew()`
+4. **Debugging**: Runtime type identification via `managerType` property
+5. **UX**: Stable references prevent unnecessary React re-renders
 
 ## Documentation
 

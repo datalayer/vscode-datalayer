@@ -28,79 +28,27 @@ import {
 import { ISignal, Signal } from "@lumino/signaling";
 import { LocalKernelConnection } from "./localKernelConnection";
 import { UUID } from "@lumino/coreutils";
+import { BaseKernelManager, BaseSessionManager } from "./base";
 
 /**
  * Custom KernelManager for local kernels.
- * Provides kernel spec information and creates LocalKernelConnection.
+ * Extends BaseKernelManager to eliminate ~200 lines of duplicate code.
  */
-class LocalKernelManager implements Kernel.IManager {
-  private _kernelId: string;
-  private _kernelName: string;
-  private _serverSettings: ServerConnection.ISettings;
-  private _activeKernel: Kernel.IKernelConnection | null = null;
-  private _connectionFailure = new Signal<this, Error>(this);
-  private _runningChanged = new Signal<this, Kernel.IModel[]>(this);
+class LocalKernelManager extends BaseKernelManager {
+  readonly managerType = "local" as const;
 
   constructor(
-    kernelId: string,
-    kernelName: string,
+    private _kernelId: string,
+    private _kernelName: string,
     serverSettings: ServerConnection.ISettings,
   ) {
-    this._kernelId = kernelId;
-    this._kernelName = kernelName;
-    this._serverSettings = serverSettings;
+    super(serverSettings);
   }
 
-  get serverSettings(): ServerConnection.ISettings {
-    return this._serverSettings;
-  }
-
-  get connectionFailure(): ISignal<this, Error> {
-    return this._connectionFailure;
-  }
-
-  get isReady() {
-    return true;
-  }
-
-  get ready() {
-    return Promise.resolve();
-  }
-
-  get isDisposed() {
-    return false;
-  }
-
-  get disposed(): ISignal<this, void> {
-    return new Signal(this);
-  }
-
-  get runningChanged(): ISignal<this, Kernel.IModel[]> {
-    return this._runningChanged;
-  }
-
-  get runningCount(): number {
-    return this._activeKernel ? 1 : 0;
-  }
-
-  get isActive(): boolean {
-    return true;
-  }
-
-  async findById(_id: string): Promise<Kernel.IModel | undefined> {
-    if (this._activeKernel && this._activeKernel.id === _id) {
-      return this._activeKernel.model;
-    }
-    return undefined;
-  }
-
-  dispose(): void {
-    if (this._activeKernel) {
-      this._activeKernel.dispose();
-      this._activeKernel = null;
-    }
-  }
-
+  /**
+   * Start a new local kernel connection.
+   * Creates LocalKernelConnection with direct ZMQ communication to VS Code.
+   */
   async startNew(
     _options?: Partial<Pick<Kernel.IModel, "name">>,
     _connectOptions?: Omit<
@@ -108,7 +56,7 @@ class LocalKernelManager implements Kernel.IManager {
       "model" | "serverSettings"
     >,
   ): Promise<Kernel.IKernelConnection> {
-    console.log(`[LocalKernelManager] startNew called`);
+    this.log("startNew called");
 
     // Create LocalKernelConnection
     const kernelConnection = new LocalKernelConnection({
@@ -118,130 +66,56 @@ class LocalKernelManager implements Kernel.IManager {
         id: this._kernelId,
         name: this._kernelName,
       },
-      serverSettings: this._serverSettings,
+      serverSettings: this.serverSettings,
       clientId: UUID.uuid4(),
       username: "user",
       handleComms: true,
     });
 
     this._activeKernel = kernelConnection;
-    console.log(`[LocalKernelManager] Created LocalKernelConnection`);
+    this._runningChanged.emit([kernelConnection.model]);
+    this.log("Created LocalKernelConnection");
 
     return kernelConnection;
   }
 
-  connectTo(
+  /**
+   * Connect to existing kernel.
+   * For local kernels, returns active kernel or throws.
+   */
+  override connectTo(
     _options: Kernel.IKernelConnection.IOptions,
   ): Kernel.IKernelConnection {
-    console.log(`[LocalKernelManager] connectTo called (using startNew)`);
-    // For local kernels, we just return the active kernel or create a new one
+    this.log("connectTo called");
     if (this._activeKernel) {
       return this._activeKernel;
     }
-    // This is a sync operation required by the interface, but we need to create async
-    // We'll throw for now since this shouldn't be called in our local kernel flow
     throw new Error(
       "connectTo called without active kernel - use startNew instead",
-    );
-  }
-
-  async shutdown(id: string): Promise<void> {
-    console.log(`[LocalKernelManager] shutdown called for id: ${id}`);
-    if (this._activeKernel && this._activeKernel.id === id) {
-      await this._activeKernel.shutdown();
-    }
-  }
-
-  async shutdownAll(): Promise<void> {
-    console.log(`[LocalKernelManager] shutdownAll called`);
-    if (this._activeKernel) {
-      await this._activeKernel.shutdown();
-    }
-  }
-
-  running(): IterableIterator<Kernel.IModel> {
-    if (this._activeKernel) {
-      return [this._activeKernel.model].values();
-    }
-    return [].values();
-  }
-
-  async refreshRunning(): Promise<void> {
-    console.log(
-      `[LocalKernelManager] refreshRunning called (no-op for local kernels)`,
     );
   }
 }
 
 /**
  * Custom SessionManager for local kernels.
+ * Extends BaseSessionManager to eliminate duplicate code.
  * Returns sessions with LocalKernelConnection instead of standard KernelConnection.
  */
-class LocalSessionManager implements Session.IManager {
-  private _kernelId: string;
-  private _kernelName: string;
-  private _serverSettings: ServerConnection.ISettings;
-  private _activeSession: Session.ISessionConnection | null = null;
-  private _connectionFailure = new Signal<this, Error>(this);
-  private _runningChanged = new Signal<this, Session.IModel[]>(this);
+class LocalSessionManager extends BaseSessionManager {
+  readonly managerType = "local" as const;
 
   constructor(
-    kernelId: string,
-    kernelName: string,
+    private _kernelId: string,
+    private _kernelName: string,
     serverSettings: ServerConnection.ISettings,
   ) {
-    this._kernelId = kernelId;
-    this._kernelName = kernelName;
-    this._serverSettings = serverSettings;
+    super(serverSettings);
   }
 
-  // Required by IManager interface but not implemented for local kernels
-  get serverSettings(): ServerConnection.ISettings {
-    return this._serverSettings;
-  }
-
-  get connectionFailure(): ISignal<this, Error> {
-    return this._connectionFailure;
-  }
-
-  get isReady() {
-    return true;
-  }
-
-  get ready() {
-    return Promise.resolve();
-  }
-
-  get isDisposed() {
-    return false;
-  }
-
-  get runningChanged(): ISignal<this, Session.IModel[]> {
-    return this._runningChanged;
-  }
-
-  async findById(_id: string): Promise<Session.IModel | undefined> {
-    if (this._activeSession && this._activeSession.id === _id) {
-      return this._activeSession as Session.IModel;
-    }
-    return undefined;
-  }
-
-  async findByPath(_path: string): Promise<Session.IModel | undefined> {
-    if (this._activeSession && this._activeSession.path === _path) {
-      return this._activeSession as Session.IModel;
-    }
-    return undefined;
-  }
-
-  dispose(): void {
-    if (this._activeSession) {
-      this._activeSession.dispose();
-      this._activeSession = null;
-    }
-  }
-
-  // Session management methods
+  /**
+   * Start a new local session with LocalKernelConnection.
+   * Creates a session that wraps our direct ZMQ kernel connection.
+   */
   async startNew(
     options: Session.ISessionOptions,
     _connectOptions?: Omit<
@@ -249,7 +123,7 @@ class LocalSessionManager implements Session.IManager {
       "model" | "serverSettings" | "connectToKernel"
     >,
   ): Promise<Session.ISessionConnection> {
-    console.log(`[LocalSessionManager] startNew called with options:`, options);
+    this.log("startNew called", options);
 
     // Create LocalKernelConnection
     const kernelConnection = new LocalKernelConnection({
@@ -259,7 +133,7 @@ class LocalSessionManager implements Session.IManager {
         id: this._kernelId,
         name: this._kernelName,
       },
-      serverSettings: this._serverSettings,
+      serverSettings: this.serverSettings,
       clientId: UUID.uuid4(),
       username: "user",
       handleComms: true,
@@ -274,12 +148,11 @@ class LocalSessionManager implements Session.IManager {
       kernel: kernelConnection.model,
     };
 
-    // Create session connection
-    // We need to create a minimal Session.ISessionConnection that wraps our LocalKernelConnection
+    // Create session connection wrapping LocalKernelConnection
     const sessionConnection: Session.ISessionConnection = {
       ...sessionModel,
       model: sessionModel,
-      serverSettings: this._serverSettings,
+      serverSettings: this.serverSettings,
       isDisposed: false,
       disposed: kernelConnection.disposed as unknown as ISignal<
         Session.ISessionConnection,
@@ -325,18 +198,14 @@ class LocalSessionManager implements Session.IManager {
       },
 
       async setPath(_path: string) {
-        // For local kernels, we don't actually update the path
-        // Just log and no-op
         console.log(`[LocalSessionManager] setPath called (no-op)`);
       },
 
       async setName(_name: string) {
-        // For local kernels, we don't actually update the name
         console.log(`[LocalSessionManager] setName called (no-op)`);
       },
 
       async setType(_type: string) {
-        // For local kernels, we don't actually update the type
         console.log(`[LocalSessionManager] setType called (no-op)`);
       },
 
@@ -353,58 +222,10 @@ class LocalSessionManager implements Session.IManager {
     };
 
     this._activeSession = sessionConnection;
-    console.log(
-      `[LocalSessionManager] Created session with LocalKernelConnection`,
-    );
+    this._runningChanged.emit([sessionConnection.model]);
+    this.log("Created session with LocalKernelConnection");
 
     return sessionConnection;
-  }
-
-  connectTo(
-    _options: Omit<
-      Kernel.IKernelConnection.IOptions,
-      "serverSettings" | "connectToKernel"
-    >,
-  ): Session.ISessionConnection {
-    console.log(`[LocalSessionManager] connectTo called`);
-    // For local kernels, we just return the active session or throw
-    if (this._activeSession) {
-      return this._activeSession;
-    }
-    throw new Error(
-      "connectTo called without active session - use startNew instead",
-    );
-  }
-
-  async stopIfNeeded(_path: string): Promise<void> {
-    console.log(`[LocalSessionManager] stopIfNeeded called (no-op)`);
-  }
-
-  async refreshRunning(): Promise<void> {
-    console.log(
-      `[LocalSessionManager] refreshRunning called (no-op for local kernels)`,
-    );
-  }
-
-  async shutdown(id: string): Promise<void> {
-    console.log(`[LocalSessionManager] shutdown called for id: ${id}`);
-    if (this._activeSession && this._activeSession.id === id) {
-      await this._activeSession.shutdown();
-    }
-  }
-
-  async shutdownAll(): Promise<void> {
-    console.log(`[LocalSessionManager] shutdownAll called`);
-    if (this._activeSession) {
-      await this._activeSession.shutdown();
-    }
-  }
-
-  running(): IterableIterator<Session.IModel> {
-    if (this._activeSession) {
-      return [this._activeSession as Session.IModel].values();
-    }
-    return [].values();
   }
 }
 
