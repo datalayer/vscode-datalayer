@@ -430,6 +430,8 @@ export function LexicalEditor({
         url: "token-url",
         variable: "token-variable",
       },
+      draggableBlockMenu: "vscode-draggable-block-menu",
+      draggableBlockTargetLine: "vscode-draggable-block-target-line",
     },
     onError(_error: Error) {
       // Silently handle Lexical errors

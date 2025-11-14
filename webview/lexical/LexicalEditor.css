@@ -1403,3 +1403,17 @@ input[type="color"]:disabled {
   overflow: visible !important;
   max-height: none !important;
 }
+
+/* ========================================
+   Draggable Block Plugin - VS Code Theme
+   ======================================== */
+
+/* VS Code themed hover background for draggable menu icon */
+.vscode-draggable-block-menu:hover {
+  background-color: var(--vscode-list-hoverBackground) !important;
+}
+
+/* VS Code themed target line color (drop indicator) */
+.vscode-draggable-block-target-line {
+  background: var(--vscode-focusBorder) !important;
+}
