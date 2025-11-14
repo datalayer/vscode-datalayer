@@ -53,6 +53,14 @@ export function getOutlineTreeProvider() {
 }
 
 /**
+ * Get the runtimes tree provider instance.
+ * @returns The runtimes tree provider or undefined if not initialized
+ */
+export function getRuntimesTreeProvider() {
+  return ui?.runtimesTreeProvider;
+}
+
+/**
  * Activates the Datalayer VS Code extension.
  * This function is called when the extension is activated by VS Code.
  * It orchestrates the initialization of all components using the service container.

@@ -19,9 +19,15 @@ import { getNotebookHtml } from "../ui/templates/notebookTemplate";
 import { WebviewCollection } from "../utils/webviewCollection";
 import { NotebookDocument, NotebookEdit } from "../models/notebookDocument";
 import { SDKAuthProvider } from "../services/core/authProvider";
-import { getServiceContainer, getOutlineTreeProvider } from "../extension";
+import {
+  getServiceContainer,
+  getOutlineTreeProvider,
+  getRuntimesTreeProvider,
+} from "../extension";
 import { selectDatalayerRuntime } from "../ui/dialogs/runtimeSelector";
 import { BaseDocumentProvider } from "./baseDocumentProvider";
+import { AutoConnectService } from "../services/autoConnect/autoConnectService";
+import type { RuntimeDTO } from "@datalayer/core/lib/models/RuntimeDTO";
 
 /**
  * Custom editor provider for Jupyter notebooks with dual-mode support.
@@ -105,6 +111,11 @@ export class NotebookProvider extends BaseDocumentProvider<NotebookDocument> {
    * Tracks all known webviews
    */
   private readonly webviews = new WebviewCollection();
+
+  /**
+   * Auto-connect service for automatically connecting to runtimes
+   */
+  private readonly autoConnectService = new AutoConnectService();
 
   /**
    * Creates a new NotebookProvider.
@@ -428,6 +439,9 @@ export class NotebookProvider extends BaseDocumentProvider<NotebookDocument> {
             notebookId,
             documentUri: document.uri.toString(), // For logging
           });
+
+          // Try auto-connect after init
+          await this.tryAutoConnect(document.uri);
         }
       }
     });
@@ -668,6 +682,54 @@ Complete the code at <CURSOR>:`;
       .catch((error) => {
         vscode.window.showErrorMessage(`Failed to select runtime: ${error}`);
       });
+  }
+
+  /**
+   * Attempts to auto-connect the document to a runtime using configured strategies.
+   *
+   * @param documentUri - URI of the document being opened
+   */
+  private async tryAutoConnect(documentUri: vscode.Uri): Promise<void> {
+    try {
+      const sdk = getServiceContainer().sdk;
+      const authProvider = getServiceContainer()
+        .authProvider as SDKAuthProvider;
+      const runtimesTreeProvider = getRuntimesTreeProvider();
+
+      // Get current runtime if any (no API for this yet, so pass undefined)
+      const currentRuntime: RuntimeDTO | undefined = undefined;
+
+      // Try auto-connect
+      const runtime = await this.autoConnectService.connect(
+        documentUri,
+        currentRuntime,
+        sdk,
+        authProvider,
+        runtimesTreeProvider,
+      );
+
+      if (runtime) {
+        console.log(
+          `[NotebookProvider] Auto-connect successful for ${documentUri.fsPath}`,
+        );
+
+        // Connect the webview to the runtime via kernel bridge
+        await getServiceContainer().kernelBridge.connectWebviewDocument(
+          documentUri,
+          runtime,
+        );
+      } else {
+        console.log(
+          `[NotebookProvider] Auto-connect skipped or failed for ${documentUri.fsPath}`,
+        );
+      }
+    } catch (error) {
+      console.error(
+        `[NotebookProvider] Auto-connect error for ${documentUri.fsPath}:`,
+        error,
+      );
+      // Don't show error to user - auto-connect is optional
+    }
   }
 }
 

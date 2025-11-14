@@ -1,8 +1,52 @@
 # Datalayer VS Code Extension - Developer Context
 
-**Last Updated**: January 2025
+**Last Updated**: November 2025
 
 ## Critical Recent Changes
+
+### Auto-Connect Feature (November 2025)
+
+**Status**: Fully implemented and working
+**Location**: `src/services/autoConnect/`
+**Purpose**: Automatically connects documents to runtimes when opened
+
+**Architecture**:
+
+- **Strategy Pattern**: Extensible design for different connection strategies
+- **Configuration**: `datalayer.autoConnect.strategies` array setting
+- **Default**: `["Active Runtime", "Ask"]` - tries active runtime, then asks user
+
+**Available Strategies**:
+
+```typescript
+"Active Runtime"; // Selects runtime with MOST TIME REMAINING (sorted by expiredAt - now)
+"Ask"; // Shows Quick Pick dialog (same as Select Kernel)
+```
+
+**Key Design Decisions**:
+
+- **Smart Selection**: ActiveRuntimeStrategy sorts runtimes by remaining time (expiredAt - now) in descending order, always selecting the runtime with the most time available to maximize session duration
+- **No Extra API Calls**: Uses `RuntimesTreeProvider.getCachedRuntimes()` to access already-loaded runtime data from the sidebar
+- **Strategy Pattern**: Extensible design allows adding new connection strategies without modifying existing code
+
+**Files**:
+
+- `src/services/autoConnect/autoConnectService.ts` - Main service with fallback chain
+- `src/services/autoConnect/strategies/activeRuntimeStrategy.ts` - Selects runtime with most time remaining (sorted by expiredAt)
+- `src/services/autoConnect/strategies/askUserStrategy.ts` - Shows runtime picker
+- `src/providers/notebookProvider.ts` - Integrated in resolveCustomEditor
+- `src/providers/lexicalProvider.ts` - Integrated in resolveCustomEditor
+- `src/providers/runtimesTreeProvider.ts` - Added `getCachedRuntimes()` method
+- `src/extension.ts` - Added `getRuntimesTreeProvider()` export
+
+**Configuration Examples**:
+
+```json
+["Active Runtime"]           // Auto-connect to runtime with most time remaining, silent if none
+["Active Runtime", "Ask"]    // Try runtime, ask if none (DEFAULT)
+["Ask"]                      // Always ask user
+[]                           // Disabled
+```
 
 ### Smart Controller Registration - DISABLED (January 2025)
 

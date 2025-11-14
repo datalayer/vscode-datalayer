@@ -350,6 +350,35 @@ new KernelBridge(sdk, authProvider);
 ServiceLoggers.initialize(loggerManager);
 ```
 
+#### Auto-Connect Service
+
+The extension provides automatic runtime connection when opening notebooks and lexical documents:
+
+**Location**: `src/services/autoConnect/`
+
+**Strategy Pattern**:
+
+- `AutoConnectService` - Main service that processes strategy array
+- `ActiveRuntimeStrategy` - Selects runtime with most time remaining (sorted by expiredAt - now)
+- `AskUserStrategy` - Shows Quick Pick dialog for runtime selection
+
+**Configuration**: `datalayer.autoConnect.strategies` (array)
+
+- Default: `["Active Runtime", "Ask"]`
+- Empty array `[]` disables auto-connect
+- Tries strategies in order until one succeeds
+
+**Integration**:
+
+- `NotebookProvider.tryAutoConnect()` - Called after webview initialization
+- `LexicalProvider.tryAutoConnect()` - Called after webview initialization
+- Both providers get `RuntimesTreeProvider` via `getRuntimesTreeProvider()` export
+
+**Key Design Decisions**:
+
+- **Smart Selection**: ActiveRuntimeStrategy sorts runtimes by remaining time (expiredAt - now) in descending order, always selecting the runtime with the most time available to maximize session duration
+- **No Extra API Calls**: Uses `RuntimesTreeProvider.getCachedRuntimes()` to access already-loaded runtime data from the sidebar
+
 ### Logging Infrastructure
 
 Three-tier logging system:

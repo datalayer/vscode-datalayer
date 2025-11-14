@@ -31,6 +31,48 @@ npm run pretest && npm test
 
 **Note:** Code coverage is not available for VS Code extensions because tests run in a separate Extension Host process that coverage tools cannot instrument. Test quality is measured by test count and thoroughness, not coverage metrics.
 
+## Feature Testing Scenarios
+
+### Auto-Connect Feature
+
+The auto-connect feature can be tested manually with the following scenarios:
+
+**Test 1: Default Configuration** (`["Active Runtime", "Ask"]`)
+
+1. Start a runtime in the Runtimes sidebar
+2. Open a notebook or lexical document
+3. ✅ Expected: Document auto-connects to the first runtime (no dialog)
+
+**Test 2: Active Runtime Only** (`["Active Runtime"]`)
+
+1. Stop all runtimes
+2. Open a document
+3. ✅ Expected: No dialog shown, document opens disconnected
+
+**Test 3: Ask Only** (`["Ask"]`)
+
+1. Start a runtime
+2. Open a document
+3. ✅ Expected: Runtime selection Quick Pick dialog appears
+
+**Test 4: Disabled** (`[]`)
+
+1. Start a runtime
+2. Open a document
+3. ✅ Expected: No auto-connect, no dialog
+
+**Test 5: Multiple Runtimes**
+
+1. Start 2+ runtimes in different environments
+2. Open a document
+3. ✅ Expected: Connects to first runtime (most recently created)
+
+**Test 6: Fallback Chain** (`["Active Runtime", "Ask"]`)
+
+1. Stop all runtimes
+2. Open a document
+3. ✅ Expected: Falls back to "Ask" strategy, shows dialog
+
 ## Test Structure
 
 ```

@@ -21,10 +21,16 @@ import {
   LexicalCollaborationService,
   LexicalCollaborationConfig,
 } from "../services/collaboration/lexicalCollaboration";
-import { getServiceContainer, getOutlineTreeProvider } from "../extension";
+import {
+  getServiceContainer,
+  getOutlineTreeProvider,
+  getRuntimesTreeProvider,
+} from "../extension";
 import type { RuntimeDTO } from "@datalayer/core/lib/models/RuntimeDTO";
 import { BaseDocumentProvider } from "./baseDocumentProvider";
 import { LoroWebSocketAdapter } from "../services/collaboration/loroWebSocketAdapter";
+import { AutoConnectService } from "../services/autoConnect/autoConnectService";
+import { SDKAuthProvider } from "../services/core/authProvider";
 
 /**
  * Custom editor provider for Lexical documents.
@@ -135,6 +141,11 @@ export class LexicalProvider extends BaseDocumentProvider<LexicalDocument> {
   private readonly adapterCreationTimes = new Map<string, number>();
   private readonly adapterConnectionTimes = new Map<string, number>();
   private readonly adapterToWebview = new Map<string, string>(); // adapterId -> document URI
+
+  /**
+   * Auto-connect service for automatically connecting to runtimes
+   */
+  private readonly autoConnectService = new AutoConnectService();
 
   /**
    * Creates a new LexicalProvider.
@@ -428,6 +439,9 @@ export class LexicalProvider extends BaseDocumentProvider<LexicalDocument> {
         documentUri: document.uri.toString(), // Still include for logging
         documentId: uniqueDocId, // Unique ID for validation
       });
+
+      // Try auto-connect after sending initial content
+      await this.tryAutoConnect(document.uri);
     };
   }
 
@@ -795,5 +809,53 @@ Complete the code at <CURSOR>:`;
 
     // Remove trailing newlines from direct completions
     return completion.replace(/\n+$/, "");
+  }
+
+  /**
+   * Attempts to auto-connect the document to a runtime using configured strategies.
+   *
+   * @param documentUri - URI of the document being opened
+   */
+  private async tryAutoConnect(documentUri: vscode.Uri): Promise<void> {
+    try {
+      const sdk = getServiceContainer().sdk;
+      const authProvider = getServiceContainer()
+        .authProvider as SDKAuthProvider;
+      const runtimesTreeProvider = getRuntimesTreeProvider();
+
+      // Get current runtime if any (no API for this yet, so pass undefined)
+      const currentRuntime: RuntimeDTO | undefined = undefined;
+
+      // Try auto-connect
+      const runtime = await this.autoConnectService.connect(
+        documentUri,
+        currentRuntime,
+        sdk,
+        authProvider,
+        runtimesTreeProvider,
+      );
+
+      if (runtime) {
+        console.log(
+          `[LexicalProvider] Auto-connect successful for ${documentUri.fsPath}`,
+        );
+
+        // Connect the webview to the runtime via kernel bridge
+        await getServiceContainer().kernelBridge.connectWebviewDocument(
+          documentUri,
+          runtime,
+        );
+      } else {
+        console.log(
+          `[LexicalProvider] Auto-connect skipped or failed for ${documentUri.fsPath}`,
+        );
+      }
+    } catch (error) {
+      console.error(
+        `[LexicalProvider] Auto-connect error for ${documentUri.fsPath}:`,
+        error,
+      );
+      // Don't show error to user - auto-connect is optional
+    }
   }
 }
