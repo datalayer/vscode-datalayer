@@ -35,10 +35,14 @@ export interface CopilotKitAction {
   };
 
   /** Handler function that executes the action */
-  handler: (params: any) => Promise<string>;
+  handler: (params: unknown) => Promise<string>;
 
   /** Optional: Render function for custom UI */
-  render?: (props: { status: string; args: any; result: any }) => React.ReactNode;
+  render?: (props: {
+    status: string;
+    args: unknown;
+    result: unknown;
+  }) => React.ReactNode;
 }
 
 /**
@@ -51,7 +55,7 @@ export interface CopilotKitAction {
  */
 export function createCopilotKitAction(
   definition: ToolDefinition,
-  operation: ToolOperation<any, any>,
+  operation: ToolOperation<unknown, unknown>,
   context: SaaSToolContext,
 ): CopilotKitAction {
   // Create SaaS adapter (ag-ui runs in browser, same as SaaS)
@@ -66,13 +70,17 @@ export function createCopilotKitAction(
       required: definition.parameters.required,
     },
 
-    handler: async (params: any): Promise<string> => {
+    handler: async (params: unknown): Promise<string> => {
       try {
         const result = await adapter.execute(params);
 
         // Format result as string for CopilotKit
         if (typeof result === "object" && result !== null) {
-          const resultObj = result as any;
+          const resultObj = result as {
+            message?: string;
+            success?: boolean;
+            error?: string;
+          };
 
           // Return success message if available
           if (resultObj.message) {
@@ -98,7 +106,11 @@ export function createCopilotKitAction(
 
     // Optional: Custom render function for ag-ui
     render: definition.platformConfig?.agui?.renderingHints?.customRender
-      ? (definition.platformConfig.agui.renderingHints.customRender as any)
+      ? (definition.platformConfig.agui.renderingHints.customRender as (props: {
+          status: string;
+          args: unknown;
+          result: unknown;
+        }) => React.ReactNode)
       : undefined,
   };
 }
@@ -113,7 +125,7 @@ export function createCopilotKitAction(
  */
 export function createAllCopilotKitActions(
   definitions: ToolDefinition[],
-  operations: Record<string, ToolOperation<any, any>>,
+  operations: Record<string, ToolOperation<unknown, unknown>>,
   context: SaaSToolContext,
 ): CopilotKitAction[] {
   const actions: CopilotKitAction[] = [];

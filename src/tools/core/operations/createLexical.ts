@@ -10,11 +10,8 @@
  * @module tools/core/operations/createLexical
  */
 
-import type { ToolOperation, ToolExecutionContext } from "../interfaces";
-import type {
-  LexicalCreationParams,
-  LexicalCreationResult,
-} from "../types";
+import type { ToolOperation } from "../interfaces";
+import type { LexicalCreationParams, LexicalCreationResult } from "../types";
 
 /**
  * Create Remote Lexical Operation
@@ -54,7 +51,10 @@ export const createRemoteLexicalOperation: ToolOperation<
       );
     }
 
-    if (!auth || !(auth as any).isAuthenticated?.()) {
+    if (
+      !auth ||
+      !(auth as { isAuthenticated?: () => boolean }).isAuthenticated?.()
+    ) {
       throw new Error(
         "Authentication is required for createRemoteLexical operation. " +
           "Please login to Datalayer first.",
@@ -63,6 +63,7 @@ export const createRemoteLexicalOperation: ToolOperation<
 
     try {
       // Type assertion to access SDK methods
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const client = sdk as any;
 
       // Ensure lexical name has .lexical extension
@@ -84,18 +85,19 @@ export const createRemoteLexicalOperation: ToolOperation<
 
         const targetSpaceName = spaceName || "Personal";
         const targetSpace = spaces.find(
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           (s: any) =>
             s.name?.toLowerCase() === targetSpaceName.toLowerCase() ||
             s.name?.toLowerCase().includes(targetSpaceName.toLowerCase()),
         );
 
         if (!targetSpace) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const availableSpaces = spaces.map((s: any) => s.name).join(", ");
           return {
             success: false,
             uri: "",
-            error:
-              `Space "${targetSpaceName}" not found. Available spaces: ${availableSpaces}`,
+            error: `Space "${targetSpaceName}" not found. Available spaces: ${availableSpaces}`,
           };
         }
 
@@ -103,6 +105,7 @@ export const createRemoteLexicalOperation: ToolOperation<
       }
 
       // Create lexical document via SDK
+
       const lexical = await client.createLexical(
         targetSpaceId,
         finalName,
@@ -126,7 +129,8 @@ export const createRemoteLexicalOperation: ToolOperation<
         uri,
       };
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
       return {
         success: false,
         uri: "",
@@ -166,7 +170,13 @@ export const createLocalLexicalOperation: ToolOperation<
       const finalName = name.endsWith(".lexical") ? name : `${name}.lexical`;
 
       // Platform-specific file creation via extras callback
-      const createFile = (extras as any)?.createLocalFile;
+      const extrasWithFile = extras as {
+        createLocalFile?: (
+          filename: string,
+          content: unknown,
+        ) => Promise<string>;
+      };
+      const createFile = extrasWithFile?.createLocalFile;
 
       if (!createFile) {
         throw new Error(
@@ -194,7 +204,8 @@ export const createLocalLexicalOperation: ToolOperation<
         uri,
       };
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
       return {
         success: false,
         uri: "",

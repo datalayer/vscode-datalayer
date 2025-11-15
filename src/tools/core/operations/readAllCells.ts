@@ -10,7 +10,7 @@
  * @module tools/core/operations/readAllCells
  */
 
-import type { ToolOperation, ToolExecutionContext } from "../interfaces";
+import type { ToolOperation } from "../interfaces";
 import type { CellData } from "../types";
 
 /**
@@ -62,7 +62,7 @@ export const readAllCellsOperation: ToolOperation<
   name: "readAllCells",
   description: "Reads all cells from a notebook",
 
-  async execute(params, context): Promise<ReadAllCellsResult> {
+  async execute(_params, context): Promise<ReadAllCellsResult> {
     const { document } = context;
 
     // Validate context
@@ -87,7 +87,8 @@ export const readAllCellsOperation: ToolOperation<
       };
     } catch (error) {
       // Convert error to descriptive error
-      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
       throw new Error(`Failed to read all cells: ${errorMessage}`);
     }
   },

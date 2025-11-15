@@ -10,7 +10,7 @@
  * @module tools/core/operations/manageRuntime
  */
 
-import type { ToolOperation, ToolExecutionContext } from "../interfaces";
+import type { ToolOperation } from "../interfaces";
 import type {
   RuntimeCreationParams,
   RuntimeCreationResult,
@@ -54,7 +54,10 @@ export const startRuntimeOperation: ToolOperation<
       );
     }
 
-    if (!auth || !(auth as any).isAuthenticated?.()) {
+    if (
+      !auth ||
+      !(auth as { isAuthenticated?: () => boolean }).isAuthenticated?.()
+    ) {
       throw new Error(
         "Authentication is required for startRuntime operation. " +
           "Please login to Datalayer first.",
@@ -63,6 +66,7 @@ export const startRuntimeOperation: ToolOperation<
 
     try {
       // Type assertion to access SDK methods
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const client = sdk as any;
 
       // Get environment from parameter or use first available
@@ -79,8 +83,9 @@ export const startRuntimeOperation: ToolOperation<
       }
 
       // Get duration from parameter or use default from extras/config
+      const extrasWithDuration = extras as { defaultRuntimeDuration?: number };
       const duration =
-        durationMinutes || (extras as any)?.defaultRuntimeDuration || 10;
+        durationMinutes || extrasWithDuration?.defaultRuntimeDuration || 10;
 
       // Start runtime using SDK's ensureRuntime method
       const runtimeData = await client.ensureRuntime(environmentName, duration);
@@ -107,7 +112,8 @@ export const startRuntimeOperation: ToolOperation<
         runtime,
       };
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
       return {
         success: false,
         error: `Failed to start runtime: ${errorMessage}`,
@@ -151,7 +157,10 @@ export const connectRuntimeOperation: ToolOperation<
       );
     }
 
-    if (!auth || !(auth as any).isAuthenticated?.()) {
+    if (
+      !auth ||
+      !(auth as { isAuthenticated?: () => boolean }).isAuthenticated?.()
+    ) {
       throw new Error(
         "Authentication is required for connectRuntime operation. " +
           "Please login to Datalayer first.",
@@ -161,12 +170,25 @@ export const connectRuntimeOperation: ToolOperation<
     try {
       // Platform-specific runtime connection logic
       // This varies between VS Code (message-based) and SaaS (direct API)
-      const connectCallback = (extras as any)?.connectRuntimeCallback;
+      const extrasWithCallback = extras as {
+        connectRuntimeCallback?: (
+          name: string,
+          uri?: string,
+        ) => Promise<unknown>;
+      };
+      const connectCallback = extrasWithCallback?.connectRuntimeCallback;
 
       if (!connectCallback) {
         throw new Error(
           "connectRuntimeCallback is required in extras for runtime connection",
         );
+      }
+
+      if (!runtimeName) {
+        return {
+          success: false,
+          error: "Runtime name is required for connection",
+        };
       }
 
       // Call platform-specific connection logic
@@ -180,11 +202,15 @@ export const connectRuntimeOperation: ToolOperation<
       }
 
       // Map to RuntimeInfo type
+      const runtimeDataTyped = runtimeData as {
+        uid?: string;
+        podName?: string;
+      };
       const runtime = {
-        id: runtimeData.uid || runtimeData.podName,
-        name: runtimeData.podName || runtimeName,
+        id: runtimeDataTyped.uid || runtimeDataTyped.podName || "unknown",
+        name: runtimeDataTyped.podName || runtimeName || "unknown",
         status: "running" as const,
-        metadata: runtimeData,
+        metadata: runtimeData as Record<string, unknown>,
       };
 
       return {
@@ -192,7 +218,8 @@ export const connectRuntimeOperation: ToolOperation<
         runtime,
       };
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
       return {
         success: false,
         error: `Failed to connect runtime: ${errorMessage}`,

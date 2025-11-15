@@ -36,7 +36,7 @@ import { allToolDefinitions } from "../../definitions/tools";
 export function registerVSCodeTools(
   context: vscode.ExtensionContext,
   definitions: readonly ToolDefinition[] = allToolDefinitions,
-  operations: Record<string, ToolOperation<any, any>> = allOperations,
+  operations: Record<string, ToolOperation<unknown, unknown>> = allOperations,
 ): void {
   console.log(
     `[Datalayer Tools] Registering ${definitions.length} tools with unified architecture`,
@@ -83,7 +83,7 @@ export function registerVSCodeTools(
 export function registerSingleTool(
   context: vscode.ExtensionContext,
   definition: ToolDefinition,
-  operation: ToolOperation<any, any>,
+  operation: ToolOperation<unknown, unknown>,
 ): vscode.Disposable {
   const adapter = new VSCodeToolAdapter(definition, operation);
   const disposable = vscode.lm.registerTool(definition.name, adapter);

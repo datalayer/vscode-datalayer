@@ -10,7 +10,7 @@
  * @module tools/core/operations/executeCell
  */
 
-import type { ToolOperation, ToolExecutionContext } from "../interfaces";
+import type { ToolOperation } from "../interfaces";
 import type { ExecutionResult } from "../types";
 
 /**
@@ -116,7 +116,8 @@ export const executeCellOperation: ToolOperation<
       };
     } catch (error) {
       // Convert error to descriptive error
-      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
       throw new Error(`Failed to execute cell: ${errorMessage}`);
     }
   },

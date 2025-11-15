@@ -66,9 +66,9 @@ export function generateAllVSCodeToolContributions(
 /**
  * Generates the complete languageModelTools section for package.json
  */
-export function generatePackageJsonSection(
-  tools: ToolDefinition[],
-): { languageModelTools: VSCodeLanguageModelTool[] } {
+export function generatePackageJsonSection(tools: ToolDefinition[]): {
+  languageModelTools: VSCodeLanguageModelTool[];
+} {
   return {
     languageModelTools: generateAllVSCodeToolContributions(tools),
   };

@@ -142,10 +142,7 @@ describe("Core Operations - Platform Agnostic", () => {
 
   describe("readCellOperation", () => {
     it("should read a cell by index", async () => {
-      const result = await readCellOperation.execute(
-        { cellIndex: 1 },
-        context,
-      );
+      const result = await readCellOperation.execute({ cellIndex: 1 }, context);
 
       expect(result.success).toBe(true);
       expect(result.index).toBe(1);

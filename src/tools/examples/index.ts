@@ -10,4 +10,4 @@
  * @module tools/examples
  */
 
-export * from './completeWorkflowExample';
+export * from "./completeWorkflowExample";

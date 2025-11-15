@@ -54,9 +54,7 @@ export class SaaSToolAdapter<TParams, TResult> {
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : String(error);
-      throw new Error(
-        `${this.definition.displayName} failed: ${errorMessage}`,
-      );
+      throw new Error(`${this.definition.displayName} failed: ${errorMessage}`);
     }
   }
 
@@ -116,6 +114,7 @@ export class SaaSToolAdapter<TParams, TResult> {
       defaultRuntimeDuration: 10,
 
       // SaaS app reference for advanced operations
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       app: (this.saasContext as any).app,
     };
 
@@ -127,7 +126,11 @@ export class SaaSToolAdapter<TParams, TResult> {
    */
   private resolveDocumentHandle(params: TParams) {
     // Try to get document ID from parameters
-    const docId = (params as any).notebook_uri || (params as any).document_id;
+    const paramsWithId = params as {
+      notebook_uri?: string;
+      document_id?: string;
+    };
+    const docId = paramsWithId.notebook_uri || paramsWithId.document_id;
 
     const notebook = docId
       ? this.saasContext.getDocumentById(docId)
@@ -162,10 +165,10 @@ export class SaaSToolAdapter<TParams, TResult> {
  */
 export function createSaaSToolAdapters(
   definitions: ToolDefinition[],
-  operations: Record<string, ToolOperation<any, any>>,
+  operations: Record<string, ToolOperation<unknown, unknown>>,
   context: SaaSToolContext,
-): Map<string, SaaSToolAdapter<any, any>> {
-  const adapters = new Map<string, SaaSToolAdapter<any, any>>();
+): Map<string, SaaSToolAdapter<unknown, unknown>> {
+  const adapters = new Map<string, SaaSToolAdapter<unknown, unknown>>();
 
   for (const definition of definitions) {
     const operation = operations[definition.operation];

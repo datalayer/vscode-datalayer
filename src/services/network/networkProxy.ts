@@ -77,10 +77,10 @@ export class NotebookNetworkService {
       method: requestBody.method,
     })
       .then(async (reply: Response) => {
-        const headers: Record<string, string> = [...reply.headers].reduce(
-          (agg, pair) => ({ ...agg, [pair[0]]: pair[1] }),
-          {},
-        );
+        const headers: Record<string, string> = {};
+        reply.headers.forEach((value, key) => {
+          headers[key] = value;
+        });
         const rawBody =
           requestBody.method !== "DELETE"
             ? await reply.arrayBuffer()

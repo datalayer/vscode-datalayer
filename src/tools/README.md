@@ -135,7 +135,7 @@ Core operations contain pure business logic with zero platform dependencies:
 import type { ToolOperation, ToolExecutionContext } from "../interfaces";
 
 export const insertCellOperation: ToolOperation<
-  { cellType: 'code' | 'markdown'; cellSource: string; cellIndex?: number },
+  { cellType: "code" | "markdown"; cellSource: string; cellIndex?: number },
   { success: boolean; index: number }
 > = {
   name: "insertCell",
@@ -145,18 +145,19 @@ export const insertCellOperation: ToolOperation<
     const { cellType, cellSource, cellIndex } = params;
     const { document } = context;
 
-    const targetIndex = cellIndex ?? await document.getCellCount();
+    const targetIndex = cellIndex ?? (await document.getCellCount());
     await document.insertCell(targetIndex, {
       type: cellType,
       source: cellSource,
     });
 
     return { success: true, index: targetIndex };
-  }
+  },
 };
 ```
 
 **Benefits**:
+
 - ✅ Write once, use everywhere
 - ✅ Easy to unit test (mock DocumentHandle)
 - ✅ No VS Code, DOM, or platform-specific code
@@ -177,14 +178,14 @@ export const insertCellTool: ToolDefinition = {
       cell_type: {
         type: "string",
         enum: ["code", "markdown"],
-        description: "Type of cell to insert"
+        description: "Type of cell to insert",
       },
       cell_source: {
         type: "string",
-        description: "Content of the cell"
-      }
+        description: "Content of the cell",
+      },
     },
-    required: ["cell_type", "cell_source"]
+    required: ["cell_type", "cell_source"],
   },
 
   operation: "insertCell", // Links to core operation
@@ -198,12 +199,13 @@ export const insertCellTool: ToolDefinition = {
     },
     agui: {
       requiresConfirmation: true,
-    }
-  }
+    },
+  },
 };
 ```
 
 **Benefits**:
+
 - ✅ Single source of truth
 - ✅ ag-ui compatible (JSON Schema parameters)
 - ✅ Platform-specific customization without duplication
@@ -227,6 +229,7 @@ export interface DocumentHandle {
 ```
 
 **Platform Implementations**:
+
 - **VS Code**: `VSCodeDocumentHandle` - Uses `vscode.commands.executeCommand` for message passing
 - **SaaS**: `SaaSDocumentHandle` - Uses JupyterLab widget APIs directly
 - **ag-ui**: Reuses `SaaSDocumentHandle` with CopilotKit wrapper
@@ -240,12 +243,12 @@ import { MockDocumentHandle } from "./core/__tests__/mockDocumentHandle";
 import { insertCellOperation } from "./core/operations";
 
 const mockDocument = new MockDocumentHandle([
-  { type: "code", source: "print('Hello')", outputs: [] }
+  { type: "code", source: "print('Hello')", outputs: [] },
 ]);
 
 const result = await insertCellOperation.execute(
   { cellType: "code", cellSource: "x = 42" },
-  { document: mockDocument }
+  { document: mockDocument },
 );
 
 console.log(result); // { success: true, index: 1, message: "✅ Code cell inserted" }
@@ -271,7 +274,7 @@ import { SaaSDocumentHandle, SaaSToolAdapter } from "./adapters/saas";
 const documentHandle = new SaaSDocumentHandle(notebookWidget, sdk);
 const result = await insertCellOperation.execute(
   { cellType: "code", cellSource: "y = 10" },
-  { document: documentHandle }
+  { document: documentHandle },
 );
 ```
 
@@ -299,6 +302,7 @@ function NotebookWithAgUI() {
 ## Implementation Status
 
 ### ✅ Phase 1: Core Operations (Complete)
+
 - [x] DocumentHandle interface
 - [x] ToolOperation interface
 - [x] All 13 core operations implemented
@@ -306,24 +310,28 @@ function NotebookWithAgUI() {
 - [x] Mock DocumentHandle for testing
 
 ### ✅ Phase 2: Tool Definitions (Complete)
+
 - [x] ToolDefinition schema (ag-ui compatible)
 - [x] 9 tool definitions created (subset)
 - [x] Tool registry implementation
 - [x] Platform-specific configuration support
 
 ### ✅ Phase 3: VS Code Adapter (Complete)
+
 - [x] VSCodeDocumentHandle implementation with message passing
 - [x] VSCodeToolAdapter with factory registration
 - [x] INTEGRATION_GUIDE.md for extension.ts updates
 - [ ] Zero regression testing in Extension Host (F5)
 
 ### ✅ Phase 4: SaaS Adapter (Complete)
+
 - [x] SaaSDocumentHandle implementation using JupyterLab widgets
 - [x] SaaSToolAdapter for web context
 - [x] SaaSToolContext for document management
 - [ ] Testing in web environment
 
 ### ✅ Phase 5: ag-ui Adapter (Complete)
+
 - [x] AgUIToolAdapter implementation with CopilotKit format
 - [x] useNotebookTools() React hook
 - [x] useSingleTool() and useToolActions() hooks
@@ -331,6 +339,7 @@ function NotebookWithAgUI() {
 - [x] Documentation and examples
 
 ### 🚧 Phase 6: Integration & Testing (Next)
+
 - [ ] Update extension.ts to use factory registration
 - [ ] Test all tools in Extension Development Host
 - [ ] Test with GitHub Copilot
@@ -355,23 +364,27 @@ npm run test:coverage -- src/tools/core
 ## Benefits
 
 ### Code Reusability
+
 - ✅ **90%+ code reuse** across VS Code, SaaS, and ag-ui
 - ✅ Write business logic once, deploy everywhere
 - ✅ Bug fixes propagate to all platforms automatically
 
 ### Maintainability
+
 - ✅ Single source of truth for tool definitions
 - ✅ Reduced duplication (no more package.json + TypeScript classes)
 - ✅ Type-safe interfaces prevent integration errors
 - ✅ Auto-generated VS Code contributions
 
 ### Testability
+
 - ✅ Core operations testable in isolation
 - ✅ Mock DocumentHandle for comprehensive unit tests
 - ✅ Platform adapters testable independently
 - ✅ Higher test coverage with less effort
 
 ### Future-Proof
+
 - ✅ Add new platforms by creating adapters
 - ✅ Swap document backends without touching operations
 - ✅ ag-ui compatibility built-in from day one
@@ -382,6 +395,7 @@ npm run test:coverage -- src/tools/core
 The old tool implementations (e.g., `insertDatalayerCell.ts`) are still present for backward compatibility but are marked as **DEPRECATED**. They will be removed in Phase 6 after all platforms are migrated to the new architecture.
 
 To migrate a tool:
+
 1. Extract business logic to `core/operations/`
 2. Create unified definition in `definitions/tools/`
 3. Implement platform adapter (vscode/saas/agui)
@@ -391,6 +405,7 @@ To migrate a tool:
 ## Contributing
 
 When adding a new tool:
+
 1. Create the core operation in `core/operations/`
 2. Write unit tests in `core/__tests__/`
 3. Create the tool definition in `definitions/tools/`
@@ -424,6 +439,7 @@ When adding a new tool:
 ### For Contributors
 
 When adding new tools:
+
 1. Create core operation in `core/operations/`
 2. Write unit tests in `core/__tests__/`
 3. Create tool definition in `definitions/tools/`
@@ -443,6 +459,7 @@ When adding new tools:
 ## Questions?
 
 For questions about the unified tool architecture:
+
 - Check the documentation files above
 - Review the example workflow
 - Contact the Datalayer engineering team

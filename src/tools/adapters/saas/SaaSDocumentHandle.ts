@@ -18,9 +18,12 @@ import type {
 } from "../../core/interfaces";
 
 // Type imports for JupyterLab (these would come from @jupyterlab/notebook)
+// Using eslint-disable to allow any types for external JupyterLab APIs
+/* eslint-disable @typescript-eslint/no-explicit-any */
 type NotebookPanel = any; // INotebookPanel from @jupyterlab/notebook
 type ICellModel = any; // From @jupyterlab/cells
 type INotebookModel = any; // From @jupyterlab/notebook
+/* eslint-enable @typescript-eslint/no-explicit-any */
 
 /**
  * SaaS implementation of DocumentHandle.
@@ -72,37 +75,52 @@ export class SaaSDocumentHandle implements DocumentHandle {
     const cells = await this.getAllCells();
     const cellTypes = cells.reduce(
       (acc, cell) => {
-        if (cell.type === "code") acc.code++;
-        else if (cell.type === "markdown") acc.markdown++;
-        else if (cell.type === "raw") acc.raw++;
+        if (cell.type === "code") {
+          acc.code++;
+        } else if (cell.type === "markdown") {
+          acc.markdown++;
+        } else if (cell.type === "raw") {
+          acc.raw++;
+        }
         return acc;
       },
       { code: 0, markdown: 0, raw: 0 },
     );
 
     const metadata = this.notebook.metadata;
-    const kernelspec = metadata.get("kernelspec") as any;
-    const languageInfo = metadata.get("language_info") as any;
+    const kernelspec = metadata.get("kernelspec") as {
+      name?: string;
+      display_name?: string;
+      language?: string;
+    };
+    const languageInfo = metadata.get("language_info") as {
+      name?: string;
+      version?: string;
+      mimetype?: string;
+      file_extension?: string;
+    };
 
     return {
       path: this.notebookPanel.context.path,
       cellCount: cells.length,
       cellTypes,
-      kernelspec: kernelspec
-        ? {
-            name: kernelspec.name,
-            display_name: kernelspec.display_name,
-            language: kernelspec.language,
-          }
-        : undefined,
-      language_info: languageInfo
-        ? {
-            name: languageInfo.name,
-            version: languageInfo.version,
-            mimetype: languageInfo.mimetype,
-            file_extension: languageInfo.file_extension,
-          }
-        : undefined,
+      kernelspec:
+        kernelspec && kernelspec.name && kernelspec.display_name
+          ? {
+              name: kernelspec.name,
+              display_name: kernelspec.display_name,
+              language: kernelspec.language,
+            }
+          : undefined,
+      language_info:
+        languageInfo && languageInfo.name
+          ? {
+              name: languageInfo.name,
+              version: languageInfo.version,
+              mimetype: languageInfo.mimetype,
+              file_extension: languageInfo.file_extension,
+            }
+          : undefined,
     };
   }
 
@@ -190,6 +208,7 @@ export class SaaSDocumentHandle implements DocumentHandle {
     let executionOrder: number | undefined;
 
     await new Promise<void>((resolve, reject) => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       future.onIOPub = (msg: any) => {
         const msgType = msg.header.msg_type;
 
@@ -221,7 +240,8 @@ export class SaaSDocumentHandle implements DocumentHandle {
 
       future.done
         .then(() => resolve())
-        .catch((error) => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        .catch((error: any) => {
           success = false;
           reject(error);
         });
@@ -266,6 +286,7 @@ export class SaaSDocumentHandle implements DocumentHandle {
       outputs,
       metadata: cell.metadata.toJSON(),
       execution_count:
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         cell.type === "code" ? (cell as any).executionCount : undefined,
     };
   }

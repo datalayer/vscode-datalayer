@@ -10,7 +10,7 @@
  * @module tools/core/operations/insertCell
  */
 
-import type { ToolOperation, ToolExecutionContext } from "../interfaces";
+import type { ToolOperation } from "../interfaces";
 import type { CellType } from "../types";
 
 /**
@@ -107,12 +107,12 @@ export const insertCellOperation: ToolOperation<
       return {
         success: true,
         index: targetIndex,
-        message:
-          `✅ ${cellTypeCapitalized} cell inserted at index ${targetIndex}`,
+        message: `✅ ${cellTypeCapitalized} cell inserted at index ${targetIndex}`,
       };
     } catch (error) {
       // Convert error to result with failure status
-      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
       throw new Error(`Failed to insert cell: ${errorMessage}`);
     }
   },

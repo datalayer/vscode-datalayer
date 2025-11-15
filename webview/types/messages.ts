@@ -117,6 +117,8 @@ export interface LocalKernelConnectedMessage {
 export interface OutlineNavigateMessage {
   type: "outline-navigate";
   itemId: string;
+}
+
 /** Insert cell into notebook (MCP tool support) */
 export interface InsertCellMessage {
   type: "insert-cell";

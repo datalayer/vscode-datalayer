@@ -18,6 +18,7 @@ This guide helps you migrate from the old manual tool implementation to the new 
 ### What's Changing?
 
 **Old Implementation:**
+
 - Manual tool registration in [extension.ts](../../extension.ts)
 - Tight coupling to VS Code APIs
 - Duplicate tool definitions (TypeScript + package.json)
@@ -25,6 +26,7 @@ This guide helps you migrate from the old manual tool implementation to the new 
 - Difficult to test
 
 **New Implementation:**
+
 - Factory-based automatic registration
 - Platform-agnostic core operations
 - Single source of truth for tool definitions
@@ -47,19 +49,19 @@ This guide helps you migrate from the old manual tool implementation to the new 
 
 ```typescript
 // OLD: extension.ts (manual registration)
-import * as vscode from 'vscode';
+import * as vscode from "vscode";
 
 export function activate(context: vscode.ExtensionContext) {
   // Register each tool manually
   context.subscriptions.push(
-    vscode.lm.registerTool('datalayer_insertCell', {
+    vscode.lm.registerTool("datalayer_insertCell", {
       async prepareInvocation(options, _token) {
         return {
           invocationMessage: `Inserting ${options.input.cellType} cell`,
           confirmationMessages: {
-            title: 'Insert Cell',
+            title: "Insert Cell",
             message: new vscode.MarkdownString(
-              `Insert **${options.input.cellType}** cell?`
+              `Insert **${options.input.cellType}** cell?`,
             ),
           },
         };
@@ -72,18 +74,19 @@ export function activate(context: vscode.ExtensionContext) {
         const cellIndex = options.input.cellIndex;
 
         // Execute VS Code command
-        await vscode.commands.executeCommand(
-          'datalayer.internal.insertCell',
-          { cellType, cellSource, cellIndex }
-        );
+        await vscode.commands.executeCommand("datalayer.internal.insertCell", {
+          cellType,
+          cellSource,
+          cellIndex,
+        });
 
         return new vscode.LanguageModelToolResult([
           new vscode.LanguageModelTextPart(
-            `✅ Inserted ${cellType} cell at index ${cellIndex}`
+            `✅ Inserted ${cellType} cell at index ${cellIndex}`,
           ),
         ]);
       },
-    })
+    }),
   );
 
   // Repeat for every tool... 😓
@@ -91,6 +94,7 @@ export function activate(context: vscode.ExtensionContext) {
 ```
 
 **Problems with old approach:**
+
 - ❌ 50+ lines per tool
 - ❌ No code reuse (can't use in web)
 - ❌ Hard to test (requires VS Code environment)
@@ -100,7 +104,7 @@ export function activate(context: vscode.ExtensionContext) {
 
 ```typescript
 // NEW: extension.ts (one line!)
-import { registerVSCodeTools } from './tools/adapters/vscode/registration';
+import { registerVSCodeTools } from "./tools/adapters/vscode/registration";
 
 export function activate(context: vscode.ExtensionContext) {
   // Register all tools automatically
@@ -109,6 +113,7 @@ export function activate(context: vscode.ExtensionContext) {
 ```
 
 **Benefits of new approach:**
+
 - ✅ 1 line replaces 50+ lines per tool
 - ✅ Works on VS Code, SaaS, and ag-ui
 - ✅ Fully unit testable
@@ -134,11 +139,11 @@ Replace manual tool registration with factory:
 
 ```typescript
 // src/extension.ts
-import * as vscode from 'vscode';
-import { registerVSCodeTools } from './tools/adapters/vscode/registration';
+import * as vscode from "vscode";
+import { registerVSCodeTools } from "./tools/adapters/vscode/registration";
 
 export function activate(context: vscode.ExtensionContext) {
-  console.log('🚀 Datalayer extension activating...');
+  console.log("🚀 Datalayer extension activating...");
 
   // ===== NEW: Replace manual tool registration with this =====
   registerVSCodeTools(context);
@@ -151,18 +156,23 @@ export function activate(context: vscode.ExtensionContext) {
   // - Status bar
   // - Commands
 
-  console.log('✅ Datalayer extension activated');
+  console.log("✅ Datalayer extension activated");
 }
 ```
 
 **What to remove:**
+
 ```typescript
 // ❌ REMOVE: Old manual tool registrations
 context.subscriptions.push(
-  vscode.lm.registerTool('datalayer_insertCell', { /* ... */ })
+  vscode.lm.registerTool("datalayer_insertCell", {
+    /* ... */
+  }),
 );
 context.subscriptions.push(
-  vscode.lm.registerTool('datalayer_deleteCell', { /* ... */ })
+  vscode.lm.registerTool("datalayer_deleteCell", {
+    /* ... */
+  }),
 );
 // ... etc
 ```
@@ -177,7 +187,7 @@ function registerInternalCommands(context: vscode.ExtensionContext) {
   // Insert Cell
   context.subscriptions.push(
     vscode.commands.registerCommand(
-      'datalayer.internal.insertCell',
+      "datalayer.internal.insertCell",
       async (args: {
         uri: string;
         cellType: string;
@@ -186,108 +196,104 @@ function registerInternalCommands(context: vscode.ExtensionContext) {
       }) => {
         const panel = getWebviewPanel(args.uri);
         await panel.webview.postMessage({
-          type: 'insertCell',
+          type: "insertCell",
           ...args,
         });
-        return await waitForResponse(panel, 'insertCellResponse');
-      }
-    )
+        return await waitForResponse(panel, "insertCellResponse");
+      },
+    ),
   );
 
   // Read Cell
   context.subscriptions.push(
     vscode.commands.registerCommand(
-      'datalayer.internal.readCell',
+      "datalayer.internal.readCell",
       async (args: { uri: string; cellIndex: number }) => {
         const panel = getWebviewPanel(args.uri);
         await panel.webview.postMessage({
-          type: 'readCell',
+          type: "readCell",
           cellIndex: args.cellIndex,
         });
-        return await waitForResponse(panel, 'readCellResponse');
-      }
-    )
+        return await waitForResponse(panel, "readCellResponse");
+      },
+    ),
   );
 
   // Read All Cells
   context.subscriptions.push(
     vscode.commands.registerCommand(
-      'datalayer.internal.readAllCells',
+      "datalayer.internal.readAllCells",
       async (args: { uri: string }) => {
         const panel = getWebviewPanel(args.uri);
-        await panel.webview.postMessage({ type: 'readAllCells' });
-        return await waitForResponse(panel, 'readAllCellsResponse');
-      }
-    )
+        await panel.webview.postMessage({ type: "readAllCells" });
+        return await waitForResponse(panel, "readAllCellsResponse");
+      },
+    ),
   );
 
   // Delete Cell
   context.subscriptions.push(
     vscode.commands.registerCommand(
-      'datalayer.internal.deleteCell',
+      "datalayer.internal.deleteCell",
       async (args: { uri: string; cellIndex: number }) => {
         const panel = getWebviewPanel(args.uri);
         await panel.webview.postMessage({
-          type: 'deleteCell',
+          type: "deleteCell",
           cellIndex: args.cellIndex,
         });
-        return await waitForResponse(panel, 'deleteCellResponse');
-      }
-    )
+        return await waitForResponse(panel, "deleteCellResponse");
+      },
+    ),
   );
 
   // Update Cell
   context.subscriptions.push(
     vscode.commands.registerCommand(
-      'datalayer.internal.updateCell',
-      async (args: {
-        uri: string;
-        cellIndex: number;
-        newSource: string;
-      }) => {
+      "datalayer.internal.updateCell",
+      async (args: { uri: string; cellIndex: number; newSource: string }) => {
         const panel = getWebviewPanel(args.uri);
         await panel.webview.postMessage({
-          type: 'updateCell',
+          type: "updateCell",
           cellIndex: args.cellIndex,
           newSource: args.newSource,
         });
-        return await waitForResponse(panel, 'updateCellResponse');
-      }
-    )
+        return await waitForResponse(panel, "updateCellResponse");
+      },
+    ),
   );
 
   // Execute Cell
   context.subscriptions.push(
     vscode.commands.registerCommand(
-      'datalayer.internal.executeCell',
+      "datalayer.internal.executeCell",
       async (args: { uri: string; cellIndex: number }) => {
         const panel = getWebviewPanel(args.uri);
         await panel.webview.postMessage({
-          type: 'executeCell',
+          type: "executeCell",
           cellIndex: args.cellIndex,
         });
-        return await waitForResponse(panel, 'executeCellResponse');
-      }
-    )
+        return await waitForResponse(panel, "executeCellResponse");
+      },
+    ),
   );
 
   // Get Notebook Info
   context.subscriptions.push(
     vscode.commands.registerCommand(
-      'datalayer.internal.getNotebookInfo',
+      "datalayer.internal.getNotebookInfo",
       async (args: { uri: string }) => {
         const panel = getWebviewPanel(args.uri);
-        await panel.webview.postMessage({ type: 'getNotebookInfo' });
-        return await waitForResponse(panel, 'notebookInfoResponse');
-      }
-    )
+        await panel.webview.postMessage({ type: "getNotebookInfo" });
+        return await waitForResponse(panel, "notebookInfoResponse");
+      },
+    ),
   );
 }
 
 // Call in activate()
 export function activate(context: vscode.ExtensionContext) {
   registerVSCodeTools(context);
-  registerInternalCommands(context);  // Add this
+  registerInternalCommands(context); // Add this
   // ... rest of activation
 }
 ```
@@ -298,11 +304,11 @@ Your webview needs to handle the new message format:
 
 ```typescript
 // In your webview code (e.g., webview/index.tsx)
-window.addEventListener('message', async (event) => {
+window.addEventListener("message", async (event) => {
   const message = event.data;
 
   switch (message.type) {
-    case 'insertCell': {
+    case "insertCell": {
       const { cellType, cellSource, cellIndex } = message;
 
       // Your existing notebook manipulation logic
@@ -310,39 +316,39 @@ window.addEventListener('message', async (event) => {
         type: cellType,
         source: cellSource,
         outputs: [],
-        metadata: {}
+        metadata: {},
       });
 
       // Send response back
       vscode.postMessage({
-        type: 'insertCellResponse',
+        type: "insertCellResponse",
         success: true,
-        index: cellIndex
+        index: cellIndex,
       });
       break;
     }
 
-    case 'readCell': {
+    case "readCell": {
       const cell = await notebook.getCell(message.cellIndex);
 
       vscode.postMessage({
-        type: 'readCellResponse',
+        type: "readCellResponse",
         cell: {
           type: cell.type,
           source: cell.source,
           outputs: cell.outputs,
-          metadata: cell.metadata
-        }
+          metadata: cell.metadata,
+        },
       });
       break;
     }
 
-    case 'deleteCell': {
+    case "deleteCell": {
       await notebook.deleteCell(message.cellIndex);
 
       vscode.postMessage({
-        type: 'deleteCellResponse',
-        success: true
+        type: "deleteCellResponse",
+        success: true,
       });
       break;
     }
@@ -438,12 +444,12 @@ git commit -m "Migrate to unified tool architecture"
 
 ```typescript
 // OLD
-'insertCell'
-'datalayer_createNotebook'
+"insertCell";
+"datalayer_createNotebook";
 
 // NEW
-'datalayer_insertCell'
-'datalayer_createNotebook'
+"datalayer_insertCell";
+"datalayer_createNotebook";
 ```
 
 **Migration**: Update any hardcoded tool references.
@@ -471,13 +477,13 @@ git commit -m "Migrate to unified tool architecture"
 ```typescript
 // OLD
 return new vscode.LanguageModelToolResult([
-  new vscode.LanguageModelTextPart('✅ Success')
+  new vscode.LanguageModelTextPart("✅ Success"),
 ]);
 
 // NEW
 return {
   success: true,
-  message: '✅ Success'
+  message: "✅ Success",
 };
 ```
 
@@ -493,7 +499,7 @@ return {
 await someDirectFunction();
 
 // NEW
-await vscode.commands.executeCommand('datalayer.internal.someCommand', args);
+await vscode.commands.executeCommand("datalayer.internal.someCommand", args);
 ```
 
 **Migration**: Implement internal commands (see Step 3).
@@ -505,12 +511,14 @@ await vscode.commands.executeCommand('datalayer.internal.someCommand', args);
 Use this checklist to track your migration progress:
 
 ### Pre-Migration
+
 - [ ] Create backup branch (`git checkout -b backup-old-tools`)
 - [ ] Document any custom tool modifications
 - [ ] Review current tool usage patterns
 - [ ] Test all existing tools to establish baseline
 
 ### Core Migration
+
 - [ ] Update [extension.ts](../../extension.ts) to use `registerVSCodeTools()`
 - [ ] Remove old manual tool registration code
 - [ ] Implement internal command handlers
@@ -518,6 +526,7 @@ Use this checklist to track your migration progress:
 - [ ] Update [package.json](../../package.json) tool contributions
 
 ### Testing
+
 - [ ] Build extension (`npm run compile`)
 - [ ] Test in Extension Development Host (F5)
 - [ ] Verify each tool with GitHub Copilot
@@ -526,6 +535,7 @@ Use this checklist to track your migration progress:
 - [ ] Test tool with invalid parameters
 
 ### Validation
+
 - [ ] All 17 tools registered successfully
 - [ ] No console errors in Extension Host
 - [ ] Copilot can discover all tools
@@ -533,6 +543,7 @@ Use this checklist to track your migration progress:
 - [ ] Confirmation messages display correctly
 
 ### Cleanup
+
 - [ ] Remove old tool implementation files
 - [ ] Update internal documentation
 - [ ] Remove unused dependencies
@@ -540,12 +551,14 @@ Use this checklist to track your migration progress:
 - [ ] Run type checker (`npx tsc --noEmit`)
 
 ### Documentation
+
 - [ ] Update README if necessary
 - [ ] Document any custom modifications
 - [ ] Add migration notes to CHANGELOG
 - [ ] Update developer onboarding docs
 
 ### Finalization
+
 - [ ] Commit changes (`git commit -m "Migrate to unified tool architecture"`)
 - [ ] Create PR for review
 - [ ] Deploy to testing environment
@@ -572,11 +585,13 @@ git commit -m "Rollback: Restore old tool implementation"
 ### Option 2: Manual Restore
 
 1. Restore old [extension.ts](../../extension.ts):
+
    ```bash
    git show backup-old-tools:src/extension.ts > src/extension.ts
    ```
 
 2. Restore old [package.json](../../package.json) contributions:
+
    ```bash
    git show backup-old-tools:package.json > package.json
    ```
@@ -596,9 +611,9 @@ registerVSCodeTools(context);
 
 // But manually override specific problematic tools
 context.subscriptions.push(
-  vscode.lm.registerTool('datalayer_problematicTool', {
+  vscode.lm.registerTool("datalayer_problematicTool", {
     // Old implementation
-  })
+  }),
 );
 ```
 
@@ -611,9 +626,10 @@ context.subscriptions.push(
 **Cause**: `registerVSCodeTools()` not called or operations not found.
 
 **Solution**:
+
 ```typescript
 // Check console for warnings
-console.log('[Datalayer Tools] Registering tools...');
+console.log("[Datalayer Tools] Registering tools...");
 registerVSCodeTools(context);
 
 // Should see:
@@ -627,18 +643,20 @@ registerVSCodeTools(context);
 **Cause**: Internal command not implemented or webview not responding.
 
 **Solution**:
+
 1. Check internal command exists:
+
    ```typescript
-   vscode.commands.getCommands().then(commands => {
-     console.log(commands.filter(c => c.startsWith('datalayer.internal.')));
+   vscode.commands.getCommands().then((commands) => {
+     console.log(commands.filter((c) => c.startsWith("datalayer.internal.")));
    });
    ```
 
 2. Verify webview message handler:
    ```typescript
    // In webview code
-   window.addEventListener('message', (event) => {
-     console.log('Received message:', event.data.type);
+   window.addEventListener("message", (event) => {
+     console.log("Received message:", event.data.type);
      // Should log message types
    });
    ```
@@ -648,6 +666,7 @@ registerVSCodeTools(context);
 **Cause**: Parameter names changed from snake_case to camelCase.
 
 **Solution**: Tool definitions handle this automatically. Verify definition:
+
 ```typescript
 // Should use camelCase
 parameters: {
@@ -663,6 +682,7 @@ parameters: {
 **Cause**: Platform config missing.
 
 **Solution**: Add to tool definition:
+
 ```typescript
 platformConfig: {
   vscode: {
@@ -694,6 +714,7 @@ platformConfig: {
 - **30 min**: Documentation and cleanup
 
 **Recommended Approach**: Migrate incrementally
+
 1. Start with read-only tools (readCell, readAllCells)
 2. Then mutation tools (insertCell, deleteCell, updateCell)
 3. Finally complex tools (createNotebook, startRuntime)

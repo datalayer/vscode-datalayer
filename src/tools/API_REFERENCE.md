@@ -45,18 +45,20 @@ interface DocumentHandle {
 ```
 
 **Implementations:**
+
 - [VSCodeDocumentHandle](./adapters/vscode/VSCodeDocumentHandle.ts) - VS Code message passing
 - [SaaSDocumentHandle](./adapters/saas/SaaSDocumentHandle.ts) - Direct Jupyter widget APIs
 - [MockDocumentHandle](./core/__tests__/mockDocumentHandle.ts) - Testing
 
 **Usage:**
+
 ```typescript
 const cellCount = await document.getCellCount();
 await document.insertCell(0, {
-  type: 'code',
+  type: "code",
   source: 'print("Hello")',
   outputs: [],
-  metadata: {}
+  metadata: {},
 });
 ```
 
@@ -75,27 +77,26 @@ interface ToolOperation<TParams, TResult> {
   description: string;
 
   /** Execute the operation */
-  execute(
-    params: TParams,
-    context: ToolExecutionContext
-  ): Promise<TResult>;
+  execute(params: TParams, context: ToolExecutionContext): Promise<TResult>;
 }
 ```
 
 **Type Parameters:**
+
 - `TParams` - Input parameter type (validated against JSON Schema)
 - `TResult` - Output result type
 
 **Example:**
+
 ```typescript
 const myOperation: ToolOperation<MyParams, MyResult> = {
-  name: 'myOperation',
-  description: 'Does something useful',
+  name: "myOperation",
+  description: "Does something useful",
 
   async execute(params, context) {
     // Platform-agnostic business logic
     return { success: true };
-  }
+  },
 };
 ```
 
@@ -122,6 +123,7 @@ interface ToolExecutionContext {
 ```
 
 **Usage:**
+
 ```typescript
 async execute(params, context) {
   const { document, sdk, auth } = context;
@@ -146,9 +148,9 @@ Insert a cell into notebook at specified position.
 
 ```typescript
 interface InsertCellParams {
-  cellType: 'code' | 'markdown' | 'raw';
+  cellType: "code" | "markdown" | "raw";
   cellSource: string;
-  cellIndex?: number;  // Optional: defaults to end
+  cellIndex?: number; // Optional: defaults to end
 }
 
 interface InsertCellResult {
@@ -159,14 +161,15 @@ interface InsertCellResult {
 ```
 
 **Example:**
+
 ```typescript
 const result = await insertCellOperation.execute(
   {
-    cellType: 'code',
+    cellType: "code",
     cellSource: 'print("Hello")',
-    cellIndex: 0
+    cellIndex: 0,
   },
-  { document }
+  { document },
 );
 // result.index === 0
 ```
@@ -187,11 +190,9 @@ interface DeleteCellResult {
 ```
 
 **Example:**
+
 ```typescript
-await deleteCellOperation.execute(
-  { cellIndex: 2 },
-  { document }
-);
+await deleteCellOperation.execute({ cellIndex: 2 }, { document });
 ```
 
 #### updateCell
@@ -211,13 +212,14 @@ interface UpdateCellResult {
 ```
 
 **Example:**
+
 ```typescript
 await updateCellOperation.execute(
   {
     cellIndex: 0,
-    newSource: 'x = 42\nprint(x)'
+    newSource: "x = 42\nprint(x)",
   },
-  { document }
+  { document },
 );
 ```
 
@@ -241,14 +243,12 @@ interface ReadCellResult {
 ```
 
 **Example:**
-```typescript
-const result = await readCellOperation.execute(
-  { cellIndex: 0 },
-  { document }
-);
 
-console.log(result.cell.type);     // 'code'
-console.log(result.cell.source);   // Cell content
+```typescript
+const result = await readCellOperation.execute({ cellIndex: 0 }, { document });
+
+console.log(result.cell.type); // 'code'
+console.log(result.cell.source); // Cell content
 ```
 
 #### readAllCells
@@ -256,7 +256,7 @@ console.log(result.cell.source);   // Cell content
 Read all cells from notebook.
 
 ```typescript
-interface ReadAllCellsParams {}  // No parameters
+interface ReadAllCellsParams {} // No parameters
 
 interface ReadAllCellsResult {
   success: boolean;
@@ -266,6 +266,7 @@ interface ReadAllCellsResult {
 ```
 
 **Example:**
+
 ```typescript
 const result = await readAllCellsOperation.execute({}, { document });
 
@@ -292,24 +293,25 @@ interface ExecuteCellResult {
   success: boolean;
   executionOrder?: number;
   outputs: CellOutput[];
-  duration: number;  // milliseconds
+  duration: number; // milliseconds
   message: string;
 }
 ```
 
 **Example:**
+
 ```typescript
 const result = await executeCellOperation.execute(
   { cellIndex: 0 },
-  { document }
+  { document },
 );
 
 if (result.success) {
   console.log(`Executed in ${result.duration}ms`);
   console.log(`Execution count: ${result.executionOrder}`);
 
-  result.outputs.forEach(output => {
-    if (output.output_type === 'stream') {
+  result.outputs.forEach((output) => {
+    if (output.output_type === "stream") {
       console.log(output.text);
     }
   });
@@ -334,6 +336,7 @@ interface GetNotebookInfoResult {
 ```
 
 **Example:**
+
 ```typescript
 const result = await getNotebookInfoOperation.execute({}, { document });
 
@@ -367,14 +370,15 @@ interface CreateRemoteNotebookResult {
 ```
 
 **Example:**
+
 ```typescript
 const result = await createRemoteNotebookOperation.execute(
   {
-    notebookName: 'My Analysis',
-    spaceId: 'space-123',
-    initialContent: '# Hello\nprint("World")'
+    notebookName: "My Analysis",
+    spaceId: "space-123",
+    initialContent: '# Hello\nprint("World")',
   },
-  { sdk, auth }
+  { sdk, auth },
 );
 
 console.log(`Created: ${result.url}`);
@@ -399,14 +403,15 @@ interface CreateLocalNotebookResult {
 ```
 
 **Example:**
+
 ```typescript
 const result = await createLocalNotebookOperation.execute(
   {
-    notebookName: 'analysis.ipynb',
-    directory: '/Users/me/notebooks',
-    initialContent: 'print("Hello")'
+    notebookName: "analysis.ipynb",
+    directory: "/Users/me/notebooks",
+    initialContent: 'print("Hello")',
   },
-  { extras: { createLocalFile } }
+  { extras: { createLocalFile } },
 );
 ```
 
@@ -422,7 +427,7 @@ Start a Jupyter runtime in Datalayer cloud.
 interface StartRuntimeParams {
   runtimeName: string;
   snapshotId?: string;
-  duration?: number;  // minutes
+  duration?: number; // minutes
   autoConnect?: boolean;
 }
 
@@ -435,15 +440,16 @@ interface StartRuntimeResult {
 ```
 
 **Example:**
+
 ```typescript
 const result = await startRuntimeOperation.execute(
   {
-    runtimeName: 'ml-runtime',
-    snapshotId: 'snap-123',
+    runtimeName: "ml-runtime",
+    snapshotId: "snap-123",
     duration: 60,
-    autoConnect: true
+    autoConnect: true,
   },
-  { sdk, auth, extras }
+  { sdk, auth, extras },
 );
 ```
 
@@ -487,7 +493,7 @@ interface ToolDefinition {
 
   /** JSON Schema parameter definition (ag-ui compatible) */
   parameters: {
-    type: 'object';
+    type: "object";
     properties: Record<string, JSONSchemaProperty>;
     required?: string[];
   };
@@ -571,43 +577,43 @@ interface AgUIToolConfig {
 
 ```typescript
 export const insertCellTool: ToolDefinition = {
-  name: 'datalayer_insertCell',
-  displayName: 'Insert Notebook Cell',
-  toolReferenceName: 'insertCell',
-  description: 'Inserts a code or markdown cell into a Jupyter notebook',
+  name: "datalayer_insertCell",
+  displayName: "Insert Notebook Cell",
+  toolReferenceName: "insertCell",
+  description: "Inserts a code or markdown cell into a Jupyter notebook",
 
   parameters: {
-    type: 'object',
+    type: "object",
     properties: {
       cellType: {
-        type: 'string',
-        enum: ['code', 'markdown'],
-        description: 'Type of cell to insert'
+        type: "string",
+        enum: ["code", "markdown"],
+        description: "Type of cell to insert",
       },
       cellSource: {
-        type: 'string',
-        description: 'Content of the cell'
+        type: "string",
+        description: "Content of the cell",
       },
       cellIndex: {
-        type: 'number',
-        description: 'Position to insert (0-based, optional)'
-      }
+        type: "number",
+        description: "Position to insert (0-based, optional)",
+      },
     },
-    required: ['cellType', 'cellSource']
+    required: ["cellType", "cellSource"],
   },
 
-  operation: 'insertCell',
+  operation: "insertCell",
 
   platformConfig: {
     vscode: {
-      confirmationMessage: 'Insert **{{cellType}}** cell?',
-      invocationMessage: 'Inserting {{cellType}} cell'
+      confirmationMessage: "Insert **{{cellType}}** cell?",
+      invocationMessage: "Inserting {{cellType}} cell",
     },
     saas: { enablePreview: true },
-    agui: { requiresConfirmation: true }
+    agui: { requiresConfirmation: true },
   },
 
-  tags: ['cell', 'notebook', 'manipulation', 'create']
+  tags: ["cell", "notebook", "manipulation", "create"],
 };
 ```
 
@@ -643,15 +649,13 @@ class VSCodeToolAdapter<TParams>
 ```
 
 **Usage:**
+
 ```typescript
-import { VSCodeToolAdapter } from './adapters/vscode/VSCodeToolAdapter';
+import { VSCodeToolAdapter } from "./adapters/vscode/VSCodeToolAdapter";
 
-const adapter = new VSCodeToolAdapter(
-  insertCellTool,
-  insertCellOperation
-);
+const adapter = new VSCodeToolAdapter(insertCellTool, insertCellOperation);
 
-vscode.lm.registerTool('datalayer_insertCell', adapter);
+vscode.lm.registerTool("datalayer_insertCell", adapter);
 ```
 
 #### VSCodeDocumentHandle
@@ -670,13 +674,16 @@ class VSCodeDocumentHandle implements DocumentHandle {
 ```
 
 **Usage:**
+
 ```typescript
 const handle = new VSCodeDocumentHandle(
   notebookUri,
-  vscode.commands.executeCommand
+  vscode.commands.executeCommand,
 );
 
-await handle.insertCell(0, { /* ... */ });
+await handle.insertCell(0, {
+  /* ... */
+});
 ```
 
 #### Registration Functions
@@ -688,7 +695,7 @@ await handle.insertCell(0, { /* ... */ });
 function registerVSCodeTools(
   context: vscode.ExtensionContext,
   definitions?: readonly ToolDefinition[],
-  operations?: Record<string, ToolOperation<any, any>>
+  operations?: Record<string, ToolOperation<any, any>>,
 ): void;
 
 /**
@@ -697,7 +704,7 @@ function registerVSCodeTools(
 function registerSingleTool(
   context: vscode.ExtensionContext,
   definition: ToolDefinition,
-  operation: ToolOperation<any, any>
+  operation: ToolOperation<any, any>,
 ): vscode.Disposable;
 ```
 
@@ -722,16 +729,17 @@ class SaaSToolAdapter<TParams, TResult> {
 ```
 
 **Usage:**
+
 ```typescript
 const adapter = new SaaSToolAdapter(
   insertCellTool,
   insertCellOperation,
-  context
+  context,
 );
 
 const result = await adapter.execute({
-  cellType: 'code',
-  cellSource: 'print("Hello")'
+  cellType: "code",
+  cellSource: 'print("Hello")',
 });
 ```
 
@@ -765,6 +773,7 @@ class SaaSToolContext {
 ```
 
 **Usage:**
+
 ```typescript
 const context = new SaaSToolContext(app, sdk, auth);
 
@@ -797,7 +806,7 @@ interface CopilotKitAction {
   name: string;
   description: string;
   parameters: {
-    type: 'object';
+    type: "object";
     properties: Record<string, unknown>;
     required?: string[];
   };
@@ -819,7 +828,7 @@ interface CopilotKitAction {
 function createCopilotKitAction(
   definition: ToolDefinition,
   operation: ToolOperation<any, any>,
-  context: SaaSToolContext
+  context: SaaSToolContext,
 ): CopilotKitAction;
 
 /**
@@ -828,7 +837,7 @@ function createCopilotKitAction(
 function createAllCopilotKitActions(
   definitions: ToolDefinition[],
   operations: Record<string, ToolOperation<any, any>>,
-  context: SaaSToolContext
+  context: SaaSToolContext,
 ): CopilotKitAction[];
 ```
 
@@ -843,11 +852,12 @@ function useNotebookTools(
   context: SaaSToolContext,
   useCopilotAction: UseCopilotActionFn,
   definitions?: ToolDefinition[],
-  operations?: Record<string, ToolOperation<any, any>>
+  operations?: Record<string, ToolOperation<any, any>>,
 ): void;
 ```
 
 **Usage:**
+
 ```tsx
 function NotebookEditor() {
   const context = useMemo(() => new SaaSToolContext(app, sdk, auth), []);
@@ -867,7 +877,7 @@ function useSingleTool(
   definition: ToolDefinition,
   operation: ToolOperation<any, any>,
   context: SaaSToolContext,
-  useCopilotAction: UseCopilotActionFn
+  useCopilotAction: UseCopilotActionFn,
 ): void;
 ```
 
@@ -879,7 +889,7 @@ Get actions without auto-registration.
 function useToolActions(
   definitions: ToolDefinition[],
   operations: Record<string, ToolOperation<any, any>>,
-  context: SaaSToolContext
+  context: SaaSToolContext,
 ): CopilotKitAction[];
 ```
 
@@ -891,7 +901,7 @@ function useToolActions(
 
 ```typescript
 interface CellData {
-  type: 'code' | 'markdown' | 'raw';
+  type: "code" | "markdown" | "raw";
   source: string | string[];
   outputs: CellOutput[];
   metadata: Record<string, unknown>;
@@ -909,26 +919,26 @@ type CellOutput =
   | ErrorOutput;
 
 interface StreamOutput {
-  output_type: 'stream';
-  name: 'stdout' | 'stderr';
+  output_type: "stream";
+  name: "stdout" | "stderr";
   text: string | string[];
 }
 
 interface ExecuteResultOutput {
-  output_type: 'execute_result';
+  output_type: "execute_result";
   data: Record<string, unknown>;
   metadata: Record<string, unknown>;
   execution_count: number;
 }
 
 interface DisplayDataOutput {
-  output_type: 'display_data';
+  output_type: "display_data";
   data: Record<string, unknown>;
   metadata: Record<string, unknown>;
 }
 
 interface ErrorOutput {
-  output_type: 'error';
+  output_type: "error";
   ename: string;
   evalue: string;
   traceback: string[];
@@ -967,7 +977,7 @@ interface ExecutionResult {
   success: boolean;
   executionOrder?: number;
   outputs: CellOutput[];
-  duration: number;  // milliseconds
+  duration: number; // milliseconds
 }
 ```
 
@@ -977,7 +987,7 @@ interface ExecutionResult {
 interface RuntimeInfo {
   runtimeId: string;
   runtimeName: string;
-  status: 'pending' | 'running' | 'stopped' | 'error';
+  status: "pending" | "running" | "stopped" | "error";
   url?: string;
   createdAt: string;
   expiresAt?: string;
@@ -995,14 +1005,14 @@ try {
   await operation.execute(params, context);
 } catch (error) {
   if (error instanceof Error) {
-    console.error('Operation failed:', error.message);
+    console.error("Operation failed:", error.message);
 
     // Common error patterns:
-    if (error.message.includes('out of bounds')) {
+    if (error.message.includes("out of bounds")) {
       // Invalid cell index
-    } else if (error.message.includes('Document handle')) {
+    } else if (error.message.includes("Document handle")) {
       // Missing document
-    } else if (error.message.includes('No kernel')) {
+    } else if (error.message.includes("No kernel")) {
       // Kernel not available
     }
   }
@@ -1027,16 +1037,17 @@ class MockDocumentHandle implements DocumentHandle {
 ```
 
 **Usage:**
+
 ```typescript
-import { MockDocumentHandle } from './core/__tests__/mockDocumentHandle';
+import { MockDocumentHandle } from "./core/__tests__/mockDocumentHandle";
 
 const doc = new MockDocumentHandle([
-  { type: 'code', source: 'x = 1', outputs: [] }
+  { type: "code", source: "x = 1", outputs: [] },
 ]);
 
 await insertCellOperation.execute(
-  { cellType: 'markdown', cellSource: '# Header', cellIndex: 0 },
-  { document: doc }
+  { cellType: "markdown", cellSource: "# Header", cellIndex: 0 },
+  { document: doc },
 );
 
 expect(await doc.getCellCount()).toBe(2);
@@ -1049,24 +1060,24 @@ expect(await doc.getCellCount()).toBe(2);
 ### Default Values
 
 ```typescript
-const DEFAULT_RUNTIME_DURATION = 10;  // minutes
-const MAX_CELL_SOURCE_LENGTH = 10000;  // characters
-const DEFAULT_CELL_INDEX = -1;  // append to end
+const DEFAULT_RUNTIME_DURATION = 10; // minutes
+const MAX_CELL_SOURCE_LENGTH = 10000; // characters
+const DEFAULT_CELL_INDEX = -1; // append to end
 ```
 
 ### Operation Names
 
 ```typescript
 const OPERATION_NAMES = {
-  INSERT_CELL: 'insertCell',
-  DELETE_CELL: 'deleteCell',
-  UPDATE_CELL: 'updateCell',
-  READ_CELL: 'readCell',
-  READ_ALL_CELLS: 'readAllCells',
-  EXECUTE_CELL: 'executeCell',
-  GET_NOTEBOOK_INFO: 'getNotebookInfo',
-  CREATE_REMOTE_NOTEBOOK: 'createRemoteNotebook',
-  CREATE_LOCAL_NOTEBOOK: 'createLocalNotebook',
+  INSERT_CELL: "insertCell",
+  DELETE_CELL: "deleteCell",
+  UPDATE_CELL: "updateCell",
+  READ_CELL: "readCell",
+  READ_ALL_CELLS: "readAllCells",
+  EXECUTE_CELL: "executeCell",
+  GET_NOTEBOOK_INFO: "getNotebookInfo",
+  CREATE_REMOTE_NOTEBOOK: "createRemoteNotebook",
+  CREATE_LOCAL_NOTEBOOK: "createLocalNotebook",
   // ...
 };
 ```

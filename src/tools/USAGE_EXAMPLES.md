@@ -36,6 +36,7 @@ The unified architecture consists of three layers:
 ```
 
 **Key benefits:**
+
 - 90%+ code reuse across platforms
 - Single source of truth for tool definitions
 - Platform-agnostic testing
@@ -51,8 +52,8 @@ Replace manual tool registration with factory registration:
 
 ```typescript
 // src/extension.ts
-import * as vscode from 'vscode';
-import { registerVSCodeTools } from './tools/adapters/vscode/registration';
+import * as vscode from "vscode";
+import { registerVSCodeTools } from "./tools/adapters/vscode/registration";
 
 export function activate(context: vscode.ExtensionContext) {
   // Register all tools automatically
@@ -67,18 +68,21 @@ export function activate(context: vscode.ExtensionContext) {
 Register only specific tools:
 
 ```typescript
-import { registerVSCodeTools } from './tools/adapters/vscode/registration';
-import { insertCellTool, deleteCellTool } from './tools/definitions/tools';
-import { insertCellOperation, deleteCellOperation } from './tools/core/operations';
+import { registerVSCodeTools } from "./tools/adapters/vscode/registration";
+import { insertCellTool, deleteCellTool } from "./tools/definitions/tools";
+import {
+  insertCellOperation,
+  deleteCellOperation,
+} from "./tools/core/operations";
 
 // Register only cell manipulation tools
 registerVSCodeTools(
   context,
-  [insertCellTool, deleteCellTool],  // Only these tools
+  [insertCellTool, deleteCellTool], // Only these tools
   {
     insertCell: insertCellOperation,
-    deleteCell: deleteCellOperation
-  }
+    deleteCell: deleteCellOperation,
+  },
 );
 ```
 
@@ -87,15 +91,11 @@ registerVSCodeTools(
 Register a single tool with custom configuration:
 
 ```typescript
-import { registerSingleTool } from './tools/adapters/vscode/registration';
-import { myCustomTool } from './tools/definitions/tools/myCustomTool';
-import { myCustomOperation } from './tools/core/operations/myCustomOperation';
+import { registerSingleTool } from "./tools/adapters/vscode/registration";
+import { myCustomTool } from "./tools/definitions/tools/myCustomTool";
+import { myCustomOperation } from "./tools/core/operations/myCustomOperation";
 
-const disposable = registerSingleTool(
-  context,
-  myCustomTool,
-  myCustomOperation
-);
+const disposable = registerSingleTool(context, myCustomTool, myCustomOperation);
 
 // Unregister later if needed
 disposable.dispose();
@@ -111,8 +111,13 @@ export function activate(context: vscode.ExtensionContext) {
   // Register internal command handlers for webview communication
   context.subscriptions.push(
     vscode.commands.registerCommand(
-      'datalayer.internal.insertCell',
-      async (args: { uri: string; cellType: string; cellSource: string; cellIndex: number }) => {
+      "datalayer.internal.insertCell",
+      async (args: {
+        uri: string;
+        cellType: string;
+        cellSource: string;
+        cellIndex: number;
+      }) => {
         const panel = findWebviewPanel(args.uri);
         if (!panel) {
           throw new Error(`No webview found for URI: ${args.uri}`);
@@ -120,16 +125,16 @@ export function activate(context: vscode.ExtensionContext) {
 
         // Send message to webview
         await panel.webview.postMessage({
-          type: 'insertCell',
+          type: "insertCell",
           cellType: args.cellType,
           cellSource: args.cellSource,
           cellIndex: args.cellIndex,
         });
 
         // Wait for response
-        return await waitForWebviewResponse(panel, 'insertCellResponse');
-      }
-    )
+        return await waitForWebviewResponse(panel, "insertCellResponse");
+      },
+    ),
   );
 
   // Register other internal commands: readCell, deleteCell, updateCell, etc.
@@ -158,66 +163,62 @@ export function activate(context: vscode.ExtensionContext) {
 
 ```typescript
 // In your JupyterLab extension plugin
-import { JupyterFrontEnd } from '@jupyterlab/application';
-import { SaaSToolContext } from './tools/adapters/saas/SaaSToolContext';
-import { SaaSToolAdapter } from './tools/adapters/saas/SaaSToolAdapter';
-import { insertCellTool } from './tools/definitions/tools';
-import { insertCellOperation } from './tools/core/operations';
+import { JupyterFrontEnd } from "@jupyterlab/application";
+import { SaaSToolContext } from "./tools/adapters/saas/SaaSToolContext";
+import { SaaSToolAdapter } from "./tools/adapters/saas/SaaSToolAdapter";
+import { insertCellTool } from "./tools/definitions/tools";
+import { insertCellOperation } from "./tools/core/operations";
 
 const plugin: JupyterFrontEndPlugin<void> = {
-  id: 'datalayer-tools',
+  id: "datalayer-tools",
   autoStart: true,
   activate: (app: JupyterFrontEnd) => {
     // Create context
-    const context = new SaaSToolContext(
-      app,
-      yourSDKClient,
-      yourAuthProvider
-    );
+    const context = new SaaSToolContext(app, yourSDKClient, yourAuthProvider);
 
     // Create adapter for a specific tool
     const insertCellAdapter = new SaaSToolAdapter(
       insertCellTool,
       insertCellOperation,
-      context
+      context,
     );
 
     // Execute tool
     async function insertCell() {
       try {
         const result = await insertCellAdapter.execute({
-          cellType: 'code',
+          cellType: "code",
           cellSource: 'print("Hello from SaaS")',
-          cellIndex: 0
+          cellIndex: 0,
         });
 
-        console.log('✅ Cell inserted:', result);
+        console.log("✅ Cell inserted:", result);
       } catch (error) {
-        console.error('❌ Failed to insert cell:', error);
+        console.error("❌ Failed to insert cell:", error);
       }
     }
 
     // Expose to UI
-    app.commands.addCommand('datalayer:insert-cell', {
-      label: 'Insert Cell',
-      execute: insertCell
+    app.commands.addCommand("datalayer:insert-cell", {
+      label: "Insert Cell",
+      execute: insertCell,
     });
-  }
+  },
 };
 ```
 
 ### 2. Using Direct Document Access
 
 ```typescript
-import { SaaSToolContext } from './tools/adapters/saas/SaaSToolContext';
-import { SaaSDocumentHandle } from './tools/adapters/saas/SaaSDocumentHandle';
+import { SaaSToolContext } from "./tools/adapters/saas/SaaSToolContext";
+import { SaaSDocumentHandle } from "./tools/adapters/saas/SaaSDocumentHandle";
 
 // Get active notebook
 const context = new SaaSToolContext(app, sdk, auth);
 const notebookPanel = context.getActiveDocument();
 
 if (!notebookPanel) {
-  console.error('No active notebook');
+  console.error("No active notebook");
   return;
 }
 
@@ -226,10 +227,10 @@ const documentHandle = context.createDocumentHandle(notebookPanel);
 
 // Use handle directly (bypasses tool layer)
 await documentHandle.insertCell(0, {
-  type: 'code',
-  source: 'x = 42\nprint(x)',
+  type: "code",
+  source: "x = 42\nprint(x)",
   outputs: [],
-  metadata: {}
+  metadata: {},
 });
 
 // Read cells
@@ -238,48 +239,51 @@ console.log(`Notebook has ${cellCount} cells`);
 
 // Execute cell
 const result = await documentHandle.executeCell(0);
-console.log('Execution result:', result);
+console.log("Execution result:", result);
 ```
 
 ### 3. Batch Operations
 
 ```typescript
-import { SaaSToolAdapter } from './tools/adapters/saas/SaaSToolAdapter';
-import { allToolDefinitions } from './tools/definitions/tools';
-import { allOperations } from './tools/core/operations';
+import { SaaSToolAdapter } from "./tools/adapters/saas/SaaSToolAdapter";
+import { allToolDefinitions } from "./tools/definitions/tools";
+import { allOperations } from "./tools/core/operations";
 
 // Create adapters for all tools
-const adapters = allToolDefinitions.map(definition =>
-  new SaaSToolAdapter(
-    definition,
-    allOperations[definition.operation],
-    context
-  )
+const adapters = allToolDefinitions.map(
+  (definition) =>
+    new SaaSToolAdapter(
+      definition,
+      allOperations[definition.operation],
+      context,
+    ),
 );
 
 // Execute multiple operations
 async function setupNotebook() {
-  const insertCell = adapters.find(a => a.definition.operation === 'insertCell');
+  const insertCell = adapters.find(
+    (a) => a.definition.operation === "insertCell",
+  );
 
   // Insert header
   await insertCell!.execute({
-    cellType: 'markdown',
-    cellSource: '# Data Analysis',
-    cellIndex: 0
+    cellType: "markdown",
+    cellSource: "# Data Analysis",
+    cellIndex: 0,
   });
 
   // Insert imports
   await insertCell!.execute({
-    cellType: 'code',
-    cellSource: 'import pandas as pd\nimport numpy as np',
-    cellIndex: 1
+    cellType: "code",
+    cellSource: "import pandas as pd\nimport numpy as np",
+    cellIndex: 1,
   });
 
   // Insert analysis code
   await insertCell!.execute({
-    cellType: 'code',
+    cellType: "code",
     cellSource: 'df = pd.read_csv("data.csv")\ndf.head()',
-    cellIndex: 2
+    cellIndex: 2,
   });
 }
 ```
@@ -292,7 +296,7 @@ const allNotebooks = context.getAllDocuments();
 console.log(`${allNotebooks.length} notebooks open`);
 
 // Get notebook by ID
-const notebook = context.getDocumentById('my-notebook-id');
+const notebook = context.getDocumentById("my-notebook-id");
 
 // Clear cached handles
 context.clearHandles();
@@ -306,15 +310,15 @@ context.clearHandles();
 
 ```tsx
 // In your React component
-import { useCopilotAction } from '@copilotkit/react-core';
-import { useNotebookTools } from './tools/adapters/agui/hooks';
-import { SaaSToolContext } from './tools/adapters/saas/SaaSToolContext';
+import { useCopilotAction } from "@copilotkit/react-core";
+import { useNotebookTools } from "./tools/adapters/agui/hooks";
+import { SaaSToolContext } from "./tools/adapters/saas/SaaSToolContext";
 
 function NotebookEditor({ app, sdk, auth }: Props) {
   // Create context (same as SaaS)
   const context = useMemo(
     () => new SaaSToolContext(app, sdk, auth),
-    [app, sdk, auth]
+    [app, sdk, auth],
   );
 
   // Auto-register all notebook tools with CopilotKit
@@ -332,25 +336,28 @@ function NotebookEditor({ app, sdk, auth }: Props) {
 ### 2. Selective Tool Registration
 
 ```tsx
-import { useNotebookTools } from './tools/adapters/agui/hooks';
-import { insertCellTool, deleteCellTool } from './tools/definitions/tools';
-import { insertCellOperation, deleteCellOperation } from './tools/core/operations';
+import { useNotebookTools } from "./tools/adapters/agui/hooks";
+import { insertCellTool, deleteCellTool } from "./tools/definitions/tools";
+import {
+  insertCellOperation,
+  deleteCellOperation,
+} from "./tools/core/operations";
 
 function NotebookEditor({ app, sdk, auth }: Props) {
   const context = useMemo(
     () => new SaaSToolContext(app, sdk, auth),
-    [app, sdk, auth]
+    [app, sdk, auth],
   );
 
   // Only register cell manipulation tools
   useNotebookTools(
     context,
     useCopilotAction,
-    [insertCellTool, deleteCellTool],  // Only these tools
+    [insertCellTool, deleteCellTool], // Only these tools
     {
       insertCell: insertCellOperation,
-      deleteCell: deleteCellOperation
-    }
+      deleteCell: deleteCellOperation,
+    },
   );
 
   return <YourUI />;
@@ -360,24 +367,21 @@ function NotebookEditor({ app, sdk, auth }: Props) {
 ### 3. Single Tool Registration
 
 ```tsx
-import { useSingleTool } from './tools/adapters/agui/hooks';
-import { insertCellTool } from './tools/definitions/tools';
-import { insertCellOperation } from './tools/core/operations';
+import { useSingleTool } from "./tools/adapters/agui/hooks";
+import { insertCellTool } from "./tools/definitions/tools";
+import { insertCellOperation } from "./tools/core/operations";
 
 function InsertCellButton({ context }: Props) {
   // Register only the insert cell tool
-  useSingleTool(
-    insertCellTool,
-    insertCellOperation,
-    context,
-    useCopilotAction
-  );
+  useSingleTool(insertCellTool, insertCellOperation, context, useCopilotAction);
 
   return (
-    <button onClick={() => {
-      // Tool is now available to CopilotKit
-      console.log('Insert cell tool registered');
-    }}>
+    <button
+      onClick={() => {
+        // Tool is now available to CopilotKit
+        console.log("Insert cell tool registered");
+      }}
+    >
       Enable Insert Cell Tool
     </button>
   );
@@ -387,31 +391,27 @@ function InsertCellButton({ context }: Props) {
 ### 4. Manual Tool Actions
 
 ```tsx
-import { useToolActions } from './tools/adapters/agui/hooks';
-import { allToolDefinitions } from './tools/definitions/tools';
-import { allOperations } from './tools/core/operations';
+import { useToolActions } from "./tools/adapters/agui/hooks";
+import { allToolDefinitions } from "./tools/definitions/tools";
+import { allOperations } from "./tools/core/operations";
 
 function NotebookToolbar({ context }: Props) {
   // Get all tool actions without auto-registration
-  const actions = useToolActions(
-    allToolDefinitions,
-    allOperations,
-    context
-  );
+  const actions = useToolActions(allToolDefinitions, allOperations, context);
 
   return (
     <div>
-      {actions.map(action => (
+      {actions.map((action) => (
         <button
           key={action.name}
           onClick={async () => {
             // Execute tool manually
             const result = await action.handler({
-              cellType: 'code',
+              cellType: "code",
               cellSource: 'print("Manual execution")',
-              cellIndex: 0
+              cellIndex: 0,
             });
-            console.log('Tool result:', result);
+            console.log("Tool result:", result);
           }}
         >
           {action.name}
@@ -426,7 +426,7 @@ function NotebookToolbar({ context }: Props) {
 
 ```tsx
 // In your tool definition
-import { ToolDefinition } from './tools/definitions/schema';
+import { ToolDefinition } from "./tools/definitions/schema";
 
 export const insertCellTool: ToolDefinition = {
   // ... other properties
@@ -434,11 +434,11 @@ export const insertCellTool: ToolDefinition = {
     agui: {
       renderingHints: {
         customRender: ({ status, args, result }) => {
-          if (status === 'executing') {
+          if (status === "executing") {
             return <Spinner>Inserting {args.cellType} cell...</Spinner>;
           }
 
-          if (status === 'complete') {
+          if (status === "complete") {
             return (
               <div>
                 ✅ Inserted {args.cellType} cell at index {result.index}
@@ -448,10 +448,10 @@ export const insertCellTool: ToolDefinition = {
           }
 
           return null;
-        }
-      }
-    }
-  }
+        },
+      },
+    },
+  },
 };
 ```
 
@@ -463,7 +463,7 @@ export const insertCellTool: ToolDefinition = {
 
 ```typescript
 // src/tools/core/operations/myCustomOperation.ts
-import type { ToolOperation, ToolExecutionContext } from '../interfaces';
+import type { ToolOperation, ToolExecutionContext } from "../interfaces";
 
 export interface MyCustomParams {
   input: string;
@@ -477,73 +477,74 @@ export interface MyCustomResult {
   output: string;
 }
 
-export const myCustomOperation: ToolOperation<MyCustomParams, MyCustomResult> = {
-  name: 'myCustom',
-  description: 'Performs a custom operation',
+export const myCustomOperation: ToolOperation<MyCustomParams, MyCustomResult> =
+  {
+    name: "myCustom",
+    description: "Performs a custom operation",
 
-  async execute(params, context): Promise<MyCustomResult> {
-    const { input, options } = params;
-    const { document, sdk, auth } = context;
+    async execute(params, context): Promise<MyCustomResult> {
+      const { input, options } = params;
+      const { document, sdk, auth } = context;
 
-    // Your business logic here (platform-agnostic!)
-    const output = input.toUpperCase();
+      // Your business logic here (platform-agnostic!)
+      const output = input.toUpperCase();
 
-    return {
-      success: true,
-      output: options?.flag ? `${output}!` : output
-    };
-  }
-};
+      return {
+        success: true,
+        output: options?.flag ? `${output}!` : output,
+      };
+    },
+  };
 ```
 
 ### Step 2: Create Tool Definition
 
 ```typescript
 // src/tools/definitions/tools/myCustomTool.ts
-import type { ToolDefinition } from '../schema';
+import type { ToolDefinition } from "../schema";
 
 export const myCustomTool: ToolDefinition = {
-  name: 'datalayer_myCustom',
-  displayName: 'My Custom Tool',
-  toolReferenceName: 'myCustom',
-  description: 'A custom tool that transforms input text',
+  name: "datalayer_myCustom",
+  displayName: "My Custom Tool",
+  toolReferenceName: "myCustom",
+  description: "A custom tool that transforms input text",
 
   parameters: {
-    type: 'object',
+    type: "object",
     properties: {
       input: {
-        type: 'string',
-        description: 'Text to transform'
+        type: "string",
+        description: "Text to transform",
       },
       options: {
-        type: 'object',
+        type: "object",
         properties: {
           flag: {
-            type: 'boolean',
-            description: 'Add exclamation mark'
-          }
-        }
-      }
+            type: "boolean",
+            description: "Add exclamation mark",
+          },
+        },
+      },
     },
-    required: ['input']
+    required: ["input"],
   },
 
-  operation: 'myCustom',
+  operation: "myCustom",
 
   platformConfig: {
     vscode: {
-      confirmationMessage: 'Transform **{{input}}**?',
-      invocationMessage: 'Transforming text...'
+      confirmationMessage: "Transform **{{input}}**?",
+      invocationMessage: "Transforming text...",
     },
     saas: {
-      enablePreview: true
+      enablePreview: true,
     },
     agui: {
-      requiresConfirmation: false
-    }
+      requiresConfirmation: false,
+    },
   },
 
-  tags: ['custom', 'text']
+  tags: ["custom", "text"],
 };
 ```
 
@@ -551,20 +552,20 @@ export const myCustomTool: ToolDefinition = {
 
 ```typescript
 // Add to src/tools/core/operations/index.ts
-export { myCustomOperation } from './myCustomOperation';
+export { myCustomOperation } from "./myCustomOperation";
 
 // Add to src/tools/definitions/tools/index.ts
-export { myCustomTool } from './myCustomTool';
+export { myCustomTool } from "./myCustomTool";
 
 // Update registry
 export const allOperations = {
   // ... existing operations
-  myCustom: myCustomOperation
+  myCustom: myCustomOperation,
 };
 
 export const allToolDefinitions = [
   // ... existing tools
-  myCustomTool
+  myCustomTool,
 ] as const;
 ```
 
@@ -578,7 +579,7 @@ registerVSCodeTools(context);
 
 // SaaS: Create adapter
 const adapter = new SaaSToolAdapter(myCustomTool, myCustomOperation, context);
-await adapter.execute({ input: 'hello', options: { flag: true } });
+await adapter.execute({ input: "hello", options: { flag: true } });
 
 // ag-ui: Auto-registered via hook
 useNotebookTools(context, useCopilotAction);
@@ -592,28 +593,28 @@ useNotebookTools(context, useCopilotAction);
 
 ```typescript
 // src/tools/core/__tests__/myCustomOperation.test.ts
-import { describe, it, expect } from 'vitest';
-import { MockDocumentHandle } from './mockDocumentHandle';
-import { myCustomOperation } from '../operations/myCustomOperation';
+import { describe, it, expect } from "vitest";
+import { MockDocumentHandle } from "./mockDocumentHandle";
+import { myCustomOperation } from "../operations/myCustomOperation";
 
-describe('myCustomOperation', () => {
-  it('should transform input text', async () => {
+describe("myCustomOperation", () => {
+  it("should transform input text", async () => {
     const result = await myCustomOperation.execute(
-      { input: 'hello' },
-      {}  // No context needed
+      { input: "hello" },
+      {}, // No context needed
     );
 
     expect(result.success).toBe(true);
-    expect(result.output).toBe('HELLO');
+    expect(result.output).toBe("HELLO");
   });
 
-  it('should add exclamation mark when flag is true', async () => {
+  it("should add exclamation mark when flag is true", async () => {
     const result = await myCustomOperation.execute(
-      { input: 'hello', options: { flag: true } },
-      {}
+      { input: "hello", options: { flag: true } },
+      {},
     );
 
-    expect(result.output).toBe('HELLO!');
+    expect(result.output).toBe("HELLO!");
   });
 });
 ```
@@ -621,29 +622,29 @@ describe('myCustomOperation', () => {
 ### 2. Integration Testing with Mock Document
 
 ```typescript
-import { MockDocumentHandle } from './mockDocumentHandle';
-import { insertCellOperation } from '../operations/insertCell';
+import { MockDocumentHandle } from "./mockDocumentHandle";
+import { insertCellOperation } from "../operations/insertCell";
 
-describe('insertCell integration', () => {
-  it('should insert cell at correct position', async () => {
+describe("insertCell integration", () => {
+  it("should insert cell at correct position", async () => {
     const doc = new MockDocumentHandle([
-      { type: 'code', source: 'x = 1', outputs: [] }
+      { type: "code", source: "x = 1", outputs: [] },
     ]);
 
     await insertCellOperation.execute(
       {
-        cellType: 'markdown',
-        cellSource: '# Header',
-        cellIndex: 0
+        cellType: "markdown",
+        cellSource: "# Header",
+        cellIndex: 0,
       },
-      { document: doc }
+      { document: doc },
     );
 
     expect(await doc.getCellCount()).toBe(2);
 
     const cell = await doc.getCell(0);
-    expect(cell.type).toBe('markdown');
-    expect(cell.source).toBe('# Header');
+    expect(cell.type).toBe("markdown");
+    expect(cell.source).toBe("# Header");
   });
 });
 ```
@@ -651,17 +652,17 @@ describe('insertCell integration', () => {
 ### 3. Testing Tool Definitions
 
 ```typescript
-import { myCustomTool } from '../definitions/tools/myCustomTool';
+import { myCustomTool } from "../definitions/tools/myCustomTool";
 
-describe('myCustomTool definition', () => {
-  it('should have correct schema', () => {
-    expect(myCustomTool.name).toBe('datalayer_myCustom');
-    expect(myCustomTool.operation).toBe('myCustom');
-    expect(myCustomTool.parameters.required).toContain('input');
+describe("myCustomTool definition", () => {
+  it("should have correct schema", () => {
+    expect(myCustomTool.name).toBe("datalayer_myCustom");
+    expect(myCustomTool.operation).toBe("myCustom");
+    expect(myCustomTool.parameters.required).toContain("input");
   });
 
-  it('should be ag-ui compatible', () => {
-    expect(myCustomTool.parameters.type).toBe('object');
+  it("should be ag-ui compatible", () => {
+    expect(myCustomTool.parameters.type).toBe("object");
     expect(myCustomTool.parameters.properties).toBeDefined();
   });
 });
@@ -670,25 +671,25 @@ describe('myCustomTool definition', () => {
 ### 4. Testing VS Code Adapter
 
 ```typescript
-import * as vscode from 'vscode';
-import { VSCodeToolAdapter } from '../adapters/vscode/VSCodeToolAdapter';
-import { myCustomTool } from '../definitions/tools/myCustomTool';
-import { myCustomOperation } from '../operations/myCustomOperation';
+import * as vscode from "vscode";
+import { VSCodeToolAdapter } from "../adapters/vscode/VSCodeToolAdapter";
+import { myCustomTool } from "../definitions/tools/myCustomTool";
+import { myCustomOperation } from "../operations/myCustomOperation";
 
-describe('VSCodeToolAdapter', () => {
-  it('should prepare invocation message', async () => {
+describe("VSCodeToolAdapter", () => {
+  it("should prepare invocation message", async () => {
     const adapter = new VSCodeToolAdapter(myCustomTool, myCustomOperation);
 
     const result = await adapter.prepareInvocation(
       {
-        input: { input: 'test' },
+        input: { input: "test" },
         toolInvocationToken: {} as any,
-        requestedContentTypes: []
+        requestedContentTypes: [],
       },
-      {} as any
+      {} as any,
     );
 
-    expect(result.invocationMessage).toContain('Transforming');
+    expect(result.invocationMessage).toContain("Transforming");
   });
 });
 ```
@@ -703,9 +704,9 @@ describe('VSCodeToolAdapter', () => {
 // Register tools based on features or permissions
 function registerToolsBasedOnPermissions(
   context: vscode.ExtensionContext,
-  userPermissions: string[]
+  userPermissions: string[],
 ) {
-  const toolsToRegister = allToolDefinitions.filter(tool => {
+  const toolsToRegister = allToolDefinitions.filter((tool) => {
     // Check if user has permission for this tool
     const requiredPermission = tool.platformConfig?.vscode?.requiredPermission;
     return !requiredPermission || userPermissions.includes(requiredPermission);
@@ -724,48 +725,45 @@ async function createNotebookWorkflow(context: ToolExecutionContext) {
 
   // Insert header
   await insertCellOperation.execute(
-    { cellType: 'markdown', cellSource: '# Analysis', cellIndex: 0 },
-    context
+    { cellType: "markdown", cellSource: "# Analysis", cellIndex: 0 },
+    context,
   );
 
   // Insert code
   await insertCellOperation.execute(
-    { cellType: 'code', cellSource: 'import pandas as pd', cellIndex: 1 },
-    context
+    { cellType: "code", cellSource: "import pandas as pd", cellIndex: 1 },
+    context,
   );
 
   // Execute code
-  await executeCellOperation.execute(
-    { cellIndex: 1 },
-    context
-  );
+  await executeCellOperation.execute({ cellIndex: 1 }, context);
 
-  return { success: true, message: '✅ Workflow complete' };
+  return { success: true, message: "✅ Workflow complete" };
 }
 ```
 
 ### 3. Error Handling
 
 ```typescript
-import { SaaSToolAdapter } from './tools/adapters/saas/SaaSToolAdapter';
+import { SaaSToolAdapter } from "./tools/adapters/saas/SaaSToolAdapter";
 
 async function executeToolSafely(
   adapter: SaaSToolAdapter<any, any>,
-  params: any
+  params: any,
 ) {
   try {
     const result = await adapter.execute(params);
-    console.log('✅ Success:', result);
+    console.log("✅ Success:", result);
     return result;
   } catch (error) {
     if (error instanceof Error) {
       // Handle specific error types
-      if (error.message.includes('out of bounds')) {
-        console.error('❌ Invalid cell index');
-      } else if (error.message.includes('Document handle')) {
-        console.error('❌ No active document');
+      if (error.message.includes("out of bounds")) {
+        console.error("❌ Invalid cell index");
+      } else if (error.message.includes("Document handle")) {
+        console.error("❌ No active document");
       } else {
-        console.error('❌ Unexpected error:', error.message);
+        console.error("❌ Unexpected error:", error.message);
       }
     }
     throw error;
@@ -777,7 +775,7 @@ async function executeToolSafely(
 
 ```typescript
 // Implement DocumentHandle for a custom platform
-import type { DocumentHandle, CellData } from './tools/core/interfaces';
+import type { DocumentHandle, CellData } from "./tools/core/interfaces";
 
 export class CustomPlatformDocumentHandle implements DocumentHandle {
   constructor(private customNotebook: CustomNotebookType) {}
@@ -798,7 +796,7 @@ export class CustomPlatformDocumentHandle implements DocumentHandle {
 const adapter = new SaaSToolAdapter(
   insertCellTool,
   insertCellOperation,
-  context
+  context,
 );
 ```
 
@@ -808,14 +806,14 @@ const adapter = new SaaSToolAdapter(
 // Register tools dynamically based on configuration
 async function loadAndRegisterTools(
   context: vscode.ExtensionContext,
-  configPath: string
+  configPath: string,
 ) {
   // Load tool configuration
   const config = await loadToolConfig(configPath);
 
   // Filter tools by configuration
-  const enabledTools = allToolDefinitions.filter(tool =>
-    config.enabledTools.includes(tool.name)
+  const enabledTools = allToolDefinitions.filter((tool) =>
+    config.enabledTools.includes(tool.name),
   );
 
   // Register only enabled tools
@@ -840,7 +838,7 @@ async function loadAndRegisterTools(
 // SaaS adapter needs active document
 const notebook = context.getActiveDocument();
 if (!notebook) {
-  console.error('No active notebook');
+  console.error("No active notebook");
   return;
 }
 ```
@@ -853,11 +851,11 @@ if (!notebook) {
 
 ```typescript
 // Tool definition
-operation: 'myCustom'
+operation: "myCustom";
 
 // Operation export
 export const allOperations = {
-  myCustom: myCustomOperation  // Must match!
+  myCustom: myCustomOperation, // Must match!
 };
 ```
 
@@ -869,9 +867,7 @@ export const allOperations = {
 
 ```tsx
 <CopilotKit>
-  <YourComponent>
-    {/* useNotebookTools must be here */}
-  </YourComponent>
+  <YourComponent>{/* useNotebookTools must be here */}</YourComponent>
 </CopilotKit>
 ```
 
@@ -885,6 +881,7 @@ export const allOperations = {
 4. **Deploy** - Test in production with SaaS and ag-ui
 
 For more details, see:
+
 - [README.md](./README.md) - Architecture overview
 - [INTEGRATION_GUIDE.md](./adapters/vscode/INTEGRATION_GUIDE.md) - VS Code integration
 - [API Documentation](./core/interfaces.ts) - Core interfaces

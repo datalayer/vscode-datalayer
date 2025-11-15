@@ -9,17 +9,21 @@
 ## 🎯 Project Goals (Achieved)
 
 ### Primary Objectives
+
 ✅ **Enable tool reusability across three platforms**:
+
 - VS Code Extension (embedded MCP tools)
 - SaaS Web Application (browser-based)
 - ag-ui Integration (CopilotKit)
 
 ✅ **Eliminate code duplication**:
+
 - Single source of truth for tool definitions
 - Platform-agnostic core operations
 - 90%+ code reuse achieved
 
 ✅ **ag-ui compatibility**:
+
 - JSON Schema parameters built-in
 - CopilotKit integration ready
 - React hooks for automatic registration
@@ -31,9 +35,11 @@
 ### Code Implementation (100% Complete)
 
 #### Phase 1: Core Operations ✅
+
 **Location**: [`src/tools/core/`](./core/)
 
 **Files Created**:
+
 - [`interfaces.ts`](./core/interfaces.ts) - DocumentHandle, ToolOperation interfaces (129 lines)
 - [`types.ts`](./core/types.ts) - Shared data types (148 lines)
 - **13 Operations** in [`operations/`](./core/operations/):
@@ -52,9 +58,11 @@
 ---
 
 #### Phase 2: Tool Definitions ✅
+
 **Location**: [`src/tools/definitions/`](./definitions/)
 
 **Files Created**:
+
 - [`schema.ts`](./definitions/schema.ts) - ToolDefinition interface (166 lines)
 - **9 Tool Definitions** in [`tools/`](./definitions/tools/):
   - insertCell.ts, deleteCell.ts, updateCell.ts
@@ -71,9 +79,11 @@
 ---
 
 #### Phase 3: VS Code Adapter ✅
+
 **Location**: [`src/tools/adapters/vscode/`](./adapters/vscode/)
 
 **Files Created**:
+
 - [`VSCodeDocumentHandle.ts`](./adapters/vscode/VSCodeDocumentHandle.ts) - Webview message passing (291 lines)
 - [`VSCodeToolAdapter.ts`](./adapters/vscode/VSCodeToolAdapter.ts) - LanguageModelTool bridge (264 lines)
 - [`registration.ts`](./adapters/vscode/registration.ts) - Factory registration (92 lines)
@@ -84,9 +94,11 @@
 ---
 
 #### Phase 4: SaaS Adapter ✅
+
 **Location**: [`src/tools/adapters/saas/`](./adapters/saas/)
 
 **Files Created**:
+
 - [`SaaSDocumentHandle.ts`](./adapters/saas/SaaSDocumentHandle.ts) - Direct Jupyter widget APIs (272 lines)
 - [`SaaSToolContext.ts`](./adapters/saas/SaaSToolContext.ts) - Document management (125 lines)
 - [`SaaSToolAdapter.ts`](./adapters/saas/SaaSToolAdapter.ts) - Web execution wrapper (155 lines)
@@ -96,9 +108,11 @@
 ---
 
 #### Phase 5: ag-ui Adapter ✅
+
 **Location**: [`src/tools/adapters/agui/`](./adapters/agui/)
 
 **Files Created**:
+
 - [`AgUIToolAdapter.ts`](./adapters/agui/AgUIToolAdapter.ts) - CopilotKit converter (138 lines)
 - [`hooks.tsx`](./adapters/agui/hooks.tsx) - React hooks for auto-registration (166 lines)
 - [`index.ts`](./adapters/agui/index.ts) - Module exports (16 lines)
@@ -155,11 +169,13 @@
 ## 📊 Metrics & Achievements
 
 ### Code Reusability
+
 - **90%+ code reuse** across VS Code, SaaS, and ag-ui
 - **13 core operations** work identically on all platforms
 - **Zero duplication** of business logic
 
 ### Lines of Code
+
 - **Core operations**: ~2,000 lines
 - **Tool definitions**: ~1,200 lines
 - **Platform adapters**: ~1,500 lines
@@ -168,11 +184,13 @@
 - **Total**: ~8,250 lines of production-ready code
 
 ### Code Reduction
+
 - **Before**: ~50 lines of boilerplate per tool × 17 tools = 850 lines
 - **After**: 1 line factory registration + shared infrastructure
 - **Reduction**: ~85% less boilerplate code
 
 ### Test Coverage
+
 - **Core operations**: 100% coverage with MockDocumentHandle
 - **Unit tests**: All 13 operations tested
 - **Integration tests**: Workflow example demonstrates end-to-end usage
@@ -212,6 +230,7 @@
 ### Key Interfaces
 
 **DocumentHandle** - Unified notebook API:
+
 ```typescript
 interface DocumentHandle {
   getCellCount(): Promise<number>;
@@ -225,6 +244,7 @@ interface DocumentHandle {
 ```
 
 **ToolOperation** - Generic operation interface:
+
 ```typescript
 interface ToolOperation<TParams, TResult> {
   name: string;
@@ -234,13 +254,14 @@ interface ToolOperation<TParams, TResult> {
 ```
 
 **ToolDefinition** - ag-ui compatible metadata:
+
 ```typescript
 interface ToolDefinition {
   name: string;
   displayName: string;
   description: string;
   parameters: {
-    type: 'object';
+    type: "object";
     properties: Record<string, JSONSchemaProperty>;
     required?: string[];
   };
@@ -259,36 +280,39 @@ interface ToolDefinition {
 ## 🚀 Usage Examples
 
 ### VS Code (One Line!)
+
 ```typescript
-import { registerVSCodeTools } from './tools/adapters/vscode/registration';
+import { registerVSCodeTools } from "./tools/adapters/vscode/registration";
 
 export function activate(context: vscode.ExtensionContext) {
-  registerVSCodeTools(context);  // ✅ All tools registered!
+  registerVSCodeTools(context); // ✅ All tools registered!
 }
 ```
 
 ### SaaS (Direct Manipulation)
+
 ```typescript
-import { SaaSToolContext } from './tools/adapters/saas/SaaSToolContext';
+import { SaaSToolContext } from "./tools/adapters/saas/SaaSToolContext";
 
 const context = new SaaSToolContext(app, sdk, auth);
 const notebook = context.getActiveDocument();
 const handle = context.createDocumentHandle(notebook!);
 
 await handle.insertCell(0, {
-  type: 'code',
-  source: 'print("Hello from SaaS")'
+  type: "code",
+  source: 'print("Hello from SaaS")',
 });
 ```
 
 ### ag-ui (Automatic Registration)
+
 ```tsx
-import { useNotebookTools } from './tools/adapters/agui/hooks';
+import { useNotebookTools } from "./tools/adapters/agui/hooks";
 
 function NotebookEditor() {
   const context = useMemo(() => new SaaSToolContext(app, sdk, auth), []);
 
-  useNotebookTools(context, useCopilotAction);  // ✅ All tools available!
+  useNotebookTools(context, useCopilotAction); // ✅ All tools available!
 
   return <YourUI />;
 }
@@ -299,6 +323,7 @@ function NotebookEditor() {
 ## ✅ What's Been Tested
 
 ### Unit Tests
+
 - ✅ All 13 core operations
 - ✅ MockDocumentHandle functionality
 - ✅ Parameter validation
@@ -306,12 +331,14 @@ function NotebookEditor() {
 - ✅ Edge cases
 
 ### Integration Tests
+
 - ✅ Complete workflow example
 - ✅ Multi-step operations
 - ✅ Error recovery
 - ✅ Cross-operation dependencies
 
 ### Manual Testing Required (Phase 6)
+
 - ⏳ VS Code Extension Host (F5)
 - ⏳ GitHub Copilot integration
 - ⏳ SaaS web environment
@@ -353,6 +380,7 @@ function NotebookEditor() {
 **Total Estimated Time**: 6 hours
 
 **Suggested Schedule**:
+
 - Day 1 (3 hours): VS Code integration and testing
 - Day 2 (2 hours): SaaS integration and testing
 - Day 3 (1 hour): ag-ui integration and cleanup
@@ -364,11 +392,13 @@ function NotebookEditor() {
 ### For New Developers
 
 **Start Here**:
+
 1. Read [README.md](./README.md) - Architecture overview
 2. Study [USAGE_EXAMPLES.md](./USAGE_EXAMPLES.md) - See it in action
 3. Review [API_REFERENCE.md](./API_REFERENCE.md) - Learn the APIs
 
 **Then Explore**:
+
 - [completeWorkflowExample.ts](./examples/completeWorkflowExample.ts) - End-to-end demo
 - Core operations in [`core/operations/`](./core/operations/)
 - Tool definitions in [`definitions/tools/`](./definitions/tools/)
@@ -376,6 +406,7 @@ function NotebookEditor() {
 ### For Existing Developers
 
 **Migration Path**:
+
 1. Read [MIGRATION_GUIDE.md](./MIGRATION_GUIDE.md) - Step-by-step instructions
 2. Follow [VS Code Integration Guide](./adapters/vscode/INTEGRATION_GUIDE.md)
 3. Update extension.ts following examples
@@ -386,6 +417,7 @@ function NotebookEditor() {
 ## 🔒 Quality Assurance
 
 ### Code Quality
+
 - ✅ TypeScript strict mode enabled
 - ✅ ESLint passing
 - ✅ No type errors
@@ -393,6 +425,7 @@ function NotebookEditor() {
 - ✅ Consistent naming conventions
 
 ### Documentation Quality
+
 - ✅ Complete API reference
 - ✅ Usage examples for all platforms
 - ✅ Step-by-step migration guide
@@ -400,6 +433,7 @@ function NotebookEditor() {
 - ✅ Code examples that compile
 
 ### Testing Quality
+
 - ✅ Unit tests for all operations
 - ✅ Mock implementations for testing
 - ✅ Integration test example
@@ -410,24 +444,28 @@ function NotebookEditor() {
 ## 🎉 Success Criteria (Met)
 
 ### Functionality
+
 - ✅ All 13 core operations implemented
 - ✅ All 3 platform adapters complete
 - ✅ ag-ui compatibility verified
 - ✅ Factory registration working
 
 ### Code Quality
+
 - ✅ 90%+ code reuse achieved
 - ✅ Zero duplication of business logic
 - ✅ 100% test coverage for core
 - ✅ Type-safe interfaces
 
 ### Documentation
+
 - ✅ Complete usage examples
 - ✅ Migration guide
 - ✅ API reference
 - ✅ Integration guides
 
 ### Developer Experience
+
 - ✅ Easy to add new tools
 - ✅ Easy to test
 - ✅ Clear error messages
@@ -438,6 +476,7 @@ function NotebookEditor() {
 ## 📝 Lessons Learned
 
 ### What Worked Well
+
 1. **3-tier architecture** - Clean separation of concerns
 2. **DocumentHandle abstraction** - Perfect for platform independence
 3. **JSON Schema parameters** - ag-ui compatibility built-in
@@ -445,12 +484,14 @@ function NotebookEditor() {
 5. **Factory registration** - Eliminated boilerplate dramatically
 
 ### Challenges Overcome
+
 1. **Message passing complexity** - Solved with clear internal command patterns
 2. **Type safety** - Generic ToolOperation interface provides full type checking
 3. **Platform differences** - Adapters hide all platform-specific details
 4. **Documentation scope** - Comprehensive but not overwhelming
 
 ### Best Practices Established
+
 1. Always use DocumentHandle, never platform-specific APIs in operations
 2. Write unit tests with MockDocumentHandle first
 3. Keep operations pure (no side effects except through context)
@@ -462,23 +503,27 @@ function NotebookEditor() {
 ## 🚀 Future Enhancements
 
 ### Additional Platforms
+
 - Desktop application (Electron)
 - Mobile application (React Native)
 - CLI tool (Node.js)
 
 ### Additional Tools
+
 - Complete remaining 8 tools (17 total)
 - Add data visualization tools
 - Add ML/AI integration tools
 - Add collaboration tools
 
 ### Performance Optimizations
+
 - Batch operations
 - Lazy loading
 - Caching strategies
 - WebSocket improvements
 
 ### Developer Experience
+
 - VS Code snippets for creating tools
 - CLI generator for new tools
 - Interactive documentation
@@ -501,6 +546,7 @@ This unified tool architecture enables Datalayer to provide consistent, high-qua
 ## 📞 Support
 
 For questions or issues:
+
 - Review the comprehensive documentation
 - Check the usage examples
 - Contact the Datalayer engineering team
@@ -514,4 +560,4 @@ For questions or issues:
 
 ---
 
-*"Write once, run everywhere" - achieved!* 🎯
+_"Write once, run everywhere" - achieved!_ 🎯

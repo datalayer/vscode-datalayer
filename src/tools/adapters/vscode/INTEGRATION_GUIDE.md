@@ -84,6 +84,7 @@ describe("VS Code Tool Registration", () => {
 ## Benefits of the New Architecture
 
 ### Before (Old Way)
+
 - ❌ 17+ separate TypeScript files
 - ❌ Manual registration in extension.ts
 - ❌ Duplication between package.json and TypeScript
@@ -91,6 +92,7 @@ describe("VS Code Tool Registration", () => {
 - ❌ Hard to test (requires VS Code APIs)
 
 ### After (New Way)
+
 - ✅ Single line registration: `registerVSCodeTools(context)`
 - ✅ Business logic in platform-agnostic operations
 - ✅ Tool definitions auto-generate package.json
@@ -112,15 +114,17 @@ describe("VS Code Tool Registration", () => {
 ### Tools not showing up in Copilot
 
 1. Check console for registration errors:
+
    ```
    [Datalayer Tools] Registering 9 tools with unified architecture
    [Datalayer Tools] ✓ Registered datalayer_insertCell → insertCell
    ```
 
 2. Verify `allToolDefinitions` includes your tools:
+
    ```typescript
    import { allToolDefinitions } from "./tools/definitions/tools";
-   console.log(allToolDefinitions.map(t => t.name));
+   console.log(allToolDefinitions.map((t) => t.name));
    ```
 
 3. Check operation is registered:
@@ -169,6 +173,7 @@ npm test src/tools/adapters/vscode/__tests__
 ## Next Steps
 
 After VS Code integration is stable:
+
 - Add remaining tool definitions (7 more tools to reach 17 total)
 - Generate package.json contributions automatically
 - Implement SaaS adapter (Phase 4)

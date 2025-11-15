@@ -18,7 +18,8 @@ export const executeCellTool: ToolDefinition = {
     properties: {
       cell_index: {
         type: "number",
-        description: "Index of the cell to execute (0-based, must be a code cell)",
+        description:
+          "Index of the cell to execute (0-based, must be a code cell)",
       },
       notebook_uri: {
         type: "string",

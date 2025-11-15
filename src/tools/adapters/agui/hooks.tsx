@@ -112,13 +112,10 @@ export function useSingleTool(
   context: SaaSToolContext,
   useCopilotAction: UseCopilotActionFn,
 ): void {
-  const action = useMemo(
-    () => {
-      const { createCopilotKitAction } = require("./AgUIToolAdapter");
-      return createCopilotKitAction(definition, operation, context);
-    },
-    [definition, operation, context],
-  );
+  const action = useMemo(() => {
+    const { createCopilotKitAction } = require("./AgUIToolAdapter");
+    return createCopilotKitAction(definition, operation, context);
+  }, [definition, operation, context]);
 
   useEffect(() => {
     console.log(`[ag-ui Tools] Registering ${action.name}`);

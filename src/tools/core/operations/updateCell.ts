@@ -10,7 +10,7 @@
  * @module tools/core/operations/updateCell
  */
 
-import type { ToolOperation, ToolExecutionContext } from "../interfaces";
+import type { ToolOperation } from "../interfaces";
 
 /**
  * Parameters for update cell operation
@@ -57,8 +57,7 @@ export const updateCellOperation: ToolOperation<
   UpdateCellResult
 > = {
   name: "updateCell",
-  description:
-    "Updates (overwrites) a cell's source code without executing it",
+  description: "Updates (overwrites) a cell's source code without executing it",
 
   async execute(params, context): Promise<UpdateCellResult> {
     const { cellIndex, cellSource } = params;
@@ -93,7 +92,8 @@ export const updateCellOperation: ToolOperation<
       };
     } catch (error) {
       // Convert error to descriptive error
-      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
       throw new Error(`Failed to update cell: ${errorMessage}`);
     }
   },

@@ -39,7 +39,6 @@ import { initializeRequireJSStub } from "../utils/requirejsStub";
 import { proxyFetch } from "../utils/httpProxy";
 import { RuntimeProgressBar } from "../components/RuntimeProgressBar";
 import { NotebookActions } from "@jupyterlab/notebook";
-import { notebookStore2 } from "@datalayer/jupyter-react";
 
 // Initialize RequireJS stub for ClassicWidgetManager
 initializeRequireJSStub();
@@ -183,9 +182,7 @@ function NotebookEditorCore({
   // Handle messages from the extension
   // Memoize the handler to prevent re-registration on every render
   const handleMessage = useCallback(
-    (message: ExtensionMessage) => {
-  useEffect(() => {
-    const handleMessage = async (message: ExtensionMessage) => {
+    async (message: ExtensionMessage) => {
       switch (message.type) {
         case "init": {
           const { body } = message;
@@ -649,8 +646,6 @@ function NotebookEditorCore({
           }
           break;
         }
-      }
-    };
 
         case "outline-navigate": {
           // Handle navigation to outline item

@@ -385,12 +385,7 @@ export function createMockSecretStorage(): vscode.SecretStorage {
   const onDidChangeEmitter =
     new vscode.EventEmitter<vscode.SecretStorageChangeEvent>();
 
-<<<<<<< HEAD
-  return {
-    keys: async () => Array.from(secrets.keys()),
-=======
   const storage: vscode.SecretStorage = {
->>>>>>> 56e89a4 (Proof of concept for tool embdedding)
     get: async (key: string) => secrets.get(key),
     store: async (key: string, value: string) => {
       secrets.set(key, value);

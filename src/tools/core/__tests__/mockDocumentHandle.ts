@@ -49,9 +49,13 @@ export class MockDocumentHandle implements DocumentHandle {
   async getMetadata(): Promise<NotebookMetadata> {
     const cellTypes = this.cells.reduce(
       (acc, cell) => {
-        if (cell.type === "code") acc.code++;
-        else if (cell.type === "markdown") acc.markdown++;
-        else if (cell.type === "raw") acc.raw++;
+        if (cell.type === "code") {
+          acc.code++;
+        } else if (cell.type === "markdown") {
+          acc.markdown++;
+        } else if (cell.type === "raw") {
+          acc.raw++;
+        }
         return acc;
       },
       { code: 0, markdown: 0, raw: 0 },
@@ -130,7 +134,10 @@ export class MockDocumentHandle implements DocumentHandle {
           output_type: "error",
           ename: "Exception",
           evalue: "Mock error",
-          traceback: ["Traceback (most recent call last):", "  Exception: Mock error"],
+          traceback: [
+            "Traceback (most recent call last):",
+            "  Exception: Mock error",
+          ],
         },
       ];
     } else if (source.includes("print")) {

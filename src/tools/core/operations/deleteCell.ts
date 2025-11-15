@@ -10,7 +10,7 @@
  * @module tools/core/operations/deleteCell
  */
 
-import type { ToolOperation, ToolExecutionContext } from "../interfaces";
+import type { ToolOperation } from "../interfaces";
 
 /**
  * Parameters for delete cell operation
@@ -89,7 +89,8 @@ export const deleteCellOperation: ToolOperation<
       };
     } catch (error) {
       // Convert error to descriptive error
-      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
       throw new Error(`Failed to delete cell: ${errorMessage}`);
     }
   },

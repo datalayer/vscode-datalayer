@@ -91,9 +91,7 @@ export class VSCodeToolAdapter<TParams>
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : String(error);
-      throw new Error(
-        `${this.definition.displayName} failed: ${errorMessage}`,
-      );
+      throw new Error(`${this.definition.displayName} failed: ${errorMessage}`);
     }
   }
 
@@ -168,7 +166,8 @@ export class VSCodeToolAdapter<TParams>
     params: TParams,
   ): Promise<VSCodeDocumentHandle> {
     // Try to get URI from parameters (with retry logic for async notebook initialization)
-    const uriString = (params as any).notebook_uri;
+    const paramsWithUri = params as { notebook_uri?: string };
+    const uriString = paramsWithUri.notebook_uri;
     let targetUri: vscode.Uri | undefined;
 
     if (uriString) {
@@ -181,7 +180,9 @@ export class VSCodeToolAdapter<TParams>
 
       while (!targetUri && retryCount < maxRetries) {
         targetUri = getActiveDatalayerNotebook();
-        if (targetUri) break;
+        if (targetUri) {
+          break;
+        }
 
         retryCount++;
         if (retryCount < maxRetries) {
@@ -207,7 +208,11 @@ export class VSCodeToolAdapter<TParams>
     let message: string;
 
     if (typeof result === "object" && result !== null) {
-      const resultObj = result as any;
+      const resultObj = result as {
+        message?: string;
+        success?: boolean;
+        error?: string;
+      };
 
       // Check for success message
       if (resultObj.message) {
@@ -232,8 +237,11 @@ export class VSCodeToolAdapter<TParams>
    */
   private interpolate(template: string, params: TParams): string {
     return template.replace(/\{\{(\w+)\}\}/g, (_, key) => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const value = (params as any)[key];
-      if (value === undefined) return `{{${key}}}`; // Keep placeholder if not found
+      if (value === undefined) {
+        return `{{${key}}}`;
+      } // Keep placeholder if not found
       return String(value);
     });
   }

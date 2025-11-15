@@ -10,7 +10,7 @@
  * @module tools/core/operations/getNotebookInfo
  */
 
-import type { ToolOperation, ToolExecutionContext } from "../interfaces";
+import type { ToolOperation } from "../interfaces";
 import type { NotebookMetadata } from "../types";
 
 /**
@@ -56,9 +56,10 @@ export const getNotebookInfoOperation: ToolOperation<
   GetNotebookInfoResult
 > = {
   name: "getNotebookInfo",
-  description: "Retrieves metadata about a notebook (path, cell counts, kernel info)",
+  description:
+    "Retrieves metadata about a notebook (path, cell counts, kernel info)",
 
-  async execute(params, context): Promise<GetNotebookInfoResult> {
+  async execute(_params, context): Promise<GetNotebookInfoResult> {
     const { document } = context;
 
     // Validate context
@@ -83,7 +84,8 @@ export const getNotebookInfoOperation: ToolOperation<
       };
     } catch (error) {
       // Convert error to descriptive error
-      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
       throw new Error(`Failed to get notebook info: ${errorMessage}`);
     }
   },

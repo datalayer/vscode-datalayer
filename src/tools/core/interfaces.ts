@@ -19,6 +19,9 @@ import type {
   RuntimeInfo,
 } from "./types";
 
+// Re-export types for platform adapters
+export type { CellData, NotebookMetadata, ExecutionResult, RuntimeInfo };
+
 /**
  * Document handle abstraction - implemented differently per platform.
  *
@@ -178,9 +181,7 @@ export interface ToolOperationRegistry {
   /**
    * Register a tool operation
    */
-  register<TParams, TResult>(
-    operation: ToolOperation<TParams, TResult>,
-  ): void;
+  register<TParams, TResult>(operation: ToolOperation<TParams, TResult>): void;
 
   /**
    * Get a tool operation by name

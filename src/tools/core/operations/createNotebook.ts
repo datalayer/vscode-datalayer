@@ -10,11 +10,8 @@
  * @module tools/core/operations/createNotebook
  */
 
-import type { ToolOperation, ToolExecutionContext } from "../interfaces";
-import type {
-  NotebookCreationParams,
-  NotebookCreationResult,
-} from "../types";
+import type { ToolOperation } from "../interfaces";
+import type { NotebookCreationParams, NotebookCreationResult } from "../types";
 
 /**
  * Create Remote Notebook Operation
@@ -54,7 +51,10 @@ export const createRemoteNotebookOperation: ToolOperation<
       );
     }
 
-    if (!auth || !(auth as any).isAuthenticated?.()) {
+    if (
+      !auth ||
+      !(auth as { isAuthenticated?: () => boolean }).isAuthenticated?.()
+    ) {
       throw new Error(
         "Authentication is required for createRemoteNotebook operation. " +
           "Please login to Datalayer first.",
@@ -63,6 +63,7 @@ export const createRemoteNotebookOperation: ToolOperation<
 
     try {
       // Type assertion to access SDK methods (avoid circular import)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const client = sdk as any;
 
       // Ensure notebook name has .ipynb extension
@@ -86,18 +87,19 @@ export const createRemoteNotebookOperation: ToolOperation<
         // Find space by name or use Personal/first space as default
         const targetSpaceName = spaceName || "Personal";
         const targetSpace = spaces.find(
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           (s: any) =>
             s.name?.toLowerCase() === targetSpaceName.toLowerCase() ||
             s.name?.toLowerCase().includes(targetSpaceName.toLowerCase()),
         );
 
         if (!targetSpace) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const availableSpaces = spaces.map((s: any) => s.name).join(", ");
           return {
             success: false,
             uri: "",
-            error:
-              `Space "${targetSpaceName}" not found. Available spaces: ${availableSpaces}`,
+            error: `Space "${targetSpaceName}" not found. Available spaces: ${availableSpaces}`,
           };
         }
 
@@ -128,7 +130,8 @@ export const createRemoteNotebookOperation: ToolOperation<
         uri,
       };
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
       return {
         success: false,
         uri: "",
@@ -170,7 +173,13 @@ export const createLocalNotebookOperation: ToolOperation<
 
       // Platform-specific file creation is handled by the adapter
       // via extras.createLocalFile or similar callback
-      const createFile = (extras as any)?.createLocalFile;
+      const extrasWithFile = extras as {
+        createLocalFile?: (
+          filename: string,
+          content: unknown,
+        ) => Promise<string>;
+      };
+      const createFile = extrasWithFile?.createLocalFile;
 
       if (!createFile) {
         throw new Error(
@@ -206,7 +215,8 @@ export const createLocalNotebookOperation: ToolOperation<
         uri,
       };
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
       return {
         success: false,
         uri: "",

@@ -51,7 +51,7 @@ export async function createDataAnalysisWorkflow(
     dataSource: string; // e.g., 'data.csv' or 'https://example.com/data.csv'
     executeImmediately?: boolean; // Whether to execute cells after insertion
     includeVisualization?: boolean; // Whether to add plotting code
-  }
+  },
 ): Promise<WorkflowResult> {
   const { document } = context;
 
@@ -71,10 +71,11 @@ export async function createDataAnalysisWorkflow(
     await insertCellOperation.execute(
       {
         cellType: "markdown",
-        cellSource: "# Data Analysis Workflow\n\nAutomated analysis created by Datalayer tools",
+        cellSource:
+          "# Data Analysis Workflow\n\nAutomated analysis created by Datalayer tools",
         cellIndex: 0,
       },
-      context
+      context,
     );
     cellsCreated++;
 
@@ -94,7 +95,7 @@ print("✅ Libraries imported successfully")
         cellSource: imports,
         cellIndex: 1,
       },
-      context
+      context,
     );
     cellsCreated++;
 
@@ -105,7 +106,7 @@ print("✅ Libraries imported successfully")
         cellsExecuted++;
       } catch (error) {
         errors.push(
-          `Failed to execute imports: ${error instanceof Error ? error.message : String(error)}`
+          `Failed to execute imports: ${error instanceof Error ? error.message : String(error)}`,
         );
       }
     }
@@ -128,7 +129,7 @@ df.head()
         cellSource: dataLoading,
         cellIndex: 2,
       },
-      context
+      context,
     );
     cellsCreated++;
 
@@ -152,7 +153,7 @@ print(df.isnull().sum())
         cellSource: exploration,
         cellIndex: 3,
       },
-      context
+      context,
     );
     cellsCreated++;
 
@@ -178,7 +179,7 @@ else:
         cellSource: analysis,
         cellIndex: 4,
       },
-      context
+      context,
     );
     cellsCreated++;
 
@@ -219,7 +220,7 @@ print("✅ Visualization complete")
           cellSource: visualization,
           cellIndex: 5,
         },
-        context
+        context,
       );
       cellsCreated++;
     } else {
@@ -238,8 +239,7 @@ print("✅ Visualization complete")
       summary: `✅ Created ${cellsCreated} cells${cellsExecuted > 0 ? `, executed ${cellsExecuted}` : ""}${errors.length > 0 ? `, encountered ${errors.length} error(s)` : ""}`,
     };
   } catch (error) {
-    const errorMessage =
-      error instanceof Error ? error.message : String(error);
+    const errorMessage = error instanceof Error ? error.message : String(error);
     errors.push(errorMessage);
 
     return {
@@ -258,7 +258,7 @@ print("✅ Visualization complete")
  * This shows how to integrate the workflow into a VS Code command.
  */
 export function registerWorkflowCommand(
-  context: any // vscode.ExtensionContext
+  context: unknown, // vscode.ExtensionContext
 ): void {
   const vscode = require("vscode");
 
@@ -286,20 +286,14 @@ export function registerWorkflowCommand(
           }
 
           // Ask about execution
-          const executeNow = await vscode.window.showQuickPick(
-            ["Yes", "No"],
-            {
-              placeHolder: "Execute cells immediately?",
-            }
-          );
+          const executeNow = await vscode.window.showQuickPick(["Yes", "No"], {
+            placeHolder: "Execute cells immediately?",
+          });
 
           // Ask about visualization
-          const includeViz = await vscode.window.showQuickPick(
-            ["Yes", "No"],
-            {
-              placeHolder: "Include visualization?",
-            }
-          );
+          const includeViz = await vscode.window.showQuickPick(["Yes", "No"], {
+            placeHolder: "Include visualization?",
+          });
 
           // Show progress
           await vscode.window.withProgress(
@@ -308,7 +302,12 @@ export function registerWorkflowCommand(
               title: "Creating data analysis workflow...",
               cancellable: false,
             },
-            async (progress) => {
+            async (
+              progress: vscode.Progress<{
+                message?: string;
+                increment?: number;
+              }>,
+            ) => {
               // Import dependencies
               const { VSCodeDocumentHandle } = await import(
                 "../adapters/vscode/VSCodeDocumentHandle"
@@ -320,7 +319,7 @@ export function registerWorkflowCommand(
               // Create document handle
               const documentHandle = new VSCodeDocumentHandle(
                 activeEditor.document.uri,
-                vscode.commands.executeCommand
+                vscode.commands.executeCommand,
               );
 
               // Get services
@@ -341,7 +340,7 @@ export function registerWorkflowCommand(
                   dataSource,
                   executeImmediately: executeNow === "Yes",
                   includeVisualization: includeViz === "Yes",
-                }
+                },
               );
 
               // Show result
@@ -353,15 +352,15 @@ export function registerWorkflowCommand(
                   console.error("Workflow errors:", result.errors);
                 }
               }
-            }
+            },
           );
         } catch (error) {
           vscode.window.showErrorMessage(
-            `Workflow failed: ${error instanceof Error ? error.message : String(error)}`
+            `Workflow failed: ${error instanceof Error ? error.message : String(error)}`,
           );
         }
-      }
-    )
+      },
+    ),
   );
 }
 
@@ -371,19 +370,17 @@ export function registerWorkflowCommand(
  * This shows how to use the workflow in a JupyterLab extension.
  */
 export async function runWorkflowInSaaS(
-  app: any, // JupyterFrontEnd
-  sdk: any, // DatalayerClient
-  auth: any, // AuthProvider
+  app: unknown, // JupyterFrontEnd
+  sdk: unknown, // DatalayerClient
+  auth: unknown, // AuthProvider
   options: {
     dataSource: string;
     executeImmediately?: boolean;
     includeVisualization?: boolean;
-  }
+  },
 ): Promise<WorkflowResult> {
   // Import SaaS dependencies
-  const { SaaSToolContext } = await import(
-    "../adapters/saas/SaaSToolContext"
-  );
+  const { SaaSToolContext } = await import("../adapters/saas/SaaSToolContext");
 
   // Create context
   const context = new SaaSToolContext(app, sdk, auth);
@@ -414,8 +411,8 @@ export async function runWorkflowInSaaS(
  * This shows how to expose the workflow as a CopilotKit action.
  */
 export function createWorkflowAction(
-  context: any // SaaSToolContext
-): any {
+  context: unknown, // SaaSToolContext
+): unknown {
   // CopilotKitAction
   return {
     name: "createDataAnalysisWorkflow",
@@ -441,7 +438,7 @@ export function createWorkflowAction(
       required: ["dataSource"],
     },
 
-    handler: async (params: any): Promise<string> => {
+    handler: async (params: unknown): Promise<string> => {
       try {
         // Get active notebook
         const notebookPanel = context.getActiveDocument();
@@ -462,7 +459,7 @@ export function createWorkflowAction(
         // Execute workflow
         const result = await createDataAnalysisWorkflow(
           executionContext,
-          params
+          params,
         );
 
         // Return formatted result
@@ -481,7 +478,7 @@ export function createWorkflowAction(
 /**
  * Example React component using the workflow with ag-ui
  */
-export function WorkflowButton(): any {
+export function WorkflowButton(): unknown {
   // React.ReactNode
   const { useCopilotAction } = require("@copilotkit/react-core");
   const context = null; // Get from your app context
@@ -541,7 +538,7 @@ export async function createResilientWorkflow(
     dataSource: string;
     maxRetries?: number;
     fallbackMode?: boolean;
-  }
+  },
 ): Promise<WorkflowResult> {
   const maxRetries = options.maxRetries ?? 3;
   let attempt = 0;
