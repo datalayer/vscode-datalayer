@@ -27,7 +27,7 @@ export class DatalayerError extends Error {
   constructor(
     message: string,
     public readonly code: string,
-    public override readonly cause?: Error,
+    public readonly cause?: Error,
     public readonly context?: Record<string, unknown>,
   ) {
     super(message);

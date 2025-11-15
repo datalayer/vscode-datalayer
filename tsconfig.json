@@ -8,8 +8,14 @@
     "moduleResolution": "node",
     "strictNullChecks": true,
     "types": ["node", "mocha"],
+    "lib": ["ES2020", "DOM"],
     "skipLibCheck": true
   },
   "include": ["src"],
-  "exclude": ["node_modules", "webview"]
+  "exclude": [
+    "node_modules",
+    "webview",
+    "src/**/__tests__/**",
+    "src/tools/examples/**"
+  ]
 }

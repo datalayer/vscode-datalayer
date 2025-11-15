@@ -57,9 +57,8 @@
 
 # Security and performance
 [build.environment]
-  # NOTE: Do NOT set NODE_ENV = "production" here!
-  # It prevents devDependencies from being installed, breaking patch-package and typedoc
-  NODE_VERSION = "20"
+  # Don't set NODE_ENV to production - we need devDependencies for TypeDoc
+  NODE_VERSION = "20.18.1"
   GENERATE_SOURCEMAP = "false"
   CI = "true"
   # Increase Node.js heap size for large documentation builds
