@@ -83,6 +83,7 @@
 
 ### ⚙️ **Smart Runtime Management**
 
+- **Auto-connect** - Documents automatically connect to available runtimes (configurable)
 - **Automatic provisioning** - Runtimes created on-demand when you run cells
 - **Intelligent reuse** - Existing healthy runtimes are reused to conserve credits
 - **Health verification** - Automatic checks ensure runtime reliability
@@ -160,6 +161,11 @@ Open settings (`Ctrl+,` / `Cmd+,`) and search "Datalayer":
 **Runtime:**
 
 - `datalayer.runtime.defaultMinutes` - Duration (default: 10, max: 1440)
+- `datalayer.autoConnect.strategies` - Auto-connect strategies when opening documents (default: `["Active Runtime", "Ask"]`)
+  - `["Active Runtime"]` - Automatically connect to runtime with most time remaining
+  - `["Active Runtime", "Ask"]` - Try active runtime, then ask user if none available
+  - `["Ask"]` - Always show runtime selection dialog
+  - `[]` - No auto-connect, manual selection required
 
 **Logging:**
 
@@ -189,9 +195,9 @@ Open settings (`Ctrl+,` / `Cmd+,`) and search "Datalayer":
 
 ## Developer Resources
 
-- [DEVELOPMENT.md](./DEVELOPMENT.md) - Setup, debugging, architecture, jupyter package workflow
-- [CONTRIBUTING.md](./CONTRIBUTING.md) - Contribution guidelines
-- [TESTING.md](./TESTING.md) - Test infrastructure (41 tests, 100% pass)
+- [DEVELOPMENT.md](./dev/docs/DEVELOPMENT.md) - Setup, debugging, architecture, jupyter package workflow
+- [CONTRIBUTING.md](./dev/docs/CONTRIBUTING.md) - Contribution guidelines
+- [TESTING.md](./dev/docs/TESTING.md) - Test infrastructure (41 tests, 100% pass)
 - [CHANGELOG.md](./CHANGELOG.md) - Version history
 - [API Documentation](https://datalayer-desktop.netlify.app) - Complete TypeScript API reference
 

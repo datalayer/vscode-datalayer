@@ -1,8 +1,52 @@
 # Datalayer VS Code Extension - Developer Context
 
-**Last Updated**: January 2025
+**Last Updated**: November 2025
 
 ## Critical Recent Changes
+
+### Auto-Connect Feature (November 2025)
+
+**Status**: Fully implemented and working
+**Location**: `src/services/autoConnect/`
+**Purpose**: Automatically connects documents to runtimes when opened
+
+**Architecture**:
+
+- **Strategy Pattern**: Extensible design for different connection strategies
+- **Configuration**: `datalayer.autoConnect.strategies` array setting
+- **Default**: `["Active Runtime", "Ask"]` - tries active runtime, then asks user
+
+**Available Strategies**:
+
+```typescript
+"Active Runtime"; // Selects runtime with MOST TIME REMAINING (sorted by expiredAt - now)
+"Ask"; // Shows Quick Pick dialog (same as Select Kernel)
+```
+
+**Key Design Decisions**:
+
+- **Smart Selection**: ActiveRuntimeStrategy sorts runtimes by remaining time (expiredAt - now) in descending order, always selecting the runtime with the most time available to maximize session duration
+- **No Extra API Calls**: Uses `RuntimesTreeProvider.getCachedRuntimes()` to access already-loaded runtime data from the sidebar
+- **Strategy Pattern**: Extensible design allows adding new connection strategies without modifying existing code
+
+**Files**:
+
+- `src/services/autoConnect/autoConnectService.ts` - Main service with fallback chain
+- `src/services/autoConnect/strategies/activeRuntimeStrategy.ts` - Selects runtime with most time remaining (sorted by expiredAt)
+- `src/services/autoConnect/strategies/askUserStrategy.ts` - Shows runtime picker
+- `src/providers/notebookProvider.ts` - Integrated in resolveCustomEditor
+- `src/providers/lexicalProvider.ts` - Integrated in resolveCustomEditor
+- `src/providers/runtimesTreeProvider.ts` - Added `getCachedRuntimes()` method
+- `src/extension.ts` - Added `getRuntimesTreeProvider()` export
+
+**Configuration Examples**:
+
+```json
+["Active Runtime"]           // Auto-connect to runtime with most time remaining, silent if none
+["Active Runtime", "Ask"]    // Try runtime, ask if none (DEFAULT)
+["Ask"]                      // Always ask user
+[]                           // Disabled
+```
 
 ### Smart Controller Registration - DISABLED (January 2025)
 
@@ -629,6 +673,105 @@ const serviceManager = mutableServiceManager.createProxy();
 - ✅ **Local Kernel Execution** (January 2025) - Native Python kernels with ZMQ integration
 - ✅ **Python Extension Integration** - Seamless environment selection from Python extension
 - ✅ **LocalKernelServiceManager** - Full ServiceManager implementation for local kernels
+- ✅ **Unified Kernel Architecture** (November 2025) - Template Method pattern eliminates ~174 lines of duplicate code
+
+### Unified Kernel Architecture (November 2025)
+
+**Goal**: Homogenize kernel and session management across different execution environments (mock, local, remote, future Pyodide).
+
+**Implementation**: Template Method design pattern with base manager classes.
+
+#### Base Manager Classes
+
+**BaseKernelManager** (`webview/services/base/baseKernelManager.ts` - 432 lines):
+
+- Abstract base implementing `Kernel.IManager` interface
+- Common methods: `shutdown()`, `dispose()`, `running()`, `requestRunning()`, `refreshRunning()`, `findById()`
+- Abstract method: `startNew()` (subclasses implement)
+- Type discriminator: `managerType: "mock" | "pyodide" | "local" | "remote"`
+- Signal management: `runningChanged`, `disposed`
+- Unified logging with type prefix
+
+**BaseSessionManager** (`webview/services/base/baseSessionManager.ts` - 394 lines):
+
+- Abstract base implementing `Session.IManager` interface
+- Common methods: `shutdown()`, `dispose()`, `running()`, `requestRunning()`, `refreshRunning()`, `findById()`, `findByPath()`
+- Abstract method: `startNew()` (subclasses implement)
+- Type discriminator: `managerType: "mock" | "pyodide" | "local" | "remote"`
+- Signal management: `runningChanged`, `disposed`
+
+#### Concrete Implementations
+
+**MockServiceManager** (`webview/services/mockServiceManager.ts`):
+
+- **Before**: ~310 lines with inline object properties
+- **After**: 284 lines extending base classes
+- **Savings**: ~26 lines eliminated
+- **Behavior**: Throws helpful errors on execution attempts for read-only mode
+- Both `MockKernelManager` and `MockSessionManager` extend respective bases
+
+**LocalKernelServiceManager** (`webview/services/localKernelServiceManager.ts`):
+
+- **Before**: ~450 lines with duplicate lifecycle code
+- **After**: 308 lines extending base classes
+- **Savings**: ~142 lines eliminated
+- **Behavior**: Creates `LocalKernelConnection` for direct ZMQ communication to VS Code Python
+- Both `LocalKernelManager` and `LocalSessionManager` extend respective bases
+- Only implements unique logic in `startNew()` and `connectTo()`
+
+**ServiceManagerFactory** (`webview/services/serviceManagerFactory.ts`):
+
+- Type-safe factory with discriminated unions
+- Methods:
+  - `create(options)` - Main factory with type discrimination
+  - `isMock(manager)` - Type guard for mock managers
+  - `getType(manager)` - Runtime type identification
+- Supports: 'mock', 'local', 'remote', 'pyodide' (stub)
+- Pyodide type throws "not yet implemented" error with helpful message
+
+**MutableServiceManager** (`webview/services/mutableServiceManager.ts`):
+
+- Currently uses old factory functions (`createMockServiceManager`, `updateServiceManager`)
+- **Future**: Will be updated to use `ServiceManagerFactory.create()` for consistency
+- Enables hot-swapping between kernel types without React re-renders
+
+#### Benefits
+
+1. **Code Reuse**: ~174 total lines eliminated across implementations
+2. **Type Safety**: Discriminated unions ensure correct options per manager type
+3. **Interface Compliance**: All managers correctly implement JupyterLab interfaces
+4. **Consistent Behavior**: Standardized logging, validation, disposal, lifecycle
+5. **Extensibility**: Adding new kernel types requires only implementing `startNew()`
+6. **Debugging**: Runtime type identification via `managerType` property
+7. **UX**: Stable references prevent unnecessary component re-renders
+
+#### Technical Details
+
+**Template Method Pattern**:
+
+- Base classes define algorithm skeleton
+- Subclasses fill in specific steps (`startNew()`, `connectTo()`)
+- Common operations fully implemented in base
+
+**Type Discrimination**:
+
+```typescript
+type KernelManagerType = "mock" | "pyodide" | "local" | "remote";
+type SessionManagerType = "mock" | "pyodide" | "local" | "remote";
+
+interface ITypedKernelManager extends Kernel.IManager {
+  readonly managerType: KernelManagerType;
+}
+```
+
+**Future Work** (Phases 5-13):
+
+- [ ] Integrate factory into MutableServiceManager
+- [ ] Create RuntimeProvider context for shared state
+- [ ] Create useRuntimeMessages hook for centralized message handling
+- [ ] Update NotebookEditor to use RuntimeProvider
+- [ ] Update LexicalEditor to use shared architecture
+- [ ] Comprehensive testing across all kernel types
 
 ## Current State Summary (January 2025)
 

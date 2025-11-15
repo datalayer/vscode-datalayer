@@ -14,7 +14,6 @@ import { useState, useCallback, useRef } from "react";
 import type { ServiceManager } from "@jupyterlab/services";
 import type { RuntimeJSON } from "@datalayer/core/lib/client";
 import { MutableServiceManager } from "../services/mutableServiceManager";
-import { createLocalKernelServiceManager } from "../services/localKernelServiceManager";
 import { isLocalKernelUrl } from "../../src/constants/kernelConstants";
 
 /**
@@ -49,10 +48,25 @@ export function useRuntimeManager(initialRuntime?: RuntimeJSON) {
 
     // Initialize with runtime if provided
     if (initialRuntime?.ingress) {
-      mutableManagerRef.current.updateConnection(
-        initialRuntime.ingress,
-        initialRuntime.token || "",
-      );
+      // Detect local kernel runtimes using shared utility
+      const isLocalKernel = isLocalKernelUrl(initialRuntime.ingress);
+
+      if (isLocalKernel) {
+        const kernelId =
+          initialRuntime.ingress.match(/local-kernel-([^.]+)/)?.[1];
+        if (kernelId) {
+          mutableManagerRef.current.updateToLocal(
+            kernelId,
+            initialRuntime.environmentName || "python3",
+            initialRuntime.ingress,
+          );
+        }
+      } else {
+        mutableManagerRef.current.updateToRemote(
+          initialRuntime.ingress,
+          initialRuntime.token || "",
+        );
+      }
     }
     // Otherwise starts with mock (default in MutableServiceManager constructor)
   }
@@ -83,46 +97,34 @@ export function useRuntimeManager(initialRuntime?: RuntimeJSON) {
           console.error(
             `[useRuntimeManager] Could not extract kernel ID from URL: ${runtime.ingress}`,
           );
-          mutableManagerRef.current?.resetToMock();
+          mutableManagerRef.current?.updateToMock();
           return;
         }
 
         console.log(
-          `[useRuntimeManager] Creating LocalKernelServiceManager for kernel ${kernelId}`,
+          `[useRuntimeManager] Switching to local kernel service manager for kernel ${kernelId}`,
         );
 
-        // Create LocalKernelServiceManager
-        const localServiceManager = createLocalKernelServiceManager(
+        // Switch to local kernel service manager
+        mutableManagerRef.current?.updateToLocal(
           kernelId,
-          runtime.environmentName || "python3", // Use environment name as kernel name
+          runtime.environmentName || "python3",
           runtime.ingress,
         );
 
         console.log(
-          `[useRuntimeManager] LocalKernelServiceManager created successfully`,
+          `[useRuntimeManager] Successfully switched to LocalKernelServiceManager`,
         );
-
-        // Update the MutableServiceManager with the local service manager using public method
-        if (mutableManagerRef.current) {
-          mutableManagerRef.current.updateServiceManager(localServiceManager);
-          console.log(
-            `[useRuntimeManager] MutableServiceManager updated with LocalKernelServiceManager`,
-          );
-        } else {
-          console.error(
-            `[useRuntimeManager] mutableManagerRef.current is null!`,
-          );
-        }
       } else {
         // Regular remote runtime - use standard connection
-        mutableManagerRef.current?.updateConnection(
+        mutableManagerRef.current?.updateToRemote(
           runtime.ingress,
           runtime.token || "",
         );
       }
     } else {
       // Reset to mock service manager (reference stays stable)
-      mutableManagerRef.current?.resetToMock();
+      mutableManagerRef.current?.updateToMock();
     }
   }, []);
 

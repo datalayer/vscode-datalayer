@@ -43,7 +43,6 @@ import { RuntimeProgressBar } from "../components/RuntimeProgressBar";
 initializeRequireJSStub();
 import { NotebookToolbar } from "./NotebookToolbar";
 import { VSCodeTheme } from "../theme/VSCodeTheme";
-import type { RuntimeJSON } from "@datalayer/core/lib/client";
 
 // Import our new hooks and stores
 import { createNotebookStore } from "../stores/notebookStore";
@@ -57,12 +56,7 @@ import {
   cellSidebarMargin,
 } from "../components/notebookStyles";
 import { VSCodeLLMProvider } from "../services/completion/vscodeLLMProvider";
-
-// Extended interface for runtime with credits information
-interface RuntimeWithCredits extends RuntimeJSON {
-  creditsUsed?: number;
-  creditsLimit?: number;
-}
+import { createRuntimeMessageHandlers } from "../utils/runtimeMessageHandlers";
 
 /**
  * Core notebook editor component using centralized state
@@ -175,6 +169,15 @@ function NotebookEditorCore({
     messageHandler.send({ type: "ready" });
   }, [messageHandler]);
 
+  // Create runtime message handlers using shared utilities
+  const runtimeHandlers = useMemo(
+    () =>
+      createRuntimeMessageHandlers(selectRuntime, (runtime) =>
+        store.getState().setRuntime(runtime),
+      ),
+    [selectRuntime, store],
+  );
+
   // Handle messages from the extension
   // Memoize the handler to prevent re-registration on every render
   const handleMessage = useCallback(
@@ -267,82 +270,23 @@ function NotebookEditorCore({
           break;
         }
 
-        case "local-kernel-connected": {
-          // Handle local kernel connection - bypass runtime/session creation
-          const { body } = message;
-          console.log(
-            `[NotebookEditor] Local kernel connected:`,
-            body?.kernelInfo,
-          );
-
-          // For local kernels, we MUST still set the runtime because the notebook
-          // component needs a serviceManager, but JupyterLab will handle the kernel
-          // connection directly via the LocalKernelProxy without going through
-          // the full session creation flow
-          if (body?.runtime) {
-            console.log(
-              `[NotebookEditor] Setting runtime for local kernel: ${body.runtime.ingress}`,
-            );
-            selectRuntime(body.runtime);
-            store.getState().setRuntime(body.runtime);
-          }
-          break;
-        }
-
         case "runtime-selected":
-        case "kernel-selected": {
-          const { body } = message;
-          console.log(
-            `[NotebookEditor] Received ${message.type}:`,
-            body?.runtime,
-          );
-          if (body?.runtime) {
-            console.log(
-              `[NotebookEditor] Setting runtime with ingress: ${body.runtime.ingress}`,
-            );
-            selectRuntime(body.runtime);
-            store.getState().setRuntime(body.runtime);
-          }
+        case "kernel-selected":
+          runtimeHandlers.onRuntimeSelected(message);
           break;
-        }
 
-        case "kernel-terminated": // Extension sends this when runtime is terminated
-        case "runtime-terminated": // Legacy message type
-          setTimeout(() => {
-            selectRuntime(undefined);
-            store.getState().setRuntime(undefined);
-          }, 100);
+        case "kernel-terminated":
+        case "runtime-terminated":
+          runtimeHandlers.onRuntimeTerminated();
           break;
 
         case "runtime-expired":
-          // Runtime has expired - reset to mock service manager
-          setTimeout(() => {
-            selectRuntime(undefined);
-            store.getState().setRuntime(undefined);
-          }, 100);
+          runtimeHandlers.onRuntimeExpired();
           break;
 
-        case "set-runtime": {
-          const { body } = message;
-          if (body.baseUrl) {
-            const runtimeInfo: RuntimeWithCredits = {
-              uid: "local-runtime",
-              givenName: "Jupyter Server",
-              ingress: body.baseUrl,
-              token: body.token || "",
-              podName: "local",
-              environmentName: "jupyter",
-              environmentTitle: "Jupyter",
-              type: "notebook",
-              burningRate: 0,
-              startedAt: new Date().toISOString(),
-              expiredAt: "",
-            };
-            selectRuntime(runtimeInfo);
-            store.getState().setRuntime(runtimeInfo);
-          }
+        case "set-runtime":
+          runtimeHandlers.onSetRuntime(message);
           break;
-        }
 
         case "getFileData": {
           if (!isDatalayerNotebook) {
@@ -398,7 +342,7 @@ function NotebookEditorCore({
       }
     },
     [
-      selectRuntime,
+      runtimeHandlers,
       getNotebookData,
       markClean,
       theme,

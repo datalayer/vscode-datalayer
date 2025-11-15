@@ -616,6 +616,21 @@
           "maximum": 1440,
           "description": "Default runtime duration in minutes (max 24 hours)"
         },
+        "datalayer.autoConnect.strategies": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "Active Runtime",
+              "Ask"
+            ]
+          },
+          "default": [
+            "Active Runtime",
+            "Ask"
+          ],
+          "markdownDescription": "Auto-connect strategies for opening notebooks and lexical documents. Strategies are tried in order until one succeeds:\n\n- **Active Runtime**: Select the runtime with the most time remaining from available runtimes\n- **Ask**: Show a Quick Pick to select from available runtimes\n- **Empty array `[]`**: Disable auto-connect (manual selection required)\n\n**Examples:**\n- `[\"Active Runtime\"]` - Only connect to runtime with most time, otherwise no kernel\n- `[\"Active Runtime\", \"Ask\"]` - Try runtime with most time first, then ask user if none available\n- `[\"Ask\"]` - Always ask user to select runtime\n- `[]` - No auto-connect, user must manually select kernel"
+        },
         "datalayer.logging.level": {
           "type": "string",
           "enum": [

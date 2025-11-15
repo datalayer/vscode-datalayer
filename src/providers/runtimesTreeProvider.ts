@@ -134,6 +134,16 @@ export class RuntimesTreeProvider
   }
 
   /**
+   * Gets the currently cached runtimes.
+   * Returns the most recently loaded runtimes without making a new API call.
+   *
+   * @returns Array of cached runtime DTOs
+   */
+  getCachedRuntimes(): RuntimeDTO[] {
+    return this.runtimesCache;
+  }
+
+  /**
    * Disposes resources including the refresh timer.
    */
   dispose(): void {

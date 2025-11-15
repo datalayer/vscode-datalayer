@@ -35,7 +35,8 @@ import { TableCellNode, TableNode, TableRowNode } from "@lexical/table";
 import { ListPlugin } from "@lexical/react/LexicalListPlugin";
 import { CheckListPlugin } from "@lexical/react/LexicalCheckListPlugin";
 import { LinkPlugin } from "@lexical/react/LexicalLinkPlugin";
-import { useJupyter } from "@datalayer/jupyter-react";
+import { Jupyter, useJupyter } from "@datalayer/jupyter-react";
+import { ServiceManager } from "@jupyterlab/services";
 import {
   JupyterInputNode,
   JupyterInputHighlightNode,
@@ -111,6 +112,7 @@ export interface LexicalEditorProps {
   vscode?: { postMessage: (message: OutlineUpdateMessage) => void };
   navigationTarget?: string | null;
   onNavigated?: () => void;
+  serviceManager: ServiceManager.IManager;
 }
 
 /**
@@ -246,6 +248,22 @@ function LoadContentPlugin({
 }
 
 /**
+ * Wrapper component for kernel-dependent Jupyter plugins.
+ * This component is wrapped with Jupyter provider and uses runtime ingress as key,
+ * so only these plugins remount when runtime changes (not the entire editor).
+ */
+function JupyterKernelPlugins() {
+  const { defaultKernel } = useJupyter();
+
+  return (
+    <>
+      <ComponentPickerMenuPlugin kernel={defaultKernel} />
+      <JupyterInputOutputPlugin kernel={defaultKernel} />
+    </>
+  );
+}
+
+/**
  * Main Lexical editor component with VS Code theme integration.
  * Provides a rich text editing experience with support for various formatting options,
  * lists, links, and markdown shortcuts. Includes an optional toolbar for visual formatting.
@@ -278,31 +296,8 @@ export function LexicalEditor({
   vscode,
   navigationTarget,
   onNavigated,
+  serviceManager,
 }: LexicalEditorProps) {
-  // Get ONLY the defaultKernel from Jupyter context
-  // DO NOT use serviceManager from useJupyter - we already have our MutableServiceManager!
-  const { defaultKernel } = useJupyter();
-  const [localKernel, setLocalKernel] = React.useState<any>(null);
-
-  // When runtime is terminated, we should use undefined kernel instead of defaultKernel
-  // This ensures the JupyterInputOutputPlugin knows there's no kernel available
-  const activeKernel = selectedRuntime?.ingress ? defaultKernel : undefined;
-
-  // Kernel management is handled by Jupyter React when we have a runtime selected
-  // We don't need to manually start kernels - the library does it for us
-  // Just clean up local kernel if we had one
-  React.useEffect(() => {
-    // Cleanup kernel on unmount or runtime change
-    return () => {
-      if (localKernel) {
-        localKernel.shutdown().catch((err: any) => {
-          console.error("Failed to shutdown kernel:", err);
-        });
-        setLocalKernel(null);
-      }
-    };
-  }, [selectedRuntime, localKernel]);
-
   const [floatingAnchorElem, setFloatingAnchorElem] =
     useState<HTMLDivElement | null>(null);
 
@@ -521,8 +516,19 @@ export function LexicalEditor({
           <YouTubePlugin />
           <AutoEmbedPlugin />
           <JupyterCellPlugin />
-          <ComponentPickerMenuPlugin kernel={activeKernel} />
-          <JupyterInputOutputPlugin kernel={activeKernel} />
+          {/* Wrap kernel plugins with Jupyter provider - only these remount on runtime change */}
+          <Jupyter
+            key={selectedRuntime?.ingress || "no-runtime"}
+            // @ts-ignore - Type mismatch between @jupyterlab/services versions
+            serviceManager={serviceManager}
+            startDefaultKernel={!!selectedRuntime}
+            defaultKernelName="python"
+            lite={false}
+            collaborative={false}
+            terminals={false}
+          >
+            <JupyterKernelPlugins />
+          </Jupyter>
           <LexicalInlineCompletionPlugin
             providers={[lexicalLLMProvider]}
             debounceMs={200}
