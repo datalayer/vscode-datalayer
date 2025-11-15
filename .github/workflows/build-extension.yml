@@ -153,7 +153,7 @@ jobs:
       - name: Upload VS Code extension artifact
         if: matrix.os == 'ubuntu-latest'
         id: upload-artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: ${{ steps.version-info.outputs.artifact-name }}
           path: "*.vsix"
