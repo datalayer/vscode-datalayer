@@ -1,6 +1,6 @@
 {
   "name": "datalayer-jupyter-vscode",
-  "publisher": "datalayer",
+  "publisher": "Datalayer",
   "displayName": "Datalayer",
   "description": "✨ AI ⚡ GPU 👥 Collaboration for 🪐 Jupyter Notebooks - 📄 Notion-like editor included.",
   "version": "0.0.7",
@@ -21,6 +21,9 @@
     "vscode": "^1.105.0",
     "node": ">=20.0.0 <21.0.0"
   },
+  "enabledApiProposals": [
+    "chatContextProvider"
+  ],
   "main": "./dist/extension.js",
   "scripts": {
     "clean": "rm -rf dist out *.vsix",
@@ -64,6 +67,8 @@
     "@codemirror/search": "^6.5.11",
     "@codemirror/state": "^6.5.2",
     "@codemirror/view": "^6.38.3",
+    "@copilotkit/react-core": "^1.10.6",
+    "@copilotkit/react-ui": "^1.10.6",
     "@datalayer/core": "^0.0.14",
     "@datalayer/jupyter-lexical": "1.0.6",
     "@datalayer/jupyter-react": "1.1.8",
@@ -87,6 +92,7 @@
     "@nteract/messaging": "^7.0.20",
     "@primer/react": "^37.19.0",
     "@primer/react-brand": "^0.58.1",
+    "@toon-format/toon": "^1.0.0",
     "@vscode/codicons": "^0.0.41",
     "@vscode/python-extension": "^1.0.6",
     "ansi-to-html": "^0.7.2",
@@ -164,8 +170,18 @@
         "category": "Datalayer"
       },
       {
+        "command": "datalayer.showAgUIExample",
+        "title": "Show ag-ui Notebook Example (with CopilotKit)",
+        "category": "Datalayer"
+      },
+      {
         "command": "datalayer.help",
         "title": "Help and Feedback",
+        "category": "Datalayer"
+      },
+      {
+        "command": "datalayer.internal.resetOnboarding",
+        "title": "Reset Onboarding (Dev)",
         "category": "Datalayer"
       },
       {
@@ -291,6 +307,18 @@
         "command": "datalayer.outline.collapseAll",
         "title": "Collapse All",
         "icon": "$(collapse-all)"
+      },
+      {
+        "command": "datalayer.attachCurrentDocumentToChat",
+        "title": "Attach Current Document to Copilot Chat",
+        "category": "Datalayer",
+        "icon": "$(link)"
+      },
+      {
+        "command": "datalayer.testGetActiveDocument",
+        "title": "Test: Get Active Document (Show What Copilot Sees)",
+        "category": "Datalayer",
+        "icon": "$(debug)"
       }
     ],
     "viewsContainers": {
@@ -586,6 +614,400 @@
         }
       ]
     },
+    "languageModelTools": [
+      {
+        "name": "datalayer_getActiveDocument",
+        "displayName": "Get Active Document",
+        "toolReferenceName": "getActiveDocument",
+        "modelDescription": "**IMPORTANT: Call this tool FIRST when the user is viewing a .ipynb or .lexical file in VS Code.** Returns the complete content of custom editor documents (Jupyter Notebooks and Lexical documents) that are NOT visible through normal VS Code text editor APIs. Standard file reading will NOT work for these custom editors - you MUST use this tool. Returns: full document content (JSON structure with cells/nodes), file name, URI, type (notebook/lexical/other), scheme, and line count. Use this whenever the user asks about 'this notebook', 'this file', 'current document', or any question that requires seeing the content of an open .ipynb or .lexical file.",
+        "canBeReferencedInPrompt": true,
+        "inputSchema": {
+          "type": "object",
+          "properties": {},
+          "required": []
+        }
+      },
+      {
+        "name": "datalayer_insertCell",
+        "displayName": "Insert Notebook Cell",
+        "toolReferenceName": "insertCell",
+        "modelDescription": "Inserts a code or markdown cell into a Jupyter notebook at a specified position or at the end",
+        "canBeReferencedInPrompt": true,
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "cellType": {
+              "type": "string",
+              "enum": [
+                "code",
+                "markdown"
+              ],
+              "description": "Type of cell to insert: 'code' for executable Python code or 'markdown' for formatted text"
+            },
+            "source": {
+              "type": "string",
+              "description": "Content of the cell (Python code or Markdown text)"
+            },
+            "index": {
+              "type": "number",
+              "description": "Optional: Position where the cell should be inserted (0-based index). If not provided, inserts at the end."
+            },
+            "uri": {
+              "type": "string",
+              "description": "Optional: Document identifier. If not provided, uses the active notebook editor.",
+              "platformSpecific": true
+            }
+          },
+          "required": [
+            "cellType",
+            "source"
+          ]
+        }
+      },
+      {
+        "name": "datalayer_deleteCell",
+        "displayName": "Delete Notebook Cell",
+        "toolReferenceName": "deleteCell",
+        "modelDescription": "Deletes a cell from a Jupyter notebook at the specified index",
+        "canBeReferencedInPrompt": true,
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "index": {
+              "type": "number",
+              "description": "Index of the cell to delete (0-based)"
+            },
+            "uri": {
+              "type": "string",
+              "description": "Optional: Document identifier. If not provided, uses the active notebook.",
+              "platformSpecific": true
+            }
+          },
+          "required": [
+            "index"
+          ]
+        }
+      },
+      {
+        "name": "datalayer_updateCell",
+        "displayName": "Update Notebook Cell",
+        "toolReferenceName": "updateCell",
+        "modelDescription": "Updates (overwrites) a cell's source code at the specified index. Does NOT execute the cell.",
+        "canBeReferencedInPrompt": true,
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "index": {
+              "type": "number",
+              "description": "Index of the cell to update (0-based)"
+            },
+            "source": {
+              "type": "string",
+              "description": "New source code for the cell"
+            },
+            "uri": {
+              "type": "string",
+              "description": "Optional: Document identifier. If not provided, uses the active notebook.",
+              "platformSpecific": true
+            }
+          },
+          "required": [
+            "index",
+            "source"
+          ]
+        }
+      },
+      {
+        "name": "datalayer_readCell",
+        "displayName": "Read Notebook Cell",
+        "toolReferenceName": "readCell",
+        "modelDescription": "Reads a specific cell from a Jupyter notebook by index, including source code and outputs",
+        "canBeReferencedInPrompt": true,
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "index": {
+              "type": "number",
+              "description": "Index of the cell to read (0-based)"
+            },
+            "uri": {
+              "type": "string",
+              "description": "Optional: Document identifier. If not provided, uses the active notebook.",
+              "platformSpecific": true
+            }
+          },
+          "required": [
+            "index"
+          ]
+        }
+      },
+      {
+        "name": "datalayer_readAllCells",
+        "displayName": "Read All Notebook Cells",
+        "toolReferenceName": "readAllCells",
+        "modelDescription": "Reads all cells from a Jupyter notebook, including source code and outputs for each cell",
+        "canBeReferencedInPrompt": true,
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "uri": {
+              "type": "string",
+              "description": "Optional: Document identifier. If not provided, uses the active notebook.",
+              "platformSpecific": true
+            }
+          },
+          "required": []
+        }
+      },
+      {
+        "name": "datalayer_executeCell",
+        "displayName": "Execute Notebook Cell",
+        "toolReferenceName": "executeCell",
+        "modelDescription": "Executes a code cell in a Jupyter notebook and returns its outputs",
+        "canBeReferencedInPrompt": true,
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "index": {
+              "type": "number",
+              "description": "Index of the cell to execute (0-based, must be a code cell)"
+            },
+            "uri": {
+              "type": "string",
+              "description": "Optional: Document identifier. If not provided, uses the active notebook.",
+              "platformSpecific": true
+            }
+          },
+          "required": [
+            "index"
+          ]
+        }
+      },
+      {
+        "name": "datalayer_getNotebookInfo",
+        "displayName": "Get Notebook Info",
+        "toolReferenceName": "getNotebookInfo",
+        "modelDescription": "Gets metadata about a Jupyter notebook including path, cell counts, and kernel information",
+        "canBeReferencedInPrompt": true,
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "uri": {
+              "type": "string",
+              "description": "Optional: Document identifier. If not provided, uses the active notebook.",
+              "platformSpecific": true
+            }
+          },
+          "required": []
+        }
+      },
+      {
+        "name": "datalayer_readBlocks",
+        "displayName": "Read Lexical Blocks",
+        "toolReferenceName": "readBlocks",
+        "modelDescription": "Read all blocks from the currently open Lexical document. Returns array of blocks, each with: block_id (stable identifier for insertion), block_type (e.g. 'heading', 'paragraph', 'jupyter-cell'), source (content as string), metadata (properties like level, language). CRITICAL: Use the block_id values from this result for insertBlock's insert_after_block_id parameter. Works on active .lexical file.",
+        "canBeReferencedInPrompt": true,
+        "inputSchema": {
+          "type": "object",
+          "properties": {},
+          "required": []
+        }
+      },
+      {
+        "name": "datalayer_insertBlock",
+        "displayName": "Insert Lexical Block",
+        "toolReferenceName": "insertBlock",
+        "modelDescription": "Insert blocks into Lexical documents (.lexical files). CRITICAL: Use exact parameter names shown below. ADDRESSING: Required parameter 'insertAfter' (NOT 'index'). WORKFLOW: 1) Call readBlocks to get block_id values, 2) Use insertAfter='TOP' for beginning, 'BOTTOM' for end, or actual block_id to insert after that block. EXAMPLE: {insertAfter: 'BOTTOM', type: 'jupyter-cell', source: 'print(1+1)', properties: {language: 'python'}}",
+        "canBeReferencedInPrompt": true,
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "insertAfter": {
+              "type": "string",
+              "description": "REQUIRED. Insert position: 'TOP' (beginning), 'BOTTOM' (end), or block_id from readBlocks. Example: 'BOTTOM' or '7'."
+            },
+            "type": {
+              "type": "string",
+              "description": "REQUIRED. Block type: \"jupyter-cell\", \"heading\", \"paragraph\", \"code\", \"quote\", \"list\"."
+            },
+            "source": {
+              "type": "string",
+              "description": "REQUIRED. Block content as string. Example: 'print(1+1)'"
+            },
+            "properties": {
+              "type": "object",
+              "description": "Optional metadata object. Put language HERE: {\"language\": \"python\"} for code/jupyter-cell, {\"level\": 1} for h1 heading. Do NOT put language at top level."
+            }
+          },
+          "required": [
+            "insertAfter",
+            "type",
+            "source"
+          ]
+        }
+      },
+      {
+        "name": "datalayer_insertBlocks",
+        "displayName": "Insert Multiple Lexical Blocks",
+        "toolReferenceName": "insertBlocks",
+        "modelDescription": "Insert multiple blocks into Lexical documents (.lexical files) in a single efficient operation. Use this instead of multiple insertBlock calls when creating documents with many blocks. ADDRESSING: First block inserts after 'insertAfter', subsequent blocks follow in order. WORKFLOW: 1) Prepare array of blocks with type, source, and optional properties, 2) Call insertBlocks with insertAfter='TOP' for beginning, 'BOTTOM' for end, or block_id from readBlocks. EXAMPLE: {insertAfter: 'BOTTOM', blocks: [{type: 'heading', source: 'Title', properties: {level: 1}}, {type: 'jupyter-cell', source: 'print(1)', properties: {language: 'python'}}]}",
+        "canBeReferencedInPrompt": true,
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "insertAfter": {
+              "type": "string",
+              "description": "REQUIRED. Insert position for first block: 'TOP' (beginning), 'BOTTOM' (end), or block_id from readBlocks. Subsequent blocks follow in order."
+            },
+            "blocks": {
+              "type": "array",
+              "description": "REQUIRED. Array of blocks to insert. Each block must have type and source. Blocks are inserted sequentially.",
+              "items": {
+                "type": "object",
+                "description": "A single block to insert with its type, content, and optional metadata.",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "description": "REQUIRED. Block type: \"jupyter-cell\", \"heading\", \"paragraph\", \"code\", \"quote\", \"list\"."
+                  },
+                  "source": {
+                    "type": "string",
+                    "description": "REQUIRED. Block content as string."
+                  },
+                  "properties": {
+                    "type": "object",
+                    "description": "Optional metadata. Examples: {\"language\": \"python\"} for code/jupyter-cell, {\"level\": 1} for h1 heading."
+                  }
+                },
+                "required": [
+                  "type",
+                  "source"
+                ]
+              }
+            }
+          },
+          "required": [
+            "insertAfter",
+            "blocks"
+          ]
+        }
+      },
+      {
+        "name": "datalayer_deleteBlock",
+        "displayName": "Delete Lexical Block",
+        "toolReferenceName": "deleteBlock",
+        "modelDescription": "Delete a block from the currently open Lexical document by its block_id. WORKFLOW: 1) Call readBlocks to get block_id values, 2) Pass the block_id of the block to delete. This permanently removes the block and changes appear immediately.",
+        "canBeReferencedInPrompt": true,
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "description": "ID of the block to delete (from block_id field in readBlocks)."
+            }
+          },
+          "required": [
+            "id"
+          ]
+        }
+      },
+      {
+        "name": "datalayer_listAvailableBlocks",
+        "displayName": "List Available Lexical Blocks",
+        "toolReferenceName": "listAvailableBlocks",
+        "modelDescription": "Discover available block types for the currently open Lexical document. Returns schema for all registered blocks including: 'jupyter-cell' (executable code cell with language property), standard blocks (paragraph, heading, code, quote, list, table). Use this to see exact block type names and required properties before calling insertBlock.",
+        "canBeReferencedInPrompt": true,
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "category": {
+              "type": "string",
+              "description": "Optional category filter. Categories: \"text\" (paragraph, quote), \"heading\" (h1-h6), \"code\" (code blocks), \"list\" (bullet/numbered), \"table\", \"media\" (plots), \"special\" (jupyter-cell, dataframe-viewer). Omit to get all block types.",
+              "enum": [
+                "text",
+                "heading",
+                "code",
+                "media",
+                "list",
+                "table",
+                "special"
+              ]
+            }
+          },
+          "required": []
+        }
+      },
+      {
+        "name": "datalayer_createNotebook",
+        "displayName": "Create Notebook",
+        "toolReferenceName": "createNotebook",
+        "modelDescription": "Creates a new Jupyter notebook with smart location detection. Automatically determines whether to create locally or in cloud based on context (keywords, open notebooks, space mentions, auth state). Use keywords like 'cloud', 'remote', 'space' for cloud notebooks, or 'local', 'workspace' for local notebooks.",
+        "canBeReferencedInPrompt": true,
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string",
+              "description": "Name of the notebook (e.g., 'data-analysis' or 'analysis.ipynb'). Extension '.ipynb' is added automatically if missing."
+            },
+            "description": {
+              "type": "string",
+              "description": "Optional: Description of the notebook's purpose (e.g., 'for analyzing sales data')"
+            },
+            "space": {
+              "type": "string",
+              "description": "Optional: Name of the Datalayer cloud space (e.g., 'Personal', 'Team Project'). If specified, notebook will be created in cloud. Defaults to 'Personal' if not specified."
+            },
+            "location": {
+              "type": "string",
+              "enum": [
+                "local",
+                "cloud"
+              ],
+              "description": "Optional: Explicit location override. Use 'local' for workspace or 'cloud' for Datalayer space. If not specified, location is auto-detected from context."
+            }
+          },
+          "required": [
+            "name"
+          ]
+        }
+      },
+      {
+        "name": "datalayer_createLexical",
+        "displayName": "Create Lexical Document",
+        "toolReferenceName": "createLexical",
+        "modelDescription": "Creates a new Lexical document with smart location detection. Automatically determines whether to create locally or in cloud based on context (keywords, open documents, space mentions, auth state). Use keywords like 'cloud', 'remote', 'space' for cloud documents, or 'local', 'workspace' for local documents.",
+        "canBeReferencedInPrompt": true,
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string",
+              "description": "Name of the lexical document (e.g., 'meeting-notes' or 'notes.lexical'). Extension '.lexical' is added automatically if missing."
+            },
+            "description": {
+              "type": "string",
+              "description": "Optional: Description of the document's purpose (e.g., 'for team meeting notes')"
+            },
+            "space": {
+              "type": "string",
+              "description": "Optional: Name of the Datalayer cloud space (e.g., 'Personal', 'Team Project'). If specified, document will be created in cloud. Defaults to 'Personal' if not specified."
+            },
+            "location": {
+              "type": "string",
+              "enum": [
+                "local",
+                "cloud"
+              ],
+              "description": "Optional: Explicit location override. Use 'local' for workspace or 'cloud' for Datalayer space. If not specified, location is auto-detected from context."
+            }
+          },
+          "required": [
+            "name"
+          ]
+        }
+      }
+    ],
     "configuration": {
       "title": "Datalayer",
       "properties": {
@@ -626,8 +1048,7 @@
             ]
           },
           "default": [
-            "Active Runtime",
-            "Ask"
+            "Active Runtime"
           ],
           "markdownDescription": "Auto-connect strategies for opening notebooks and lexical documents. Strategies are tried in order until one succeeds:\n\n- **Active Runtime**: Select the runtime with the most time remaining from available runtimes\n- **Ask**: Show a Quick Pick to select from available runtimes\n- **Empty array `[]`**: Disable auto-connect (manual selection required)\n\n**Examples:**\n- `[\"Active Runtime\"]` - Only connect to runtime with most time, otherwise no kernel\n- `[\"Active Runtime\", \"Ask\"]` - Try runtime with most time first, then ask user if none available\n- `[\"Ask\"]` - Always ask user to select runtime\n- `[]` - No auto-connect, user must manually select kernel"
         },
@@ -669,6 +1090,24 @@
           "type": "boolean",
           "default": false,
           "description": "Enable performance monitoring with timing and memory usage tracking (may impact performance)"
+        },
+        "datalayer.onboarding.showWelcome": {
+          "type": "boolean",
+          "default": true,
+          "markdownDescription": "Show unified welcome prompt on first activation with recommended configuration (default editor + Jupyter tools optimization)"
+        },
+        "datalayer.tools.responseFormat": {
+          "type": "string",
+          "enum": [
+            "json",
+            "toon"
+          ],
+          "enumDescriptions": [
+            "Standard JSON format - structured data optimized for programmatic parsing",
+            "TOON format - human/LLM-readable format with compact, intuitive syntax"
+          ],
+          "default": "toon",
+          "markdownDescription": "Format for MCP tool responses. **TOON** provides more readable output for LLMs, while **JSON** maintains traditional structured format."
         }
       }
     },
@@ -688,6 +1127,40 @@
         "selector": [
           {
             "filenamePattern": "*.lexical"
+          }
+        ],
+        "priority": "default"
+      }
+    ],
+    "chatParticipants": [
+      {
+        "id": "datalayer",
+        "name": "datalayer",
+        "fullName": "Datalayer Assistant",
+        "description": "AI assistant specialized in Datalayer notebooks and lexical documents. Type @datalayer or @d to invoke. Automatically understands .ipynb and .lexical files.",
+        "isSticky": true,
+        "disambiguation": [
+          {
+            "category": "datalayer",
+            "description": "Datalayer AI assistant for notebooks and lexical documents",
+            "examples": [
+              "@datalayer what is this notebook about?",
+              "@d explain this document"
+            ]
+          }
+        ],
+        "commands": [
+          {
+            "name": "explain",
+            "description": "Explain the structure and content of the current document"
+          },
+          {
+            "name": "summarize",
+            "description": "Provide a summary of the document content"
+          },
+          {
+            "name": "sections",
+            "description": "Show the main sections or cells in the document"
           }
         ]
       }

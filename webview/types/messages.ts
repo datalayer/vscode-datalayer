@@ -119,6 +119,103 @@ export interface OutlineNavigateMessage {
   itemId: string;
 }
 
+/** Insert cell into notebook (MCP tool support) */
+export interface InsertCellMessage {
+  type: "insert-cell";
+  body: {
+    cellType: "code" | "markdown";
+    source: string;
+    index?: number;
+  };
+}
+
+/** Delete cell from notebook (MCP tool support) */
+export interface DeleteCellMessage {
+  type: "delete-cell";
+  body: {
+    index: number;
+  };
+}
+
+/** Overwrite cell source (MCP tool support) */
+export interface OverwriteCellMessage {
+  type: "overwrite-cell";
+  body: {
+    index: number;
+    source: string;
+  };
+}
+
+/** Set active cell (select a cell programmatically) */
+export interface SetActiveCellMessage {
+  type: "set-active-cell";
+  body: {
+    index: number;
+  };
+}
+
+/** Read specific cell request (MCP tool support) */
+export interface ReadCellRequestMessage {
+  type: "read-cell-request";
+  requestId: string;
+  body: {
+    index: number;
+  };
+}
+
+/** Read specific cell response (MCP tool support) */
+export interface ReadCellResponseMessage {
+  type: "read-cell-response";
+  requestId: string;
+  body: {
+    index: number;
+    type: string;
+    source: string;
+    outputs?: string[];
+  };
+}
+
+/** Read all cells request (MCP tool support) */
+export interface ReadAllCellsRequestMessage {
+  type: "get-cells-request";
+  requestId: string;
+  body: Record<string, never>;
+}
+
+/** Read all cells response (MCP tool support) */
+export interface ReadAllCellsResponseMessage {
+  type: "get-cells-response";
+  requestId: string;
+  body: Array<{
+    index: number;
+    type: string;
+    source: string;
+    outputs?: string[];
+  }>;
+}
+
+/** Get notebook info request (MCP tool support) */
+export interface GetNotebookInfoRequestMessage {
+  type: "get-notebook-info-request";
+  requestId: string;
+  body: Record<string, never>;
+}
+
+/** Get notebook info response (MCP tool support) */
+export interface GetNotebookInfoResponseMessage {
+  type: "get-notebook-info-response";
+  requestId: string;
+  body: {
+    path: string;
+    cellCount: number;
+    cellTypes: {
+      code: number;
+      markdown: number;
+      raw: number;
+    };
+  };
+}
+
 /**
  * Union of all Extension → Webview messages
  */
@@ -133,6 +230,16 @@ export type ExtensionToWebviewMessage =
   | GetFileDataRequestMessage
   | SavedMessage
   | LocalKernelConnectedMessage
+  | InsertCellMessage
+  | DeleteCellMessage
+  | OverwriteCellMessage
+  | SetActiveCellMessage
+  | ReadCellRequestMessage
+  | ReadCellResponseMessage
+  | ReadAllCellsRequestMessage
+  | ReadAllCellsResponseMessage
+  | GetNotebookInfoRequestMessage
+  | GetNotebookInfoResponseMessage
   | WebSocketProxyMessage
   | WebSocketOpenMessage
   | WebSocketCloseMessage
