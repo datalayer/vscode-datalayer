@@ -1,8 +1,8 @@
 diff --git a/node_modules/@datalayer/jupyter-react/lib/components/notebook/Notebook2Adapter.d.ts b/node_modules/@datalayer/jupyter-react/lib/components/notebook/Notebook2Adapter.d.ts
-index b8bf4a6..2ceb9d0 100644
+index b8bf4a6..681ede2 100644
 --- a/node_modules/@datalayer/jupyter-react/lib/components/notebook/Notebook2Adapter.d.ts
 +++ b/node_modules/@datalayer/jupyter-react/lib/components/notebook/Notebook2Adapter.d.ts
-@@ -72,6 +72,107 @@ export declare class Notebook2Adapter {
+@@ -72,6 +72,134 @@ export declare class Notebook2Adapter {
       * must be available and properly initialized for this operation to succeed.
       */
      redo(): void;
@@ -107,11 +107,38 @@ index b8bf4a6..2ceb9d0 100644
 +     * Run all cells in the notebook (aligned with runAllCells tool).
 +     */
 +    runAllCells(): void;
++    /**
++     * Execute code directly in the kernel without creating a cell.
++     *
++     * This method sends code execution requests directly to the kernel,
++     * bypassing the notebook cell model. Useful for:
++     * - Variable inspection
++     * - Environment setup
++     * - Background tasks
++     * - Tool introspection
++     *
++     * @param code - Code to execute
++     * @param options - Execution options
++     * @returns Promise with execution result including outputs
++     */
++    executeCode(code: string, options?: {
++        storeHistory?: boolean;
++        silent?: boolean;
++        stopOnError?: boolean;
++    }): Promise<{
++        success: boolean;
++        outputs?: Array<{
++            type: 'stream' | 'execute_result' | 'display_data' | 'error';
++            content: unknown;
++        }>;
++        executionCount?: number;
++        error?: string;
++    }>;
      /**
       * Dispose of the adapter.
       */
 diff --git a/node_modules/@datalayer/jupyter-react/lib/components/notebook/Notebook2Adapter.js b/node_modules/@datalayer/jupyter-react/lib/components/notebook/Notebook2Adapter.js
-index 53144a3..039bef8 100644
+index 53144a3..cbcb7f5 100644
 --- a/node_modules/@datalayer/jupyter-react/lib/components/notebook/Notebook2Adapter.js
 +++ b/node_modules/@datalayer/jupyter-react/lib/components/notebook/Notebook2Adapter.js
 @@ -4,6 +4,7 @@
@@ -143,7 +170,7 @@ index 53144a3..039bef8 100644
      }
      /**
       * Redo the last undone change in the notebook.
-@@ -130,7 +143,199 @@ export class Notebook2Adapter {
+@@ -130,7 +143,276 @@ export class Notebook2Adapter {
       * must be available and properly initialized for this operation to succeed.
       */
      redo() {
@@ -341,17 +368,94 @@ index 53144a3..039bef8 100644
 +     */
 +    runAllCells() {
 +        this._commands.execute(NotebookCommandIds.runAll);
++    }
++    /**
++     * Execute code directly in the kernel without creating a cell.
++     *
++     * This method sends code execution requests directly to the kernel,
++     * bypassing the notebook cell model. Useful for:
++     * - Variable inspection
++     * - Environment setup
++     * - Background tasks
++     * - Tool introspection
++     *
++     * @param code - Code to execute
++     * @param options - Execution options
++     * @returns Promise with execution result including outputs
++     */
++    async executeCode(code, options = {}) {
++        const sessionContext = this._panel.sessionContext;
++        if (!sessionContext || !sessionContext.session?.kernel) {
++            return {
++                success: false,
++                error: 'No active kernel session',
++            };
++        }
++        const kernel = sessionContext.session.kernel;
++        try {
++            const future = kernel.requestExecute({
++                code,
++                stop_on_error: options.stopOnError ?? true,
++                store_history: options.storeHistory ?? false,
++                silent: options.silent ?? false,
++                allow_stdin: false,
++            });
++            const outputs = [];
++            let executionCount;
++            // Collect outputs
++            future.onIOPub = (msg) => {
++                const msgType = msg.header.msg_type;
++                if (msgType === 'stream') {
++                    outputs.push({
++                        type: 'stream',
++                        content: msg.content,
++                    });
++                }
++                else if (msgType === 'execute_result') {
++                    outputs.push({
++                        type: 'execute_result',
++                        content: msg.content,
++                    });
++                    executionCount = msg.content.execution_count;
++                }
++                else if (msgType === 'display_data') {
++                    outputs.push({
++                        type: 'display_data',
++                        content: msg.content,
++                    });
++                }
++                else if (msgType === 'error') {
++                    outputs.push({
++                        type: 'error',
++                        content: msg.content,
++                    });
++                }
++            };
++            // Wait for execution to complete
++            await future.done;
++            return {
++                success: true,
++                outputs,
++                executionCount,
++            };
++        }
++        catch (error) {
++            return {
++                success: false,
++                error: error instanceof Error ? error.message : String(error),
++            };
++        }
      }
      /**
       * Dispose of the adapter.
 diff --git a/node_modules/@datalayer/jupyter-react/lib/components/notebook/Notebook2Adapter.js.map b/node_modules/@datalayer/jupyter-react/lib/components/notebook/Notebook2Adapter.js.map
-index 57d3add..cfdcced 100644
+index 57d3add..516d8e4 100644
 --- a/node_modules/@datalayer/jupyter-react/lib/components/notebook/Notebook2Adapter.js.map
 +++ b/node_modules/@datalayer/jupyter-react/lib/components/notebook/Notebook2Adapter.js.map
 @@ -1 +1 @@
 -{"version":3,"file":"Notebook2Adapter.js","sourceRoot":"","sources":["../../../src/components/notebook/Notebook2Adapter.ts"],"names":[],"mappings":"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"}
 \ No newline at end of file
-+{"version":3,"file":"Notebook2Adapter.js","sourceRoot":"","sources":["../../../src/components/notebook/Notebook2Adapter.ts"],"names":[],"mappings":"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"}
++{"version":3,"file":"Notebook2Adapter.js","sourceRoot":"","sources":["../../../src/components/notebook/Notebook2Adapter.ts"],"names":[],"mappings":"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"}
 \ No newline at end of file
 diff --git a/node_modules/@datalayer/jupyter-react/lib/components/notebook/Notebook2State.d.ts b/node_modules/@datalayer/jupyter-react/lib/components/notebook/Notebook2State.d.ts
 index c6f6cb7..ee61486 100644
@@ -871,10 +975,10 @@ index 0000000..682b87e
 \ No newline at end of file
 diff --git a/node_modules/@datalayer/jupyter-react/lib/tools/core/index.d.ts b/node_modules/@datalayer/jupyter-react/lib/tools/core/index.d.ts
 new file mode 100644
-index 0000000..97458ce
+index 0000000..4e16dd5
 --- /dev/null
 +++ b/node_modules/@datalayer/jupyter-react/lib/tools/core/index.d.ts
-@@ -0,0 +1,16 @@
+@@ -0,0 +1,17 @@
 +/**
 + * Core tool operations, interfaces, and utilities.
 + *
@@ -887,16 +991,17 @@ index 0000000..97458ce
 +export * from '../operations/readAllCells';
 +export * from '../operations/runCell';
 +export * from '../operations/runAllCells';
++export * from '../operations/executeCode';
 +export * from './interfaces';
 +export * from './formatter';
 +export * from './executor';
 +export * from './schema';
 diff --git a/node_modules/@datalayer/jupyter-react/lib/tools/core/index.js b/node_modules/@datalayer/jupyter-react/lib/tools/core/index.js
 new file mode 100644
-index 0000000..d8ba9a6
+index 0000000..6d6638c
 --- /dev/null
 +++ b/node_modules/@datalayer/jupyter-react/lib/tools/core/index.js
-@@ -0,0 +1,22 @@
+@@ -0,0 +1,23 @@
 +/*
 + * Copyright (c) 2021-2023 Datalayer, Inc.
 + *
@@ -914,6 +1019,7 @@ index 0000000..d8ba9a6
 +export * from '../operations/readAllCells';
 +export * from '../operations/runCell';
 +export * from '../operations/runAllCells';
++export * from '../operations/executeCode';
 +export * from './interfaces';
 +export * from './formatter';
 +export * from './executor';
@@ -922,11 +1028,11 @@ index 0000000..d8ba9a6
 \ No newline at end of file
 diff --git a/node_modules/@datalayer/jupyter-react/lib/tools/core/index.js.map b/node_modules/@datalayer/jupyter-react/lib/tools/core/index.js.map
 new file mode 100644
-index 0000000..8986941
+index 0000000..ee91403
 --- /dev/null
 +++ b/node_modules/@datalayer/jupyter-react/lib/tools/core/index.js.map
 @@ -0,0 +1 @@
-+{"version":3,"file":"index.js","sourceRoot":"","sources":["../../../src/tools/core/index.ts"],"names":[],"mappings":"AAAA;;;;GAIG;AAEH;;;;GAIG;AAEH,cAAc,0BAA0B,CAAC;AACzC,cAAc,0BAA0B,CAAC;AACzC,cAAc,0BAA0B,CAAC;AACzC,cAAc,wBAAwB,CAAC;AACvC,cAAc,4BAA4B,CAAC;AAC3C,cAAc,uBAAuB,CAAC;AACtC,cAAc,2BAA2B,CAAC;AAE1C,cAAc,cAAc,CAAC;AAC7B,cAAc,aAAa,CAAC;AAC5B,cAAc,YAAY,CAAC;AAC3B,cAAc,UAAU,CAAC"}
++{"version":3,"file":"index.js","sourceRoot":"","sources":["../../../src/tools/core/index.ts"],"names":[],"mappings":"AAAA;;;;GAIG;AAEH;;;;GAIG;AAEH,cAAc,0BAA0B,CAAC;AACzC,cAAc,0BAA0B,CAAC;AACzC,cAAc,0BAA0B,CAAC;AACzC,cAAc,wBAAwB,CAAC;AACvC,cAAc,4BAA4B,CAAC;AAC3C,cAAc,uBAAuB,CAAC;AACtC,cAAc,2BAA2B,CAAC;AAC1C,cAAc,2BAA2B,CAAC;AAE1C,cAAc,cAAc,CAAC;AAC7B,cAAc,aAAa,CAAC;AAC5B,cAAc,YAAY,CAAC;AAC3B,cAAc,UAAU,CAAC"}
 \ No newline at end of file
 diff --git a/node_modules/@datalayer/jupyter-react/lib/tools/core/interfaces.d.ts b/node_modules/@datalayer/jupyter-react/lib/tools/core/interfaces.d.ts
 new file mode 100644
@@ -1128,12 +1234,83 @@ index 0000000..a8c3871
 @@ -0,0 +1 @@
 +{"version":3,"file":"deleteCell.js","sourceRoot":"","sources":["../../../src/tools/definitions/deleteCell.ts"],"names":[],"mappings":"AAAA;;;;GAIG;AAUH,MAAM,CAAC,MAAM,cAAc,GAAmB;IAC5C,IAAI,EAAE,sBAAsB;IAC5B,WAAW,EAAE,sBAAsB;IACnC,iBAAiB,EAAE,YAAY;IAC/B,WAAW,EAAE,+DAA+D;IAE5E,UAAU,EAAE;QACV,IAAI,EAAE,QAAQ;QACd,UAAU,EAAE;YACV,KAAK,EAAE;gBACL,IAAI,EAAE,QAAQ;gBACd,WAAW,EAAE,uCAAuC;aACrD;SACF;QACD,QAAQ,EAAE,CAAC,OAAO,CAAC;KACpB;IAED,SAAS,EAAE,YAAY;IAEvB,MAAM,EAAE;QACN,mBAAmB,EAAE,CAAC,MAAyB,EAAE,EAAE,CACjD,wBAAwB,MAAM,CAAC,KAAK,GAAG;QACzC,iBAAiB,EAAE,CAAC,MAAyB,EAAE,EAAE,CAC/C,iBAAiB,MAAM,CAAC,KAAK,EAAE;QACjC,oBAAoB,EAAE,IAAI;QAC1B,uBAAuB,EAAE,IAAI;QAC7B,QAAQ,EAAE,QAAQ;KACnB;IAED,IAAI,EAAE,CAAC,MAAM,EAAE,UAAU,EAAE,cAAc,EAAE,QAAQ,CAAC;CACrD,CAAC"}
 \ No newline at end of file
+diff --git a/node_modules/@datalayer/jupyter-react/lib/tools/definitions/executeCode.d.ts b/node_modules/@datalayer/jupyter-react/lib/tools/definitions/executeCode.d.ts
+new file mode 100644
+index 0000000..ba7b3be
+--- /dev/null
++++ b/node_modules/@datalayer/jupyter-react/lib/tools/definitions/executeCode.d.ts
+@@ -0,0 +1,7 @@
++/**
++ * Execute code tool definition.
++ *
++ * @module tools/definitions/executeCode
++ */
++import type { ToolDefinition } from '../core/schema';
++export declare const executeCodeTool: ToolDefinition;
+diff --git a/node_modules/@datalayer/jupyter-react/lib/tools/definitions/executeCode.js b/node_modules/@datalayer/jupyter-react/lib/tools/definitions/executeCode.js
+new file mode 100644
+index 0000000..8528d12
+--- /dev/null
++++ b/node_modules/@datalayer/jupyter-react/lib/tools/definitions/executeCode.js
+@@ -0,0 +1,43 @@
++/*
++ * Copyright (c) 2021-2023 Datalayer, Inc.
++ *
++ * MIT License
++ */
++export const executeCodeTool = {
++    name: 'datalayer_executeCode',
++    displayName: 'Execute Code in Kernel',
++    toolReferenceName: 'executeCode',
++    description: 'Executes code directly in the Jupyter kernel without creating or modifying notebook cells. Useful for variable inspection, environment setup, background tasks, and tool introspection. Returns execution outputs including streams, results, and errors.',
++    parameters: {
++        type: 'object',
++        properties: {
++            code: {
++                type: 'string',
++                description: 'Python code to execute in the kernel',
++            },
++            storeHistory: {
++                type: 'boolean',
++                description: 'Whether to store this execution in kernel history (default: false). Set to true to make this code accessible via In[n].',
++            },
++            silent: {
++                type: 'boolean',
++                description: 'Silent execution - no output displayed (default: false). Useful for background tasks.',
++            },
++            stopOnError: {
++                type: 'boolean',
++                description: 'Stop execution if an error occurs (default: true). Set to false to continue execution even on errors.',
++            },
++        },
++        required: ['code'],
++    },
++    operation: 'executeCode',
++    config: {
++        confirmationMessage: (params) => `Execute code: ${params.code.substring(0, 50)}${params.code.length > 50 ? '...' : ''}?`,
++        invocationMessage: () => 'Executing code in kernel',
++        requiresConfirmation: false,
++        canBeReferencedInPrompt: true,
++        priority: 'high',
++    },
++    tags: ['kernel', 'notebook', 'execute', 'code', 'inspection'],
++};
++//# sourceMappingURL=executeCode.js.map
+\ No newline at end of file
+diff --git a/node_modules/@datalayer/jupyter-react/lib/tools/definitions/executeCode.js.map b/node_modules/@datalayer/jupyter-react/lib/tools/definitions/executeCode.js.map
+new file mode 100644
+index 0000000..e058664
+--- /dev/null
++++ b/node_modules/@datalayer/jupyter-react/lib/tools/definitions/executeCode.js.map
+@@ -0,0 +1 @@
++{"version":3,"file":"executeCode.js","sourceRoot":"","sources":["../../../src/tools/definitions/executeCode.ts"],"names":[],"mappings":"AAAA;;;;GAIG;AAUH,MAAM,CAAC,MAAM,eAAe,GAAmB;IAC7C,IAAI,EAAE,uBAAuB;IAC7B,WAAW,EAAE,wBAAwB;IACrC,iBAAiB,EAAE,aAAa;IAChC,WAAW,EACT,2PAA2P;IAE7P,UAAU,EAAE;QACV,IAAI,EAAE,QAAQ;QACd,UAAU,EAAE;YACV,IAAI,EAAE;gBACJ,IAAI,EAAE,QAAQ;gBACd,WAAW,EAAE,sCAAsC;aACpD;YACD,YAAY,EAAE;gBACZ,IAAI,EAAE,SAAS;gBACf,WAAW,EACT,yHAAyH;aAC5H;YACD,MAAM,EAAE;gBACN,IAAI,EAAE,SAAS;gBACf,WAAW,EACT,uFAAuF;aAC1F;YACD,WAAW,EAAE;gBACX,IAAI,EAAE,SAAS;gBACf,WAAW,EACT,uGAAuG;aAC1G;SACF;QACD,QAAQ,EAAE,CAAC,MAAM,CAAC;KACnB;IAED,SAAS,EAAE,aAAa;IAExB,MAAM,EAAE;QACN,mBAAmB,EAAE,CAAC,MAAwB,EAAE,EAAE,CAChD,iBAAiB,MAAM,CAAC,IAAI,CAAC,SAAS,CAAC,CAAC,EAAE,EAAE,CAAC,GAAG,MAAM,CAAC,IAAI,CAAC,MAAM,GAAG,EAAE,CAAC,CAAC,CAAC,KAAK,CAAC,CAAC,CAAC,EAAE,GAAG;QACzF,iBAAiB,EAAE,GAAG,EAAE,CAAC,0BAA0B;QACnD,oBAAoB,EAAE,KAAK;QAC3B,uBAAuB,EAAE,IAAI;QAC7B,QAAQ,EAAE,MAAM;KACjB;IAED,IAAI,EAAE,CAAC,QAAQ,EAAE,UAAU,EAAE,SAAS,EAAE,MAAM,EAAE,YAAY,CAAC;CAC9D,CAAC"}
+\ No newline at end of file
 diff --git a/node_modules/@datalayer/jupyter-react/lib/tools/definitions/index.d.ts b/node_modules/@datalayer/jupyter-react/lib/tools/definitions/index.d.ts
 new file mode 100644
-index 0000000..e116cd9
+index 0000000..25b746f
 --- /dev/null
 +++ b/node_modules/@datalayer/jupyter-react/lib/tools/definitions/index.d.ts
-@@ -0,0 +1,13 @@
+@@ -0,0 +1,14 @@
 +/**
 + * Tool definitions (schemas) for notebook operations.
 + *
@@ -1147,12 +1324,13 @@ index 0000000..e116cd9
 +export * from './readAllCells';
 +export * from './runCell';
 +export * from './runAllCells';
++export * from './executeCode';
 diff --git a/node_modules/@datalayer/jupyter-react/lib/tools/definitions/index.js b/node_modules/@datalayer/jupyter-react/lib/tools/definitions/index.js
 new file mode 100644
-index 0000000..221832e
+index 0000000..fa37e36
 --- /dev/null
 +++ b/node_modules/@datalayer/jupyter-react/lib/tools/definitions/index.js
-@@ -0,0 +1,19 @@
+@@ -0,0 +1,20 @@
 +/*
 + * Copyright (c) 2021-2023 Datalayer, Inc.
 + *
@@ -1171,15 +1349,16 @@ index 0000000..221832e
 +export * from './readAllCells';
 +export * from './runCell';
 +export * from './runAllCells';
++export * from './executeCode';
 +//# sourceMappingURL=index.js.map
 \ No newline at end of file
 diff --git a/node_modules/@datalayer/jupyter-react/lib/tools/definitions/index.js.map b/node_modules/@datalayer/jupyter-react/lib/tools/definitions/index.js.map
 new file mode 100644
-index 0000000..813cf9b
+index 0000000..8e1cc68
 --- /dev/null
 +++ b/node_modules/@datalayer/jupyter-react/lib/tools/definitions/index.js.map
 @@ -0,0 +1 @@
-+{"version":3,"file":"index.js","sourceRoot":"","sources":["../../../src/tools/definitions/index.ts"],"names":[],"mappings":"AAAA;;;;GAIG;AAEH;;;;GAIG;AAEH,cAAc,cAAc,CAAC;AAC7B,cAAc,eAAe,CAAC;AAC9B,cAAc,cAAc,CAAC;AAC7B,cAAc,cAAc,CAAC;AAC7B,cAAc,YAAY,CAAC;AAC3B,cAAc,gBAAgB,CAAC;AAC/B,cAAc,WAAW,CAAC;AAC1B,cAAc,eAAe,CAAC"}
++{"version":3,"file":"index.js","sourceRoot":"","sources":["../../../src/tools/definitions/index.ts"],"names":[],"mappings":"AAAA;;;;GAIG;AAEH;;;;GAIG;AAEH,cAAc,cAAc,CAAC;AAC7B,cAAc,eAAe,CAAC;AAC9B,cAAc,cAAc,CAAC;AAC7B,cAAc,cAAc,CAAC;AAC7B,cAAc,YAAY,CAAC;AAC3B,cAAc,gBAAgB,CAAC;AAC/B,cAAc,WAAW,CAAC;AAC1B,cAAc,eAAe,CAAC;AAC9B,cAAc,eAAe,CAAC"}
 \ No newline at end of file
 diff --git a/node_modules/@datalayer/jupyter-react/lib/tools/definitions/insertCell.d.ts b/node_modules/@datalayer/jupyter-react/lib/tools/definitions/insertCell.d.ts
 new file mode 100644
@@ -1621,23 +1800,36 @@ index 0000000..90abcf3
 \ No newline at end of file
 diff --git a/node_modules/@datalayer/jupyter-react/lib/tools/index.d.ts b/node_modules/@datalayer/jupyter-react/lib/tools/index.d.ts
 new file mode 100644
-index 0000000..c86662e
+index 0000000..f1b0143
 --- /dev/null
 +++ b/node_modules/@datalayer/jupyter-react/lib/tools/index.d.ts
-@@ -0,0 +1,7 @@
+@@ -0,0 +1,20 @@
++import type { ToolDefinition } from './core/schema';
++import type { ToolOperation } from './core/interfaces';
 +/**
-+ * Platform-agnostic notebook tools.
-+ *
-+ * @module tools
++ * Array of all notebook tool definitions
 + */
++export declare const notebookToolDefinitions: ToolDefinition[];
++/**
++ * Registry of all notebook tool operations
++ * Maps operation names to their implementations
++ */
++export declare const notebookToolOperations: Record<string, ToolOperation<unknown, unknown>>;
++/**
++ * Complete notebook tools bundle for easy iteration and registration
++ */
++export declare const notebookTools: {
++    definitions: ToolDefinition<unknown>[];
++    operations: Record<string, ToolOperation<unknown, unknown>>;
++};
 +export * from './core';
 +export * from './definitions';
 diff --git a/node_modules/@datalayer/jupyter-react/lib/tools/index.js b/node_modules/@datalayer/jupyter-react/lib/tools/index.js
 new file mode 100644
-index 0000000..b00bfcf
+index 0000000..6792965
 --- /dev/null
 +++ b/node_modules/@datalayer/jupyter-react/lib/tools/index.js
-@@ -0,0 +1,13 @@
+@@ -0,0 +1,68 @@
 +/*
 + * Copyright (c) 2021-2023 Datalayer, Inc.
 + *
@@ -1648,17 +1840,72 @@ index 0000000..b00bfcf
 + *
 + * @module tools
 + */
++// Import all tool definitions
++import { insertCellTool } from './definitions/insertCell';
++import { insertCellsTool } from './definitions/insertCells';
++import { deleteCellTool } from './definitions/deleteCell';
++import { updateCellTool } from './definitions/updateCell';
++import { readCellTool } from './definitions/readCell';
++import { readAllCellsTool } from './definitions/readAllCells';
++import { runCellTool } from './definitions/runCell';
++import { runAllCellsTool } from './definitions/runAllCells';
++import { executeCodeTool } from './definitions/executeCode';
++// Import all operations
++import { insertCellOperation } from './operations/insertCell';
++import { deleteCellOperation } from './operations/deleteCell';
++import { updateCellOperation } from './operations/updateCell';
++import { readCellOperation } from './operations/readCell';
++import { readAllCellsOperation } from './operations/readAllCells';
++import { runCellOperation } from './operations/runCell';
++import { runAllCellsOperation } from './operations/runAllCells';
++import { executeCodeOperation } from './operations/executeCode';
++/**
++ * Array of all notebook tool definitions
++ */
++export const notebookToolDefinitions = [
++    insertCellTool,
++    insertCellsTool,
++    deleteCellTool,
++    updateCellTool,
++    readCellTool,
++    readAllCellsTool,
++    runCellTool,
++    runAllCellsTool,
++    executeCodeTool,
++];
++/**
++ * Registry of all notebook tool operations
++ * Maps operation names to their implementations
++ */
++export const notebookToolOperations = {
++    insertCell: insertCellOperation,
++    deleteCell: deleteCellOperation,
++    updateCell: updateCellOperation,
++    readCell: readCellOperation,
++    readAllCells: readAllCellsOperation,
++    runCell: runCellOperation,
++    runAllCells: runAllCellsOperation,
++    executeCode: executeCodeOperation,
++};
++/**
++ * Complete notebook tools bundle for easy iteration and registration
++ */
++export const notebookTools = {
++    definitions: notebookToolDefinitions,
++    operations: notebookToolOperations,
++};
++// Re-export everything for convenience
 +export * from './core';
 +export * from './definitions';
 +//# sourceMappingURL=index.js.map
 \ No newline at end of file
 diff --git a/node_modules/@datalayer/jupyter-react/lib/tools/index.js.map b/node_modules/@datalayer/jupyter-react/lib/tools/index.js.map
 new file mode 100644
-index 0000000..88f55d8
+index 0000000..054db7a
 --- /dev/null
 +++ b/node_modules/@datalayer/jupyter-react/lib/tools/index.js.map
 @@ -0,0 +1 @@
-+{"version":3,"file":"index.js","sourceRoot":"","sources":["../../src/tools/index.ts"],"names":[],"mappings":"AAAA;;;;GAIG;AAEH;;;;GAIG;AAEH,cAAc,QAAQ,CAAC;AACvB,cAAc,eAAe,CAAC"}
++{"version":3,"file":"index.js","sourceRoot":"","sources":["../../src/tools/index.ts"],"names":[],"mappings":"AAAA;;;;GAIG;AAEH;;;;GAIG;AAEH,8BAA8B;AAC9B,OAAO,EAAE,cAAc,EAAE,MAAM,0BAA0B,CAAC;AAC1D,OAAO,EAAE,eAAe,EAAE,MAAM,2BAA2B,CAAC;AAC5D,OAAO,EAAE,cAAc,EAAE,MAAM,0BAA0B,CAAC;AAC1D,OAAO,EAAE,cAAc,EAAE,MAAM,0BAA0B,CAAC;AAC1D,OAAO,EAAE,YAAY,EAAE,MAAM,wBAAwB,CAAC;AACtD,OAAO,EAAE,gBAAgB,EAAE,MAAM,4BAA4B,CAAC;AAC9D,OAAO,EAAE,WAAW,EAAE,MAAM,uBAAuB,CAAC;AACpD,OAAO,EAAE,eAAe,EAAE,MAAM,2BAA2B,CAAC;AAC5D,OAAO,EAAE,eAAe,EAAE,MAAM,2BAA2B,CAAC;AAE5D,wBAAwB;AACxB,OAAO,EAAE,mBAAmB,EAAE,MAAM,yBAAyB,CAAC;AAC9D,OAAO,EAAE,mBAAmB,EAAE,MAAM,yBAAyB,CAAC;AAC9D,OAAO,EAAE,mBAAmB,EAAE,MAAM,yBAAyB,CAAC;AAC9D,OAAO,EAAE,iBAAiB,EAAE,MAAM,uBAAuB,CAAC;AAC1D,OAAO,EAAE,qBAAqB,EAAE,MAAM,2BAA2B,CAAC;AAClE,OAAO,EAAE,gBAAgB,EAAE,MAAM,sBAAsB,CAAC;AACxD,OAAO,EAAE,oBAAoB,EAAE,MAAM,0BAA0B,CAAC;AAChE,OAAO,EAAE,oBAAoB,EAAE,MAAM,0BAA0B,CAAC;AAMhE;;GAEG;AACH,MAAM,CAAC,MAAM,uBAAuB,GAAqB;IACvD,cAAc;IACd,eAAe;IACf,cAAc;IACd,cAAc;IACd,YAAY;IACZ,gBAAgB;IAChB,WAAW;IACX,eAAe;IACf,eAAe;CAChB,CAAC;AAEF;;;GAGG;AACH,MAAM,CAAC,MAAM,sBAAsB,GAG/B;IACF,UAAU,EAAE,mBAAmB;IAC/B,UAAU,EAAE,mBAAmB;IAC/B,UAAU,EAAE,mBAAmB;IAC/B,QAAQ,EAAE,iBAAiB;IAC3B,YAAY,EAAE,qBAAqB;IACnC,OAAO,EAAE,gBAAgB;IACzB,WAAW,EAAE,oBAAoB;IACjC,WAAW,EAAE,oBAAoB;CAClC,CAAC;AAEF;;GAEG;AACH,MAAM,CAAC,MAAM,aAAa,GAAG;IAC3B,WAAW,EAAE,uBAAuB;IACpC,UAAU,EAAE,sBAAsB;CACnC,CAAC;AAEF,uCAAuC;AACvC,cAAc,QAAQ,CAAC;AACvB,cAAc,eAAe,CAAC"}
 \ No newline at end of file
 diff --git a/node_modules/@datalayer/jupyter-react/lib/tools/operations/deleteCell.d.ts b/node_modules/@datalayer/jupyter-react/lib/tools/operations/deleteCell.d.ts
 new file mode 100644
@@ -1782,6 +2029,143 @@ index 0000000..0e83df8
 +++ b/node_modules/@datalayer/jupyter-react/lib/tools/operations/deleteCell.js.map
 @@ -0,0 +1 @@
 +{"version":3,"file":"deleteCell.js","sourceRoot":"","sources":["../../../src/tools/operations/deleteCell.ts"],"names":[],"mappings":"AAAA;;;;GAIG;AASH,OAAO,EAAE,cAAc,EAAE,MAAM,mBAAmB,CAAC;AAUnD;;GAEG;AACH,SAAS,kBAAkB,CAAC,MAAe;IACzC,IAAI,OAAO,MAAM,KAAK,QAAQ,IAAI,MAAM,KAAK,IAAI,EAAE,CAAC;QAClD,OAAO,KAAK,CAAC;IACf,CAAC;IAED,MAAM,CAAC,GAAG,MAAiC,CAAC;IAC5C,OAAO,OAAO,CAAC,CAAC,KAAK,KAAK,QAAQ,CAAC;AACrC,CAAC;AAWD;;;;;;;;;;GAUG;AACH,MAAM,CAAC,MAAM,mBAAmB,GAG5B;IACF,IAAI,EAAE,YAAY;IAElB,KAAK,CAAC,OAAO,CACX,MAAe,EACf,OAA6B;QAE7B,mCAAmC;QACnC,IAAI,CAAC,kBAAkB,CAAC,MAAM,CAAC,EAAE,CAAC;YAChC,MAAM,IAAI,KAAK,CACb,iEAAiE;gBAC/D,aAAa,IAAI,CAAC,SAAS,CAAC,MAAM,CAAC,EAAE,CACxC,CAAC;QACJ,CAAC;QAED,mDAAmD;QACnD,MAAM,EAAE,KAAK,EAAE,GAAG,MAAM,CAAC;QACzB,MAAM,EAAE,UAAU,EAAE,GAAG,OAAO,CAAC;QAE/B,IAAI,CAAC,UAAU,EAAE,CAAC;YAChB,OAAO,cAAc,CACnB;gBACE,OAAO,EAAE,KAAK;gBACd,KAAK,EAAE,6CAA6C;aACrD,EACD,OAAO,CAAC,MAAM,CACgB,CAAC;QACnC,CAAC;QAED,+BAA+B;QAC/B,IAAI,CAAC,OAAO,CAAC,QAAQ,EAAE,CAAC;YACtB,MAAM,IAAI,KAAK,CACb,iDAAiD;gBAC/C,iFAAiF,CACpF,CAAC;QACJ,CAAC;QAED,IAAI,CAAC;YACH,gBAAgB;YAChB,MAAM,OAAO,CAAC,QAAQ,CAAC,OAAO,CAAC,YAAY,EAAE;gBAC3C,KAAK;aACN,CAAC,CAAC;YAEH,wBAAwB;YACxB,OAAO,cAAc,CACnB;gBACE,OAAO,EAAE,IAAI;gBACb,KAAK,EAAE,KAAK;gBACZ,OAAO,EAAE,mBAAmB,KAAK,uBAAuB;aACzD,EACD,OAAO,CAAC,MAAM,CACgB,CAAC;QACnC,CAAC;QAAC,OAAO,KAAK,EAAE,CAAC;YACf,qCAAqC;YACrC,MAAM,YAAY,GAChB,KAAK,YAAY,KAAK,CAAC,CAAC,CAAC,KAAK,CAAC,OAAO,CAAC,CAAC,CAAC,MAAM,CAAC,KAAK,CAAC,CAAC;YACzD,MAAM,IAAI,KAAK,CAAC,0BAA0B,YAAY,EAAE,CAAC,CAAC;QAC5D,CAAC;IACH,CAAC;CACF,CAAC"}
+\ No newline at end of file
+diff --git a/node_modules/@datalayer/jupyter-react/lib/tools/operations/executeCode.d.ts b/node_modules/@datalayer/jupyter-react/lib/tools/operations/executeCode.d.ts
+new file mode 100644
+index 0000000..6b6de72
+--- /dev/null
++++ b/node_modules/@datalayer/jupyter-react/lib/tools/operations/executeCode.d.ts
+@@ -0,0 +1,45 @@
++/**
++ * Platform-agnostic code execution operation.
++ * Executes code directly in the kernel without creating or modifying cells.
++ *
++ * @module tools/operations/executeCode
++ */
++import type { ToolOperation } from '../core/interfaces';
++/**
++ * Parameters for executeCode operation.
++ */
++export interface ExecuteCodeParams {
++    /** Code to execute */
++    code: string;
++    /** Whether to store in kernel history (default: false) */
++    storeHistory?: boolean;
++    /** Silent execution - no output displayed (default: false) */
++    silent?: boolean;
++    /** Stop execution on error (default: true) */
++    stopOnError?: boolean;
++}
++/**
++ * Result from executeCode operation.
++ */
++export interface ExecuteCodeResult {
++    success: boolean;
++    /** Execution outputs (streams, results, errors) */
++    outputs?: Array<{
++        type: 'stream' | 'execute_result' | 'display_data' | 'error';
++        content: unknown;
++    }>;
++    /** Error message if execution failed */
++    error?: string;
++    /** Execution count (if stored in history) */
++    executionCount?: number;
++}
++/**
++ * Executes code directly in the kernel without creating a cell.
++ *
++ * This is useful for:
++ * - Variable inspection
++ * - Environment setup
++ * - Background tasks
++ * - Tool introspection
++ */
++export declare const executeCodeOperation: ToolOperation<ExecuteCodeParams, ExecuteCodeResult>;
+diff --git a/node_modules/@datalayer/jupyter-react/lib/tools/operations/executeCode.js b/node_modules/@datalayer/jupyter-react/lib/tools/operations/executeCode.js
+new file mode 100644
+index 0000000..eed0bff
+--- /dev/null
++++ b/node_modules/@datalayer/jupyter-react/lib/tools/operations/executeCode.js
+@@ -0,0 +1,71 @@
++/*
++ * Copyright (c) 2021-2023 Datalayer, Inc.
++ *
++ * MIT License
++ */
++import { formatResponse } from '../core/formatter';
++/**
++ * Validates ExecuteCodeParams at runtime.
++ */
++function isExecuteCodeParams(params) {
++    if (typeof params !== 'object' || params === null) {
++        return false;
++    }
++    const p = params;
++    // code is required and must be a string
++    if (typeof p.code !== 'string') {
++        return false;
++    }
++    // Optional boolean fields
++    if (p.storeHistory !== undefined && typeof p.storeHistory !== 'boolean') {
++        return false;
++    }
++    if (p.silent !== undefined && typeof p.silent !== 'boolean') {
++        return false;
++    }
++    if (p.stopOnError !== undefined && typeof p.stopOnError !== 'boolean') {
++        return false;
++    }
++    return true;
++}
++/**
++ * Executes code directly in the kernel without creating a cell.
++ *
++ * This is useful for:
++ * - Variable inspection
++ * - Environment setup
++ * - Background tasks
++ * - Tool introspection
++ */
++export const executeCodeOperation = {
++    name: 'executeCode',
++    async execute(params, context) {
++        // Validate params using type guard
++        if (!isExecuteCodeParams(params)) {
++            throw new Error(`Invalid parameters for executeCode. Expected { code: string, storeHistory?: boolean, silent?: boolean, stopOnError?: boolean }. ` +
++                `Received: ${JSON.stringify(params)}`);
++        }
++        const { notebookId } = context;
++        if (!notebookId) {
++            return formatResponse({
++                success: false,
++                error: 'Notebook ID is required for this operation.',
++            }, context.format);
++        }
++        // Ensure executor is available
++        if (!context.executor) {
++            throw new Error('Executor is required for executeCode operation. ' +
++                'This should be provided by the platform (DefaultExecutor, BridgeExecutor, etc.)');
++        }
++        try {
++            // Call executor to execute code directly in kernel
++            const result = await context.executor.execute('executeCode', params);
++            return formatResponse(result, context.format);
++        }
++        catch (error) {
++            const errorMessage = error instanceof Error ? error.message : String(error);
++            throw new Error(`Failed to execute code: ${errorMessage}`);
++        }
++    },
++};
++//# sourceMappingURL=executeCode.js.map
+\ No newline at end of file
+diff --git a/node_modules/@datalayer/jupyter-react/lib/tools/operations/executeCode.js.map b/node_modules/@datalayer/jupyter-react/lib/tools/operations/executeCode.js.map
+new file mode 100644
+index 0000000..d3be39d
+--- /dev/null
++++ b/node_modules/@datalayer/jupyter-react/lib/tools/operations/executeCode.js.map
+@@ -0,0 +1 @@
++{"version":3,"file":"executeCode.js","sourceRoot":"","sources":["../../../src/tools/operations/executeCode.ts"],"names":[],"mappings":"AAAA;;;;GAIG;AAUH,OAAO,EAAE,cAAc,EAAE,MAAM,mBAAmB,CAAC;AAmBnD;;GAEG;AACH,SAAS,mBAAmB,CAAC,MAAe;IAC1C,IAAI,OAAO,MAAM,KAAK,QAAQ,IAAI,MAAM,KAAK,IAAI,EAAE,CAAC;QAClD,OAAO,KAAK,CAAC;IACf,CAAC;IAED,MAAM,CAAC,GAAG,MAAiC,CAAC;IAE5C,wCAAwC;IACxC,IAAI,OAAO,CAAC,CAAC,IAAI,KAAK,QAAQ,EAAE,CAAC;QAC/B,OAAO,KAAK,CAAC;IACf,CAAC;IAED,0BAA0B;IAC1B,IAAI,CAAC,CAAC,YAAY,KAAK,SAAS,IAAI,OAAO,CAAC,CAAC,YAAY,KAAK,SAAS,EAAE,CAAC;QACxE,OAAO,KAAK,CAAC;IACf,CAAC;IACD,IAAI,CAAC,CAAC,MAAM,KAAK,SAAS,IAAI,OAAO,CAAC,CAAC,MAAM,KAAK,SAAS,EAAE,CAAC;QAC5D,OAAO,KAAK,CAAC;IACf,CAAC;IACD,IAAI,CAAC,CAAC,WAAW,KAAK,SAAS,IAAI,OAAO,CAAC,CAAC,WAAW,KAAK,SAAS,EAAE,CAAC;QACtE,OAAO,KAAK,CAAC;IACf,CAAC;IAED,OAAO,IAAI,CAAC;AACd,CAAC;AAkBD;;;;;;;;GAQG;AACH,MAAM,CAAC,MAAM,oBAAoB,GAG7B;IACF,IAAI,EAAE,aAAa;IAEnB,KAAK,CAAC,OAAO,CACX,MAAe,EACf,OAA6B;QAE7B,mCAAmC;QACnC,IAAI,CAAC,mBAAmB,CAAC,MAAM,CAAC,EAAE,CAAC;YACjC,MAAM,IAAI,KAAK,CACb,kIAAkI;gBAChI,aAAa,IAAI,CAAC,SAAS,CAAC,MAAM,CAAC,EAAE,CACxC,CAAC;QACJ,CAAC;QAED,MAAM,EAAE,UAAU,EAAE,GAAG,OAAO,CAAC;QAE/B,IAAI,CAAC,UAAU,EAAE,CAAC;YAChB,OAAO,cAAc,CACnB;gBACE,OAAO,EAAE,KAAK;gBACd,KAAK,EAAE,6CAA6C;aACrD,EACD,OAAO,CAAC,MAAM,CACM,CAAC;QACzB,CAAC;QAED,+BAA+B;QAC/B,IAAI,CAAC,OAAO,CAAC,QAAQ,EAAE,CAAC;YACtB,MAAM,IAAI,KAAK,CACb,kDAAkD;gBAChD,iFAAiF,CACpF,CAAC;QACJ,CAAC;QAED,IAAI,CAAC;YACH,mDAAmD;YACnD,MAAM,MAAM,GAAG,MAAM,OAAO,CAAC,QAAQ,CAAC,OAAO,CAAC,aAAa,EAAE,MAAM,CAAC,CAAC;YAErE,OAAO,cAAc,CACnB,MAA2B,EAC3B,OAAO,CAAC,MAAM,CACM,CAAC;QACzB,CAAC;QAAC,OAAO,KAAK,EAAE,CAAC;YACf,MAAM,YAAY,GAChB,KAAK,YAAY,KAAK,CAAC,CAAC,CAAC,KAAK,CAAC,OAAO,CAAC,CAAC,CAAC,MAAM,CAAC,KAAK,CAAC,CAAC;YACzD,MAAM,IAAI,KAAK,CAAC,2BAA2B,YAAY,EAAE,CAAC,CAAC;QAC7D,CAAC;IACH,CAAC;CACF,CAAC"}
 \ No newline at end of file
 diff --git a/node_modules/@datalayer/jupyter-react/lib/tools/operations/insertCell.d.ts b/node_modules/@datalayer/jupyter-react/lib/tools/operations/insertCell.d.ts
 new file mode 100644
