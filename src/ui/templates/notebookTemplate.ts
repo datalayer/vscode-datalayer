@@ -20,11 +20,13 @@ import { getNonce } from "../../utils/webviewSecurity";
  *
  * @param webview - The webview instance for URI resolution
  * @param extensionUri - Extension URI for resource loading
+ * @param pyodideVersion - Pyodide version to use (default: "0.27.3")
  * @returns HTML string for the webview
  */
 export function getNotebookHtml(
   webview: vscode.Webview,
   extensionUri: vscode.Uri,
+  pyodideVersion: string = "0.27.3",
 ): string {
   // Local path to script and css for the webview with cache busting
   // Use build timestamp to ensure fresh cache after rebuild
@@ -181,6 +183,10 @@ export function getNotebookHtml(
 
         <body>
           <div id="notebook-editor"></div>
+          <!-- Set Pyodide base URI for browser-based Python -->
+          <script nonce="${nonce}">
+            window.__PYODIDE_BASE_URI__ = "https://cdn.jsdelivr.net/pyodide/v${pyodideVersion}/full";
+          </script>
           <script nonce="${nonce}" src="${scriptUri}"></script>
         </body>
 

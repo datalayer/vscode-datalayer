@@ -200,6 +200,19 @@ export async function activate(
       });
     activationTimer.checkpoint("python_extension_activation_started");
 
+    // Initialize Pyodide preloader (handles package caching)
+    logger.debug("Initializing Pyodide preloader");
+    const { PyodidePreloader } = await import(
+      "./services/pyodide/pyodidePreloader"
+    );
+    const pyodidePreloader = new PyodidePreloader(context, logger);
+    context.subscriptions.push(pyodidePreloader);
+    // Initialize preloader (prompts user if configured)
+    pyodidePreloader.initialize().catch((error) => {
+      logger.error("Failed to initialize Pyodide preloader:", error);
+    });
+    activationTimer.checkpoint("pyodide_preloader_initialized");
+
     // Register test command for debugging getActiveDocument tool
     logger.debug("Registering getActiveDocument test command");
     const { testGetActiveDocument } = await import(

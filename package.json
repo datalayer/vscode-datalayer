@@ -326,6 +326,11 @@
         "title": "Test: Get Active Document (Show What Copilot Sees)",
         "category": "Datalayer",
         "icon": "$(debug)"
+      },
+      {
+        "command": "datalayer.pyodide.clearCache",
+        "title": "Clear Pyodide Package Cache",
+        "category": "Datalayer"
       }
     ],
     "viewsContainers": {
@@ -1163,14 +1168,15 @@
           "items": {
             "type": "string",
             "enum": [
+              "Pyodide",
               "Active Runtime",
               "Ask"
             ]
           },
           "default": [
-            "Active Runtime"
+            "Pyodide"
           ],
-          "markdownDescription": "Auto-connect strategies for opening notebooks and lexical documents. Strategies are tried in order until one succeeds:\n\n- **Active Runtime**: Select the runtime with the most time remaining from available runtimes\n- **Ask**: Show a Quick Pick to select from available runtimes\n- **Empty array `[]`**: Disable auto-connect (manual selection required)\n\n**Examples:**\n- `[\"Active Runtime\"]` - Only connect to runtime with most time, otherwise no kernel\n- `[\"Active Runtime\", \"Ask\"]` - Try runtime with most time first, then ask user if none available\n- `[\"Ask\"]` - Always ask user to select runtime\n- `[]` - No auto-connect, user must manually select kernel"
+          "markdownDescription": "Auto-connect strategies for opening notebooks and lexical documents. Strategies are tried in order until one succeeds:\n\n- **Pyodide**: Connect to browser-based Python kernel (offline, no setup required)\n- **Active Runtime**: Select the runtime with the most time remaining from available runtimes\n- **Ask**: Show a Quick Pick to select from available runtimes\n- **Empty array `[]`**: Disable auto-connect (manual selection required)\n\n**Examples:**\n- `[\"Pyodide\"]` - Always use Pyodide (default, works offline)\n- `[\"Active Runtime\", \"Pyodide\"]` - Try cloud runtime first, fallback to Pyodide\n- `[\"Pyodide\", \"Active Runtime\", \"Ask\"]` - Try Pyodide, then cloud runtime, then ask\n- `[\"Ask\"]` - Always ask user to select runtime\n- `[]` - No auto-connect, user must manually select kernel"
         },
         "datalayer.logging.level": {
           "type": "string",
@@ -1228,6 +1234,42 @@
           ],
           "default": "toon",
           "markdownDescription": "Format for MCP tool responses. **TOON** provides more readable output for LLMs, while **JSON** maintains traditional structured format."
+        },
+        "datalayer.pyodide.preloadBehavior": {
+          "type": "string",
+          "enum": [
+            "auto",
+            "ask-once",
+            "ask-always",
+            "disabled"
+          ],
+          "enumDescriptions": [
+            "Automatically download packages without asking",
+            "Prompt once on first use, then remember choice",
+            "Always prompt on extension startup",
+            "Never preload packages"
+          ],
+          "default": "auto",
+          "description": "Controls how Pyodide packages are preloaded on extension startup"
+        },
+        "datalayer.pyodide.version": {
+          "type": "string",
+          "default": "0.27.3",
+          "description": "Pyodide version to use. Changes require closing and reopening notebooks."
+        },
+        "datalayer.pyodide.preloadPackages": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [
+            "numpy",
+            "pandas",
+            "matplotlib",
+            "ipython",
+            "ipywidgets"
+          ],
+          "description": "Python packages to preload when extension starts (start with a small list, add more as needed)"
         }
       }
     },

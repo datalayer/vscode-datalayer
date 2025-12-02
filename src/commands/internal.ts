@@ -586,6 +586,61 @@ export function registerInternalCommands(
       },
     ),
   );
+
+  /**
+   * Internal command to switch a document to Pyodide kernel.
+   * Called from kernel selector UI.
+   */
+  context.subscriptions.push(
+    vscode.commands.registerCommand(
+      "datalayer.internal.switchToPyodide",
+      async (documentUri: vscode.Uri) => {
+        // Create a mock runtime object for Pyodide (similar to local kernel)
+        const pyodideRuntime = {
+          uid: `pyodide-${Date.now()}`,
+          podName: "pyodide-browser",
+          givenName: "Pyodide",
+          environmentName: "pyodide",
+          environmentTitle: "Pyodide (Browser Python)",
+          type: "notebook" as const,
+          burningRate: 0,
+          ingress: "http://pyodide-local",
+          token: "",
+          startedAt: new Date().toISOString(),
+          expiredAt: new Date(Date.now() + 86400000).toISOString(),
+        };
+
+        // Fire internal command to update runtime state
+        await vscode.commands.executeCommand(
+          "datalayer.internal.runtime.connected",
+          documentUri,
+          pyodideRuntime,
+        );
+
+        // Send message to webview to switch service manager
+        await vscode.commands.executeCommand(
+          "datalayer.internal.document.sendToWebview",
+          documentUri.toString(),
+          {
+            type: "switch-to-pyodide",
+            body: {},
+          },
+        );
+
+        // Send kernel-selected message to update UI
+        await vscode.commands.executeCommand(
+          "datalayer.internal.document.sendToWebview",
+          documentUri.toString(),
+          {
+            type: "kernel-selected",
+            body: {
+              runtime: pyodideRuntime,
+            },
+          },
+        );
+      },
+    ),
+  );
 }
 
 /**

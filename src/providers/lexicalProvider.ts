@@ -642,6 +642,11 @@ export class LexicalProvider extends BaseDocumentProvider<LexicalDocument> {
     );
     const nonce = getNonce();
 
+    // Read Pyodide version from configuration
+    const pyodideVersion = vscode.workspace
+      .getConfiguration("datalayer.pyodide")
+      .get<string>("version", "0.27.3");
+
     return /* html */ `
       <!DOCTYPE html>
       <html lang="en">
@@ -672,6 +677,10 @@ export class LexicalProvider extends BaseDocumentProvider<LexicalDocument> {
       </head>
       <body style="margin: 0; padding: 0; background-color: var(--vscode-editor-background); color: var(--vscode-editor-foreground);">
         <div id="root"></div>
+        <!-- Set Pyodide base URI for browser-based Python -->
+        <script nonce="${nonce}">
+          window.__PYODIDE_BASE_URI__ = "https://cdn.jsdelivr.net/pyodide/v${pyodideVersion}/full";
+        </script>
         <script nonce="${nonce}" src="${scriptUri}"></script>
       </body>
       </html>`;
@@ -944,7 +953,7 @@ Complete the code at <CURSOR>:`;
       const currentRuntime: RuntimeDTO | undefined = undefined;
 
       // Try auto-connect
-      const runtime = await this.autoConnectService.connect(
+      const result = await this.autoConnectService.connect(
         documentUri,
         currentRuntime,
         sdk,
@@ -952,16 +961,28 @@ Complete the code at <CURSOR>:`;
         runtimesTreeProvider,
       );
 
-      if (runtime) {
+      if (result) {
         console.log(
-          `[LexicalProvider] Auto-connect successful for ${documentUri.fsPath}`,
+          `[LexicalProvider] Auto-connect successful using "${result.strategyName}" for ${documentUri.fsPath}`,
         );
 
         // Connect the webview to the runtime via kernel bridge
-        await getServiceContainer().kernelBridge.connectWebviewDocument(
-          documentUri,
-          runtime,
-        );
+        if (result.strategyName === "Pyodide") {
+          // Use Pyodide-specific connection method
+          await getServiceContainer().kernelBridge.connectWebviewDocumentToPyodide(
+            documentUri,
+          );
+        } else if (result.runtime) {
+          // Use cloud runtime connection method
+          await getServiceContainer().kernelBridge.connectWebviewDocument(
+            documentUri,
+            result.runtime,
+          );
+        } else {
+          console.warn(
+            `[LexicalProvider] Strategy "${result.strategyName}" succeeded but provided no runtime`,
+          );
+        }
       } else {
         console.log(
           `[LexicalProvider] Auto-connect skipped or failed for ${documentUri.fsPath}`,

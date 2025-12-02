@@ -34,7 +34,7 @@ export interface KernelSelectorProps {
  *
  * Display logic:
  * - If selectedRuntime exists and is a cloud runtime: "Datalayer: {runtimeName}"
- * - If selectedRuntime exists and is a local kernel: "{runtimeName}" (no prefix)
+ * - If selectedRuntime exists and is Pyodide or local kernel: "{runtimeName}" (no prefix)
  * - If kernelName exists: "{kernelName}"
  * - Otherwise: "Select Kernel"
  *
@@ -61,12 +61,15 @@ export const KernelSelector: React.FC<KernelSelectorProps> = ({
         selectedRuntime.environmentName ||
         selectedRuntime.uid ||
         "Runtime";
-      // Check if this is a local kernel using shared utility
+      // Check if this is a local kernel or Pyodide (both should not have "Datalayer: " prefix)
+      const isPyodide = selectedRuntime.ingress === "http://pyodide-local";
       const isLocalKernel = selectedRuntime.ingress
         ? isLocalKernelUrl(selectedRuntime.ingress)
         : false;
-      // Don't show "Datalayer: " prefix for local kernels
-      return isLocalKernel ? runtimeName : `Datalayer: ${runtimeName}`;
+      // Don't show "Datalayer: " prefix for local kernels or Pyodide
+      return isPyodide || isLocalKernel
+        ? runtimeName
+        : `Datalayer: ${runtimeName}`;
     }
     if (kernelName) {
       return kernelName;

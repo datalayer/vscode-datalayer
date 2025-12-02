@@ -87,6 +87,21 @@ export const listKernelsOperation: ToolOperation<
 
     const kernels: KernelInfo[] = [];
 
+    // Always include Pyodide (browser-based Python kernel)
+    kernels.push({
+      id: "pyodide-local",
+      name: "pyodide",
+      displayName: "🌐 Pyodide (Browser Python)",
+      language: "python",
+      type: "local",
+      status: "idle",
+      metadata: {
+        isPyodide: true,
+        description:
+          "Browser-based Python kernel powered by WebAssembly. No server required.",
+      },
+    });
+
     // Discover local Python/conda environments with ipykernel
     if (includeLocal) {
       try {
@@ -208,12 +223,20 @@ export const listKernelsOperation: ToolOperation<
     const cloudCount = filteredKernels.filter(
       (k) => k.type === "cloud" && k.id !== "CREATE_NEW_RUNTIME",
     ).length;
-    const localCount = filteredKernels.filter((k) => k.type === "local").length;
+    const pyodideCount = filteredKernels.filter(
+      (k) => k.id === "pyodide-local",
+    ).length;
+    const localCount = filteredKernels.filter(
+      (k) => k.type === "local" && k.id !== "pyodide-local",
+    ).length;
     const hasCreateNew = filteredKernels.some(
       (k) => k.id === "CREATE_NEW_RUNTIME",
     );
 
     let chatMessage = `Found ${filteredKernels.length} kernel(s)`;
+    if (pyodideCount > 0) {
+      chatMessage += ` (Pyodide browser Python)`;
+    }
     if (cloudCount > 0) {
       chatMessage += ` (${cloudCount} cloud runtime${cloudCount > 1 ? "s" : ""})`;
     }

@@ -209,6 +209,16 @@ const webviewConfig = {
           filename: "[name][ext]",
         },
       },
+      // Python file loader (for Pyodide kernel)
+      {
+        test: /pyodide_kernel\.py$/,
+        type: "asset/source",
+      },
+      // Worker JavaScript loader (for Pyodide worker)
+      {
+        test: /pyodideWorker\.worker\.js$/,
+        type: "asset/source",
+      },
       // Rule for pyodide kernel wheel files
       {
         test: /\.whl$/,
@@ -327,6 +337,16 @@ const lexicalWebviewConfig = {
       {
         test: /\.wasm$/,
         type: "webassembly/async",
+      },
+      // Python file loader (for Pyodide kernel)
+      {
+        test: /pyodide_kernel\.py$/,
+        type: "asset/source",
+      },
+      // Worker JavaScript loader (for Pyodide worker)
+      {
+        test: /pyodideWorker\.worker\.js$/,
+        type: "asset/source",
       },
       // Rule for pyodide kernel wheel files
       {

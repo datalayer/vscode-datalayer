@@ -114,10 +114,20 @@ export function useRuntimeManager(initialRuntime?: RuntimeJSON) {
     setSelectedRuntime(runtime);
 
     if (runtime?.ingress) {
+      // Detect Pyodide runtimes (ingress === "http://pyodide-local")
+      const isPyodide = runtime.ingress === "http://pyodide-local";
+
       // Detect local kernel runtimes using shared utility
       const isLocalKernel = isLocalKernelUrl(runtime.ingress);
 
-      if (isLocalKernel) {
+      if (isPyodide) {
+        console.log("[useRuntimeManager] Detected Pyodide runtime");
+        mutableManagerRef.current?.updateToPyodide();
+        console.log(
+          "[useRuntimeManager] Successfully switched to Pyodide ServiceManager",
+        );
+        // No need to start kernel here - Pyodide starts on first execution
+      } else if (isLocalKernel) {
         console.log(
           `[useRuntimeManager] Detected local kernel runtime: ${runtime.ingress}`,
         );
@@ -216,5 +226,6 @@ export function useRuntimeManager(initialRuntime?: RuntimeJSON) {
     selectedRuntime,
     serviceManager: serviceManagerProxy.current, // ✅ Stable reference - no Notebook2 re-renders!
     selectRuntime,
+    mutableServiceManager: mutableManagerRef.current, // Expose for direct access (e.g., updateToPyodide)
   };
 }

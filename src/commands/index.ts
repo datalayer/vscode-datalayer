@@ -22,6 +22,7 @@ import { registerCreateCommands } from "./create";
 import { registerThemeCommands } from "./theme";
 import { registerOutlineCommands } from "./outline";
 import { registerAgUICommands } from "./agui";
+import { registerPyodideCommands } from "./pyodide";
 import { SDKAuthProvider } from "../services/core/authProvider";
 import { DocumentBridge } from "../services/bridges/documentBridge";
 import { SpacesTreeProvider } from "../providers/spacesTreeProvider";
@@ -101,4 +102,7 @@ export function registerAllCommands(
 
   // Register ag-ui example commands
   registerAgUICommands(context);
+
+  // Register Pyodide commands (browser-based Python)
+  registerPyodideCommands(context);
 }
