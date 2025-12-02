@@ -79,7 +79,7 @@
     "@jupyterlab/services": "^7.0.0",
     "@lexical/code": "^0.35.0",
     "@lexical/html": "^0.35.0",
-    "@lexical/link": "^0.35.0",
+    "@lexical/link": "^0.38.2",
     "@lexical/list": "^0.35.0",
     "@lexical/markdown": "^0.35.0",
     "@lexical/react": "^0.35.0",
