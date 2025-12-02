@@ -63,6 +63,11 @@ const extensionConfig = {
         test: /\.(png|jpg|jpeg|gif|svg|woff|woff2|eot|ttf|otf)$/,
         use: "null-loader",
       },
+      // Ignore Python wheel files (not needed in Node.js extension context)
+      {
+        test: /\.whl$/,
+        use: "null-loader",
+      },
     ],
   },
   devtool: "nosources-source-map",
@@ -461,9 +466,116 @@ const showcaseWebviewConfig = {
   ],
 };
 
+// Config for ag-ui example webview
+const aguiExampleConfig = {
+  target: "web",
+  mode: "none",
+  devtool: "inline-source-map",
+  entry: "./webview/datalayer-core/AgUIExample.tsx",
+  output: {
+    path: path.resolve(__dirname, "dist"),
+    filename: "aguiExample.js",
+  },
+  resolve: {
+    extensions: [".ts", ".tsx", ".js", ".jsx", ".json"],
+    symlinks: true,
+    fallback: {
+      process: require.resolve("process/browser"),
+      buffer: require.resolve("buffer/"),
+      stream: false,
+    },
+    alias: {
+      react: path.resolve(__dirname, "./node_modules/react"),
+      "react-dom": path.resolve(__dirname, "./node_modules/react-dom"),
+    },
+  },
+  ignoreWarnings: [
+    {
+      module: /node_modules\/@jupyterlite\/pyodide-kernel/,
+      message:
+        /Critical dependency: the request of a dependency is an expression/,
+    },
+  ],
+  module: {
+    rules: [
+      {
+        test: /\.tsx?$/,
+        exclude: /node_modules/,
+        use: {
+          loader: "ts-loader",
+          options: {
+            configFile: path.join(__dirname, "tsconfig.webview.json"),
+            experimentalWatchApi: true,
+            transpileOnly: true,
+          },
+        },
+      },
+      { test: /\.raw\.css$/, type: "asset/source" },
+      {
+        test: /(?<!\.raw)\.css$/,
+        use: [require.resolve("style-loader"), require.resolve("css-loader")],
+      },
+      {
+        test: /\.svg/,
+        type: "asset/inline",
+        generator: {
+          dataUrl: (content) => miniSVGDataURI(content.toString()),
+        },
+      },
+      {
+        test: /\.(png|jpg|jpeg|gif|woff|woff2|eot|ttf|otf)$/,
+        type: "asset/resource",
+      },
+      {
+        test: /\.(c|m)?js/,
+        resolve: {
+          fullySpecified: false,
+        },
+      },
+      // Rule for pyodide kernel wheel files
+      {
+        test: /\.whl$/,
+        type: "asset/resource",
+        generator: {
+          filename: "pypi/[name][ext]",
+        },
+      },
+      // Rule for other pyodide kernel resources
+      {
+        test: /pypi\/.*/,
+        type: "asset/resource",
+        generator: {
+          filename: "pypi/[name][ext][query]",
+        },
+      },
+      {
+        test: /pyodide-kernel-extension\/schema\/.*/,
+        type: "asset/resource",
+        generator: {
+          filename: "schema/[name][ext][query]",
+        },
+      },
+      // Ship the JupyterLite service worker.
+      {
+        resourceQuery: /text/,
+        type: "asset/resource",
+        generator: {
+          filename: "[name][ext]",
+        },
+      },
+    ],
+  },
+  plugins: [
+    new webpack.ProvidePlugin({
+      process: "process/browser",
+    }),
+  ],
+};
+
 module.exports = [
   extensionConfig,
   webviewConfig,
   lexicalWebviewConfig,
   showcaseWebviewConfig,
+  // aguiExampleConfig, // Commented out - file doesn't exist
 ];

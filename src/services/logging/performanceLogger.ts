@@ -17,6 +17,13 @@ import { ServiceLoggers } from "./loggers";
  * Performance monitoring utilities for tracking operation timing and memory usage.
  */
 export class PerformanceLogger {
+  /**
+   * Get the configured logger instance.
+   * Returns a no-op logger if ServiceLoggers is not yet initialized.
+   *
+   * @private
+   * @returns Logger instance with trace, debug, info, warn, and error methods
+   */
   private static get logger() {
     // Return no-op logger if ServiceLoggers not initialized yet
     if (!ServiceLoggers.isInitialized()) {
@@ -199,6 +206,9 @@ export class PerformanceLogger {
 
   /**
    * Get current memory usage snapshot.
+   *
+   * @private
+   * @returns Current process memory usage snapshot
    */
   private static getMemorySnapshot(): MemorySnapshot {
     const memUsage = process.memoryUsage();
@@ -212,6 +222,11 @@ export class PerformanceLogger {
 
   /**
    * Calculate memory usage delta between two snapshots.
+   *
+   * @private
+   * @param start - Starting memory snapshot
+   * @param end - Ending memory snapshot
+   * @returns Memory delta with human-readable formatted values
    */
   private static calculateMemoryDelta(
     start: MemorySnapshot,
@@ -226,7 +241,11 @@ export class PerformanceLogger {
   }
 
   /**
-   * Categorize performance based on duration.
+   * Categorize performance based on duration in milliseconds.
+   *
+   * @private
+   * @param durationMs - Duration in milliseconds
+   * @returns Performance category: 'fast', 'normal', 'slow', or 'very_slow'
    */
   private static categorizePerformance(durationMs: number): string {
     if (durationMs < 100) {
@@ -242,7 +261,11 @@ export class PerformanceLogger {
   }
 
   /**
-   * Format bytes into human-readable format.
+   * Format bytes into human-readable format with sign and unit.
+   *
+   * @private
+   * @param bytes - Byte count to format
+   * @returns Formatted string with sign ('+' or '-'), value, and unit (B, KB, MB, GB)
    */
   private static formatBytes(bytes: number): string {
     if (bytes === 0) {
@@ -261,28 +284,63 @@ export class PerformanceLogger {
  * Manual performance timer for complex operations.
  */
 export class PerformanceTimer {
+  /**
+   * Start time in milliseconds.
+   *
+   * @private
+   */
   private startTime?: number;
+
+  /**
+   * List of checkpoints recorded during operation.
+   *
+   * @private
+   */
   private checkpoints: Array<{
+    /** Checkpoint name */
     name: string;
+    /** Time when checkpoint was recorded (milliseconds) */
     time: number;
+    /** Memory snapshot at checkpoint */
     memory: MemorySnapshot;
   }> = [];
+
+  /**
+   * Initial memory snapshot.
+   *
+   * @private
+   */
   private startMemory?: MemorySnapshot;
 
+  /**
+   * Create a new performance timer.
+   *
+   * @param operationName - Human-readable name for the operation being timed
+   * @param logger - Logger instance for recording timing information
+   * @param context - Optional context information to include in logs
+   */
   constructor(
     private operationName: string,
     private logger: {
+      /** Trace level logging */
       trace: (msg: string, ctx?: Record<string, unknown>) => void;
+      /** Debug level logging */
       debug: (msg: string, ctx?: Record<string, unknown>) => void;
+      /** Info level logging */
       info: (msg: string, ctx?: Record<string, unknown>) => void;
+      /** Warning level logging */
       warn: (msg: string, ctx?: Record<string, unknown>) => void;
+      /** Error level logging */
       error: (msg: string, err?: Error, ctx?: Record<string, unknown>) => void;
     },
     private context?: Record<string, unknown>,
   ) {}
 
   /**
-   * Start the timer.
+   * Start the timer and initialize memory tracking.
+   * Must be called before using checkpoint() or end().
+   *
+   * @returns void
    */
   start(): void {
     this.startTime = performance.now();
@@ -298,6 +356,11 @@ export class PerformanceTimer {
 
   /**
    * Add a checkpoint with optional name.
+   * Records current time and memory snapshot.
+   *
+   * @param name - Optional name for the checkpoint
+   * @returns void
+   * @throws Error if timer has not been started
    */
   checkpoint(name?: string): void {
     if (!this.startTime) {
@@ -321,6 +384,12 @@ export class PerformanceTimer {
 
   /**
    * End the timer and log final results.
+   * Logs total duration, checkpoint summary, and memory delta.
+   * Resets the timer after logging.
+   *
+   * @param status - Operation status: 'success', 'failure', or 'cancelled' (default: 'success')
+   * @returns void
+   * @throws Error if timer has not been started
    */
   end(status: "success" | "failure" | "cancelled" = "success"): void {
     if (!this.startTime || !this.startMemory) {
@@ -365,6 +434,12 @@ export class PerformanceTimer {
     this.checkpoints = [];
   }
 
+  /**
+   * Get current memory usage snapshot.
+   *
+   * @private
+   * @returns Current process memory usage snapshot
+   */
   private getMemorySnapshot(): MemorySnapshot {
     const memUsage = process.memoryUsage();
     return {
@@ -375,6 +450,14 @@ export class PerformanceTimer {
     };
   }
 
+  /**
+   * Calculate memory usage delta between two snapshots.
+   *
+   * @private
+   * @param start - Starting memory snapshot
+   * @param end - Ending memory snapshot
+   * @returns Memory delta with human-readable formatted values
+   */
   private calculateMemoryDelta(
     start: MemorySnapshot,
     end: MemorySnapshot,
@@ -387,6 +470,13 @@ export class PerformanceTimer {
     };
   }
 
+  /**
+   * Categorize performance based on duration in milliseconds.
+   *
+   * @private
+   * @param durationMs - Duration in milliseconds
+   * @returns Performance category: 'fast', 'normal', 'slow', or 'very_slow'
+   */
   private categorizePerformance(durationMs: number): string {
     if (durationMs < 100) {
       return "fast";
@@ -400,6 +490,13 @@ export class PerformanceTimer {
     return "very_slow";
   }
 
+  /**
+   * Format bytes into human-readable format with sign and unit.
+   *
+   * @private
+   * @param bytes - Byte count to format
+   * @returns Formatted string with sign ('+' or '-'), value, and unit (B, KB, MB, GB)
+   */
   private formatBytes(bytes: number): string {
     if (bytes === 0) {
       return "0B";
@@ -413,17 +510,30 @@ export class PerformanceTimer {
   }
 }
 
-// Type definitions
+/**
+ * Memory snapshot containing current memory usage metrics.
+ */
 export interface MemorySnapshot {
+  /** Current heap memory used in bytes */
   heapUsed: number;
+  /** Total allocated heap size in bytes */
   heapTotal: number;
+  /** External memory (buffers, C++ objects) in bytes */
   external: number;
+  /** Resident set size (total memory used) in bytes */
   rss: number;
 }
 
+/**
+ * Memory usage delta between two snapshots with human-readable formatting.
+ */
 export interface MemoryDelta {
+  /** Change in heap used with sign and unit */
   heapUsed: string;
+  /** Change in heap total with sign and unit */
   heapTotal: string;
+  /** Change in external memory with sign and unit */
   external: string;
+  /** Change in resident set size with sign and unit */
   rss: string;
 }

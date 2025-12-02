@@ -118,7 +118,9 @@ export function handleRuntimeExpired(
  * Extended runtime type with credits information (for local Jupyter servers)
  */
 export interface RuntimeWithCredits extends RuntimeJSON {
+  /** Number of credits used */
   creditsUsed?: number;
+  /** Credit limit */
   creditsLimit?: number;
 }
 
@@ -202,15 +204,19 @@ export function createRuntimeMessageHandlers(
   updateStore?: RuntimeSelectCallback,
 ) {
   return {
+    /** Handler for kernel-selected and runtime-selected messages */
     onRuntimeSelected: (
       message: KernelSelectedMessage | RuntimeSelectedMessage,
     ) => handleRuntimeSelected(message, selectRuntime, updateStore),
 
+    /** Handler for kernel-terminated and runtime-terminated messages */
     onRuntimeTerminated: () =>
       handleRuntimeTerminated(selectRuntime, updateStore),
 
+    /** Handler for runtime-expired messages */
     onRuntimeExpired: () => handleRuntimeExpired(selectRuntime, updateStore),
 
+    /** Handler for set-runtime messages from local Jupyter server */
     onSetRuntime: (message: SetRuntimeMessage) =>
       handleSetRuntime(message, selectRuntime, updateStore),
   };

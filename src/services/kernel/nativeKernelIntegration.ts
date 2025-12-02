@@ -15,22 +15,37 @@ import * as vscode from "vscode";
 import { PythonExtension, Environment } from "@vscode/python-extension";
 
 /**
- * Kernel connection information returned from native pickers
+ * Kernel connection information returned from native pickers.
+ * Contains all necessary details to establish a connection to either a local Python environment
+ * or a remote Jupyter server.
  */
 export interface NativeKernelInfo {
+  /** The type of kernel source: local Python environment or remote Jupyter server */
   type: "python-environment" | "jupyter-server";
+  /** Unique identifier for this kernel connection */
   id: string;
+  /** Human-readable display name for the kernel */
   displayName: string;
+  /** Path to the Python executable (only for python-environment type) */
   pythonPath?: string;
+  /** Base URL of the Jupyter server (only for jupyter-server type) */
   serverUrl?: string;
+  /** Authentication token for the Jupyter server */
   token?: string;
+  /** Jupyter kernel specification with execution details */
   kernelSpec?: {
+    /** Internal name of the kernel */
     name: string;
+    /** Display name for the kernel */
     display_name: string;
+    /** Programming language of the kernel */
     language: string;
+    /** Command line arguments to launch the kernel */
     argv?: string[];
+    /** Additional metadata about the kernel */
     metadata?: Record<string, unknown>;
   };
+  /** Python environment object from the VS Code Python extension */
   environment?: Environment;
 }
 
@@ -99,9 +114,14 @@ export async function showPythonEnvironmentPicker(): Promise<
       environments = pythonApi.environments.known;
     }
 
-    // Create quick pick items from environments
+    /**
+     * Quick pick item for environment selection.
+     * Extends VS Code's QuickPickItem with environment data.
+     */
     interface EnvironmentPickItem extends vscode.QuickPickItem {
+      /** The Python environment object from the extension API, undefined for special items */
       env?: Environment;
+      /** Flags this item as the "Create New Environment" option */
       isCreateNew?: boolean;
     }
 
@@ -257,7 +277,13 @@ export async function showPythonEnvironmentPicker(): Promise<
 }
 
 /**
- * Helper function to process the selected Python environment
+ * Processes a selected Python environment and creates kernel connection information.
+ * Resolves full environment details from the Python extension API and generates
+ * a kernel specification with the appropriate Python executable path.
+ *
+ * @param env - The Python environment to process
+ * @param label - The display label for the environment
+ * @returns Promise resolving to kernel info or undefined if processing fails
  */
 async function processSelectedEnvironment(
   env: Environment,
@@ -367,7 +393,12 @@ export async function showJupyterServerPicker(): Promise<
 export async function showNativeKernelPicker(): Promise<
   NativeKernelInfo | undefined
 > {
+  /**
+   * Quick pick item representing a kernel source option.
+   * Used in the unified kernel picker to show different kernel connection sources.
+   */
   interface KernelSourceItem extends vscode.QuickPickItem {
+    /** The kernel source type: either Python environments or Jupyter server */
     source: "python" | "jupyter-server";
   }
 

@@ -180,19 +180,13 @@ export const NotebookToolbar: React.FC<NotebookToolbarProps> = ({
 
   const handleAddCodeCell = () => {
     if (notebookId) {
-      notebookStore2.getState().insertBelow({
-        id: notebookId,
-        cellType: "code",
-      });
+      notebookStore2.getState().insertBelow(notebookId, "code");
     }
   };
 
   const handleAddMarkdownCell = () => {
     if (notebookId) {
-      notebookStore2.getState().insertBelow({
-        id: notebookId,
-        cellType: "markdown",
-      });
+      notebookStore2.getState().insertBelow(notebookId, "markdown");
     }
   };
 

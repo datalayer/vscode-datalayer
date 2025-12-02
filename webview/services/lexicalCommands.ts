@@ -21,6 +21,9 @@ export type CommandHandler = (command: string) => void;
  * Manages subscriptions and broadcasts commands to all handlers.
  */
 export class LexicalCommandEmitter {
+  /**
+   * Array of registered command handler functions
+   */
   private handlers: CommandHandler[] = [];
 
   /**
@@ -41,4 +44,22 @@ export class LexicalCommandEmitter {
   }
 }
 
+/**
+ * Singleton instance of LexicalCommandEmitter for broadcasting formatting commands
+ * from the VS Code extension to the Lexical editor webview.
+ *
+ * @example
+ * Subscribe to commands in webview:
+ * ```typescript
+ * lexicalCommands.subscribe((command) => {
+ *   console.log('Received command:', command);
+ * });
+ * ```
+ *
+ * @example
+ * Emit command from extension:
+ * ```typescript
+ * lexicalCommands.emit('bold');
+ * ```
+ */
 export const lexicalCommands = new LexicalCommandEmitter();

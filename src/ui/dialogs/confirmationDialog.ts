@@ -56,20 +56,42 @@ export async function showTwoStepConfirmation(
 ): Promise<boolean> {
   const { itemName, action, consequences, actionButton } = config;
 
-  // Single step: Use error message for delete actions to show red/danger styling
   const capitalizedAction = action.charAt(0).toUpperCase() + action.slice(1);
-  const consequencesList = consequences.map((c) => `• ${c}`).join(" ");
-  const message = `${capitalizedAction} "${itemName}"? This will: ${consequencesList}`;
+  const consequencesList = consequences.map((c) => `  ${c}`).join("\n");
 
-  // Use error message for delete actions to get red/danger button styling
-  const messageFunction =
-    action === "delete"
-      ? vscode.window.showErrorMessage
-      : vscode.window.showWarningMessage;
+  console.log("[DEBUG confirmationDialog] Showing QuickPick confirmation");
+  console.log("[DEBUG confirmationDialog] Item:", itemName);
+  console.log("[DEBUG confirmationDialog] Action:", action);
 
-  const selection = await messageFunction(message, actionButton, "Cancel");
+  // Use QuickPick for reliable UI interaction (VS Code notifications are broken)
+  const selected = await vscode.window.showQuickPick(
+    [
+      {
+        label: `$(warning) ${actionButton}`,
+        description: `${capitalizedAction} ${itemName}`,
+        detail: `This will:\n${consequencesList}`,
+        action: "confirm",
+      },
+      {
+        label: "$(x) Cancel",
+        description: "Do not proceed",
+        detail: "No changes will be made",
+        action: "cancel",
+      },
+    ],
+    {
+      placeHolder: `${capitalizedAction} "${itemName}"?`,
+      ignoreFocusOut: false,
+      title: `Confirm ${capitalizedAction}`,
+    },
+  );
 
-  return selection === actionButton;
+  console.log(
+    "[DEBUG confirmationDialog] QuickPick selection:",
+    selected?.action,
+  );
+
+  return selected?.action === "confirm";
 }
 
 /**

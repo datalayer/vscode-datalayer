@@ -20,11 +20,17 @@ import { getServiceContainer } from "../../extension";
  * Configuration for lexical document collaboration.
  */
 export interface LexicalCollaborationConfig {
+  /** Whether real-time collaboration is enabled for this document */
   enabled: boolean;
+  /** WebSocket URL for Y.js collaboration server connection */
   websocketUrl: string;
+  /** Unique identifier for the lexical document */
   documentId: string;
+  /** Session identifier for the collaboration session */
   sessionId: string;
+  /** Display name for the current user in the collaboration session */
   username: string;
+  /** Hex color code for user cursor and presence indication */
   userColor: string;
 }
 
@@ -39,8 +45,15 @@ export interface LexicalCollaborationConfig {
  * ```
  */
 export class LexicalCollaborationService {
+  /** Singleton instance of the collaboration service */
   private static instance: LexicalCollaborationService;
 
+  /**
+   * Gets the singleton instance of the collaboration service.
+   * Creates a new instance if one doesn't exist.
+   *
+   * @returns The singleton instance of LexicalCollaborationService
+   */
   static getInstance(): LexicalCollaborationService {
     if (!LexicalCollaborationService.instance) {
       LexicalCollaborationService.instance = new LexicalCollaborationService();
@@ -48,6 +61,10 @@ export class LexicalCollaborationService {
     return LexicalCollaborationService.instance;
   }
 
+  /**
+   * Private constructor to enforce singleton pattern.
+   * Use getInstance() to obtain an instance.
+   */
   private constructor() {}
 
   /**

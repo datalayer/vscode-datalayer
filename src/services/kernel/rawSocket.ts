@@ -24,22 +24,88 @@ import type { Channel } from "@jupyterlab/services/lib/kernel/messages";
  * Kernel connection configuration (from connection file).
  */
 export interface IKernelConnection {
+  /**
+   * Port for the iopub (I/O publish) channel.
+   * Used for kernel output messages sent to all clients.
+   */
   iopub_port: number;
+  /**
+   * Port for the shell (request/reply) channel.
+   * Used for synchronous request-reply communication.
+   */
   shell_port: number;
+  /**
+   * Port for the stdin channel.
+   * Used for kernel input requests (e.g., raw_input calls).
+   */
   stdin_port: number;
+  /**
+   * Port for the control channel.
+   * Used for control messages like interrupt and shutdown.
+   */
   control_port: number;
+  /**
+   * HMAC signature scheme used for message authentication.
+   * Always "hmac-sha256" for Jupyter kernels.
+   */
   signature_scheme: "hmac-sha256";
+  /**
+   * Port for the heartbeat channel.
+   * Used to detect if the kernel is alive.
+   */
   hb_port: number;
+  /**
+   * IP address or hostname where the kernel is running.
+   * Usually "127.0.0.1" for local kernels or an IP/domain for remote kernels.
+   */
   ip: string;
+  /**
+   * Secret key for HMAC message signing.
+   * Used to authenticate messages between client and kernel.
+   */
   key: string;
+  /**
+   * Transport protocol for connecting to kernel channels.
+   * "tcp" for TCP/IP connections, "ipc" for inter-process communication.
+   */
   transport: "tcp" | "ipc";
+  /**
+   * Display name of the kernel (optional).
+   * Examples: "python3", "ir", "julia-1.10"
+   */
   kernel_name?: string;
 }
 
+/**
+ * ZMQ channels for kernel communication.
+ * Channels are created based on the kernel connection configuration.
+ *
+ * @internal Used internally for kernel communication
+ */
 interface IChannels {
+  /**
+   * Shell channel for synchronous request-reply messages.
+   * DEALER socket connecting to kernel's shell port.
+   * Used for execute_request, inspect_request, etc.
+   */
   shell: Dealer;
+  /**
+   * Control channel for control messages.
+   * DEALER socket connecting to kernel's control port.
+   * Used for interrupt and shutdown messages.
+   */
   control: Dealer;
+  /**
+   * Stdin channel for kernel input requests.
+   * DEALER socket connecting to kernel's stdin port.
+   * Used for responding to raw_input and password requests.
+   */
   stdin: Dealer;
+  /**
+   * IOPub channel for kernel output messages.
+   * SUBSCRIBER socket connecting to kernel's iopub port.
+   * Receives stream, display_data, execute_result, error, status messages, etc.
+   */
   iopub: Subscriber;
 }
 
@@ -63,37 +129,90 @@ function generateUuid(): string {
  * Used by @jupyterlab/services for kernel communication.
  */
 export class RawSocket {
+  /**
+   * Callback invoked when the socket connection opens.
+   * Signature: (event: { target: unknown }) => void
+   */
   public onopen: (event: { target: unknown }) => void = noop;
+  /**
+   * Callback invoked when a socket error occurs.
+   * Signature: (event: { error: unknown; message: string; type: string; target: unknown }) => void
+   */
   public onerror: (event: {
     error: unknown;
     message: string;
     type: string;
     target: unknown;
   }) => void = noop;
+  /**
+   * Callback invoked when the socket connection closes.
+   * Signature: (event: { wasClean: boolean; code: number; reason: string; target: unknown }) => void
+   */
   public onclose: (event: {
     wasClean: boolean;
     code: number;
     reason: string;
     target: unknown;
   }) => void = noop;
+  /**
+   * Callback invoked when a message is received from the kernel.
+   * Signature: (event: { data: WebSocketWS.Data; type: string; target: unknown }) => void
+   */
   public onmessage: (event: {
     data: WebSocketWS.Data;
     type: string;
     target: unknown;
   }) => void = noop;
 
+  /**
+   * Array of hooks to be called when receiving messages from the kernel.
+   * Each hook receives serialized message data and must complete before the message is processed.
+   * Used for intercepting and transforming incoming messages.
+   */
   private receiveHooks: ((data: WebSocketWS.Data) => Promise<void>)[] = [];
+  /**
+   * Array of hooks to be called when sending messages to the kernel.
+   * Each hook receives the message data and an optional callback for error reporting.
+   * Used for intercepting and transforming outgoing messages.
+   */
   private sendHooks: ((
     data: unknown,
     cb?: (err?: Error) => void,
   ) => Promise<void>)[] = [];
+  /**
+   * Promise chain for sequencing message receive operations.
+   * Ensures messages are processed in order by chaining async operations.
+   */
   private msgChain: Promise<unknown> = Promise.resolve();
+  /**
+   * Promise chain for sequencing message send operations.
+   * Ensures messages are sent in order by chaining async operations.
+   */
   private sendChain: Promise<unknown> = Promise.resolve();
+  /**
+   * ZMQ channels for kernel communication.
+   * Contains shell, control, stdin (DEALER) and iopub (SUBSCRIBER) channels.
+   */
   private channels: IChannels;
+  /**
+   * Flag indicating whether the socket has been closed.
+   * Prevents message processing after closure.
+   */
   private closed = false;
 
+  /**
+   * WebSocket protocol version string.
+   * Empty for raw ZMQ sockets, matches WebSocket interface.
+   */
   public readonly protocol = "";
 
+  /**
+   * Creates a new RawSocket instance that wraps ZMQ channels in a WebSocket-like interface.
+   * Initializes kernel communication channels (shell, control, stdin, iopub).
+   *
+   * @param connection - Kernel connection configuration from the connection file
+   * @param serialize - Function to serialize kernel messages to string or ArrayBuffer format
+   */
   constructor(
     private connection: IKernelConnection,
     private serialize: (msg: KernelMessage.IMessage) => string | ArrayBuffer,

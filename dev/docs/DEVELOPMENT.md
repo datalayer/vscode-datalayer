@@ -41,7 +41,9 @@ The extension depends on local `@datalayer/jupyter-lexical` and `@datalayer/jupy
 ```bash
 # Sync latest changes from jupyter-ui packages
 npm run sync:jupyter
-# Builds jupyter-lexical and jupyter-react, copies lib/ to node_modules
+# 1. Runs gulp resources-to-lib (copies images/examples to lib/)
+# 2. Builds TypeScript (jupyter-lexical and jupyter-react)
+# 3. Copies lib/, style/, and package.json to node_modules
 
 # Watch mode - auto-sync on file changes
 npm run sync:jupyter:watch
@@ -65,6 +67,19 @@ npm run apply:patches
 5. **Create patches**: `npm run create:patches` (when ready to commit)
 
 The patches in `patches/` directory are automatically applied when anyone runs `npm install`, ensuring all contributors get your modifications.
+
+### ⚠️ Important Notes
+
+**After `npm install`, you MUST re-run `npm run sync:jupyter`**. The sync script copies packages to `node_modules/`, and `npm install` will remove these synced packages. Always sync again after installing new dependencies.
+
+**New Dependencies** (added January 2025):
+
+- `tailwindcss` - Required for processing Lexical's CSS
+- `@tailwindcss/postcss` - PostCSS integration
+- `postcss` - CSS processing
+- `autoprefixer` - CSS vendor prefixing
+
+These are needed because `@datalayer/jupyter-lexical/style/index.css` uses `@import 'tailwindcss'`.
 
 ## Code Quality & Validation
 
@@ -92,6 +107,14 @@ npm run check
 # Auto-fix all issues
 npm run check:fix
 # Equivalent to: format + lint:fix + type-check
+
+# Tool schema generation (Copilot tools)
+node scripts/generate-tool-schemas.js
+# Parses TypeScript tool definitions and syncs to package.json
+
+# Validate tool schemas
+node scripts/validate-tool-schemas.js
+# Checks that package.json has all expected Copilot tools
 ```
 
 ### Quality Metrics (Current Status)
@@ -612,6 +635,206 @@ The documentation is automatically built and deployed on every push to the main 
 - **Interface Documentation**: All TypeScript interfaces and types
 - **Code Examples**: Usage examples and code snippets
 - **Coverage Reports**: Documentation coverage metrics
+
+## Tool Schema Generator
+
+### Overview
+
+The extension uses GitHub Copilot's Language Model Tools API to provide programmatic access to notebooks and lexical documents. Tool definitions are written in TypeScript and automatically synced to `package.json`.
+
+### Architecture
+
+**Tool Definitions** (`src/tools/definitions/tools/*.ts`):
+- TypeScript interfaces with full type safety
+- JSDoc descriptions for AI model understanding
+- Parameter schemas with validation
+
+**Schema Generator** (`scripts/generate-tool-schemas.js`):
+- Parses TypeScript object literals without eval()
+- Extracts name, description, and parameters
+- Syncs to `package.json` `contributes.languageModelTools`
+- Handles nested objects, arrays, and complex schemas
+
+### Usage
+
+```bash
+# Generate schemas from TypeScript definitions
+node scripts/generate-tool-schemas.js
+# Output: ✅ 12/12 tools parsed successfully
+
+# Validate schemas are in sync
+node scripts/validate-tool-schemas.js
+# Output: ✅ All expected tools present
+```
+
+### Adding a New Tool
+
+1. **Create Tool Definition** (`src/tools/definitions/tools/myTool.ts`):
+
+```typescript
+import type { ToolDefinition } from '../schema';
+
+export const myTool: ToolDefinition = {
+  name: 'datalayer_myTool',
+  displayName: 'My Tool',
+  description: 'Description for the AI model',
+  parameters: {
+    properties: {
+      myParam: {
+        type: 'string',
+        description: 'Parameter description',
+      },
+    },
+    required: ['myParam'],
+  },
+} as const;
+```
+
+2. **Export Tool** (`src/tools/definitions/tools/index.ts`):
+
+```typescript
+export * from './myTool';
+import { myTool } from './myTool';
+export const allToolDefinitions = [/* existing */, myTool];
+```
+
+3. **Implement Operation** (`src/tools/core/myOperation.ts`):
+
+```typescript
+export const myOperation: ToolOperation<MyParams, MyResult> = {
+  execute: async (params, context) => {
+    // Implementation
+  },
+};
+```
+
+4. **Register Operation** (`src/tools/core/index.ts`):
+
+```typescript
+import { myOperation } from './myOperation';
+export const allOperations = { /* existing */, myTool: myOperation };
+```
+
+5. **Generate Schema**:
+
+```bash
+node scripts/generate-tool-schemas.js
+```
+
+The schema is automatically added to `package.json` with correct structure.
+
+### Schema Generator Implementation
+
+**Parser Features**:
+- Handles TypeScript syntax (as const, single quotes, trailing commas)
+- Parses nested objects and arrays
+- Extracts string literals with proper escaping
+- Type-safe without using eval()
+- Preserves complex schemas (array items with properties)
+
+**Example Parsing**:
+
+```typescript
+// TypeScript tool definition
+export const insertBlocksTool: ToolDefinition = {
+  name: 'datalayer_insertBlocks',
+  parameters: {
+    properties: {
+      blocks: {
+        type: 'array',
+        items: {
+          type: 'object',
+          properties: {
+            blockType: { type: 'string' },
+            source: { type: 'string' },
+          },
+          required: ['blockType', 'source'],
+        },
+      },
+    },
+    required: ['blocks'],
+  },
+} as const;
+
+// Parses to package.json schema (preserving nested structure)
+{
+  "name": "datalayer_insertBlocks",
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "blocks": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "blockType": { "type": "string" },
+            "source": { "type": "string" }
+          },
+          "required": ["blockType", "source"]
+        }
+      }
+    },
+    "required": ["blocks"]
+  }
+}
+```
+
+### Current Tools (13 total)
+
+**Notebook Tools** (8):
+- `datalayer_createNotebook` - Create new notebooks
+- `datalayer_insertCell` - Insert cells at specific positions
+- `datalayer_executeCell` - Execute cells and get outputs
+- `datalayer_readCell` - Read cell content
+- `datalayer_updateCell` - Update cell source
+- `datalayer_deleteCell` - Delete cells
+- `datalayer_getActiveDocument` - Get active document info
+
+**Lexical Tools** (5):
+- `datalayer_insertBlock` - Insert single block
+- `datalayer_insertBlocks` - **Batch insert multiple blocks** (NEW)
+- `datalayer_readBlocks` - Read blocks with formatting
+- `datalayer_deleteBlock` - Delete blocks
+- `datalayer_listAvailableBlocks` - List supported block types
+
+### insertBlocks Feature (November 2025)
+
+**Purpose**: Allows Copilot to create complex documents with a single API call instead of many sequential `insertBlock` calls.
+
+**Benefits**:
+- **Performance**: One message instead of N messages for N blocks
+- **Atomicity**: All blocks inserted or none (stops on first error)
+- **Simplicity**: Cleaner code for AI model
+
+**Implementation Layers** (8 layers):
+1. **Tool Definition** - `src/tools/definitions/tools/insertBlocks.ts`
+2. **Operation** - `src/tools/core/lexical/insertBlocks.ts`
+3. **Adapter** - `src/tools/adapters/vscode/VSCodeLexicalHandle.ts`
+4. **Internal Command** - `src/commands/internal.ts` (datalayer.internal.lexical.insertBlocks)
+5. **Message Handler** - `webview/lexical/plugins/InternalCommandsPlugin.tsx`
+6. **Controller** - `webview/utils/LexicalDocumentController.ts` (insertBlocks method)
+7. **Schema** - Auto-generated in `package.json`
+8. **Registration** - `src/tools/definitions/tools/index.ts`, `src/tools/core/index.ts`
+
+**Usage Example** (AI model prompt):
+
+```typescript
+// Single call to create multi-section document
+await insertBlocks({
+  insert_after_block_id: 'TOP',
+  blocks: [
+    { blockType: 'heading', source: '# Introduction' },
+    { blockType: 'paragraph', source: 'Overview text...' },
+    { blockType: 'heading', source: '## Section 1' },
+    { blockType: 'code', source: 'console.log("example");' },
+  ]
+});
+```
+
+**Error Handling**:
+- Validates each block has required fields (blockType, source)
+- Stops on first failure with descriptive error
+- Returns success with last inserted block ID for chaining
 
 ## Configuration
 

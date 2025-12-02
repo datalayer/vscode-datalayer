@@ -28,6 +28,7 @@ import { KernelBridge } from "../bridges/kernelBridge";
 import { NotebookNetworkService } from "../network/networkProxy";
 import { ErrorHandler } from "./errorHandler";
 import { ILifecycle } from "./baseService";
+import { DocumentRegistry } from "../documents/documentRegistry";
 
 /**
  * Service container interface defining all available services.
@@ -42,6 +43,9 @@ export interface IServiceContainer extends ILifecycle {
   // Logging services
   readonly loggerManager: ILoggerManager;
   readonly logger: ILogger;
+
+  // Document services
+  readonly documentRegistry: DocumentRegistry;
 
   // Notebook services
   readonly documentBridge: IDocumentBridge;
@@ -64,20 +68,73 @@ export interface IServiceContainer extends ILifecycle {
  * ```
  */
 export class ServiceContainer implements IServiceContainer {
-  // Lazy-initialized services
+  /**
+   * Lazily initialized SDK client for Datalayer platform.
+   * @private
+   */
   private _sdk?: DatalayerClient;
+
+  /**
+   * Lazily initialized authentication provider for managing user auth state.
+   * @private
+   */
   private _authProvider?: SDKAuthProvider;
+
+  /**
+   * Lazily initialized bridge service for document operations.
+   * @private
+   */
   private _documentBridge?: DocumentBridge;
+
+  /**
+   * Lazily initialized bridge service for kernel operations.
+   * @private
+   */
   private _kernelBridge?: KernelBridge;
+
+  /**
+   * Lazily initialized network service for notebook communication.
+   * @private
+   */
   private _notebookNetwork?: NotebookNetworkService;
+
+  /**
+   * Lazily initialized logger manager for creating loggers.
+   * @private
+   */
   private _loggerManager?: ILoggerManager;
+
+  /**
+   * Lazily initialized logger instance for this service container.
+   * @private
+   */
   private _logger?: ILogger;
+
+  /**
+   * Lazily initialized error handler for centralized error management.
+   * @private
+   */
   private _errorHandler?: IErrorHandler;
 
+  /**
+   * Lazily initialized document registry for managing document lifecycle.
+   * @private
+   */
+  private _documentRegistry?: DocumentRegistry;
+
+  /**
+   * Creates a new service container instance.
+   *
+   * @param context The VS Code extension context for accessing extension state
+   */
   constructor(public readonly context: vscode.ExtensionContext) {}
 
-  // Core services with lazy initialization
-
+  /**
+   * Gets or lazily initializes the Datalayer SDK client.
+   * Creates a new SDK instance with VS Code context on first access.
+   *
+   * @returns The initialized DatalayerClient instance
+   */
   get sdk(): DatalayerClient {
     if (!this._sdk) {
       this._sdk = createVSCodeSDK({ context: this.context });
@@ -85,6 +142,12 @@ export class ServiceContainer implements IServiceContainer {
     return this._sdk;
   }
 
+  /**
+   * Gets or lazily initializes the authentication provider.
+   * Creates a new SDKAuthProvider instance on first access.
+   *
+   * @returns The initialized IAuthProvider instance
+   */
   get authProvider(): IAuthProvider {
     if (!this._authProvider) {
       this._authProvider = new SDKAuthProvider(
@@ -96,6 +159,12 @@ export class ServiceContainer implements IServiceContainer {
     return this._authProvider;
   }
 
+  /**
+   * Gets or lazily initializes the error handler.
+   * Creates a new ErrorHandler instance on first access.
+   *
+   * @returns The initialized IErrorHandler instance
+   */
   get errorHandler(): IErrorHandler {
     if (!this._errorHandler) {
       this._errorHandler = new ErrorHandler(this.logger);
@@ -103,8 +172,12 @@ export class ServiceContainer implements IServiceContainer {
     return this._errorHandler;
   }
 
-  // Logging services
-
+  /**
+   * Gets or lazily initializes the logger manager.
+   * Retrieves singleton LoggerManager instance on first access.
+   *
+   * @returns The initialized ILoggerManager instance
+   */
   get loggerManager(): ILoggerManager {
     if (!this._loggerManager) {
       this._loggerManager = LoggerManager.getInstance(this.context);
@@ -112,6 +185,12 @@ export class ServiceContainer implements IServiceContainer {
     return this._loggerManager;
   }
 
+  /**
+   * Gets or lazily initializes the logger for the service container.
+   * Creates a logger instance from the logger manager on first access.
+   *
+   * @returns The initialized ILogger instance
+   */
   get logger(): ILogger {
     if (!this._logger) {
       this._logger = this.loggerManager.createLogger("Service Container");
@@ -119,8 +198,26 @@ export class ServiceContainer implements IServiceContainer {
     return this._logger;
   }
 
-  // Notebook services
+  /**
+   * Gets or lazily initializes the document registry.
+   * Creates a new DocumentRegistry instance on first access.
+   *
+   * @returns The initialized DocumentRegistry instance
+   */
+  get documentRegistry(): DocumentRegistry {
+    if (!this._documentRegistry) {
+      this._documentRegistry = new DocumentRegistry();
+    }
+    return this._documentRegistry;
+  }
 
+  /**
+   * Gets or lazily initializes the document bridge service.
+   * Creates a new DocumentBridge instance on first access.
+   * Responsible for downloading and opening documents from the platform.
+   *
+   * @returns The initialized IDocumentBridge instance
+   */
   get documentBridge(): IDocumentBridge {
     if (!this._documentBridge) {
       this.logger.debug("Lazily initializing DocumentBridge service");
@@ -129,6 +226,13 @@ export class ServiceContainer implements IServiceContainer {
     return this._documentBridge;
   }
 
+  /**
+   * Gets or lazily initializes the kernel bridge service.
+   * Creates a new KernelBridge instance on first access.
+   * Routes kernel connections between extension and webview.
+   *
+   * @returns The initialized IKernelBridge instance
+   */
   get kernelBridge(): IKernelBridge {
     if (!this._kernelBridge) {
       this.logger.debug("Lazily initializing KernelBridge service");
@@ -140,6 +244,13 @@ export class ServiceContainer implements IServiceContainer {
     return this._kernelBridge;
   }
 
+  /**
+   * Gets or lazily initializes the notebook network service.
+   * Creates a new NotebookNetworkService instance on first access.
+   * Provides HTTP and WebSocket proxy for notebook communication.
+   *
+   * @returns The initialized NotebookNetworkService instance
+   */
   get notebookNetwork(): NotebookNetworkService {
     if (!this._notebookNetwork) {
       this.logger.debug("Lazily initializing NotebookNetwork service");

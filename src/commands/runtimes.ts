@@ -91,7 +91,7 @@ export function registerRuntimeCommands(
 
               // Fire event that lexical provider can listen to
               vscode.commands.executeCommand(
-                "datalayer.internal.runtimeSelected",
+                "datalayer.internal.runtime.selected",
                 runtimeJSON,
               );
 
@@ -385,7 +385,7 @@ export function registerRuntimeCommands(
    */
   context.subscriptions.push(
     vscode.commands.registerCommand(
-      "datalayer.internal.terminateRuntime",
+      "datalayer.internal.runtime.terminate",
       async (uri: vscode.Uri, runtime: unknown) => {
         const runtimeObj = runtime as {
           podName?: string;
@@ -420,7 +420,7 @@ export function registerRuntimeCommands(
         // Send kernel-terminated message to appropriate provider
         // This is a fire-and-forget command to notify the UI
         vscode.commands.executeCommand(
-          "datalayer.internal.notifyRuntimeTerminated",
+          "datalayer.internal.runtime.notifyTerminated",
           uri,
         );
       },
@@ -551,18 +551,28 @@ export function registerRuntimeCommands(
     vscode.commands.registerCommand(
       "datalayer.runtimes.terminate",
       async (item: RuntimeTreeItem) => {
+        console.log("[DEBUG] terminate command triggered with item:", item);
         if (!item || !item.runtime) {
+          console.log("[DEBUG] No item or runtime provided, exiting");
           return;
         }
 
         const runtimeName = item.runtime.givenName || item.runtime.podName;
+        console.log("[DEBUG] Terminating runtime:", runtimeName);
+        console.log("[DEBUG] About to show confirmation dialog...");
+
         const confirmed = await showTwoStepConfirmation(
           CommonConfirmations.terminateRuntime(runtimeName),
         );
 
+        console.log("[DEBUG] Confirmation dialog result:", confirmed);
+
         if (!confirmed) {
+          console.log("[DEBUG] User cancelled termination");
           return;
         }
+
+        console.log("[DEBUG] User confirmed, proceeding with termination...");
 
         try {
           await sdk.deleteRuntime(item.runtime.podName);
@@ -594,10 +604,12 @@ export function registerRuntimeCommands(
     vscode.commands.registerCommand(
       "datalayer.runtimes.terminateAll",
       async () => {
+        console.log("[DEBUG] terminateAll command triggered");
         try {
           // Check authentication
           const authState = authProvider.getAuthState();
           if (!authState.isAuthenticated) {
+            console.log("[DEBUG] Not authenticated");
             vscode.window.showErrorMessage(
               "Please login first to manage runtimes",
             );
@@ -606,6 +618,7 @@ export function registerRuntimeCommands(
 
           // Fetch all runtimes
           const runtimes = await sdk.listRuntimes();
+          console.log("[DEBUG] Found runtimes:", runtimes?.length);
 
           if (!runtimes || runtimes.length === 0) {
             vscode.window.showInformationMessage("No running runtimes found");
@@ -837,7 +850,7 @@ async function notifyAllDocuments(): Promise<void> {
       ) {
         const uri = (input as { uri: vscode.Uri }).uri;
         vscode.commands.executeCommand(
-          "datalayer.internal.notifyRuntimeTerminated",
+          "datalayer.internal.runtime.notifyTerminated",
           uri,
         );
       }

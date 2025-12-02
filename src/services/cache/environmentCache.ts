@@ -20,10 +20,19 @@ import type { IAuthProvider } from "../interfaces/IAuthProvider";
  * Singleton pattern ensures single cache instance across extension.
  */
 export class EnvironmentCache {
+  /** Singleton instance of EnvironmentCache */
   private static _instance: EnvironmentCache;
+
+  /** Array of cached environment DTOs */
   private _environments: EnvironmentDTO[] = [];
+
+  /** Timestamp of last successful fetch in milliseconds */
   private _lastFetch: number = 0;
+
+  /** Cache timeout duration in milliseconds (default: 1 hour) */
   private _cacheTimeout = 3600000; // 1 hour cache
+
+  /** Flag indicating whether a fetch operation is in progress */
   private _fetching = false;
 
   /**
@@ -174,9 +183,13 @@ export class EnvironmentCache {
    * @returns Cache status information
    */
   public getStatus(): {
+    /** Number of cached environments */
     environmentCount: number;
+    /** Date of last fetch, or null if never fetched */
     lastFetch: Date | null;
+    /** Whether the cache is currently valid */
     cacheValid: boolean;
+    /** Whether a fetch operation is in progress */
     fetching: boolean;
   } {
     const now = Date.now();

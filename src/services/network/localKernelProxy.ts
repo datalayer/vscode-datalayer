@@ -21,20 +21,38 @@ import type { LocalKernelClient } from "../kernel/localKernelClient";
  * Supports multiple WebSocket connections to the same kernel.
  */
 export class LocalKernelProxy {
+  /** The underlying JupyterLab kernel connection */
   private _kernel: Kernel.IKernelConnection | undefined;
-  private _rawSocket: unknown; // RawSocket from the kernel connection
+
+  /** RawSocket from the kernel connection for direct ZMQ communication */
+  private _rawSocket: unknown;
+
+  /** Map of message handlers for routing kernel messages */
   private _messageHandlers = new Map<
     string,
     (msg: KernelMessage.IMessage) => void
   >();
-  private _clientIds = new Set<string>(); // Track all WebSocket connection IDs
 
-  // Track session ID mapping: request msg_id -> JupyterLab's session ID
-  // We need this because the real kernel uses its own session ID, but JupyterLab
-  // expects replies to use the same session ID as the request
+  /** Set of all active WebSocket connection IDs for this kernel */
+  private _clientIds = new Set<string>();
+
+  /**
+   * Maps request message IDs to JupyterLab's session IDs.
+   * Required because the kernel uses its own session ID, but JupyterLab
+   * expects replies to use the same session ID as the request.
+   */
   private _sessionIdMap = new Map<string, string>();
+
+  /** The kernel's actual session ID */
   private _kernelSessionId: string | null = null;
 
+  /**
+   * Creates a new LocalKernelProxy instance.
+   * @param _kernelClient - The local kernel client managing the kernel lifecycle
+   * @param _webview - The webview panel to send messages to
+   * @param initialClientId - The initial WebSocket connection ID
+   * @throws Error if kernel is not started or RawSocket is unavailable
+   */
   constructor(
     private readonly _kernelClient: LocalKernelClient,
     private readonly _webview: vscode.WebviewPanel,
@@ -91,7 +109,8 @@ export class LocalKernelProxy {
 
   /**
    * Registers an additional WebSocket connection to this kernel.
-   * Returns an empty object for the websocket-open message body.
+   * @param clientId - The WebSocket connection ID to register
+   * @returns An empty object for the websocket-open message body
    */
   public addConnection(clientId: string): Record<string, never> {
     this._clientIds.add(clientId);
@@ -103,7 +122,8 @@ export class LocalKernelProxy {
 
   /**
    * Removes a WebSocket connection from this kernel.
-   * Returns true if there are still active connections, false if this was the last one.
+   * @param clientId - The WebSocket connection ID to remove
+   * @returns True if there are still active connections, false if this was the last one
    */
   public removeConnection(clientId: string): boolean {
     this._clientIds.delete(clientId);
@@ -115,6 +135,7 @@ export class LocalKernelProxy {
 
   /**
    * Sets up listeners for kernel messages and forwards them to the webview.
+   * Connects to the kernel's IOPub and status change signals.
    */
   private _setupKernelListeners(): void {
     if (!this._kernel) {

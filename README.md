@@ -61,6 +61,7 @@
 **Lexical Documents**
 
 - **Notion-like rich text editor** with real-time collaborative editing
+- Notion-like rich text editor\*\* with real-time collaborative editing
 - Support for images, tables, code blocks, mathematical equations, and formatted text
 - Perfect for creating data science reports, documentation, and presentations
 
@@ -96,6 +97,7 @@
 - **Native local execution** - Direct ZMQ kernel communication without Jupyter server
 - **Rich status indicators** - Connection status and runtime info in status bar
 - **Command palette integration** - All features accessible via `Ctrl+Shift+P`
+- **GitHub Copilot integration** - Use natural language to create notebooks and insert cells (e.g., "Create a local notebook and add a plot")
 
 ## 💡 Common Questions
 

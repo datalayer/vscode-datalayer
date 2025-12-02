@@ -12,17 +12,31 @@
 import React, { useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
 
+/**
+ * Configuration for a single dropdown menu item.
+ */
 export interface DropdownItem {
+  /** Unique identifier for the dropdown item */
   id: string;
+  /** Display text for the menu item */
   label: string;
+  /** Optional icon class (e.g., codicon class name) */
   icon?: string;
+  /** Optional keyboard shortcut display text */
   shortcut?: string;
+  /** Callback function executed when item is clicked */
   onClick: () => void;
+  /** Whether the item is currently active/selected */
   active?: boolean;
+  /** Whether the item is disabled and cannot be clicked */
   disabled?: boolean;
+  /** Whether to show a divider line before this item */
   dividerBefore?: boolean;
 }
 
+/**
+ * Props for the Dropdown component.
+ */
 export interface DropdownProps {
   /** Button label when no selection */
   buttonLabel: string;

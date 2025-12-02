@@ -19,13 +19,13 @@ import { setupAuthStateManagement } from "./services/core/authManager";
 import { ServiceLoggers } from "./services/logging/loggers";
 import { PerformanceLogger } from "./services/logging/performanceLogger";
 import type { SDKAuthProvider } from "./services/core/authProvider";
-import type { ILogger } from "./services/interfaces/ILogger";
 import {
   DocumentBridge,
   notifyExtensionReady,
 } from "./services/bridges/documentBridge";
 import { DatalayerFileSystemProvider } from "./providers/documentsFileSystemProvider";
 import type { ExtensionUI } from "./services/ui/uiSetup";
+import { registerChatContextProvider } from "./chat/chatContextProvider";
 
 // Global service container instance
 let services: ServiceContainer | undefined;
@@ -33,6 +33,7 @@ let ui: ExtensionUI | undefined;
 
 /**
  * Get the global service container instance.
+ * @internal
  * @throws Error if called before extension activation
  */
 export function getServiceContainer(): ServiceContainer {
@@ -132,9 +133,6 @@ export async function activate(
     );
     activationTimer.checkpoint("filesystem_provider_registered");
 
-    // Open Datalayer sidebar on first run
-    await openSidebarOnFirstRun(context, logger);
-
     // Subscribe to runtime creation events from controller manager to refresh tree
     context.subscriptions.push(
       ui.controllerManager.onRuntimeCreated(() => {
@@ -149,6 +147,11 @@ export async function activate(
       ui.runtimesTreeProvider,
     );
     activationTimer.checkpoint("auth_state_setup");
+
+    // Store auth provider globally for diagnostic commands
+    (
+      globalThis as typeof globalThis & { __datalayerAuth?: unknown }
+    ).__datalayerAuth = services.authProvider;
 
     logger.debug("Setting up commands registration");
     registerAllCommands(
@@ -165,6 +168,76 @@ export async function activate(
       updateAuthState,
     );
     activationTimer.checkpoint("commands_registered");
+
+    // Register embedded MCP tools for Copilot integration using unified architecture
+    logger.debug("Registering unified MCP tools with new architecture");
+    const { registerVSCodeTools } = await import("./tools/core/registration");
+
+    registerVSCodeTools(context);
+    activationTimer.checkpoint("mcp_tools_registered");
+    logger.info(
+      "Registered all embedded MCP tools for Copilot using unified architecture",
+    );
+
+    // Proactively activate Python extension for kernel discovery
+    logger.debug(
+      "Proactively activating Python extension for kernel discovery",
+    );
+    const { ensurePythonExtensionActive } = await import(
+      "./tools/utils/pythonExtensionActivation"
+    );
+    // Fire-and-forget activation (don't block extension startup)
+    ensurePythonExtensionActive()
+      .then((isActive) => {
+        if (isActive) {
+          logger.info("Python extension activated successfully");
+        } else {
+          logger.warn("Python extension activation failed or not installed");
+        }
+      })
+      .catch((error) => {
+        logger.error("Error activating Python extension:", error);
+      });
+    activationTimer.checkpoint("python_extension_activation_started");
+
+    // Register test command for debugging getActiveDocument tool
+    logger.debug("Registering getActiveDocument test command");
+    const { testGetActiveDocument } = await import(
+      "./tools/operations/getActiveDocument"
+    );
+    context.subscriptions.push(
+      vscode.commands.registerCommand(
+        "datalayer.testGetActiveDocument",
+        testGetActiveDocument,
+      ),
+    );
+    logger.debug("Test command registered: datalayer.testGetActiveDocument");
+
+    // Register chat context provider for notebooks and lexical documents
+    logger.debug("Registering chat context providers for Copilot");
+    try {
+      context.subscriptions.push(registerChatContextProvider(context));
+      logger.info("Chat context providers registered successfully");
+    } catch (err: unknown) {
+      const error = err as Error;
+      logger.error("Failed to register chat context providers", error);
+    }
+
+    // Register Datalayer chat participant (@datalayer)
+    logger.debug("Registering Datalayer chat participant");
+    try {
+      const { DatalayerChatParticipant } = await import(
+        "./chat/datalayerChatParticipant"
+      );
+      const chatParticipant = new DatalayerChatParticipant(context);
+      context.subscriptions.push(chatParticipant.register());
+      logger.info("Datalayer chat participant registered (@datalayer)");
+    } catch (error: unknown) {
+      logger.error(
+        "Failed to register Datalayer chat participant",
+        error as Error,
+      );
+    }
 
     // Set up notebook event handlers with logging
     context.subscriptions.push(
@@ -185,8 +258,14 @@ export async function activate(
       },
     });
 
-    // Prompt user to set Datalayer as default notebook editor (only once)
-    await promptSetDefaultNotebookEditor(context, logger);
+    // Show unified onboarding (combines default editor + Jupyter tools prompts)
+    const { showUnifiedWelcomePrompt, disableBuiltInNotebookTool } =
+      await import("./onboarding/unifiedWelcome");
+
+    // Disable built-in VS Code newJupyterNotebook tool to avoid conflicts with Copilot
+    disableBuiltInNotebookTool(context, logger);
+
+    await showUnifiedWelcomePrompt(context, logger);
 
     // Notify that extension is ready (unblocks document loading during startup)
     notifyExtensionReady();
@@ -227,125 +306,6 @@ export async function activate(
  */
 export function refreshRuntimesTree(): void {
   ui?.runtimesTreeProvider.refresh();
-}
-
-/**
- * Opens the Datalayer sidebar on first run and moves it to visible Activity Bar.
- * Only runs once per installation.
- *
- * @param context - Extension context for storing state
- * @param logger - Logger instance for tracking
- */
-async function openSidebarOnFirstRun(
-  context: vscode.ExtensionContext,
-  logger: ILogger,
-): Promise<void> {
-  const SIDEBAR_OPENED_KEY = "datalayer.sidebarOpenedOnFirstRun";
-
-  // Check if we've already opened the sidebar on first run
-  const hasOpenedSidebar = context.globalState.get<boolean>(
-    SIDEBAR_OPENED_KEY,
-    false,
-  );
-
-  if (!hasOpenedSidebar) {
-    try {
-      // Move the Datalayer icon from overflow menu to visible Activity Bar
-      const config = vscode.workspace.getConfiguration();
-      const currentPinnedViews = config.get<string[]>(
-        "workbench.activityBar.pinnedViewlets",
-        [],
-      );
-
-      // Add Datalayer view container to pinned views if not already there
-      const datalayerViewId = "workbench.view.extension.datalayer";
-      if (!currentPinnedViews.includes(datalayerViewId)) {
-        const updatedPinnedViews = [...currentPinnedViews, datalayerViewId];
-        await config.update(
-          "workbench.activityBar.pinnedViewlets",
-          updatedPinnedViews,
-          vscode.ConfigurationTarget.Global,
-        );
-        logger.info("Pinned Datalayer icon to Activity Bar");
-      }
-
-      // Focus on the Datalayer view container (opens the sidebar)
-      await vscode.commands.executeCommand(datalayerViewId);
-      logger.info("Opened Datalayer sidebar on first run");
-
-      // Mark that we've opened the sidebar
-      await context.globalState.update(SIDEBAR_OPENED_KEY, true);
-    } catch (error) {
-      logger.warn("Failed to open Datalayer sidebar on first run", {
-        error: error instanceof Error ? error.message : String(error),
-      });
-    }
-  }
-}
-
-/**
- * Prompts the user to set Datalayer as the default notebook editor.
- * Only shows the prompt once per installation.
- *
- * @param context - Extension context for storing state
- * @param logger - Logger instance for tracking user response
- */
-async function promptSetDefaultNotebookEditor(
-  context: vscode.ExtensionContext,
-  logger: ILogger,
-): Promise<void> {
-  const PROMPT_KEY = "datalayer.defaultEditorPromptShown";
-
-  // Check if we've already shown this prompt
-  const hasShownPrompt = context.globalState.get<boolean>(PROMPT_KEY, false);
-  if (hasShownPrompt) {
-    return;
-  }
-
-  // Check current default editor setting
-  const config = vscode.workspace.getConfiguration();
-  const currentDefault = config.get<string>(
-    "workbench.editorAssociations.*.ipynb",
-  );
-
-  // If already set to Datalayer, no need to prompt
-  if (currentDefault === "datalayer.jupyter-notebook") {
-    await context.globalState.update(PROMPT_KEY, true);
-    return;
-  }
-
-  // Show prompt to user
-  const choice = await vscode.window.showInformationMessage(
-    "Would you like to set Datalayer as the default editor for Jupyter Notebook (.ipynb) files?",
-    "Yes",
-    "No",
-    "Don't Ask Again",
-  );
-
-  logger.info("Default editor prompt shown", { userChoice: choice });
-
-  if (choice === "Yes") {
-    // Set Datalayer as default for .ipynb files
-    await config.update(
-      "workbench.editorAssociations",
-      {
-        "*.ipynb": "datalayer.jupyter-notebook",
-      },
-      vscode.ConfigurationTarget.Global,
-    );
-
-    logger.info("Datalayer set as default notebook editor");
-
-    vscode.window.showInformationMessage(
-      "Datalayer is now the default editor for .ipynb files",
-    );
-
-    await context.globalState.update(PROMPT_KEY, true);
-  } else if (choice === "Don't Ask Again") {
-    logger.info("User chose not to be asked again about default editor");
-    await context.globalState.update(PROMPT_KEY, true);
-  }
-  // If "No" or dismissed, we'll ask again next time (don't set PROMPT_KEY)
 }
 
 /**

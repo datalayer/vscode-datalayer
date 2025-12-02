@@ -59,6 +59,7 @@ export type ServiceManagerType = "mock" | "local" | "remote" | "pyodide";
  * Options for creating a mock service manager.
  */
 export interface MockServiceManagerOptions {
+  /** Service manager type discriminator */
   type: "mock";
 }
 
@@ -66,9 +67,13 @@ export interface MockServiceManagerOptions {
  * Options for creating a local kernel service manager.
  */
 export interface LocalServiceManagerOptions {
+  /** Service manager type discriminator */
   type: "local";
+  /** Unique identifier for the kernel instance */
   kernelId: string;
+  /** Name of the kernel specification (e.g., 'python3') */
   kernelName: string;
+  /** Base URL for the kernel connection */
   url: string;
 }
 
@@ -76,7 +81,9 @@ export interface LocalServiceManagerOptions {
  * Options for creating a remote service manager.
  */
 export interface RemoteServiceManagerOptions {
+  /** Service manager type discriminator */
   type: "remote";
+  /** JupyterLab server connection settings */
   serverSettings: ServerConnection.ISettings;
 }
 
@@ -85,6 +92,7 @@ export interface RemoteServiceManagerOptions {
  * Reserved for future implementation - will throw if used.
  */
 export interface PyodideServiceManagerOptions {
+  /** Service manager type discriminator */
   type: "pyodide";
   // Future options will be added when Pyodide support is implemented
 }

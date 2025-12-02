@@ -27,7 +27,7 @@ export class DatalayerError extends Error {
   constructor(
     message: string,
     public readonly code: string,
-    public override readonly cause?: Error,
+    public readonly cause?: Error,
     public readonly context?: Record<string, unknown>,
   ) {
     super(message);
@@ -126,9 +126,13 @@ export class DocumentError extends DatalayerError {
  * Information extracted from an error for logging and display.
  */
 export interface ErrorInfo {
+  /** Error code for categorization and identification */
   code: string;
+  /** Human-readable error message */
   message: string;
+  /** Original error that caused this error (if available) */
   cause?: Error;
+  /** Additional context information about the error */
   context?: Record<string, unknown>;
 }
 

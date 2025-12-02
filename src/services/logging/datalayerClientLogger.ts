@@ -16,15 +16,27 @@ import type { SDKHandlers } from "@datalayer/core/lib/client";
 import { ServiceLoggers } from "./loggers";
 import { promptAndLogin } from "../../ui/dialogs/authDialog";
 
+/**
+ * Context information for a single SDK operation.
+ */
 export interface OperationContext {
+  /** Unique identifier for this operation */
   operationId: string;
+  /** Name of the SDK method being called */
   method: string;
+  /** ISO 8601 timestamp when the operation started */
   timestamp: string;
+  /** Sanitized arguments passed to the SDK method */
   args: unknown[];
 }
 
+/**
+ * Tracking data for an in-flight SDK operation.
+ */
 export interface OperationData {
+  /** High-resolution timestamp when operation started (performance.now()) */
   startTime: number;
+  /** Context information for this operation */
   context: OperationContext;
 }
 
@@ -33,6 +45,7 @@ export interface OperationData {
  * Provides operation correlation, timing, error categorization, and user-friendly handling.
  */
 export class DatalayerClientOperationTracker {
+  /** Map of operation IDs to their tracking data */
   private static operations = new Map<string, OperationData>();
 
   /**
@@ -42,6 +55,11 @@ export class DatalayerClientOperationTracker {
    */
   static createEnhancedSDKHandlers(): SDKHandlers {
     return {
+      /**
+       * Hook called before SDK method execution.
+       * @param methodName - Name of the SDK method being called
+       * @param args - Arguments passed to the method
+       */
       beforeCall: (methodName: string, args: unknown[]) => {
         const operationId = `${methodName}_${Date.now()}_${Math.random()
           .toString(36)
@@ -68,6 +86,11 @@ export class DatalayerClientOperationTracker {
         );
       },
 
+      /**
+       * Hook called after successful SDK method execution.
+       * @param methodName - Name of the SDK method that completed
+       * @param result - Result returned by the method
+       */
       afterCall: (methodName: string, result: unknown) => {
         // Find the most recent operation for this method
         const operation =
@@ -94,6 +117,11 @@ export class DatalayerClientOperationTracker {
         );
       },
 
+      /**
+       * Hook called when SDK method throws an error.
+       * @param methodName - Name of the SDK method that failed
+       * @param error - Error thrown by the method
+       */
       onError: async (methodName: string, error: unknown) => {
         const operation =
           DatalayerClientOperationTracker.findOperation(methodName);
@@ -146,6 +174,8 @@ export class DatalayerClientOperationTracker {
   /**
    * Route SDK method to appropriate logger based on method name.
    * Returns a no-op logger if ServiceLoggers is not yet initialized.
+   * @param methodName - Name of the SDK method
+   * @returns Logger instance for the method category
    */
   private static getLoggerForMethod(methodName: string) {
     // If ServiceLoggers not initialized, return no-op logger
@@ -209,6 +239,8 @@ export class DatalayerClientOperationTracker {
 
   /**
    * Find the most recent operation for a given method name.
+   * @param methodName - Name of the SDK method to find
+   * @returns Operation data if found, undefined otherwise
    */
   private static findOperation(methodName: string): OperationData | undefined {
     const operations = Array.from(
@@ -219,6 +251,8 @@ export class DatalayerClientOperationTracker {
 
   /**
    * Sanitize arguments to remove sensitive data before logging.
+   * @param args - Raw arguments passed to SDK method
+   * @returns Sanitized arguments safe for logging
    */
   private static sanitizeArgs(args: unknown[]): unknown[] {
     return args.map((arg) => {
@@ -250,6 +284,8 @@ export class DatalayerClientOperationTracker {
 
   /**
    * Create a summary of the result for logging without exposing sensitive data.
+   * @param result - Result returned from SDK method
+   * @returns Human-readable summary of the result
    */
   private static summarizeResult(result: unknown): string {
     if (!result) {
@@ -269,6 +305,8 @@ export class DatalayerClientOperationTracker {
 
   /**
    * Check if an error is network-related.
+   * @param error - Error object to check
+   * @returns True if error is network-related, false otherwise
    */
   private static isNetworkError(error: unknown): boolean {
     if (!error) {
@@ -289,6 +327,9 @@ export class DatalayerClientOperationTracker {
 
   /**
    * Handle SDK errors with smart categorization and user-friendly responses.
+   * @param methodName - Name of the SDK method that failed
+   * @param error - Error object thrown by the method
+   * @param logger - Logger instance for error reporting
    */
   private static async handleSDKError(
     methodName: string,

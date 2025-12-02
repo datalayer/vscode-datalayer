@@ -22,8 +22,10 @@
   "includeVersion": true,
   "disableSources": false,
   "skipErrorChecking": true,
+  "treatWarningsAsErrors": false,
   "validation": {
     "notExported": false,
-    "invalidLink": false
+    "invalidLink": false,
+    "notDocumented": false
   }
 }

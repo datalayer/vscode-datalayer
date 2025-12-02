@@ -58,6 +58,7 @@ interface WebviewMessage {
   documentUri?: string; // For logging only
   documentId?: string; // Unique ID for document validation
   itemId?: string; // For outline navigation
+  lexicalId?: string; // Lexical ID for tool execution context
 }
 
 /**
@@ -117,6 +118,24 @@ function LexicalWebviewInner({
           // Store the document URI for outline
           if (message.documentUri) {
             store.getState().setDocumentUri(message.documentUri);
+          }
+
+          // Store lexicalId for tool execution context
+          console.log(
+            "[LexicalWebview] Received lexicalId:",
+            message.lexicalId,
+          );
+          if (message.lexicalId) {
+            store.getState().setLexicalId(message.lexicalId);
+            console.log(
+              "[LexicalWebview] Stored lexicalId in state:",
+              store.getState().lexicalId,
+            );
+          } else {
+            console.warn(
+              "[LexicalWebview] No lexicalId in message! Message:",
+              message,
+            );
           }
 
           // Handle content (even if empty)
@@ -255,6 +274,16 @@ function LexicalWebviewInner({
   const theme = store((state) => state.theme);
   const documentUri = store((state) => state.documentUri);
   const navigationTarget = store((state) => state.navigationTarget);
+  const lexicalId = store((state) => state.lexicalId);
+
+  // Debug log when lexicalId changes
+  React.useEffect(() => {
+    console.log(
+      "[LexicalWebview] lexicalId from state changed:",
+      lexicalId,
+      "will pass to LexicalEditor",
+    );
+  }, [lexicalId]);
 
   // Callback to clear navigation target after navigating
   const handleNavigated = useCallback(() => {
@@ -292,6 +321,7 @@ function LexicalWebviewInner({
           navigationTarget={navigationTarget}
           onNavigated={handleNavigated}
           serviceManager={serviceManager}
+          lexicalId={lexicalId}
         />
       ) : (
         <div
