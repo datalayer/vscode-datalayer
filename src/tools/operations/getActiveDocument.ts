@@ -9,7 +9,6 @@
  * This tool directly accesses VS Code API and is not part of the core operations
  */
 
-import * as vscode from "vscode";
 import { getActiveCustomEditorUri } from "../../utils/activeDocument";
 
 export interface ActiveDocumentResult {
@@ -114,36 +113,3 @@ export const getActiveDocumentOperation: import("@datalayer/jupyter-react").Tool
     return result;
   },
 };
-
-/**
- * Test command to manually invoke the tool and show the output
- * Useful for debugging without needing Copilot
- */
-export async function testGetActiveDocument(): Promise<void> {
-  console.log("[Datalayer getActiveDocument] TEST COMMAND invoked");
-
-  const result = await getActiveDocument();
-  const resultJson = JSON.stringify(result, null, 2);
-
-  // Show in output channel
-  const outputChannel = vscode.window.createOutputChannel(
-    "Datalayer Active Document Test",
-  );
-  outputChannel.clear();
-  outputChannel.appendLine("=== Get Active Document Tool Test ===");
-  outputChannel.appendLine("");
-  outputChannel.appendLine(resultJson);
-  outputChannel.show();
-
-  // Also show as info message
-  vscode.window
-    .showInformationMessage(
-      `Active Document: ${result.fileName || "None"} (${result.type}) - URI: ${result.uri || "N/A"}`,
-      "Show Details",
-    )
-    .then((selection) => {
-      if (selection === "Show Details") {
-        outputChannel.show();
-      }
-    });
-}

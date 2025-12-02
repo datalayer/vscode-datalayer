@@ -1,6 +1,8 @@
 #!/bin/bash
-# Sync local jupyter-ui packages to vscode-datalayer node_modules
-# This script builds the local jupyter packages and copies their lib/ outputs
+# Sync local Datalayer packages (@datalayer/core, jupyter-lexical, jupyter-react)
+# to vscode-datalayer node_modules.
+#
+# This script builds all local packages and copies their lib/ outputs
 # into the extension's node_modules for quick testing during development.
 #
 # Usage:
@@ -18,11 +20,18 @@ NC='\033[0m' # No Color
 # Get the script directory and project root
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 VSCODE_ROOT="$( cd "$SCRIPT_DIR/.." && pwd )"
+CORE_ROOT="$( cd "$VSCODE_ROOT/../core" && pwd )"
 JUPYTER_UI_ROOT="$( cd "$VSCODE_ROOT/../jupyter-ui" && pwd )"
 
 # Function to perform the sync
 sync_packages() {
-  echo -e "${BLUE}🔄 Syncing jupyter-ui packages to vscode-datalayer...${NC}"
+  echo -e "${BLUE}🔄 Syncing Datalayer packages to vscode-datalayer...${NC}"
+
+  # Build @datalayer/core
+  echo -e "${BLUE}📦 Building @datalayer/core...${NC}"
+  cd "$CORE_ROOT"
+  npx gulp resources-to-lib
+  npm run build:lib
 
   # Build jupyter-lexical (with resources)
   echo -e "${BLUE}📦 Building @datalayer/jupyter-lexical...${NC}"
@@ -40,8 +49,17 @@ sync_packages() {
   cd "$VSCODE_ROOT"
 
   # Create directories
+  mkdir -p node_modules/@datalayer/core
   mkdir -p node_modules/@datalayer/jupyter-lexical
   mkdir -p node_modules/@datalayer/jupyter-react
+
+  # Copy core: lib/, style/, package.json (and schema/ if it exists)
+  cp -r "$CORE_ROOT/lib" node_modules/@datalayer/core/
+  cp -r "$CORE_ROOT/style" node_modules/@datalayer/core/
+  if [ -d "$CORE_ROOT/schema" ]; then
+    cp -r "$CORE_ROOT/schema" node_modules/@datalayer/core/
+  fi
+  cp "$CORE_ROOT/package.json" node_modules/@datalayer/core/
 
   # Copy jupyter-lexical: lib/, style/, package.json
   cp -r "$JUPYTER_UI_ROOT/packages/lexical/lib" node_modules/@datalayer/jupyter-lexical/
@@ -70,8 +88,9 @@ if [[ "$1" == "--watch" ]]; then
     fi
   fi
 
-  echo -e "${BLUE}👁️  Watch mode enabled. Monitoring jupyter-ui packages for changes...${NC}"
+  echo -e "${BLUE}👁️  Watch mode enabled. Monitoring Datalayer packages for changes...${NC}"
   echo -e "${YELLOW}📁 Watching:${NC}"
+  echo -e "${YELLOW}   - $CORE_ROOT/src${NC}"
   echo -e "${YELLOW}   - $JUPYTER_UI_ROOT/packages/lexical/src${NC}"
   echo -e "${YELLOW}   - $JUPYTER_UI_ROOT/packages/react/src${NC}"
   echo -e "${YELLOW}Press Ctrl+C to stop${NC}"
@@ -87,6 +106,7 @@ if [[ "$1" == "--watch" ]]; then
   # -l 1: latency 1 second (debounce rapid changes)
   fswatch -r -l 1 \
     -e ".*" -i "\\.tsx?$" -i "\\.jsx?$" -i "\\.css$" \
+    "$CORE_ROOT/src" \
     "$JUPYTER_UI_ROOT/packages/lexical/src" \
     "$JUPYTER_UI_ROOT/packages/react/src" | while read -r file; do
     echo -e "\n${YELLOW}📝 Change detected in: $(basename "$file")${NC}"

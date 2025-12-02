@@ -1,0 +1,1511 @@
+diff --git a/node_modules/@datalayer/core/lib/client/auth/AuthenticationManager.d.ts b/node_modules/@datalayer/core/lib/client/auth/AuthenticationManager.d.ts
+new file mode 100644
+index 0000000..386c229
+--- /dev/null
++++ b/node_modules/@datalayer/core/lib/client/auth/AuthenticationManager.d.ts
+@@ -0,0 +1,92 @@
++import type { AuthOptions, AuthResult, TokenStorage, TokenValidationResult } from './types';
++import { UserDTO } from '../../models/UserDTO';
++/**
++ * Authentication Manager for Datalayer SDK
++ * Provides a unified interface for all authentication methods
++ */
++export declare class AuthenticationManager {
++    private strategies;
++    private storage;
++    private iamRunUrl;
++    private currentUser?;
++    private currentToken?;
++    /**
++     * Create an AuthenticationManager instance
++     * @param iamRunUrl - IAM service URL (e.g., "https://prod1.datalayer.run")
++     * @param storage - Token storage backend (optional, defaults to auto-detected)
++     */
++    constructor(iamRunUrl: string, storage?: TokenStorage);
++    /**
++     * Login using various authentication methods
++     * Automatically selects the appropriate strategy based on options
++     *
++     * @param options - Authentication options
++     * @returns Authentication result with user and token
++     * @throws Error if authentication fails or no suitable strategy found
++     *
++     * @example
++     * // Token-based auth
++     * const result = await auth.login({ token: 'abc123' });
++     *
++     * @example
++     * // Credentials-based auth
++     * const result = await auth.login({
++     *   handle: 'user@example.com',
++     *   password: 'secret'
++     * });
++     *
++     * @example
++     * // Storage-based auth (uses stored token)
++     * const result = await auth.login({});
++     */
++    login(options?: AuthOptions): Promise<AuthResult>;
++    /**
++     * Logout the current user
++     * Calls the logout API and clears stored tokens
++     */
++    logout(): Promise<void>;
++    /**
++     * Get the current user profile
++     * Uses cached user if available, otherwise fetches from API
++     *
++     * @returns Current user or null if not authenticated
++     */
++    whoami(): Promise<UserDTO | null>;
++    /**
++     * Validate a token
++     * Checks if a token is valid by attempting to get the user profile
++     *
++     * @param token - Token to validate
++     * @returns Validation result with user if valid
++     */
++    validateToken(token: string): Promise<TokenValidationResult>;
++    /**
++     * Get the stored token from storage
++     * @returns Stored token or null
++     */
++    getStoredToken(): string | null;
++    /**
++     * Store a token in storage
++     * @param token - Token to store
++     */
++    storeToken(token: string): void;
++    /**
++     * Clear the stored token
++     */
++    clearStoredToken(): void;
++    /**
++     * Get the current cached user
++     * @returns Current user or undefined
++     */
++    getCurrentUser(): UserDTO | undefined;
++    /**
++     * Get the current token
++     * @returns Current token or undefined
++     */
++    getCurrentToken(): string | undefined;
++    /**
++     * Check if user is currently authenticated
++     * @returns True if user is authenticated
++     */
++    isAuthenticated(): boolean;
++}
+diff --git a/node_modules/@datalayer/core/lib/client/auth/AuthenticationManager.js b/node_modules/@datalayer/core/lib/client/auth/AuthenticationManager.js
+new file mode 100644
+index 0000000..71ddc0d
+--- /dev/null
++++ b/node_modules/@datalayer/core/lib/client/auth/AuthenticationManager.js
+@@ -0,0 +1,219 @@
++/*
++ * Copyright (c) 2023-2025 Datalayer, Inc.
++ * Distributed under the terms of the Modified BSD License.
++ */
++/*
++ * Copyright (c) 2021-2025 Datalayer, Inc.
++ *
++ * Datalayer License
++ */
++/**
++ * Core authentication manager for the Datalayer SDK
++ */
++import * as authentication from '../../api/iam/authentication';
++import { TokenAuthStrategy, CredentialsAuthStrategy, StorageAuthStrategy, BrowserOAuthStrategy, } from './strategies';
++import { NodeStorage, BrowserStorage } from './storage';
++/**
++ * Authentication Manager for Datalayer SDK
++ * Provides a unified interface for all authentication methods
++ */
++export class AuthenticationManager {
++    strategies;
++    storage;
++    iamRunUrl;
++    currentUser;
++    currentToken;
++    /**
++     * Create an AuthenticationManager instance
++     * @param iamRunUrl - IAM service URL (e.g., "https://prod1.datalayer.run")
++     * @param storage - Token storage backend (optional, defaults to auto-detected)
++     */
++    constructor(iamRunUrl, storage) {
++        this.iamRunUrl = iamRunUrl;
++        // Extract run_url (remove /api/iam/v1 if present)
++        const runUrl = iamRunUrl.replace('/api/iam/v1', '');
++        // CRITICAL: Pass runUrl to storage for keyring compatibility
++        if (!storage) {
++            if (typeof window !== 'undefined') {
++                this.storage = new BrowserStorage();
++            }
++            else {
++                this.storage = new NodeStorage(runUrl); // Pass runUrl as serviceUrl
++            }
++        }
++        else {
++            this.storage = storage;
++        }
++        // Initialize strategies
++        this.strategies = [
++            new TokenAuthStrategy(this.iamRunUrl, this.storage),
++            new CredentialsAuthStrategy(this.iamRunUrl, this.storage),
++            new StorageAuthStrategy(this.iamRunUrl, this.storage),
++            new BrowserOAuthStrategy(this.iamRunUrl, this.storage),
++        ];
++    }
++    /**
++     * Login using various authentication methods
++     * Automatically selects the appropriate strategy based on options
++     *
++     * @param options - Authentication options
++     * @returns Authentication result with user and token
++     * @throws Error if authentication fails or no suitable strategy found
++     *
++     * @example
++     * // Token-based auth
++     * const result = await auth.login({ token: 'abc123' });
++     *
++     * @example
++     * // Credentials-based auth
++     * const result = await auth.login({
++     *   handle: 'user@example.com',
++     *   password: 'secret'
++     * });
++     *
++     * @example
++     * // Storage-based auth (uses stored token)
++     * const result = await auth.login({});
++     */
++    async login(options = {}) {
++        // Find the first strategy that can handle these options
++        const strategy = this.strategies.find(s => s.canHandle(options));
++        if (!strategy) {
++            throw new Error('No authentication strategy found for the provided options. ' +
++                'Please provide a token, credentials (handle + password), or use browser OAuth.');
++        }
++        try {
++            const result = await strategy.authenticate(options);
++            // Cache the user and token
++            this.currentUser = result.user;
++            this.currentToken = result.token;
++            return result;
++        }
++        catch (error) {
++            // Clear any cached data on failure
++            this.currentUser = undefined;
++            this.currentToken = undefined;
++            throw error;
++        }
++    }
++    /**
++     * Logout the current user
++     * Calls the logout API and clears stored tokens
++     */
++    async logout() {
++        if (this.currentToken) {
++            try {
++                await authentication.logout(this.currentToken, this.iamRunUrl);
++            }
++            catch (error) {
++                console.error('Error during logout API call:', error);
++                // Continue with local cleanup even if API call fails
++            }
++        }
++        // Clear stored data
++        if (this.storage.clear) {
++            await this.storage.clear();
++        }
++        // Clear cached data
++        this.currentUser = undefined;
++        this.currentToken = undefined;
++    }
++    /**
++     * Get the current user profile
++     * Uses cached user if available, otherwise fetches from API
++     *
++     * @returns Current user or null if not authenticated
++     */
++    async whoami() {
++        if (this.currentUser) {
++            return this.currentUser;
++        }
++        if (this.currentToken) {
++            try {
++                // Re-authenticate using the current token
++                const result = await this.login({
++                    token: this.currentToken,
++                    noStore: true,
++                });
++                return result.user;
++            }
++            catch (error) {
++                console.error('Failed to get user profile:', error);
++                return null;
++            }
++        }
++        return null;
++    }
++    /**
++     * Validate a token
++     * Checks if a token is valid by attempting to get the user profile
++     *
++     * @param token - Token to validate
++     * @returns Validation result with user if valid
++     */
++    async validateToken(token) {
++        try {
++            const result = await this.login({ token, noStore: true });
++            return {
++                valid: true,
++                user: result.user,
++            };
++        }
++        catch (error) {
++            return {
++                valid: false,
++                error: error instanceof Error ? error.message : 'Unknown error',
++            };
++        }
++    }
++    /**
++     * Get the stored token from storage
++     * @returns Stored token or null
++     */
++    getStoredToken() {
++        if (!this.storage.getToken) {
++            return null;
++        }
++        return this.storage.getToken();
++    }
++    /**
++     * Store a token in storage
++     * @param token - Token to store
++     */
++    storeToken(token) {
++        if (this.storage.setToken) {
++            this.storage.setToken(token);
++        }
++        this.currentToken = token;
++    }
++    /**
++     * Clear the stored token
++     */
++    clearStoredToken() {
++        if (this.storage.deleteToken) {
++            this.storage.deleteToken();
++        }
++        this.currentToken = undefined;
++    }
++    /**
++     * Get the current cached user
++     * @returns Current user or undefined
++     */
++    getCurrentUser() {
++        return this.currentUser;
++    }
++    /**
++     * Get the current token
++     * @returns Current token or undefined
++     */
++    getCurrentToken() {
++        return this.currentToken;
++    }
++    /**
++     * Check if user is currently authenticated
++     * @returns True if user is authenticated
++     */
++    isAuthenticated() {
++        return !!this.currentToken && !!this.currentUser;
++    }
++}
+diff --git a/node_modules/@datalayer/core/lib/client/auth/index.d.ts b/node_modules/@datalayer/core/lib/client/auth/index.d.ts
+new file mode 100644
+index 0000000..689d732
+--- /dev/null
++++ b/node_modules/@datalayer/core/lib/client/auth/index.d.ts
+@@ -0,0 +1,8 @@
++/**
++ * Authentication module for Datalayer SDK
++ * Provides unified authentication interface with multiple strategies
++ */
++export * from './types';
++export * from './storage';
++export * from './strategies';
++export * from './AuthenticationManager';
+diff --git a/node_modules/@datalayer/core/lib/client/auth/index.js b/node_modules/@datalayer/core/lib/client/auth/index.js
+new file mode 100644
+index 0000000..304fa53
+--- /dev/null
++++ b/node_modules/@datalayer/core/lib/client/auth/index.js
+@@ -0,0 +1,17 @@
++/*
++ * Copyright (c) 2023-2025 Datalayer, Inc.
++ * Distributed under the terms of the Modified BSD License.
++ */
++/*
++ * Copyright (c) 2021-2025 Datalayer, Inc.
++ *
++ * Datalayer License
++ */
++/**
++ * Authentication module for Datalayer SDK
++ * Provides unified authentication interface with multiple strategies
++ */
++export * from './types';
++export * from './storage';
++export * from './strategies';
++export * from './AuthenticationManager';
+diff --git a/node_modules/@datalayer/core/lib/client/auth/storage.d.ts b/node_modules/@datalayer/core/lib/client/auth/storage.d.ts
+new file mode 100644
+index 0000000..bc6b3a5
+--- /dev/null
++++ b/node_modules/@datalayer/core/lib/client/auth/storage.d.ts
+@@ -0,0 +1,154 @@
++import type { TokenStorage } from './types';
++import { UserDTO } from '../../models/UserDTO';
++/**
++ * Browser localStorage-based token storage
++ */
++export declare class BrowserStorage implements TokenStorage {
++    /**
++     * Get token from browser localStorage
++     */
++    get(key: string): string | null;
++    /**
++     * Set token in browser localStorage
++     */
++    set(key: string, value: string): void;
++    /**
++     * Delete token from browser localStorage
++     */
++    delete(key: string): void;
++    /**
++     * Check if browser localStorage is available
++     */
++    isAvailable(): boolean;
++    /**
++     * Get stored authentication token
++     */
++    getToken(): string | null;
++    /**
++     * Store authentication token
++     */
++    setToken(token: string): void;
++    /**
++     * Delete authentication token
++     */
++    deleteToken(): void;
++    /**
++     * Get stored user data
++     */
++    getUser(): UserDTO | null;
++    /**
++     * Store user data
++     */
++    setUser(user: UserDTO): void;
++    /**
++     * Delete user data
++     */
++    deleteUser(): void;
++    /**
++     * Clear all authentication data
++     */
++    clear(): void;
++}
++/**
++ * Node.js storage with keyring support using keytar
++ */
++export declare class NodeStorage implements TokenStorage {
++    private memoryStorage;
++    private keytar;
++    private serviceUrl;
++    constructor(serviceUrl?: string);
++    /**
++     * Get token from keyring, environment variable, or memory
++     * Supports both sync (getPasswordSync) and async (getPassword) keytar APIs
++     */
++    get(key: string): string | null;
++    /**
++     * Set token in keyring or memory storage (sync version)
++     */
++    set(key: string, value: string): void;
++    /**
++     * Async version of set - supports VS Code's async keytar API
++     */
++    setAsync(key: string, value: string): Promise<void>;
++    /**
++     * Async version of get - supports VS Code's async keytar API
++     */
++    getAsync(key: string): Promise<string | null>;
++    /**
++     * Delete token from keyring or memory storage (sync version)
++     */
++    delete(key: string): void;
++    /**
++     * Async version of delete - supports VS Code's async keytar API
++     */
++    deleteAsync(key: string): Promise<void>;
++    /**
++     * Check if Node.js environment
++     */
++    isAvailable(): boolean;
++    /**
++     * Get stored authentication token (sync version)
++     * Checks environment variables and memory, but not async keytar
++     */
++    getToken(): string | null;
++    /**
++     * Get stored authentication token (async version)
++     * Properly checks async keytar API (VS Code), then env vars, then memory
++     */
++    getTokenAsync(): Promise<string | null>;
++    /**
++     * Store authentication token (async version - use this in auth strategies)
++     */
++    setToken(token: string): Promise<void>;
++    /**
++     * Delete authentication token (async version - use this in auth manager)
++     */
++    deleteToken(): Promise<void>;
++    /**
++     * Clear all authentication data (async version - use this in auth manager)
++     */
++    clear(): Promise<void>;
++}
++/**
++ * Electron safeStorage-based token storage
++ * Falls back to BrowserStorage if Electron safeStorage is not available
++ */
++export declare class ElectronStorage implements TokenStorage {
++    private browserStorage;
++    /**
++     * Get token from Electron safeStorage or fall back to localStorage
++     */
++    get(key: string): string | null;
++    /**
++     * Set token in Electron safeStorage or fall back to localStorage
++     */
++    set(key: string, value: string): void;
++    /**
++     * Delete token from Electron safeStorage or localStorage
++     */
++    delete(key: string): void;
++    /**
++     * Check if Electron safeStorage or browser storage is available
++     */
++    isAvailable(): boolean;
++    /**
++     * Get stored authentication token
++     */
++    getToken(): string | null;
++    /**
++     * Store authentication token
++     */
++    setToken(token: string): void;
++    /**
++     * Delete authentication token
++     */
++    deleteToken(): void;
++    /**
++     * Clear all authentication data
++     */
++    clear(): void;
++}
++/**
++ * Get the appropriate storage backend for the current environment
++ */
++export declare function getDefaultStorage(): TokenStorage;
+diff --git a/node_modules/@datalayer/core/lib/client/auth/storage.js b/node_modules/@datalayer/core/lib/client/auth/storage.js
+new file mode 100644
+index 0000000..28e641f
+--- /dev/null
++++ b/node_modules/@datalayer/core/lib/client/auth/storage.js
+@@ -0,0 +1,447 @@
++/*
++ * Copyright (c) 2023-2025 Datalayer, Inc.
++ * Distributed under the terms of the Modified BSD License.
++ */
++/*
++ * Copyright (c) 2021-2025 Datalayer, Inc.
++ *
++ * Datalayer License
++ */
++/**
++ * Token storage backend implementations
++ */
++import { DATALAYER_IAM_TOKEN_KEY, DATALAYER_IAM_USER_KEY, } from '../../state/storage/IAMStorage';
++/**
++ * Browser localStorage-based token storage
++ */
++export class BrowserStorage {
++    /**
++     * Get token from browser localStorage
++     */
++    get(key) {
++        if (typeof window === 'undefined') {
++            return null;
++        }
++        return window.localStorage.getItem(key);
++    }
++    /**
++     * Set token in browser localStorage
++     */
++    set(key, value) {
++        if (typeof window === 'undefined') {
++            return;
++        }
++        window.localStorage.setItem(key, value);
++    }
++    /**
++     * Delete token from browser localStorage
++     */
++    delete(key) {
++        if (typeof window === 'undefined') {
++            return;
++        }
++        window.localStorage.removeItem(key);
++    }
++    /**
++     * Check if browser localStorage is available
++     */
++    isAvailable() {
++        return typeof window !== 'undefined' && !!window.localStorage;
++    }
++    /**
++     * Get stored authentication token
++     */
++    getToken() {
++        return this.get(DATALAYER_IAM_TOKEN_KEY);
++    }
++    /**
++     * Store authentication token
++     */
++    setToken(token) {
++        this.set(DATALAYER_IAM_TOKEN_KEY, token);
++    }
++    /**
++     * Delete authentication token
++     */
++    deleteToken() {
++        this.delete(DATALAYER_IAM_TOKEN_KEY);
++    }
++    /**
++     * Get stored user data
++     */
++    getUser() {
++        const userData = this.get(DATALAYER_IAM_USER_KEY);
++        if (!userData) {
++            return null;
++        }
++        try {
++            const parsed = JSON.parse(userData);
++            return parsed;
++        }
++        catch (error) {
++            console.error('Failed to parse stored user data:', error);
++            return null;
++        }
++    }
++    /**
++     * Store user data
++     */
++    setUser(user) {
++        this.set(DATALAYER_IAM_USER_KEY, JSON.stringify(user));
++    }
++    /**
++     * Delete user data
++     */
++    deleteUser() {
++        this.delete(DATALAYER_IAM_USER_KEY);
++    }
++    /**
++     * Clear all authentication data
++     */
++    clear() {
++        this.deleteToken();
++        this.deleteUser();
++    }
++}
++/**
++ * Node.js storage with keyring support using keytar
++ */
++export class NodeStorage {
++    memoryStorage = new Map();
++    keytar = null;
++    serviceUrl;
++    constructor(serviceUrl = 'https://prod1.datalayer.run') {
++        this.serviceUrl = serviceUrl;
++        try {
++            // Load keytar for system keyring access
++            // VS Code extensions get this from VS Code's bundled keytar
++            // CLI gets this from installed keytar package
++            this.keytar = require('keytar');
++        }
++        catch (e) {
++            // Keyring not available, use memory only
++            console.warn('keytar not available, tokens will not persist');
++        }
++    }
++    /**
++     * Get token from keyring, environment variable, or memory
++     * Supports both sync (getPasswordSync) and async (getPassword) keytar APIs
++     */
++    get(key) {
++        console.log('[NodeStorage.get] key:', key, 'keytar available:', !!this.keytar);
++        // 1. Try keyring first (if available)
++        if (this.keytar) {
++            try {
++                // Try sync API first (CLI keytar)
++                if (this.keytar.getPasswordSync) {
++                    console.log('[NodeStorage.get] using keytar.getPasswordSync');
++                    const value = this.keytar.getPasswordSync(this.serviceUrl, key);
++                    console.log('[NodeStorage.get] keytar returned:', value ? 'token found' : 'null');
++                    if (value)
++                        return value;
++                }
++                else {
++                    console.log('[NodeStorage.get] getPasswordSync not available, skipping sync keytar');
++                }
++            }
++            catch (e) {
++                console.warn('[NodeStorage.get] keytar.getPasswordSync failed:', e);
++                // Fall through to other methods
++            }
++        }
++        // 2. Try environment variables
++        const envValue = process.env[key];
++        console.log('[NodeStorage.get] env var', key, ':', envValue ? 'found' : 'not found');
++        if (envValue)
++            return envValue;
++        // 3. Fall back to memory storage
++        const memValue = this.memoryStorage.get(key) || null;
++        console.log('[NodeStorage.get] memory storage:', memValue ? 'found' : 'not found');
++        return memValue;
++    }
++    /**
++     * Set token in keyring or memory storage (sync version)
++     */
++    set(key, value) {
++        console.log('[NodeStorage.set] key:', key, 'keytar available:', !!this.keytar);
++        // Store in keyring if available and has sync API
++        if (this.keytar && this.keytar.setPasswordSync) {
++            try {
++                console.log('[NodeStorage.set] calling keytar.setPasswordSync');
++                this.keytar.setPasswordSync(this.serviceUrl, key, value);
++                console.log('[NodeStorage.set] keytar.setPasswordSync succeeded');
++                return;
++            }
++            catch (e) {
++                console.warn('[NodeStorage.set] Failed to store in keyring, using memory:', e);
++            }
++        }
++        else if (this.keytar) {
++            console.log('[NodeStorage.set] setPasswordSync not available, use setAsync() instead');
++        }
++        // Fall back to memory
++        console.log('[NodeStorage.set] falling back to memory storage');
++        this.memoryStorage.set(key, value);
++    }
++    /**
++     * Async version of set - supports VS Code's async keytar API
++     */
++    async setAsync(key, value) {
++        console.log('[NodeStorage.setAsync] key:', key, 'keytar available:', !!this.keytar);
++        // Store in keyring if available
++        if (this.keytar) {
++            try {
++                // Try async API (VS Code keytar)
++                if (this.keytar.setPassword) {
++                    console.log('[NodeStorage.setAsync] calling keytar.setPassword (async)');
++                    await this.keytar.setPassword(this.serviceUrl, key, value);
++                    console.log('[NodeStorage.setAsync] keytar.setPassword succeeded');
++                    // IMPORTANT: Also store in memory so synchronous get() can access it
++                    this.memoryStorage.set(key, value);
++                    return;
++                }
++                // Try sync API (CLI keytar)
++                else if (this.keytar.setPasswordSync) {
++                    console.log('[NodeStorage.setAsync] calling keytar.setPasswordSync');
++                    this.keytar.setPasswordSync(this.serviceUrl, key, value);
++                    console.log('[NodeStorage.setAsync] keytar.setPasswordSync succeeded');
++                    // Also store in memory for consistency
++                    this.memoryStorage.set(key, value);
++                    return;
++                }
++            }
++            catch (e) {
++                console.warn('[NodeStorage.setAsync] Failed to store in keyring, using memory:', e);
++            }
++        }
++        // Fall back to memory
++        console.log('[NodeStorage.setAsync] falling back to memory storage');
++        this.memoryStorage.set(key, value);
++    }
++    /**
++     * Async version of get - supports VS Code's async keytar API
++     */
++    async getAsync(key) {
++        console.log('[NodeStorage.getAsync] key:', key, 'keytar available:', !!this.keytar);
++        // Try keyring first (if available)
++        if (this.keytar) {
++            try {
++                // Try async API (VS Code keytar)
++                if (this.keytar.getPassword) {
++                    console.log('[NodeStorage.getAsync] calling keytar.getPassword (async)');
++                    const value = await this.keytar.getPassword(this.serviceUrl, key);
++                    console.log('[NodeStorage.getAsync] keytar returned:', value ? 'token found' : 'null');
++                    if (value)
++                        return value;
++                }
++                // Try sync API (CLI keytar)
++                else if (this.keytar.getPasswordSync) {
++                    console.log('[NodeStorage.getAsync] calling keytar.getPasswordSync');
++                    const value = this.keytar.getPasswordSync(this.serviceUrl, key);
++                    console.log('[NodeStorage.getAsync] keytar returned:', value ? 'token found' : 'null');
++                    if (value)
++                        return value;
++                }
++            }
++            catch (e) {
++                console.warn('[NodeStorage.getAsync] keytar failed:', e);
++            }
++        }
++        // Try environment variables
++        const envValue = process.env[key];
++        console.log('[NodeStorage.getAsync] env var', key, ':', envValue ? 'found' : 'not found');
++        if (envValue)
++            return envValue;
++        // Fall back to memory storage
++        const memValue = this.memoryStorage.get(key) || null;
++        console.log('[NodeStorage.getAsync] memory storage:', memValue ? 'found' : 'not found');
++        return memValue;
++    }
++    /**
++     * Delete token from keyring or memory storage (sync version)
++     */
++    delete(key) {
++        console.log('[NodeStorage.delete] key:', key, 'keytar available:', !!this.keytar);
++        if (this.keytar && this.keytar.deletePasswordSync) {
++            try {
++                console.log('[NodeStorage.delete] calling keytar.deletePasswordSync');
++                this.keytar.deletePasswordSync(this.serviceUrl, key);
++                console.log('[NodeStorage.delete] keytar.deletePasswordSync succeeded');
++            }
++            catch (e) {
++                console.warn('[NodeStorage.delete] Failed to delete from keyring:', e);
++            }
++        }
++        else if (this.keytar) {
++            console.log('[NodeStorage.delete] deletePasswordSync not available, use deleteAsync() instead');
++        }
++        console.log('[NodeStorage.delete] deleting from memory storage');
++        this.memoryStorage.delete(key);
++    }
++    /**
++     * Async version of delete - supports VS Code's async keytar API
++     */
++    async deleteAsync(key) {
++        console.log('[NodeStorage.deleteAsync] key:', key, 'keytar available:', !!this.keytar);
++        if (this.keytar) {
++            try {
++                // Try async API (VS Code keytar)
++                if (this.keytar.deletePassword) {
++                    console.log('[NodeStorage.deleteAsync] calling keytar.deletePassword (async)');
++                    await this.keytar.deletePassword(this.serviceUrl, key);
++                    console.log('[NodeStorage.deleteAsync] keytar.deletePassword succeeded');
++                }
++                // Try sync API (CLI keytar)
++                else if (this.keytar.deletePasswordSync) {
++                    console.log('[NodeStorage.deleteAsync] calling keytar.deletePasswordSync');
++                    this.keytar.deletePasswordSync(this.serviceUrl, key);
++                    console.log('[NodeStorage.deleteAsync] keytar.deletePasswordSync succeeded');
++                }
++            }
++            catch (e) {
++                console.warn('[NodeStorage.deleteAsync] Failed to delete from keyring:', e);
++            }
++        }
++        console.log('[NodeStorage.deleteAsync] deleting from memory storage');
++        this.memoryStorage.delete(key);
++    }
++    /**
++     * Check if Node.js environment
++     */
++    isAvailable() {
++        return typeof process !== 'undefined' && !!process.env;
++    }
++    /**
++     * Get stored authentication token (sync version)
++     * Checks environment variables and memory, but not async keytar
++     */
++    getToken() {
++        // Check DATALAYER_API_KEY first
++        const apiKey = process.env['DATALAYER_API_KEY'];
++        if (apiKey)
++            return apiKey;
++        // Use "access_token" key (sync only - won't find tokens stored via async keytar)
++        return this.get('access_token');
++    }
++    /**
++     * Get stored authentication token (async version)
++     * Properly checks async keytar API (VS Code), then env vars, then memory
++     */
++    async getTokenAsync() {
++        // Check DATALAYER_API_KEY first
++        const apiKey = process.env['DATALAYER_API_KEY'];
++        if (apiKey)
++            return apiKey;
++        // Use async method to check keyring (supports VS Code's async keytar)
++        return await this.getAsync('access_token');
++    }
++    /**
++     * Store authentication token (async version - use this in auth strategies)
++     */
++    async setToken(token) {
++        console.log('[NodeStorage] setToken called, keytar available:', !!this.keytar);
++        console.log('[NodeStorage] storing token with key: access_token, service:', this.serviceUrl);
++        // Use async method to support VS Code's keytar
++        await this.setAsync('access_token', token);
++        console.log('[NodeStorage] token stored successfully');
++    }
++    /**
++     * Delete authentication token (async version - use this in auth manager)
++     */
++    async deleteToken() {
++        console.log('[NodeStorage] deleteToken called');
++        // Use async method to support VS Code's keytar
++        await this.deleteAsync('access_token');
++        console.log('[NodeStorage] token deleted successfully');
++    }
++    /**
++     * Clear all authentication data (async version - use this in auth manager)
++     */
++    async clear() {
++        console.log('[NodeStorage] clear called');
++        await this.deleteToken();
++        this.memoryStorage.clear();
++        console.log('[NodeStorage] all data cleared');
++    }
++}
++/**
++ * Electron safeStorage-based token storage
++ * Falls back to BrowserStorage if Electron safeStorage is not available
++ */
++export class ElectronStorage {
++    browserStorage = new BrowserStorage();
++    /**
++     * Get token from Electron safeStorage or fall back to localStorage
++     */
++    get(key) {
++        // TODO: Implement Electron safeStorage when running in Electron
++        // For now, fall back to browser storage
++        return this.browserStorage.get(key);
++    }
++    /**
++     * Set token in Electron safeStorage or fall back to localStorage
++     */
++    set(key, value) {
++        // TODO: Implement Electron safeStorage when running in Electron
++        // For now, fall back to browser storage
++        this.browserStorage.set(key, value);
++    }
++    /**
++     * Delete token from Electron safeStorage or localStorage
++     */
++    delete(key) {
++        // TODO: Implement Electron safeStorage when running in Electron
++        // For now, fall back to browser storage
++        this.browserStorage.delete(key);
++    }
++    /**
++     * Check if Electron safeStorage or browser storage is available
++     */
++    isAvailable() {
++        // TODO: Check for Electron safeStorage API
++        // For now, check browser storage
++        return this.browserStorage.isAvailable();
++    }
++    /**
++     * Get stored authentication token
++     */
++    getToken() {
++        return this.get(DATALAYER_IAM_TOKEN_KEY);
++    }
++    /**
++     * Store authentication token
++     */
++    setToken(token) {
++        this.set(DATALAYER_IAM_TOKEN_KEY, token);
++    }
++    /**
++     * Delete authentication token
++     */
++    deleteToken() {
++        this.delete(DATALAYER_IAM_TOKEN_KEY);
++    }
++    /**
++     * Clear all authentication data
++     */
++    clear() {
++        this.browserStorage.clear();
++    }
++}
++/**
++ * Get the appropriate storage backend for the current environment
++ */
++export function getDefaultStorage() {
++    if (typeof window !== 'undefined') {
++        // Browser environment
++        return new BrowserStorage();
++    }
++    else if (typeof process !== 'undefined') {
++        // Node.js environment
++        return new NodeStorage();
++    }
++    else {
++        // Unknown environment, use in-memory storage
++        console.warn('Unknown environment, using in-memory storage (data will not persist)');
++        return new NodeStorage(); // NodeStorage has in-memory fallback
++    }
++}
+diff --git a/node_modules/@datalayer/core/lib/client/auth/strategies.d.ts b/node_modules/@datalayer/core/lib/client/auth/strategies.d.ts
+new file mode 100644
+index 0000000..75b7f16
+--- /dev/null
++++ b/node_modules/@datalayer/core/lib/client/auth/strategies.d.ts
+@@ -0,0 +1,54 @@
++import type { AuthStrategy, AuthOptions, AuthResult, TokenStorage } from './types';
++import { UserDTO } from '../../models/UserDTO';
++/**
++ * Base authentication strategy with common functionality
++ */
++declare abstract class BaseAuthStrategy implements AuthStrategy {
++    protected iamRunUrl: string;
++    protected storage?: TokenStorage | undefined;
++    constructor(iamRunUrl: string, storage?: TokenStorage | undefined);
++    abstract authenticate(options: AuthOptions): Promise<AuthResult>;
++    abstract canHandle(options: AuthOptions): boolean;
++    /**
++     * Validate a token by calling whoami
++     */
++    protected validateToken(token: string): Promise<UserDTO>;
++}
++/**
++ * Token-based authentication strategy
++ * Authenticates using an existing token
++ */
++export declare class TokenAuthStrategy extends BaseAuthStrategy {
++    canHandle(options: AuthOptions): boolean;
++    authenticate(options: AuthOptions): Promise<AuthResult>;
++}
++/**
++ * Credentials-based authentication strategy
++ * Authenticates using handle and password
++ */
++export declare class CredentialsAuthStrategy extends BaseAuthStrategy {
++    canHandle(options: AuthOptions): boolean;
++    authenticate(options: AuthOptions): Promise<AuthResult>;
++}
++/**
++ * Storage-based authentication strategy
++ * Authenticates using a token from storage
++ */
++export declare class StorageAuthStrategy extends BaseAuthStrategy {
++    canHandle(options: AuthOptions): boolean;
++    authenticate(options: AuthOptions): Promise<AuthResult>;
++}
++/**
++ * Browser OAuth strategy
++ * Authenticates using browser-based OAuth flow with GitHub or LinkedIn
++ */
++export declare class BrowserOAuthStrategy extends BaseAuthStrategy {
++    canHandle(options: AuthOptions): boolean;
++    authenticate(options: AuthOptions): Promise<AuthResult>;
++    /**
++     * Wait for OAuth callback in popup window
++     * Expects: { user, token, error } from the Datalayer OAuth callback
++     */
++    private waitForOAuthCallback;
++}
++export {};
+diff --git a/node_modules/@datalayer/core/lib/client/auth/strategies.js b/node_modules/@datalayer/core/lib/client/auth/strategies.js
+new file mode 100644
+index 0000000..e33f8dd
+--- /dev/null
++++ b/node_modules/@datalayer/core/lib/client/auth/strategies.js
+@@ -0,0 +1,238 @@
++/*
++ * Copyright (c) 2023-2025 Datalayer, Inc.
++ * Distributed under the terms of the Modified BSD License.
++ */
++/*
++ * Copyright (c) 2021-2025 Datalayer, Inc.
++ *
++ * Datalayer License
++ */
++/**
++ * Authentication strategy implementations
++ */
++import * as authentication from '../../api/iam/authentication';
++import * as profile from '../../api/iam/profile';
++import { UserDTO } from '../../models/UserDTO';
++/**
++ * Base authentication strategy with common functionality
++ */
++class BaseAuthStrategy {
++    iamRunUrl;
++    storage;
++    constructor(iamRunUrl, storage) {
++        this.iamRunUrl = iamRunUrl;
++        this.storage = storage;
++    }
++    /**
++     * Validate a token by calling whoami
++     */
++    async validateToken(token) {
++        const response = await profile.whoami(token, this.iamRunUrl);
++        if (!response || !response.profile) {
++            throw new Error('Invalid response from profile API');
++        }
++        const userData = {
++            id: response.profile.id,
++            uid: response.profile.uid,
++            handle_s: response.profile.handle_s || response.profile.handle,
++            email_s: response.profile.email_s || response.profile.email,
++            first_name_t: response.profile.first_name_t || response.profile.first_name || '',
++            last_name_t: response.profile.last_name_t || response.profile.last_name || '',
++            avatar_url_s: response.profile.avatar_url_s || response.profile.avatar_url,
++        };
++        return new UserDTO(userData, undefined);
++    }
++}
++/**
++ * Token-based authentication strategy
++ * Authenticates using an existing token
++ */
++export class TokenAuthStrategy extends BaseAuthStrategy {
++    canHandle(options) {
++        return !!options.token;
++    }
++    async authenticate(options) {
++        if (!options.token) {
++            throw new Error('Token is required for token authentication');
++        }
++        // Validate the token
++        const user = await this.validateToken(options.token);
++        // Store the token if requested
++        if (!options.noStore && this.storage) {
++            if (this.storage.setToken) {
++                await this.storage.setToken(options.token);
++            }
++            if (this.storage.setUser) {
++                await this.storage.setUser(user);
++            }
++        }
++        return { user, token: options.token };
++    }
++}
++/**
++ * Credentials-based authentication strategy
++ * Authenticates using handle and password
++ */
++export class CredentialsAuthStrategy extends BaseAuthStrategy {
++    canHandle(options) {
++        return !!options.handle && !!options.password;
++    }
++    async authenticate(options) {
++        if (!options.handle || !options.password) {
++            throw new Error('Handle and password are required for credentials authentication');
++        }
++        // Call the login API
++        const response = await authentication.login({ handle: options.handle, password: options.password }, this.iamRunUrl);
++        if (!response || !response.success || !response.token) {
++            throw new Error(response?.message || 'Login failed');
++        }
++        const token = response.token;
++        // Get user profile
++        const user = await this.validateToken(token);
++        // Store the token if requested
++        if (!options.noStore && this.storage) {
++            this.storage.setToken?.(token);
++            this.storage.setUser?.(user);
++        }
++        return { user, token };
++    }
++}
++/**
++ * Storage-based authentication strategy
++ * Authenticates using a token from storage
++ */
++export class StorageAuthStrategy extends BaseAuthStrategy {
++    canHandle(options) {
++        // Can handle if:
++        // 1. Storage is available
++        // 2. No other auth method is provided (this is the fallback strategy)
++        if (!this.storage || !this.storage.isAvailable()) {
++            return false;
++        }
++        // Return true if no explicit auth method provided (empty options or noStore only)
++        // This allows the authenticate() method to check storage async
++        const hasExplicitAuthMethod = !!options.token ||
++            !!options.handle ||
++            !!options.password ||
++            !!options.useBrowser;
++        return !hasExplicitAuthMethod;
++    }
++    async authenticate(options) {
++        if (!this.storage) {
++            throw new Error('Storage is required for storage-based authentication');
++        }
++        // Try async getTokenAsync first (for VS Code async keytar support)
++        let token = null;
++        if ('getTokenAsync' in this.storage &&
++            typeof this.storage.getTokenAsync === 'function') {
++            token = await this.storage.getTokenAsync();
++        }
++        else if (this.storage.getToken) {
++            token = this.storage.getToken();
++        }
++        if (!token) {
++            throw new Error('No token found in storage');
++        }
++        // Validate the token
++        const user = await this.validateToken(token);
++        return { user, token };
++    }
++}
++/**
++ * Browser OAuth strategy
++ * Authenticates using browser-based OAuth flow with GitHub or LinkedIn
++ */
++export class BrowserOAuthStrategy extends BaseAuthStrategy {
++    canHandle(options) {
++        return !!options.useBrowser;
++    }
++    async authenticate(options) {
++        // Import OAuth2 API
++        const { getOAuth2AuthzUrl } = await import('../../api/iam/oauth2');
++        // Default to GitHub provider
++        const provider = options.oauthProvider || 'github';
++        if (provider !== 'github' && provider !== 'linkedin') {
++            throw new Error(`Unsupported OAuth provider: ${provider}. Use 'github' or 'linkedin'.`);
++        }
++        // Generate callback URI
++        const callbackUri = options.callbackUri || `${window.location.origin}/auth/callback`;
++        try {
++            // Step 1: Get OAuth authorization URL
++            const authzResponse = await getOAuth2AuthzUrl(provider, callbackUri, this.iamRunUrl, options.nonce);
++            // Step 2: Open OAuth URL in popup or redirect
++            if (options.usePopup !== false) {
++                // Use popup window
++                const popup = window.open(authzResponse.loginURL, 'oauth-login', 'width=600,height=700,left=100,top=100');
++                if (!popup) {
++                    throw new Error('Failed to open OAuth popup. Please allow popups for this site.');
++                }
++                // Wait for callback - Datalayer redirects to our callback with ?user=<json>&token=<token>
++                const result = await this.waitForOAuthCallback(popup, callbackUri);
++                // Extract token and user from callback result
++                const token = result.token;
++                const user = result.user;
++                if (!token) {
++                    throw new Error('No token received from OAuth callback');
++                }
++                if (!user) {
++                    throw new Error('No user data received from OAuth callback');
++                }
++                // Store token if requested
++                if (!options.noStore && this.storage) {
++                    this.storage.setToken?.(token);
++                    this.storage.setUser?.(user);
++                }
++                return { user, token };
++            }
++            else {
++                // Redirect to OAuth URL
++                window.location.href = authzResponse.loginURL;
++                // Return a pending promise (page will redirect)
++                return new Promise(() => {
++                    // This promise never resolves because we redirect
++                });
++            }
++        }
++        catch (error) {
++            throw new Error(`OAuth authentication failed: ${error instanceof Error ? error.message : String(error)}`);
++        }
++    }
++    /**
++     * Wait for OAuth callback in popup window
++     * Expects: { user, token, error } from the Datalayer OAuth callback
++     */
++    async waitForOAuthCallback(popup, callbackUri) {
++        return new Promise((resolve, reject) => {
++            const timeout = setTimeout(() => {
++                popup.close();
++                reject(new Error('OAuth authentication timed out'));
++            }, 5 * 60 * 1000); // 5 minute timeout
++            // Listen for message from popup
++            const handleMessage = (event) => {
++                // Verify origin
++                if (event.origin !== new URL(callbackUri).origin) {
++                    return;
++                }
++                clearTimeout(timeout);
++                window.removeEventListener('message', handleMessage);
++                popup.close();
++                if (event.data.error) {
++                    reject(new Error(`OAuth error: ${event.data.error}`));
++                }
++                else {
++                    resolve(event.data);
++                }
++            };
++            window.addEventListener('message', handleMessage);
++            // Check if popup was closed manually
++            const checkClosed = setInterval(() => {
++                if (popup.closed) {
++                    clearInterval(checkClosed);
++                    clearTimeout(timeout);
++                    window.removeEventListener('message', handleMessage);
++                    reject(new Error('OAuth popup was closed'));
++                }
++            }, 1000);
++        });
++    }
++}
+diff --git a/node_modules/@datalayer/core/lib/client/auth/types.d.ts b/node_modules/@datalayer/core/lib/client/auth/types.d.ts
+new file mode 100644
+index 0000000..d6a0ad7
+--- /dev/null
++++ b/node_modules/@datalayer/core/lib/client/auth/types.d.ts
+@@ -0,0 +1,151 @@
++/**
++ * Authentication types and interfaces for the Datalayer SDK
++ */
++import { UserDTO } from '../../models/UserDTO';
++/**
++ * Authentication credentials for login
++ */
++export interface AuthCredentials {
++    handle: string;
++    password: string;
++}
++/**
++ * Authentication options for login flow
++ */
++export interface AuthOptions {
++    /**
++     * Existing authentication token
++     */
++    token?: string;
++    /**
++     * User handle for credentials-based auth
++     */
++    handle?: string;
++    /**
++     * Password for credentials-based auth
++     */
++    password?: string;
++    /**
++     * Use browser-based OAuth flow
++     */
++    useBrowser?: boolean;
++    /**
++     * OAuth provider (github or linkedin)
++     */
++    oauthProvider?: 'github' | 'linkedin';
++    /**
++     * Callback URI for OAuth redirect
++     */
++    callbackUri?: string;
++    /**
++     * Nonce for OAuth state parameter
++     */
++    nonce?: string;
++    /**
++     * Use popup window for OAuth (default: true). If false, redirects the current page.
++     */
++    usePopup?: boolean;
++    /**
++     * Don't store the token after authentication
++     */
++    noStore?: boolean;
++}
++/**
++ * Authentication result containing user and token
++ */
++export interface AuthResult {
++    user: UserDTO;
++    token: string;
++}
++/**
++ * Token storage backend interface
++ */
++export interface TokenStorage {
++    /**
++     * Get token from storage
++     */
++    get(key: string): string | null;
++    /**
++     * Set token in storage
++     */
++    set(key: string, value: string): void;
++    /**
++     * Delete token from storage
++     */
++    delete(key: string): void;
++    /**
++     * Check if storage is available
++     */
++    isAvailable(): boolean;
++    /**
++     * Get stored authentication token (convenience method)
++     */
++    getToken?(): string | null;
++    /**
++     * Store authentication token (convenience method)
++     * May be async to support keyring storage
++     */
++    setToken?(token: string): void | Promise<void>;
++    /**
++     * Delete authentication token (convenience method)
++     * May be async to support keyring storage
++     */
++    deleteToken?(): void | Promise<void>;
++    /**
++     * Store user data (optional)
++     * May be async to support keyring storage
++     */
++    setUser?(user: any): void | Promise<void>;
++    /**
++     * Clear all authentication data (optional)
++     * May be async to support keyring storage
++     */
++    clear?(): void | Promise<void>;
++}
++/**
++ * Authentication strategy interface
++ */
++export interface AuthStrategy {
++    /**
++     * Authenticate using this strategy
++     */
++    authenticate(options: AuthOptions): Promise<AuthResult>;
++    /**
++     * Check if this strategy can handle the given options
++     */
++    canHandle(options: AuthOptions): boolean;
++}
++/**
++ * Browser OAuth configuration
++ */
++export interface BrowserOAuthConfig {
++    /**
++     * OAuth provider name (e.g., 'github', 'linkedin')
++     */
++    provider: string;
++    /**
++     * Callback URL for OAuth redirect
++     */
++    callbackUrl: string;
++    /**
++     * IAM server URL
++     */
++    iamUrl: string;
++}
++/**
++ * Token validation result
++ */
++export interface TokenValidationResult {
++    /**
++     * Whether the token is valid
++     */
++    valid: boolean;
++    /**
++     * User associated with the token (if valid)
++     */
++    user?: UserDTO;
++    /**
++     * Error message (if invalid)
++     */
++    error?: string;
++}
+diff --git a/node_modules/@datalayer/core/lib/client/auth/types.js b/node_modules/@datalayer/core/lib/client/auth/types.js
+new file mode 100644
+index 0000000..df5fbe8
+--- /dev/null
++++ b/node_modules/@datalayer/core/lib/client/auth/types.js
+@@ -0,0 +1,5 @@
++/*
++ * Copyright (c) 2023-2025 Datalayer, Inc.
++ * Distributed under the terms of the Modified BSD License.
++ */
++export {};
+diff --git a/node_modules/@datalayer/core/lib/client/base.d.ts b/node_modules/@datalayer/core/lib/client/base.d.ts
+index 6ec2033..cef3086 100644
+--- a/node_modules/@datalayer/core/lib/client/base.d.ts
++++ b/node_modules/@datalayer/core/lib/client/base.d.ts
+@@ -1,4 +1,5 @@
+ import { EnvironmentDTO } from '../models/EnvironmentDTO';
++import { AuthenticationManager } from './auth';
+ /** Handlers for SDK method lifecycle events. */
+ export interface SDKHandlers {
+     /** Called before any SDK method execution */
+@@ -35,6 +36,8 @@ export declare class DatalayerClientBase {
+     readonly environments: EnvironmentDTO[];
+     /** Method lifecycle handlers */
+     readonly handlers?: SDKHandlers;
++    /** Authentication manager */
++    readonly auth: AuthenticationManager;
+     /**
+      * Create a DatalayerClient base instance.
+      * @param config - Client configuration options
+diff --git a/node_modules/@datalayer/core/lib/client/base.js b/node_modules/@datalayer/core/lib/client/base.js
+index 72418a7..44282d3 100644
+--- a/node_modules/@datalayer/core/lib/client/base.js
++++ b/node_modules/@datalayer/core/lib/client/base.js
+@@ -7,6 +7,7 @@
+  * @module client/base
+  */
+ import { DEFAULT_SERVICE_URLS } from '../api/constants';
++import { AuthenticationManager } from './auth';
+ /** Base Client class providing core configuration and token management. */
+ export class DatalayerClientBase {
+     /** URL for IAM service */
+@@ -32,6 +33,12 @@ export class DatalayerClientBase {
+         this.spacerRunUrl = config.spacerRunUrl || DEFAULT_SERVICE_URLS.SPACER;
+         this.token = config.token;
+         this.handlers = config.handlers;
++        // Initialize authentication manager
++        this.auth = new AuthenticationManager(this.iamRunUrl);
++        // If a token was provided, store it in the auth manager
++        if (this.token) {
++            this.auth.storeToken(this.token);
++        }
+     }
+     /**
+      * Get the current configuration including service URLs and token.
+diff --git a/node_modules/@datalayer/core/lib/client/index.d.ts b/node_modules/@datalayer/core/lib/client/index.d.ts
+index 0b25e5d..39e1b9c 100644
+--- a/node_modules/@datalayer/core/lib/client/index.d.ts
++++ b/node_modules/@datalayer/core/lib/client/index.d.ts
+@@ -68,6 +68,7 @@ export { HealthCheck } from '../models/HealthCheck';
+ export type { HealthCheckJSON } from '../models/HealthCheck';
+ export { ItemTypes } from './constants';
+ export type { ItemType } from './constants';
++export * from './auth';
+ export interface DatalayerClient {
+     getToken(): string | undefined;
+     setToken(token: string): Promise<void>;
+diff --git a/node_modules/@datalayer/core/lib/client/index.js b/node_modules/@datalayer/core/lib/client/index.js
+index bb338f6..ed0beb0 100644
+--- a/node_modules/@datalayer/core/lib/client/index.js
++++ b/node_modules/@datalayer/core/lib/client/index.js
+@@ -77,3 +77,5 @@ export { ItemDTO as Item } from '../models/ItemDTO';
+ export { HealthCheck } from '../models/HealthCheck';
+ // Export constants
+ export { ItemTypes } from './constants';
++// Export authentication module
++export * from './auth';
