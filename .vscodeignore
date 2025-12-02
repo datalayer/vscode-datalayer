@@ -3,6 +3,7 @@
 out/**
 node_modules/**
 !node_modules/@vscode/codicons/dist/**
+!node_modules/pyodide/**
 src/**
 .gitignore
 .yarnrc

@@ -100,6 +100,7 @@
     "buffer": "^6.0.3",
     "codemirror": "^6.0.2",
     "lexical": "^0.35.0",
+    "pyodide": "^0.29.0",
     "react": "18.3.1",
     "react-dom": "18.3.1",
     "typestyle": "^2.0.4",
@@ -1250,12 +1251,12 @@
             "Never preload packages"
           ],
           "default": "auto",
-          "description": "Controls how Pyodide packages are preloaded on extension startup"
+          "markdownDescription": "Controls how Pyodide packages are preloaded on extension startup. Applies to **both** Datalayer webview notebooks and native VS Code notebooks."
         },
         "datalayer.pyodide.version": {
           "type": "string",
           "default": "0.27.3",
-          "description": "Pyodide version to use. Changes require closing and reopening notebooks."
+          "markdownDescription": "Pyodide version for **Datalayer webview notebooks only**. Native VS Code notebooks use a fixed version (v0.29.0 from npm package). Changes require closing and reopening notebooks."
         },
         "datalayer.pyodide.preloadPackages": {
           "type": "array",
@@ -1266,10 +1267,11 @@
             "numpy",
             "pandas",
             "matplotlib",
+            "matplotlib-inline",
             "ipython",
             "ipywidgets"
           ],
-          "description": "Python packages to preload when extension starts (start with a small list, add more as needed)"
+          "markdownDescription": "Python packages to preload when extension starts. Applies to **both** Datalayer webview notebooks (configurable version) and native VS Code notebooks (v0.29.0). Start with a small list, add more as needed."
         }
       }
     },

@@ -97,6 +97,9 @@ class LiteStream:
     def __init__(self, name: str) -> None:
         self.name = name
         self.publish_stream_callback = None
+        # Store reference to original stream for debugging (before we replace sys.stdout/stderr)
+        import sys
+        self._original_stream = sys.stdout if name == "stdout" else sys.stderr
 
     def write(self, text: str) -> int:
         if self.publish_stream_callback:
@@ -106,6 +109,11 @@ class LiteStream:
             msg_id = getattr(builtins, "_current_msg_id", None)
             if msg_id is not None:
                 self.publish_stream_callback(msg_id, self.name, text)
+        else:
+            # Fall back to original Pyodide stream for debugging
+            # This allows print() statements to work during initialization
+            if hasattr(self._original_stream, 'write'):
+                self._original_stream.write(text)
         return len(text) if text else 0
 
     def flush(self) -> None:

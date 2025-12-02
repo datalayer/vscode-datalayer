@@ -14,6 +14,7 @@
 import * as vscode from "vscode";
 import type { ILogger } from "../interfaces/ILogger";
 import { getNonce } from "../../utils/webviewSecurity";
+import { PyodideCacheManager } from "./pyodideCacheManager";
 
 /**
  * Key for storing whether user has been prompted for preload
@@ -33,11 +34,16 @@ const PRELOADED_PACKAGES_KEY = "datalayer.pyodide.preloadedPackages";
 export class PyodidePreloader implements vscode.Disposable {
   private _configWatcher: vscode.Disposable | null = null;
   private _isPreloading = false;
+  private _cacheManager: PyodideCacheManager;
 
   constructor(
     private readonly _context: vscode.ExtensionContext,
     private readonly _logger: ILogger,
-  ) {}
+  ) {
+    this._cacheManager = new PyodideCacheManager(
+      this._context.globalStorageUri.fsPath,
+    );
+  }
 
   /**
    * Initialize the preloader service.
@@ -246,11 +252,15 @@ export class PyodidePreloader implements vscode.Disposable {
       },
       async (progress) => {
         try {
-          progress.report({ message: "Initializing..." });
+          const pyodideVersion = config.get<string>("version", "0.27.3");
 
-          // Execute preload by sending command to a hidden webview
-          // This will trigger package download and caching in IndexedDB
-          await this._executePreload(packages, progress);
+          // Step 1: Preload for NATIVE notebooks (filesystem cache)
+          progress.report({ message: "Preloading for native notebooks..." });
+          await this._executeNativePreload(pyodideVersion, packages, progress);
+
+          // Step 2: Preload for WEBVIEW notebooks (IndexedDB cache)
+          progress.report({ message: "Preloading for webview notebooks..." });
+          await this._executeWebviewPreload(packages, progress);
 
           // Mark packages as successfully preloaded
           const packagesKey = this._getPackagesKey(packages);
@@ -261,7 +271,7 @@ export class PyodidePreloader implements vscode.Disposable {
 
           this._logger.info("Pyodide package preload completed successfully");
           vscode.window.showInformationMessage(
-            `Pyodide packages preloaded: ${packages.join(", ")}`,
+            "Pyodide packages preloaded successfully",
           );
         } catch (error) {
           this._logger.error(
@@ -279,9 +289,41 @@ export class PyodidePreloader implements vscode.Disposable {
   }
 
   /**
-   * Execute the actual preload by creating a hidden webview that loads Pyodide
+   * Preload packages for NATIVE notebooks (Node.js filesystem cache).
    */
-  private async _executePreload(
+  private async _executeNativePreload(
+    pyodideVersion: string,
+    packages: string[],
+    progress: vscode.Progress<{ message?: string; increment?: number }>,
+  ): Promise<void> {
+    this._logger.info("Starting native notebook preload");
+
+    // Download Pyodide core files
+    await this._cacheManager.ensurePyodideCore(pyodideVersion, progress);
+
+    // Download packages
+    const result = await this._cacheManager.preloadPackages(
+      pyodideVersion,
+      packages,
+      progress,
+    );
+
+    if (result.failed.length > 0) {
+      this._logger.warn(
+        `Some packages failed to download: ${result.failed.join(", ")}`,
+      );
+    }
+
+    this._logger.info(
+      `Native preload complete: ${result.succeeded.length} succeeded, ${result.failed.length} failed`,
+    );
+  }
+
+  /**
+   * Preload packages for WEBVIEW notebooks (browser IndexedDB cache).
+   * Creates a hidden webview panel that downloads packages via micropip.
+   */
+  private async _executeWebviewPreload(
     packages: string[],
     progress: vscode.Progress<{ message?: string; increment?: number }>,
   ): Promise<void> {

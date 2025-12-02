@@ -17,6 +17,7 @@ import type { RuntimeDTO } from "@datalayer/core/lib/models/RuntimeDTO";
 import { SDKAuthProvider } from "../services/core/authProvider";
 import { selectDatalayerRuntime } from "../ui/dialogs/runtimeSelector";
 import { WebSocketKernelClient } from "../kernel/clients/websocketKernelClient";
+import { PyodideKernelClient } from "../kernel/clients/pyodideKernelClient";
 import { KernelBridge } from "../services/bridges/kernelBridge";
 import { promptAndLogin } from "../ui/dialogs/authDialog";
 
@@ -44,6 +45,9 @@ export class SmartDynamicControllerManager implements vscode.Disposable {
 
   /** Map of notebook URIs to active WebSocket kernel clients */
   private readonly _activeKernels = new Map<string, WebSocketKernelClient>();
+
+  /** Map of notebook URIs to active Pyodide kernel clients */
+  private readonly _pyodideKernels = new Map<string, PyodideKernelClient>();
 
   /** Map of notebook URIs to their selected runtimes */
   private readonly _notebookRuntimes = new Map<string, RuntimeDTO>();
@@ -81,6 +85,9 @@ export class SmartDynamicControllerManager implements vscode.Disposable {
 
     // Create the main "Datalayer Platform" controller
     this.createMainController();
+
+    // Create Pyodide controller for offline Python execution
+    this.createPyodideController();
 
     // Refresh on auth changes
     authProvider.onAuthStateChanged(() => {
@@ -120,6 +127,32 @@ export class SmartDynamicControllerManager implements vscode.Disposable {
     // to execute without selecting a runtime first.
 
     this._controllers.set("datalayer-platform", controller);
+    this._context.subscriptions.push(controller);
+  }
+
+  /**
+   * Creates the Pyodide controller for offline Python execution.
+   * This controller works with native .ipynb files without requiring server connectivity.
+   */
+  private createPyodideController(): void {
+    const controller = vscode.notebooks.createNotebookController(
+      "datalayer-pyodide",
+      "jupyter-notebook",
+      "Datalayer: Pyodide (Python)",
+    );
+
+    controller.description = "Offline Python execution (WebAssembly)";
+    controller.detail = "Browser-based Python kernel powered by Pyodide";
+    controller.supportedLanguages = ["python", "markdown", "raw"];
+    controller.supportsExecutionOrder = true;
+
+    // Execute handler for Pyodide kernel
+    controller.executeHandler = async (cells, notebook, ctrl) => {
+      await this.executePyodideCells(cells, notebook, ctrl);
+    };
+
+    // Store controller
+    this._controllers.set("datalayer-pyodide", controller);
     this._context.subscriptions.push(controller);
   }
 
@@ -411,6 +444,67 @@ export class SmartDynamicControllerManager implements vscode.Disposable {
   }
 
   /**
+   * Executes cells using Pyodide kernel (browser-based Python).
+   * Creates kernel on-demand and reuses it for the notebook lifetime.
+   *
+   * @param cells - Cells to execute
+   * @param notebook - Notebook document
+   * @param controller - Pyodide controller
+   */
+  private async executePyodideCells(
+    cells: vscode.NotebookCell[],
+    notebook: vscode.NotebookDocument,
+    controller: vscode.NotebookController,
+  ): Promise<void> {
+    const notebookUri = notebook.uri.toString();
+
+    // Get or create Pyodide kernel client for this notebook
+    let kernelClient = this._pyodideKernels.get(notebookUri);
+    if (!kernelClient) {
+      console.log(`[Pyodide] Creating new kernel for ${notebook.uri.fsPath}`);
+      kernelClient = new PyodideKernelClient();
+
+      try {
+        await kernelClient.initialize();
+        this._pyodideKernels.set(notebookUri, kernelClient);
+      } catch (error) {
+        vscode.window.showErrorMessage(
+          `Failed to initialize Pyodide kernel: ${error instanceof Error ? error.message : String(error)}`,
+        );
+        return;
+      }
+    }
+
+    // Execute each cell sequentially
+    // Abort on first error (matches Jupyter "Run All" behavior)
+    for (const cell of cells) {
+      if (cell.kind !== vscode.NotebookCellKind.Code) {
+        continue; // Skip markdown cells
+      }
+
+      const execution = controller.createNotebookCellExecution(cell);
+      execution.executionOrder = ++this._executionOrder;
+      execution.start(Date.now());
+
+      try {
+        await execution.clearOutput();
+        // Execute cell - this will throw if Python code has an error
+        await kernelClient.execute(cell.document.getText(), execution);
+        execution.end(true, Date.now());
+      } catch (error) {
+        // Error output already displayed by PyodideKernelClient._handleError()
+        // Just mark execution as failed and abort remaining cells
+        execution.end(false, Date.now());
+        console.log(
+          `[Pyodide] Cell execution failed, aborting remaining cells:`,
+          error instanceof Error ? error.message : String(error),
+        );
+        break; // CRITICAL: Abort execution of remaining cells
+      }
+    }
+  }
+
+  /**
    * Gets the unique controller ID for a specific runtime.
    * @param runtime The runtime DTO to get the controller ID for
    * @returns The unique controller identifier string
@@ -475,10 +569,20 @@ export class SmartDynamicControllerManager implements vscode.Disposable {
    */
   public onDidCloseNotebook(notebook: vscode.NotebookDocument): void {
     const notebookUri = notebook.uri.toString();
+
+    // Dispose WebSocket kernel if exists
     const kernelClient = this._activeKernels.get(notebookUri);
     if (kernelClient) {
       kernelClient.dispose();
       this._activeKernels.delete(notebookUri);
+    }
+
+    // Dispose Pyodide kernel if exists
+    const pyodideClient = this._pyodideKernels.get(notebookUri);
+    if (pyodideClient) {
+      console.log(`[Pyodide] Disposing kernel for ${notebook.uri.fsPath}`);
+      pyodideClient.dispose();
+      this._pyodideKernels.delete(notebookUri);
     }
   }
 
@@ -572,11 +676,18 @@ export class SmartDynamicControllerManager implements vscode.Disposable {
 
     this._disposed = true;
 
-    // Clean up kernels
+    // Clean up WebSocket kernels
     for (const kernelClient of this._activeKernels.values()) {
       kernelClient.dispose();
     }
     this._activeKernels.clear();
+
+    // Clean up Pyodide kernels
+    for (const [uri, client] of this._pyodideKernels.entries()) {
+      console.log(`[Pyodide] Disposing kernel for ${uri}`);
+      client.dispose();
+    }
+    this._pyodideKernels.clear();
 
     // Clean up controllers
     for (const controller of this._controllers.values()) {

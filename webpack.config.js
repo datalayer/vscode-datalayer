@@ -30,6 +30,7 @@ const extensionConfig = {
   externals: {
     vscode: "commonjs vscode", // the vscode-module is created on-the-fly and must be excluded. Add other modules that cannot be webpack'ed, 📖 -> https://webpack.js.org/configuration/externals/
     zeromq: "commonjs zeromq", // zeromq has native bindings that must be excluded from webpack
+    pyodide: "commonjs pyodide", // pyodide package is HUGE (~10MB+ WASM), must be external to avoid heap overflow during webpack bundling
     // modules added here also need to be added in the .vscodeignore file
   },
   resolve: {
@@ -67,6 +68,11 @@ const extensionConfig = {
       {
         test: /\.whl$/,
         use: "null-loader",
+      },
+      // Python file loader (for Pyodide kernel in native notebooks)
+      {
+        test: /pyodide_kernel\.py$/,
+        type: "asset/source",
       },
     ],
   },
