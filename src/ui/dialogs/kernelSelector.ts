@@ -49,6 +49,11 @@ export async function showKernelSelector(
     "../../services/kernel/nativeKernelIntegration"
   );
 
+  console.log("[KernelSelector] showKernelSelector called", {
+    documentUri: documentUri?.toString(),
+    currentRuntime,
+  });
+
   const options: KernelOption[] = [
     {
       label: "Datalayer Platform",
@@ -79,6 +84,28 @@ export async function showKernelSelector(
           } catch (error) {
             vscode.window.showErrorMessage(
               `Failed to connect to Python environment: ${error}`,
+            );
+          }
+        }
+      },
+    },
+    {
+      label: "Pyodide (Browser Python)",
+      description: "Run Python in the browser without a server",
+      action: async () => {
+        if (documentUri) {
+          try {
+            // Switch to Pyodide kernel via command
+            await vscode.commands.executeCommand(
+              "datalayer.internal.switchToPyodide",
+              documentUri,
+            );
+            vscode.window.showInformationMessage(
+              "Switched to Pyodide (Browser Python). Python code will run in your browser.",
+            );
+          } catch (error) {
+            vscode.window.showErrorMessage(
+              `Failed to switch to Pyodide: ${error}`,
             );
           }
         }
@@ -133,6 +160,13 @@ export async function showKernelSelector(
       },
     },
   ];
+
+  console.log(
+    "[KernelSelector] Options array created, length:",
+    options.length,
+    "labels:",
+    options.map((o) => o.label),
+  );
 
   // Add "Terminate Runtime" option if a runtime is currently selected
   if (currentRuntime) {
@@ -196,6 +230,13 @@ export async function showKernelSelector(
 
     return result;
   });
+
+  console.log(
+    "[KernelSelector] Items to show in QuickPick:",
+    items.length,
+    "labels:",
+    items.map((i) => i.label),
+  );
 
   const selected = await vscode.window.showQuickPick(items, {
     placeHolder: "Select a kernel source or manage current runtime",

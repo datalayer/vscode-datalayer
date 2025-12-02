@@ -151,6 +151,67 @@ export class KernelBridge implements vscode.Disposable {
   }
 
   /**
+   * Connects a webview document (notebook or lexical) to Pyodide kernel.
+   * Sends Pyodide runtime information to the webview for in-browser Python execution.
+   *
+   * @param uri - Document URI
+   */
+  public async connectWebviewDocumentToPyodide(uri: vscode.Uri): Promise<void> {
+    const key = uri.toString();
+    const webview = this._webviews.get(key);
+
+    if (!webview) {
+      // Try to find webview by searching active panels
+      const allWebviews = this.findWebviewsForUri(uri);
+      if (allWebviews.length === 0) {
+        throw new Error("No webview found for document");
+      }
+      // Use first matching webview
+      const webviewPanel = allWebviews[0];
+      this._webviews.set(key, webviewPanel);
+    }
+
+    const targetWebview = this._webviews.get(key);
+    if (!targetWebview) {
+      throw new Error("Failed to get webview panel for document");
+    }
+
+    // Create a Pyodide runtime object that matches the RuntimeJSON interface
+    // The special ingress URL "http://pyodide-local" signals to the webview
+    // to use the in-browser Pyodide kernel instead of making HTTP requests
+    const pyodideRuntime: ExtendedRuntimeJSON = {
+      uid: "pyodide-local",
+      podName: "pyodide-local",
+      givenName: "Pyodide (Browser Python)",
+      environmentName: "python",
+      environmentTitle: "Python (Pyodide)",
+      type: "notebook",
+      burningRate: 0,
+      ingress: "http://pyodide-local", // Special marker URL
+      token: "", // No token needed for browser-based execution
+      startedAt: new Date().toISOString(),
+      expiredAt: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(), // Never expires (1 year)
+    };
+
+    // Fire event so providers can track the Pyodide kernel
+    await vscode.commands.executeCommand(
+      "datalayer.internal.runtime.connected",
+      uri,
+      pyodideRuntime,
+    );
+
+    // Send kernel-selected message to webview
+    const message = {
+      type: "kernel-selected",
+      body: {
+        runtime: pyodideRuntime,
+      },
+    };
+
+    await targetWebview.webview.postMessage(message);
+  }
+
+  /**
    * Connects a webview document to a local kernel (Python environment, Jupyter kernel, or Jupyter server).
    * Starts the kernel and sends kernel information to the webview.
    *

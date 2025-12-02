@@ -95,9 +95,12 @@ function NotebookEditorCore({
   const nbformat = store((state) => state.nbformat);
 
   // Runtime management with hook
-  const { selectedRuntime, serviceManager, selectRuntime } = useRuntimeManager(
-    selectedRuntimeFromStore,
-  );
+  const {
+    selectedRuntime,
+    serviceManager,
+    selectRuntime,
+    mutableServiceManager,
+  } = useRuntimeManager(selectedRuntimeFromStore);
 
   // Notebook model management
   const { handleNotebookModelChanged, getNotebookData, markClean } =
@@ -648,7 +651,11 @@ function NotebookEditorCore({
     );
 
     // Set up listener for tool-execution messages from extension
-    const cleanup = setupToolExecutionListener(runner, vsCodeAPI);
+    const cleanup = setupToolExecutionListener(
+      runner,
+      vsCodeAPI,
+      mutableServiceManager || undefined,
+    );
 
     console.log(
       "[NotebookEditor] Tool execution listener registered with Runner for notebookId:",
@@ -656,7 +663,7 @@ function NotebookEditorCore({
     );
 
     return cleanup;
-  }, [notebookId, notebookStoreState]); // Recreate runner when notebookId or store changes
+  }, [notebookId, notebookStoreState, mutableServiceManager]); // Recreate runner when notebookId or store changes
 
   // Sync colormode with theme changes
   useEffect(() => {

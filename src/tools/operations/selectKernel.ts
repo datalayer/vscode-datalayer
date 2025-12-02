@@ -107,7 +107,9 @@ export const selectKernelOperation: ToolOperation<
       const isCreateNew = normalizedKernelId === "CREATE_NEW_RUNTIME";
       const isActiveRuntime = normalizedKernelId === "ACTIVE_RUNTIME";
       const isLocalDefault = normalizedKernelId === "LOCAL_IPYKERNEL";
-      const isPyodide = normalizedKernelId === "PYODIDE_KERNEL";
+      const isPyodide =
+        normalizedKernelId === "PYODIDE_KERNEL" ||
+        normalizedKernelId === "pyodide-local";
       const isCloudRuntime =
         normalizedKernelId.startsWith("runtime-") ||
         (!isCreateNew &&
@@ -259,14 +261,18 @@ export const selectKernelOperation: ToolOperation<
         };
       }
 
-      // Handler: Pyodide Kernel (Future Support)
+      // Handler: Pyodide Kernel (Browser-based Python)
       if (isPyodide) {
+        // Connect to Pyodide (webview will initialize browser-based Python kernel)
+        await kernelBridge.connectWebviewDocumentToPyodide(documentUri);
+
         return {
-          success: false,
-          error: "Pyodide kernel support not yet implemented",
-          message:
-            "Pyodide WebAssembly kernel support is coming soon! Stay tuned.",
-          chatMessage: "❌ Pyodide kernel support coming soon!",
+          success: true,
+          kernelId: "pyodide-local",
+          documentUri: documentUri.toString(),
+          message: "Connected to Pyodide (browser-based Python kernel)",
+          chatMessage:
+            "✅ Connected to Pyodide - browser Python (no server required!)",
         };
       }
 

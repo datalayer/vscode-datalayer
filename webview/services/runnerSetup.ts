@@ -227,9 +227,22 @@ export function setupToolExecutionListener(
   runner: WebviewRunner,
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   vscodeAPI: { postMessage: (message: any) => void },
+  mutableServiceManager?: { updateToPyodide: (url?: string) => void },
 ): () => void {
   const messageListener = (event: MessageEvent) => {
     const message = event.data;
+
+    // Handle switch-to-pyodide message
+    if (message.type === "switch-to-pyodide") {
+      console.log("[ToolExecutionListener] Switching to Pyodide kernel");
+      if (mutableServiceManager) {
+        mutableServiceManager.updateToPyodide();
+        console.log(
+          "[ToolExecutionListener] Pyodide service manager created, kernel will start on first execution",
+        );
+      }
+      return;
+    }
 
     if (message.type === "tool-execution") {
       const { requestId, operationName, args, format } = message as {

@@ -730,7 +730,11 @@ Complete the code at <CURSOR>:`;
    * @returns HTML content for the webview
    */
   private getHtmlForWebview(webview: vscode.Webview): string {
-    return getNotebookHtml(webview, this._context.extensionUri);
+    // Read Pyodide version from configuration
+    const pyodideVersion = vscode.workspace
+      .getConfiguration("datalayer.pyodide")
+      .get<string>("version", "0.27.3");
+    return getNotebookHtml(webview, this._context.extensionUri, pyodideVersion);
   }
 
   /**
@@ -833,7 +837,7 @@ Complete the code at <CURSOR>:`;
       const currentRuntime: RuntimeDTO | undefined = undefined;
 
       // Try auto-connect
-      const runtime = await this.autoConnectService.connect(
+      const result = await this.autoConnectService.connect(
         documentUri,
         currentRuntime,
         sdk,
@@ -841,16 +845,28 @@ Complete the code at <CURSOR>:`;
         runtimesTreeProvider,
       );
 
-      if (runtime) {
+      if (result) {
         console.log(
-          `[NotebookProvider] Auto-connect successful for ${documentUri.fsPath}`,
+          `[NotebookProvider] Auto-connect successful using "${result.strategyName}" for ${documentUri.fsPath}`,
         );
 
         // Connect the webview to the runtime via kernel bridge
-        await getServiceContainer().kernelBridge.connectWebviewDocument(
-          documentUri,
-          runtime,
-        );
+        if (result.strategyName === "Pyodide") {
+          // Use Pyodide-specific connection method
+          await getServiceContainer().kernelBridge.connectWebviewDocumentToPyodide(
+            documentUri,
+          );
+        } else if (result.runtime) {
+          // Use cloud runtime connection method
+          await getServiceContainer().kernelBridge.connectWebviewDocument(
+            documentUri,
+            result.runtime,
+          );
+        } else {
+          console.warn(
+            `[NotebookProvider] Strategy "${result.strategyName}" succeeded but provided no runtime`,
+          );
+        }
       } else {
         console.log(
           `[NotebookProvider] Auto-connect skipped or failed for ${documentUri.fsPath}`,

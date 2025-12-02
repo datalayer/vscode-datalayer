@@ -103,6 +103,21 @@ export class MutableServiceManager {
   }
 
   /**
+   * Update to Pyodide service manager (browser-based Python).
+   *
+   * @param pyodideUrl - Optional CDN URL for Pyodide
+   */
+  updateToPyodide(pyodideUrl?: string): void {
+    this._disposeCurrentManager();
+    this._subProxies.clear();
+    this._serviceManager = ServiceManagerFactory.create({
+      type: "pyodide",
+      pyodideUrl,
+    });
+    this._notifyListeners();
+  }
+
+  /**
    * Get the current service manager type.
    *
    * @returns Service manager type or 'unknown' if not created by factory

@@ -11,8 +11,8 @@
  * until one successfully returns a runtime.
  *
  * Configuration: datalayer.autoConnect.strategies
- * - ["Active Runtime"] - Only connect to active runtime
- * - ["Active Runtime", "Ask"] - Try active runtime, then ask user
+ * - ["Pyodide"] - Always use browser Python (default)
+ * - ["Active Runtime", "Pyodide"] - Try cloud runtime first, fallback to Pyodide
  * - ["Ask"] - Always ask user
  * - [] - No auto-connect (manual selection required)
  *
@@ -26,6 +26,7 @@ import type { IAuthProvider } from "../interfaces/IAuthProvider";
 import type { RuntimesTreeProvider } from "../../providers/runtimesTreeProvider";
 import { ActiveRuntimeStrategy } from "./strategies/activeRuntimeStrategy";
 import { AskUserStrategy } from "./strategies/askUserStrategy";
+import { PyodideStrategy } from "./strategies/pyodideStrategy";
 
 /**
  * Context passed to auto-connect strategies.
@@ -59,6 +60,16 @@ export interface AutoConnectStrategy {
 }
 
 /**
+ * Result from auto-connect attempt.
+ */
+export interface AutoConnectResult {
+  /** Runtime if a cloud runtime was selected, null for Pyodide/local */
+  runtime: RuntimeDTO | null;
+  /** Name of the strategy that succeeded */
+  strategyName: string;
+}
+
+/**
  * Service for auto-connecting documents to runtimes based on configured strategies.
  */
 export class AutoConnectService {
@@ -66,6 +77,7 @@ export class AutoConnectService {
 
   constructor() {
     // Register available strategies
+    this.strategies.set("Pyodide", new PyodideStrategy());
     this.strategies.set("Active Runtime", new ActiveRuntimeStrategy());
     this.strategies.set("Ask", new AskUserStrategy());
   }
@@ -78,7 +90,7 @@ export class AutoConnectService {
    * @param sdk - Datalayer SDK client
    * @param authProvider - Authentication provider
    * @param runtimesTreeProvider - Optional tree provider for accessing cached runtimes
-   * @returns Runtime if a strategy succeeds, null if all strategies fail or config is empty
+   * @returns Result with runtime and strategy name, or null if all strategies fail
    */
   async connect(
     documentUri: vscode.Uri,
@@ -86,7 +98,7 @@ export class AutoConnectService {
     sdk: DatalayerClient,
     authProvider: IAuthProvider,
     runtimesTreeProvider?: RuntimesTreeProvider,
-  ): Promise<RuntimeDTO | null> {
+  ): Promise<AutoConnectResult | null> {
     // Get configured strategies
     const config = vscode.workspace.getConfiguration("datalayer");
     const strategyNames = config.get<string[]>("autoConnect.strategies", [
@@ -121,11 +133,27 @@ export class AutoConnectService {
 
       try {
         const runtime = await strategy.tryConnect(context);
+
+        // For Pyodide, runtime will be null but strategy succeeds
+        if (strategyName === "Pyodide") {
+          console.log(
+            `[AutoConnect] Success using Pyodide strategy for ${documentUri.fsPath}`,
+          );
+          return {
+            runtime: null, // Pyodide doesn't use RuntimeDTO
+            strategyName: "Pyodide",
+          };
+        }
+
+        // For other strategies, check if runtime was returned
         if (runtime) {
           console.log(
             `[AutoConnect] Success using strategy "${strategyName}" for ${documentUri.fsPath}`,
           );
-          return runtime;
+          return {
+            runtime,
+            strategyName,
+          };
         }
         console.log(
           `[AutoConnect] Strategy "${strategyName}" returned no runtime, trying next`,

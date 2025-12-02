@@ -200,6 +200,35 @@ export async function activate(
       });
     activationTimer.checkpoint("python_extension_activation_started");
 
+    // Initialize Pyodide preloader (handles package caching for webview notebooks)
+    logger.debug("Initializing Pyodide preloader for webview notebooks");
+    const { PyodidePreloader } = await import(
+      "./services/pyodide/pyodidePreloader"
+    );
+    const pyodidePreloader = new PyodidePreloader(context, logger);
+    context.subscriptions.push(pyodidePreloader);
+    // Initialize preloader (prompts user if configured)
+    pyodidePreloader.initialize().catch((error) => {
+      logger.error("Failed to initialize Pyodide preloader:", error);
+    });
+    activationTimer.checkpoint("pyodide_preloader_initialized");
+
+    // Preload packages for native notebooks (uses bundled npm Pyodide v0.29.0)
+    logger.debug("Preloading packages for native notebooks");
+    const { preloadPackagesForNativeNotebooks } = await import(
+      "./services/pyodide/nativeNotebookPreloader"
+    );
+    // Fire-and-forget preload (don't block activation)
+    preloadPackagesForNativeNotebooks(context, logger).catch(
+      (error: unknown) => {
+        logger.error(
+          "Failed to preload packages for native notebooks:",
+          error instanceof Error ? error : undefined,
+        );
+      },
+    );
+    activationTimer.checkpoint("native_notebook_preload_started");
+
     // Register test command for debugging getActiveDocument tool
     logger.debug("Registering getActiveDocument test command");
     const { testGetActiveDocument } = await import(

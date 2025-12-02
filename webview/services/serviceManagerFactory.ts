@@ -48,6 +48,7 @@
 import { ServiceManager, ServerConnection } from "@jupyterlab/services";
 import { createMockServiceManager } from "./mockServiceManager";
 import { createLocalKernelServiceManager } from "./localKernelServiceManager";
+import { createPyodideServiceManager } from "./pyodideServiceManager";
 
 /**
  * Service manager type discriminator.
@@ -89,12 +90,12 @@ export interface RemoteServiceManagerOptions {
 
 /**
  * Options for creating a Pyodide service manager.
- * Reserved for future implementation - will throw if used.
  */
 export interface PyodideServiceManagerOptions {
   /** Service manager type discriminator */
   type: "pyodide";
-  // Future options will be added when Pyodide support is implemented
+  /** Optional Pyodide CDN URL (defaults to official CDN) */
+  pyodideUrl?: string;
 }
 
 /**
@@ -154,11 +155,7 @@ export class ServiceManagerFactory {
         return new ServiceManager({ serverSettings: options.serverSettings });
 
       case "pyodide":
-        throw new Error(
-          "Pyodide service manager not yet implemented. " +
-            "This will be added in a future PR. " +
-            "For now, use 'mock', 'local', or 'remote' types.",
-        );
+        return createPyodideServiceManager(options.pyodideUrl);
 
       default:
         // Type guard ensures this is unreachable
