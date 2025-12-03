@@ -125,11 +125,19 @@ export class PyodideCacheManager {
 
     // Load Pyodide
     const { loadPyodide } = await import("pyodide");
+
+    // Create package cache directory
+    const packageCache = path.join(pyodidePath, "packages");
+    await fs.mkdir(packageCache, { recursive: true });
+
+    // CRITICAL FIX: Add packageCacheDir for persistent caching
+    // Type assertion needed - packageCacheDir exists in runtime but TypeScript may cache old types
     const pyodide: PyodideInterface = await loadPyodide({
       indexURL: pyodidePath,
+      packageCacheDir: packageCache,
       stdout: () => {}, // Suppress stdout
       stderr: () => {}, // Suppress stderr
-    });
+    } as Parameters<typeof loadPyodide>[0]);
 
     progress?.report({
       message: "Loading micropip...",
