@@ -18,8 +18,12 @@ import type { ILogger } from "../interfaces/ILogger";
 import type {
   IAuthProvider,
   VSCodeAuthState,
+  AuthMethod,
 } from "../interfaces/IAuthProvider";
 import { BaseService } from "./baseService";
+import { OAuthFlowManager } from "./oauthFlowManager";
+import { showAuthMethodPicker } from "../../ui/dialogs/authMethodSelector";
+import { promptForCredentials } from "../../ui/dialogs/credentialsInput";
 
 /**
  * SDK-based authentication provider for VS Code.
@@ -43,7 +47,7 @@ export class SDKAuthProvider extends BaseService implements IAuthProvider {
   private _onAuthStateChanged = new vscode.EventEmitter<VSCodeAuthState>();
   readonly onAuthStateChanged = this._onAuthStateChanged.event;
 
-  private static readonly TOKEN_SECRET_KEY = "datalayer.token";
+  private oauthFlowManager: OAuthFlowManager;
 
   constructor(
     private sdk: DatalayerClient,
@@ -51,6 +55,7 @@ export class SDKAuthProvider extends BaseService implements IAuthProvider {
     logger: ILogger,
   ) {
     super("SDKAuthProvider", logger);
+    this.oauthFlowManager = new OAuthFlowManager(context, logger);
     this.logger.debug("SDKAuthProvider instance created", {
       contextId: context.extension.id,
       hasSDK: !!sdk,
@@ -68,75 +73,98 @@ export class SDKAuthProvider extends BaseService implements IAuthProvider {
 
   /**
    * Implementation of BaseService lifecycle initialization.
-   * Verifies existing authentication with the platform.
+   * Tries to restore session from SDK storage (OS keyring).
+   * Falls back to migrating from old VS Code secrets if found.
    */
   protected async onInitialize(): Promise<void> {
-    // Load token from secret storage
-    const storedToken = await this.context.secrets.get(
-      SDKAuthProvider.TOKEN_SECRET_KEY,
-    );
+    // Initialize OAuth flow manager
+    await this.oauthFlowManager.initialize();
 
-    if (!storedToken) {
-      this.logger.debug(
-        "No stored authentication token found in secret storage",
-      );
-      this._authState = {
-        isAuthenticated: false,
-        user: null,
-        error: null,
-      };
-      this._onAuthStateChanged.fire(this._authState);
-      return;
-    }
-
-    // Set token in SDK from secret storage
-    this.logger.debug("Loading token from secret storage");
-    await this.sdk.setToken(storedToken);
-
+    // Try SDK session restoration first
     try {
-      const user = await this.logger.timeAsync(
-        "whoami_verification",
-        () => this.sdk.whoami(),
-        { operation: "verify_stored_token" },
+      this.logger.debug("Attempting SDK session restoration from keyring");
+      const result = await this.logger.timeAsync(
+        "sdk_session_restore",
+        () => this.sdk.auth.login({}), // Empty options = use StorageAuthStrategy
+        { operation: "restore_session" },
       );
 
-      this._authState = {
-        isAuthenticated: true,
-        user: user as UserDTO,
-        error: null,
-      };
+      if (result && result.user) {
+        // CRITICAL: Also set token in base SDK class for API calls
+        // sdk.auth.login() stores in auth.currentToken but not in this.token
+        await this.sdk.setToken(result.token);
 
-      this.logger.info("Authentication verified", {
-        userId: user.uid,
-        displayName: user.displayName,
-        hasToken: true,
-      });
+        this._authState = {
+          isAuthenticated: true,
+          user: result.user,
+          error: null,
+        };
 
-      this._onAuthStateChanged.fire(this._authState);
+        this.logger.info("Session restored from SDK storage", {
+          userId: result.user.uid,
+          displayName: result.user.displayName,
+        });
+
+        this._onAuthStateChanged.fire(this._authState);
+        return;
+      }
     } catch (error) {
-      this.logger.warn("Authentication verification failed", {
+      this.logger.debug("No valid session in SDK storage", {
         error: error instanceof Error ? error.message : "Unknown error",
-        hasStoredToken: true,
       });
-
-      this._authState = {
-        isAuthenticated: false,
-        user: null,
-        error:
-          error instanceof Error
-            ? error.message
-            : "Unknown authentication error",
-      };
-
-      this._onAuthStateChanged.fire(this._authState);
     }
+
+    // No SDK session - check for old VS Code secret (migration)
+    const oldToken = await this.context.secrets.get("datalayer.token");
+    if (oldToken) {
+      this.logger.info("Found old VS Code secret - migrating to SDK storage");
+      try {
+        const result = await this.logger.timeAsync(
+          "sdk_token_migration",
+          () => this.sdk.auth.login({ token: oldToken }),
+          { operation: "migrate_token" },
+        );
+
+        // CRITICAL: Also set token in base SDK class for API calls
+        await this.sdk.setToken(result.token);
+
+        // Migration successful - delete old secret
+        await this.context.secrets.delete("datalayer.token");
+        this.logger.info("Token migrated successfully, old secret deleted");
+
+        this._authState = {
+          isAuthenticated: true,
+          user: result.user,
+          error: null,
+        };
+
+        this._onAuthStateChanged.fire(this._authState);
+        return;
+      } catch (error) {
+        this.logger.warn("Token migration failed - invalid token", {
+          error: error instanceof Error ? error.message : "Unknown error",
+        });
+        // Delete invalid old secret
+        await this.context.secrets.delete("datalayer.token");
+      }
+    }
+
+    // No valid session or migration
+    this.logger.debug("No authentication session found");
+    this._authState = {
+      isAuthenticated: false,
+      user: null,
+      error: null,
+    };
+    this._onAuthStateChanged.fire(this._authState);
   }
 
   /**
    * Implementation of BaseService lifecycle disposal.
-   * Cleans up event emitters and auth state.
+   * Cleans up event emitters, OAuth manager, and auth state.
    */
   protected async onDispose(): Promise<void> {
+    await this.oauthFlowManager.dispose();
     this._onAuthStateChanged.dispose();
     this._authState = {
       isAuthenticated: false,
@@ -146,65 +174,99 @@ export class SDKAuthProvider extends BaseService implements IAuthProvider {
   }
 
   /**
-   * Prompts user for token and authenticates with the platform.
-   * Updates authentication state based on the result.
+   * Prompts user for authentication method and performs login.
+   * @deprecated Use showLoginMethodPicker() followed by specific login methods
    */
   async login(): Promise<void> {
-    this.logger.info("Starting login process");
+    this.logger.info("Starting login process with method picker");
 
-    const token = await this.promptForToken();
-    if (!token) {
+    const method = await this.showLoginMethodPicker();
+    if (!method) {
       this.logger.debug("Login cancelled by user");
       return;
     }
 
-    this.logger.debug("Token provided, attempting authentication", {
-      tokenLength: token.length,
-      tokenType: token.startsWith("eyJ") ? "JWT" : "Bearer",
+    try {
+      switch (method) {
+        case "email-password":
+          await this.loginWithCredentials();
+          break;
+        case "github":
+        case "linkedin":
+          await this.loginWithOAuth(method);
+          break;
+      }
+    } catch (error) {
+      // Error already logged and shown in specific methods
+      throw error;
+    }
+  }
+
+  /**
+   * Show login method selection dialog.
+   * Presents user with choice of email/password or OAuth providers.
+   */
+  async showLoginMethodPicker(): Promise<AuthMethod | undefined> {
+    this.logger.debug("Showing login method picker");
+    return await showAuthMethodPicker();
+  }
+
+  /**
+   * Login using email/password credentials.
+   * Prompts for credentials and authenticates with platform.
+   */
+  async loginWithCredentials(): Promise<void> {
+    this.logger.info("Starting email/password login");
+
+    const creds = await promptForCredentials();
+    if (!creds) {
+      this.logger.debug("Credentials input cancelled by user");
+      return;
+    }
+
+    this.logger.debug("Credentials provided, attempting authentication", {
+      handle: creds.handle,
     });
 
     try {
-      // Set token in SDK
-      await this.logger.timeAsync("sdk_login", () => this.sdk.setToken(token), {
-        operation: "set_token",
-      });
-
-      // Verify token by fetching user
-      const user = await this.logger.timeAsync(
-        "user_verification",
-        () => this.sdk.whoami(),
-        { operation: "verify_new_token" },
+      // SDK handles storage automatically
+      const result = await this.logger.timeAsync(
+        "sdk_credentials_login",
+        () =>
+          this.sdk.auth.login({
+            handle: creds.handle,
+            password: creds.password,
+          }),
+        { operation: "credentials_login" },
       );
 
-      // Persist token to secret storage AFTER successful verification
-      await this.context.secrets.store(SDKAuthProvider.TOKEN_SECRET_KEY, token);
-      this.logger.debug("Token stored in secret storage");
+      // CRITICAL: Also set token in base SDK class for API calls
+      // sdk.auth.login() stores in auth.currentToken but not in this.token
+      await this.sdk.setToken(result.token);
 
       this._authState = {
         isAuthenticated: true,
-        user: user as UserDTO,
+        user: result.user,
         error: null,
       };
 
-      this.logger.info("Login successful", {
-        userId: user.uid,
-        displayName: user.displayName,
-        userEmail: user.email || "not_available",
+      this.logger.info("Credentials login successful", {
+        userId: result.user.uid,
+        displayName: result.user.displayName,
       });
 
       this._onAuthStateChanged.fire(this._authState);
 
-      const displayName = user.displayName;
       await vscode.window.showInformationMessage(
-        `Successfully logged in as ${displayName}`,
+        `Successfully logged in as ${result.user.displayName}`,
       );
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : "Unknown login error";
 
-      this.logger.error("Login failed", error as Error, {
-        operation: "login_process",
-        tokenLength: token.length,
+      this.logger.error("Credentials login failed", error as Error, {
+        operation: "credentials_login",
+        handle: creds.handle,
       });
 
       this._authState = {
@@ -220,7 +282,106 @@ export class SDKAuthProvider extends BaseService implements IAuthProvider {
   }
 
   /**
+   * Login using OAuth provider.
+   * Opens browser for OAuth flow and handles callback.
+   */
+  async loginWithOAuth(provider: "github" | "linkedin"): Promise<void> {
+    this.logger.info("Starting OAuth login", {
+      provider,
+      extensionId: this.context.extension.id,
+    });
+
+    try {
+      this.logger.debug("Calling oauthFlowManager.startOAuthFlow", {
+        provider,
+      });
+
+      // Get token via OAuth flow
+      const oauthResult = await this.oauthFlowManager.startOAuthFlow(provider);
+
+      this.logger.info("OAuth flow completed successfully", {
+        provider,
+        tokenLength: oauthResult.token.length,
+      });
+
+      this.logger.debug("OAuth flow completed, authenticating with SDK", {
+        provider,
+        tokenLength: oauthResult.token.length,
+      });
+
+      // SDK handles token storage automatically via keytar (OS keyring)
+      // TokenAuthStrategy validates token AND persists it to storage
+      this.logger.debug("Authenticating with OAuth token", {
+        tokenLength: oauthResult.token.length,
+      });
+
+      const result = await this.logger.timeAsync(
+        "sdk_oauth_login",
+        () => this.sdk.auth.login({ token: oauthResult.token }),
+        { operation: "oauth_login", provider },
+      );
+
+      // CRITICAL: Also set token in base SDK class for API calls
+      // sdk.auth.login() stores in auth.currentToken but not in this.token
+      await this.sdk.setToken(result.token);
+
+      this._authState = {
+        isAuthenticated: true,
+        user: result.user,
+        error: null,
+      };
+
+      this.logger.info("OAuth login successful", {
+        provider,
+        userId: result.user.uid,
+        displayName: result.user.displayName,
+      });
+
+      // Verify token is stored and retrievable
+      const storedToken = this.sdk.getToken();
+      const isAuthenticated = this.sdk.auth.isAuthenticated();
+      this.logger.info("Verifying authentication state after login", {
+        hasStoredToken: !!storedToken,
+        storedTokenLength: storedToken ? storedToken.length : 0,
+        isAuthenticated,
+        sdkAuthState: this.sdk.auth.isAuthenticated(),
+      });
+
+      this._onAuthStateChanged.fire(this._authState);
+      this.logger.info("Auth state change event fired", {
+        isAuthenticated: this._authState.isAuthenticated,
+        userId: this._authState.user?.uid,
+      });
+
+      await vscode.window.showInformationMessage(
+        `Successfully logged in with ${provider} as ${result.user.displayName}`,
+      );
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : "Unknown OAuth error";
+
+      this.logger.error("OAuth login failed", error as Error, {
+        operation: "oauth_login",
+        provider,
+      });
+
+      this._authState = {
+        isAuthenticated: false,
+        user: null,
+        error: errorMessage,
+      };
+
+      this._onAuthStateChanged.fire(this._authState);
+      await vscode.window.showErrorMessage(
+        `${provider} login failed: ${errorMessage}`,
+      );
+      throw error;
+    }
+  }
+
+  /**
    * Logout and clear authentication state.
+   * SDK clears keyring storage automatically.
    */
   async logout(): Promise<void> {
     this.logger.info("Starting logout process", {
@@ -229,14 +390,22 @@ export class SDKAuthProvider extends BaseService implements IAuthProvider {
     });
 
     try {
-      // Call server logout
+      // First call SDK IAM logout (requires base token to be set)
       await this.logger.timeAsync("sdk_logout", () => this.sdk.logout(), {
         operation: "clear_server_session",
       });
 
-      // Delete token from secret storage
-      await this.context.secrets.delete(SDKAuthProvider.TOKEN_SECRET_KEY);
-      this.logger.debug("Token deleted from secret storage");
+      // Then explicitly clear auth manager and keyring
+      await this.logger.timeAsync(
+        "sdk_auth_logout",
+        () => this.sdk.auth.logout(),
+        {
+          operation: "clear_keyring",
+        },
+      );
+
+      // Finally clear base SDK token
+      await this.sdk.setToken("");
 
       this._authState = {
         isAuthenticated: false,
@@ -244,23 +413,20 @@ export class SDKAuthProvider extends BaseService implements IAuthProvider {
         error: null,
       };
 
-      this.logger.info("Logout successful - server session cleared");
+      this.logger.info("Logout successful - SDK cleared keyring");
       this._onAuthStateChanged.fire(this._authState);
       await vscode.window.showInformationMessage("Successfully logged out");
     } catch (error) {
-      this.logger.error(
-        "Logout error (proceeding with local cleanup)",
-        error as Error,
-        {
-          operation: "logout_process",
-        },
-      );
+      // Even if API fails, SDK clears local storage
+      this.logger.error("Logout error (local state cleared)", error as Error);
 
-      // Even if logout fails, clear local state and secret storage
-      await this.context.secrets.delete(SDKAuthProvider.TOKEN_SECRET_KEY);
-      this.logger.debug(
-        "Token deleted from secret storage despite server error",
-      );
+      // Force clear auth manager and keyring
+      try {
+        await this.sdk.auth.logout();
+        await this.sdk.setToken("");
+      } catch (clearError) {
+        this.logger.error("Error clearing local storage", clearError as Error);
+      }
 
       this._authState = {
         isAuthenticated: false,
@@ -355,38 +521,19 @@ export class SDKAuthProvider extends BaseService implements IAuthProvider {
   }
 
   /**
-   * Prompt user for their Datalayer API Key.
-   */
-  private async promptForToken(): Promise<string | undefined> {
-    const token = await vscode.window.showInputBox({
-      title: "Datalayer Authentication",
-      prompt: "Enter your Datalayer API Key",
-      placeHolder: "Paste your API Key here",
-      password: true,
-      ignoreFocusOut: true,
-      validateInput: (value: string) => {
-        if (!value || value.trim().length === 0) {
-          return "API Key cannot be empty";
-        }
-        return null;
-      },
-    });
-
-    return token?.trim();
-  }
-
-  /**
    * Check if currently authenticated.
+   * Delegates to SDK's authentication manager.
    */
   isAuthenticated(): boolean {
-    return this._authState.isAuthenticated;
+    return this.sdk.auth.isAuthenticated();
   }
 
   /**
    * Get current user (null if not authenticated).
+   * Delegates to SDK's authentication manager.
    */
   getCurrentUser(): UserDTO | null {
-    return this._authState.user;
+    return this.sdk.auth.getCurrentUser() || null;
   }
 
   /**

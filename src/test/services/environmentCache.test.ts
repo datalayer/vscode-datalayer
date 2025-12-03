@@ -78,6 +78,7 @@ suite("EnvironmentCache Tests", () => {
         user: null,
         error: null,
       };
+      mockSDK.auth.isAuthenticated.mockReturnValue(false);
 
       const environments = await cache.getEnvironments(
         mockSDK as unknown as DatalayerClient,
@@ -96,6 +97,7 @@ suite("EnvironmentCache Tests", () => {
         user: { uid: "test-user" } as unknown as UserDTO,
         error: null,
       };
+      mockSDK.auth.isAuthenticated.mockReturnValue(true);
 
       const mockEnvironments = [
         { name: "python-env", displayName: "Python" },
@@ -120,6 +122,7 @@ suite("EnvironmentCache Tests", () => {
         user: { uid: "test-user" } as unknown as UserDTO,
         error: null,
       };
+      mockSDK.auth.isAuthenticated.mockReturnValue(true);
 
       const mockEnvironments = [{ name: "python-env", displayName: "Python" }];
 
@@ -151,6 +154,7 @@ suite("EnvironmentCache Tests", () => {
         user: { uid: "test-user" } as unknown as UserDTO,
         error: null,
       };
+      mockSDK.auth.isAuthenticated.mockReturnValue(true);
 
       const mockEnvironments = [{ name: "python-env", displayName: "Python" }];
 
@@ -191,6 +195,7 @@ suite("EnvironmentCache Tests", () => {
         user: { uid: "test-user" } as unknown as UserDTO,
         error: null,
       };
+      mockSDK.auth.isAuthenticated.mockReturnValue(true);
 
       mockSDK.listEnvironments.mockRejectedValue(new Error("Network error"));
 

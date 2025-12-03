@@ -229,19 +229,6 @@ export async function activate(
     );
     activationTimer.checkpoint("native_notebook_preload_started");
 
-    // Register test command for debugging getActiveDocument tool
-    logger.debug("Registering getActiveDocument test command");
-    const { testGetActiveDocument } = await import(
-      "./tools/operations/getActiveDocument"
-    );
-    context.subscriptions.push(
-      vscode.commands.registerCommand(
-        "datalayer.testGetActiveDocument",
-        testGetActiveDocument,
-      ),
-    );
-    logger.debug("Test command registered: datalayer.testGetActiveDocument");
-
     // Register chat context provider for notebooks and lexical documents
     logger.debug("Registering chat context providers for Copilot");
     try {

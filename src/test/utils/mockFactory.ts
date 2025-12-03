@@ -211,6 +211,13 @@ export interface MockSpyFunction {
  * Type for the mock SDK returned by createMockSDK.
  */
 export interface MockSDK {
+  // Authentication manager (new SDK structure)
+  auth: {
+    isAuthenticated: MockSpyFunction;
+    getCurrentUser: MockSpyFunction;
+    storeToken: MockSpyFunction;
+    clearToken: MockSpyFunction;
+  };
   // IAM methods (nested structure - legacy)
   iam: {
     getIdentity: MockSpyFunction;
@@ -293,6 +300,13 @@ export function createMockSDK(): MockSDK {
   };
 
   return {
+    // Authentication manager (new SDK structure)
+    auth: {
+      isAuthenticated: createSpy().mockReturnValue(false),
+      getCurrentUser: createSpy().mockReturnValue(null),
+      storeToken: createSpy(),
+      clearToken: createSpy(),
+    },
     // IAM methods (nested structure - legacy)
     iam: {
       getIdentity: createSpy(),

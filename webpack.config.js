@@ -31,6 +31,7 @@ const extensionConfig = {
     vscode: "commonjs vscode", // the vscode-module is created on-the-fly and must be excluded. Add other modules that cannot be webpack'ed, 📖 -> https://webpack.js.org/configuration/externals/
     zeromq: "commonjs zeromq", // zeromq has native bindings that must be excluded from webpack
     pyodide: "commonjs pyodide", // pyodide package is HUGE (~10MB+ WASM), must be external to avoid heap overflow during webpack bundling
+    keytar: "commonjs keytar", // keytar has native bindings for OS keyring access
     // modules added here also need to be added in the .vscodeignore file
   },
   resolve: {
