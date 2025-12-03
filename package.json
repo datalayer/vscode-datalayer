@@ -3,7 +3,7 @@
   "publisher": "Datalayer",
   "displayName": "Datalayer",
   "description": "✨ AI ⚡ GPU 👥 Collaboration for 🪐 Jupyter Notebooks - 📄 Notion-like editor included.",
-  "version": "0.0.7",
+  "version": "0.0.8",
   "cache_version": "2",
   "icon": "images/datalayer-logo.png",
   "categories": [
