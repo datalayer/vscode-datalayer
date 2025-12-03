@@ -71,6 +71,18 @@
 []                           // Disabled
 ```
 
+### Pyodide Package Caching (December 2024)
+
+**Problem**: Pyodide packages re-downloaded every kernel startup (~50+ MB, 30+ seconds) despite cache setup code.
+
+**Fix**: Added `packageCacheDir` option to `loadPyodide()` calls in 4 files - this is the only way to enable persistent caching in Node.js Pyodide.
+
+**Impact**: Second startup now instant (< 5 seconds) instead of 30+ seconds. Packages cached at `~/.cache/datalayer-pyodide/0.29.0/packages/`
+
+**Version Sync**: Auto-sync script (`scripts/validate-pyodide-version.js`) keeps hardcoded version "0.29.0" synchronized with npm package during upgrades.
+
+**See**: [DEVELOPMENT.md - Pyodide Package Caching](dev/docs/DEVELOPMENT.md#pyodide-package-caching-december-2024) for complete technical details.
+
 ### Smart Controller Registration - DISABLED (January 2025)
 
 **Last Updated**: October 2025

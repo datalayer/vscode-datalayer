@@ -79,43 +79,55 @@ export class PyodideKernelClient {
    */
   async initialize(): Promise<void> {
     if (this._pyodide) {
-      console.log("[PyodideKernelClient] Already initialized");
       return;
     }
 
-    console.log("[PyodideKernelClient] Initializing Pyodide kernel...");
+    console.log("[PyodideKernelClient] Initializing...");
 
     try {
-      // Load Pyodide using npm package (Node.js compatible)
-      // The npm package includes all necessary files - no indexURL needed!
-      const { loadPyodide } = await import("pyodide");
+      // Import Node.js modules for cache directory
+      const os = await import("os");
+      const path = await import("path");
+      const fs = await import("fs/promises");
 
-      this._pyodide = await loadPyodide({
-        stdout: (text: string) => this._handleStdout(text),
-        stderr: (text: string) => this._handleStderr(text),
-      });
+      // IMPORTANT: Native notebooks use npm package version (0.29.0)
+      // The datalayer.pyodide.version config is ONLY for webview notebooks (CDN)
+      const pyodideVersion = "0.29.0";
 
-      // Mount Node.js filesystem for persistent package cache
-      await this._setupPersistentCache();
-
-      // Load micropip for package management
-      console.log("[PyodideKernelClient] Loading micropip package...");
-      await this._pyodide.loadPackage("micropip");
-      console.log("[PyodideKernelClient] ✓ micropip loaded");
-
-      // Load IPython package (required by pyodide_kernel.py)
-      console.log("[PyodideKernelClient] Loading IPython package...");
-      await this._pyodide.loadPackage("ipython");
-      console.log("[PyodideKernelClient] ✓ IPython loaded");
-
-      // Load IPython kernel module for clean error tracebacks
-      console.log("[PyodideKernelClient] Loading IPython kernel module...");
-      console.log(
-        `[PyodideKernelClient] Python code length: ${pyodideKernelCode?.length || 0} chars`,
+      // Create cache directory path
+      const cacheDir = path.join(
+        os.homedir(),
+        ".cache",
+        "datalayer-pyodide",
+        pyodideVersion,
+        "packages",
       );
 
+      // Ensure cache directory exists
+      await fs.mkdir(cacheDir, { recursive: true });
+
+      console.log(`[PyodideKernelClient] Cache: ${cacheDir}`);
+
+      // Load Pyodide using npm package (Node.js compatible)
+      // The npm package includes all necessary files - no indexURL needed!
+      // CRITICAL FIX: Pyodide is copied to dist/node_modules/pyodide during build
+      // This follows the same pattern as ZeroMQ binaries (see copyZmqBinaries.js)
+      // Webpack marks pyodide as external, so import('pyodide') resolves from dist/node_modules/
+      const { loadPyodide } = await import("pyodide");
+
+      // CRITICAL FIX: Add packageCacheDir for persistent caching
+      // Type assertion needed - packageCacheDir exists in runtime but TypeScript may cache old types
+      this._pyodide = await loadPyodide({
+        packageCacheDir: cacheDir,
+        stdout: (text: string) => this._handleStdout(text),
+        stderr: (text: string) => this._handleStderr(text),
+      } as Parameters<typeof loadPyodide>[0]);
+
+      // Load IPython using loadPackage() - this respects packageCacheDir cache
+      await this._pyodide!.loadPackage(["micropip", "ipython"]);
+
       // Register the module in Python's sys.modules so it can be imported
-      await this._pyodide.runPythonAsync(`
+      await this._pyodide!.runPythonAsync(`
 import sys
 from types import ModuleType
 
@@ -127,130 +139,21 @@ exec('''${pyodideKernelCode.replace(/'/g, "\\'")}''', pyodide_kernel.__dict__)
 
 # Register in sys.modules so it can be imported
 sys.modules['pyodide_kernel'] = pyodide_kernel
-
-print("[DEBUG] pyodide_kernel module registered in sys.modules")
 `);
-      console.log("[PyodideKernelClient] ✓ IPython kernel module loaded");
 
       // Set up error callback to capture IPython-formatted tracebacks
-      console.log("[PyodideKernelClient] Setting up IPython callbacks...");
       await this._setupIPythonCallbacks();
-      console.log("[PyodideKernelClient] ✓ IPython callbacks configured");
 
       // Pre-download packages from VS Code configuration
       await this._preloadPackages();
 
       this._isReady = true;
-      console.log("[PyodideKernelClient] Pyodide kernel ready");
+      console.log("[PyodideKernelClient] ✓ Ready");
     } catch (error) {
       this._pyodide = null;
-      // Log full error details for debugging
-      console.error(
-        "[PyodideKernelClient] Initialization failed with error:",
-        error,
-      );
-      if (error instanceof Error && error.stack) {
-        console.error("[PyodideKernelClient] Stack trace:", error.stack);
-      }
+      console.error("[PyodideKernelClient] Initialization failed:", error);
       throw new Error(
         `Failed to initialize Pyodide kernel: ${error instanceof Error ? error.message : String(error)}`,
-      );
-    }
-  }
-
-  /**
-   * Sets up persistent package cache using Node.js filesystem.
-   * Mounts a cache directory into Pyodide's MEMFS and configures micropip to use it.
-   * This allows packages to persist across Pyodide instances.
-   */
-  private async _setupPersistentCache(): Promise<void> {
-    try {
-      // Get VS Code's global storage path for cache
-      const config = vscode.workspace.getConfiguration("datalayer.pyodide");
-      const pyodideVersion = config.get<string>("version", "0.29.0");
-
-      // Use OS temp directory for package cache (cross-platform)
-      const os = await import("os");
-      const path = await import("path");
-      const fs = await import("fs/promises");
-
-      // Create cache directory: ~/.cache/datalayer-pyodide/packages
-      const homedir = os.homedir();
-      const cacheDir = path.join(
-        homedir,
-        ".cache",
-        "datalayer-pyodide",
-        pyodideVersion,
-        "packages",
-      );
-
-      // Ensure cache directory exists
-      await fs.mkdir(cacheDir, { recursive: true });
-
-      console.log(
-        `[PyodideKernelClient] Mounting package cache at: ${cacheDir}`,
-      );
-
-      // Mount Node.js filesystem into Pyodide's Emscripten FS
-      // This creates a /cache directory in Pyodide that maps to the real filesystem
-      await this._pyodide!.runPythonAsync(`
-import os
-import sys
-
-# Get FS from pyodide module
-from pyodide.ffi import to_js
-from js import Object
-
-# Create mount point in Pyodide's filesystem
-cache_mount = "/cache"
-if not os.path.exists(cache_mount):
-    os.makedirs(cache_mount, exist_ok=True)
-    print(f"[PyodideKernelClient] Created cache mount point: {cache_mount}")
-
-print(f"[PyodideKernelClient] Cache directory: ${cacheDir}")
-`);
-
-      // Mount the Node.js directory using Pyodide's FS API
-      // Note: Direct FS mounting needs to be done via JS API, not Python
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const FS = (this._pyodide as any).FS;
-
-      if (FS && FS.mount && FS.filesystems && FS.filesystems.NODEFS) {
-        try {
-          // Mount Node.js directory to /cache in Pyodide FS
-          FS.mkdir("/cache");
-          FS.mount(FS.filesystems.NODEFS, { root: cacheDir }, "/cache");
-          console.log(
-            `[PyodideKernelClient] ✓ Mounted NODEFS at /cache -> ${cacheDir}`,
-          );
-        } catch (error) {
-          // Directory might already exist from previous mount attempt
-          console.log(`[PyodideKernelClient] Cache mount note: ${error}`);
-        }
-
-        // Configure micropip to use the cache directory
-        await this._pyodide!.runPythonAsync(`
-import sys
-import os
-
-# Set environment variables for micropip cache
-os.environ['MICROPIP_CACHE_DIR'] = '/cache'
-
-# Also set pip cache directory
-os.environ['PIP_CACHE_DIR'] = '/cache'
-
-print("[PyodideKernelClient] ✓ Configured micropip to use persistent cache at /cache")
-`);
-      } else {
-        console.warn(
-          "[PyodideKernelClient] NODEFS not available, package cache will not persist",
-        );
-      }
-    } catch (error) {
-      // Don't fail initialization if cache setup fails
-      console.warn(
-        "[PyodideKernelClient] Failed to setup persistent cache (non-fatal):",
-        error,
       );
     }
   }
@@ -337,38 +240,12 @@ print("[PyodideKernelClient] ✓ Configured micropip to use persistent cache at 
     // Set callbacks on Python IPython shell (MUST await this!)
     await this._pyodide.runPythonAsync(
       `
-try:
-    import pyodide_kernel
-    print(f"[DEBUG] pyodide_kernel imported: {pyodide_kernel}")
-    print(f"[DEBUG] stdout_stream: {pyodide_kernel.stdout_stream}")
-    print(f"[DEBUG] stderr_stream: {pyodide_kernel.stderr_stream}")
-    print(f"[DEBUG] ipython_shell: {pyodide_kernel.ipython_shell}")
-    print(f"[DEBUG] publishStreamCallback type: {type(publishStreamCallback)}")
-    print(f"[DEBUG] publishErrorCallback type: {type(publishErrorCallback)}")
-
-    pyodide_kernel.stdout_stream.publish_stream_callback = publishStreamCallback
-    print("[DEBUG] stdout callback set")
-
-    pyodide_kernel.stderr_stream.publish_stream_callback = publishStreamCallback
-    print("[DEBUG] stderr callback set")
-
-    pyodide_kernel.ipython_shell.publish_error_callback = publishErrorCallback
-    print("[DEBUG] error callback set")
-
-    # Set display publisher callbacks for matplotlib plots, widgets, etc.
-    pyodide_kernel.ipython_shell.display_pub.display_data_callback = publishDisplayDataCallback
-    print("[DEBUG] display_data callback set")
-
-    # Set displayhook callback for execution results (cell return values)
-    pyodide_kernel.ipython_shell.displayhook.publish_execution_result = publishExecutionResultCallback
-    print("[DEBUG] execution_result callback set")
-
-except Exception as e:
-    import traceback
-    print(f"[ERROR] Failed to set callbacks: {e}")
-    print(f"[ERROR] Traceback:")
-    traceback.print_exc()
-    raise
+import pyodide_kernel
+pyodide_kernel.stdout_stream.publish_stream_callback = publishStreamCallback
+pyodide_kernel.stderr_stream.publish_stream_callback = publishStreamCallback
+pyodide_kernel.ipython_shell.publish_error_callback = publishErrorCallback
+pyodide_kernel.ipython_shell.display_pub.display_data_callback = publishDisplayDataCallback
+pyodide_kernel.ipython_shell.displayhook.publish_execution_result = publishExecutionResultCallback
 `,
       {
         globals: this._pyodide.toPy({
@@ -393,74 +270,57 @@ except Exception as e:
       const packages = config.get<string[]>("preloadPackages", []);
 
       if (packages.length === 0) {
-        console.log("[PyodideKernelClient] No packages configured for preload");
         return;
       }
 
-      console.log(
-        `[PyodideKernelClient] Pre-downloading ${packages.length} packages: ${packages.join(", ")}`,
-      );
-
-      // Get micropip from Pyodide
-      const micropip = this._pyodide!.pyimport("micropip");
-
-      // Download packages in parallel (faster than sequential)
+      // Use loadPackage() for built-in packages - this respects packageCacheDir!
+      // micropip.install() does NOT use packageCacheDir and re-downloads every time
+      // Load packages individually to handle errors gracefully (skip failed packages)
       const results = await Promise.allSettled(
         packages.map(async (pkg) => {
           try {
-            await micropip.install(pkg);
-            console.log(`[PyodideKernelClient] ✓ Downloaded: ${pkg}`);
+            await this._pyodide!.loadPackage(pkg);
             return { pkg, success: true };
           } catch (error) {
             console.warn(
-              `[PyodideKernelClient] ✗ Failed to download ${pkg}:`,
-              error,
+              `[PyodideKernelClient] Failed to load ${pkg}: ${error instanceof Error ? error.message : String(error)}`,
             );
             return { pkg, success: false, error };
           }
         }),
       );
 
-      // Log summary
       const succeeded = results.filter(
         (r) => r.status === "fulfilled" && r.value.success,
       ).length;
-      const failed = results.length - succeeded;
 
-      console.log(
-        `[PyodideKernelClient] Package preload complete: ${succeeded} succeeded, ${failed} failed`,
-      );
+      if (succeeded < packages.length) {
+        console.log(
+          `[PyodideKernelClient] Loaded ${succeeded}/${packages.length} packages`,
+        );
+      }
 
       // Configure matplotlib to use inline backend (avoids browser API dependencies)
       // This must be done after matplotlib is loaded
       if (packages.some((pkg) => pkg.toLowerCase().includes("matplotlib"))) {
-        console.log(
-          "[PyodideKernelClient] Configuring matplotlib inline backend...",
-        );
         try {
           await this._pyodide!.runPythonAsync(`
 import matplotlib
 import matplotlib.pyplot as plt
-# Use inline backend (works in Node.js context without browser APIs)
 matplotlib.use('module://matplotlib_inline.backend_inline')
-# Configure matplotlib for inline display
 from matplotlib_inline import backend_inline
 backend_inline.configure_inline_support(pyodide_kernel.ipython_shell, 'inline')
-print("[PyodideKernelClient] Matplotlib configured with inline backend")
 `);
         } catch (error) {
           console.warn(
-            "[PyodideKernelClient] Failed to configure matplotlib (non-fatal):",
+            "[PyodideKernelClient] Failed to configure matplotlib:",
             error,
           );
         }
       }
     } catch (error) {
       // Don't throw - preloading is optional
-      console.warn(
-        "[PyodideKernelClient] Package preload failed (non-fatal):",
-        error,
-      );
+      console.warn("[PyodideKernelClient] Package preload failed:", error);
     }
   }
 
@@ -477,10 +337,6 @@ print("[PyodideKernelClient] Matplotlib configured with inline backend")
     execution: vscode.NotebookCellExecution,
   ): Promise<void> {
     if (!this._pyodide) {
-      // Auto-reinitialize if Pyodide was disposed
-      console.log(
-        "[PyodideKernelClient] Pyodide not initialized, reinitializing...",
-      );
       await this.initialize();
     }
 
@@ -516,11 +372,6 @@ print("[PyodideKernelClient] Matplotlib configured with inline backend")
     this._isExecuting = true;
     const item = this._executionQueue.shift()!;
 
-    console.log(
-      `[PyodideKernelClient] Executing code (msgId=${item.msgId}):`,
-      item.code.substring(0, 50),
-    );
-
     let executionError: Error | null = null;
 
     try {
@@ -548,11 +399,6 @@ await pyodide_kernel.ipython_shell.run_cell_async('''${escapedCode}''')
 
       // Note: We don't manually handle the result here because IPython's displayhook
       // already calls publishExecutionResultCallback which routes to _handleDisplayData
-
-      // Mark execution complete
-      console.log(
-        `[PyodideKernelClient] Execution complete (msgId=${item.msgId})`,
-      );
     } catch (error) {
       // Handle Python exceptions and display error output
       // IPython shell should have already called publishErrorCallback,
@@ -664,9 +510,6 @@ await pyodide_kernel.ipython_shell.run_cell_async('''${escapedCode}''')
   ): void {
     const pending = this._pendingExecutions.get(msgId);
     if (!pending) {
-      console.warn(
-        `[PyodideKernelClient] No pending execution for display_data msgId=${msgId}`,
-      );
       return;
     }
 
@@ -679,9 +522,6 @@ await pyodide_kernel.ipython_shell.run_cell_async('''${escapedCode}''')
       this._lastDisplayData.msgId === msgId &&
       this._lastDisplayData.dataHash === dataHash
     ) {
-      console.log(
-        `[PyodideKernelClient] Skipping duplicate display_data for msgId=${msgId}`,
-      );
       return;
     }
 
@@ -733,13 +573,6 @@ await pyodide_kernel.ipython_shell.run_cell_async('''${escapedCode}''')
     if (items.length > 0) {
       const output = new vscode.NotebookCellOutput(items, metadata);
       pending.execution.appendOutput(output);
-      console.log(
-        `[PyodideKernelClient] ✓ Display data appended with ${items.length} MIME type(s): ${items.map((i) => i.mime).join(", ")}`,
-      );
-    } else {
-      console.warn(
-        "[PyodideKernelClient] display_data had no recognized MIME types",
-      );
     }
   }
 
@@ -861,8 +694,6 @@ await pyodide_kernel.ipython_shell.run_cell_async('''${escapedCode}''')
    * Should be called when notebook is closed.
    */
   dispose(): void {
-    console.log("[PyodideKernelClient] Disposing kernel");
-
     this._pyodide = null;
     this._isReady = false;
     this._isExecuting = false;
