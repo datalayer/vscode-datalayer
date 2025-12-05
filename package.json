@@ -170,8 +170,9 @@
       },
       {
         "command": "datalayer.showAuthStatus",
-        "title": "Show Authentication Status",
-        "category": "Datalayer"
+        "title": "Datalayer",
+        "category": "Datalayer",
+        "icon": "$(menu)"
       },
       {
         "command": "datalayer.showPrimerThemeShowcase",
@@ -619,6 +620,13 @@
           "command": "datalayer.newLocalLexicalDocument",
           "when": "resourceExtname == .ipynb || resourceExtname == .lexical",
           "group": "navigation@2"
+        }
+      ],
+      "notebook/toolbar": [
+        {
+          "command": "datalayer.showAuthStatus",
+          "when": "notebookType == 'jupyter-notebook'",
+          "group": "navigation/control"
         }
       ]
     },
