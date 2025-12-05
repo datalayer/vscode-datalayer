@@ -6,6 +6,8 @@ on:
     paths:
       - "src/**"
       - "webview/**"
+      - "resources/icons/**"
+      - "scripts/build-icons.js"
       - "package.json"
       - "webpack.config.js"
       - ".github/workflows/build-extension.yml"
@@ -14,6 +16,8 @@ on:
     paths:
       - "src/**"
       - "webview/**"
+      - "resources/icons/**"
+      - "scripts/build-icons.js"
       - "package.json"
       - "webpack.config.js"
       - ".github/workflows/build-extension.yml"

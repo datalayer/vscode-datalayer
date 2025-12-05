@@ -26,12 +26,13 @@
   ],
   "main": "./dist/extension.js",
   "scripts": {
+    "build:icons": "node scripts/build-icons.js",
     "clean": "rm -rf dist out *.vsix",
     "clean:dist": "rm -rf dist",
     "clean:out": "rm -rf out",
     "clean:vsix": "rm -rf *.vsix",
-    "vscode:prepublish": "npm run clean && npm run sync:tools && npm run package",
-    "compile": "npm run sync:tools && npm run clean:dist && cross-env NODE_OPTIONS=--max-old-space-size=8192 webpack",
+    "vscode:prepublish": "npm run build:icons && npm run clean && npm run sync:tools && npm run package",
+    "compile": "npm run build:icons && npm run sync:tools && npm run clean:dist && cross-env NODE_OPTIONS=--max-old-space-size=8192 webpack",
     "watch": "npm run clean:dist && webpack --watch",
     "watch:lib": "tsc --project tsconfig.json --rootDir src --outDir lib --declaration --declarationDir lib --watch --preserveWatchOutput",
     "sync:jupyter": "bash scripts/sync-jupyter.sh",
@@ -143,9 +144,12 @@
     "process": "^0.11.10",
     "style-loader": "^2.0.0",
     "svg-inline-loader": "^0.8.2",
+    "svg2ttf": "^6.0.3",
+    "svgicons2svgfont": "^15.0.1",
     "tailwindcss": "^4.1.17",
     "ts-loader": "^9.5.2",
     "tsx": "^4.20.6",
+    "ttf2woff": "^3.0.0",
     "typedoc": "^0.28.14",
     "typedoc-plugin-coverage": "^4.0.1",
     "typedoc-plugin-markdown": "^4.8.1",
@@ -157,6 +161,15 @@
     "onStartupFinished"
   ],
   "contributes": {
+    "icons": {
+      "datalayer-logo": {
+        "description": "Datalayer logo",
+        "default": {
+          "fontPath": "./resources/datalayer-icons.woff",
+          "fontCharacter": "\\e900"
+        }
+      }
+    },
     "commands": [
       {
         "command": "datalayer.login",
@@ -170,8 +183,9 @@
       },
       {
         "command": "datalayer.showAuthStatus",
-        "title": "Show Authentication Status",
-        "category": "Datalayer"
+        "title": "Datalayer",
+        "category": "Datalayer",
+        "icon": "$(datalayer-logo)"
       },
       {
         "command": "datalayer.showPrimerThemeShowcase",
@@ -619,6 +633,13 @@
           "command": "datalayer.newLocalLexicalDocument",
           "when": "resourceExtname == .ipynb || resourceExtname == .lexical",
           "group": "navigation@2"
+        }
+      ],
+      "notebook/toolbar": [
+        {
+          "command": "datalayer.showAuthStatus",
+          "when": "notebookType == 'jupyter-notebook'",
+          "group": "navigation/control"
         }
       ]
     },

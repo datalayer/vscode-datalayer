@@ -98,8 +98,11 @@ npm run create:patches
 Press F5 in VS Code to launch Extension Development Host
 
 # Build & Package
-npm run compile
+npm run compile      # Includes icon font generation
 npm run vsix
+
+# Icon font generation (runs automatically during compile)
+npm run build:icons
 ```
 
 ## Development Scripts
@@ -478,6 +481,18 @@ npm run type-check  # TypeScript checking
 npm run compile     # Build extension
 npm run doc         # Documentation
 ```
+
+### Custom Icon Font
+
+The extension uses a custom WOFF icon font for branded UI elements:
+
+- **Font file**: `resources/datalayer-icons.woff` (generated)
+- **Build command**: `npm run build:icons` (runs automatically in `npm run compile`)
+- **Usage in code**: `$(datalayer-logo)` syntax in package.json commands
+- **Adding icons**: Add SVG to `resources/icons/`, run build script, update package.json
+- **Full docs**: See `dev/docs/DEVELOPMENT.md` - Custom Icon Font System section
+
+**Toolchain**: SVG → svgicons2svgfont → svg2ttf → ttf2woff → WOFF
 
 ### SDK Usage Pattern (October 2025)
 

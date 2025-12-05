@@ -81,6 +81,114 @@ The patches in `patches/` directory are automatically applied when anyone runs `
 
 These are needed because `@datalayer/jupyter-lexical/style/index.css` uses `@import 'tailwindcss'`.
 
+## Custom Icon Font System
+
+The extension uses a custom WOFF icon font for consistent Datalayer branding across the VS Code UI.
+
+### Overview
+
+- **Icon Font**: `resources/datalayer-icons.woff` (1KB)
+- **Build Script**: `scripts/build-icons.js` (automated CLI-based generation)
+- **Build Tool**: `npm run build:icons`
+- **Source Icons**: `resources/icons/*.svg`
+- **Integration**: Automatically built during `compile` and `vscode:prepublish`
+
+### Toolchain
+
+```
+SVG files → svgicons2svgfont → svg2ttf → ttf2woff → WOFF font
+```
+
+### Current Icons
+
+- `datalayer-logo` - Main Datalayer stacked blocks logo
+  - **Used in**: Notebook toolbar button, Status bar
+  - **Unicode**: `\ue900`
+  - **Source**: `resources/icons/datalayer-logo.svg`
+
+### Build Process
+
+The icon font is automatically generated:
+
+```bash
+# Manual build
+npm run build:icons
+
+# Automatically runs during:
+npm run compile          # Development builds
+npm run vscode:prepublish # Production packaging
+```
+
+**CI Integration**: CI automatically rebuilds the icon font when:
+- SVG files in `resources/icons/` are modified
+- Build script `scripts/build-icons.js` is updated
+
+### Adding New Icons
+
+1. **Prepare SVG**:
+   - Create monochrome SVG (single color)
+   - Use `fill="currentColor"` for theme adaptability
+   - Remove strokes (convert to fills)
+   - Square aspect ratio recommended (e.g., 20x20 viewBox)
+
+2. **Add to Project**:
+   ```bash
+   # Copy SVG to icons directory
+   cp my-icon.svg resources/icons/
+   ```
+
+3. **Regenerate Font**:
+   ```bash
+   npm run build:icons
+   ```
+   This generates:
+   - `resources/datalayer-icons.woff` - Icon font
+   - `resources/datalayer-icons.json` - Unicode mapping
+
+4. **Register in package.json**:
+   Check `resources/datalayer-icons.json` for the assigned unicode, then add:
+   ```json
+   {
+     "contributes": {
+       "icons": {
+         "my-icon": {
+           "description": "My custom icon",
+           "default": {
+             "fontPath": "./resources/datalayer-icons.woff",
+             "fontCharacter": "\\e901"
+           }
+         }
+       }
+     }
+   }
+   ```
+
+5. **Use in Code**:
+   ```typescript
+   // In commands (package.json)
+   "icon": "$(my-icon)"
+
+   // In status bar (TypeScript)
+   statusBarItem.text = "$(my-icon) Label";
+   ```
+
+### Icon Font Details
+
+**Format**: WOFF (Web Open Font Format)
+**Unicode Range**: Private Use Area (U+E900 - U+E9FF)
+**Font Name**: `datalayer-icons`
+**Dependencies**: `svgicons2svgfont`, `svg2ttf`, `ttf2woff`
+
+### Packaging
+
+- **Source SVGs**: Excluded from `.vsix` via `.vscodeignore`
+- **Generated WOFF**: Included in `.vsix` package
+- **Build**: Auto-runs before packaging
+
+### Documentation
+
+See `resources/icons/README.md` for complete icon font documentation.
+
 ## Code Quality & Validation
 
 The project enforces strict quality standards with zero-tolerance for errors.

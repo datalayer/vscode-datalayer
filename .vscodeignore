@@ -5,6 +5,7 @@ node_modules/**
 !node_modules/@vscode/codicons/dist/**
 !node_modules/pyodide/**
 src/**
+resources/icons/**
 .gitignore
 .yarnrc
 webpack.config.js
