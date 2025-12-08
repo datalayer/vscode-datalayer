@@ -89,7 +89,7 @@
     "@lezer/highlight": "^1.2.1",
     "@lumino/coreutils": "^2.1.1",
     "@lumino/disposable": "^2.1.1",
-    "@lumino/signaling": "^2.1.1",
+    "@lumino/signaling": "^2.1.5",
     "@nteract/messaging": "^7.0.20",
     "@primer/react": "^37.19.0",
     "@primer/react-brand": "^0.58.1",
