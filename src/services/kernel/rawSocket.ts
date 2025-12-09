@@ -19,6 +19,8 @@ import * as wireProtocol from "@nteract/messaging/lib/wire-protocol";
 import type * as WebSocketWS from "ws";
 import type { Dealer, Subscriber } from "zeromq";
 import type { Channel } from "@jupyterlab/services/lib/kernel/messages";
+import * as fs from "fs";
+import * as path from "path";
 
 /**
  * Kernel connection configuration (from connection file).
@@ -110,6 +112,67 @@ interface IChannels {
 }
 
 const noop = () => {};
+
+/**
+ * Loads zeromq with fallback mechanism.
+ * Tries primary zeromq first, falls back to zeromqold if it fails.
+ * Based on VS Code Jupyter extension's approach.
+ *
+ * Sets up prebuilds path for native binaries before loading.
+ *
+ * @returns The zeromq module
+ * @throws Error if both zeromq versions fail to load
+ */
+function getZeroMQ(): typeof import("zeromq") {
+  // Set up path to native binaries (located in dist/node_modules/zeromq/prebuilds)
+  // This helps zeromq's cmake-ts loader find the .node files
+  const extensionRoot = path.join(__dirname, "..");
+  const zmqPrebuildsPath = path.join(
+    extensionRoot,
+    "node_modules",
+    "zeromq",
+    "prebuilds",
+  );
+  const zmqOldPrebuildsPath = path.join(
+    extensionRoot,
+    "node_modules",
+    "zeromqold",
+    "prebuilds",
+  );
+
+  console.log(`[RawSocket] ZeroMQ prebuilds path: ${zmqPrebuildsPath}`);
+
+  try {
+    // Try primary zeromq with prebuilds path hint
+    if (fs.existsSync(zmqPrebuildsPath)) {
+      process.env.ZMQ_PREBUILDS_PATH = zmqPrebuildsPath;
+    }
+
+    const zmq: typeof import("zeromq") = require("zeromq");
+    console.log("[RawSocket] Successfully loaded primary zeromq");
+    return zmq;
+  } catch (error) {
+    console.warn("[RawSocket] Primary zeromq failed, trying fallback:", error);
+    try {
+      // Try fallback zeromqold
+      if (fs.existsSync(zmqOldPrebuildsPath)) {
+        process.env.ZMQ_PREBUILDS_PATH = zmqOldPrebuildsPath;
+      }
+
+      const zmq: typeof import("zeromq") = require("zeromqold");
+      console.log("[RawSocket] Successfully loaded fallback zeromqold");
+      return zmq;
+    } catch (fallbackError) {
+      console.error("[RawSocket] Both zeromq versions failed to load:", {
+        primary: error,
+        fallback: fallbackError,
+      });
+      throw new Error(
+        `Failed to load zeromq: ${(error as Error).message}. Fallback also failed: ${(fallbackError as Error).message}`,
+      );
+    }
+  }
+}
 
 function formConnectionString(config: IKernelConnection, channel: string) {
   const portDelimiter = config.transport === "tcp" ? ":" : "-";
@@ -342,9 +405,9 @@ export class RawSocket {
   }
 
   private generateChannels(connection: IKernelConnection): IChannels {
-    // Use zeromq from node_modules
+    // Use zeromq from node_modules with fallback mechanism
 
-    const zmq = require("zeromq");
+    const zmq = getZeroMQ();
     const routingId = generateUuid();
 
     const result: IChannels = {

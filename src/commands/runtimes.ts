@@ -382,6 +382,10 @@ export function registerRuntimeCommands(
    * Internal command: datalayer.internal.terminateRuntime
    * Called from kernel selector to terminate a specific runtime for a document.
    * Used by both notebooks and lexical editors.
+   *
+   * Handles BOTH Datalayer runtimes and local kernels:
+   * - Datalayer runtimes: Calls API to delete runtime
+   * - Local kernels: Just disconnects and shuts down locally
    */
   context.subscriptions.push(
     vscode.commands.registerCommand(
@@ -390,19 +394,70 @@ export function registerRuntimeCommands(
         const runtimeObj = runtime as {
           podName?: string;
           givenName?: string;
+          given_name?: string;
           uid?: string;
+          displayName?: string;
+          serverUrl?: string;
+          ingress?: string;
         };
 
+        console.log(
+          "[RuntimeTerminate] Terminating runtime object:",
+          JSON.stringify(runtimeObj, null, 2),
+        );
+
         try {
-          // Terminate the runtime on the server using podName
-          if (runtimeObj.podName) {
-            await sdk.deleteRuntime(runtimeObj.podName);
-            const runtimeName = runtimeObj.givenName || runtimeObj.podName;
+          // Check if this is a Datalayer runtime or a local kernel
+          // Local kernels have ingress URLs like "http://local-kernel-*.localhost" or "http://pyodide-local"
+          const isLocalKernel =
+            runtimeObj.ingress?.startsWith("http://local-kernel-") ||
+            runtimeObj.ingress === "http://pyodide-local";
+          const isDatalayerRuntime = !isLocalKernel && !!runtimeObj.podName;
+          console.log(
+            "[RuntimeTerminate] isLocalKernel:",
+            isLocalKernel,
+            "isDatalayerRuntime:",
+            isDatalayerRuntime,
+            "ingress:",
+            runtimeObj.ingress,
+          );
+
+          if (isDatalayerRuntime) {
+            // Datalayer runtime - call API to terminate
+            console.log(
+              "[RuntimeTerminate] Terminating Datalayer runtime via API",
+            );
+
+            // Check authentication before calling API
+            if (!authProvider.isAuthenticated()) {
+              vscode.window.showErrorMessage(
+                "You must be logged in to terminate Datalayer runtimes. Local kernels can be terminated without login.",
+              );
+              return;
+            }
+
+            await sdk.deleteRuntime(runtimeObj.podName!);
+            const runtimeName =
+              runtimeObj.givenName ||
+              runtimeObj.given_name ||
+              runtimeObj.podName;
             vscode.window.showInformationMessage(
               `Runtime "${runtimeName}" terminated successfully.`,
             );
           } else {
-            throw new Error("Runtime podName not found");
+            // Local kernel (Python environment, Jupyter server, or Pyodide)
+            // Just disconnect - no API call needed
+            console.log(
+              "[RuntimeTerminate] Disconnecting local kernel (no API call)",
+            );
+            const kernelName =
+              runtimeObj.displayName ||
+              runtimeObj.givenName ||
+              runtimeObj.given_name ||
+              "kernel";
+            vscode.window.showInformationMessage(
+              `Disconnected from "${kernelName}".`,
+            );
           }
         } catch (error: unknown) {
           const errorMessage =

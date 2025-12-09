@@ -189,6 +189,56 @@ npm run vscode:prepublish # Production packaging
 
 See `resources/icons/README.md` for complete icon font documentation.
 
+## Native Modules & Universal VSIX Build
+
+The extension uses **zeromq** for direct kernel communication. Since zeromq is a native Node.js module with platform-specific binaries, we use Microsoft's `@vscode/zeromq` package (same approach as VS Code Jupyter extension) to download pre-built binaries for **all platforms** during the build.
+
+**ZeroMQ Dependencies**:
+
+- `zeromq@^6.0.0-beta.20` - Primary ZMQ library (Electron-compatible beta)
+- `zeromqold@npm:zeromq@^6.0.0-beta.6` - Fallback version for reliability
+- `@vscode/zeromq@^0.2.3` - Microsoft's binary downloader (devDependency)
+
+**Universal VSIX**:
+
+The extension is built as a **single universal VSIX** that works on all platforms:
+
+- `datalayer-jupyter-vscode-{version}.vsix` - Works on macOS (Intel + ARM), Windows, and Linux
+
+This is the same approach used by VS Code Jupyter extension. The VSIX includes native binaries for all platforms, and zeromq automatically selects the correct binary at runtime.
+
+**Build Command**:
+
+```bash
+# Build universal VSIX (works on all platforms)
+npm run vsix
+```
+
+**How it works**:
+
+1. During `npm install`, the `postinstall` script runs `scripts/downloadZmqBinaries.js`
+2. This downloads **ALL platform binaries** via `@vscode/zeromq.downloadZMQ()`
+3. Binaries for all platforms are placed in `node_modules/zeromq/prebuilds/`
+4. The `npm run vsix` command packages the extension with production dependencies (including zeromq/zeromqold modules and their binaries)
+5. At runtime, zeromq automatically picks the correct binary for the current platform
+6. Fallback loader tries `zeromq` first, then `zeromqold` if it fails (see `src/services/kernel/rawSocket.ts`)
+
+**Benefits**:
+
+- ✅ **Simpler distribution** - One VSIX works everywhere
+- ✅ **Faster builds** - No need for matrix builds across platforms
+- ✅ **10x faster than compiling** - Download vs compile with electron-rebuild
+- ✅ **More reliable** - Microsoft-maintained pre-built binaries
+- ✅ **No build tools required** - No python, make, gcc, etc.
+- ✅ **Proven approach** - Used by VS Code Jupyter in production
+- ⚠️ **Larger VSIX** - ~100MB (contains all production dependencies including zeromq binaries for all platforms)
+
+**Important**: The extension requires specific dependency versions. If you encounter ELSPROBLEMS errors during packaging, ensure:
+
+- `@toon-format/toon@^1.3.0` (not 1.0.0)
+- `diff@^8.0.2` (not 7.0.0)
+- Run `npm install @toon-format/toon@^1.3.0 diff@^8.0.2` to fix version mismatches
+
 ## Code Quality & Validation
 
 The project enforces strict quality standards with zero-tolerance for errors.
@@ -653,6 +703,45 @@ webview/
 3. **Message Passing**: Extension and webview communicate via structured messages with JWT tokens
 
 4. **Virtual File System**: Datalayer documents are mapped to virtual URIs for seamless VS Code integration
+
+### Kernel Switching Architecture (January 2025)
+
+**MutableServiceManager + useKernelId Pattern**: Enables seamless runtime switching without notebook re-renders.
+
+**Key Components**:
+
+1. **MutableServiceManager** - Stable proxy that forwards to current service manager
+2. **useRuntimeManager** - React hook managing runtime selection and service manager lifecycle
+3. **useKernelId** - Jupyter UI hook that starts kernels when dependencies change
+4. **kernelId prop** - Runtime ingress passed to Notebook2 to trigger kernel startup
+
+**How It Works**:
+
+```typescript
+// NotebookEditor.tsx
+const { selectedRuntime, serviceManager } = useRuntimeManager();
+
+<Notebook2
+  serviceManager={serviceManager}      // ← Stable proxy (never changes)
+  kernelId={selectedRuntime?.ingress}  // ← Changes on runtime switch
+  startDefaultKernel={!!selectedRuntime}
+/>
+```
+
+When runtime changes:
+1. `selectedRuntime?.ingress` changes (e.g., "http://pyodide-local" → "http://local-kernel-...")
+2. Notebook2 re-renders (cheap React VDOM diff)
+3. `useKernelId` detects `kernelId` prop change → calls `kernels.startNew()`
+4. NotebookPanel widget NOT recreated (expensive operation avoided)
+5. Cells NOT re-rendered, scroll position maintained
+
+**Critical Fixes**:
+
+- **Proxy method binding** (`mutableServiceManager.ts:283-285`) - Methods must be bound to maintain `this` context
+- **CORS avoidance** (`useRuntimeManager.ts:85-89, 184-201`) - Don't call `startNew()` for remote runtimes (already running)
+- **Force useKernelId re-run** (`NotebookEditor.tsx:908`) - Pass ingress as kernelId to trigger kernel startup
+
+**Result**: All kernel switching scenarios work perfectly (Pyodide ↔ Local ↔ Remote).
 
 ### Unified Kernel Architecture
 

@@ -58,12 +58,62 @@ export async function showKernelSelector(
     {
       label: "Datalayer Platform",
       action: async () => {
-        const runtime = await selectDatalayerRuntime(sdk, authProvider);
-        if (runtime) {
-          // If we have a document URI, connect it to the runtime
-          if (documentUri) {
-            await kernelBridge.connectWebviewDocument(documentUri, runtime);
+        try {
+          console.log("[KernelSelector] Datalayer Platform selected");
+
+          // Check authentication first
+          if (!authProvider.isAuthenticated()) {
+            console.log(
+              "[KernelSelector] User not authenticated, triggering login",
+            );
+
+            // Trigger login directly (same as status bar click)
+            await vscode.commands.executeCommand("datalayer.login");
+
+            console.log(
+              "[KernelSelector] Login command executed, checking auth state",
+            );
+
+            // Check again after login attempt
+            if (!authProvider.isAuthenticated()) {
+              console.log(
+                "[KernelSelector] User still not authenticated after login attempt",
+              );
+              vscode.window.showWarningMessage(
+                "You must be logged in to use Datalayer Platform kernels",
+              );
+              return;
+            }
+
+            console.log("[KernelSelector] User successfully authenticated");
           }
+
+          // Now select runtime
+          const runtime = await selectDatalayerRuntime(sdk, authProvider);
+          console.log("[KernelSelector] Runtime selected:", runtime?.uid);
+
+          if (runtime) {
+            // If we have a document URI, connect it to the runtime
+            if (documentUri) {
+              console.log("[KernelSelector] Connecting document to runtime");
+              await kernelBridge.connectWebviewDocument(documentUri, runtime);
+              vscode.window.showInformationMessage(
+                `Connected to runtime "${runtime.givenName || runtime.podName}"`,
+              );
+            }
+          } else {
+            console.log(
+              "[KernelSelector] No runtime selected (user cancelled)",
+            );
+          }
+        } catch (error) {
+          console.error(
+            "[KernelSelector] Error selecting Datalayer Platform:",
+            error,
+          );
+          vscode.window.showErrorMessage(
+            `Failed to connect to Datalayer Platform: ${error instanceof Error ? error.message : String(error)}`,
+          );
         }
       },
     },
@@ -90,24 +140,33 @@ export async function showKernelSelector(
       },
     },
     {
-      label: "Pyodide (Browser Python)",
+      label: "Pyodide",
       description: "Run Python in the browser without a server",
       action: async () => {
         if (documentUri) {
           try {
-            // Switch to Pyodide kernel via command
-            await vscode.commands.executeCommand(
-              "datalayer.internal.switchToPyodide",
-              documentUri,
+            console.log(
+              "[KernelSelector] Pyodide selected, calling kernelBridge",
             );
+            // Connect to Pyodide kernel via kernel bridge (same as other kernel types)
+            await kernelBridge.connectWebviewDocumentToPyodide(documentUri);
+            console.log("[KernelSelector] Successfully connected to Pyodide");
             vscode.window.showInformationMessage(
               "Switched to Pyodide (Browser Python). Python code will run in your browser.",
             );
           } catch (error) {
+            console.error(
+              "[KernelSelector] Failed to switch to Pyodide:",
+              error,
+            );
             vscode.window.showErrorMessage(
               `Failed to switch to Pyodide: ${error}`,
             );
           }
+        } else {
+          console.warn(
+            "[KernelSelector] No documentUri provided for Pyodide selection",
+          );
         }
       },
     },

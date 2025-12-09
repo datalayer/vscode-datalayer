@@ -54,7 +54,8 @@ export class MutableServiceManager {
    */
   updateToMock(): void {
     this._disposeCurrentManager();
-    this._subProxies.clear();
+    // DO NOT clear _subProxies! Keeps existing proxy references working
+    // this._subProxies.clear(); // ❌ REMOVED
     this._serviceManager = ServiceManagerFactory.create({ type: "mock" });
     this._notifyListeners();
   }
@@ -68,14 +69,20 @@ export class MutableServiceManager {
    * @param url - Base URL for kernel connection
    */
   updateToLocal(kernelId: string, kernelName: string, url: string): void {
+    console.log(
+      `[MutableServiceManager] 🔄 Switching to LOCAL kernel manager (${kernelId}, ${kernelName})`,
+    );
     this._disposeCurrentManager();
-    this._subProxies.clear();
+    // DO NOT clear _subProxies! Notebook2/SessionContext holds references to these proxies
+    // The proxies dynamically forward to this._serviceManager, so they'll work with the new manager
+    // this._subProxies.clear(); // ❌ REMOVED - breaks existing proxy references
     this._serviceManager = ServiceManagerFactory.create({
       type: "local",
       kernelId,
       kernelName,
       url,
     });
+    console.log(`[MutableServiceManager] ✓ Switched to LOCAL kernel manager`);
     this._notifyListeners();
   }
 
@@ -88,7 +95,8 @@ export class MutableServiceManager {
    */
   updateToRemote(url: string, token: string): void {
     this._disposeCurrentManager();
-    this._subProxies.clear();
+    // DO NOT clear _subProxies! Keeps existing proxy references working
+    // this._subProxies.clear(); // ❌ REMOVED
     const serverSettings = ServerConnection.makeSettings({
       baseUrl: url,
       token,
@@ -108,12 +116,19 @@ export class MutableServiceManager {
    * @param pyodideUrl - Optional CDN URL for Pyodide
    */
   updateToPyodide(pyodideUrl?: string): void {
+    console.log(
+      `[MutableServiceManager] 🔄 Switching to PYODIDE service manager`,
+    );
     this._disposeCurrentManager();
-    this._subProxies.clear();
+    // DO NOT clear _subProxies! Keeps existing proxy references working
+    // this._subProxies.clear(); // ❌ REMOVED
     this._serviceManager = ServiceManagerFactory.create({
       type: "pyodide",
       pyodideUrl,
     });
+    console.log(
+      `[MutableServiceManager] ✓ Switched to PYODIDE service manager`,
+    );
     this._notifyListeners();
   }
 
@@ -150,17 +165,54 @@ export class MutableServiceManager {
   private _disposeCurrentManager(): void {
     if (this._serviceManager && hasDispose(this._serviceManager)) {
       const oldSm = this._serviceManager;
+      const oldType = ServiceManagerFactory.getType(oldSm);
+      console.log(
+        `[MutableServiceManager] Disposing ${oldType} service manager...`,
+      );
+
       try {
-        setTimeout(() => {
-          try {
-            oldSm.dispose();
-          } catch (error) {
-            // Error during delayed disposal
+        // SPECIAL CASE: Pyodide inline kernels need explicit session shutdown
+        // Pyodide kernels run in-browser, not as separate processes, so they need
+        // explicit cleanup. For other types (local, remote), just disposing works fine.
+        if (oldType === "pyodide") {
+          console.log(
+            `[MutableServiceManager] Shutting down Pyodide sessions before disposal...`,
+          );
+          const sessionManager = oldSm.sessions;
+          if (
+            sessionManager &&
+            typeof sessionManager.shutdownAll === "function"
+          ) {
+            try {
+              sessionManager.shutdownAll();
+              console.log(
+                `[MutableServiceManager] ✓ Pyodide sessions shut down`,
+              );
+            } catch (error) {
+              console.warn(
+                `[MutableServiceManager] ⚠️ Error shutting down Pyodide sessions:`,
+                error,
+              );
+            }
           }
-        }, 50);
+        }
+
+        // Dispose the service manager
+        console.log(
+          `[MutableServiceManager] Disposing ${oldType} service manager...`,
+        );
+        oldSm.dispose();
+        console.log(
+          `[MutableServiceManager] ✓ ${oldType} service manager disposed`,
+        );
       } catch (error) {
-        // Continue anyway
+        console.error(
+          `[MutableServiceManager] ❌ Error in _disposeCurrentManager for ${oldType}:`,
+          error,
+        );
       }
+    } else {
+      console.log("[MutableServiceManager] No service manager to dispose");
     }
   }
 
@@ -222,7 +274,17 @@ export class MutableServiceManager {
                 PropertyKey,
                 unknown
               >;
-              return currentProp?.[subProp];
+              const value = currentProp?.[subProp];
+
+              // CRITICAL: Bind methods to maintain correct `this` context
+              // Without this, extracted methods lose their `this` binding and fail
+              // This fixes the bug where SessionContext calls kernels.running() but
+              // gets undefined because the method isn't bound to the kernels manager
+              if (typeof value === "function") {
+                return value.bind(currentProp);
+              }
+
+              return value;
             },
             set: (_subTarget, subProp, subValue) => {
               const currentSm = this._serviceManager as unknown as Record<

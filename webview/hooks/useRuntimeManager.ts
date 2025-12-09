@@ -64,14 +64,9 @@ export function useRuntimeManager(initialRuntime?: RuntimeJSON) {
           // Start the kernel to set _activeKernel (required for tool execution)
           mutableManagerRef.current.current.kernels
             .startNew()
-            .then(() => {
-              console.log(
-                `[useRuntimeManager] ✓ Initial kernel started for ${kernelId}`,
-              );
-            })
             .catch((error) => {
               console.error(
-                `[useRuntimeManager] ❌ Failed to start initial kernel:`,
+                `[useRuntimeManager] Failed to start initial kernel:`,
                 error,
               );
             });
@@ -82,21 +77,8 @@ export function useRuntimeManager(initialRuntime?: RuntimeJSON) {
           initialRuntime.token || "",
         );
 
-        // Start the kernel for remote runtime (avoid race condition with tool execution)
-        mutableManagerRef.current.current.kernels
-          .startNew({ name: initialRuntime.environmentName || "python3" })
-          .then((kernel) => {
-            console.log(
-              `[useRuntimeManager] ✓ Initial remote kernel started:`,
-              kernel.id,
-            );
-          })
-          .catch((error) => {
-            console.error(
-              `[useRuntimeManager] ❌ Failed to start initial remote kernel:`,
-              error,
-            );
-          });
+        // NOTE: For remote Datalayer runtimes, the kernel is already running on the server.
+        // We don't call startNew() here - SessionContext will find the existing kernel.
       }
     }
     // Otherwise starts with mock (default in MutableServiceManager constructor)
@@ -121,17 +103,9 @@ export function useRuntimeManager(initialRuntime?: RuntimeJSON) {
       const isLocalKernel = isLocalKernelUrl(runtime.ingress);
 
       if (isPyodide) {
-        console.log("[useRuntimeManager] Detected Pyodide runtime");
         mutableManagerRef.current?.updateToPyodide();
-        console.log(
-          "[useRuntimeManager] Successfully switched to Pyodide ServiceManager",
-        );
         // No need to start kernel here - Pyodide starts on first execution
       } else if (isLocalKernel) {
-        console.log(
-          `[useRuntimeManager] Detected local kernel runtime: ${runtime.ingress}`,
-        );
-
         // Extract kernel ID from URL (format: http://local-kernel-<kernelId>.localhost)
         const kernelId = runtime.ingress.match(/local-kernel-([^.]+)/)?.[1];
         if (!kernelId) {
@@ -142,19 +116,11 @@ export function useRuntimeManager(initialRuntime?: RuntimeJSON) {
           return;
         }
 
-        console.log(
-          `[useRuntimeManager] Switching to local kernel service manager for kernel ${kernelId}`,
-        );
-
         // Switch to local kernel service manager
         mutableManagerRef.current?.updateToLocal(
           kernelId,
           runtime.environmentName || "python3",
           runtime.ingress,
-        );
-
-        console.log(
-          `[useRuntimeManager] Successfully switched to LocalKernelServiceManager`,
         );
 
         // CRITICAL: Start the kernel to set _activeKernel
@@ -164,14 +130,9 @@ export function useRuntimeManager(initialRuntime?: RuntimeJSON) {
         if (mutableManagerRef.current) {
           mutableManagerRef.current.current.kernels
             .startNew()
-            .then(() => {
-              console.log(
-                `[useRuntimeManager] ✓ Kernel started, _activeKernel is now set`,
-              );
-            })
             .catch((error) => {
               console.error(
-                `[useRuntimeManager] ❌ Failed to start kernel:`,
+                `[useRuntimeManager] Failed to start kernel:`,
                 error,
               );
             });
@@ -183,29 +144,14 @@ export function useRuntimeManager(initialRuntime?: RuntimeJSON) {
           runtime.token || "",
         );
 
-        console.log(
-          `[useRuntimeManager] Successfully switched to remote ServiceManager`,
-        );
-
-        // CRITICAL: Start the kernel for remote runtimes too
-        // Same race condition as local kernels - tool execution could happen
-        // before Jupyter component mounts and starts the kernel
-        if (mutableManagerRef.current) {
-          mutableManagerRef.current.current.kernels
-            .startNew({ name: runtime.environmentName || "python3" })
-            .then((kernel) => {
-              console.log(
-                `[useRuntimeManager] ✓ Remote kernel started:`,
-                kernel.id,
-              );
-            })
-            .catch((error) => {
-              console.error(
-                `[useRuntimeManager] ❌ Failed to start remote kernel:`,
-                error,
-              );
-            });
-        }
+        // NOTE: For remote Datalayer runtimes, the kernel is already running on the server.
+        // We DON'T call startNew() here because:
+        // 1. The webview cannot make cross-origin HTTP requests (CORS policy blocks it)
+        // 2. The kernel is already running - we just need to connect to it
+        // 3. SessionContext will find the existing kernel via kernels.running()
+        //
+        // For local kernels, we DO need startNew() because we're creating a new kernel.
+        // But for remote runtimes, the kernel is provisioned and started by the platform.
       }
     } else {
       // Reset to mock service manager (reference stays stable)

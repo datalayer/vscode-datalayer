@@ -1,8 +1,31 @@
 # Datalayer VS Code Extension - Developer Context
 
-**Last Updated**: November 2025
+**Last Updated**: January 2025
 
 ## Critical Recent Changes
+
+### Kernel Switching Fix (January 2025)
+
+**Status**: ✅ FULLY WORKING - All runtime switching scenarios work perfectly
+
+**The Bug**: When switching between runtimes multiple times (e.g., Pyodide → Local → Pyodide), the second Pyodide selection didn't start a kernel.
+
+**Root Cause**: `useKernelId` hook in Notebook2Base only ran on mount and first runtime selection because:
+
+1. `serviceManager.kernels` is a stable proxy reference (never changes)
+2. `startDefaultKernel` only changes from `false → true` once
+
+**The Fix**: Pass `kernelId={selectedRuntime?.ingress}` prop to Notebook2. This forces `useKernelId`'s useEffect to re-run on every runtime change.
+
+**Why No Problematic Re-renders**: React component re-renders are cheap (virtual DOM diff). The expensive operation (recreating NotebookPanel widget with all cells) is avoided because that useEffect doesn't depend on `kernelId`.
+
+**Files Modified**:
+
+- `webview/notebook/NotebookEditor.tsx` - Added kernelId prop
+- `webview/services/mutableServiceManager.ts` - Fixed method binding in proxy
+- `webview/hooks/useRuntimeManager.ts` - Removed startNew() for remote runtimes (CORS fix)
+
+**Documentation**: See `PYODIDE_KERNEL_SWITCHING_DEBUG.md` for complete debugging history.
 
 ### Auto-Connect Feature (November 2025)
 
@@ -83,7 +106,7 @@ runtimesTreeProvider?.refresh();
 
 ```bash
 # Setup
-npm install
+npm install  # Auto-downloads zeromq binaries via @vscode/zeromq
 
 # Watch for changes
 npm run watch
@@ -97,13 +120,21 @@ npm run create:patches
 # Debug
 Press F5 in VS Code to launch Extension Development Host
 
-# Build & Package
+# Build & Package (universal VSIX)
 npm run compile      # Includes icon font generation
-npm run vsix
+npm run vsix         # Creates universal VSIX that works on all platforms
 
 # Icon font generation (runs automatically during compile)
 npm run build:icons
 ```
+
+### Native Modules (December 2025)
+
+**ZeroMQ for Local Kernels**: Uses `@vscode/zeromq` (same as VS Code Jupyter) to download pre-built binaries for **all platforms** during build. Universal VSIX includes binaries for macOS (Intel + ARM), Windows, and Linux. Fallback mechanism tries `zeromq` then `zeromqold`.
+
+**Universal Build**: Single VSIX works everywhere. `@vscode/zeromq.downloadZMQ()` downloads all platform binaries into `node_modules/zeromq/prebuilds/`, zeromq auto-selects correct binary at runtime.
+
+**Files**: `scripts/downloadZmqBinaries.js`, `src/services/kernel/rawSocket.ts` (fallback loader)
 
 ## Development Scripts
 

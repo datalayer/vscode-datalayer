@@ -1,0 +1,926 @@
+diff --git a/node_modules/@datalayer/jupyter-lexical/lib/examples/content/Example.ipynb.json b/node_modules/@datalayer/jupyter-lexical/lib/examples/content/Example.ipynb.json
+index 436d333..6f268d0 100644
+--- a/node_modules/@datalayer/jupyter-lexical/lib/examples/content/Example.ipynb.json
++++ b/node_modules/@datalayer/jupyter-lexical/lib/examples/content/Example.ipynb.json
+@@ -1,81 +1,81 @@
+ {
+-    "cells": [
+-        {
+-            "cell_type": "markdown",
+-            "id": "3ce565a1-7756-4fee-af81-32682a8eb1b3",
+-            "metadata": {},
+-            "source": ["# Hello Lexical"]
+-        },
+-        {
+-            "cell_type": "markdown",
+-            "id": "23622f4a-62c9-4915-87b4-af1f4d6e30ec",
+-            "metadata": {},
+-            "source": [
+-                "The Receiver Operating Characteristic \"ROC\" illustrates the performance of the binary classifier by plotting the false alarm probability ($P_{FA}$) on the horizontal axis and the detection probability ($P_D$) on the vertical axis. The area under the ROC-curve (AUC) is used to provide a single-figure quantification of the performance of the binary classifier based on the ROC. This article provides an interpretation of the AUC and connects the AUC to the Wilcoxon–Mann–Whitney statistic, which is a nonparametic test to compare two populations. This derivation is pretty hard to find but the connection between the AUC and the Wilcoxon–Mann–Whitney test is important insofar as it provides some perspective on the seemingly arbitrary use of AUC to quantify the performance of the binary classifier.\n",
+-                "\n",
+-                "Let's proceed with some definitions and some notation. A binary classifier can make two kinds of mistakes, usually and unhelpfully called Type I and Type II errors.  The *detection probability* is \n",
+-                "\n",
+-                "$$P_D= \\mathbb{P}(1|x \\in C_1)$$"
+-            ]
+-        },
+-        {
+-            "cell_type": "code",
+-            "execution_count": 5,
+-            "id": "5d1c1fb7-59b6-4d52-a9e2-6294ddc9758a",
+-            "metadata": {},
+-            "outputs": [
+-                {
+-                    "name": "stdout",
+-                    "output_type": "stream",
+-                    "text": ["1\n"]
+-                }
+-            ],
+-            "source": ["x=1\n", "print(x)"]
+-        },
++  "cells": [
++    {
++      "cell_type": "markdown",
++      "id": "3ce565a1-7756-4fee-af81-32682a8eb1b3",
++      "metadata": {},
++      "source": ["# Hello Lexical"]
++    },
++    {
++      "cell_type": "markdown",
++      "id": "23622f4a-62c9-4915-87b4-af1f4d6e30ec",
++      "metadata": {},
++      "source": [
++        "The Receiver Operating Characteristic \"ROC\" illustrates the performance of the binary classifier by plotting the false alarm probability ($P_{FA}$) on the horizontal axis and the detection probability ($P_D$) on the vertical axis. The area under the ROC-curve (AUC) is used to provide a single-figure quantification of the performance of the binary classifier based on the ROC. This article provides an interpretation of the AUC and connects the AUC to the Wilcoxon–Mann–Whitney statistic, which is a nonparametic test to compare two populations. This derivation is pretty hard to find but the connection between the AUC and the Wilcoxon–Mann–Whitney test is important insofar as it provides some perspective on the seemingly arbitrary use of AUC to quantify the performance of the binary classifier.\n",
++        "\n",
++        "Let's proceed with some definitions and some notation. A binary classifier can make two kinds of mistakes, usually and unhelpfully called Type I and Type II errors.  The *detection probability* is \n",
++        "\n",
++        "$$P_D= \\mathbb{P}(1|x \\in C_1)$$"
++      ]
++    },
++    {
++      "cell_type": "code",
++      "execution_count": 5,
++      "id": "5d1c1fb7-59b6-4d52-a9e2-6294ddc9758a",
++      "metadata": {},
++      "outputs": [
+         {
+-            "cell_type": "code",
+-            "execution_count": 4,
+-            "id": "1fcf3d25-cb81-4977-9cc5-91855f3c1b28",
+-            "metadata": {},
+-            "outputs": [
+-                {
+-                    "data": {
+-                        "image/png": "iVBORw0KGgoAAAANSUhEUgAAAYIAAAD4CAYAAADhNOGaAAAAOXRFWHRTb2Z0d2FyZQBNYXRwbG90bGliIHZlcnNpb24zLjUuMSwgaHR0cHM6Ly9tYXRwbG90bGliLm9yZy/YYfK9AAAACXBIWXMAAAsTAAALEwEAmpwYAAAjUUlEQVR4nO3deXxU5dn/8c8NhH0nLGEJ+04QMGyuuFQBUURpa7W4oFJ99LGbAoIWFauota0tKsWqldZqLWGTxR0UNxRQsrGFTQJhlwRIQpa5fn9k+vzSGCRATs4s3/frNa/MnHMnc93cSb6cOWeuODNDRESiVzW/CxAREX8pCEREopyCQEQkyikIRESinIJARCTK1fC7gFMVGxtrHTp08LsMEZGwsmbNmgNm1ry8fWEXBB06dGD16tV+lyEiElaccztOtE8vDYmIRDkFgYhIlFMQiIhEOQWBiEiUUxCIiEQ5z4PAOVfdOfeVc25xOfucc+5PzrkM51yyc26A1/WIiMh/q4ojgp8D60+wbwTQNXibADxfBfWIiEgpngaBc64tcAXw1xMMGQ3MsRKfA42dc3Fe1iQiEm4KiwM8tyKDdTsPe/L1vT4i+CMwEQicYH8bYGepx5nBbf/FOTfBObfaObd6//79lV6kiEioSt2VzdXPfsKTb21kWeoeT57Ds3cWO+dGAfvMbI1zbtiJhpWz7Tt/KcfMZgOzARITE/WXdEQk4uUXFvPnDzYz68OtNKlbk+dvGMCIBG9eMPGyxcS5wFXOuZFAbaChc+4fZvbTUmMygXalHrcFdntYk4hIyFu9/RATk5LZuv8YPzy7LQ9c0YtGdWM8ez7PgsDM7gfuBwgeEdxbJgQAFgF3O+deBwYD2WaW5VVNIiKh7OjxIp56awNzPt9B60Z1mDN+EBd0K7dPXKWq8qZzzrk7AMxsFrAUGAlkALnALVVdj4hIKPhw036mzEthd3YeNw3twH2Xd6derar5FV0lz2JmK4AVwfuzSm034K6qqEFEJBQdzi1g+uL1JK3NpHPzevz7Z0NJ7NC0SmsIuzbUIiKRYllKFg8uTONwbgF3X9SFuy/uQu2Y6lVeh4JARKSK7cvJ5zcL03grbQ992jTklfED6d26kW/1KAhERKqImfHvNZk8ujid/KIAk4b34PbzO1Kjur9t3xQEIiJVYOehXKbMT2Hl5gMM6tCUGdcm0Kl5fb/LAhQEIiKeKg4Ycz7bzlNvb8QB00f35obB7alWrbz30/pDQSAi4pGMfUeYlJTCmh3fMqx7c347JoE2jev4XdZ3KAhERCpZYXGAv3y4hT+9n0HdWtX5w4/P4up+bXAudI4CSlMQiIhUopTMbO6bu44Ne45wRd84Hr6qN7H1a/ld1vdSEIiIVIL8wmL++N5mXli5lWb1avKXcWdzee9WfpdVIQoCEZEztGrrQSbPS2HbgWP8OLEdU67oSaM63jWJq2wKAhGR03Qkv5An39rI3z/fQbumdXj1tsGc2yXW77JOmYJAROQ0LN+wj6nzU8jKyefW8zry68u6UbdmeP5KDc+qRUR8cuhYAdMXpzP/q110bVGfpDvPYUB8E7/LOiMKAhGRCjAzlqRkMW1hGtl5hdxzSVfuuqgztWpUfZO4yqYgEBE5ib05+TywIJV30/fSt20j/nHbYHrGNfS7rEqjIBAROQEz443VO3l0yXoKigJMGdmD8ef63ySusikIRETK8c3BXCbPS+bTLQcZ3LEpT1zblw6x9fwuyxMKAhGRUooDxsufbON372ykRrVqPDYmgesGtgupJnGVTUEgIhK0ae8RJs5N5uudh7m4Rwt+O6YPcY1Cr0lcZVMQiEjUKygK8PyKLcxcvpkGtWN45rp+XHVW65BtElfZFAQiEtXW7TzMpKRkNuw5wuh+rfnNqF40C/EmcZVNQSAiUSmvoJg/vLeJv67cSosGtfnrjYlc2qul32X5QkEgIlHnsy0HmTwvmR0Hc7l+cDyTR/SgYe3waRJX2RQEIhI1cvILeXzpBl774hvaN6vLP28fzDmdw69JXGXzLAicc7WBj4BaweeZa2bTyowZBiwEtgU3zTOzR7yqSUSi1/vr9zJ1fir7juQz4YJO/PLSbtSpGf7tISqDl0cEx4GLzeyocy4G+Ng5t8zMPi8zbqWZjfKwDhGJYgePHufhN9NZtG43PVo14C/jzuasdo39LiukeBYEZmbA0eDDmODNvHo+EZHSzIxF63bz8JvpHMkv5JeXduPOYZ2pWSOy2kNUBk/PETjnqgNrgC7As2a2qpxhQ51z64DdwL1mllbO15kATACIj4/3sGIRiQRZ2Xk8MD+V9zfso1+7xjw5ti/dWjbwu6yQ5WkQmFkx0M851xiY75zrY2appYasBdoHXz4aCSwAupbzdWYDswESExN1VCEi5QoEjNe+/IbHl26gKBDggSt6csu5Hakewe0hKkOVXDVkZoedcyuA4UBqqe05pe4vdc4955yLNbMDVVGXiESO7QeOMXleMp9vPcQ5nZsx45q+xDer63dZYcHLq4aaA4XBEKgDXAo8UWZMK2CvmZlzbhBQDTjoVU0iEnmKigO89Mk2nn5nEzVrVOOJaxP4UWK7qGkPURm8PCKIA14JnieoBrxhZoudc3cAmNksYCxwp3OuCMgDrgueZBYROakNe3KYNDeZdZnZ/KBXSx69ug8tG9b2u6yw4+VVQ8lA/3K2zyp1fyYw06saRCQyHS8q5tnlW3hueQaN6sQw8/r+XJEQp6OA06R3FotIWFn7zbdMmpvM5n1HGdO/Db8Z1Ysm9Wr6XVZYUxCISFjILSji6Xc28dIn22jVsDYv3zyQi3q08LusiKAgEJGQ90nGASbPS2bnoTzGDWnPxOHdaRDFTeIqm4JAREJWdl4hjy9dz+tf7qRjbD3+NWEIgzs187usiKMgEJGQ9E7aHh5YkMrBYwXccWFnfnFpV2rHqEmcFxQEIhJS9h85zkNvprEkOYuecQ158aaBJLRt5HdZEU1BICIhwcxY8PUuHn4zndzjxdx7WTd+dmFnYqqrSZzXFAQi4rtdh/OYOj+FFRv3MyC+pElclxZqEldVFAQi4ptAwHh11Q5mLNtAwGDalb24cWgHNYmrYgoCEfHF1v1HmZyUwhfbD3F+11geG5NAu6ZqEucHBYGIVKmi4gAvrNzGH97bRO0a1XhqbF/Gnt1W7SF8pCAQkSqTvjuHiUnrSN2Vw+W9WzJ9dB9aqEmc7xQEIuK5/MJiZn6QwawPt9C4bk2ev2EAIxLi/C5LghQEIuKpNTsOMXFuMlv2H+PaAW15cFRPGtdVk7hQoiAQEU8cO17EU29v5JXPttO6UR1eGT+IC7s197ssKYeCQEQq3Ueb9nP/vBR2Z+dx45D23De8B/Vr6ddNqNLKiEilyc4tZPqSdOauyaRT83q88bOhDOzQ1O+y5CQUBCJSKd5KzeLBhWkcOlbA/wzrzD2XqElcuFAQiMgZ2Xckn2kL01iWuoferRvy8s0D6dNGTeLCiYJARE6LmZG0dhfTF6eTV1jMxOHduf38TmoSF4YUBCJyynYeymXK/BRWbj7AwA5NmHFtXzo3r+93WXKaFAQiUmGBgDHns+08+fZGHPDI6N78dHB7qqlJXFhTEIhIhWTsO8rkpGRW7/iWC7o157ExfWjbRE3iIoGCQES+V2FxgNkfbeWZ9zZTt1Z1nv7hWVwzoI2axEUQz4LAOVcb+AioFXyeuWY2rcwYBzwDjARygZvNbK1XNYnIqUndlc3EucmkZ+VwRUIcD13Vm+YNavldllQyL48IjgMXm9lR51wM8LFzbpmZfV5qzAiga/A2GHg++FFEfJRfWMwz729m9kdbaVqvJrN+ejbD+7TyuyzxiGdBYGYGHA0+jAnerMyw0cCc4NjPnXONnXNxZpblVV0i8v2+3H6ISXOT2XrgGD9KbMvUkb1oVDfG77LEQ56eI3DOVQfWAF2AZ81sVZkhbYCdpR5nBrf9VxA45yYAEwDi4+M9q1ckmh09XsSTb21gzmc7aNukDv+4dTDndY31uyypAp4GgZkVA/2cc42B+c65PmaWWmpIeWebyh41YGazgdkAiYmJ39kvImdmxcZ9TJ2fyu7sPMaf25FfX9aNemoSFzWqZKXN7LBzbgUwHCgdBJlAu1KP2wK7q6ImEYFvjxUwfUk689buokuL+sy94xzObt/E77Kkinl51VBzoDAYAnWAS4EnygxbBNztnHudkpPE2To/IOI9M2Npyh6mLUrlcG4h91zchbsu7kKtGmoSF428PCKIA14JnieoBrxhZoudc3cAmNksYCkll45mUHL56C0e1iMiwL6cfB5YkMo76XtJaNOIOeMH06t1Q7/LEh95edVQMtC/nO2zSt034C6vahCR/8/M+PfqTKYvSaegKMD9I3pw63kdqaEmcVFPZ4NEosDOQ7ncPy+FjzMOMKhjU2Zck0AnNYmTIAWBSAQrDhivfLqdp97eSPVqjkev7sP1g+LVJE7+i4JAJEJt3nuESUnJrP3mMBd1b85vxyTQunEdv8uSEKQgEIkwhcUBZq3Ywp8/yKBerer88cf9GN2vtZrEyQkpCEQiSEpmNvfNXceGPUe48qzWTLuyF7H11SROvp+CQCQC5BcW84f3NvHCR1tp3qAWL9yYyA96tfS7LAkTCgKRMPf51oNMTkpm+8FcfjKoHZNH9KRRHTWJk4pTEIiEqSP5hcxYtoFXV31DfNO6/PO2wZzTRU3i5NQpCETC0PIN+5gyP4W9Ofncdl5HfnVZN+rW1I+znB5954iEkUPHCnjkzTQWfL2bbi3r89wN59A/Xk3i5MwoCETCgJmxODmLhxalkZNfyM8v6cpdF3WhZg21h5AzpyAQCXF7c/KZOj+V99bv5ay2jXhi7GB6tFKTOKk8CgKREGVm/OvLnfx26XoKiwNMHdmT8ed1pLraQ0glUxCIhKAdB49x/7wUPt1ykCGdmjLjmr50iK3nd1kSoRQEIiGkOGC8/Mk2fvfORmKqVeOxMQlcN7CdmsSJpxQEIiFi456SJnFf7zzMJT1a8OiYPsQ1UpM48Z6CQMRnBUUBnluRwbPLM2hQO4Y//aQ/V/aNU5M4qTIKAhEfrdt5mIlzk9m49wij+7Vm2pW9aVqvpt9lSZRREIj4IK+gmN+/u5EXP95Giwa1efGmRC7pqSZx4g8FgUgV+3TLAe6fl8KOg7lcPzieySN60LC2msSJf076tkTn3K1lHld3zk3zriSRyJSTX8j981K4/oVVALx2+xAeG5OgEBDfVeSI4BLn3LXArUAz4GXgQ0+rEokw76XvZeqCFPYfOc6ECzrxy0u7Uadmdb/LEgEqEARmdr1z7sdACpAL/MTMPvG8MpEIcPDocR5+M51F63bTo1UDZo9L5Kx2jf0uS+S/nDQInHNdgZ8DSUBPYJxz7iszy/W6OJFwZWYsWrebhxalcfR4Eb/6QTfuuLCzmsRJSKrIS0NvAneZ2fuu5MLmXwFfAr2/75Occ+2AOUArIADMNrNnyowZBiwEtgU3zTOzR05lAiKhJis7jwfmp/L+hn30a9eYJ8f2pVvLBn6XJXJCFQmCQWaWA2BmBjztnFtUgc8rAn5tZmudcw2ANc65d80svcy4lWY26tTKFgk9gYDx2pff8PjSDRQHjAdH9eLmczqoSZyEvIqcI8hxzvUwsw3/+WhmmyvweVlAVvD+EefceqANUDYIRMLetgPHmJyUzKpthzi3SzMeH9OX+GZ1/S5LpEIq+j6CfwIDSn08Jc65DkB/YFU5u4c659YBu4F7zSytnM+fAEwAiI+PP9WnF/FMUXGAlz7ZxtPvbKJmjWo8cW0CP0psp/YQElZO9Q1lp/zd7ZyrT8mJ5l/85yWmUtYC7c3sqHNuJLAA6Fr2a5jZbGA2QGJiop1qDSJeWJ+Vw6SkZJIzs/lBr5Y8enUfWjas7XdZIqfM03cWO+diKAmBV81sXtn9pYPBzJY6555zzsWa2QEv6xI5E8eLinl2+RaeW55BozoxzLy+P1ckqEmchC/PgiB4hdGLwHoz+/0JxrQC9pqZOecGUfJO54Ne1SRyptZ+8y2T5iazed9RrunfhgdH9aKJmsRJmDvVIDiVl2XOBcYBKc65r4PbpgDxAGY2CxgL3OmcKwLygOuCVyaJhJTcgiJ+9/YmXv50G3ENa/PyLQO5qHsLv8sSqRQVDQJX5uNJmdnHJxtvZjOBmRX9miJ++CTjAJPnJbPzUB7jhrRn4vDuNFB/IIkgFXln8d3AVcGH53tbjkjoyM4r5LEl6/nX6p10jK3HvyYMYXCnZn6XJVLpKnJE0ApY7pxbC7zknHtbL99IpHsnbQ8PLEjl4LEC7riwM7+4tCu1Y9QkTiJTRd5Q9oBz7kHgMuAWYKZz7g3gRTPb4nWBIlVp/5HjPPRmGkuSs+gZ15AXbxpIQttGfpcl4qkKnSMIXtWzB9hDSeuIJsDcYMuIiV4WKFIVzIz5X+3ikcXp5B4v5t7LuvGzCzsTU11N4iTyVeQcwT3ATcAB4K/AfWZW6JyrBmwGFAQS1nYdzmPq/BRWbNzPgPiSJnFdWqhJnESPihwRxALXmNmO0hvNLOCcU7M4CVuBgPHqqh3MWLYBAx66shfjhqpJnESfipwj+M337FtfueWIVI2t+48yOSmFL7Yf4vyusTw2JoF2TdUkTqKT/ni9RJWi4gAvrNzGH97bRO0a1XhqbF/Gnt1W7SEkqikIJGqk7c5mUlIyqbtyuLx3S6aP7kMLNYkTURBI5MsvLObPH2xm1odbaVK3Js/fMIARCXF+lyUSMhQEEtHW7DjExLnJbNl/jGsHtOXBUT1pXFdN4kRKUxBIRDp2vIin3t7IK59tp3WjOrwyfhAXdmvud1kiIUlBIBHno037uX9eCruz87hxSHvuG96D+rX0rS5yIvrpkIiRnVvI9CXpzF2TSafm9XjjZ0MZ2KGp32WJhDwFgUSEt1KzeHBhGoeOFfA/wzpzzyVqEidSUQoCCWv7juQzbWEay1L30CuuIS/fPJA+bdQkTuRUKAgkLJkZc9dk8uiS9eQVFnPf5d2ZcEEnNYkTOQ0KAgk7Ow/lMmV+Cis3HyCxfRNmXNuXLi3q+12WSNhSEEjYCASMOZ9t58m3N+KAR0b35qeD21NNTeJEzoiCQMJCxr6jTE5KZvWOb7mgW3MeG9OHtk3UJE6kMigIJKQVFgeY/dFWnnlvM3VqVufpH57FNQPaqEmcSCVSEEjISt2VzcS5yaRn5TAyoRUPX9WH5g1q+V2WSMRREEjIyS8s5pn3NzP7o600rVeTWT8dwPA+ahIn4hUFgYSUL7cfYtLcZLYeOMYPz27LA1f0olHdGL/LEolongWBc64dMAdoBQSA2Wb2TJkxDngGGAnkAjeb2VqvapLQdfR4EU++tYE5n+2gbZM6/P3WQZzfVU3iRKqCl0cERcCvzWytc64BsMY5966ZpZcaMwLoGrwNBp4PfpQosnzjPqbOSyErJ59bzu3AvZd1p56axIlUGc9+2swsC8gK3j/inFsPtAFKB8FoYI6ZGfC5c66xcy4u+LkS4b49VsD0xenM+2oXXVrUZ+4d53B2+yZ+lyUSdarkv13OuQ5Af2BVmV1tgJ2lHmcGt/1XEDjnJgATAOLj4z2rU6qGmbE0ZQ/TFqVyOLeQuy/qwv9e0oVaNdQkTsQPngeBc64+kAT8wsxyyu4u51PsOxvMZgOzARITE7+zX8LHvpx8HliQyjvpe0lo04g54wfTq3VDv8sSiWqeBoFzLoaSEHjVzOaVMyQTaFfqcVtgt5c1iT/MjH+vzmT6knQKigJMHtGD287rSA01iRPxnZdXDTngRWC9mf3+BMMWAXc7516n5CRxts4PRJ5vDpY0ifs44wCDOjZlxjUJdGquJnEiocLLI4JzgXFAinPu6+C2KUA8gJnNApZSculoBiWXj97iYT1SxYoDxt8+3c7v3t5I9WqOR6/uw/WD4tUkTiTEeHnV0MeUfw6g9BgD7vKqBvHP5r1HmJiUzFffHGZY9+Y8NiaB1o3r+F2WiJRDF2tLpSooCjDrwy3M/CCDerWq88cf92N0v9ZqEicSwhQEUmmSMw8zcW4yG/YcYVTfOB66qjex9dUkTiTUKQjkjOUXFvOHdzfxwsqtxNavxexxZ3NZ71Z+lyUiFaQgkDPy+daDTE5KZvvBXH4yqB2TR/SkUR01iRMJJwoCOS1H8guZsWwDr676hvimdfnnbYM5p0us32WJyGlQEMgp+2DDXqbOT2VvTj63ndeRX13Wjbo19a0kEq700ysVduhYAY+8mcaCr3fTtUV9nrvzHPrHq0mcSLhTEMhJmRlvJmfx0KI0cvIK+fklXfmfizqrSZxIhFAQyPfak13SJO699Xs5q20jnrh9MD1aqUmcSCRREEi5zIzXv9zJY0vWUxgIMHVkT8af15Hqag8hEnEUBPIdOw4eY3JSCp9tPciQTk2ZcU1fOsTW87ssEfGIgkD+T3HAePmTbfzunY3EVKvGY2MSuG5gOzWJE4lwCgIBYOOekiZx63Ye5pIeLXh0TB/iGqlJnEg0UBBEuYKiAM+tyODZ5Rk0qB3DM9f146qz1CROJJooCKLY1zsPM2luMhv3HmF0v9b8ZlQvmqlJnEjUURBEobyCYp5+ZyMvfbKNFg1q8+JNiVzSs6XfZYmITxQEUebTLQeYnJTCN4dyuX5wPJNH9KBhbTWJE4lmCoIokZNfyONL1/PaFztp36wur90+hKGdm/ldloiEAAVBFHgvfS9TF6Sw/8hxJlzQiV9e2o06NdUeQkRKKAgi2MGjx3nozXTeXLebHq0aMHtcIme1a+x3WSISYhQEEcjMWPj1bh5+M42jx4v41Q+6cceFnalZo5rfpYlICFIQRJjdh/N4YEEqH2zYR792jXlybF+6tWzgd1kiEsIUBBEiEDD++cU3zFi2geKA8eCoXtx8Tgc1iRORk1IQRIBtB44xOSmZVdsOcW6XZjw+pi/xzer6XZaIhAnPgsA59xIwCthnZn3K2T8MWAhsC26aZ2aPeFVPJCoqDvDix9v4/bubqFmjGk9cm8CPEtupPYSInBIvjwj+BswE5nzPmJVmNsrDGiJW+u4cJiUlk7Irmx/0asmjV/ehZcPafpclImHIsyAws4+ccx28+vrR6nhRMTM/yOD5FVtoXDeGZ68fwMiEVjoKEJHT5vc5gqHOuXXAbuBeM0srb5BzbgIwASA+Pr4Kywsta3Z8y6SkZDL2HeWa/m14cFQvmtSr6XdZIhLm/AyCtUB7MzvqnBsJLAC6ljfQzGYDswESExOtyioMEbkFRTz19kb+9ul24hrW5uVbBnJR9xZ+lyUiEcK3IDCznFL3lzrnnnPOxZrZAb9qCkUfbz7A5HnJZH6bx7gh7Zk4vDsN1CRORCqRb0HgnGsF7DUzc84NAqoBB/2qJ9Rk5xXy2yXpvLE6k46x9fjXhCEM7qQmcSJS+by8fPQ1YBgQ65zLBKYBMQBmNgsYC9zpnCsC8oDrzCzqXvYpz9tpe3hwQSoHjxVw57DO/PySrtSOUZM4EfGGl1cN/eQk+2dScnmpBO0/cpyHFqWxJCWLnnENefGmgSS0beR3WSIS4fy+akgoaRI3b+0uHlmcTl5BMfdd3p0JF3QiprqaxImI9xQEPtt1OI8p81L4cNN+BsSXNInr0kJN4kSk6igIfBIIGP9YtYMnlm3AgIeu7MW4oWoSJyJVT0Hggy37jzI5KZkvt3/L+V1jeWxMAu2aqkmciPhDQVCFCosDvLByK398bzO1a1TjqbF9GXt2W7WHEBFfKQiqSOqubCYlJZO2O4fhvVvxyNW9adFATeJExH8KAo/lFxbz5w82M+vDrTSpW5PnbxjAiIQ4v8sSEfk/CgIPrd5+iIlJyWzdf4xrB7TlwVE9aVxXTeJEJLQoCDxw7HhJk7hXPttO60Z1eGX8IC7s1tzvskREyqUgqGQfbtrPlHkp7M7O46ahHbjv8u7Uq6V/ZhEJXfoNVUkO5xYwffF6ktZm0ql5Pf79s6Ekdmjqd1kiIielIKgEy1KyeHBhGt/mFnDXRZ3534vVJE5EwoeC4Azsy8nnNwvTeCttD71bN+SV8QPp3VpN4kQkvCgIToOZMXdNJtMXp5NfFGDi8O7cfr6axIlIeFIQnKKdh3KZMj+FlZsPMLBDE2Zc25fOzev7XZaIyGlTEFRQccD4+2fbefLtjThg+uje3DC4PdXUJE5EwpyCoAIy9h1hUlIKa3Z8y4XdmvPbMX1o20RN4kQkMigIvkdhcYC/fLiFP72fQd1a1fn9j85iTP82ahInIhFFQXACqbuyuW9uMuuzcrgiIY6HrupN8wa1/C5LRKTSKQjKyC8s5o/vbeaFlVtpWq8ms356NsP7tPK7LBERzygISvli2yEmJyWz9cAxfpzYjikje9KobozfZYmIeEpBABzJL+TJtzby98930LZJHf5x62DO6xrrd1kiIlUi6oNg+cZ9TJ2XQlZOPuPP7ci9l3ejbs2o/2cRkSgStb/xvj1WwPTF6cz7ahddWtRn7h3ncHb7Jn6XJSJS5TwLAufcS8AoYJ+Z9SlnvwOeAUYCucDNZrbWq3r+w8xYkpLFtIVpZOcVcs/FXbjr4i7UqqEmcSISnbw8IvgbMBOYc4L9I4Cuwdtg4PngR8/szcnnwQWpvJO+l4Q2jfjHbYPpGdfQy6cUEQl5ngWBmX3knOvwPUNGA3PMzIDPnXONnXNxZpblRT3LN+zjnte/oqAowP0jenDreR2poSZxIiK+niNoA+ws9TgzuO07QeCcmwBMAIiPjz+tJ+sYW48B8U146KredIytd1pfQ0QkEvn5X+Ly+jRYeQPNbLaZJZpZYvPmp/e3fzvE1uOV8YMUAiIiZfgZBJlAu1KP2wK7fapFRCRq+RkEi4AbXYkhQLZX5wdEROTEvLx89DVgGBDrnMsEpgExAGY2C1hKyaWjGZRcPnqLV7WIiMiJeXnV0E9Ost+Au7x6fhERqRhdPykiEuUUBCIiUU5BICIS5RQEIiJRzpWcsw0fzrn9wI7T/PRY4EAlluMnzSU0RcpcImUeoLn8R3szK/cduWEXBGfCObfazBL9rqMyaC6hKVLmEinzAM2lIvTSkIhIlFMQiIhEuWgLgtl+F1CJNJfQFClziZR5gOZyUlF1jkBERL4r2o4IRESkDAWBiEiUi8ggcM4Nd85tdM5lOOcml7PfOef+FNyf7Jwb4EedFVGBuQxzzmU7574O3n7jR50n45x7yTm3zzmXeoL94bQmJ5tLuKxJO+fccufceudcmnPu5+WMCYt1qeBcwmVdajvnvnDOrQvO5eFyxlTuuphZRN2A6sAWoBNQE1gH9CozZiSwjJK/kjYEWOV33Wcwl2HAYr9rrcBcLgAGAKkn2B8Wa1LBuYTLmsQBA4L3GwCbwvhnpSJzCZd1cUD94P0YYBUwxMt1icQjgkFAhpltNbMC4HVgdJkxo4E5VuJzoLFzLq6qC62AiswlLJjZR8Ch7xkSLmtSkbmEBTPLMrO1wftHgPWU/N3w0sJiXSo4l7AQ/Lc+GnwYE7yVvaqnUtclEoOgDbCz1ONMvvsNUZExoaCidQ4NHkYuc871rprSKl24rElFhdWaOOc6AP0p+d9naWG3Lt8zFwiTdXHOVXfOfQ3sA941M0/XxbM/TOMjV862smlakTGhoCJ1rqWkh8hR59xIYAHQ1evCPBAua1IRYbUmzrn6QBLwCzPLKbu7nE8J2XU5yVzCZl3MrBjo55xrDMx3zvUxs9LnpCp1XSLxiCATaFfqcVtg92mMCQUnrdPMcv5zGGlmS4EY51xs1ZVYacJlTU4qnNbEORdDyS/OV81sXjlDwmZdTjaXcFqX/zCzw8AKYHiZXZW6LpEYBF8CXZ1zHZ1zNYHrgEVlxiwCbgyeeR8CZJtZVlUXWgEnnYtzrpVzzgXvD6JkTQ9WeaVnLlzW5KTCZU2CNb4IrDez359gWFisS0XmEkbr0jx4JIBzrg5wKbChzLBKXZeIe2nIzIqcc3cDb1Ny1c1LZpbmnLsjuH8WsJSSs+4ZQC5wi1/1fp8KzmUscKdzrgjIA66z4GUFocQ59xolV23EOucygWmUnAQLqzWBCs0lLNYEOBcYB6QEX48GmALEQ9itS0XmEi7rEge84pyrTklYvWFmi738HaYWEyIiUS4SXxoSEZFToCAQEYlyCgIRkSinIBARiXIKAhGRKKcgEBGJcgoCEZEo9/8AhJkumot7wJYAAAAASUVORK5CYII=\n",
+-                        "text/plain": ["<Figure size 432x288 with 1 Axes>"]
+-                    },
+-                    "metadata": {
+-                        "needs_background": "light"
+-                    },
+-                    "output_type": "display_data"
+-                }
+-            ],
+-            "source": [
+-                "import matplotlib.pyplot as plt\n",
+-                "plt.plot([1, 2, 3, 4])\n",
+-                "plt.ylabel('y=x')\n",
+-                "plt.show()"
+-            ]
++          "name": "stdout",
++          "output_type": "stream",
++          "text": ["1\n"]
+         }
+-    ],
+-    "metadata": {
+-        "kernelspec": {
+-            "display_name": "Python 3 (ipykernel)",
+-            "language": "python",
+-            "name": "python3"
+-        },
+-        "language_info": {
+-            "codemirror_mode": {
+-                "name": "ipython",
+-                "version": 3
+-            },
+-            "file_extension": ".py",
+-            "mimetype": "text/x-python",
+-            "name": "python",
+-            "nbconvert_exporter": "python",
+-            "pygments_lexer": "ipython3",
+-            "version": "3.10.4"
++      ],
++      "source": ["x=1\n", "print(x)"]
++    },
++    {
++      "cell_type": "code",
++      "execution_count": 4,
++      "id": "1fcf3d25-cb81-4977-9cc5-91855f3c1b28",
++      "metadata": {},
++      "outputs": [
++        {
++          "data": {
++            "image/png": "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\n",
++            "text/plain": ["<Figure size 432x288 with 1 Axes>"]
++          },
++          "metadata": {
++            "needs_background": "light"
++          },
++          "output_type": "display_data"
+         }
++      ],
++      "source": [
++        "import matplotlib.pyplot as plt\n",
++        "plt.plot([1, 2, 3, 4])\n",
++        "plt.ylabel('y=x')\n",
++        "plt.show()"
++      ]
++    }
++  ],
++  "metadata": {
++    "kernelspec": {
++      "display_name": "Python 3 (ipykernel)",
++      "language": "python",
++      "name": "python3"
+     },
+-    "nbformat": 4,
+-    "nbformat_minor": 5
++    "language_info": {
++      "codemirror_mode": {
++        "name": "ipython",
++        "version": 3
++      },
++      "file_extension": ".py",
++      "mimetype": "text/x-python",
++      "name": "python",
++      "nbconvert_exporter": "python",
++      "pygments_lexer": "ipython3",
++      "version": "3.10.4"
++    }
++  },
++  "nbformat": 4,
++  "nbformat_minor": 5
+ }
+diff --git a/node_modules/@datalayer/jupyter-lexical/lib/examples/content/Example.lexical.json b/node_modules/@datalayer/jupyter-lexical/lib/examples/content/Example.lexical.json
+index 5573802..2d4f3b0 100644
+--- a/node_modules/@datalayer/jupyter-lexical/lib/examples/content/Example.lexical.json
++++ b/node_modules/@datalayer/jupyter-lexical/lib/examples/content/Example.lexical.json
+@@ -1,269 +1,269 @@
+ {
+-    "root": {
++  "root": {
++    "children": [
++      {
+         "children": [
+-            {
+-                "children": [
+-                    {
+-                        "detail": 0,
+-                        "format": 0,
+-                        "mode": "normal",
+-                        "style": "",
+-                        "text": "print",
+-                        "type": "jupyter-input-highlight",
+-                        "version": 1,
+-                        "highlightType": "keyword"
+-                    },
+-                    {
+-                        "detail": 0,
+-                        "format": 0,
+-                        "mode": "normal",
+-                        "style": "",
+-                        "text": "(",
+-                        "type": "jupyter-input-highlight",
+-                        "version": 1,
+-                        "highlightType": "punctuation"
+-                    },
+-                    {
+-                        "detail": 0,
+-                        "format": 0,
+-                        "mode": "normal",
+-                        "style": "",
+-                        "text": "'Cell 1'",
+-                        "type": "jupyter-input-highlight",
+-                        "version": 1,
+-                        "highlightType": "string"
+-                    },
+-                    {
+-                        "detail": 0,
+-                        "format": 0,
+-                        "mode": "normal",
+-                        "style": "",
+-                        "text": ")",
+-                        "type": "jupyter-input-highlight",
+-                        "version": 1,
+-                        "highlightType": "punctuation"
+-                    }
+-                ],
+-                "direction": "ltr",
+-                "format": "",
+-                "indent": 0,
+-                "type": "jupyter-input",
+-                "version": 1,
+-                "language": "python",
+-                "jupyterInputNodeUuid": "63cf52e9-1bff-4309-945b-68527dbb1c27"
+-            },
+-            {
+-                "format": "",
+-                "type": "jupyter-output",
+-                "version": 1,
+-                "source": "print('Cell 1')",
+-                "outputs": [
+-                    {
+-                        "name": "stdout",
+-                        "text": "Cell 1\n",
+-                        "output_type": "stream"
+-                    }
+-                ],
+-                "jupyterInputNodeUuid": "63cf52e9-1bff-4309-945b-68527dbb1c27",
+-                "jupyterOutputNodeUuid": "25e7cca4-6f6a-4bbc-8a32-c3760b90dc2f"
+-            },
+-            {
+-                "children": [
+-                    {
+-                        "detail": 0,
+-                        "format": 0,
+-                        "mode": "normal",
+-                        "style": "",
+-                        "text": "Next...",
+-                        "type": "text",
+-                        "version": 1
+-                    }
+-                ],
+-                "direction": "ltr",
+-                "format": "",
+-                "indent": 0,
+-                "type": "paragraph",
+-                "version": 1
+-            },
+-            {
+-                "children": [
+-                    {
+-                        "detail": 0,
+-                        "format": 0,
+-                        "mode": "normal",
+-                        "style": "",
+-                        "text": "print",
+-                        "type": "jupyter-input-highlight",
+-                        "version": 1,
+-                        "highlightType": "keyword"
+-                    },
+-                    {
+-                        "detail": 0,
+-                        "format": 0,
+-                        "mode": "normal",
+-                        "style": "",
+-                        "text": "(",
+-                        "type": "jupyter-input-highlight",
+-                        "version": 1,
+-                        "highlightType": "punctuation"
+-                    },
+-                    {
+-                        "detail": 0,
+-                        "format": 0,
+-                        "mode": "normal",
+-                        "style": "",
+-                        "text": "'Cell 2'",
+-                        "type": "jupyter-input-highlight",
+-                        "version": 1,
+-                        "highlightType": "string"
+-                    },
+-                    {
+-                        "detail": 0,
+-                        "format": 0,
+-                        "mode": "normal",
+-                        "style": "",
+-                        "text": ")",
+-                        "type": "jupyter-input-highlight",
+-                        "version": 1,
+-                        "highlightType": "punctuation"
+-                    }
+-                ],
+-                "direction": "ltr",
+-                "format": "",
+-                "indent": 0,
+-                "type": "jupyter-input",
+-                "version": 1,
+-                "language": "python",
+-                "jupyterInputNodeUuid": "1465bc96-0fbc-4327-9557-02b627ae6b23"
+-            },
+-            {
+-                "format": "",
+-                "type": "jupyter-output",
+-                "version": 1,
+-                "source": "print('Cell 2')",
+-                "outputs": [
+-                    {
+-                        "name": "stdout",
+-                        "text": "Cell 2\n",
+-                        "output_type": "stream"
+-                    }
+-                ],
+-                "jupyterInputNodeUuid": "1465bc96-0fbc-4327-9557-02b627ae6b23",
+-                "jupyterOutputNodeUuid": "9c0d20d7-42a8-482f-80fa-31fd6f9c234b"
+-            },
+-            {
+-                "children": [
+-                    {
+-                        "detail": 0,
+-                        "format": 0,
+-                        "mode": "normal",
+-                        "style": "",
+-                        "text": "More...",
+-                        "type": "text",
+-                        "version": 1
+-                    }
+-                ],
+-                "direction": "ltr",
+-                "format": "",
+-                "indent": 0,
+-                "type": "paragraph",
+-                "version": 1
+-            },
+-            {
+-                "children": [
+-                    {
+-                        "detail": 0,
+-                        "format": 0,
+-                        "mode": "normal",
+-                        "style": "",
+-                        "text": "print",
+-                        "type": "jupyter-input-highlight",
+-                        "version": 1,
+-                        "highlightType": "keyword"
+-                    },
+-                    {
+-                        "detail": 0,
+-                        "format": 0,
+-                        "mode": "normal",
+-                        "style": "",
+-                        "text": "(",
+-                        "type": "jupyter-input-highlight",
+-                        "version": 1,
+-                        "highlightType": "punctuation"
+-                    },
+-                    {
+-                        "detail": 0,
+-                        "format": 0,
+-                        "mode": "normal",
+-                        "style": "",
+-                        "text": "'Cell 3'",
+-                        "type": "jupyter-input-highlight",
+-                        "version": 1,
+-                        "highlightType": "string"
+-                    },
+-                    {
+-                        "detail": 0,
+-                        "format": 0,
+-                        "mode": "normal",
+-                        "style": "",
+-                        "text": ")",
+-                        "type": "jupyter-input-highlight",
+-                        "version": 1,
+-                        "highlightType": "punctuation"
+-                    }
+-                ],
+-                "direction": "ltr",
+-                "format": "",
+-                "indent": 0,
+-                "type": "jupyter-input",
+-                "version": 1,
+-                "language": "python",
+-                "jupyterInputNodeUuid": "d792c092-60df-4fec-ad16-dd36a0213159"
+-            },
+-            {
+-                "format": "",
+-                "type": "jupyter-output",
+-                "version": 1,
+-                "source": "print('Cell 3')",
+-                "outputs": [
+-                    {
+-                        "name": "stdout",
+-                        "text": "Cell 3\n",
+-                        "output_type": "stream"
+-                    }
+-                ],
+-                "jupyterInputNodeUuid": "d792c092-60df-4fec-ad16-dd36a0213159",
+-                "jupyterOutputNodeUuid": "fc0cb97b-b295-4e5c-a70b-dab9222b3a78"
+-            },
+-            {
+-                "children": [
+-                    {
+-                        "detail": 0,
+-                        "format": 0,
+-                        "mode": "normal",
+-                        "style": "",
+-                        "text": "Done!",
+-                        "type": "text",
+-                        "version": 1
+-                    }
+-                ],
+-                "direction": "ltr",
+-                "format": "",
+-                "indent": 0,
+-                "type": "paragraph",
+-                "version": 1
+-            },
+-            {
+-                "format": "",
+-                "type": "youtube",
+-                "version": 1,
+-                "videoID": "dh2RK-c1dZA"
+-            }
++          {
++            "detail": 0,
++            "format": 0,
++            "mode": "normal",
++            "style": "",
++            "text": "print",
++            "type": "jupyter-input-highlight",
++            "version": 1,
++            "highlightType": "keyword"
++          },
++          {
++            "detail": 0,
++            "format": 0,
++            "mode": "normal",
++            "style": "",
++            "text": "(",
++            "type": "jupyter-input-highlight",
++            "version": 1,
++            "highlightType": "punctuation"
++          },
++          {
++            "detail": 0,
++            "format": 0,
++            "mode": "normal",
++            "style": "",
++            "text": "'Cell 1'",
++            "type": "jupyter-input-highlight",
++            "version": 1,
++            "highlightType": "string"
++          },
++          {
++            "detail": 0,
++            "format": 0,
++            "mode": "normal",
++            "style": "",
++            "text": ")",
++            "type": "jupyter-input-highlight",
++            "version": 1,
++            "highlightType": "punctuation"
++          }
+         ],
+         "direction": "ltr",
+         "format": "",
+         "indent": 0,
+-        "type": "root",
++        "type": "jupyter-input",
++        "version": 1,
++        "language": "python",
++        "jupyterInputNodeUuid": "63cf52e9-1bff-4309-945b-68527dbb1c27"
++      },
++      {
++        "format": "",
++        "type": "jupyter-output",
++        "version": 1,
++        "source": "print('Cell 1')",
++        "outputs": [
++          {
++            "name": "stdout",
++            "text": "Cell 1\n",
++            "output_type": "stream"
++          }
++        ],
++        "jupyterInputNodeUuid": "63cf52e9-1bff-4309-945b-68527dbb1c27",
++        "jupyterOutputNodeUuid": "25e7cca4-6f6a-4bbc-8a32-c3760b90dc2f"
++      },
++      {
++        "children": [
++          {
++            "detail": 0,
++            "format": 0,
++            "mode": "normal",
++            "style": "",
++            "text": "Next...",
++            "type": "text",
++            "version": 1
++          }
++        ],
++        "direction": "ltr",
++        "format": "",
++        "indent": 0,
++        "type": "paragraph",
++        "version": 1
++      },
++      {
++        "children": [
++          {
++            "detail": 0,
++            "format": 0,
++            "mode": "normal",
++            "style": "",
++            "text": "print",
++            "type": "jupyter-input-highlight",
++            "version": 1,
++            "highlightType": "keyword"
++          },
++          {
++            "detail": 0,
++            "format": 0,
++            "mode": "normal",
++            "style": "",
++            "text": "(",
++            "type": "jupyter-input-highlight",
++            "version": 1,
++            "highlightType": "punctuation"
++          },
++          {
++            "detail": 0,
++            "format": 0,
++            "mode": "normal",
++            "style": "",
++            "text": "'Cell 2'",
++            "type": "jupyter-input-highlight",
++            "version": 1,
++            "highlightType": "string"
++          },
++          {
++            "detail": 0,
++            "format": 0,
++            "mode": "normal",
++            "style": "",
++            "text": ")",
++            "type": "jupyter-input-highlight",
++            "version": 1,
++            "highlightType": "punctuation"
++          }
++        ],
++        "direction": "ltr",
++        "format": "",
++        "indent": 0,
++        "type": "jupyter-input",
++        "version": 1,
++        "language": "python",
++        "jupyterInputNodeUuid": "1465bc96-0fbc-4327-9557-02b627ae6b23"
++      },
++      {
++        "format": "",
++        "type": "jupyter-output",
++        "version": 1,
++        "source": "print('Cell 2')",
++        "outputs": [
++          {
++            "name": "stdout",
++            "text": "Cell 2\n",
++            "output_type": "stream"
++          }
++        ],
++        "jupyterInputNodeUuid": "1465bc96-0fbc-4327-9557-02b627ae6b23",
++        "jupyterOutputNodeUuid": "9c0d20d7-42a8-482f-80fa-31fd6f9c234b"
++      },
++      {
++        "children": [
++          {
++            "detail": 0,
++            "format": 0,
++            "mode": "normal",
++            "style": "",
++            "text": "More...",
++            "type": "text",
++            "version": 1
++          }
++        ],
++        "direction": "ltr",
++        "format": "",
++        "indent": 0,
++        "type": "paragraph",
+         "version": 1
+-    }
++      },
++      {
++        "children": [
++          {
++            "detail": 0,
++            "format": 0,
++            "mode": "normal",
++            "style": "",
++            "text": "print",
++            "type": "jupyter-input-highlight",
++            "version": 1,
++            "highlightType": "keyword"
++          },
++          {
++            "detail": 0,
++            "format": 0,
++            "mode": "normal",
++            "style": "",
++            "text": "(",
++            "type": "jupyter-input-highlight",
++            "version": 1,
++            "highlightType": "punctuation"
++          },
++          {
++            "detail": 0,
++            "format": 0,
++            "mode": "normal",
++            "style": "",
++            "text": "'Cell 3'",
++            "type": "jupyter-input-highlight",
++            "version": 1,
++            "highlightType": "string"
++          },
++          {
++            "detail": 0,
++            "format": 0,
++            "mode": "normal",
++            "style": "",
++            "text": ")",
++            "type": "jupyter-input-highlight",
++            "version": 1,
++            "highlightType": "punctuation"
++          }
++        ],
++        "direction": "ltr",
++        "format": "",
++        "indent": 0,
++        "type": "jupyter-input",
++        "version": 1,
++        "language": "python",
++        "jupyterInputNodeUuid": "d792c092-60df-4fec-ad16-dd36a0213159"
++      },
++      {
++        "format": "",
++        "type": "jupyter-output",
++        "version": 1,
++        "source": "print('Cell 3')",
++        "outputs": [
++          {
++            "name": "stdout",
++            "text": "Cell 3\n",
++            "output_type": "stream"
++          }
++        ],
++        "jupyterInputNodeUuid": "d792c092-60df-4fec-ad16-dd36a0213159",
++        "jupyterOutputNodeUuid": "fc0cb97b-b295-4e5c-a70b-dab9222b3a78"
++      },
++      {
++        "children": [
++          {
++            "detail": 0,
++            "format": 0,
++            "mode": "normal",
++            "style": "",
++            "text": "Done!",
++            "type": "text",
++            "version": 1
++          }
++        ],
++        "direction": "ltr",
++        "format": "",
++        "indent": 0,
++        "type": "paragraph",
++        "version": 1
++      },
++      {
++        "format": "",
++        "type": "youtube",
++        "version": 1,
++        "videoID": "dh2RK-c1dZA"
++      }
++    ],
++    "direction": "ltr",
++    "format": "",
++    "indent": 0,
++    "type": "root",
++    "version": 1
++  }
+ }
+diff --git a/node_modules/@datalayer/jupyter-lexical/lib/nodes/JupyterOutputNode.js b/node_modules/@datalayer/jupyter-lexical/lib/nodes/JupyterOutputNode.js
+index 46cac16..d080ae9 100644
+--- a/node_modules/@datalayer/jupyter-lexical/lib/nodes/JupyterOutputNode.js
++++ b/node_modules/@datalayer/jupyter-lexical/lib/nodes/JupyterOutputNode.js
+@@ -8,7 +8,7 @@ import { DecoratorNode, } from 'lexical';
+ import { UUID } from '@lumino/coreutils';
+ import { OUTPUT_UUID_TO_CODE_UUID, INPUT_UUID_TO_OUTPUT_KEY, INPUT_UUID_TO_OUTPUT_UUID, OUTPUT_UUID_TO_OUTPUT_KEY, } from '../plugins/JupyterInputOutputPlugin';
+ import { Output, OutputAdapter, newUuid, } from '@datalayer/jupyter-react';
+-import { createNoKernelWarning } from './jupyterUtils';
++import { createNoRuntimeWarning } from './jupyterUtils';
+ import { isJupyterOutputNodeOrphaned } from './JupyterOutputNodeUtils';
+ export class JupyterOutputNode extends DecoratorNode {
+     __code;
+@@ -149,7 +149,7 @@ export class JupyterOutputNode extends DecoratorNode {
+         self.__code = code;
+         if (!self.__outputAdapter.kernel) {
+             // Show user-facing warning instead of just logging
+-            const warningOutput = createNoKernelWarning();
++            const warningOutput = createNoRuntimeWarning();
+             // Update BOTH the node's outputs AND the adapter's model
+             self.__outputs = [warningOutput];
+             self.__outputAdapter.setOutputs([warningOutput]);
+@@ -162,7 +162,9 @@ export class JupyterOutputNode extends DecoratorNode {
+     }
+     updateKernel(kernel) {
+         const self = this.getWritable();
+-        self.__outputAdapter.kernel = kernel;
++        if (self.__outputAdapter) {
++            self.__outputAdapter.kernel = kernel;
++        }
+     }
+ }
+ export function $createJupyterOutputNode(code, outputAdapter, outputs, autoRun, jupyterInputNodeUuid, jupyterOutputNodeUuid) {
+diff --git a/node_modules/@datalayer/jupyter-lexical/lib/nodes/JupyterOutputNode.js.map b/node_modules/@datalayer/jupyter-lexical/lib/nodes/JupyterOutputNode.js.map
+index f5d8c39..6776c78 100644
+--- a/node_modules/@datalayer/jupyter-lexical/lib/nodes/JupyterOutputNode.js.map
++++ b/node_modules/@datalayer/jupyter-lexical/lib/nodes/JupyterOutputNode.js.map
+@@ -1 +1 @@
+-{"version":3,"file":"JupyterOutputNode.js","sourceRoot":"","sources":["../../src/nodes/JupyterOutputNode.tsx"],"names":[],"mappings":"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"}
+\ No newline at end of file
++{"version":3,"file":"JupyterOutputNode.js","sourceRoot":"","sources":["../../src/nodes/JupyterOutputNode.tsx"],"names":[],"mappings":"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"}
+\ No newline at end of file
+diff --git a/node_modules/@datalayer/jupyter-lexical/lib/nodes/jupyterUtils.d.ts b/node_modules/@datalayer/jupyter-lexical/lib/nodes/jupyterUtils.d.ts
+index d8585ea..b783632 100644
+--- a/node_modules/@datalayer/jupyter-lexical/lib/nodes/jupyterUtils.d.ts
++++ b/node_modules/@datalayer/jupyter-lexical/lib/nodes/jupyterUtils.d.ts
+@@ -1,8 +1,8 @@
+ import type { IOutput } from '@jupyterlab/nbformat';
+ /**
+- * Creates a warning output message for when no kernel is connected.
+- * This message is shown to users when they try to execute code without a kernel.
++ * Creates a warning output message for when no runtime is connected.
++ * This message is shown to users when they try to execute code without a runtime.
+  *
+  * @returns IOutput object containing the warning message
+  */
+-export declare function createNoKernelWarning(): IOutput;
++export declare function createNoRuntimeWarning(): IOutput;
+diff --git a/node_modules/@datalayer/jupyter-lexical/lib/nodes/jupyterUtils.js b/node_modules/@datalayer/jupyter-lexical/lib/nodes/jupyterUtils.js
+index 65172d1..2e609d0 100644
+--- a/node_modules/@datalayer/jupyter-lexical/lib/nodes/jupyterUtils.js
++++ b/node_modules/@datalayer/jupyter-lexical/lib/nodes/jupyterUtils.js
+@@ -4,16 +4,18 @@
+  * MIT License
+  */
+ /**
+- * Creates a warning output message for when no kernel is connected.
+- * This message is shown to users when they try to execute code without a kernel.
++ * Creates a warning output message for when no runtime is connected.
++ * This message is shown to users when they try to execute code without a runtime.
+  *
+  * @returns IOutput object containing the warning message
+  */
+-export function createNoKernelWarning() {
++export function createNoRuntimeWarning() {
+     return {
+         output_type: 'stream',
+         name: 'stderr',
+-        text: ['⚠️  No kernel connected. Please connect to execute code.\n'],
++        text: [
++            '⚠️  No runtime connected. Please connect to a runtime to execute code.\n',
++        ],
+     };
+ }
+ //# sourceMappingURL=jupyterUtils.js.map
+\ No newline at end of file
+diff --git a/node_modules/@datalayer/jupyter-lexical/lib/nodes/jupyterUtils.js.map b/node_modules/@datalayer/jupyter-lexical/lib/nodes/jupyterUtils.js.map
+index 71f8b19..01af65b 100644
+--- a/node_modules/@datalayer/jupyter-lexical/lib/nodes/jupyterUtils.js.map
++++ b/node_modules/@datalayer/jupyter-lexical/lib/nodes/jupyterUtils.js.map
+@@ -1 +1 @@
+-{"version":3,"file":"jupyterUtils.js","sourceRoot":"","sources":["../../src/nodes/jupyterUtils.ts"],"names":[],"mappings":"AAAA;;;;GAIG;AAIH;;;;;GAKG;AACH,MAAM,UAAU,qBAAqB;IACnC,OAAO;QACL,WAAW,EAAE,QAAQ;QACrB,IAAI,EAAE,QAAQ;QACd,IAAI,EAAE,CAAC,4DAA4D,CAAC;KACrE,CAAC;AACJ,CAAC"}
+\ No newline at end of file
++{"version":3,"file":"jupyterUtils.js","sourceRoot":"","sources":["../../src/nodes/jupyterUtils.ts"],"names":[],"mappings":"AAAA;;;;GAIG;AAIH;;;;;GAKG;AACH,MAAM,UAAU,sBAAsB;IACpC,OAAO;QACL,WAAW,EAAE,QAAQ;QACrB,IAAI,EAAE,QAAQ;QACd,IAAI,EAAE;YACJ,0EAA0E;SAC3E;KACF,CAAC;AACJ,CAAC"}
+\ No newline at end of file
+diff --git a/node_modules/@datalayer/jupyter-lexical/lib/plugins/JupyterInputOutputPlugin.js b/node_modules/@datalayer/jupyter-lexical/lib/plugins/JupyterInputOutputPlugin.js
+index acbfbc5..64733c2 100644
+--- a/node_modules/@datalayer/jupyter-lexical/lib/plugins/JupyterInputOutputPlugin.js
++++ b/node_modules/@datalayer/jupyter-lexical/lib/plugins/JupyterInputOutputPlugin.js
+@@ -8,7 +8,7 @@ import { $getSelection, $isRangeSelection, createCommand, COMMAND_PRIORITY_EDITO
+ import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext';
+ import { OutputAdapter, newUuid, } from '@datalayer/jupyter-react';
+ import { UUID } from '@lumino/coreutils';
+-import { createNoKernelWarning } from '../nodes/jupyterUtils';
++import { createNoRuntimeWarning } from '../nodes/jupyterUtils';
+ import { $createJupyterInputNode, JupyterInputNode, $isJupyterInputNode, } from '../nodes/JupyterInputNode';
+ import { registerCodeHighlighting } from '../nodes/JupyterInputHighlighter';
+ import { JupyterOutputNode, $createJupyterOutputNode, } from '../nodes/JupyterOutputNode';
+@@ -23,7 +23,7 @@ export const DEFAULT_INITIAL_OUTPUTS = [
+         data: {
+             'text/html': [
+                 '<div style="color: #888; font-size: 11px; font-style: italic; padding: 0; margin: 0;">',
+-                'Press <kbd style="font-size: 10px; padding: 1px 4px; background: #f0f0f0; border: 1px solid #ccc; border-radius: 3px;">Shift+Enter</kbd> to execute. Please connect to execute code.',
++                'Press <kbd style="font-size: 10px; padding: 1px 4px; background: #f0f0f0; border: 1px solid #ccc; border-radius: 3px;">Shift+Enter</kbd> to execute.',
+                 '</div>',
+             ],
+         },
+@@ -263,7 +263,7 @@ export const JupyterInputOutputPlugin = (props) => {
+                                 // Handle execution
+                                 if (!existingAdapter.kernel) {
+                                     // Show user-facing warning
+-                                    const warningOutput = createNoKernelWarning();
++                                    const warningOutput = createNoRuntimeWarning();
+                                     // Update BOTH the node's outputs AND the adapter's model
+                                     writableNode.__outputs = [warningOutput];
+                                     existingAdapter.setOutputs([warningOutput]);
+diff --git a/node_modules/@datalayer/jupyter-lexical/lib/plugins/JupyterInputOutputPlugin.js.map b/node_modules/@datalayer/jupyter-lexical/lib/plugins/JupyterInputOutputPlugin.js.map
+index 82713a1..b26f5d7 100644
+--- a/node_modules/@datalayer/jupyter-lexical/lib/plugins/JupyterInputOutputPlugin.js.map
++++ b/node_modules/@datalayer/jupyter-lexical/lib/plugins/JupyterInputOutputPlugin.js.map
+@@ -1 +1 @@
+-{"version":3,"file":"JupyterInputOutputPlugin.js","sourceRoot":"","sources":["../../src/plugins/JupyterInputOutputPlugin.tsx"],"names":[],"mappings":"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"}
+\ No newline at end of file
++{"version":3,"file":"JupyterInputOutputPlugin.js","sourceRoot":"","sources":["../../src/plugins/JupyterInputOutputPlugin.tsx"],"names":[],"mappings":"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"}
+\ No newline at end of file
+diff --git a/node_modules/@datalayer/jupyter-lexical/lib/tools/definitions/executeCode.ts.bak b/node_modules/@datalayer/jupyter-lexical/lib/tools/definitions/executeCode.ts.bak
+new file mode 100644
+index 0000000..8bd361a
+--- /dev/null
++++ b/node_modules/@datalayer/jupyter-lexical/lib/tools/definitions/executeCode.ts.bak
+@@ -0,0 +1,42 @@
++/*
++ * Copyright (c) 2021-2023 Datalayer, Inc.
++ *
++ * MIT License
++ */
++
++/**
++ * Tool definition for executing code directly in kernel
++ *
++ * @module tools/definitions/executeCode
++ */
++
++import type { ToolDefinition } from '../core';
++import { zodToToolParameters } from '../core/zodUtils';
++import { executeCodeParamsSchema } from '../schemas/executeCode';
++
++/**
++ * Tool definition for executing code directly in the kernel
++ *
++ * Executes code without creating or modifying blocks in the document.
++ */
++export const executeCodeTool: ToolDefinition = {
++  name: 'datalayer_executeCode_lexical',
++  displayName: 'Execute Code in Kernel (Lexical)',
++  toolReferenceName: 'executeCode',
++  description:
++    required: ['code'],
++  },
++
++  operation: 'executeCode',
++
++  config: {
++    confirmationMessage: (params: { code: string }) =>
++      `Execute code: ${params.code.substring(0, 50)}${params.code.length > 50 ? '...' : ''}?`,
++    invocationMessage: () => 'Executing code in kernel',
++    requiresConfirmation: false,
++    canBeReferencedInPrompt: true,
++    priority: 'high',
++  },
++
++  tags: ['lexical', 'kernel', 'execute', 'code', 'inspection'],
++};
+diff --git a/node_modules/@datalayer/jupyter-lexical/lib/tools/schemas/listAvailableBlocks.d.ts b/node_modules/@datalayer/jupyter-lexical/lib/tools/schemas/listAvailableBlocks.d.ts
+index 1e7d21c..463b832 100644
+--- a/node_modules/@datalayer/jupyter-lexical/lib/tools/schemas/listAvailableBlocks.d.ts
++++ b/node_modules/@datalayer/jupyter-lexical/lib/tools/schemas/listAvailableBlocks.d.ts
+@@ -5,23 +5,23 @@
+  */
+ import { z } from 'zod';
+ export declare const blockCategorySchema: z.ZodEnum<{
+-    list: "list";
+-    media: "media";
+     text: "text";
+-    heading: "heading";
+-    table: "table";
+     code: "code";
++    table: "table";
++    list: "list";
+     jupyter: "jupyter";
++    heading: "heading";
++    media: "media";
+ }>;
+ export declare const listAvailableBlocksParamsSchema: z.ZodObject<{
+     category: z.ZodOptional<z.ZodEnum<{
+-        list: "list";
+-        media: "media";
+         text: "text";
+-        heading: "heading";
+-        table: "table";
+         code: "code";
++        table: "table";
++        list: "list";
+         jupyter: "jupyter";
++        heading: "heading";
++        media: "media";
+     }>>;
+ }, z.core.$strip>;
+ export type BlockCategory = z.infer<typeof blockCategorySchema>;
+diff --git a/node_modules/@datalayer/jupyter-lexical/style/lexical/icons/LICENSE.md b/node_modules/@datalayer/jupyter-lexical/style/lexical/icons/LICENSE.md
+new file mode 100644
+index 0000000..ce74f6a
+--- /dev/null
++++ b/node_modules/@datalayer/jupyter-lexical/style/lexical/icons/LICENSE.md
+@@ -0,0 +1,5 @@
++Bootstrap Icons
++https://icons.getbootstrap.com
++
++Licensed under MIT license
++https://github.com/twbs/icons/blob/main/LICENSE.md

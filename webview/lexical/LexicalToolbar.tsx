@@ -590,6 +590,8 @@ export function LexicalToolbar({
         type: "select-runtime",
         body: { isDatalayerNotebook: true },
       });
+    } else {
+      console.error("[LexicalToolbar] No messageHandler available");
     }
   };
 

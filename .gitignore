@@ -2,6 +2,7 @@
 out/
 dist/
 lib/
+native/
 *.vsix
 
 # Dependencies

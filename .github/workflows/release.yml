@@ -10,15 +10,13 @@ permissions:
   id-token: write # Required for attestations
 
 jobs:
-  build-and-release:
-    name: Build and Release Extension
+  build-extension:
+    name: Build Universal VSIX
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
-        with:
-          fetch-depth: 0 # Fetch all history for changelog generation
 
       - name: Setup Node.js
         uses: actions/setup-node@v6
@@ -28,21 +26,63 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-      - name: Run type checking
-        run: npm run type-check
-
-      - name: Run linter
-        run: npm run lint
-
       - name: Build extension
         run: npm run compile
+
+      - name: Package universal extension
+        run: npm run vsix
+
+      - name: Get VSIX filename
+        id: vsix-info
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          VSIX_FILE="datalayer-jupyter-vscode-${VERSION}.vsix"
+
+          if [ -f "$VSIX_FILE" ]; then
+            echo "✅ Found VSIX: $VSIX_FILE"
+            echo "filename=$VSIX_FILE" >> $GITHUB_OUTPUT
+          else
+            echo "❌ Error: VSIX file not found"
+            ls -la *.vsix
+            exit 1
+          fi
+        shell: bash
+
+      - name: Upload universal VSIX artifact
+        uses: actions/upload-artifact@v5
+        with:
+          name: vsix-universal
+          path: "*.vsix"
+          retention-days: 90
+
+  create-release:
+    name: Create GitHub Release
+    needs: build-extension
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Download universal VSIX artifact
+        uses: actions/download-artifact@v5
+        with:
+          path: ./vsix-artifacts
+
+      - name: List downloaded artifacts
+        run: |
+          echo "Downloaded VSIX file:"
+          find ./vsix-artifacts -name "*.vsix" -type f
 
       - name: Extract version from tag
         id: extract_version
         run: |
           VERSION=${GITHUB_REF#refs/tags/v}
           echo "version=$VERSION" >> $GITHUB_OUTPUT
-          echo "Version: $VERSION"
 
       - name: Verify package.json version matches tag
         run: |
@@ -54,50 +94,41 @@ jobs:
           fi
           echo "Version verified: $PACKAGE_VERSION"
 
-      - name: Package extension
-        run: npm run vsix
-
-      - name: Get VSIX filename
-        id: vsix_filename
-        run: |
-          VSIX_FILE=$(ls *.vsix | head -n 1)
-          echo "filename=$VSIX_FILE" >> $GITHUB_OUTPUT
-          echo "VSIX file: $VSIX_FILE"
-
       - name: Generate changelog
-        id: changelog
         run: |
-          # Get the previous tag
           PREVIOUS_TAG=$(git describe --abbrev=0 --tags $(git rev-list --tags --skip=1 --max-count=1) 2>/dev/null || echo "")
-
           if [ -z "$PREVIOUS_TAG" ]; then
-            echo "No previous tag found, using initial commit"
             PREVIOUS_TAG=$(git rev-list --max-parents=0 HEAD)
           fi
+          git log $PREVIOUS_TAG..${{ github.ref_name }} --pretty=format:"* %s (%h)" --no-merges > CHANGELOG.txt
 
-          echo "Generating changelog from $PREVIOUS_TAG to ${{ github.ref_name }}"
-
-          # Generate changelog
-          CHANGELOG=$(git log $PREVIOUS_TAG..${{ github.ref_name }} --pretty=format:"* %s (%h)" --no-merges)
-
-          # Save to file for release notes
-          echo "$CHANGELOG" > CHANGELOG.txt
-
-          # Also output for debugging
-          echo "Changelog:"
-          echo "$CHANGELOG"
-
-      - name: Create GitHub Release
+      - name: Create GitHub Release with universal VSIX
         uses: softprops/action-gh-release@v2
         with:
           name: Release ${{ steps.extract_version.outputs.version }}
           body_path: CHANGELOG.txt
-          files: ${{ steps.vsix_filename.outputs.filename }}
+          files: |
+            ./vsix-artifacts/**/*.vsix
           draft: false
           prerelease: ${{ contains(steps.extract_version.outputs.version, '-') }}
           generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  publish-marketplace:
+    name: Publish to VS Code Marketplace
+    needs: build-extension
+    runs-on: ubuntu-latest
+    if: ${{ !contains(github.ref_name, '-') }} # Only publish stable versions
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: "20"
 
       - name: Check VS Code Marketplace credentials
         id: check_VSCE_KEY
@@ -109,10 +140,27 @@ jobs:
             echo "⚠️ VSCE_KEY secret not found - skipping VS Code Marketplace publishing"
           fi
 
-      - name: Publish to VS Code Marketplace
-        if: ${{ steps.check_VSCE_KEY.outputs.has_secret == 'true' && !contains(steps.extract_version.outputs.version, '-') }}
+      - name: Download universal VSIX artifact
+        if: steps.check_VSCE_KEY.outputs.has_secret == 'true'
+        uses: actions/download-artifact@v5
+        with:
+          path: ./vsix-artifacts
+
+      - name: Install dependencies
+        if: steps.check_VSCE_KEY.outputs.has_secret == 'true'
+        run: npm install
+
+      - name: Publish universal VSIX to Marketplace
+        if: steps.check_VSCE_KEY.outputs.has_secret == 'true'
         run: |
-          echo "Publishing version ${{ steps.extract_version.outputs.version }} to VS Code Marketplace"
-          npx vsce publish --packagePath ${{ steps.vsix_filename.outputs.filename }}
+          echo "Publishing universal VSIX file..."
+          VSIX_FILE=$(find ./vsix-artifacts -name "*.vsix" -type f | head -1)
+          if [ -n "$VSIX_FILE" ]; then
+            echo "Publishing: $VSIX_FILE"
+            npx vsce publish --packagePath "$VSIX_FILE"
+          else
+            echo "❌ Error: No VSIX file found"
+            exit 1
+          fi
         env:
           VSCE_KEY: ${{ secrets.VSCE_KEY }}

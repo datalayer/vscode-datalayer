@@ -1,6 +1,7 @@
 .vscode/**
 .vscode-test/**
 out/**
+native/**
 node_modules/**
 !node_modules/@vscode/codicons/dist/**
 !node_modules/pyodide/**
@@ -15,3 +16,5 @@ vsc-extension-quickstart.md
 **/*.map
 **/*.ts
 **/.vscode-test.*
+.mypy_cache/**
+**/.mypy_cache/**
