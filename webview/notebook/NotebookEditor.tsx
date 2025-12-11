@@ -627,6 +627,89 @@ function NotebookEditorCore({
     return () => disposable.dispose();
   }, [messageHandler, handleMessage]);
 
+  // CRITICAL: Restart SessionContext when switching between ANY runtimes
+  // When we switch service managers, SessionContext keeps the old kernel session cached
+  // This causes "Kernel is disposed" errors when cells try to execute
+  // Solution: Force SessionContext to shutdown and reconnect with the new service manager's kernel
+  useEffect(() => {
+    if (!selectedRuntime || !notebookId) return;
+
+    // Track previous runtime to detect switches
+    const prevRuntimeKey = `prevRuntime_${documentId || notebookId}`;
+    const prevRuntimeStr = sessionStorage.getItem(prevRuntimeKey);
+    const prevRuntime = prevRuntimeStr ? JSON.parse(prevRuntimeStr) : null;
+
+    // Detect if runtime actually changed
+    const runtimeChanged =
+      !prevRuntime || prevRuntime.ingress !== selectedRuntime.ingress;
+
+    // Store current runtime for next comparison
+    sessionStorage.setItem(prevRuntimeKey, JSON.stringify(selectedRuntime));
+
+    // Skip restart if runtime hasn't changed
+    if (!runtimeChanged) return;
+
+    // Get SessionContext from notebook adapter
+    const notebookState = notebookStore2.getState();
+    const notebook = notebookState.notebooks.get(documentId || notebookId);
+
+    if (!notebook?.adapter?.panel?.sessionContext) {
+      console.warn("[NotebookEditor] No SessionContext found");
+      return;
+    }
+
+    const sessionContext = notebook.adapter.panel.sessionContext;
+
+    // Check if switching TO Pyodide
+    const isPyodide = selectedRuntime.ingress === "http://pyodide-local";
+
+    // Shutdown and reconnect SessionContext
+    // This kills the old session and connects to the new running kernel
+    (async () => {
+      try {
+        // Special handling: Don't shutdown SessionContext when switching TO Pyodide
+        // Notebook2 will start the Pyodide kernel naturally
+        if (isPyodide) {
+          return;
+        }
+
+        // For non-Pyodide runtimes: shutdown old SessionContext first
+        await sessionContext.shutdown();
+
+        // Wait for kernel to be running (useRuntimeManager starts it asynchronously)
+        // Retry up to 10 times with 200ms delays (2 seconds total)
+        let newKernel = null;
+        for (let attempt = 0; attempt < 10; attempt++) {
+          const runningKernels =
+            mutableServiceManager.current.kernels.running();
+          const kernelsArray = Array.from(runningKernels);
+
+          if (kernelsArray.length > 0) {
+            newKernel = kernelsArray[0];
+            break;
+          }
+
+          await new Promise((resolve) => setTimeout(resolve, 200));
+        }
+
+        if (!newKernel) {
+          console.error(
+            "[NotebookEditor] No running kernel found after waiting",
+          );
+          return;
+        }
+
+        // Connect to the running kernel (creates new session)
+        await sessionContext.changeKernel({ id: newKernel.id });
+      } catch (error) {
+        console.error(
+          "[NotebookEditor] ❌ Error restarting SessionContext:",
+          error,
+        );
+      }
+    })();
+  }, [selectedRuntime, documentId, notebookId]);
+
   // Get notebook store for DefaultExecutor
   const notebookStoreState = useNotebookStore2();
 
@@ -789,6 +872,11 @@ function NotebookEditorCore({
             // @ts-ignore - Type mismatch between @jupyterlab/services versions
             serviceManager={serviceManager}
             collaborationProvider={collaborationProvider}
+            // CRITICAL: Pass runtime ingress as kernelId to force useKernelId to re-run
+            // when runtime changes. Without this, useKernelId's useEffect won't re-run
+            // because serviceManager.kernels is a stable proxy reference.
+            // This fixes the bug where switching runtimes multiple times doesn't start kernels.
+            kernelId={selectedRuntime?.ingress}
             // Start kernel when we have a real runtime selected
             // Collaboration and execution are orthogonal:
             // - collaborationProvider syncs notebook content with Datalayer platform

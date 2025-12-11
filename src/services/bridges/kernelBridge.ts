@@ -182,9 +182,9 @@ export class KernelBridge implements vscode.Disposable {
     const pyodideRuntime: ExtendedRuntimeJSON = {
       uid: "pyodide-local",
       podName: "pyodide-local",
-      givenName: "Pyodide (Browser Python)",
+      givenName: "Pyodide",
       environmentName: "python",
-      environmentTitle: "Python (Pyodide)",
+      environmentTitle: "Pyodide",
       type: "notebook",
       burningRate: 0,
       ingress: "http://pyodide-local", // Special marker URL

@@ -28,18 +28,10 @@ concurrency:
 
 jobs:
   build-and-test:
-    name: Build & Test on ${{ matrix.os }}
-    runs-on: ${{ matrix.os }}
-    outputs:
-      artifact-name: ${{ steps.version-info.outputs.artifact-name }}
+    name: Build & Test Universal VSIX
+    runs-on: ubuntu-latest
     permissions:
       contents: read # Required for actions/checkout
-      pull-requests: write # Required to post PR comments
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
-        node-version: ["20"]
 
     steps:
       - name: Checkout repository
@@ -47,10 +39,10 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Setup Node.js ${{ matrix.node-version }}
+      - name: Setup Node.js
         uses: actions/setup-node@v6
         with:
-          node-version: ${{ matrix.node-version }}
+          node-version: "20"
 
       - name: Install dependencies
         run: |
@@ -93,6 +85,15 @@ jobs:
             echo "✗ Package NOT installed"
           fi
           echo ""
+          echo "🔍 Verifying zeromq binaries (all platforms):"
+          if [ -d "node_modules/zeromq/prebuilds" ]; then
+            echo "✓ zeromq prebuilds directory exists"
+            echo "  Platform binaries:"
+            ls -la node_modules/zeromq/prebuilds/ | head -20
+          else
+            echo "✗ zeromq prebuilds directory NOT FOUND"
+          fi
+          echo ""
           if [ $NPM_EXIT_CODE -ne 0 ]; then
             echo "❌ npm install failed with exit code $NPM_EXIT_CODE"
             exit $NPM_EXIT_CODE
@@ -109,74 +110,75 @@ jobs:
       - name: Build VS Code extension
         run: npm run compile
 
-      - name: Package extension (.vsix)
+      - name: Package universal extension
         run: npm run vsix
 
-      - name: List generated artifacts
+      - name: Get VSIX filename
+        id: vsix-info
         run: |
-          echo "Generated extension package:"
-          ls -la *.vsix || echo "No .vsix files found"
-        shell: bash
-
-      - name: Get version info and rename .vsix
-        if: matrix.os == 'ubuntu-latest'
-        id: version-info
-        run: |
-          COMMIT_HASH_LENGTH=7
           VERSION=$(node -p "require('./package.json').version")
-          # For PRs, use the actual PR head SHA, otherwise use the current commit
-          if [ "${{ github.event_name }}" == "pull_request" ]; then
-            COMMIT_HASH_FULL="${{ github.event.pull_request.head.sha }}"
-          else
-            COMMIT_HASH_FULL="${{ github.sha }}"
-          fi
-          COMMIT_HASH="${COMMIT_HASH_FULL:0:$COMMIT_HASH_LENGTH}"
+          VSIX_FILE="datalayer-jupyter-vscode-${VERSION}.vsix"
 
-          # Rename .vsix file with version and commit hash
-          OLD_NAME="datalayer-jupyter-vscode-${VERSION}.vsix"
-          NEW_NAME="vscode-datalayer-extension-${VERSION}-${COMMIT_HASH}-node${{ matrix.node-version }}.vsix"
-
-          if [ -f "$OLD_NAME" ]; then
-            mv "$OLD_NAME" "$NEW_NAME"
-            echo "✅ Renamed: $OLD_NAME → $NEW_NAME"
+          if [ -f "$VSIX_FILE" ]; then
+            echo "✅ Found VSIX: $VSIX_FILE"
+            echo "vsix_filename=$VSIX_FILE" >> $GITHUB_OUTPUT
           else
-            echo "❌ Error: Expected file $OLD_NAME not found"
+            echo "❌ Error: VSIX file not found"
             ls -la *.vsix
             exit 1
           fi
-
-          ARTIFACT_NAME="vscode-datalayer-extension-${VERSION}-${COMMIT_HASH}-node${{ matrix.node-version }}"
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
-          echo "commit_hash=$COMMIT_HASH" >> $GITHUB_OUTPUT
-          echo "commit_hash_full=$COMMIT_HASH_FULL" >> $GITHUB_OUTPUT
-          echo "artifact-name=$ARTIFACT_NAME" >> $GITHUB_OUTPUT
-          echo "Version: $VERSION, Commit: $COMMIT_HASH (Full: $COMMIT_HASH_FULL)"
-          echo "Artifact name: $ARTIFACT_NAME"
         shell: bash
 
-      - name: Upload VS Code extension artifact
-        if: matrix.os == 'ubuntu-latest'
-        id: upload-artifact
+      - name: Upload universal VSIX artifact
         uses: actions/upload-artifact@v5
         with:
-          name: ${{ steps.version-info.outputs.artifact-name }}
+          name: vsix-universal
           path: "*.vsix"
           retention-days: 30
 
-      - name: Post PR comment with artifact
-        if: matrix.os == 'ubuntu-latest' && github.event_name == 'pull_request' && !github.event.pull_request.head.repo.fork
+  post-pr-comment:
+    name: Post PR Comment with Artifact
+    needs: build-and-test
+    if: github.event_name == 'pull_request' && !github.event.pull_request.head.repo.fork
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+      actions: read
+
+    steps:
+      - name: Get artifact download URL
+        id: get-artifact
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const artifacts = await github.rest.actions.listWorkflowRunArtifacts({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              run_id: context.runId,
+            });
+
+            const vsixArtifact = artifacts.data.artifacts.find(a => a.name === 'vsix-universal');
+            if (vsixArtifact) {
+              const url = `${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts/${vsixArtifact.id}`;
+              core.setOutput('vsix_url', url);
+            } else {
+              core.setOutput('vsix_url', '');
+            }
+
+      - name: Post PR comment with universal VSIX artifact
         uses: marocchino/sticky-pull-request-comment@v2
         with:
-          replace: true
           header: extension-artifact
           message: |
-            ## 📦 Extension Build Ready!
+            ## 📦 Extension Build Ready (Universal VSIX)!
 
             **Download the extension** (works on all platforms):
 
-            [📥 Download build artifact](${{ steps.upload-artifact.outputs.artifact-url }})
+            ### [`Download datalayer-jupyter-vscode.vsix` ⬇️](${{ steps.get-artifact.outputs.vsix_url }})
 
-            <sup>The artifact contains the <code>.vsix</code> extension package.</sup>
+            > 💡 This universal VSIX includes native binaries for all platforms (macOS Intel, macOS ARM, Windows, Linux) and works everywhere!
+
+            [📥 View artifact in workflow run →](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
 
             ---
 
@@ -184,7 +186,7 @@ jobs:
             <summary>📖 Installation Instructions</summary>
 
             ### Method 1: VS Code UI
-            1. Download the `.vsix` file above
+            1. Download the `.vsix` file from the link above
             2. Open VS Code
             3. Go to Extensions (`Ctrl+Shift+X` / `Cmd+Shift+X`)
             4. Click `...` menu → "Install from VSIX..."
@@ -192,7 +194,7 @@ jobs:
 
             ### Method 2: Command Line
             ```bash
-            code --install-extension datalayer-jupyter-vscode.vsix
+            code --install-extension datalayer-jupyter-vscode-{version}.vsix
             ```
 
             ### Method 3: Drag & Drop
@@ -201,19 +203,19 @@ jobs:
 
             </details>
 
-            > **Note**: The `.vsix` artifact works on **Windows, macOS, and Linux**.
+            > ✅ **Universal build**: This extension includes native modules (zeromq) with pre-built binaries for all platforms via `@vscode/zeromq`.
             >
-            > Built from commit [`${{ steps.version-info.outputs.commit_hash }}`](https://github.com/${{ github.repository }}/commit/${{ steps.version-info.outputs.commit_hash_full }}) • Version `${{ steps.version-info.outputs.version }}` • [View workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+            > Build successful • [View workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
 
   test-installation:
     name: Test Extension Installation
     needs: build-and-test
     runs-on: ubuntu-latest
     steps:
-      - name: Download extension artifact
-        uses: actions/download-artifact@v6
+      - name: Download universal extension artifact
+        uses: actions/download-artifact@v5
         with:
-          name: ${{ needs.build-and-test.outputs.artifact-name }}
+          name: vsix-universal
           path: ./artifacts
 
       - name: List downloaded artifacts

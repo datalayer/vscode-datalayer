@@ -121,21 +121,10 @@ function LexicalWebviewInner({
           }
 
           // Store lexicalId for tool execution context
-          console.log(
-            "[LexicalWebview] Received lexicalId:",
-            message.lexicalId,
-          );
           if (message.lexicalId) {
             store.getState().setLexicalId(message.lexicalId);
-            console.log(
-              "[LexicalWebview] Stored lexicalId in state:",
-              store.getState().lexicalId,
-            );
           } else {
-            console.warn(
-              "[LexicalWebview] No lexicalId in message! Message:",
-              message,
-            );
+            console.warn("[LexicalWebview] No lexicalId in message");
           }
 
           // Handle content (even if empty)
@@ -170,10 +159,6 @@ function LexicalWebviewInner({
           // Store the navigation request in the store so the editor can respond
           if (message.itemId) {
             store.getState().setNavigationTarget(message.itemId);
-            console.log(
-              "[LexicalWebview] Navigate to outline item:",
-              message.itemId,
-            );
           }
           break;
         }
@@ -275,15 +260,6 @@ function LexicalWebviewInner({
   const documentUri = store((state) => state.documentUri);
   const navigationTarget = store((state) => state.navigationTarget);
   const lexicalId = store((state) => state.lexicalId);
-
-  // Debug log when lexicalId changes
-  React.useEffect(() => {
-    console.log(
-      "[LexicalWebview] lexicalId from state changed:",
-      lexicalId,
-      "will pass to LexicalEditor",
-    );
-  }, [lexicalId]);
 
   // Callback to clear navigation target after navigating
   const handleNavigated = useCallback(() => {
