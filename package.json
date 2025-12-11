@@ -151,7 +151,7 @@
     "svgicons2svgfont": "^15.0.1",
     "tailwindcss": "^4.1.17",
     "ts-loader": "^9.5.2",
-    "tsx": "^4.20.6",
+    "tsx": "^4.21.0",
     "ttf2woff": "^3.0.0",
     "typedoc": "^0.28.14",
     "typedoc-plugin-coverage": "^4.0.1",
