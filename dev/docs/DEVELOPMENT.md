@@ -1033,6 +1033,435 @@ await insertBlocks({
 - Stops on first failure with descriptive error
 - Returns success with last inserted block ID for chaining
 
+## Pyodide Package Caching (December 2024)
+
+### Problem
+
+Pyodide packages were being re-downloaded on every kernel startup, causing:
+
+- ~50+ MB downloads per session
+- 30+ seconds startup delay
+- Wasted bandwidth and poor user experience
+- Despite 256 lines of cache setup code
+
+**Evidence from logs**:
+
+```text
+[PyodideKernelClient] Mounting package cache at: ~/.cache/datalayer-pyodide/0.27.3/packages
+[PyodideKernelClient] Configured micropip to use persistent cache at /cache
+[Pyodide/stdout] Loading micropip          <-- DOWNLOADING (should be cached!)
+[Pyodide/stdout] Loading Pillow, Pygments, asttokens, ... (24 packages)  <-- ALL DOWNLOADING
+[PyodideKernelClient] Pre-downloading 25 packages: altair, bokeh, ...
+[Pyodide/stdout] Loading Jinja2, MarkupSafe, altair, ...  <-- ALL DOWNLOADING AGAIN
+```
+
+### Root Cause
+
+The `packageCacheDir` option was missing from all `loadPyodide()` calls. This is the **only way** to enable persistent package caching in Node.js Pyodide (confirmed from Pyodide type definitions in `node_modules/pyodide/pyodide.d.ts`).
+
+**From Pyodide types**:
+
+```typescript
+/**
+ * The file path where packages will be cached in node. If a package
+ * exists in packageCacheDir it is loaded from there, otherwise it is
+ * downloaded from JsDelivr CDN and then cached into packageCacheDir.
+ * Only applies when running in node; ignored in browsers.
+ */
+packageCacheDir?: string;
+```
+
+**Why previous code didn't work**:
+
+1. **NODEFS mounting** - Only affects Python file I/O, not package caching
+2. **Environment variables** - Pyodide ignores `MICROPIP_CACHE_DIR` in Node.js context
+3. **micropip configuration** - Only works for PyPI packages, not built-in Pyodide packages
+
+### Solution
+
+Added `packageCacheDir` option to 4 files with hardcoded version "0.29.0" (npm package version):
+
+#### File 1: `src/kernel/clients/pyodideKernelClient.ts`
+
+**Purpose**: Main Pyodide kernel runtime for native notebooks
+
+**Before**:
+
+```typescript
+this._pyodide = await loadPyodide({
+  stdout: (text: string) => this._handleStdout(text),
+  stderr: (text: string) => this._handleStderr(text),
+});
+```
+
+**After**:
+
+```typescript
+// Import Node.js modules for cache directory
+const os = await import("os");
+const path = await import("path");
+const fs = await import("fs/promises");
+
+// IMPORTANT: Native notebooks use npm package version (0.29.0)
+// The datalayer.pyodide.version config is ONLY for webview notebooks (CDN)
+const pyodideVersion = "0.29.0";
+
+// Create cache directory path
+const cacheDir = path.join(
+  os.homedir(),
+  ".cache",
+  "datalayer-pyodide",
+  pyodideVersion,
+  "packages"
+);
+
+// Ensure cache directory exists
+await fs.mkdir(cacheDir, { recursive: true });
+
+console.log(`[PyodideKernelClient] Using package cache: ${cacheDir}`);
+
+const { loadPyodide } = await import("pyodide");
+
+this._pyodide = await loadPyodide({
+  packageCacheDir: cacheDir,  // CRITICAL: Enables persistent caching
+  stdout: (text: string) => this._handleStdout(text),
+  stderr: (text: string) => this._handleStderr(text),
+} as Parameters<typeof loadPyodide>[0]);
+```
+
+**Additional change**: Removed `_setupPersistentCache()` method (90 lines of ineffective NODEFS mounting code)
+
+#### File 2: `src/services/pyodide/nativeNotebookPreloader.ts`
+
+**Purpose**: Preloads packages on extension activation
+
+**Before**:
+
+```typescript
+const { loadPyodide } = await import("pyodide");
+
+pyodide = await loadPyodide({
+  stdout: () => {},
+  stderr: () => {},
+});
+```
+
+**After**:
+
+```typescript
+// Import Node.js modules for cache directory
+const os = await import("os");
+const path = await import("path");
+const fs = await import("fs/promises");
+
+// IMPORTANT: Native notebooks use npm package version (0.29.0)
+// The datalayer.pyodide.version config is ONLY for webview notebooks (CDN)
+const pyodideVersion = "0.29.0";
+
+// Create cache directory path (same location as runtime!)
+const cacheDir = path.join(
+  os.homedir(),
+  ".cache",
+  "datalayer-pyodide",
+  pyodideVersion,
+  "packages"
+);
+
+// Ensure cache directory exists
+await fs.mkdir(cacheDir, { recursive: true });
+
+const { loadPyodide } = await import("pyodide");
+
+// CRITICAL FIX: Add packageCacheDir for persistent caching
+// Type assertion needed - packageCacheDir exists in runtime but TypeScript may cache old types
+pyodide = await loadPyodide({
+  packageCacheDir: cacheDir,
+  stdout: () => {},
+  stderr: () => {},
+} as Parameters<typeof loadPyodide>[0]);
+```
+
+#### File 3: `src/services/pyodide/pyodidePreloader.ts`
+
+**Purpose**: Background service for package preloading
+
+**Before**:
+
+```typescript
+const { loadPyodide } = await import("pyodide");
+
+const pyodide = await loadPyodide({
+  stdout: () => {},
+  stderr: () => {},
+} as Parameters<typeof loadPyodide>[0]);
+```
+
+**After**:
+
+```typescript
+// Import Node.js modules for cache directory
+const os = await import("os");
+const path = await import("path");
+const fs = await import("fs/promises");
+
+// IMPORTANT: Native notebooks use npm package version (0.29.0), NOT config version!
+const npmPyodideVersion = "0.29.0";
+
+// Create cache directory path (same location as runtime!)
+const cacheDir = path.join(
+  os.homedir(),
+  ".cache",
+  "datalayer-pyodide",
+  npmPyodideVersion,
+  "packages"
+);
+
+// Ensure cache directory exists
+await fs.mkdir(cacheDir, { recursive: true });
+
+// Load Pyodide using npm package (Node.js compatible)
+const { loadPyodide } = await import("pyodide");
+
+// CRITICAL: Add packageCacheDir for persistent caching
+const pyodide = await loadPyodide({
+  packageCacheDir: cacheDir,
+  stdout: () => {},
+  stderr: () => {},
+} as Parameters<typeof loadPyodide>[0]);
+```
+
+#### File 4: `src/services/pyodide/pyodideCacheManager.ts`
+
+**Purpose**: Cache management for webview notebooks
+
+**Before**:
+
+```typescript
+const { loadPyodide } = await import("pyodide");
+const pyodide: PyodideInterface = await loadPyodide({
+  indexURL: pyodidePath,
+  stdout: () => {},
+  stderr: () => {},
+});
+```
+
+**After**:
+
+```typescript
+const { loadPyodide } = await import("pyodide");
+
+// Create package cache directory
+const packageCache = path.join(pyodidePath, "packages");
+await fs.mkdir(packageCache, { recursive: true });
+
+// CRITICAL FIX: Add packageCacheDir for persistent caching
+// Type assertion needed - packageCacheDir exists in runtime but TypeScript may cache old types
+const pyodide: PyodideInterface = await loadPyodide({
+  indexURL: pyodidePath,
+  packageCacheDir: packageCache,
+  stdout: () => {},
+  stderr: () => {},
+} as Parameters<typeof loadPyodide>[0]);
+```
+
+### Version Management
+
+Created `scripts/validate-pyodide-version.js` to auto-sync hardcoded version strings with npm package version. This ensures version consistency when upgrading Pyodide.
+
+**Purpose**: Prevent version mismatches between npm package and hardcoded strings
+
+**Files Checked**:
+
+1. `src/kernel/clients/pyodideKernelClient.ts` - Main kernel
+2. `src/services/pyodide/nativeNotebookPreloader.ts` - Preloader
+3. `package.json` - Config documentation
+
+**Script Logic**:
+
+```javascript
+// Read installed Pyodide version from node_modules
+const pyodidePackageJson = require('../node_modules/pyodide/package.json');
+const installedVersion = pyodidePackageJson.version;
+
+// Check each file for hardcoded version strings
+for (const file of filesToSync) {
+  const content = fs.readFileSync(filePath, 'utf8');
+  const match = content.match(file.pattern);
+
+  if (foundVersion !== installedVersion) {
+    // Auto-fix the mismatch
+    const updatedContent = file.replace(content, installedVersion);
+    fs.writeFileSync(filePath, updatedContent, 'utf8');
+    console.log(`   ✅ ${file.description}: ${foundVersion} → ${installedVersion}`);
+  }
+}
+```
+
+**Integration**: Added to npm scripts as pre-build hook
+
+```json
+{
+  "scripts": {
+    "sync:pyodide-version": "node scripts/validate-pyodide-version.js",
+    "precompile": "npm run sync:pyodide-version",
+    "pretest": "npm run sync:pyodide-version"
+  }
+}
+```
+
+**Upgrading Pyodide**:
+
+```bash
+# Update package.json
+npm install pyodide@0.30.0
+
+# Build extension (auto-syncs version)
+npm run compile
+```
+
+The script automatically detects the new version and updates all hardcoded strings during the precompile hook.
+
+### Cache Directory Structure
+
+```text
+~/.cache/datalayer-pyodide/
+└── 0.29.0/                  # Version-specific cache
+    └── packages/            # Persistent package storage
+        ├── micropip.js      # Built-in packages
+        ├── numpy.tar
+        ├── pandas.tar
+        ├── matplotlib.tar
+        └── ...
+```
+
+**Why this location**:
+
+- Standard XDG cache directory on macOS/Linux
+- Version-specific to avoid conflicts
+- Shared across all extension instances
+- Persists between VS Code sessions
+
+### Development Workflow Guide
+
+#### Testing Pyodide Changes
+
+```bash
+# 1. Clear cache to force fresh download
+rm -rf ~/.cache/datalayer-pyodide/
+
+# 2. Open notebook with Pyodide kernel
+# Watch console logs for "Using package cache: ..."
+
+# 3. Close and reopen notebook
+# Should see instant startup (no "Loading..." messages)
+
+# 4. Verify cache directory
+ls -lh ~/.cache/datalayer-pyodide/0.29.0/packages/
+```
+
+**Expected behavior**:
+
+- **First startup**: Downloads packages, saves to cache (~30 seconds)
+- **Second startup**: Loads from cache, instant (< 5 seconds)
+- **Console logs**: "Using package cache: ~/.cache/datalayer-pyodide/0.29.0/packages"
+
+#### Clearing Cache
+
+Use the VS Code command: "Datalayer: Clear Pyodide Cache"
+
+This clears:
+
+- Native notebook cache (`~/.cache/datalayer-pyodide/`)
+- Old globalStorage files (from previous caching attempts)
+- Webview notebook cache (IndexedDB)
+
+### Troubleshooting
+
+#### Problem: Packages still downloading every startup
+
+**Check 1**: Verify cache directory exists and has files
+
+```bash
+ls -lh ~/.cache/datalayer-pyodide/0.29.0/packages/
+```
+
+Should show `.tar` and `.js` files for each package.
+
+**Check 2**: Check console logs for cache path
+
+Look for: `[PyodideKernelClient] Using package cache: ...`
+
+If missing, `packageCacheDir` option wasn't set correctly.
+
+**Check 3**: Verify Pyodide version matches
+
+```bash
+# Check npm package version
+npm list pyodide
+
+# Should match hardcoded version in code files
+grep 'const pyodideVersion = ' src/kernel/clients/pyodideKernelClient.ts
+```
+
+#### Problem: Version mismatch errors
+
+**Symptom**: "Pyodide version mismatch" or incompatible package errors
+
+**Solution**: Run version sync script manually
+
+```bash
+node scripts/validate-pyodide-version.js
+```
+
+This auto-fixes mismatches between npm package and hardcoded strings.
+
+#### Problem: Cache using wrong version
+
+**Symptom**: Cache directory shows old version (e.g., `0.27.3` instead of `0.29.0`)
+
+**Solution**:
+
+1. Clear old cache: `rm -rf ~/.cache/datalayer-pyodide/0.27.3/`
+2. Verify version sync: `node scripts/validate-pyodide-version.js`
+3. Restart VS Code
+4. Reopen notebook
+
+### Performance Impact
+
+**Before fix**:
+
+- First startup: ~30 seconds (downloads all packages)
+- Second startup: ~30 seconds (downloads all packages again)
+- Bandwidth: ~50+ MB per session
+
+**After fix**:
+
+- First startup: ~30 seconds (downloads and caches)
+- Second startup: < 5 seconds (loads from cache)
+- Bandwidth: ~50 MB first time, then 0 MB
+
+**User experience improvement**: 6x faster startup after first run
+
+### Important Notes
+
+1. **Native vs Webview Notebooks**:
+   - Native notebooks use npm package version (0.29.0 from package.json)
+   - Webview notebooks use CDN version (configurable via `datalayer.pyodide.version`)
+   - Config setting does NOT affect native notebooks
+
+2. **loadPackage() vs micropip.install()**:
+   - Use `loadPackage()` for built-in Pyodide packages - respects `packageCacheDir`
+   - Avoid `micropip.install()` for caching - ignores `packageCacheDir` in Node.js
+
+3. **Type Assertions**:
+   - `as Parameters<typeof loadPyodide>[0]` needed because TypeScript types may be outdated
+   - `packageCacheDir` exists in runtime but may not be in cached type definitions
+
+4. **Version Upgrades**:
+   - Always run `npm run compile` after `npm install pyodide@X.Y.Z`
+   - Pre-build hook automatically syncs version strings
+   - Never manually edit version numbers in code files
+
 ## Configuration
 
 The extension provides comprehensive configuration in VS Code settings (`Cmd+,` → "Datalayer"):

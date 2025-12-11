@@ -14,7 +14,6 @@
 import * as vscode from "vscode";
 import type { ILogger } from "../interfaces/ILogger";
 import { getNonce } from "../../utils/webviewSecurity";
-import { PyodideCacheManager } from "./pyodideCacheManager";
 
 /**
  * Key for storing whether user has been prompted for preload
@@ -34,15 +33,13 @@ const PRELOADED_PACKAGES_KEY = "datalayer.pyodide.preloadedPackages";
 export class PyodidePreloader implements vscode.Disposable {
   private _configWatcher: vscode.Disposable | null = null;
   private _isPreloading = false;
-  private _cacheManager: PyodideCacheManager;
 
   constructor(
     private readonly _context: vscode.ExtensionContext,
     private readonly _logger: ILogger,
   ) {
-    this._cacheManager = new PyodideCacheManager(
-      this._context.globalStorageUri.fsPath,
-    );
+    // Native notebooks no longer use PyodideCacheManager - they download packages
+    // directly to filesystem cache using npm Pyodide package (0.29.0)
   }
 
   /**
@@ -52,13 +49,10 @@ export class PyodidePreloader implements vscode.Disposable {
    * - Starts preload if appropriate
    */
   public async initialize(): Promise<void> {
-    this._logger.info("Initializing Pyodide preloader");
-
     const config = vscode.workspace.getConfiguration("datalayer.pyodide");
     const preloadBehavior = config.get<string>("preloadBehavior", "ask-once");
 
     if (preloadBehavior === "disabled") {
-      this._logger.info("Pyodide preload disabled in settings");
       return;
     }
 
@@ -83,17 +77,12 @@ export class PyodidePreloader implements vscode.Disposable {
     if (preloadBehavior === "auto") {
       // Auto mode: Download without asking if not cached
       if (!arePackagesPreloaded) {
-        this._logger.info("Auto-preload mode: downloading packages");
         await this._startPreload();
-      } else {
-        this._logger.info("Auto-preload mode: packages already cached");
       }
     } else if (preloadBehavior === "ask-always") {
       // Always ask mode: Prompt every time if packages aren't cached
       if (!arePackagesPreloaded) {
         await this._promptUserForPreload();
-      } else {
-        this._logger.info("Packages already preloaded, no action needed");
       }
     } else {
       // ask-once mode (default): Prompt only first time
@@ -102,16 +91,7 @@ export class PyodidePreloader implements vscode.Disposable {
         await this._promptUserForPreload();
       } else if (!arePackagesPreloaded) {
         // Packages changed or haven't been preloaded yet - download silently
-        this._logger.info("Package list changed", {
-          current: packagesKey,
-          cached: preloadedPackages,
-        });
         await this._startPreload();
-      } else {
-        // Packages already preloaded, nothing to do
-        this._logger.info("Packages already preloaded", {
-          packages: packagesKey,
-        });
       }
     }
 
@@ -160,9 +140,6 @@ export class PyodidePreloader implements vscode.Disposable {
           "disabled",
           vscode.ConfigurationTarget.Global,
         );
-      this._logger.info("User disabled Pyodide preload");
-    } else {
-      this._logger.info("User skipped Pyodide preload");
     }
   }
 
@@ -176,7 +153,6 @@ export class PyodidePreloader implements vscode.Disposable {
         e.affectsConfiguration("datalayer.pyodide.preloadBehavior") ||
         e.affectsConfiguration("datalayer.pyodide.version")
       ) {
-        this._logger.info("Pyodide configuration changed");
         this._onConfigChanged();
       }
     });
@@ -190,7 +166,6 @@ export class PyodidePreloader implements vscode.Disposable {
     const preloadBehavior = config.get<string>("preloadBehavior", "ask-once");
 
     if (preloadBehavior === "disabled") {
-      this._logger.info("Pyodide preload disabled");
       return;
     }
 
@@ -204,7 +179,6 @@ export class PyodidePreloader implements vscode.Disposable {
     );
 
     if (preloadedPackages === packagesKey) {
-      this._logger.info("Packages already preloaded, no action needed");
       return;
     }
 
@@ -226,7 +200,6 @@ export class PyodidePreloader implements vscode.Disposable {
    */
   private async _startPreload(): Promise<void> {
     if (this._isPreloading) {
-      this._logger.warn("Preload already in progress");
       return;
     }
 
@@ -234,14 +207,10 @@ export class PyodidePreloader implements vscode.Disposable {
     const packages = config.get<string[]>("preloadPackages", []);
 
     if (packages.length === 0) {
-      this._logger.info("No packages to preload");
       return;
     }
 
     this._isPreloading = true;
-    this._logger.info(
-      `Starting Pyodide package preload: ${packages.join(", ")}`,
-    );
 
     // Show progress notification
     await vscode.window.withProgress(
@@ -254,13 +223,9 @@ export class PyodidePreloader implements vscode.Disposable {
         try {
           const pyodideVersion = config.get<string>("version", "0.27.3");
 
-          // Step 1: Preload for NATIVE notebooks (filesystem cache)
-          progress.report({ message: "Preloading for native notebooks..." });
+          // Preload for NATIVE notebooks (filesystem cache)
+          progress.report({ message: "Preloading packages..." });
           await this._executeNativePreload(pyodideVersion, packages, progress);
-
-          // Step 2: Preload for WEBVIEW notebooks (IndexedDB cache)
-          progress.report({ message: "Preloading for webview notebooks..." });
-          await this._executeWebviewPreload(packages, progress);
 
           // Mark packages as successfully preloaded
           const packagesKey = this._getPackagesKey(packages);
@@ -269,7 +234,6 @@ export class PyodidePreloader implements vscode.Disposable {
             packagesKey,
           );
 
-          this._logger.info("Pyodide package preload completed successfully");
           vscode.window.showInformationMessage(
             "Pyodide packages preloaded successfully",
           );
@@ -290,39 +254,90 @@ export class PyodidePreloader implements vscode.Disposable {
 
   /**
    * Preload packages for NATIVE notebooks (Node.js filesystem cache).
+   * NOTE: Native notebooks use the npm Pyodide package (0.29.0), so we ONLY download packages,
+   * NOT core files. Core files come from npm package, not CDN!
    */
   private async _executeNativePreload(
-    pyodideVersion: string,
+    _pyodideVersion: string, // Ignored - native notebooks use npm package version (0.29.0)
     packages: string[],
     progress: vscode.Progress<{ message?: string; increment?: number }>,
   ): Promise<void> {
-    this._logger.info("Starting native notebook preload");
+    // Import Node.js modules for cache directory
+    const os = await import("os");
+    const path = await import("path");
+    const fs = await import("fs/promises");
 
-    // Download Pyodide core files
-    await this._cacheManager.ensurePyodideCore(pyodideVersion, progress);
+    // IMPORTANT: Native notebooks use npm package version (0.29.0), NOT config version!
+    const npmPyodideVersion = "0.29.0";
 
-    // Download packages
-    const result = await this._cacheManager.preloadPackages(
-      pyodideVersion,
-      packages,
-      progress,
+    // Create cache directory path (same location as runtime!)
+    const cacheDir = path.join(
+      os.homedir(),
+      ".cache",
+      "datalayer-pyodide",
+      npmPyodideVersion,
+      "packages",
     );
 
-    if (result.failed.length > 0) {
+    // Ensure cache directory exists
+    await fs.mkdir(cacheDir, { recursive: true });
+
+    // Load Pyodide using npm package (follows ZeroMQ pattern)
+    // Pyodide is copied to dist/node_modules/pyodide during build
+    // Webpack marks pyodide as external, so this import resolves from dist/node_modules/
+    const { loadPyodide } = await import("pyodide");
+
+    // CRITICAL: Add packageCacheDir for persistent caching
+    const pyodide = await loadPyodide({
+      packageCacheDir: cacheDir,
+      stdout: () => {}, // Suppress stdout during preload
+      stderr: () => {}, // Suppress stderr during preload
+    } as Parameters<typeof loadPyodide>[0]);
+
+    // Use loadPackage() for built-in packages - this respects packageCacheDir!
+    // micropip.install() does NOT use packageCacheDir and re-downloads every time
+    // Load packages individually to handle errors gracefully (skip failed packages)
+    const results = await Promise.allSettled(
+      packages.map(async (pkg) => {
+        try {
+          progress.report({ message: `Loading ${pkg}...` });
+          await pyodide.loadPackage(pkg);
+          return { pkg, success: true };
+        } catch (error) {
+          this._logger.warn(
+            `Failed to load ${pkg}: ${error instanceof Error ? error.message : String(error)}`,
+          );
+          return { pkg, success: false, error };
+        }
+      }),
+    );
+
+    const succeeded = results.filter(
+      (r) => r.status === "fulfilled" && r.value.success,
+    ).length;
+
+    progress.report({
+      message: `Loaded ${succeeded}/${packages.length} packages`,
+    });
+
+    // Clean up Pyodide instance (free memory)
+    try {
+      // destroy() method exists at runtime but not in TypeScript types
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (pyodide as any).destroy?.();
+    } catch (error) {
       this._logger.warn(
-        `Some packages failed to download: ${result.failed.join(", ")}`,
+        `Failed to destroy Pyodide instance: ${error instanceof Error ? error.message : String(error)}`,
       );
     }
-
-    this._logger.info(
-      `Native preload complete: ${result.succeeded.length} succeeded, ${result.failed.length} failed`,
-    );
   }
 
   /**
    * Preload packages for WEBVIEW notebooks (browser IndexedDB cache).
    * Creates a hidden webview panel that downloads packages via micropip.
+   * NOTE: Currently disabled due to poor UX (see line 262).
    */
+  // @ts-expect-error - Method kept for potential future re-enabling
   private async _executeWebviewPreload(
     packages: string[],
     progress: vscode.Progress<{ message?: string; increment?: number }>,
@@ -331,11 +346,11 @@ export class PyodidePreloader implements vscode.Disposable {
     const pyodideVersion = config.get<string>("version", "0.27.3");
 
     return new Promise<void>((resolve, reject) => {
-      // Create hidden webview panel for preloading
+      // Create hidden webview panel for preloading (background, no focus steal)
       const panel = vscode.window.createWebviewPanel(
         "datalayer.pyodide.preload",
         "Pyodide Preload",
-        { viewColumn: vscode.ViewColumn.Active, preserveFocus: false },
+        { viewColumn: vscode.ViewColumn.Beside, preserveFocus: true },
         {
           enableScripts: true,
           retainContextWhenHidden: true,

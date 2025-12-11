@@ -241,3 +241,38 @@ jobs:
           fi
 
           echo "✅ Extension package validation successful"
+
+  smoke-tests:
+    name: Smoke Tests - ${{ matrix.os }}
+    needs: build-and-test
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: "20"
+
+      - name: Download extension artifact
+        uses: actions/download-artifact@v5
+        with:
+          name: ${{ needs.build-and-test.outputs.artifact-name }}
+          path: ./artifacts
+
+      - name: Run smoke tests
+        run: bash .github/scripts/run-smoke-tests.sh ./artifacts/*.vsix
+        shell: bash
+
+      - name: Report results
+        if: failure()
+        run: |
+          echo "❌ Smoke tests failed on ${{ matrix.os }}"
+          echo "Check the logs above for details"
+        shell: bash
