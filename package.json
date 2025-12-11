@@ -77,7 +77,7 @@
     "@datalayer/jupyter-react": "^1.1.9",
     "@datalayer/lexical-loro": "^0.1.0",
     "@datalayer/primer-addons": "^1.0.4",
-    "@jupyter/ydoc": "^2.0.0",
+    "@jupyter/ydoc": "^3.3.3",
     "@jupyterlab/services": "^7.0.0",
     "@lexical/code": "^0.35.0",
     "@lexical/html": "^0.35.0",
