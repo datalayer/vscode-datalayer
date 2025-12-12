@@ -82,7 +82,7 @@ function classifyDocumentType(uri: vscode.Uri, fileName: string): DocumentType {
   if (fileName.endsWith(".ipynb")) {
     return "notebook";
   }
-  if (fileName.endsWith(".lexical")) {
+  if (fileName.endsWith(".dlex") || fileName.endsWith(".lexical")) {
     return "lexical";
   }
 

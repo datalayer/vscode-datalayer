@@ -13,6 +13,12 @@ All notable changes to the Datalayer VS Code extension are documented here.
 
 ### Changed (January 2025)
 
+- **BREAKING: Lexical File Extension**: Changed from `.lexical` to `.dlex` ([#133](https://github.com/datalayer/vscode-datalayer/issues/133))
+  - Existing `.lexical` files will continue to work (backward compatible)
+  - New lexical documents created with `.dlex` extension
+  - UI and documentation updated to reflect new extension
+  - Shorter, clearer brand association ("Datalayer Lexical")
+
 - **Smart Controller**: Disabled `SmartDynamicControllerManager` for native notebook integration
   - Needs improvement before re-enabling
   - All code handles null controller safely with optional chaining
@@ -25,7 +31,7 @@ All notable changes to the Datalayer VS Code extension are documented here.
 #### Two Custom Editors
 
 - **Jupyter Notebooks** (`.ipynb`): Full notebook editing with cloud runtime execution
-- **Lexical Documents** (`.lexical`): Rich text editing with formatting support
+- **Lexical Documents** (`.dlex`): Rich text editing with formatting support
 
 #### Two Tree Views
 

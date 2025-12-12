@@ -110,7 +110,8 @@ export function analyzeOpenDocuments(): DocumentAnalysisResult {
       if (scheme === "file" || scheme === "untitled") {
         if (
           viewType === "datalayer.jupyter-notebook" ||
-          viewType === "datalayer.lexical"
+          viewType === "datalayer.lexical" ||
+          viewType === "datalayer.lexical-editor"
         ) {
           console.log(
             `[DocumentAnalysis] ✓ Categorized as LOCAL DATALAYER (viewType match: ${viewType})`,
@@ -127,8 +128,11 @@ export function analyzeOpenDocuments(): DocumentAnalysisResult {
             `[DocumentAnalysis] ✓ Categorized as LOCAL DATALAYER (fallback - .ipynb file)`,
           );
           localDatalayerDocuments.push(uriString);
-        } else if (uriString.endsWith(".lexical")) {
-          // Lexical documents
+        } else if (
+          uriString.endsWith(".dlex") ||
+          uriString.endsWith(".lexical")
+        ) {
+          // Lexical documents (.dlex or legacy .lexical)
           console.log(
             `[DocumentAnalysis] ✓ Categorized as LOCAL DATALAYER (lexical file)`,
           );
@@ -236,7 +240,7 @@ export function isDatalayerNotebook(uri: vscode.Uri): boolean {
   if (uri.scheme === "file" || uri.scheme === "untitled") {
     const fsPath = uri.fsPath;
     const isNotebook = fsPath.endsWith(".ipynb");
-    const isLexical = fsPath.endsWith(".lexical");
+    const isLexical = fsPath.endsWith(".dlex") || fsPath.endsWith(".lexical");
 
     if (!isNotebook && !isLexical) {
       return false;
@@ -252,14 +256,15 @@ export function isDatalayerNotebook(uri: vscode.Uri): boolean {
           if (tabUri?.toString() === uri.toString()) {
             return (
               viewType === "datalayer.jupyter-notebook" ||
-              viewType === "datalayer.lexical"
+              viewType === "datalayer.lexical" ||
+              viewType === "datalayer.lexical-editor"
             );
           }
         }
       }
     }
 
-    // If not found in tabs, assume it's a Datalayer document if it's .ipynb or .lexical
+    // If not found in tabs, assume it's a Datalayer document if it's .ipynb or .dlex/.lexical
     // (Better to assume Datalayer than native for tool operations)
     return true;
   }
@@ -286,6 +291,8 @@ export function isCloudNotebook(uri: vscode.Uri): boolean {
 export function isLocalNotebook(uri: vscode.Uri): boolean {
   return (
     (uri.scheme === "file" || uri.scheme === "untitled") &&
-    (uri.fsPath.endsWith(".ipynb") || uri.fsPath.endsWith(".lexical"))
+    (uri.fsPath.endsWith(".ipynb") ||
+      uri.fsPath.endsWith(".dlex") ||
+      uri.fsPath.endsWith(".lexical"))
   );
 }

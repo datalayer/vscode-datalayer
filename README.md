@@ -45,7 +45,7 @@
 2. **Install** from [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=Datalayer.datalayer-jupyter-vscode)
 3. **Login**: `Ctrl+Shift+P` → "Datalayer: Login to Datalayer" → paste your token
 4. **Scale instantly**: Open any `.ipynb` file with the Datalayer Editor → click kernel picker → select cloud runtime
-5. **Create rich docs**: Create `.lexical` files for Notion-like collaborative reports with code, images and rich formatting
+5. **Create rich docs**: Create `.dlex` files for Notion-like collaborative reports with code, images and rich formatting
 
 ## 🎯 Core Features
 

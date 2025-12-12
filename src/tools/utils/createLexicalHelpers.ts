@@ -67,7 +67,11 @@ export async function createCloudLexical(
   try {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const client = sdk as any;
-    const finalName = name.endsWith(".lexical") ? name : `${name}.lexical`;
+    // Support both .dlex (new) and .lexical (legacy) but always create new files as .dlex
+    const finalName =
+      name.endsWith(".dlex") || name.endsWith(".lexical")
+        ? name
+        : `${name}.dlex`;
 
     let targetSpaceId = spaceId;
 
@@ -182,7 +186,11 @@ export async function createLocalLexical(
   const { extras } = context;
 
   try {
-    const finalName = name.endsWith(".lexical") ? name : `${name}.lexical`;
+    // Support both .dlex (new) and .lexical (legacy) but always create new files as .dlex
+    const finalName =
+      name.endsWith(".dlex") || name.endsWith(".lexical")
+        ? name
+        : `${name}.dlex`;
 
     const extrasWithFile = extras as {
       createLocalFile?: (filename: string, content: unknown) => Promise<string>;

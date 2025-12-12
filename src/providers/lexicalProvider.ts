@@ -5,9 +5,11 @@
  */
 
 /**
- * Custom editor provider for Lexical document files (.lexical).
+ * Custom editor provider for Lexical document files (.dlex).
  * Handles webview lifecycle management, document editing, and collaboration features
  * for both local and Datalayer platform documents.
+ *
+ * Supports both .dlex (new) and .lexical (legacy) file extensions for backward compatibility.
  *
  * @see https://code.visualstudio.com/api/extension-guides/custom-editors
  * @module providers/lexicalProvider
@@ -62,7 +64,7 @@ export class LexicalProvider extends BaseDocumentProvider<LexicalDocument> {
 
       const uri = vscode.Uri.joinPath(
         workspaceFolders[0].uri,
-        `new-${Date.now()}.lexical`,
+        `new-${Date.now()}.dlex`,
       ).with({ scheme: "untitled" });
 
       vscode.commands.executeCommand(

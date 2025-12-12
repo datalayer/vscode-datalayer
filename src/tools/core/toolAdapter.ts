@@ -527,7 +527,7 @@ export class VSCodeToolAdapter<TParams>
         throw new Error(
           `No active Lexical document found. ` +
             `Currently active: "${activeFileName}". ` +
-            `Please open a .lexical file or use the #file:filename.lexical variable to specify which file to edit.`,
+            `Please open a .dlex file or use the #file:filename.dlex variable to specify which file to edit.`,
         );
       }
     }
