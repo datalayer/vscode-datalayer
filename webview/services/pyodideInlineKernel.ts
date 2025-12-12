@@ -927,6 +927,23 @@ export class PyodideInlineKernel implements Kernel.IKernelConnection {
     // Return future object with getter/setter properties (not methods!)
     const future: any = {
       done: executionPromise,
+      // CRITICAL FIX (#171): Add .msg property containing the execute request message
+      // JupyterLab callbacks expect future.msg to be the original request message
+      // This is used to match replies: callback checks `this._future.msg.header.msg_id`
+      msg: {
+        header: executeRequestHeader,
+        parent_header: {},
+        metadata: {},
+        content: {
+          code: content.code,
+          silent: content.silent ?? false,
+          store_history: content.store_history ?? true,
+          user_expressions: content.user_expressions ?? {},
+          allow_stdin: content.allow_stdin ?? true,
+        },
+        channel: "shell",
+        buffers: [],
+      },
       registerMessageHook: (_hook: any) => {
         // No-op for Pyodide
       },
@@ -938,6 +955,9 @@ export class PyodideInlineKernel implements Kernel.IKernelConnection {
 
     // Store the wrapper function so we can disconnect it later
     let iopubWrapper: any = null;
+    // CRITICAL FIX: Store the callback so getter can return it (fixes #171)
+    // Lexical documents use execute() helper which reads future.onIOPub getter
+    let iopubCallback: any = null;
 
     // Define onIOPub as a setter (JupyterLab uses: future.onIOPub = callback)
     Object.defineProperty(future, "onIOPub", {
@@ -947,11 +967,14 @@ export class PyodideInlineKernel implements Kernel.IKernelConnection {
           this._iopubMessage.disconnect(iopubWrapper);
         }
 
+        // Store the callback so getter can return it
+        iopubCallback = cb;
+
         // Lumino signals emit (sender, args), but JupyterLab expects just (msg)
         // Wrap the callback to drop the sender parameter AND filter by parent_header
-        // NOTE: msg is wrapped as {msg: IMessage, direction: 'recv'} due to IAnyMessageArgs
+        // NOTE: The signal emits IAnyMessageArgs format {msg: IMessage, direction: 'recv'}
         iopubWrapper = (_sender: any, msgArgs: any) => {
-          // Unwrap the message from IAnyMessageArgs format
+          // Unwrap IAnyMessageArgs to get the raw Jupyter message
           const msg = msgArgs.msg || msgArgs; // Handle both wrapped and unwrapped formats
 
           // Only emit messages that belong to THIS execution
@@ -959,30 +982,43 @@ export class PyodideInlineKernel implements Kernel.IKernelConnection {
             msg.parent_header &&
             msg.parent_header.msg_id === executeRequestHeader.msg_id
           ) {
-            cb(msg);
+            // CRITICAL FIX (#171): Pass the unwrapped raw Jupyter message to callback
+            // KernelExecutor._onIOPub expects: message.header.msg_type (not message.msg.header)
+            cb(msg); // ← Pass unwrapped raw message (not the IAnyMessageArgs wrapper)
           }
         };
         this._iopubMessage.connect(iopubWrapper);
       },
-      get: () => undefined,
+      get: () => {
+        return iopubCallback;
+      },
     });
 
     // Define onReply as a setter
+    let onReplyCallback: any = null;
     Object.defineProperty(future, "onReply", {
       set: (cb: any) => {
-        cb({
-          content: { status: "ok", execution_count: this._executionCount },
+        onReplyCallback = cb; // Store callback so getter can return it
+        // Call the callback when execution completes
+        executionPromise.then((replyMsg) => {
+          if (onReplyCallback) {
+            onReplyCallback(replyMsg);
+          }
         });
       },
-      get: () => undefined,
+      get: () => {
+        return onReplyCallback;
+      },
     });
 
     // Define onStdin as a setter
+    let onStdinCallback: any = null;
     Object.defineProperty(future, "onStdin", {
-      set: (_cb: any) => {
+      set: (cb: any) => {
+        onStdinCallback = cb; // Store callback so getter can return it
         // No-op for Pyodide
       },
-      get: () => undefined,
+      get: () => onStdinCallback, // Return callback instead of undefined
     });
 
     return future;
