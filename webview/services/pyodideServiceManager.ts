@@ -53,27 +53,17 @@ class MinimalKernelManager extends BaseKernelManager {
   async startNew(
     options: Kernel.IKernelOptions = {},
   ): Promise<Kernel.IKernelConnection> {
-    console.error(
-      "🔵🔵🔵 [PyodideServiceManager] startNew() called - creating FULL kernel 🔵🔵🔵",
-    );
     this.log("startNew called", options);
 
     // CRITICAL FIX: Reuse existing kernel instead of creating duplicates!
     // The notebook framework may call startNew() multiple times during initialization
     // BUT: Don't reuse if the kernel has been disposed!
     if (this._pyodideKernel && !this._pyodideKernel.isDisposed) {
-      console.error(
-        "🔵 [PyodideServiceManager] Reusing existing kernel:",
-        this._pyodideKernel.id,
-      );
       return this._pyodideKernel;
     }
 
     // If we had a disposed kernel, clear it
     if (this._pyodideKernel?.isDisposed) {
-      console.error(
-        "🔵 [PyodideServiceManager] Previous kernel was disposed, creating new one",
-      );
       this._pyodideKernel = null;
       this._activeKernel = null;
     }
