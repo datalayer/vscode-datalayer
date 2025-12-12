@@ -77,7 +77,10 @@ export function getDocumentDisplayName(
   if (typeInfo.isNotebook) {
     return baseName.endsWith(".ipynb") ? baseName : `${baseName}.ipynb`;
   } else if (typeInfo.isLexical) {
-    return baseName.endsWith(".lexical") ? baseName : `${baseName}.lexical`;
+    // Support both .dlex (new) and .lexical (legacy)
+    return baseName.endsWith(".dlex") || baseName.endsWith(".lexical")
+      ? baseName
+      : `${baseName}.dlex`;
   }
 
   return baseName;

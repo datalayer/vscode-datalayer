@@ -325,11 +325,11 @@ export class SpacesTreeProvider implements vscode.TreeDataProvider<SpaceItem> {
             }),
           );
         } else if (itemType === ItemTypes.LEXICAL) {
-          // Use the model's extension getter
-          const extension = item.extension || "";
-          if (!itemName.endsWith(extension)) {
-            itemName = `${itemName}${extension}`;
-          }
+          // Always display with .dlex extension (even if server returns .lexical)
+          // First, strip any existing .lexical or .dlex extension
+          itemName = itemName.replace(/\.(lexical|dlex)$/, "");
+          // Then always append .dlex for consistent display
+          itemName = `${itemName}.dlex`;
           result.push(
             new SpaceItem(itemName, vscode.TreeItemCollapsibleState.None, {
               type: ItemType.DOCUMENT,
@@ -344,7 +344,7 @@ export class SpacesTreeProvider implements vscode.TreeDataProvider<SpaceItem> {
       if (result.length === 0 && items.length > 0) {
         return [
           new SpaceItem(
-            "No notebooks or lexical documents found",
+            "No notebooks or .dlex documents found",
             vscode.TreeItemCollapsibleState.None,
             {
               type: ItemType.ERROR,

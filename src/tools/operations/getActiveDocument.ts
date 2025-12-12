@@ -52,7 +52,7 @@ export async function getActiveDocument(): Promise<ActiveDocumentResult> {
 
     if (fileName.endsWith(".ipynb")) {
       type = "notebook";
-    } else if (fileName.endsWith(".lexical")) {
+    } else if (fileName.endsWith(".dlex") || fileName.endsWith(".lexical")) {
       type = "lexical";
     } else {
       // Other file type - not supported for custom editors
@@ -60,7 +60,7 @@ export async function getActiveDocument(): Promise<ActiveDocumentResult> {
         success: false,
         type: "other",
         error:
-          "Unsupported document type - only .ipynb and .lexical are supported",
+          "Unsupported document type - only .ipynb and .dlex are supported",
       };
     }
 

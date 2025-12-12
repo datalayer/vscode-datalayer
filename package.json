@@ -631,12 +631,12 @@
       "editor/title": [
         {
           "command": "datalayer.newLocalDatalayerNotebook",
-          "when": "resourceExtname == .ipynb || resourceExtname == .lexical",
+          "when": "resourceExtname == .ipynb || resourceExtname == .dlex || resourceExtname == .lexical",
           "group": "navigation@1"
         },
         {
           "command": "datalayer.newLocalLexicalDocument",
-          "when": "resourceExtname == .ipynb || resourceExtname == .lexical",
+          "when": "resourceExtname == .ipynb || resourceExtname == .dlex || resourceExtname == .lexical",
           "group": "navigation@2"
         }
       ],
@@ -1310,6 +1310,9 @@
         "displayName": "Datalayer Lexical Editor",
         "selector": [
           {
+            "filenamePattern": "*.dlex"
+          },
+          {
             "filenamePattern": "*.lexical"
           }
         ],
@@ -1321,7 +1324,7 @@
         "id": "datalayer",
         "name": "datalayer",
         "fullName": "Datalayer Assistant",
-        "description": "AI assistant specialized in Datalayer notebooks and lexical documents. Type @datalayer or @d to invoke. Automatically understands .ipynb and .lexical files.",
+        "description": "AI assistant specialized in Datalayer notebooks and lexical documents. Type @datalayer or @d to invoke. Automatically understands .ipynb and .dlex files.",
         "isSticky": true,
         "disambiguation": [
           {

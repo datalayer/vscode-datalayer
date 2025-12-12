@@ -191,7 +191,8 @@ export class SpaceItem extends vscode.TreeItem {
       case ".csv":
         return new vscode.ThemeIcon("table");
       case ".txt":
-      case ".lexical":
+      case ".dlex":
+      case ".lexical": // Legacy support
         return new vscode.ThemeIcon("file-text");
       case ".pdf":
         return new vscode.ThemeIcon("file-pdf");
