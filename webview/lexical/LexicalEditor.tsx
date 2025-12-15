@@ -493,6 +493,7 @@ export function LexicalEditor({
                   selectedRuntime={selectedRuntime}
                   showRuntimeSelector={showRuntimeSelector}
                   showCollaborativeLabel={collaboration?.enabled}
+                  lexicalId={lexicalId || undefined}
                 />
               )}
             </div>

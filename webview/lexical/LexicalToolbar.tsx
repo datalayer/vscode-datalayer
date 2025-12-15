@@ -62,17 +62,8 @@ import type { RuntimeJSON } from "@datalayer/core/lib/client";
 import { MessageHandlerContext } from "../services/messageHandler";
 
 // Define Jupyter commands locally (not exported from jupyter-lexical)
-const RUN_JUPYTER_CELL_COMMAND: LexicalCommand<undefined> = createCommand(
-  "RUN_JUPYTER_CELL_COMMAND",
-);
-const RUN_ALL_JUPYTER_CELLS_COMMAND: LexicalCommand<undefined> = createCommand(
-  "RUN_ALL_JUPYTER_CELLS_COMMAND",
-);
 const RESTART_JUPYTER_KERNEL_COMMAND: LexicalCommand<undefined> = createCommand(
   "RESTART_JUPYTER_KERNEL_COMMAND",
-);
-const CLEAR_ALL_OUTPUTS_COMMAND: LexicalCommand<undefined> = createCommand(
-  "CLEAR_ALL_OUTPUTS_COMMAND",
 );
 import {
   BaseToolbar,
@@ -82,6 +73,7 @@ import {
 } from "../components/toolbar";
 import type { ToolbarAction, DropdownItem } from "../components/toolbar";
 import { InsertYouTubeDialog, InsertLinkDialog } from "../components/dialogs";
+import { lexicalStore } from "@datalayer/jupyter-lexical";
 
 /**
  * Props for the LexicalToolbar component.
@@ -95,6 +87,8 @@ export interface LexicalToolbarProps {
   showRuntimeSelector?: boolean;
   /** Whether to show the collaborative editing indicator */
   showCollaborativeLabel?: boolean;
+  /** Lexical document ID for state management */
+  lexicalId?: string;
 }
 
 // Font family options
@@ -235,6 +229,7 @@ export function LexicalToolbar({
   selectedRuntime,
   showRuntimeSelector = false,
   showCollaborativeLabel = false,
+  lexicalId,
 }: LexicalToolbarProps = {}) {
   const [editor] = useLexicalComposerContext();
   const messageHandler = useContext(MessageHandlerContext);
@@ -596,20 +591,40 @@ export function LexicalToolbar({
   };
 
   const handleRunCell = useCallback(() => {
-    editor.dispatchCommand(RUN_JUPYTER_CELL_COMMAND, undefined);
-  }, [editor]);
+    if (lexicalId) {
+      // Use lexicalStore for consistency with NotebookToolbar
+      lexicalStore.getState().runBlock(lexicalId);
+    }
+  }, [lexicalId]);
 
   const handleRunAll = useCallback(() => {
-    editor.dispatchCommand(RUN_ALL_JUPYTER_CELLS_COMMAND, undefined);
-  }, [editor]);
+    if (lexicalId) {
+      // Use lexicalStore for consistency with NotebookToolbar
+      lexicalStore.getState().runAllBlocks(lexicalId);
+    }
+  }, [lexicalId]);
 
   const handleRestartKernel = useCallback(() => {
+    // This operation is not yet in LexicalAdapter, use editor command
     editor.dispatchCommand(RESTART_JUPYTER_KERNEL_COMMAND, undefined);
   }, [editor]);
 
-  const handleClearAllOutputs = useCallback(() => {
-    editor.dispatchCommand(CLEAR_ALL_OUTPUTS_COMMAND, undefined);
-  }, [editor]);
+  const handleClearAllOutputs = useCallback(async () => {
+    if (lexicalId) {
+      console.log(
+        "[LexicalToolbar] Clearing all outputs for lexicalId:",
+        lexicalId,
+      );
+      try {
+        const result = await lexicalStore.getState().clearAllOutputs(lexicalId);
+        console.log("[LexicalToolbar] clearAllOutputs result:", result);
+      } catch (error) {
+        console.error("[LexicalToolbar] clearAllOutputs error:", error);
+      }
+    } else {
+      console.warn("[LexicalToolbar] Cannot clear outputs: no lexicalId");
+    }
+  }, [lexicalId]);
 
   const applyFontFamily = (font: string) => {
     editor.update(() => {

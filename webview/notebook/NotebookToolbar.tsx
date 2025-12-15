@@ -178,6 +178,18 @@ export const NotebookToolbar: React.FC<NotebookToolbarProps> = ({
     }
   };
 
+  const handleRunCell = () => {
+    if (notebookId) {
+      notebookStore2.getState().run(notebookId);
+    }
+  };
+
+  const handleClearAllOutputs = () => {
+    if (notebookId) {
+      notebookStore2.getState().clearAllOutputs(notebookId);
+    }
+  };
+
   const handleAddCodeCell = () => {
     if (notebookId) {
       notebookStore2.getState().insertBelow(notebookId, "code");
@@ -226,6 +238,22 @@ export const NotebookToolbar: React.FC<NotebookToolbarProps> = ({
       title: "Run All Cells",
       onClick: handleRunAll,
       priority: 3,
+    },
+    {
+      id: "runCell",
+      icon: "codicon codicon-play",
+      label: "Run Cell",
+      title: "Run Active Cell",
+      onClick: handleRunCell,
+      priority: 4,
+    },
+    {
+      id: "clearOutputs",
+      icon: "codicon codicon-clear-all",
+      label: "Clear",
+      title: "Clear All Outputs",
+      onClick: handleClearAllOutputs,
+      priority: 5,
     },
   ];
 
