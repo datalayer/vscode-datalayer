@@ -58,6 +58,7 @@ import {
   YouTubePlugin,
   AutoLinkPlugin,
   AutoEmbedPlugin,
+  AutoIndentPlugin,
   LexicalConfigProvider,
   LexicalStatePlugin,
 } from "@datalayer/jupyter-lexical";
@@ -528,6 +529,7 @@ export function LexicalEditor({
             <YouTubePlugin />
             <AutoEmbedPlugin />
             <JupyterCellPlugin />
+            <AutoIndentPlugin defaultLanguage="python" debug={true} />
             {/* Wrap kernel plugins with Jupyter provider - only these remount on runtime change */}
             <Jupyter
               key={selectedRuntime?.ingress || "no-runtime"}
