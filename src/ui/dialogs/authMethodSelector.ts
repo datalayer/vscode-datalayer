@@ -50,15 +50,15 @@ export async function showAuthMethodPicker(): Promise<AuthMethod | undefined> {
     {
       label: "GitHub",
       description: "OAuth authentication via GitHub",
-      detail: "Opens browser for GitHub authorization",
+      detail: "Opens browser for GitHub authentication",
       method: "github",
     },
-    {
-      label: "LinkedIn",
-      description: "OAuth authentication via LinkedIn",
-      detail: "Opens browser for LinkedIn authorization",
-      method: "linkedin",
-    },
+    // {
+    //   label: "LinkedIn",
+    //   description: "OAuth authentication via LinkedIn",
+    //   detail: "Opens browser for LinkedIn authentication",
+    //   method: "linkedin",
+    // },
     {
       label: "Handle / Password",
       description: "Login with handle and password",
