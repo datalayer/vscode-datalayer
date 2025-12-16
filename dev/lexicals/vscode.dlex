@@ -1155,10 +1155,6 @@
           {
             "type": "linebreak",
             "version": 1
-          },
-          {
-            "type": "linebreak",
-            "version": 1
           }
         ],
         "direction": null,
@@ -1183,6 +1179,6 @@
     "indent": 0,
     "type": "root",
     "version": 1,
-    "textStyle": "font-size: 18pt;"
+    "textStyle": "font-family: Times New Roman; font-size: 18pt;"
   }
 }
