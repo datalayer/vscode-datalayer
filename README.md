@@ -6,7 +6,7 @@
 [![VS Code Marketplace](https://img.shields.io/visual-studio-marketplace/v/Datalayer.datalayer-jupyter-vscode?label=VS%20Code%20Marketplace&logo=visual-studio-code)](https://marketplace.visualstudio.com/items?itemName=Datalayer.datalayer-jupyter-vscode)
 [![Installs](https://img.shields.io/visual-studio-marketplace/i/Datalayer.datalayer-jupyter-vscode?label=Installs)](https://marketplace.visualstudio.com/items?itemName=Datalayer.datalayer-jupyter-vscode)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Documentation](https://img.shields.io/badge/docs-TypeDoc-blue.svg)](https://datalayer-desktop.netlify.app)
+[![Documentation](https://img.shields.io/badge/docs-TypeDoc-blue.svg)](https://vscode-datalayer.netlify.app)
 
 # Datalayer for Visual Studio Code
 
@@ -41,9 +41,9 @@
 
 ## ⚡ Quick Start
 
-1. **Create a free account** at [datalayer.app](https://datalayer.app) and get an access token from your account settings.
+1. **Create a free account** at [datalayer.app](https://datalayer.app).
 2. **Install** from [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=Datalayer.datalayer-jupyter-vscode)
-3. **Login**: `Ctrl+Shift+P` → "Datalayer: Login to Datalayer" → paste your token
+3. **Login**: `Ctrl+Shift+P` → "Datalayer: Login to Datalayer" → select your type of OAuth login (GitHub or LinkedIn)
 4. **Scale instantly**: Open any `.ipynb` file with the Datalayer Editor → click kernel picker → select cloud runtime
 5. **Create rich docs**: Create `.dlex` files for Notion-like collaborative reports with code, images and rich formatting
 
@@ -51,14 +51,14 @@
 
 ### 📊 **Advanced Document Editors**
 
-**Jupyter Notebooks**
+#### Jupyter Notebooks
 
 - Full-featured notebook editing with syntax highlighting and IntelliSense
 - Execute on cloud GPUs/CPUs, local Python kernels, or remote Jupyter servers
 - Seamless kernel switching between cloud, local, and remote runtimes
 - Native ZMQ integration for local Python execution (no Jupyter server required)
 
-**Lexical Documents**
+#### Lexical Documents
 
 - **Notion-like rich text editor** with real-time collaborative editing
 - Notion-like rich text editor\*\* with real-time collaborative editing
@@ -187,13 +187,9 @@ Open settings (`Ctrl+,` / `Cmd+,`) and search "Datalayer":
 
 ### Documentation & Quality
 
-- **TypeDoc API Documentation**: Complete API documentation now available at [datalayer-desktop.netlify.app](https://datalayer-desktop.netlify.app)
+- **TypeDoc API Documentation**: Complete API documentation now available at [vscode-datalayer.netlify.app](https://vscode-datalayer.netlify.app)
 - **Zero TypeDoc Warnings**: All exported types properly documented
 - **Node.js 20 Compatibility**: Fully updated to match VS Code 1.98.0 runtime requirements
-
-## Known Limitations
-
-- Uses older Jupyter WebSocket protocol (technical constraint, does not affect functionality)
 
 ## Developer Resources
 
@@ -201,21 +197,7 @@ Open settings (`Ctrl+,` / `Cmd+,`) and search "Datalayer":
 - [CONTRIBUTING.md](./dev/docs/CONTRIBUTING.md) - Contribution guidelines
 - [TESTING.md](./dev/docs/TESTING.md) - Test infrastructure (41 tests, 100% pass)
 - [CHANGELOG.md](./CHANGELOG.md) - Version history
-- [API Documentation](https://datalayer-desktop.netlify.app) - Complete TypeScript API reference
-
-### Development Workflow
-
-When working with changes to `@datalayer/jupyter-lexical` or `@datalayer/jupyter-react`:
-
-```bash
-# Sync latest changes from jupyter-ui monorepo
-npm run sync:jupyter
-
-# Create patches for your modifications
-npm run create:patches
-```
-
-Patches are automatically applied when contributors run `npm install` via the postinstall hook.
+- [API Documentation](https://vscode-datalayer.netlify.app) - Complete TypeScript API reference
 
 ## Support & Community
 
