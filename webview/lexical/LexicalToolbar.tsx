@@ -65,9 +65,6 @@ import { MessageHandlerContext } from "../services/messageHandler";
 const RESTART_JUPYTER_KERNEL_COMMAND: LexicalCommand<undefined> = createCommand(
   "RESTART_JUPYTER_KERNEL_COMMAND",
 );
-const RUN_JUPYTER_CELL_COMMAND: LexicalCommand<undefined> = createCommand(
-  "RUN_JUPYTER_CELL_COMMAND",
-);
 import {
   BaseToolbar,
   ToolbarButton,
@@ -594,9 +591,11 @@ export function LexicalToolbar({
   };
 
   const handleRunCell = useCallback(() => {
-    // Dispatch RUN_JUPYTER_CELL_COMMAND which automatically finds and runs the currently focused cell
-    editor.dispatchCommand(RUN_JUPYTER_CELL_COMMAND, undefined);
-  }, [editor]);
+    if (lexicalId) {
+      // Use adapter pattern - no blockId means "run current block"
+      lexicalStore.getState().runBlock(lexicalId);
+    }
+  }, [lexicalId]);
 
   const handleRunAll = useCallback(() => {
     if (lexicalId) {
