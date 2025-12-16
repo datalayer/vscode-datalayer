@@ -16,7 +16,7 @@
 
 **See it in action:**
 
-<img src="https://assets.datalayer.tech/demo-vscode-lexical.gif" alt="Datalayer extension running lexical document in VS Code"/>
+<img src="https://assets.datalayer.tech/demo-vscode-lexical.gif" alt="Datalayer extension running Datalayer document in VS Code"/>
 
 ## 🚀 Key Benefits
 
@@ -43,7 +43,7 @@
 
 1. **Create a free account** at [datalayer.app](https://datalayer.app).
 2. **Install** from [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=Datalayer.datalayer-jupyter-vscode)
-3. **Login**: `Ctrl+Shift+P` → "Datalayer: Login to Datalayer" → select your type of OAuth login (GitHub or LinkedIn)
+3. **Login**: `Ctrl+Shift+P` → "Datalayer: Login to Datalayer" → select your type of OAuth login (GitHub)
 4. **Scale instantly**: Open any `.ipynb` file with the Datalayer Editor → click kernel picker → select cloud runtime
 5. **Create rich docs**: Create `.dlex` files for Notion-like collaborative reports with code, images and rich formatting
 
@@ -58,10 +58,9 @@
 - Seamless kernel switching between cloud, local, and remote runtimes
 - Native ZMQ integration for local Python execution (no Jupyter server required)
 
-#### Lexical Documents
+#### Datalayer Documents
 
-- **Notion-like rich text editor** with real-time collaborative editing
-- Notion-like rich text editor\*\* with real-time collaborative editing
+- Notion-like rich text editor with real-time collaborative editing
 - Support for images, tables, code blocks, mathematical equations, and formatted text
 - Perfect for creating data science reports, documentation, and presentations
 
@@ -103,7 +102,7 @@
 
 **Do I need Python locally?** No! Cloud runtimes handle all execution with zero local setup. You can still connect to local Python/Jupyter environments if preferred for hybrid workflows.
 
-**Can I edit cloud documents?** Yes! Cloud documents are fully editable. Create, modify, and collaborate on notebooks and lexical documents directly in your cloud spaces.
+**Can I edit cloud documents?** Yes! Cloud documents are fully editable. Create, modify, and collaborate on notebooks and Datalayer documents directly in your cloud spaces.
 
 **How do credits work?** Runtimes consume credits while active. The extension intelligently reuses existing healthy runtimes to minimize costs and maximize your credit efficiency.
 
@@ -113,7 +112,7 @@
 
 **How fast is the local ↔ cloud switching?** Switching between local and cloud execution takes just 2 clicks via the kernel picker - no configuration or setup required.
 
-**What makes lexical documents special?** Think Notion meets Jupyter! Unlike traditional notebooks, lexical documents provide a Notion-like editing experience with rich formatting, real-time collaboration, and support for images, tables, and formatted text alongside executable code - perfect for creating professional reports and documentation.
+**What makes Datalayer Documents special?** Think Notion meets Jupyter! Unlike traditional notebooks, Datalayer Documents provide a Notion-like editing experience with rich formatting, real-time collaboration, and support for images, tables, and formatted text alongside executable code - perfect for creating professional reports and documentation.
 
 ## Installation
 
@@ -138,8 +137,8 @@
 **Documents:**
 
 - Create New Jupyter Notebook (local or cloud)
-- Create New Lexical Document (local or cloud)
-- Context menu in Spaces tree: New Notebook/Lexical in cloud workspace
+- Create New Datalayer Document (local or cloud)
+- Context menu in Spaces tree: New Notebook/Datalayer Document in cloud workspace
 - Context menu: Open, Rename, Delete, Share for collaboration
 
 **Runtimes:**

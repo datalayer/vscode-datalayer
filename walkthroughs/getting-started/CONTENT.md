@@ -11,11 +11,11 @@ This file contains the actual content for the 7 walkthrough steps. This content 
 **Description**:
 Create your Datalayer account to access cloud-powered Jupyter notebooks with GPU support and real-time collaboration.
 
-Visit [datalayer.app](https://datalayer.app/) and login with **GitHub** or **LinkedIn** to get started.
+Visit [datalayer.app](https://datalayer.app/) and login with **GitHub** to get started.
 
 **Image**: [datalayer-app-login.svg](media/datalayer-app-login.svg)
 
-**Alt Text**: Login to Datalayer App with GitHub or LinkedIn
+**Alt Text**: Login to Datalayer App with GitHub
 
 **Buttons**: None (informational step)
 

@@ -3,7 +3,7 @@
   "publisher": "Datalayer",
   "displayName": "Datalayer",
   "description": "✨ AI ⚡ GPU 👥 Collaboration for 🪐 Jupyter Notebooks - 📄 Notion-like editor included.",
-  "version": "0.0.9",
+  "version": "0.0.10",
   "cache_version": "2",
   "icon": "images/datalayer-logo.png",
   "categories": [
@@ -230,7 +230,7 @@
       },
       {
         "command": "datalayer.newLocalLexicalDocument",
-        "title": "New Lexical...",
+        "title": "New Datalayer Document...",
         "category": "Datalayer",
         "icon": "$(file-text)"
       },
@@ -242,7 +242,7 @@
       },
       {
         "command": "datalayer.newRemoteLexicalDocumentPrompt",
-        "title": "New Lexical in Space...",
+        "title": "New Datalayer Document in Space...",
         "category": "Datalayer",
         "icon": "$(file-text)"
       },
@@ -1361,10 +1361,10 @@
           {
             "id": "loginApp",
             "title": "Login to Datalayer App",
-            "description": "Create your Datalayer account to access cloud-powered Jupyter notebooks with GPU support and real-time collaboration.\n\nVisit [datalayer.app](https://datalayer.app/) and login with **GitHub** or **LinkedIn** to get started.",
+            "description": "Create your Datalayer account to access cloud-powered Jupyter notebooks with GPU support and real-time collaboration.\n\nVisit [datalayer.app](https://datalayer.app/) and login with **GitHub** to get started.",
             "media": {
               "svg": "walkthroughs/getting-started/media/datalayer-app-login.svg",
-              "altText": "Login to Datalayer App with GitHub or LinkedIn"
+              "altText": "Login to Datalayer App with GitHub"
             }
           },
           {
