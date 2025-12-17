@@ -82,13 +82,13 @@ export class DatalayerJupyterServerProvider
       throw new Error("Jupyter extension not found");
     }
 
-    // Activate Jupyter extension to get API
-    const jupyter = jupyterExt.isActive ? jupyterExt.exports : undefined;
-
-    if (!jupyter) {
-      // Extension not active yet, will be activated when needed
-      throw new Error("Jupyter extension not active");
+    // Get Jupyter extension API (must be active at this point)
+    if (!jupyterExt.isActive) {
+      throw new Error(
+        "Jupyter extension is not active. Please ensure ms-toolsai.jupyter is installed and activated.",
+      );
     }
+    const jupyter = jupyterExt.exports;
 
     this.serverCollection = jupyter.createJupyterServerCollection(
       "datalayer",
