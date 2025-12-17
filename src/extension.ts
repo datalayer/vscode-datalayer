@@ -169,6 +169,20 @@ export async function activate(
     );
     activationTimer.checkpoint("commands_registered");
 
+    // Register Datalayer Jupyter Server Collection
+    // This adds "Datalayer" to the kernel picker with runtime servers + commands
+    logger.debug("Registering Datalayer Jupyter Server Collection");
+    const { DatalayerJupyterServerProvider } = await import(
+      "./jupyter/serverProvider"
+    );
+    const jupyterServerProvider = new DatalayerJupyterServerProvider(
+      services!.sdk,
+      services!.authProvider as SDKAuthProvider,
+      ui!.controllerManager,
+    );
+    context.subscriptions.push(jupyterServerProvider);
+    activationTimer.checkpoint("jupyter_server_collection_registered");
+
     // Register embedded MCP tools for Copilot integration using unified architecture
     logger.debug("Registering unified MCP tools with new architecture");
     const { registerVSCodeTools } = await import("./tools/core/registration");
