@@ -36,12 +36,19 @@ svgFiles.forEach((file, index) => {
 });
 console.log('');
 
-// Generate SVG font
+// Generate SVG font with deterministic options
+// Using fixed metadata to ensure consistent binary output across builds
+// This prevents merge conflicts when multiple developers compile the same code
 const fontStream = new SVGIcons2SVGFontStream({
   fontName: FONT_NAME,
   fontHeight: 1000,
   normalize: true,
-  log: () => {} // Suppress verbose logging
+  log: () => {}, // Suppress verbose logging
+  // Fixed metadata for deterministic builds
+  metadata: {
+    version: '1.0.0',
+    created: new Date('2024-01-01T00:00:00Z')
+  }
 });
 
 let svgFont = '';
@@ -58,8 +65,15 @@ fontStream.on('finish', () => {
   try {
     console.log('✓ SVG font generated');
 
-    // Convert SVG font to TTF
-    const ttf = svg2ttf(svgFont, {});
+    // Convert SVG font to TTF with fixed timestamp for deterministic builds
+    // Using a fixed date (Jan 1, 2024) to ensure consistent output across builds
+    const fixedTimestamp = new Date('2024-01-01T00:00:00Z').getTime();
+    const ttf = svg2ttf(svgFont, {
+      ts: fixedTimestamp, // Fixed timestamp for deterministic output
+      copyright: 'Copyright (c) 2021-2025 Datalayer, Inc.',
+      description: 'Datalayer icon font',
+      url: 'https://datalayer.io'
+    });
     const ttfBuffer = Buffer.from(ttf.buffer);
     console.log('✓ TTF font generated');
 
