@@ -99,7 +99,7 @@
     "@primer/react-brand": "^0.58.1",
     "@toon-format/toon": "^1.0.0",
     "@vscode/codicons": "^0.0.44",
-    "@vscode/jupyter-extension": "^1.0.93",
+    "@vscode/jupyter-extension": "^1.1.1",
     "@vscode/python-extension": "^1.0.6",
     "ansi-to-html": "^0.7.2",
     "buffer": "^6.0.3",
