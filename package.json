@@ -152,7 +152,7 @@
     "svg-inline-loader": "^0.8.2",
     "svg2ttf": "^6.0.3",
     "svgicons2svgfont": "^15.0.1",
-    "tailwindcss": "^4.1.17",
+    "tailwindcss": "^4.1.18",
     "ts-loader": "^9.5.2",
     "tsx": "^4.20.6",
     "ttf2woff": "^3.0.0",
