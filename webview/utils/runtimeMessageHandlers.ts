@@ -14,6 +14,7 @@
 import type { RuntimeJSON } from "@datalayer/core/lib/client";
 import type {
   KernelSelectedMessage,
+  KernelStartingMessage,
   RuntimeSelectedMessage,
   SetRuntimeMessage,
 } from "../types/messages";
@@ -25,18 +26,52 @@ import type {
 export type RuntimeSelectCallback = (runtime: RuntimeJSON | undefined) => void;
 
 /**
+ * Callback function type for kernel initialization state.
+ * Called when kernel starts initializing or finishes initialization.
+ */
+export type KernelInitializingCallback = (isInitializing: boolean) => void;
+
+/**
+ * Handler for kernel-starting messages.
+ * Signals that kernel initialization has started (before kernel is created).
+ *
+ * @param _message - The kernel-starting message from extension
+ * @param setKernelInitializing - Callback to update initialization state
+ *
+ * @example
+ * ```typescript
+ * case "kernel-starting":
+ *   handleKernelStarting(message, setKernelInitializing);
+ *   break;
+ * ```
+ */
+export function handleKernelStarting(
+  _message: KernelStartingMessage,
+  setKernelInitializing: KernelInitializingCallback,
+): void {
+  console.log("[RuntimeHandler] Kernel starting - showing spinner");
+  setKernelInitializing(true);
+}
+
+/**
  * Handler for kernel-selected and runtime-selected messages.
  * Extracts runtime from message and calls the selection callback.
+ *
+ * For Pyodide and Datalayer cloud runtimes, the spinner is kept visible
+ * until the kernel monitoring code detects the kernel is ready (status='idle').
+ * For local/remote kernels, the spinner is cleared immediately since they're
+ * ready as soon as they're selected.
  *
  * @param message - The kernel/runtime selected message from extension
  * @param selectRuntime - Callback to update runtime state (from useRuntimeManager)
  * @param updateStore - Optional callback to update editor-specific store
+ * @param setKernelInitializing - Optional callback to clear initialization state
  *
  * @example
  * ```typescript
  * case "kernel-selected":
  * case "runtime-selected":
- *   handleRuntimeSelected(message, selectRuntime, (rt) => store.getState().setRuntime(rt));
+ *   handleRuntimeSelected(message, selectRuntime, (rt) => store.getState().setRuntime(rt), setKernelInitializing);
  *   break;
  * ```
  */
@@ -44,6 +79,7 @@ export function handleRuntimeSelected(
   message: KernelSelectedMessage | RuntimeSelectedMessage,
   selectRuntime: RuntimeSelectCallback,
   updateStore?: RuntimeSelectCallback,
+  setKernelInitializing?: KernelInitializingCallback,
 ): void {
   const { body } = message;
   console.log(`[RuntimeHandler] Received ${message.type}:`, body?.runtime);
@@ -54,6 +90,27 @@ export function handleRuntimeSelected(
     );
     selectRuntime(body.runtime);
     updateStore?.(body.runtime);
+
+    // Detect runtime types that require async initialization
+    const isPyodide = body.runtime.ingress === "http://pyodide-local";
+    const isDatalayerCloud =
+      body.runtime.ingress?.includes("datalayer.run") ||
+      body.runtime.ingress?.includes("datalayer.cloud");
+
+    // For Pyodide and Datalayer cloud kernels, keep the spinner visible
+    // until the webview monitoring code detects the kernel is ready (status='idle')
+    // For local/remote kernels, clear the spinner immediately since they're ready
+    if (!isPyodide && !isDatalayerCloud) {
+      console.log(
+        "[RuntimeHandler] Clearing spinner for local/remote kernel (ready immediately)",
+      );
+      setKernelInitializing?.(false);
+    } else {
+      console.log(
+        `[RuntimeHandler] Keeping spinner visible for ${isPyodide ? "Pyodide" : "Datalayer cloud"} kernel (will clear when ready)`,
+      );
+      // Spinner will be cleared by kernel monitoring code in NotebookEditor/LexicalWebview
+    }
   }
 }
 
@@ -175,6 +232,7 @@ export function handleSetRuntime(
  * Returns a function that can be used in a switch statement.
  *
  * @param selectRuntime - Callback from useRuntimeManager
+ * @param setKernelInitializing - Callback to update kernel initialization state
  * @param updateStore - Optional store update callback
  * @returns Object with handler methods for each message type
  *
@@ -182,11 +240,15 @@ export function handleSetRuntime(
  * ```typescript
  * const runtimeHandlers = createRuntimeMessageHandlers(
  *   selectRuntime,
+ *   setKernelInitializing,
  *   (rt) => store.getState().setRuntime(rt)
  * );
  *
  * // In message handler:
  * switch (message.type) {
+ *   case "kernel-starting":
+ *     runtimeHandlers.onKernelStarting(message);
+ *     break;
  *   case "kernel-selected":
  *   case "runtime-selected":
  *     runtimeHandlers.onRuntimeSelected(message);
@@ -201,13 +263,24 @@ export function handleSetRuntime(
  */
 export function createRuntimeMessageHandlers(
   selectRuntime: RuntimeSelectCallback,
+  setKernelInitializing: KernelInitializingCallback,
   updateStore?: RuntimeSelectCallback,
 ) {
   return {
+    /** Handler for kernel-starting messages */
+    onKernelStarting: (message: KernelStartingMessage) =>
+      handleKernelStarting(message, setKernelInitializing),
+
     /** Handler for kernel-selected and runtime-selected messages */
     onRuntimeSelected: (
       message: KernelSelectedMessage | RuntimeSelectedMessage,
-    ) => handleRuntimeSelected(message, selectRuntime, updateStore),
+    ) =>
+      handleRuntimeSelected(
+        message,
+        selectRuntime,
+        updateStore,
+        setKernelInitializing,
+      ),
 
     /** Handler for kernel-terminated and runtime-terminated messages */
     onRuntimeTerminated: () =>

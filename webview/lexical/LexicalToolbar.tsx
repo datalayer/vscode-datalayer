@@ -89,6 +89,8 @@ export interface LexicalToolbarProps {
   showCollaborativeLabel?: boolean;
   /** Lexical document ID for state management */
   lexicalId?: string;
+  /** Whether kernel is currently initializing (before it's created) */
+  kernelInitializing?: boolean;
 }
 
 // Font family options
@@ -230,6 +232,7 @@ export function LexicalToolbar({
   showRuntimeSelector = false,
   showCollaborativeLabel = false,
   lexicalId,
+  kernelInitializing = false,
 }: LexicalToolbarProps = {}) {
   const [editor] = useLexicalComposerContext();
   const messageHandler = useContext(MessageHandlerContext);
@@ -256,6 +259,63 @@ export function LexicalToolbar({
   const [fontSize, setFontSize] = useState("12pt");
   const [textColor, setTextColor] = useState(DEFAULT_TEXT_COLOR);
   const [highlightColor, setHighlightColor] = useState(DEFAULT_HIGHLIGHT_COLOR);
+
+  // Kernel status state
+  const [kernelStatus, setKernelStatus] = useState<string>("disconnected");
+  const [lexical, setLexical] = useState<any>(null);
+
+  // Monitor lexical state from lexicalStore to get kernel status
+  useEffect(() => {
+    if (!lexicalId) return undefined;
+
+    const unsubscribe = lexicalStore.subscribe((state) => {
+      const lexical = state.lexicals.get(lexicalId);
+      if (lexical) {
+        setLexical(lexical);
+      }
+    });
+
+    return () => unsubscribe();
+  }, [lexicalId]);
+
+  // Update kernel status from lexical adapter
+  useEffect(() => {
+    if (selectedRuntime) {
+      if (lexical?.adapter?.kernel?.connection) {
+        const kernelConnection = lexical.adapter.kernel.connection;
+        setKernelStatus(kernelConnection.status || "idle");
+
+        // Subscribe to kernel status changes
+        const onStatusChanged = () => {
+          setKernelStatus(kernelConnection.status || "idle");
+        };
+        kernelConnection.statusChanged?.connect(onStatusChanged);
+
+        return () => {
+          kernelConnection.statusChanged?.disconnect(onStatusChanged);
+        };
+      } else {
+        setKernelStatus("idle");
+      }
+    } else if (lexical?.adapter?.kernel?.connection) {
+      const kernelConnection = lexical.adapter.kernel.connection;
+      setKernelStatus(kernelConnection.status || "idle");
+
+      // Subscribe to kernel status changes
+      const onStatusChanged = () => {
+        setKernelStatus(kernelConnection.status || "idle");
+      };
+      kernelConnection.statusChanged?.connect(onStatusChanged);
+
+      return () => {
+        kernelConnection.statusChanged?.disconnect(onStatusChanged);
+      };
+    } else {
+      setKernelStatus("disconnected");
+    }
+
+    return undefined;
+  }, [lexical, selectedRuntime]);
 
   // Add pulse animation for collaborative indicator
   React.useEffect(() => {
@@ -1395,8 +1455,10 @@ export function LexicalToolbar({
             {showRuntimeSelector && (
               <KernelSelector
                 selectedRuntime={selectedRuntime}
+                kernelStatus={kernelStatus as any}
                 onClick={handleSelectRuntime}
                 disabled={disabled}
+                kernelInitializing={kernelInitializing}
               />
             )}
           </>

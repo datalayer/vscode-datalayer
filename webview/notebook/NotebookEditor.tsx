@@ -112,6 +112,9 @@ function NotebookEditorCore({
   // Track notebook model in state for outline hook reactivity
   const [notebookModel, setNotebookModel] = useState<unknown>(null);
 
+  // Track kernel initialization state for showing spinner in toolbar
+  const [kernelInitializing, setKernelInitializing] = useState<boolean>(false);
+
   // Wrap handleNotebookModelChanged to capture the model for outline
   const handleNotebookModelChangedWithOutline = useCallback(
     (model: unknown) => {
@@ -183,8 +186,10 @@ function NotebookEditorCore({
   // Create runtime message handlers using shared utilities
   const runtimeHandlers = useMemo(
     () =>
-      createRuntimeMessageHandlers(selectRuntime, (runtime) =>
-        store.getState().setRuntime(runtime),
+      createRuntimeMessageHandlers(
+        selectRuntime,
+        setKernelInitializing,
+        (runtime) => store.getState().setRuntime(runtime),
       ),
     [selectRuntime, store],
   );
@@ -280,6 +285,10 @@ function NotebookEditorCore({
           }
           break;
         }
+
+        case "kernel-starting":
+          runtimeHandlers.onKernelStarting(message);
+          break;
 
         case "runtime-selected":
         case "kernel-selected":
@@ -710,6 +719,133 @@ function NotebookEditorCore({
     })();
   }, [selectedRuntime, documentId, notebookId]);
 
+  // Monitor kernel readiness for Pyodide and Datalayer runtimes
+  // When kernel becomes ready (status='idle' AND sessionContext.isReady), send "kernel-ready" message
+  useEffect(() => {
+    // Only monitor if we're in kernel initializing state
+    if (!kernelInitializing) {
+      return undefined;
+    }
+
+    console.log("[NotebookEditor] Monitoring kernel readiness...");
+
+    // Get notebook from store
+    const currentNotebookId = documentId || notebookId;
+    if (!currentNotebookId) {
+      return undefined;
+    }
+
+    const notebook = notebookStore2.getState().notebooks.get(currentNotebookId);
+    if (!notebook?.adapter) {
+      console.log("[NotebookEditor] No adapter yet, waiting for kernel...");
+      return undefined;
+    }
+
+    const context = (notebook.adapter as any)._context;
+    const sessionContext = context?.sessionContext;
+    if (!sessionContext) {
+      console.log(
+        "[NotebookEditor] No sessionContext yet, waiting for kernel...",
+      );
+      return undefined;
+    }
+
+    // Function to check if kernel is ready
+    const checkKernelReady = () => {
+      const session = sessionContext.session;
+      const kernel = session?.kernel;
+      const isReady = sessionContext.isReady;
+      const kernelStatus = kernel?.status;
+
+      console.log("[NotebookEditor] Checking kernel ready:", {
+        hasKernel: !!kernel,
+        kernelStatus,
+        isReady,
+        kernelInitializing,
+      });
+
+      // Kernel is ready when:
+      // 1. SessionContext is ready (sessionContext.isReady = true)
+      // 2. Kernel status is 'idle' (not 'starting', 'unknown', etc.)
+      // 3. We were previously in kernel initializing state
+      if (kernel && kernelStatus === "idle" && isReady && kernelInitializing) {
+        console.log(
+          "[NotebookEditor] Kernel is ready! Sending kernel-ready message",
+        );
+
+        // Send kernel-ready message to extension
+        messageHandler.send({
+          type: "kernel-ready",
+          body: {},
+        });
+
+        // Clear kernel initializing state
+        setKernelInitializing(false);
+      }
+    };
+
+    // Check immediately
+    checkKernelReady();
+
+    // Track kernel status subscription
+    let currentKernelStatusHandler: (() => void) | null = null;
+    let currentKernel: any = null;
+
+    // Function to subscribe to kernel status changes
+    const subscribeToKernel = () => {
+      // Unsubscribe from previous kernel if any
+      if (currentKernel && currentKernelStatusHandler) {
+        currentKernel.statusChanged?.disconnect(currentKernelStatusHandler);
+      }
+
+      // Subscribe to new kernel
+      const session = sessionContext.session;
+      const kernel = session?.kernel;
+
+      if (kernel) {
+        console.log("[NotebookEditor] Subscribing to kernel status changes");
+        currentKernel = kernel;
+        currentKernelStatusHandler = () => {
+          console.log(
+            "[NotebookEditor] Kernel status changed, checking kernel ready...",
+          );
+          checkKernelReady();
+        };
+        kernel.statusChanged?.connect(currentKernelStatusHandler);
+
+        // Check immediately after subscribing
+        checkKernelReady();
+      }
+    };
+
+    // Subscribe to session changes
+    const onSessionChanged = () => {
+      console.log("[NotebookEditor] Session changed, checking kernel ready...");
+      subscribeToKernel(); // Re-subscribe to the new kernel
+    };
+    sessionContext.sessionChanged?.connect(onSessionChanged);
+
+    // Subscribe to sessionContext status changes (when isReady changes)
+    const onStatusChanged = () => {
+      console.log(
+        "[NotebookEditor] SessionContext status changed, checking kernel ready...",
+      );
+      checkKernelReady();
+    };
+    sessionContext.statusChanged?.connect(onStatusChanged);
+
+    // Subscribe to initial kernel if it exists
+    subscribeToKernel();
+
+    return () => {
+      sessionContext.sessionChanged?.disconnect(onSessionChanged);
+      sessionContext.statusChanged?.disconnect(onStatusChanged);
+      if (currentKernel && currentKernelStatusHandler) {
+        currentKernel.statusChanged?.disconnect(currentKernelStatusHandler);
+      }
+    };
+  }, [kernelInitializing, documentId, notebookId, messageHandler]);
+
   // Get notebook store for DefaultExecutor
   const notebookStoreState = useNotebookStore2();
 
@@ -848,6 +984,7 @@ function NotebookEditorCore({
         notebookId={documentId || notebookId}
         isDatalayerNotebook={isDatalayerNotebook}
         selectedRuntime={selectedRuntime}
+        kernelInitializing={kernelInitializing}
       />
 
       <Box

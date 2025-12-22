@@ -22,6 +22,7 @@ import {
   createLexicalStore,
   type CollaborationConfig,
 } from "../stores/lexicalStore";
+import { lexicalStore } from "@datalayer/jupyter-lexical";
 import { createRuntimeMessageHandlers } from "../utils/runtimeMessageHandlers";
 import type {
   KernelSelectedMessage,
@@ -82,9 +83,13 @@ function LexicalWebviewInner({
   // The messageHandler closure needs to see the LATEST value, not the value when useEffect ran.
   const documentIdRef = useRef<string | null>(null);
 
+  // Track kernel initialization state for showing spinner in toolbar
+  const [kernelInitializing, setKernelInitializing] = useState<boolean>(false);
+
   // Create runtime message handlers using shared utilities
   const runtimeHandlers = React.useMemo(
-    () => createRuntimeMessageHandlers(onRuntimeSelected),
+    () =>
+      createRuntimeMessageHandlers(onRuntimeSelected, setKernelInitializing),
     [onRuntimeSelected],
   );
 
@@ -188,6 +193,10 @@ function LexicalWebviewInner({
           });
           break;
         }
+        case "kernel-starting":
+          runtimeHandlers.onKernelStarting(message as any);
+          break;
+
         case "kernel-selected":
         case "runtime-selected":
           runtimeHandlers.onRuntimeSelected(
@@ -220,6 +229,153 @@ function LexicalWebviewInner({
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [runtimeHandlers]); // store access doesn't need to be in deps - Zustand handles reactivity
+
+  // Monitor kernel readiness for Pyodide and Datalayer runtimes
+  // When kernel becomes ready (status='idle'), send "kernel-ready" message
+  useEffect(() => {
+    // Only monitor if we're in kernel initializing state
+    if (!kernelInitializing) {
+      return undefined;
+    }
+
+    console.log("[LexicalWebview] Monitoring kernel readiness...");
+
+    // Get lexicalId from store
+    const lexicalId = store.getState().lexicalId;
+    if (!lexicalId) {
+      console.log("[LexicalWebview] No lexicalId yet, waiting...");
+      return undefined;
+    }
+
+    // Track kernel status subscription
+    let currentKernelStatusHandler: (() => void) | null = null;
+    let currentKernelConnection: any = null;
+
+    // Function to check if kernel is ready and subscribe to status changes
+    const checkAndSubscribe = async () => {
+      // Get current lexical from store
+      const lexical = lexicalStore.getState().lexicals.get(lexicalId);
+      const adapter = lexical?.adapter;
+      if (!adapter) {
+        console.log("[LexicalWebview] No adapter yet, waiting...");
+        return;
+      }
+
+      // Access serviceManager from adapter (now exposed as public getter)
+      const serviceManager = (adapter as any).serviceManager;
+      if (!serviceManager) {
+        console.log("[LexicalWebview] No serviceManager yet, waiting...");
+        return;
+      }
+
+      try {
+        // Refresh running kernels and get the first one
+        await serviceManager.kernels.refreshRunning();
+        const runningKernels = Array.from(
+          serviceManager.kernels.running(),
+        ) as any[];
+
+        if (runningKernels.length === 0) {
+          console.log("[LexicalWebview] No running kernels yet, waiting...");
+          return;
+        }
+
+        // Connect to the first running kernel
+        const kernelModel = runningKernels[0];
+
+        // Check if we're already connected to this kernel by comparing kernel IDs
+        const isNewKernel =
+          !currentKernelConnection ||
+          currentKernelConnection.id !== kernelModel.id;
+
+        // Only connect if it's a new kernel
+        if (isNewKernel) {
+          const kernelConnection = await serviceManager.kernels.connectTo({
+            model: kernelModel,
+          });
+          // Unsubscribe from previous kernel if any
+          if (currentKernelConnection && currentKernelStatusHandler) {
+            currentKernelConnection.statusChanged?.disconnect(
+              currentKernelStatusHandler,
+            );
+          }
+
+          console.log("[LexicalWebview] Subscribing to kernel status changes");
+          currentKernelConnection = kernelConnection;
+
+          // Function to check if kernel is ready
+          const checkKernelReady = () => {
+            const kernelStatus = kernelConnection.status;
+
+            console.log("[LexicalWebview] Checking kernel ready:", {
+              kernelStatus,
+              kernelInitializing,
+            });
+
+            // Kernel is ready when status is 'idle' AND we were in initializing state
+            if (kernelStatus === "idle" && kernelInitializing) {
+              console.log(
+                "[LexicalWebview] Kernel is ready! Sending kernel-ready message",
+              );
+
+              // Send kernel-ready message to extension
+              vscode.postMessage({
+                type: "kernel-ready",
+                body: {},
+              });
+
+              // Clear kernel initializing state
+              setKernelInitializing(false);
+            }
+          };
+
+          // Subscribe to kernel status changes
+          currentKernelStatusHandler = () => {
+            console.log(
+              "[LexicalWebview] Kernel status changed, checking kernel ready...",
+            );
+            checkKernelReady();
+          };
+          kernelConnection.statusChanged?.connect(currentKernelStatusHandler);
+
+          // Check immediately after subscribing
+          checkKernelReady();
+        }
+      } catch (error) {
+        console.log("[LexicalWebview] Error connecting to kernel:", error);
+      }
+    };
+
+    // Check immediately
+    checkAndSubscribe();
+
+    // Poll for kernel appearance with exponential backoff
+    // Starts at 100ms, doubles each time up to 5000ms max
+    let pollDelay = 100;
+    const maxPollDelay = 5000;
+    let pollTimeout: number | undefined;
+
+    const schedulePoll = () => {
+      pollTimeout = window.setTimeout(async () => {
+        await checkAndSubscribe();
+        pollDelay = Math.min(pollDelay * 2, maxPollDelay);
+        schedulePoll();
+      }, pollDelay);
+    };
+
+    schedulePoll();
+
+    return () => {
+      if (pollTimeout !== undefined) {
+        clearTimeout(pollTimeout);
+      }
+      if (currentKernelConnection && currentKernelStatusHandler) {
+        currentKernelConnection.statusChanged?.disconnect(
+          currentKernelStatusHandler,
+        );
+      }
+    };
+  }, [kernelInitializing, store]);
 
   const handleSave = useCallback(
     (newContent: string) => {
@@ -300,6 +456,7 @@ function LexicalWebviewInner({
             onNavigated={handleNavigated}
             serviceManager={serviceManager}
             lexicalId={lexicalId}
+            kernelInitializing={kernelInitializing}
           />
         ) : (
           <div

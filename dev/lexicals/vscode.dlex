@@ -1160,13 +1160,7 @@
       {
         "type": "jupyter-output",
         "source": "# This is a test cell that can be executed when connected to a runtime!\n\nimport platform\n\n\ndef plus(x, y):\n    \"\"\"test\"\"\"\n    return x + y\n\n\nprint(plus(1, 2))\nprint(platform.system())\nprint(platform.node())\n",
-        "outputs": [
-          {
-            "name": "stdout",
-            "text": "3\nDarwin\ngoanpeca-2.local\n",
-            "output_type": "stream"
-          }
-        ],
+        "outputs": [],
         "jupyterInputNodeUuid": "00a63edd-20db-41ba-a6af-311b0d09df67",
         "jupyterOutputNodeUuid": "445eeacf-7ed6-4737-95eb-77931a5a250a",
         "version": 1

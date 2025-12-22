@@ -325,6 +325,20 @@ export abstract class BaseDocumentProvider<
       // Handled differently via postMessageWithResponse
     });
 
+    // Handler for kernel-ready message (Pyodide/Datalayer runtimes)
+    this._messageRouter.registerHandler(
+      "kernel-ready",
+      async (_message, context) => {
+        console.log(
+          "[BaseDocumentProvider] Received kernel-ready message for:",
+          context.documentUri,
+        );
+        const { getServiceContainer } = await import("../extension");
+        const uri = vscode.Uri.parse(context.documentUri);
+        await getServiceContainer().kernelBridge.handleKernelReady(uri);
+      },
+    );
+
     // Register outline-update handler
     this._messageRouter.registerHandler("outline-update", async (message) => {
       console.log("[BaseDocumentProvider] Received outline-update message", {

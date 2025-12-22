@@ -806,7 +806,16 @@ Complete the code at <CURSOR>:`;
     const sdk = getServiceContainer().sdk;
     const authProvider = getServiceContainer().authProvider as SDKAuthProvider;
 
-    selectDatalayerRuntime(sdk, authProvider)
+    selectDatalayerRuntime(sdk, authProvider, {
+      // Show spinner immediately when runtime is selected
+      onRuntimeSelected: async (selectedRuntime) => {
+        // Send "kernel-starting" message to show spinner in notebook
+        await getServiceContainer().kernelBridge.sendKernelStartingMessage(
+          document.uri,
+          selectedRuntime,
+        );
+      },
+    })
       .then(async (runtime) => {
         if (runtime) {
           // Send selected runtime to webview via kernel bridge
@@ -814,6 +823,18 @@ Complete the code at <CURSOR>:`;
             document.uri,
             runtime,
           );
+        } else {
+          // User cancelled - clear the spinner by sending kernel-terminated message
+          const webviewPanels = this.webviews.get(document.uri);
+          if (webviewPanels) {
+            const panel = Array.from(webviewPanels)[0];
+            if (panel) {
+              await panel.webview.postMessage({
+                type: "kernel-terminated",
+                body: {},
+              });
+            }
+          }
         }
       })
       .catch((error) => {

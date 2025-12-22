@@ -74,8 +74,12 @@ export function registerRuntimeCommands(
             input !== null &&
             "viewType" in input &&
             (input as { viewType: string }).viewType ===
-              "datalayer.lexical-editor"
+              "datalayer.lexical-editor" &&
+            "uri" in input
           ) {
+            // Extract document URI from custom editor input
+            const uri = (input as { uri: vscode.Uri }).uri;
+
             // Show runtime selector for lexical editor
             const { selectDatalayerRuntime } = await import(
               "../ui/dialogs/runtimeSelector"
@@ -83,20 +87,38 @@ export function registerRuntimeCommands(
             const selectedRuntime = await selectDatalayerRuntime(
               sdk,
               authProvider,
+              {
+                // Show spinner immediately when runtime is selected
+                onRuntimeSelected: async (runtime) => {
+                  // Send "kernel-starting" message to lexical webview
+                  await getServiceContainer().kernelBridge.sendKernelStartingMessage(
+                    uri,
+                    runtime,
+                  );
+                },
+              },
             );
 
             if (selectedRuntime) {
-              // Convert Runtime model to JSON for serialization
-              const runtimeJSON = selectedRuntime.toJSON();
-
-              // Fire event that lexical provider can listen to
-              vscode.commands.executeCommand(
-                "datalayer.internal.runtime.selected",
-                runtimeJSON,
+              // Connect the runtime to the lexical webview
+              // This sends the "kernel-selected" message and creates the kernel
+              await getServiceContainer().kernelBridge.connectWebviewDocument(
+                uri,
+                selectedRuntime,
               );
 
               vscode.window.showInformationMessage(
                 `Selected runtime: ${selectedRuntime.givenName || selectedRuntime.uid}`,
+              );
+            } else {
+              // User cancelled - clear the spinner by sending kernel-terminated message
+              await vscode.commands.executeCommand(
+                "datalayer.internal.document.sendToWebview",
+                uri.toString(),
+                {
+                  type: "kernel-terminated",
+                  body: {},
+                },
               );
             }
             return;
@@ -586,6 +608,25 @@ export function registerRuntimeCommands(
       // Hide existing runtimes - user explicitly wants to CREATE a new one
       const selectedRuntime = await selectDatalayerRuntime(sdk, authProvider, {
         hideExistingRuntimes: true,
+        // Show spinner in status bar when runtime selection starts
+        onRuntimeSelected: async (runtime) => {
+          vscode.window.withProgress(
+            {
+              location: vscode.ProgressLocation.Notification,
+              title: `Creating runtime: ${runtime.givenName}`,
+              cancellable: false,
+            },
+            async () => {
+              // Progress indicator will stay visible until the Promise resolves
+              // The actual runtime creation happens after this callback
+              // We just need to show the UI feedback immediately
+              return new Promise<void>((resolve) => {
+                // Resolve after a short delay to keep spinner visible
+                setTimeout(resolve, 500);
+              });
+            },
+          );
+        },
       });
 
       if (selectedRuntime) {
