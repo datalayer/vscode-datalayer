@@ -156,6 +156,57 @@ export class LexicalProvider extends BaseDocumentProvider<LexicalDocument> {
   }
 
   /**
+   * Refreshes collaboration config for all active webviews.
+   * Called when auth state changes (login/logout) to update usernames.
+   */
+  public async refreshCollaborationConfigs(): Promise<void> {
+    console.log(
+      `[LexicalProvider] Refreshing collaboration configs for ${this.webviews.size} webview(s)`,
+    );
+
+    for (const [uriString, entry] of this.webviews.entries()) {
+      try {
+        const uri = vscode.Uri.parse(uriString);
+
+        // Only refresh for Datalayer documents
+        if (uri.scheme !== "datalayer") {
+          continue;
+        }
+
+        // Get document from documents Map
+        const document = this.documents.get(uriString);
+        if (!document) {
+          console.warn(
+            `[LexicalProvider] No document found for ${uriString}, skipping`,
+          );
+          continue;
+        }
+
+        // Get updated collaboration config with new username
+        const collaborationService = LexicalCollaborationService.getInstance();
+        const collaborationConfig =
+          await collaborationService.setupCollaboration(document);
+
+        // Send updated config to webview
+        if (collaborationConfig) {
+          await entry.webviewPanel.webview.postMessage({
+            type: "update",
+            collaboration: collaborationConfig,
+          });
+          console.log(
+            `[LexicalProvider] Updated collaboration config for ${uriString}`,
+          );
+        }
+      } catch (error) {
+        console.error(
+          `[LexicalProvider] Failed to refresh collaboration config for ${uriString}:`,
+          error,
+        );
+      }
+    }
+  }
+
+  /**
    * Send a message to a specific Lexical webview and wait for response
    */
   public async sendToWebviewWithResponse(
@@ -246,6 +297,53 @@ export class LexicalProvider extends BaseDocumentProvider<LexicalDocument> {
    */
   constructor(context: vscode.ExtensionContext) {
     super(context);
+  }
+
+  /**
+   * Initialize auth listener for userInfo updates.
+   * Called after extension activation, passing authProvider directly to avoid circular dependency.
+   */
+  initializeAuthListener(
+    authProvider: import("../services/core/authProvider").SDKAuthProvider,
+  ): void {
+    authProvider.onAuthStateChanged(() => {
+      this.updateUserInfoInAllWebviews(authProvider);
+    });
+  }
+
+  /**
+   * Updates userInfo in all open lexical webviews when auth state changes (login/logout)
+   */
+  private updateUserInfoInAllWebviews(
+    authProvider: import("../services/core/authProvider").SDKAuthProvider,
+  ): void {
+    const authState = authProvider.getAuthState();
+
+    let userInfo: { username: string; userColor: string } | undefined;
+
+    if (authState.isAuthenticated && authState.user) {
+      const user = authState.user;
+      const baseUsername =
+        user?.displayName || user?.handle || user?.email || "Anonymous";
+      const username = `${baseUsername} (VSCode)`;
+      const userColor = "#" + Math.floor(Math.random() * 16777215).toString(16);
+
+      userInfo = { username, userColor };
+      console.log(
+        "[LexicalProvider] Updating userInfo across all webviews:",
+        userInfo,
+      );
+    } else {
+      console.log("[LexicalProvider] Clearing userInfo (user logged out)");
+    }
+
+    // Send update to all open lexical webviews
+    for (const [_uri, entry] of this.webviews.entries()) {
+      entry.webviewPanel.webview.postMessage({
+        type: "user-info-update",
+        userInfo,
+      });
+    }
   }
 
   /**
@@ -522,7 +620,29 @@ export class LexicalProvider extends BaseDocumentProvider<LexicalDocument> {
 
       const contentArray = Array.from(document.documentData);
 
-      // Setup collaboration for Datalayer documents
+      // Get user info from auth state (always, even for local files)
+      // This allows CommentPlugin to show Datalayer username instead of random animal names
+      let userInfo: { username: string; userColor: string } | undefined;
+      try {
+        const authService = getServiceContainer().authProvider;
+        const authState = authService.getAuthState();
+
+        if (authState.isAuthenticated && authState.user) {
+          const user = authState.user;
+          const baseUsername =
+            user?.displayName || user?.handle || user?.email || "Anonymous";
+          const username = `${baseUsername} (VSCode)`;
+          const userColor =
+            "#" + Math.floor(Math.random() * 16777215).toString(16);
+
+          userInfo = { username, userColor };
+          console.log("[LexicalProvider] User info for comments:", userInfo);
+        }
+      } catch (error) {
+        console.error("[LexicalProvider] Failed to get user info:", error);
+      }
+
+      // Setup collaboration for Datalayer documents (remote only)
       let collaborationConfig: LexicalCollaborationConfig | undefined;
       if (isFromDatalayer) {
         try {
@@ -554,6 +674,7 @@ export class LexicalProvider extends BaseDocumentProvider<LexicalDocument> {
         content: contentArray,
         editable: true,
         collaboration: collaborationConfig,
+        userInfo, // Always send if logged in, even for local files
         documentUri: document.uri.toString(), // Still include for logging
         documentId: uniqueDocId, // Unique ID for validation
         lexicalId: lexicalId, // Pass lexicalId for tool execution context

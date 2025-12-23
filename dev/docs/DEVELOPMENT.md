@@ -34,20 +34,28 @@ npm run vsix
 
 ## Working with Jupyter Packages
 
-The extension depends on local `@datalayer/jupyter-lexical` and `@datalayer/jupyter-react` packages from the monorepo. During development, you may need to sync changes from the jupyter-ui repository.
+The extension depends on local packages from the monorepo:
+
+- `@datalayer/core` - Core Datalayer library
+- `@datalayer/jupyter-lexical` - Lexical editor with Jupyter integration
+- `@datalayer/jupyter-react` - React components for Jupyter notebooks
+- `@datalayer/lexical-loro` - Loro CRDT collaboration provider for Lexical
+
+During development, you may need to sync changes from these repositories.
 
 ### Development Scripts
 
 ```bash
-# Sync latest changes from jupyter-ui packages
+# Sync latest changes from all Datalayer packages
 npm run sync:jupyter
-# 1. Runs gulp resources-to-lib (copies images/examples to lib/)
-# 2. Builds TypeScript (jupyter-lexical and jupyter-react)
+# 1. Runs gulp resources-to-lib for core and jupyter-lexical (copies images/examples to lib/)
+# 2. Builds TypeScript (core, jupyter-lexical, jupyter-react, lexical-loro)
 # 3. Copies lib/, style/, and package.json to node_modules
 
 # Watch mode - auto-sync on file changes
 npm run sync:jupyter:watch
 # Monitors src/ folders and automatically rebuilds/syncs when files change
+# Watches: core, jupyter-lexical, jupyter-react, lexical-loro
 
 # Create patches for modified packages
 npm run create:patches
@@ -60,13 +68,46 @@ npm run apply:patches
 
 ### Workflow
 
-1. **Make changes** in `../jupyter-ui/packages/lexical` or `../jupyter-ui/packages/react`
+1. **Make changes** in any of the dependent packages:
+   - `../core/src` - Core library
+   - `../jupyter-ui/packages/lexical/src` - Lexical editor
+   - `../jupyter-ui/packages/react/src` - React components
+   - `../lexical-loro/src` - Loro collaboration provider
 2. **Option A - Manual sync**: `npm run sync:jupyter` when ready to test
 3. **Option B - Auto sync**: `npm run sync:jupyter:watch` in a separate terminal for live updates
 4. **Test changes**: Compile and run extension (`npm run compile` then F5)
 5. **Create patches**: `npm run create:patches` (when ready to commit)
 
 The patches in `patches/` directory are automatically applied when anyone runs `npm install`, ensuring all contributors get your modifications.
+
+### Package Dependencies
+
+The packages have the following dependency structure:
+
+```
+vscode-datalayer
+├── @datalayer/core (UI components, SDK client)
+├── @datalayer/jupyter-lexical (Lexical editor with Jupyter blocks)
+│   └── @datalayer/lexical-loro (CRDT collaboration provider)
+└── @datalayer/jupyter-react (React notebook components)
+```
+
+#### Key Dependency: lexical-loro
+
+The `@datalayer/jupyter-lexical` package depends on `@datalayer/lexical-loro` for real-time collaboration:
+
+- **Purpose**: Provides Loro CRDT-based collaboration context for Lexical editor
+- **Used by**: CommentPlugin, collaboration features
+- **Why it matters**: Changes to lexical-loro require rebuilding jupyter-lexical to see effects
+- **Sync requirement**: Both packages must be synced together during development
+
+**Example**: If you modify the collaboration context in lexical-loro, you must:
+
+1. Build lexical-loro: `cd ../lexical-loro && npm run build`
+2. Build jupyter-lexical: `cd ../jupyter-ui/packages/lexical && npm run build:lib`
+3. Sync to extension: `cd vscode-datalayer && npm run sync:jupyter`
+
+Or simply use watch mode which handles all of this automatically: `npm run sync:jupyter:watch`
 
 ### ⚠️ Important Notes
 
@@ -78,6 +119,7 @@ The patches in `patches/` directory are automatically applied when anyone runs `
 - `@tailwindcss/postcss` - PostCSS integration
 - `postcss` - CSS processing
 - `autoprefixer` - CSS vendor prefixing
+- `@lexical/mark` - Required by CommentPlugin for text highlighting
 
 These are needed because `@datalayer/jupyter-lexical/style/index.css` uses `@import 'tailwindcss'`.
 

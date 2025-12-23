@@ -72,6 +72,11 @@ const extensionConfig = {
         test: /\.whl$/,
         use: "null-loader",
       },
+      // Ignore WASM files (not needed in Node.js extension context)
+      {
+        test: /\.wasm$/,
+        use: "null-loader",
+      },
       // Python file loader (for Pyodide kernel in native notebooks)
       {
         test: /pyodide_kernel\.py$/,

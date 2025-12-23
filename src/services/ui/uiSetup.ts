@@ -69,6 +69,12 @@ export async function initializeUI(
   context.subscriptions.push(NotebookProvider.register(context));
   context.subscriptions.push(LexicalProvider.register(context));
 
+  // Initialize auth listener by passing authProvider directly (no circular dependency)
+  const lexicalProvider = LexicalProvider.getInstance();
+  if (lexicalProvider) {
+    lexicalProvider.initializeAuthListener(authProvider);
+  }
+
   // Initialize environment cache only if authenticated
   try {
     if (authProvider.isAuthenticated()) {

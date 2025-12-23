@@ -76,6 +76,24 @@ export function setupAuthStateManagement(
       // User logged out - clear environment cache
       envCache.onUserLogout();
     }
+
+    // Refresh Lexical collaboration configs to update usernames
+    // Import dynamically to avoid circular dependency
+    import("../../providers/lexicalProvider")
+      .then(({ LexicalProvider }) => {
+        const lexicalProvider = LexicalProvider.getInstance();
+        if (lexicalProvider) {
+          lexicalProvider.refreshCollaborationConfigs().catch((error) => {
+            console.error(
+              "[AuthManager] Failed to refresh Lexical collaboration configs:",
+              error,
+            );
+          });
+        }
+      })
+      .catch((error) => {
+        console.error("[AuthManager] Failed to import LexicalProvider:", error);
+      });
   });
 
   const initialAuthState = authProvider.getAuthState();
