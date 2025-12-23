@@ -3696,6 +3696,498 @@ index f8a068e..cf85b86 100644
 \ No newline at end of file
 +{"version":3,"file":"ComponentPickerMenuPlugin.js","sourceRoot":"","sources":["../../src/plugins/ComponentPickerMenuPlugin.tsx"],"names":[],"mappings":"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"}
 \ No newline at end of file
+diff --git a/node_modules/@datalayer/jupyter-lexical/lib/plugins/InlineCompletionConfig.d.ts b/node_modules/@datalayer/jupyter-lexical/lib/plugins/InlineCompletionConfig.d.ts
+new file mode 100644
+index 0000000..c5662a0
+--- /dev/null
++++ b/node_modules/@datalayer/jupyter-lexical/lib/plugins/InlineCompletionConfig.d.ts
+@@ -0,0 +1,135 @@
++/**
++ * Configuration schema for inline completions.
++ * Supports both code and prose content types with flexible triggering and context options.
++ */
++/**
++ * Content type for inline completions.
++ * - 'code': Jupyter cell code completions
++ * - 'prose': Natural language/markdown text completions
++ */
++export type ContentType = 'code' | 'prose';
++/**
++ * Trigger mode for inline completions.
++ * - 'auto': Automatically trigger after typing (debounced)
++ * - 'manual': Only trigger via keyboard shortcut
++ * - 'disabled': Disable completions for this content type
++ */
++export type TriggerMode = 'auto' | 'manual' | 'disabled';
++/**
++ * Context scope for completions.
++ * - N >= 0: Include N blocks before/after cursor
++ * - -1: Include entire document (all blocks)
++ */
++export type ContextScope = number;
++/**
++ * Configuration for a specific content type.
++ */
++export interface ContentTypeConfig {
++    /**
++     * How completions should be triggered.
++     * @default 'auto' for code, 'manual' for prose
++     */
++    triggerMode: TriggerMode;
++    /**
++     * Number of blocks to include before cursor.
++     * Use -1 for entire document.
++     * @default -1 (entire document)
++     */
++    contextBefore: ContextScope;
++    /**
++     * Number of blocks to include after cursor.
++     * Use -1 for entire document.
++     * @default -1 (entire document)
++     */
++    contextAfter: ContextScope;
++    /**
++     * Programming language for code completions.
++     * Only applicable for 'code' content type.
++     * @default 'python'
++     */
++    language?: string;
++}
++/**
++ * Complete inline completion configuration.
++ */
++export interface InlineCompletionConfig {
++    /**
++     * Configuration for code (Jupyter cell) completions.
++     */
++    code: ContentTypeConfig;
++    /**
++     * Configuration for prose (natural language) completions.
++     */
++    prose: ContentTypeConfig;
++    /**
++     * Debounce delay in milliseconds for auto-trigger mode.
++     * @default 200
++     */
++    debounceMs: number;
++    /**
++     * Keyboard shortcut for manual trigger.
++     * Format: "Modifier+Key" (e.g., "Ctrl+Space", "Cmd+Shift+I")
++     * @default 'Ctrl+Space'
++     */
++    manualTriggerKey: string;
++}
++/**
++ * Default configuration with user-approved settings.
++ * - Code: Auto-trigger with entire document context
++ * - Prose: Manual trigger (Ctrl+Space) with entire document context
++ */
++export declare const DEFAULT_CONFIG: InlineCompletionConfig;
++/**
++ * Partial configuration that can be provided by users.
++ * All fields are optional and will be merged with defaults.
++ */
++export type PartialInlineCompletionConfig = {
++    code?: Partial<ContentTypeConfig>;
++    prose?: Partial<ContentTypeConfig>;
++    debounceMs?: number;
++    manualTriggerKey?: string;
++};
++/**
++ * Merge user configuration with defaults.
++ * Deep merges content type configs, shallow merges top-level options.
++ *
++ * @param userConfig - Partial user configuration
++ * @returns Complete configuration with defaults filled in
++ *
++ * @example
++ * ```typescript
++ * const config = mergeConfig({
++ *   prose: { triggerMode: 'auto' }
++ * });
++ * // Result: prose uses auto-trigger, everything else from defaults
++ * ```
++ */
++export declare function mergeConfig(userConfig?: PartialInlineCompletionConfig): InlineCompletionConfig;
++/**
++ * Validate that a context scope value is valid.
++ *
++ * @param scope - Context scope value to validate
++ * @returns True if valid (-1 or >= 0)
++ */
++export declare function isValidContextScope(scope: number): boolean;
++/**
++ * Check if a content type should auto-trigger completions.
++ *
++ * @param config - Configuration for the content type
++ * @returns True if auto-trigger is enabled
++ */
++export declare function shouldAutoTrigger(config: ContentTypeConfig): boolean;
++/**
++ * Check if a content type should respond to manual triggers.
++ *
++ * @param config - Configuration for the content type
++ * @returns True if manual trigger is enabled
++ */
++export declare function shouldManualTrigger(config: ContentTypeConfig): boolean;
++/**
++ * Check if completions are disabled for a content type.
++ *
++ * @param config - Configuration for the content type
++ * @returns True if completions are disabled
++ */
++export declare function isDisabled(config: ContentTypeConfig): boolean;
+diff --git a/node_modules/@datalayer/jupyter-lexical/lib/plugins/InlineCompletionConfig.js b/node_modules/@datalayer/jupyter-lexical/lib/plugins/InlineCompletionConfig.js
+new file mode 100644
+index 0000000..767dd71
+--- /dev/null
++++ b/node_modules/@datalayer/jupyter-lexical/lib/plugins/InlineCompletionConfig.js
+@@ -0,0 +1,94 @@
++/*
++ * Copyright (c) 2021-2025 Datalayer, Inc.
++ *
++ * MIT License
++ */
++/**
++ * Default configuration with user-approved settings.
++ * - Code: Auto-trigger with entire document context
++ * - Prose: Manual trigger (Ctrl+Space) with entire document context
++ */
++export const DEFAULT_CONFIG = {
++    code: {
++        triggerMode: 'auto',
++        contextBefore: -1, // Entire document
++        contextAfter: -1, // Entire document
++        language: 'python',
++    },
++    prose: {
++        triggerMode: 'manual',
++        contextBefore: -1, // Entire document
++        contextAfter: -1, // Entire document
++    },
++    debounceMs: 200,
++    manualTriggerKey: 'Ctrl+Space',
++};
++/**
++ * Merge user configuration with defaults.
++ * Deep merges content type configs, shallow merges top-level options.
++ *
++ * @param userConfig - Partial user configuration
++ * @returns Complete configuration with defaults filled in
++ *
++ * @example
++ * ```typescript
++ * const config = mergeConfig({
++ *   prose: { triggerMode: 'auto' }
++ * });
++ * // Result: prose uses auto-trigger, everything else from defaults
++ * ```
++ */
++export function mergeConfig(userConfig) {
++    if (!userConfig) {
++        return { ...DEFAULT_CONFIG };
++    }
++    return {
++        code: {
++            ...DEFAULT_CONFIG.code,
++            ...userConfig.code,
++        },
++        prose: {
++            ...DEFAULT_CONFIG.prose,
++            ...userConfig.prose,
++        },
++        debounceMs: userConfig.debounceMs ?? DEFAULT_CONFIG.debounceMs,
++        manualTriggerKey: userConfig.manualTriggerKey ?? DEFAULT_CONFIG.manualTriggerKey,
++    };
++}
++/**
++ * Validate that a context scope value is valid.
++ *
++ * @param scope - Context scope value to validate
++ * @returns True if valid (-1 or >= 0)
++ */
++export function isValidContextScope(scope) {
++    return scope === -1 || scope >= 0;
++}
++/**
++ * Check if a content type should auto-trigger completions.
++ *
++ * @param config - Configuration for the content type
++ * @returns True if auto-trigger is enabled
++ */
++export function shouldAutoTrigger(config) {
++    return config.triggerMode === 'auto';
++}
++/**
++ * Check if a content type should respond to manual triggers.
++ *
++ * @param config - Configuration for the content type
++ * @returns True if manual trigger is enabled
++ */
++export function shouldManualTrigger(config) {
++    return config.triggerMode === 'manual' || config.triggerMode === 'auto';
++}
++/**
++ * Check if completions are disabled for a content type.
++ *
++ * @param config - Configuration for the content type
++ * @returns True if completions are disabled
++ */
++export function isDisabled(config) {
++    return config.triggerMode === 'disabled';
++}
++//# sourceMappingURL=InlineCompletionConfig.js.map
+\ No newline at end of file
+diff --git a/node_modules/@datalayer/jupyter-lexical/lib/plugins/InlineCompletionConfig.js.map b/node_modules/@datalayer/jupyter-lexical/lib/plugins/InlineCompletionConfig.js.map
+new file mode 100644
+index 0000000..b761038
+--- /dev/null
++++ b/node_modules/@datalayer/jupyter-lexical/lib/plugins/InlineCompletionConfig.js.map
+@@ -0,0 +1 @@
++{"version":3,"file":"InlineCompletionConfig.js","sourceRoot":"","sources":["../../src/plugins/InlineCompletionConfig.ts"],"names":[],"mappings":"AAAA;;;;GAIG;AAyFH;;;;GAIG;AACH,MAAM,CAAC,MAAM,cAAc,GAA2B;IACpD,IAAI,EAAE;QACJ,WAAW,EAAE,MAAM;QACnB,aAAa,EAAE,CAAC,CAAC,EAAE,kBAAkB;QACrC,YAAY,EAAE,CAAC,CAAC,EAAE,kBAAkB;QACpC,QAAQ,EAAE,QAAQ;KACnB;IACD,KAAK,EAAE;QACL,WAAW,EAAE,QAAQ;QACrB,aAAa,EAAE,CAAC,CAAC,EAAE,kBAAkB;QACrC,YAAY,EAAE,CAAC,CAAC,EAAE,kBAAkB;KACrC;IACD,UAAU,EAAE,GAAG;IACf,gBAAgB,EAAE,YAAY;CAC/B,CAAC;AAaF;;;;;;;;;;;;;;GAcG;AACH,MAAM,UAAU,WAAW,CACzB,UAA0C;IAE1C,IAAI,CAAC,UAAU,EAAE,CAAC;QAChB,OAAO,EAAE,GAAG,cAAc,EAAE,CAAC;IAC/B,CAAC;IAED,OAAO;QACL,IAAI,EAAE;YACJ,GAAG,cAAc,CAAC,IAAI;YACtB,GAAG,UAAU,CAAC,IAAI;SACnB;QACD,KAAK,EAAE;YACL,GAAG,cAAc,CAAC,KAAK;YACvB,GAAG,UAAU,CAAC,KAAK;SACpB;QACD,UAAU,EAAE,UAAU,CAAC,UAAU,IAAI,cAAc,CAAC,UAAU;QAC9D,gBAAgB,EACd,UAAU,CAAC,gBAAgB,IAAI,cAAc,CAAC,gBAAgB;KACjE,CAAC;AACJ,CAAC;AAED;;;;;GAKG;AACH,MAAM,UAAU,mBAAmB,CAAC,KAAa;IAC/C,OAAO,KAAK,KAAK,CAAC,CAAC,IAAI,KAAK,IAAI,CAAC,CAAC;AACpC,CAAC;AAED;;;;;GAKG;AACH,MAAM,UAAU,iBAAiB,CAAC,MAAyB;IACzD,OAAO,MAAM,CAAC,WAAW,KAAK,MAAM,CAAC;AACvC,CAAC;AAED;;;;;GAKG;AACH,MAAM,UAAU,mBAAmB,CAAC,MAAyB;IAC3D,OAAO,MAAM,CAAC,WAAW,KAAK,QAAQ,IAAI,MAAM,CAAC,WAAW,KAAK,MAAM,CAAC;AAC1E,CAAC;AAED;;;;;GAKG;AACH,MAAM,UAAU,UAAU,CAAC,MAAyB;IAClD,OAAO,MAAM,CAAC,WAAW,KAAK,UAAU,CAAC;AAC3C,CAAC"}
+\ No newline at end of file
+diff --git a/node_modules/@datalayer/jupyter-lexical/lib/plugins/InlineCompletionContextExtractor.d.ts b/node_modules/@datalayer/jupyter-lexical/lib/plugins/InlineCompletionContextExtractor.d.ts
+new file mode 100644
+index 0000000..06b5728
+--- /dev/null
++++ b/node_modules/@datalayer/jupyter-lexical/lib/plugins/InlineCompletionContextExtractor.d.ts
+@@ -0,0 +1,50 @@
++/**
++ * Context extraction for inline completions.
++ * Handles both code and prose content with configurable scope.
++ *
++ * @module plugins/InlineCompletionContextExtractor
++ */
++import type { LexicalNode, RangeSelection } from 'lexical';
++import type { ContentType } from './InlineCompletionConfig';
++/**
++ * Extracted context for completion requests.
++ */
++export interface ExtractedContext {
++    /** Text before cursor */
++    before: string;
++    /** Text after cursor */
++    after: string;
++    /** Full text (for logging/debugging) */
++    fullText: string;
++}
++/**
++ * Extract context based on content type and configuration.
++ *
++ * @param contentType - 'code' or 'prose'
++ * @param anchorNode - Node at cursor position
++ * @param selection - Current selection state
++ * @param contextBefore - Number of blocks before (-1 = all)
++ * @param contextAfter - Number of blocks after (-1 = all)
++ * @returns Extracted context
++ */
++export declare function extractContext(contentType: ContentType, anchorNode: LexicalNode, selection: RangeSelection, contextBefore: number, contextAfter: number): ExtractedContext;
++/**
++ * Extract context for code cells (Jupyter).
++ * Preserves current behavior: entire cell text before/after cursor.
++ *
++ * @param jupyterInputNode - The JupyterInputNode containing the code
++ * @param selection - Current selection state
++ * @returns Extracted context
++ */
++export declare function extractCodeContext(jupyterInputNode: any, selection: RangeSelection): ExtractedContext;
++/**
++ * Extract context for prose/markdown text.
++ * Supports configurable scope: N blocks before/after or entire document (-1).
++ *
++ * @param anchorNode - Node at cursor position
++ * @param selection - Current selection state
++ * @param contextBefore - Number of blocks before cursor (-1 = all)
++ * @param contextAfter - Number of blocks after cursor (-1 = all)
++ * @returns Extracted context
++ */
++export declare function extractProseContext(anchorNode: LexicalNode, selection: RangeSelection, contextBefore: number, contextAfter: number): ExtractedContext;
+diff --git a/node_modules/@datalayer/jupyter-lexical/lib/plugins/InlineCompletionContextExtractor.js b/node_modules/@datalayer/jupyter-lexical/lib/plugins/InlineCompletionContextExtractor.js
+new file mode 100644
+index 0000000..d9da718
+--- /dev/null
++++ b/node_modules/@datalayer/jupyter-lexical/lib/plugins/InlineCompletionContextExtractor.js
+@@ -0,0 +1,171 @@
++/*
++ * Copyright (c) 2021-2025 Datalayer, Inc.
++ *
++ * MIT License
++ */
++import { $getRoot, $isParagraphNode } from 'lexical';
++/**
++ * Extract context based on content type and configuration.
++ *
++ * @param contentType - 'code' or 'prose'
++ * @param anchorNode - Node at cursor position
++ * @param selection - Current selection state
++ * @param contextBefore - Number of blocks before (-1 = all)
++ * @param contextAfter - Number of blocks after (-1 = all)
++ * @returns Extracted context
++ */
++export function extractContext(contentType, anchorNode, selection, contextBefore, contextAfter) {
++    if (contentType === 'code') {
++        return extractCodeContext(anchorNode, selection);
++    }
++    else {
++        return extractProseContext(anchorNode, selection, contextBefore, contextAfter);
++    }
++}
++/**
++ * Extract context for code cells (Jupyter).
++ * Preserves current behavior: entire cell text before/after cursor.
++ *
++ * @param jupyterInputNode - The JupyterInputNode containing the code
++ * @param selection - Current selection state
++ * @returns Extracted context
++ */
++export function extractCodeContext(jupyterInputNode, selection) {
++    const cellText = jupyterInputNode.getTextContent();
++    const cursorOffset = getCursorOffset(jupyterInputNode, selection);
++    const before = cellText.substring(0, cursorOffset);
++    const after = cellText.substring(cursorOffset);
++    return {
++        before,
++        after,
++        fullText: cellText,
++    };
++}
++/**
++ * Extract context for prose/markdown text.
++ * Supports configurable scope: N blocks before/after or entire document (-1).
++ *
++ * @param anchorNode - Node at cursor position
++ * @param selection - Current selection state
++ * @param contextBefore - Number of blocks before cursor (-1 = all)
++ * @param contextAfter - Number of blocks after cursor (-1 = all)
++ * @returns Extracted context
++ */
++export function extractProseContext(anchorNode, selection, contextBefore, contextAfter) {
++    const root = $getRoot();
++    const allBlocks = root.getChildren();
++    // Find the paragraph/block containing the cursor
++    const currentBlock = findParagraphParent(anchorNode);
++    if (!currentBlock) {
++        // Fallback: return empty context if we can't find current block
++        return { before: '', after: '', fullText: '' };
++    }
++    const currentIndex = allBlocks.indexOf(currentBlock);
++    if (currentIndex === -1) {
++        // Current block not in root children (shouldn't happen)
++        return { before: '', after: '', fullText: '' };
++    }
++    // Calculate range of blocks to include
++    const startIndex = contextBefore === -1 ? 0 : Math.max(0, currentIndex - contextBefore);
++    const endIndex = contextAfter === -1
++        ? allBlocks.length - 1
++        : Math.min(allBlocks.length - 1, currentIndex + contextAfter);
++    // Extract text from blocks before current block
++    let beforeText = '';
++    for (let i = startIndex; i < currentIndex; i++) {
++        beforeText += allBlocks[i].getTextContent() + '\n';
++    }
++    // Split current block at cursor position
++    const currentBlockText = currentBlock.getTextContent();
++    const cursorOffsetInBlock = getCursorOffsetInNode(currentBlock, selection);
++    beforeText += currentBlockText.substring(0, cursorOffsetInBlock);
++    // Extract text from cursor to end of current block
++    let afterText = currentBlockText.substring(cursorOffsetInBlock);
++    // Extract text from blocks after current block
++    for (let i = currentIndex + 1; i <= endIndex; i++) {
++        afterText += '\n' + allBlocks[i].getTextContent();
++    }
++    // Full text for logging
++    const fullText = beforeText + afterText;
++    return {
++        before: beforeText,
++        after: afterText,
++        fullText,
++    };
++}
++/**
++ * Find the paragraph or block-level parent of a node.
++ *
++ * @param node - Starting node
++ * @returns Parent paragraph/block node or null
++ */
++function findParagraphParent(node) {
++    let current = node;
++    while (current) {
++        // Check if current node is a block-level element
++        if ($isParagraphNode(current)) {
++            return current;
++        }
++        // For headings, lists, etc. - check if it's an ElementNode
++        if (current.getType() === 'heading' || current.getType() === 'listitem') {
++            return current;
++        }
++        current = current.getParent();
++    }
++    // Fallback: return root if we can't find a specific block
++    return $getRoot();
++}
++/**
++ * Get cursor offset within a specific node.
++ *
++ * @param node - The node to measure offset within
++ * @param selection - Current selection state
++ * @returns Offset of cursor in node's text
++ */
++function getCursorOffsetInNode(node, selection) {
++    try {
++        const firstDescendant = node.getFirstDescendant();
++        const startKey = firstDescendant ? firstDescendant.getKey() : node.getKey();
++        const startOffset = 0;
++        const startType = firstDescendant
++            ? 'text'
++            : 'element';
++        const tempSelection = selection.clone();
++        tempSelection.anchor.set(startKey, startOffset, startType);
++        tempSelection.focus.set(selection.anchor.key, selection.anchor.offset, selection.anchor.type);
++        return tempSelection.getTextContent().length;
++    }
++    catch (e) {
++        console.error('[ContextExtractor] Error getting cursor offset:', e);
++        return 0;
++    }
++}
++/**
++ * Get accurate cursor offset using Lexical selection API.
++ * Used for code cells.
++ *
++ * @param jupyterInputNode - The JupyterInputNode
++ * @param selection - Current selection state
++ * @returns Cursor offset in cell text
++ */
++function getCursorOffset(jupyterInputNode, selection) {
++    try {
++        const firstDescendant = jupyterInputNode.getFirstDescendant();
++        const startKey = firstDescendant
++            ? firstDescendant.getKey()
++            : jupyterInputNode.getKey();
++        const startOffset = 0;
++        const startType = firstDescendant
++            ? 'text'
++            : 'element';
++        const tempSelection = selection.clone();
++        tempSelection.anchor.set(startKey, startOffset, startType);
++        tempSelection.focus.set(selection.anchor.key, selection.anchor.offset, selection.anchor.type);
++        return tempSelection.getTextContent().length;
++    }
++    catch (e) {
++        console.error('[ContextExtractor] Error getting cursor offset:', e);
++        return 0;
++    }
++}
++//# sourceMappingURL=InlineCompletionContextExtractor.js.map
+\ No newline at end of file
+diff --git a/node_modules/@datalayer/jupyter-lexical/lib/plugins/InlineCompletionContextExtractor.js.map b/node_modules/@datalayer/jupyter-lexical/lib/plugins/InlineCompletionContextExtractor.js.map
+new file mode 100644
+index 0000000..bedd14c
+--- /dev/null
++++ b/node_modules/@datalayer/jupyter-lexical/lib/plugins/InlineCompletionContextExtractor.js.map
+@@ -0,0 +1 @@
++{"version":3,"file":"InlineCompletionContextExtractor.js","sourceRoot":"","sources":["../../src/plugins/InlineCompletionContextExtractor.ts"],"names":[],"mappings":"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"}
+\ No newline at end of file
 diff --git a/node_modules/@datalayer/jupyter-lexical/lib/plugins/JupyterInputOutputPlugin.js b/node_modules/@datalayer/jupyter-lexical/lib/plugins/JupyterInputOutputPlugin.js
 index acbfbc5..934f38e 100644
 --- a/node_modules/@datalayer/jupyter-lexical/lib/plugins/JupyterInputOutputPlugin.js
@@ -3750,8 +4242,502 @@ index 82713a1..a547ec3 100644
 \ No newline at end of file
 +{"version":3,"file":"JupyterInputOutputPlugin.js","sourceRoot":"","sources":["../../src/plugins/JupyterInputOutputPlugin.tsx"],"names":[],"mappings":"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"}
 \ No newline at end of file
+diff --git a/node_modules/@datalayer/jupyter-lexical/lib/plugins/LexicalInlineCompletionPlugin.d.ts b/node_modules/@datalayer/jupyter-lexical/lib/plugins/LexicalInlineCompletionPlugin.d.ts
+index 998047b..fb6e139 100644
+--- a/node_modules/@datalayer/jupyter-lexical/lib/plugins/LexicalInlineCompletionPlugin.d.ts
++++ b/node_modules/@datalayer/jupyter-lexical/lib/plugins/LexicalInlineCompletionPlugin.d.ts
+@@ -1,3 +1,10 @@
++import { type LexicalCommand } from 'lexical';
++import { type PartialInlineCompletionConfig } from './InlineCompletionConfig';
++/**
++ * Command to manually trigger inline completion.
++ * Dispatched by keyboard shortcut (e.g., Ctrl+Space).
++ */
++export declare const TRIGGER_INLINE_COMPLETION_COMMAND: LexicalCommand<void>;
+ /**
+  * Provider interface for LLM completion services.
+  * Implement this to integrate your LLM backend.
+@@ -23,6 +30,8 @@ export interface CompletionRequest {
+     offset: number;
+     /** Programming language (e.g., 'python') */
+     language?: string;
++    /** Content type: 'code' for Jupyter cells, 'prose' for natural language */
++    contentType?: 'code' | 'prose';
+ }
+ /**
+  * Context information for completion request.
+@@ -53,10 +62,18 @@ export interface CompletionItem {
+ export interface LexicalInlineCompletionPluginProps {
+     /** Array of completion providers (currently uses first one) */
+     providers: IInlineCompletionProvider[];
+-    /** Debounce delay in milliseconds before requesting completion */
++    /**
++     * Debounce delay in milliseconds before requesting completion.
++     * @deprecated Use config.debounceMs instead
++     */
+     debounceMs?: number;
+     /** Whether completions are enabled */
+     enabled?: boolean;
++    /**
++     * Configuration for inline completions.
++     * Supports both code and prose content types with flexible triggering.
++     */
++    config?: PartialInlineCompletionConfig;
+ }
+ /**
+  * Lexical plugin component for inline code completions.
+@@ -65,5 +82,5 @@ export interface LexicalInlineCompletionPluginProps {
+  * @param props - Plugin configuration
+  * @returns null - Plugin has no visual component
+  */
+-export declare function LexicalInlineCompletionPlugin({ providers, debounceMs, enabled, }: LexicalInlineCompletionPluginProps): null;
++export declare function LexicalInlineCompletionPlugin({ providers, debounceMs: deprecatedDebounceMs, enabled, config: userConfig, }: LexicalInlineCompletionPluginProps): null;
+ export default LexicalInlineCompletionPlugin;
+diff --git a/node_modules/@datalayer/jupyter-lexical/lib/plugins/LexicalInlineCompletionPlugin.js b/node_modules/@datalayer/jupyter-lexical/lib/plugins/LexicalInlineCompletionPlugin.js
+index 9346e0a..2aafbe3 100644
+--- a/node_modules/@datalayer/jupyter-lexical/lib/plugins/LexicalInlineCompletionPlugin.js
++++ b/node_modules/@datalayer/jupyter-lexical/lib/plugins/LexicalInlineCompletionPlugin.js
+@@ -36,10 +36,17 @@
+  */
+ import { useEffect, useState, useRef, useCallback } from 'react';
+ import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext';
+-import { $getSelection, $isRangeSelection, $getNodeByKey, $createTextNode, COMMAND_PRIORITY_LOW, COMMAND_PRIORITY_HIGH, KEY_TAB_COMMAND, KEY_ESCAPE_COMMAND, } from 'lexical';
++import { $getSelection, $isRangeSelection, $getNodeByKey, $createTextNode, COMMAND_PRIORITY_LOW, COMMAND_PRIORITY_HIGH, KEY_TAB_COMMAND, KEY_ESCAPE_COMMAND, createCommand, } from 'lexical';
+ import { $isJupyterInputNode, JupyterInputNode, } from '../nodes/JupyterInputNode';
+ import { $isJupyterInputHighlightNode } from '../nodes/JupyterInputHighlightNode';
+ import { $createInlineCompletionNode, $isInlineCompletionNode, } from '../nodes/InlineCompletionNode';
++import { mergeConfig, } from './InlineCompletionConfig';
++import { extractContext } from './InlineCompletionContextExtractor';
++/**
++ * Command to manually trigger inline completion.
++ * Dispatched by keyboard shortcut (e.g., Ctrl+Space).
++ */
++export const TRIGGER_INLINE_COMPLETION_COMMAND = createCommand('TRIGGER_INLINE_COMPLETION_COMMAND');
+ /**
+  * Lexical plugin component for inline code completions.
+  * Must be used within LexicalComposer context.
+@@ -47,9 +54,13 @@ import { $createInlineCompletionNode, $isInlineCompletionNode, } from '../nodes/
+  * @param props - Plugin configuration
+  * @returns null - Plugin has no visual component
+  */
+-export function LexicalInlineCompletionPlugin({ providers, debounceMs = 200, enabled = true, }) {
++export function LexicalInlineCompletionPlugin({ providers, debounceMs: deprecatedDebounceMs, enabled = true, config: userConfig, }) {
+     const [editor] = useLexicalComposerContext();
+     const [currentCompletion, setCurrentCompletion] = useState(null);
++    // Merge user config with defaults
++    const config = mergeConfig(userConfig);
++    // Support deprecated debounceMs prop (overrides config if provided)
++    const debounceMs = deprecatedDebounceMs ?? config.debounceMs;
+     const debounceTimerRef = useRef(null);
+     const lastRequestRef = useRef('');
+     const lastCellTextRef = useRef('');
+@@ -74,7 +85,7 @@ export function LexicalInlineCompletionPlugin({ providers, debounceMs = 200, ena
+     /**
+      * Request completion from providers
+      */
+-    const requestCompletion = useCallback(async (cellText, cursorOffset, language) => {
++    const requestCompletion = useCallback(async (cellText, cursorOffset, language, contentType = 'code') => {
+         if (!providers || providers.length === 0) {
+             console.warn('[InlineCompletionPlugin] ❌ No provider configured');
+             return;
+@@ -82,6 +93,7 @@ export function LexicalInlineCompletionPlugin({ providers, debounceMs = 200, ena
+         const provider = providers[0];
+         try {
+             console.warn('[InlineCompletionPlugin] 📡 Requesting completion:', {
++                contentType,
+                 textLength: cellText.length,
+                 cursorOffset,
+                 language,
+@@ -92,7 +104,7 @@ export function LexicalInlineCompletionPlugin({ providers, debounceMs = 200, ena
+             });
+             const before = cellText.substring(0, cursorOffset);
+             const after = cellText.substring(cursorOffset);
+-            const result = await provider.fetch({ text: cellText, offset: cursorOffset, language }, { before, after });
++            const result = await provider.fetch({ text: cellText, offset: cursorOffset, language, contentType }, { before, after });
+             console.warn('[InlineCompletionPlugin] 📬 Received response:', {
+                 itemCount: result?.items?.length || 0,
+                 firstItem: result?.items?.[0]?.insertText?.substring(0, 100),
+@@ -144,106 +156,129 @@ export function LexicalInlineCompletionPlugin({ providers, debounceMs = 200, ena
+                     type: anchorNode.getType(),
+                     key: anchorNode.getKey(),
+                 });
+-                const jupyterInputNode = findJupyterInputParent(anchorNode);
+-                if (!jupyterInputNode) {
+-                    console.warn('[InlineCompletionPlugin] ❌ Not in JupyterInputNode');
+-                    setCurrentCompletion(null);
+-                    return;
+-                }
+-                console.warn('[InlineCompletionPlugin] ✅ Inside JupyterInputNode');
+-                // Get cell text and cursor position
+-                const cellText = jupyterInputNode.getTextContent();
+-                const cursorOffset = getCursorOffset(jupyterInputNode, selection);
+-                // Check if cell text actually changed (not just cursor movement)
+-                if (cellText === lastCellTextRef.current) {
+-                    console.warn('[InlineCompletionPlugin] ⏭️ Cell text unchanged, skipping (cursor movement only)');
+-                    return;
+-                }
+-                // Update last cell text
+-                lastCellTextRef.current = cellText;
+-                console.warn('[InlineCompletionPlugin] Cell state:', {
+-                    cellLength: cellText.length,
+-                    cursorOffset,
+-                    lastChars: cellText.substring(Math.max(0, cursorOffset - 20), cursorOffset),
+-                });
+-                // Check if there's ANY non-whitespace content before cursor
+-                // (either on current line or previous lines)
+-                const textBeforeCursor = cellText.substring(0, cursorOffset);
+-                if (textBeforeCursor.trim().length === 0) {
+-                    console.warn('[InlineCompletionPlugin] ❌ No content before cursor (empty or whitespace only)');
+-                    setCurrentCompletion(null);
+-                    return;
+-                }
+-                // Also check if current line is empty (e.g., just pressed Enter)
+-                // Find start of current line
+-                const lineStart = textBeforeCursor.lastIndexOf('\n') + 1;
+-                const currentLineBeforeCursor = textBeforeCursor.substring(lineStart);
+-                if (currentLineBeforeCursor.trim().length === 0) {
+-                    console.warn('[InlineCompletionPlugin] ❌ Current line is empty (no completion on blank lines)');
++                // Detect content type (code vs prose)
++                const contentType = detectContentType(anchorNode);
++                console.warn('[InlineCompletionPlugin] Content type:', contentType);
++                // Check if auto-trigger is enabled for this content type
++                const contentConfig = contentType === 'code' ? config.code : config.prose;
++                if (contentConfig.triggerMode !== 'auto') {
++                    console.warn('[InlineCompletionPlugin] ❌ Auto-trigger disabled for', contentType);
+                     setCurrentCompletion(null);
+                     return;
+                 }
+-                // Only request at end of line (current line, not entire cell)
+-                const textAfterCursor = cellText.substring(cursorOffset);
+-                const nextNewline = textAfterCursor.indexOf('\n');
+-                // Get text after cursor on CURRENT LINE only (before next newline)
+-                const textAfterCursorOnLine = nextNewline === -1
+-                    ? textAfterCursor
+-                    : textAfterCursor.substring(0, nextNewline);
+-                console.warn('[InlineCompletionPlugin] After cursor:', {
+-                    nextNewline,
+-                    onCurrentLine: textAfterCursorOnLine,
+-                    trimmedOnLineLength: textAfterCursorOnLine.trim().length,
+-                });
+-                // Check if there's text after cursor ON THE CURRENT LINE
+-                if (textAfterCursorOnLine.trim().length > 0) {
+-                    let hasCompletionNode = false;
+-                    const children = jupyterInputNode.getChildren();
+-                    for (const child of children) {
+-                        if ($isInlineCompletionNode(child)) {
+-                            hasCompletionNode = true;
+-                            break;
+-                        }
++                // For code: require JupyterInputNode (backward compatibility)
++                if (contentType === 'code') {
++                    const jupyterInputNode = findJupyterInputParent(anchorNode);
++                    if (!jupyterInputNode) {
++                        console.warn('[InlineCompletionPlugin] ❌ Not in JupyterInputNode');
++                        setCurrentCompletion(null);
++                        return;
+                     }
+-                    console.warn('[InlineCompletionPlugin] Text after cursor check:', {
+-                        textAfterLength: textAfterCursor.trim().length,
+-                        hasCompletionNode,
+-                        childrenCount: children.length,
++                    console.warn('[InlineCompletionPlugin] ✅ Inside JupyterInputNode');
++                    // Get cell text and cursor position
++                    const cellText = jupyterInputNode.getTextContent();
++                    const cursorOffset = getCursorOffset(jupyterInputNode, selection);
++                    // Check if cell text actually changed (not just cursor movement)
++                    if (cellText === lastCellTextRef.current) {
++                        console.warn('[InlineCompletionPlugin] ⏭️ Cell text unchanged, skipping (cursor movement only)');
++                        return;
++                    }
++                    // Update last cell text
++                    lastCellTextRef.current = cellText;
++                    console.warn('[InlineCompletionPlugin] Cell state:', {
++                        cellLength: cellText.length,
++                        cursorOffset,
++                        lastChars: cellText.substring(Math.max(0, cursorOffset - 20), cursorOffset),
+                     });
+-                    if (!hasCompletionNode) {
+-                        console.warn('[InlineCompletionPlugin] ❌ Not at end of line (no completion node found)');
++                    // Check if there's ANY non-whitespace content before cursor
++                    const textBeforeCursor = cellText.substring(0, cursorOffset);
++                    if (textBeforeCursor.trim().length === 0) {
++                        console.warn('[InlineCompletionPlugin] ❌ No content before cursor');
+                         setCurrentCompletion(null);
+                         return;
+                     }
+-                    // If we found our completion node, continue (don't clear it)
+-                    console.warn('[InlineCompletionPlugin] ✅ Has completion node, allowing');
+-                }
+-                // Debounce requests
+-                if (debounceTimerRef.current) {
+-                    clearTimeout(debounceTimerRef.current);
+-                }
+-                const requestKey = `${cellText}:${cursorOffset}`;
+-                if (cellText.trim().length < 2) {
+-                    console.warn('[InlineCompletionPlugin] ❌ Text too short');
+-                    setCurrentCompletion(null);
+-                    lastRequestRef.current = '';
+-                    return;
++                    // Check if current line is empty
++                    const lineStart = textBeforeCursor.lastIndexOf('\n') + 1;
++                    const currentLineBeforeCursor = textBeforeCursor.substring(lineStart);
++                    if (currentLineBeforeCursor.trim().length === 0) {
++                        console.warn('[InlineCompletionPlugin] ❌ Current line is empty');
++                        setCurrentCompletion(null);
++                        return;
++                    }
++                    // Only request at end of line
++                    const textAfterCursor = cellText.substring(cursorOffset);
++                    const nextNewline = textAfterCursor.indexOf('\n');
++                    const textAfterCursorOnLine = nextNewline === -1
++                        ? textAfterCursor
++                        : textAfterCursor.substring(0, nextNewline);
++                    if (textAfterCursorOnLine.trim().length > 0) {
++                        let hasCompletionNode = false;
++                        const children = jupyterInputNode.getChildren();
++                        for (const child of children) {
++                            if ($isInlineCompletionNode(child)) {
++                                hasCompletionNode = true;
++                                break;
++                            }
++                        }
++                        if (!hasCompletionNode) {
++                            console.warn('[InlineCompletionPlugin] ❌ Not at end of line');
++                            setCurrentCompletion(null);
++                            return;
++                        }
++                    }
++                    // Debounce requests
++                    if (debounceTimerRef.current) {
++                        clearTimeout(debounceTimerRef.current);
++                    }
++                    const requestKey = `${cellText}:${cursorOffset}`;
++                    if (cellText.trim().length < 2) {
++                        console.warn('[InlineCompletionPlugin] ❌ Text too short');
++                        setCurrentCompletion(null);
++                        lastRequestRef.current = '';
++                        return;
++                    }
++                    // Schedule timer
++                    console.warn('[InlineCompletionPlugin] ⏰ Scheduling code completion in', debounceMs, 'ms');
++                    debounceTimerRef.current = setTimeout(() => {
++                        if (requestKey !== lastRequestRef.current) {
++                            lastRequestRef.current = requestKey;
++                            requestCompletionRef.current?.(cellText, cursorOffset, contentConfig.language || 'python', 'code');
++                        }
++                    }, debounceMs);
+                 }
+-                // Schedule timer even if same request (debounce behavior)
+-                console.warn('[InlineCompletionPlugin] ⏰ Scheduling request in', debounceMs, 'ms', requestKey === lastRequestRef.current
+-                    ? '(same request)'
+-                    : '(new request)');
+-                debounceTimerRef.current = setTimeout(() => {
+-                    console.warn('[InlineCompletionPlugin] 🚀 Firing completion request');
+-                    // Only make actual request if different from last
+-                    if (requestKey !== lastRequestRef.current) {
+-                        lastRequestRef.current = requestKey;
+-                        requestCompletionRef.current?.(cellText, cursorOffset, 'python');
++                else {
++                    // Prose content - extract context and request completion
++                    console.warn('[InlineCompletionPlugin] Handling prose content');
++                    // Extract context with configured scope
++                    const context = extractContext(contentType, anchorNode, selection, contentConfig.contextBefore, contentConfig.contextAfter);
++                    // Check if text actually changed
++                    if (context.fullText === lastCellTextRef.current) {
++                        console.warn('[InlineCompletionPlugin] ⏭️ Prose text unchanged, skipping');
++                        return;
++                    }
++                    lastCellTextRef.current = context.fullText;
++                    // Minimum content check
++                    if (context.before.trim().length < 10) {
++                        console.warn('[InlineCompletionPlugin] ❌ Prose text too short');
++                        setCurrentCompletion(null);
++                        return;
+                     }
+-                    else {
+-                        console.warn('[InlineCompletionPlugin] ⏭️ Same as last completed request, skipping API call');
++                    // Debounce requests
++                    if (debounceTimerRef.current) {
++                        clearTimeout(debounceTimerRef.current);
+                     }
+-                }, debounceMs);
++                    const requestKey = `prose:${context.fullText.length}`;
++                    // Schedule timer
++                    console.warn('[InlineCompletionPlugin] ⏰ Scheduling prose completion in', debounceMs, 'ms');
++                    debounceTimerRef.current = setTimeout(() => {
++                        if (requestKey !== lastRequestRef.current) {
++                            lastRequestRef.current = requestKey;
++                            // Request prose completion with extracted context
++                            requestCompletionRef.current?.(context.fullText, context.before.length, // Cursor offset is at end of "before" text
++                            contentConfig.language || 'markdown', 'prose');
++                        }
++                    }, debounceMs);
++                }
+             });
+         });
+     }, [editor, enabled, debounceMs]); // Removed requestCompletion dependency
+@@ -435,8 +470,150 @@ export function LexicalInlineCompletionPlugin({ providers, debounceMs = 200, ena
+             return true;
+         }, COMMAND_PRIORITY_LOW);
+     }, [editor, enabled, currentCompletion]);
++    /**
++     * Keyboard shortcut listener for manual trigger
++     */
++    useEffect(() => {
++        if (!enabled)
++            return;
++        const handleKeyDown = (event) => {
++            if (matchesShortcut(event, config.manualTriggerKey)) {
++                console.warn('[InlineCompletionPlugin] ⌨️ Manual trigger shortcut pressed');
++                event.preventDefault();
++                editor.dispatchCommand(TRIGGER_INLINE_COMPLETION_COMMAND, undefined);
++            }
++        };
++        const rootElement = editor.getRootElement();
++        if (rootElement) {
++            rootElement.addEventListener('keydown', handleKeyDown);
++            console.warn('[InlineCompletionPlugin] 🎧 Keyboard shortcut listener registered:', config.manualTriggerKey);
++            return () => {
++                rootElement.removeEventListener('keydown', handleKeyDown);
++                console.warn('[InlineCompletionPlugin] 🔇 Keyboard shortcut listener removed');
++            };
++        }
++        return undefined;
++    }, [editor, enabled, config.manualTriggerKey]);
++    /**
++     * Handle manual trigger command (e.g., Ctrl+Space)
++     * Supports both code and prose content types
++     */
++    useEffect(() => {
++        if (!enabled)
++            return;
++        return editor.registerCommand(TRIGGER_INLINE_COMPLETION_COMMAND, () => {
++            console.warn('[InlineCompletionPlugin] 🎯 Manual trigger activated');
++            editor.getEditorState().read(() => {
++                const selection = $getSelection();
++                if (!$isRangeSelection(selection) || !selection.isCollapsed()) {
++                    console.warn('[InlineCompletionPlugin] ❌ Invalid selection for manual trigger');
++                    return;
++                }
++                const anchorNode = selection.anchor.getNode();
++                // Detect content type
++                const contentType = detectContentType(anchorNode);
++                console.warn('[InlineCompletionPlugin] Manual trigger content type:', contentType);
++                // Check if manual trigger is enabled for this content type
++                const contentConfig = contentType === 'code' ? config.code : config.prose;
++                if (contentConfig.triggerMode === 'disabled') {
++                    console.warn('[InlineCompletionPlugin] ❌ Manual trigger disabled for', contentType);
++                    return;
++                }
++                // Clear any pending debounce timer
++                if (debounceTimerRef.current) {
++                    clearTimeout(debounceTimerRef.current);
++                    debounceTimerRef.current = null;
++                }
++                if (contentType === 'code') {
++                    // Code cell manual trigger
++                    const jupyterInputNode = findJupyterInputParent(anchorNode);
++                    if (!jupyterInputNode) {
++                        console.warn('[InlineCompletionPlugin] ❌ Not in JupyterInputNode for manual trigger');
++                        return;
++                    }
++                    const cellText = jupyterInputNode.getTextContent();
++                    const cursorOffset = getCursorOffset(jupyterInputNode, selection);
++                    console.warn('[InlineCompletionPlugin] 🚀 Firing manual code completion request');
++                    const requestKey = `${cellText}:${cursorOffset}`;
++                    lastRequestRef.current = requestKey;
++                    requestCompletionRef.current?.(cellText, cursorOffset, contentConfig.language || 'python', 'code');
++                }
++                else {
++                    // Prose manual trigger
++                    console.warn('[InlineCompletionPlugin] 🚀 Firing manual prose completion request');
++                    // Extract context with configured scope
++                    const context = extractContext(contentType, anchorNode, selection, contentConfig.contextBefore, contentConfig.contextAfter);
++                    // Minimum content check
++                    if (context.before.trim().length < 10) {
++                        console.warn('[InlineCompletionPlugin] ❌ Prose text too short for completion');
++                        return;
++                    }
++                    const requestKey = `prose:manual:${context.fullText.length}`;
++                    lastRequestRef.current = requestKey;
++                    requestCompletionRef.current?.(context.fullText, context.before.length, contentConfig.language || 'markdown', 'prose');
++                }
++            });
++            return true;
++        }, COMMAND_PRIORITY_HIGH);
++    }, [editor, enabled, config]);
+     return null;
+ }
++/**
++ * Parse keyboard shortcut string and check if event matches.
++ * Supports format: "Modifier+Key" (e.g., "Ctrl+Space", "Cmd+Shift+I")
++ *
++ * @param event - Keyboard event to check
++ * @param shortcut - Shortcut string from config
++ * @returns True if event matches shortcut
++ */
++function matchesShortcut(event, shortcut) {
++    const parts = shortcut.split('+').map(s => s.trim().toLowerCase());
++    const key = parts[parts.length - 1]; // Last part is the key
++    const modifiers = parts.slice(0, -1); // Everything else is modifiers
++    // Check key match (case-insensitive)
++    if (event.key.toLowerCase() !== key) {
++        return false;
++    }
++    // Check modifiers
++    const hasCtrl = modifiers.includes('ctrl');
++    const hasCmd = modifiers.includes('cmd') || modifiers.includes('meta');
++    const hasShift = modifiers.includes('shift');
++    const hasAlt = modifiers.includes('alt');
++    // On macOS, treat Ctrl as Cmd
++    const isMac = typeof navigator !== 'undefined' &&
++        /Mac|iPhone|iPod|iPad/.test(navigator.userAgent);
++    const needsCtrlOrCmd = hasCtrl || hasCmd;
++    const eventHasCtrlOrCmd = isMac ? event.metaKey : event.ctrlKey;
++    if (needsCtrlOrCmd && !eventHasCtrlOrCmd) {
++        return false;
++    }
++    if (hasShift && !event.shiftKey) {
++        return false;
++    }
++    if (hasAlt && !event.altKey) {
++        return false;
++    }
++    return true;
++}
++/**
++ * Detect content type based on cursor position.
++ * Returns 'code' if inside a JupyterInputNode, 'prose' otherwise.
++ *
++ * @param anchorNode - The node at the cursor position
++ * @returns 'code' or 'prose'
++ */
++function detectContentType(anchorNode) {
++    let current = anchorNode;
++    // Traverse up the tree looking for JupyterInputNode
++    while (current) {
++        if ($isJupyterInputNode(current)) {
++            return 'code';
++        }
++        current = current.getParent();
++    }
++    // Not in a Jupyter cell - must be prose
++    return 'prose';
++}
+ /**
+  * Find parent JupyterInputNode
+  */
+diff --git a/node_modules/@datalayer/jupyter-lexical/lib/plugins/LexicalInlineCompletionPlugin.js.map b/node_modules/@datalayer/jupyter-lexical/lib/plugins/LexicalInlineCompletionPlugin.js.map
+index e1cf384..c80cec8 100644
+--- a/node_modules/@datalayer/jupyter-lexical/lib/plugins/LexicalInlineCompletionPlugin.js.map
++++ b/node_modules/@datalayer/jupyter-lexical/lib/plugins/LexicalInlineCompletionPlugin.js.map
+@@ -1 +1 @@
+-{"version":3,"file":"LexicalInlineCompletionPlugin.js","sourceRoot":"","sources":["../../src/plugins/LexicalInlineCompletionPlugin.tsx"],"names":[],"mappings":"AAAA;;;;GAIG;AAEH;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;GA8BG;AAEH,OAAO,EAAE,SAAS,EAAE,QAAQ,EAAE,MAAM,EAAE,WAAW,EAAE,MAAM,OAAO,CAAC;AACjE,OAAO,EAAE,yBAAyB,EAAE,MAAM,uCAAuC,CAAC;AAClF,OAAO,EACL,aAAa,EACb,iBAAiB,EACjB,aAAa,EACb,eAAe,EACf,oBAAoB,EACpB,qBAAqB,EACrB,eAAe,EACf,kBAAkB,GAEnB,MAAM,SAAS,CAAC;AACjB,OAAO,EACL,mBAAmB,EACnB,gBAAgB,GACjB,MAAM,2BAA2B,CAAC;AACnC,OAAO,EAAE,4BAA4B,EAAE,MAAM,oCAAoC,CAAC;AAClF,OAAO,EACL,2BAA2B,EAC3B,uBAAuB,GACxB,MAAM,+BAA+B,CAAC;AAwEvC;;;;;;GAMG;AACH,MAAM,UAAU,6BAA6B,CAAC,EAC5C,SAAS,EACT,UAAU,GAAG,GAAG,EAChB,OAAO,GAAG,IAAI,GACqB;IACnC,MAAM,CAAC,MAAM,CAAC,GAAG,yBAAyB,EAAE,CAAC;IAC7C,MAAM,CAAC,iBAAiB,EAAE,oBAAoB,CAAC,GAAG,QAAQ,CACxD,IAAI,CACL,CAAC;IACF,MAAM,gBAAgB,GAAG,MAAM,CAAwB,IAAI,CAAC,CAAC;IAC7D,MAAM,cAAc,GAAG,MAAM,CAAS,EAAE,CAAC,CAAC;IAC1C,MAAM,eAAe,GAAG,MAAM,CAAS,EAAE,CAAC,CAAC;IAC3C,MAAM,oBAAoB,GAAG,MAAM,CAAgB,IAAI,CAAC,CAAC;IACzD,MAAM,oBAAoB,GAAG,MAAM,CAAkC,IAAI,CAAC,CAAC;IAE3E;;OAEG;IACH,SAAS,CAAC,GAAG,EAAE;QACb,OAAO,CAAC,IAAI,CAAC,kCAAkC,EAAE;YAC/C,OAAO;YACP,SAAS,EAAE,SAAS,CAAC,MAAM;SAC5B,CAAC,CAAC;QACH,OAAO,GAAG,EAAE;YACV,OAAO,CAAC,IAAI,CAAC,wDAAwD,CAAC,CAAC;YACvE,IAAI,gBAAgB,CAAC,OAAO,EAAE,CAAC;gBAC7B,YAAY,CAAC,gBAAgB,CAAC,OAAO,CAAC,CAAC;gBACvC,gBAAgB,CAAC,OAAO,GAAG,IAAI,CAAC;YAClC,CAAC;QACH,CAAC,CAAC;IACJ,CAAC,EAAE,EAAE,CAAC,CAAC,CAAC,wBAAwB;IAEhC;;OAEG;IACH,MAAM,iBAAiB,GAAG,WAAW,CACnC,KAAK,EAAE,QAAgB,EAAE,YAAoB,EAAE,QAAgB,EAAE,EAAE;QACjE,IAAI,CAAC,SAAS,IAAI,SAAS,CAAC,MAAM,KAAK,CAAC,EAAE,CAAC;YACzC,OAAO,CAAC,IAAI,CAAC,mDAAmD,CAAC,CAAC;YAClE,OAAO;QACT,CAAC;QAED,MAAM,QAAQ,GAAG,SAAS,CAAC,CAAC,CAAC,CAAC;QAE9B,IAAI,CAAC;YACH,OAAO,CAAC,IAAI,CAAC,oDAAoD,EAAE;gBACjE,UAAU,EAAE,QAAQ,CAAC,MAAM;gBAC3B,YAAY;gBACZ,QAAQ;gBACR,MAAM,EAAE,QAAQ;qBACb,SAAS,CAAC,CAAC,EAAE,YAAY,CAAC;qBAC1B,SAAS,CAAC,IAAI,CAAC,GAAG,CAAC,CAAC,EAAE,YAAY,GAAG,EAAE,CAAC,CAAC;gBAC5C,KAAK,EAAE,QAAQ,CAAC,SAAS,CAAC,YAAY,EAAE,YAAY,GAAG,EAAE,CAAC;aAC3D,CAAC,CAAC;YAEH,MAAM,MAAM,GAAG,QAAQ,CAAC,SAAS,CAAC,CAAC,EAAE,YAAY,CAAC,CAAC;YACnD,MAAM,KAAK,GAAG,QAAQ,CAAC,SAAS,CAAC,YAAY,CAAC,CAAC;YAE/C,MAAM,MAAM,GAAG,MAAM,QAAQ,CAAC,KAAK,CACjC,EAAE,IAAI,EAAE,QAAQ,EAAE,MAAM,EAAE,YAAY,EAAE,QAAQ,EAAE,EAClD,EAAE,MAAM,EAAE,KAAK,EAAE,CAClB,CAAC;YAEF,OAAO,CAAC,IAAI,CAAC,gDAAgD,EAAE;gBAC7D,SAAS,EAAE,MAAM,EAAE,KAAK,EAAE,MAAM,IAAI,CAAC;gBACrC,SAAS,EAAE,MAAM,EAAE,KAAK,EAAE,CAAC,CAAC,CAAC,EAAE,UAAU,EAAE,SAAS,CAAC,CAAC,EAAE,GAAG,CAAC;aAC7D,CAAC,CAAC;YAEH,IAAI,MAAM,IAAI,MAAM,CAAC,KAAK,IAAI,MAAM,CAAC,KAAK,CAAC,MAAM,GAAG,CAAC,EAAE,CAAC;gBACtD,MAAM,UAAU,GAAG,MAAM,CAAC,KAAK,CAAC,CAAC,CAAC,CAAC,UAAU,CAAC;gBAC9C,OAAO,CAAC,IAAI,CACV,gDAAgD,EAChD,UAAU,CAAC,SAAS,CAAC,CAAC,EAAE,GAAG,CAAC,CAC7B,CAAC;gBACF,oBAAoB,CAAC,UAAU,CAAC,CAAC;YACnC,CAAC;iBAAM,CAAC;gBACN,OAAO,CAAC,IAAI,CAAC,iDAAiD,CAAC,CAAC;gBAChE,oBAAoB,CAAC,IAAI,CAAC,CAAC;YAC7B,CAAC;QACH,CAAC;QAAC,OAAO,KAAK,EAAE,CAAC;YACf,OAAO,CAAC,KAAK,CACX,yDAAyD,EACzD,KAAK,CACN,CAAC;YACF,oBAAoB,CAAC,IAAI,CAAC,CAAC;QAC7B,CAAC;IACH,CAAC,EACD,CAAC,SAAS,CAAC,CACZ,CAAC;IAEF,iDAAiD;IACjD,SAAS,CAAC,GAAG,EAAE;QACb,oBAAoB,CAAC,OAAO,GAAG,iBAAiB,CAAC;IACnD,CAAC,EAAE,CAAC,iBAAiB,CAAC,CAAC,CAAC;IAExB;;OAEG;IACH,SAAS,CAAC,GAAG,EAAE;QACb,IAAI,CAAC,OAAO;YAAE,OAAO;QAErB,OAAO,CAAC,IAAI,CAAC,yDAAyD,CAAC,CAAC;QAExE,OAAO,MAAM,CAAC,sBAAsB,CAAC,CAAC,EAAE,WAAW,EAAE,EAAE,EAAE;YACvD,OAAO,CAAC,IAAI,CAAC,iDAAiD,CAAC,CAAC;YAEhE,WAAW,CAAC,IAAI,CAAC,GAAG,EAAE;gBACpB,MAAM,SAAS,GAAG,aAAa,EAAE,CAAC;gBAClC,OAAO,CAAC,IAAI,CAAC,qCAAqC,EAAE;oBAClD,IAAI,EAAE,SAAS,EAAE,WAAW,CAAC,IAAI;oBACjC,OAAO,EAAE,iBAAiB,CAAC,SAAS,CAAC;oBACrC,WAAW,EAAE,iBAAiB,CAAC,SAAS,CAAC;wBACvC,CAAC,CAAC,SAAS,CAAC,WAAW,EAAE;wBACzB,CAAC,CAAC,KAAK;iBACV,CAAC,CAAC;gBAEH,IAAI,CAAC,iBAAiB,CAAC,SAAS,CAAC,IAAI,CAAC,SAAS,CAAC,WAAW,EAAE,EAAE,CAAC;oBAC9D,OAAO,CAAC,IAAI,CAAC,oDAAoD,CAAC,CAAC;oBACnE,oBAAoB,CAAC,IAAI,CAAC,CAAC;oBAC3B,OAAO;gBACT,CAAC;gBAED,MAAM,UAAU,GAAG,SAAS,CAAC,MAAM,CAAC,OAAO,EAAE,CAAC;gBAC9C,OAAO,CAAC,IAAI,CAAC,uCAAuC,EAAE;oBACpD,IAAI,EAAE,UAAU,CAAC,OAAO,EAAE;oBAC1B,GAAG,EAAE,UAAU,CAAC,MAAM,EAAE;iBACzB,CAAC,CAAC;gBAEH,MAAM,gBAAgB,GAAG,sBAAsB,CAAC,UAAU,CAAC,CAAC;gBAE5D,IAAI,CAAC,gBAAgB,EAAE,CAAC;oBACtB,OAAO,CAAC,IAAI,CAAC,oDAAoD,CAAC,CAAC;oBACnE,oBAAoB,CAAC,IAAI,CAAC,CAAC;oBAC3B,OAAO;gBACT,CAAC;gBAED,OAAO,CAAC,IAAI,CAAC,oDAAoD,CAAC,CAAC;gBAEnE,oCAAoC;gBACpC,MAAM,QAAQ,GAAG,gBAAgB,CAAC,cAAc,EAAE,CAAC;gBACnD,MAAM,YAAY,GAAG,eAAe,CAAC,gBAAgB,EAAE,SAAS,CAAC,CAAC;gBAElE,iEAAiE;gBACjE,IAAI,QAAQ,KAAK,eAAe,CAAC,OAAO,EAAE,CAAC;oBACzC,OAAO,CAAC,IAAI,CACV,kFAAkF,CACnF,CAAC;oBACF,OAAO;gBACT,CAAC;gBAED,wBAAwB;gBACxB,eAAe,CAAC,OAAO,GAAG,QAAQ,CAAC;gBAEnC,OAAO,CAAC,IAAI,CAAC,sCAAsC,EAAE;oBACnD,UAAU,EAAE,QAAQ,CAAC,MAAM;oBAC3B,YAAY;oBACZ,SAAS,EAAE,QAAQ,CAAC,SAAS,CAC3B,IAAI,CAAC,GAAG,CAAC,CAAC,EAAE,YAAY,GAAG,EAAE,CAAC,EAC9B,YAAY,CACb;iBACF,CAAC,CAAC;gBAEH,4DAA4D;gBAC5D,6CAA6C;gBAC7C,MAAM,gBAAgB,GAAG,QAAQ,CAAC,SAAS,CAAC,CAAC,EAAE,YAAY,CAAC,CAAC;gBAE7D,IAAI,gBAAgB,CAAC,IAAI,EAAE,CAAC,MAAM,KAAK,CAAC,EAAE,CAAC;oBACzC,OAAO,CAAC,IAAI,CACV,gFAAgF,CACjF,CAAC;oBACF,oBAAoB,CAAC,IAAI,CAAC,CAAC;oBAC3B,OAAO;gBACT,CAAC;gBAED,iEAAiE;gBACjE,6BAA6B;gBAC7B,MAAM,SAAS,GAAG,gBAAgB,CAAC,WAAW,CAAC,IAAI,CAAC,GAAG,CAAC,CAAC;gBACzD,MAAM,uBAAuB,GAAG,gBAAgB,CAAC,SAAS,CAAC,SAAS,CAAC,CAAC;gBACtE,IAAI,uBAAuB,CAAC,IAAI,EAAE,CAAC,MAAM,KAAK,CAAC,EAAE,CAAC;oBAChD,OAAO,CAAC,IAAI,CACV,iFAAiF,CAClF,CAAC;oBACF,oBAAoB,CAAC,IAAI,CAAC,CAAC;oBAC3B,OAAO;gBACT,CAAC;gBAED,8DAA8D;gBAC9D,MAAM,eAAe,GAAG,QAAQ,CAAC,SAAS,CAAC,YAAY,CAAC,CAAC;gBACzD,MAAM,WAAW,GAAG,eAAe,CAAC,OAAO,CAAC,IAAI,CAAC,CAAC;gBAElD,mEAAmE;gBACnE,MAAM,qBAAqB,GACzB,WAAW,KAAK,CAAC,CAAC;oBAChB,CAAC,CAAC,eAAe;oBACjB,CAAC,CAAC,eAAe,CAAC,SAAS,CAAC,CAAC,EAAE,WAAW,CAAC,CAAC;gBAEhD,OAAO,CAAC,IAAI,CAAC,wCAAwC,EAAE;oBACrD,WAAW;oBACX,aAAa,EAAE,qBAAqB;oBACpC,mBAAmB,EAAE,qBAAqB,CAAC,IAAI,EAAE,CAAC,MAAM;iBACzD,CAAC,CAAC;gBAEH,yDAAyD;gBACzD,IAAI,qBAAqB,CAAC,IAAI,EAAE,CAAC,MAAM,GAAG,CAAC,EAAE,CAAC;oBAC5C,IAAI,iBAAiB,GAAG,KAAK,CAAC;oBAC9B,MAAM,QAAQ,GAAG,gBAAgB,CAAC,WAAW,EAAE,CAAC;oBAChD,KAAK,MAAM,KAAK,IAAI,QAAQ,EAAE,CAAC;wBAC7B,IAAI,uBAAuB,CAAC,KAAK,CAAC,EAAE,CAAC;4BACnC,iBAAiB,GAAG,IAAI,CAAC;4BACzB,MAAM;wBACR,CAAC;oBACH,CAAC;oBAED,OAAO,CAAC,IAAI,CAAC,mDAAmD,EAAE;wBAChE,eAAe,EAAE,eAAe,CAAC,IAAI,EAAE,CAAC,MAAM;wBAC9C,iBAAiB;wBACjB,aAAa,EAAE,QAAQ,CAAC,MAAM;qBAC/B,CAAC,CAAC;oBAEH,IAAI,CAAC,iBAAiB,EAAE,CAAC;wBACvB,OAAO,CAAC,IAAI,CACV,0EAA0E,CAC3E,CAAC;wBACF,oBAAoB,CAAC,IAAI,CAAC,CAAC;wBAC3B,OAAO;oBACT,CAAC;oBACD,6DAA6D;oBAC7D,OAAO,CAAC,IAAI,CACV,0DAA0D,CAC3D,CAAC;gBACJ,CAAC;gBAED,oBAAoB;gBACpB,IAAI,gBAAgB,CAAC,OAAO,EAAE,CAAC;oBAC7B,YAAY,CAAC,gBAAgB,CAAC,OAAO,CAAC,CAAC;gBACzC,CAAC;gBAED,MAAM,UAAU,GAAG,GAAG,QAAQ,IAAI,YAAY,EAAE,CAAC;gBAEjD,IAAI,QAAQ,CAAC,IAAI,EAAE,CAAC,MAAM,GAAG,CAAC,EAAE,CAAC;oBAC/B,OAAO,CAAC,IAAI,CAAC,2CAA2C,CAAC,CAAC;oBAC1D,oBAAoB,CAAC,IAAI,CAAC,CAAC;oBAC3B,cAAc,CAAC,OAAO,GAAG,EAAE,CAAC;oBAC5B,OAAO;gBACT,CAAC;gBAED,0DAA0D;gBAC1D,OAAO,CAAC,IAAI,CACV,kDAAkD,EAClD,UAAU,EACV,IAAI,EACJ,UAAU,KAAK,cAAc,CAAC,OAAO;oBACnC,CAAC,CAAC,gBAAgB;oBAClB,CAAC,CAAC,eAAe,CACpB,CAAC;gBAEF,gBAAgB,CAAC,OAAO,GAAG,UAAU,CAAC,GAAG,EAAE;oBACzC,OAAO,CAAC,IAAI,CAAC,uDAAuD,CAAC,CAAC;oBAEtE,kDAAkD;oBAClD,IAAI,UAAU,KAAK,cAAc,CAAC,OAAO,EAAE,CAAC;wBAC1C,cAAc,CAAC,OAAO,GAAG,UAAU,CAAC;wBACpC,oBAAoB,CAAC,OAAO,EAAE,CAAC,QAAQ,EAAE,YAAY,EAAE,QAAQ,CAAC,CAAC;oBACnE,CAAC;yBAAM,CAAC;wBACN,OAAO,CAAC,IAAI,CACV,+EAA+E,CAChF,CAAC;oBACJ,CAAC;gBACH,CAAC,EAAE,UAAU,CAAC,CAAC;YACjB,CAAC,CAAC,CAAC;QACL,CAAC,CAAC,CAAC;IACL,CAAC,EAAE,CAAC,MAAM,EAAE,OAAO,EAAE,UAAU,CAAC,CAAC,CAAC,CAAC,uCAAuC;IAE1E;;OAEG;IACH,SAAS,CAAC,GAAG,EAAE;QACb,IAAI,CAAC,OAAO;YAAE,OAAO;QAErB,OAAO,CAAC,IAAI,CACV,+DAA+D,EAC/D;YACE,aAAa,EAAE,CAAC,CAAC,iBAAiB;YAClC,gBAAgB,EAAE,iBAAiB,EAAE,MAAM,IAAI,CAAC;YAChD,eAAe,EAAE,CAAC,CAAC,oBAAoB,CAAC,OAAO;SAChD,CACF,CAAC;QAEF,MAAM,CAAC,MAAM,CAAC,GAAG,EAAE;YACjB,MAAM,SAAS,GAAG,aAAa,EAAE,CAAC;YAClC,OAAO,CAAC,IAAI,CAAC,mDAAmD,EAAE;gBAChE,IAAI,EAAE,SAAS,EAAE,WAAW,CAAC,IAAI;gBACjC,OAAO,EAAE,iBAAiB,CAAC,SAAS,CAAC;aACtC,CAAC,CAAC;YAEH,IAAI,CAAC,iBAAiB,CAAC,SAAS,CAAC,EAAE,CAAC;gBAClC,OAAO,CAAC,IAAI,CACV,qEAAqE,CACtE,CAAC;gBACF,OAAO;YACT,CAAC;YAED,kCAAkC;YAClC,IAAI,oBAAoB,CAAC,OAAO,EAAE,CAAC;gBACjC,OAAO,CAAC,IAAI,CACV,sDAAsD,EACtD,oBAAoB,CAAC,OAAO,CAC7B,CAAC;gBACF,MAAM,YAAY,GAAG,aAAa,CAAC,oBAAoB,CAAC,OAAO,CAAC,CAAC;gBACjE,IAAI,YAAY,IAAI,uBAAuB,CAAC,YAAY,CAAC,EAAE,CAAC;oBAC1D,YAAY,CAAC,MAAM,EAAE,CAAC;oBACtB,OAAO,CAAC,IAAI,CAAC,6CAA6C,CAAC,CAAC;gBAC9D,CAAC;qBAAM,CAAC;oBACN,OAAO,CAAC,IAAI,CAAC,gDAAgD,CAAC,CAAC;gBACjE,CAAC;gBACD,oBAAoB,CAAC,OAAO,GAAG,IAAI,CAAC;YACtC,CAAC;YAED,wDAAwD;YACxD,IAAI,iBAAiB,IAAI,iBAAiB,CAAC,IAAI,EAAE,CAAC,MAAM,GAAG,CAAC,EAAE,CAAC;gBAC7D,OAAO,CAAC,IAAI,CACV,wDAAwD,EACxD,iBAAiB,CAAC,SAAS,CAAC,CAAC,EAAE,EAAE,CAAC,CACnC,CAAC;gBACF,MAAM,cAAc,GAAG,2BAA2B,CAAC,iBAAiB,CAAC,CAAC;gBAEtE,4CAA4C;gBAC5C,wDAAwD;gBACxD,MAAM,UAAU,GAAG,SAAS,CAAC,MAAM,CAAC,OAAO,EAAE,CAAC;gBAC9C,MAAM,YAAY,GAAG,SAAS,CAAC,MAAM,CAAC,MAAM,CAAC;gBAE7C,OAAO,CAAC,IAAI,CAAC,qCAAqC,EAAE;oBAClD,IAAI,EAAE,UAAU,CAAC,OAAO,EAAE;oBAC1B,MAAM,EAAE,YAAY;iBACrB,CAAC,CAAC;gBAEH,wCAAwC;gBACxC,IAAI,UAAU,CAAC,OAAO,EAAE,KAAK,MAAM,EAAE,CAAC;oBACpC,MAAM,QAAQ,GAAG,UAAiB,CAAC,CAAC,WAAW;oBAE/C,wEAAwE;oBACxE,MAAM,UAAU,GAAG,QAAQ,CAAC,SAAS,CAAC,YAAY,CAAC,CAAC;oBACpD,MAAM,cAAc,GAAG,UAAU,CAAC,CAAC,CAAC,CAAC;oBAErC,yCAAyC;oBACzC,cAAc,CAAC,WAAW,CAAC,cAAc,CAAC,CAAC;oBAE3C,OAAO,CAAC,IAAI,CAAC,sDAAsD,CAAC,CAAC;gBACvE,CAAC;qBAAM,IAAI,UAAU,CAAC,OAAO,EAAE,KAAK,yBAAyB,EAAE,CAAC;oBAC9D,wDAAwD;oBACxD,OAAO,CAAC,IAAI,CACV,+EAA+E,CAChF,CAAC;oBACF,UAAU,CAAC,WAAW,CAAC,cAAc,CAAC,CAAC;gBACzC,CAAC;qBAAM,CAAC;oBACN,2CAA2C;oBAC3C,OAAO,CAAC,IAAI,CACV,kEAAkE,CACnE,CAAC;oBACF,UAAU,CAAC,WAAW,CAAC,cAAc,CAAC,CAAC;gBACzC,CAAC;gBAED,oBAAoB,CAAC,OAAO,GAAG,cAAc,CAAC,MAAM,EAAE,CAAC;gBAEvD,OAAO,CAAC,IAAI,CACV,6DAA6D,EAC7D,cAAc,CAAC,MAAM,EAAE,CACxB,CAAC;gBAEF,+CAA+C;gBAC/C,UAAU,CAAC,GAAG,EAAE;oBACd,MAAM,CAAC,IAAI,CAAC,GAAG,EAAE;wBACf,MAAM,IAAI,GAAG,aAAa,CAAC,cAAc,CAAC,MAAM,EAAE,CAAC,CAAC;wBACpD,IAAI,IAAI,EAAE,CAAC;4BACT,OAAO,CAAC,IAAI,CACV,0DAA0D,CAC3D,CAAC;wBACJ,CAAC;6BAAM,CAAC;4BACN,OAAO,CAAC,KAAK,CACX,gEAAgE,CACjE,CAAC;wBACJ,CAAC;oBACH,CAAC,CAAC,CAAC;gBACL,CAAC,EAAE,EAAE,CAAC,CAAC;gBAEP,UAAU,CAAC,GAAG,EAAE;oBACd,MAAM,CAAC,IAAI,CAAC,GAAG,EAAE;wBACf,MAAM,IAAI,GAAG,aAAa,CAAC,cAAc,CAAC,MAAM,EAAE,CAAC,CAAC;wBACpD,IAAI,IAAI,EAAE,CAAC;4BACT,OAAO,CAAC,IAAI,CACV,2DAA2D,CAC5D,CAAC;wBACJ,CAAC;6BAAM,CAAC;4BACN,OAAO,CAAC,KAAK,CACX,iEAAiE,CAClE,CAAC;wBACJ,CAAC;oBACH,CAAC,CAAC,CAAC;gBACL,CAAC,EAAE,GAAG,CAAC,CAAC;YACV,CAAC;QACH,CAAC,CAAC,CAAC;IACL,CAAC,EAAE,CAAC,MAAM,EAAE,iBAAiB,EAAE,OAAO,CAAC,CAAC,CAAC;IAEzC;;;OAGG;IACH,SAAS,CAAC,GAAG,EAAE;QACb,IAAI,CAAC,OAAO,IAAI,CAAC,iBAAiB;YAAE,OAAO;QAE3C,OAAO,CAAC,IAAI,CACV,2FAA2F,CAC5F,CAAC;QAEF,OAAO,MAAM,CAAC,qBAAqB,CACjC,gBAAgB,EAChB,CAAC,IAAsB,EAAE,EAAE;YACzB,uEAAuE;YACvE,MAAM,SAAS,GAAG,aAAa,EAAE,CAAC;YAClC,IAAI,CAAC,iBAAiB,CAAC,SAAS,CAAC;gBAAE,OAAO;YAE1C,MAAM,UAAU,GAAG,SAAS,CAAC,MAAM,CAAC,OAAO,EAAE,CAAC;YAC9C,MAAM,uBAAuB,GAAG,sBAAsB,CAAC,UAAU,CAAC,CAAC;YAEnE,wDAAwD;YACxD,IAAI,uBAAuB,KAAK,IAAI,EAAE,CAAC;gBACrC,OAAO;YACT,CAAC;YAED,0DAA0D;YAC1D,MAAM,QAAQ,GAAG,IAAI,CAAC,WAAW,EAAE,CAAC;YACpC,MAAM,aAAa,GAAG,QAAQ,CAAC,IAAI,CAAC,CAAC,KAAkB,EAAE,EAAE,CACzD,uBAAuB,CAAC,KAAK,CAAC,CAC/B,CAAC;YAEF,mEAAmE;YACnE,IAAI,CAAC,aAAa,IAAI,iBAAiB,CAAC,IAAI,EAAE,EAAE,CAAC;gBAC/C,OAAO,CAAC,IAAI,CACV,iFAAiF,CAClF,CAAC;gBACF,MAAM,cAAc,GAAG,2BAA2B,CAAC,iBAAiB,CAAC,CAAC;gBAEtE,wCAAwC;gBACxC,MAAM,UAAU,GAAG,SAAS,CAAC,MAAM,CAAC,OAAO,EAAE,CAAC;gBAC9C,MAAM,YAAY,GAAG,SAAS,CAAC,MAAM,CAAC,MAAM,CAAC;gBAE7C,OAAO,CAAC,IAAI,CAAC,+CAA+C,EAAE;oBAC5D,IAAI,EAAE,UAAU,CAAC,OAAO,EAAE;oBAC1B,MAAM,EAAE,YAAY;iBACrB,CAAC,CAAC;gBAEH,6CAA6C;gBAC7C,IAAI,UAAU,CAAC,OAAO,EAAE,KAAK,MAAM,EAAE,CAAC;oBACpC,MAAM,QAAQ,GAAG,UAAiB,CAAC;oBACnC,MAAM,UAAU,GAAG,QAAQ,CAAC,SAAS,CAAC,YAAY,CAAC,CAAC;oBACpD,MAAM,cAAc,GAAG,UAAU,CAAC,CAAC,CAAC,CAAC;oBACrC,cAAc,CAAC,WAAW,CAAC,cAAc,CAAC,CAAC;oBAC3C,OAAO,CAAC,IAAI,CACV,kEAAkE,CACnE,CAAC;gBACJ,CAAC;qBAAM,IAAI,UAAU,CAAC,OAAO,EAAE,KAAK,yBAAyB,EAAE,CAAC;oBAC9D,UAAU,CAAC,WAAW,CAAC,cAAc,CAAC,CAAC;oBACvC,OAAO,CAAC,IAAI,CACV,sEAAsE,CACvE,CAAC;gBACJ,CAAC;qBAAM,CAAC;oBACN,UAAU,CAAC,WAAW,CAAC,cAAc,CAAC,CAAC;oBACvC,OAAO,CAAC,IAAI,CACV,oEAAoE,CACrE,CAAC;gBACJ,CAAC;gBAED,oBAAoB,CAAC,OAAO,GAAG,cAAc,CAAC,MAAM,EAAE,CAAC;YACzD,CAAC;QACH,CAAC,CACF,CAAC;IACJ,CAAC,EAAE,CAAC,MAAM,EAAE,iBAAiB,EAAE,OAAO,CAAC,CAAC,CAAC;IAEzC;;OAEG;IACH,SAAS,CAAC,GAAG,EAAE;QACb,IAAI,CAAC,OAAO;YAAE,OAAO;QAErB,OAAO,MAAM,CAAC,eAAe,CAC3B,eAAe,EACf,CAAC,KAA2B,EAAE,EAAE;YAC9B,IAAI,CAAC,iBAAiB;gBAAE,OAAO,KAAK,CAAC;YAErC,KAAK,EAAE,cAAc,EAAE,CAAC;YAExB,MAAM,CAAC,MAAM,CAAC,GAAG,EAAE;gBACjB,MAAM,SAAS,GAAG,aAAa,EAAE,CAAC;gBAClC,IAAI,CAAC,iBAAiB,CAAC,SAAS,CAAC;oBAAE,OAAO;gBAE1C,qDAAqD;gBACrD,IAAI,oBAAoB,CAAC,OAAO,EAAE,CAAC;oBACjC,MAAM,cAAc,GAAG,aAAa,CAAC,oBAAoB,CAAC,OAAO,CAAC,CAAC;oBACnE,IAAI,cAAc,IAAI,uBAAuB,CAAC,cAAc,CAAC,EAAE,CAAC;wBAC9D,MAAM,QAAQ,GAAG,eAAe,CAAC,iBAAiB,CAAC,CAAC;wBACpD,cAAc,CAAC,OAAO,CAAC,QAAQ,CAAC,CAAC;wBACjC,oBAAoB,CAAC,OAAO,GAAG,IAAI,CAAC;oBACtC,CAAC;gBACH,CAAC;gBAED,oBAAoB,CAAC,IAAI,CAAC,CAAC;YAC7B,CAAC,CAAC,CAAC;YAEH,OAAO,IAAI,CAAC;QACd,CAAC,EACD,qBAAqB,CACtB,CAAC;IACJ,CAAC,EAAE,CAAC,MAAM,EAAE,OAAO,EAAE,iBAAiB,CAAC,CAAC,CAAC;IAEzC;;OAEG;IACH,SAAS,CAAC,GAAG,EAAE;QACb,IAAI,CAAC,OAAO;YAAE,OAAO;QAErB,OAAO,MAAM,CAAC,eAAe,CAC3B,kBAAkB,EAClB,GAAG,EAAE;YACH,IAAI,CAAC,iBAAiB;gBAAE,OAAO,KAAK,CAAC;YACrC,oBAAoB,CAAC,IAAI,CAAC,CAAC;YAC3B,OAAO,IAAI,CAAC;QACd,CAAC,EACD,oBAAoB,CACrB,CAAC;IACJ,CAAC,EAAE,CAAC,MAAM,EAAE,OAAO,EAAE,iBAAiB,CAAC,CAAC,CAAC;IAEzC,OAAO,IAAI,CAAC;AACd,CAAC;AAED;;GAEG;AACH,SAAS,sBAAsB,CAAC,IAAiB;IAC/C,IAAI,OAAO,GAAuB,IAAI,CAAC;IAEvC,OAAO,OAAO,EAAE,CAAC;QACf,IAAI,mBAAmB,CAAC,OAAO,CAAC,EAAE,CAAC;YACjC,OAAO,OAAO,CAAC;QACjB,CAAC;QACD,IAAI,4BAA4B,CAAC,OAAO,CAAC,EAAE,CAAC;YAC1C,MAAM,MAAM,GAAG,OAAO,CAAC,SAAS,EAAE,CAAC;YACnC,IAAI,MAAM,IAAI,mBAAmB,CAAC,MAAM,CAAC,EAAE,CAAC;gBAC1C,OAAO,MAAM,CAAC;YAChB,CAAC;QACH,CAAC;QACD,OAAO,GAAG,OAAO,CAAC,SAAS,EAAE,CAAC;IAChC,CAAC;AACH,CAAC;AAED;;GAEG;AACH,SAAS,eAAe,CAAC,gBAAqB,EAAE,SAAc;IAC5D,IAAI,CAAC;QACH,MAAM,eAAe,GAAG,gBAAgB,CAAC,kBAAkB,EAAE,CAAC;QAC9D,MAAM,QAAQ,GAAG,eAAe;YAC9B,CAAC,CAAC,eAAe,CAAC,MAAM,EAAE;YAC1B,CAAC,CAAC,gBAAgB,CAAC,MAAM,EAAE,CAAC;QAC9B,MAAM,WAAW,GAAG,CAAC,CAAC;QACtB,MAAM,SAAS,GAAG,eAAe;YAC/B,CAAC,CAAE,MAAgB;YACnB,CAAC,CAAE,SAAmB,CAAC;QAEzB,MAAM,aAAa,GAAG,SAAS,CAAC,KAAK,EAAE,CAAC;QACxC,aAAa,CAAC,MAAM,CAAC,GAAG,CAAC,QAAQ,EAAE,WAAW,EAAE,SAAS,CAAC,CAAC;QAC3D,aAAa,CAAC,KAAK,CAAC,GAAG,CACrB,SAAS,CAAC,MAAM,CAAC,GAAG,EACpB,SAAS,CAAC,MAAM,CAAC,MAAM,EACvB,SAAS,CAAC,MAAM,CAAC,IAAI,CACtB,CAAC;QAEF,OAAO,aAAa,CAAC,cAAc,EAAE,CAAC,MAAM,CAAC;IAC/C,CAAC;IAAC,OAAO,CAAC,EAAE,CAAC;QACX,OAAO,CAAC,KAAK,CAAC,uDAAuD,EAAE,CAAC,CAAC,CAAC;QAC1E,OAAO,CAAC,CAAC;IACX,CAAC;AACH,CAAC;AAED,eAAe,6BAA6B,CAAC"}
+\ No newline at end of file
++{"version":3,"file":"LexicalInlineCompletionPlugin.js","sourceRoot":"","sources":["../../src/plugins/LexicalInlineCompletionPlugin.tsx"],"names":[],"mappings":"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"}
+\ No newline at end of file
 diff --git a/node_modules/@datalayer/jupyter-lexical/lib/plugins/index.d.ts b/node_modules/@datalayer/jupyter-lexical/lib/plugins/index.d.ts
-index 1f16dd3..9bd7a76 100644
+index 1f16dd3..85aa819 100644
 --- a/node_modules/@datalayer/jupyter-lexical/lib/plugins/index.d.ts
 +++ b/node_modules/@datalayer/jupyter-lexical/lib/plugins/index.d.ts
 @@ -1,4 +1,5 @@
@@ -3760,8 +4746,16 @@ index 1f16dd3..9bd7a76 100644
  export * from './AutoLinkPlugin';
  export * from './CodeActionMenuPlugin';
  export * from './CommentPlugin';
+@@ -8,6 +9,7 @@ export * from './EquationsPlugin';
+ export * from './FloatingTextFormatToolbarPlugin';
+ export * from './HorizontalRulePlugin';
+ export * from './ImagesPlugin';
++export * from './InlineCompletionConfig';
+ export * from './JupyterCellPlugin';
+ export * from './JupyterInputOutputPlugin';
+ export * from './LexicalInlineCompletionPlugin';
 diff --git a/node_modules/@datalayer/jupyter-lexical/lib/plugins/index.js b/node_modules/@datalayer/jupyter-lexical/lib/plugins/index.js
-index 2853778..d179b0a 100644
+index 2853778..07da049 100644
 --- a/node_modules/@datalayer/jupyter-lexical/lib/plugins/index.js
 +++ b/node_modules/@datalayer/jupyter-lexical/lib/plugins/index.js
 @@ -4,6 +4,7 @@
@@ -3772,14 +4766,22 @@ index 2853778..d179b0a 100644
  export * from './AutoLinkPlugin';
  export * from './CodeActionMenuPlugin';
  export * from './CommentPlugin';
+@@ -13,6 +14,7 @@ export * from './EquationsPlugin';
+ export * from './FloatingTextFormatToolbarPlugin';
+ export * from './HorizontalRulePlugin';
+ export * from './ImagesPlugin';
++export * from './InlineCompletionConfig';
+ export * from './JupyterCellPlugin';
+ export * from './JupyterInputOutputPlugin';
+ export * from './LexicalInlineCompletionPlugin';
 diff --git a/node_modules/@datalayer/jupyter-lexical/lib/plugins/index.js.map b/node_modules/@datalayer/jupyter-lexical/lib/plugins/index.js.map
-index 28ee777..d471924 100644
+index 28ee777..4951aed 100644
 --- a/node_modules/@datalayer/jupyter-lexical/lib/plugins/index.js.map
 +++ b/node_modules/@datalayer/jupyter-lexical/lib/plugins/index.js.map
 @@ -1 +1 @@
 -{"version":3,"file":"index.js","sourceRoot":"","sources":["../../src/plugins/index.ts"],"names":[],"mappings":"AAAA;;;;GAIG;AAEH,cAAc,mBAAmB,CAAC;AAClC,cAAc,kBAAkB,CAAC;AACjC,cAAc,wBAAwB,CAAC;AACvC,cAAc,iBAAiB,CAAC;AAChC,cAAc,6BAA6B,CAAC;AAC5C,cAAc,wBAAwB,CAAC;AACvC,cAAc,mBAAmB,CAAC;AAClC,cAAc,mCAAmC,CAAC;AAClD,cAAc,wBAAwB,CAAC;AACvC,cAAc,gBAAgB,CAAC;AAC/B,cAAc,qBAAqB,CAAC;AACpC,cAAc,4BAA4B,CAAC;AAC3C,cAAc,iCAAiC,CAAC;AAChD,cAAc,sBAAsB,CAAC;AACrC,cAAc,4BAA4B,CAAC;AAC3C,cAAc,kBAAkB,CAAC;AACjC,cAAc,yBAAyB,CAAC;AACxC,cAAc,mBAAmB,CAAC;AAClC,cAAc,yBAAyB,CAAC;AACxC,cAAc,iBAAiB,CAAC;AAChC,cAAc,kBAAkB,CAAC;AACjC,cAAc,iBAAiB,CAAC"}
 \ No newline at end of file
-+{"version":3,"file":"index.js","sourceRoot":"","sources":["../../src/plugins/index.ts"],"names":[],"mappings":"AAAA;;;;GAIG;AAEH,cAAc,mBAAmB,CAAC;AAClC,cAAc,oBAAoB,CAAC;AACnC,cAAc,kBAAkB,CAAC;AACjC,cAAc,wBAAwB,CAAC;AACvC,cAAc,iBAAiB,CAAC;AAChC,cAAc,6BAA6B,CAAC;AAC5C,cAAc,wBAAwB,CAAC;AACvC,cAAc,mBAAmB,CAAC;AAClC,cAAc,mCAAmC,CAAC;AAClD,cAAc,wBAAwB,CAAC;AACvC,cAAc,gBAAgB,CAAC;AAC/B,cAAc,qBAAqB,CAAC;AACpC,cAAc,4BAA4B,CAAC;AAC3C,cAAc,iCAAiC,CAAC;AAChD,cAAc,sBAAsB,CAAC;AACrC,cAAc,4BAA4B,CAAC;AAC3C,cAAc,kBAAkB,CAAC;AACjC,cAAc,yBAAyB,CAAC;AACxC,cAAc,mBAAmB,CAAC;AAClC,cAAc,yBAAyB,CAAC;AACxC,cAAc,iBAAiB,CAAC;AAChC,cAAc,kBAAkB,CAAC;AACjC,cAAc,iBAAiB,CAAC"}
++{"version":3,"file":"index.js","sourceRoot":"","sources":["../../src/plugins/index.ts"],"names":[],"mappings":"AAAA;;;;GAIG;AAEH,cAAc,mBAAmB,CAAC;AAClC,cAAc,oBAAoB,CAAC;AACnC,cAAc,kBAAkB,CAAC;AACjC,cAAc,wBAAwB,CAAC;AACvC,cAAc,iBAAiB,CAAC;AAChC,cAAc,6BAA6B,CAAC;AAC5C,cAAc,wBAAwB,CAAC;AACvC,cAAc,mBAAmB,CAAC;AAClC,cAAc,mCAAmC,CAAC;AAClD,cAAc,wBAAwB,CAAC;AACvC,cAAc,gBAAgB,CAAC;AAC/B,cAAc,0BAA0B,CAAC;AACzC,cAAc,qBAAqB,CAAC;AACpC,cAAc,4BAA4B,CAAC;AAC3C,cAAc,iCAAiC,CAAC;AAChD,cAAc,sBAAsB,CAAC;AACrC,cAAc,4BAA4B,CAAC;AAC3C,cAAc,kBAAkB,CAAC;AACjC,cAAc,yBAAyB,CAAC;AACxC,cAAc,mBAAmB,CAAC;AAClC,cAAc,yBAAyB,CAAC;AACxC,cAAc,iBAAiB,CAAC;AAChC,cAAc,kBAAkB,CAAC;AACjC,cAAc,iBAAiB,CAAC"}
 \ No newline at end of file
 diff --git a/node_modules/@datalayer/jupyter-lexical/lib/state/LexicalAdapter.d.ts b/node_modules/@datalayer/jupyter-lexical/lib/state/LexicalAdapter.d.ts
 index b8e97ef..3be4f4a 100644

@@ -523,6 +523,8 @@ export interface LLMCompletionRequestMessage {
   suffix: string;
   /** Programming language */
   language: string;
+  /** Content type: 'code' for Jupyter cells, 'prose' for natural language */
+  contentType?: "code" | "prose";
 }
 
 /** Outline item structure */
