@@ -133,16 +133,6 @@
         "tag": "ul"
       },
       {
-        "children": [],
-        "direction": null,
-        "format": "",
-        "indent": 0,
-        "type": "paragraph",
-        "version": 1,
-        "textFormat": 0,
-        "textStyle": ""
-      },
-      {
         "children": [
           {
             "detail": 0,
@@ -631,6 +621,10 @@
             "text": "But this is not executable",
             "type": "text",
             "version": 1
+          },
+          {
+            "type": "linebreak",
+            "version": 1
           }
         ],
         "direction": null,
@@ -1110,7 +1104,7 @@
             "format": 0,
             "mode": "normal",
             "style": "",
-            "text": "node",
+            "text": "platform",
             "type": "jupyter-input-highlight",
             "version": 1
           },
@@ -1171,6 +1165,6 @@
     "indent": 0,
     "type": "root",
     "version": 1,
-    "textStyle": "font-family: Courier New;"
+    "textStyle": "font-family: Times New Roman; font-size: 18pt;"
   }
 }

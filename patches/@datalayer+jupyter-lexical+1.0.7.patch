@@ -3839,7 +3839,7 @@ index 0000000..c5662a0
 +export declare function isDisabled(config: ContentTypeConfig): boolean;
 diff --git a/node_modules/@datalayer/jupyter-lexical/lib/plugins/InlineCompletionConfig.js b/node_modules/@datalayer/jupyter-lexical/lib/plugins/InlineCompletionConfig.js
 new file mode 100644
-index 0000000..767dd71
+index 0000000..623bbb6
 --- /dev/null
 +++ b/node_modules/@datalayer/jupyter-lexical/lib/plugins/InlineCompletionConfig.js
 @@ -0,0 +1,94 @@
@@ -3866,7 +3866,7 @@ index 0000000..767dd71
 +        contextAfter: -1, // Entire document
 +    },
 +    debounceMs: 200,
-+    manualTriggerKey: 'Ctrl+Space',
++    manualTriggerKey: 'Alt+Space', // Cross-platform: Option+Space on Mac, Alt+Space elsewhere
 +};
 +/**
 + * Merge user configuration with defaults.
@@ -3940,11 +3940,11 @@ index 0000000..767dd71
 \ No newline at end of file
 diff --git a/node_modules/@datalayer/jupyter-lexical/lib/plugins/InlineCompletionConfig.js.map b/node_modules/@datalayer/jupyter-lexical/lib/plugins/InlineCompletionConfig.js.map
 new file mode 100644
-index 0000000..b761038
+index 0000000..5213c6b
 --- /dev/null
 +++ b/node_modules/@datalayer/jupyter-lexical/lib/plugins/InlineCompletionConfig.js.map
 @@ -0,0 +1 @@
-+{"version":3,"file":"InlineCompletionConfig.js","sourceRoot":"","sources":["../../src/plugins/InlineCompletionConfig.ts"],"names":[],"mappings":"AAAA;;;;GAIG;AAyFH;;;;GAIG;AACH,MAAM,CAAC,MAAM,cAAc,GAA2B;IACpD,IAAI,EAAE;QACJ,WAAW,EAAE,MAAM;QACnB,aAAa,EAAE,CAAC,CAAC,EAAE,kBAAkB;QACrC,YAAY,EAAE,CAAC,CAAC,EAAE,kBAAkB;QACpC,QAAQ,EAAE,QAAQ;KACnB;IACD,KAAK,EAAE;QACL,WAAW,EAAE,QAAQ;QACrB,aAAa,EAAE,CAAC,CAAC,EAAE,kBAAkB;QACrC,YAAY,EAAE,CAAC,CAAC,EAAE,kBAAkB;KACrC;IACD,UAAU,EAAE,GAAG;IACf,gBAAgB,EAAE,YAAY;CAC/B,CAAC;AAaF;;;;;;;;;;;;;;GAcG;AACH,MAAM,UAAU,WAAW,CACzB,UAA0C;IAE1C,IAAI,CAAC,UAAU,EAAE,CAAC;QAChB,OAAO,EAAE,GAAG,cAAc,EAAE,CAAC;IAC/B,CAAC;IAED,OAAO;QACL,IAAI,EAAE;YACJ,GAAG,cAAc,CAAC,IAAI;YACtB,GAAG,UAAU,CAAC,IAAI;SACnB;QACD,KAAK,EAAE;YACL,GAAG,cAAc,CAAC,KAAK;YACvB,GAAG,UAAU,CAAC,KAAK;SACpB;QACD,UAAU,EAAE,UAAU,CAAC,UAAU,IAAI,cAAc,CAAC,UAAU;QAC9D,gBAAgB,EACd,UAAU,CAAC,gBAAgB,IAAI,cAAc,CAAC,gBAAgB;KACjE,CAAC;AACJ,CAAC;AAED;;;;;GAKG;AACH,MAAM,UAAU,mBAAmB,CAAC,KAAa;IAC/C,OAAO,KAAK,KAAK,CAAC,CAAC,IAAI,KAAK,IAAI,CAAC,CAAC;AACpC,CAAC;AAED;;;;;GAKG;AACH,MAAM,UAAU,iBAAiB,CAAC,MAAyB;IACzD,OAAO,MAAM,CAAC,WAAW,KAAK,MAAM,CAAC;AACvC,CAAC;AAED;;;;;GAKG;AACH,MAAM,UAAU,mBAAmB,CAAC,MAAyB;IAC3D,OAAO,MAAM,CAAC,WAAW,KAAK,QAAQ,IAAI,MAAM,CAAC,WAAW,KAAK,MAAM,CAAC;AAC1E,CAAC;AAED;;;;;GAKG;AACH,MAAM,UAAU,UAAU,CAAC,MAAyB;IAClD,OAAO,MAAM,CAAC,WAAW,KAAK,UAAU,CAAC;AAC3C,CAAC"}
++{"version":3,"file":"InlineCompletionConfig.js","sourceRoot":"","sources":["../../src/plugins/InlineCompletionConfig.ts"],"names":[],"mappings":"AAAA;;;;GAIG;AAyFH;;;;GAIG;AACH,MAAM,CAAC,MAAM,cAAc,GAA2B;IACpD,IAAI,EAAE;QACJ,WAAW,EAAE,MAAM;QACnB,aAAa,EAAE,CAAC,CAAC,EAAE,kBAAkB;QACrC,YAAY,EAAE,CAAC,CAAC,EAAE,kBAAkB;QACpC,QAAQ,EAAE,QAAQ;KACnB;IACD,KAAK,EAAE;QACL,WAAW,EAAE,QAAQ;QACrB,aAAa,EAAE,CAAC,CAAC,EAAE,kBAAkB;QACrC,YAAY,EAAE,CAAC,CAAC,EAAE,kBAAkB;KACrC;IACD,UAAU,EAAE,GAAG;IACf,gBAAgB,EAAE,WAAW,EAAE,2DAA2D;CAC3F,CAAC;AAaF;;;;;;;;;;;;;;GAcG;AACH,MAAM,UAAU,WAAW,CACzB,UAA0C;IAE1C,IAAI,CAAC,UAAU,EAAE,CAAC;QAChB,OAAO,EAAE,GAAG,cAAc,EAAE,CAAC;IAC/B,CAAC;IAED,OAAO;QACL,IAAI,EAAE;YACJ,GAAG,cAAc,CAAC,IAAI;YACtB,GAAG,UAAU,CAAC,IAAI;SACnB;QACD,KAAK,EAAE;YACL,GAAG,cAAc,CAAC,KAAK;YACvB,GAAG,UAAU,CAAC,KAAK;SACpB;QACD,UAAU,EAAE,UAAU,CAAC,UAAU,IAAI,cAAc,CAAC,UAAU;QAC9D,gBAAgB,EACd,UAAU,CAAC,gBAAgB,IAAI,cAAc,CAAC,gBAAgB;KACjE,CAAC;AACJ,CAAC;AAED;;;;;GAKG;AACH,MAAM,UAAU,mBAAmB,CAAC,KAAa;IAC/C,OAAO,KAAK,KAAK,CAAC,CAAC,IAAI,KAAK,IAAI,CAAC,CAAC;AACpC,CAAC;AAED;;;;;GAKG;AACH,MAAM,UAAU,iBAAiB,CAAC,MAAyB;IACzD,OAAO,MAAM,CAAC,WAAW,KAAK,MAAM,CAAC;AACvC,CAAC;AAED;;;;;GAKG;AACH,MAAM,UAAU,mBAAmB,CAAC,MAAyB;IAC3D,OAAO,MAAM,CAAC,WAAW,KAAK,QAAQ,IAAI,MAAM,CAAC,WAAW,KAAK,MAAM,CAAC;AAC1E,CAAC;AAED;;;;;GAKG;AACH,MAAM,UAAU,UAAU,CAAC,MAAyB;IAClD,OAAO,MAAM,CAAC,WAAW,KAAK,UAAU,CAAC;AAC3C,CAAC"}
 \ No newline at end of file
 diff --git a/node_modules/@datalayer/jupyter-lexical/lib/plugins/InlineCompletionContextExtractor.d.ts b/node_modules/@datalayer/jupyter-lexical/lib/plugins/InlineCompletionContextExtractor.d.ts
 new file mode 100644
