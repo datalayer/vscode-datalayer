@@ -51,6 +51,7 @@ import { createCommand, LexicalCommand } from "lexical";
 import {
   INSERT_YOUTUBE_COMMAND,
   INSERT_JUPYTER_INPUT_OUTPUT_COMMAND,
+  INSERT_INLINE_COMMAND,
   InsertImageDialog,
   InsertEquationDialog,
   useModal,
@@ -91,6 +92,10 @@ export interface LexicalToolbarProps {
   lexicalId?: string;
   /** Whether kernel is currently initializing (before it's created) */
   kernelInitializing?: boolean;
+  /** Whether comments panel is visible */
+  showCommentsPanel?: boolean;
+  /** Callback to toggle comments panel */
+  onToggleComments?: () => void;
 }
 
 // Font family options
@@ -233,6 +238,8 @@ export function LexicalToolbar({
   showCollaborativeLabel = false,
   lexicalId,
   kernelInitializing = false,
+  showCommentsPanel = false,
+  onToggleComments,
 }: LexicalToolbarProps = {}) {
   const [editor] = useLexicalComposerContext();
   const messageHandler = useContext(MessageHandlerContext);
@@ -248,6 +255,7 @@ export function LexicalToolbar({
   const [isSuperscript, setIsSuperscript] = useState(false);
   const [isHighlight, setIsHighlight] = useState(false);
   const [isCode, setIsCode] = useState(false);
+  const [hasSelection, setHasSelection] = useState(false);
 
   // Layout state
   const [canUndo, setCanUndo] = useState(false);
@@ -338,6 +346,10 @@ export function LexicalToolbar({
   const updateToolbar = useCallback(() => {
     const selection = $getSelection();
     if ($isRangeSelection(selection)) {
+      // Check if there's a non-empty text selection
+      const hasTextSelected = !selection.isCollapsed();
+      setHasSelection(hasTextSelected);
+
       // Text formatting
       setIsBold(selection.hasFormat("bold"));
       setIsItalic(selection.hasFormat("italic"));
@@ -1395,6 +1407,60 @@ export function LexicalToolbar({
                 showArrow={false}
                 minWidth="36px"
               />
+            </div>
+
+            {/* Add Comment Button */}
+            <div title="Add Comment (select text first)">
+              <button
+                type="button"
+                className="toolbar-button"
+                onClick={() => {
+                  if (hasSelection) {
+                    editor.dispatchCommand(INSERT_INLINE_COMMAND, undefined);
+                  }
+                }}
+                disabled={disabled || !hasSelection}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  width: "36px",
+                  height: "36px",
+                  padding: "6px",
+                  border: "none",
+                  cursor: disabled || !hasSelection ? "not-allowed" : "pointer",
+                  opacity: disabled || !hasSelection ? 0.5 : 1,
+                  backgroundColor: "transparent",
+                }}
+              >
+                <i className="codicon codicon-comment-add" />
+              </button>
+            </div>
+
+            {/* Comments Panel Toggle */}
+            <div title="Toggle Comments Panel">
+              <button
+                type="button"
+                className="toolbar-button"
+                onClick={onToggleComments}
+                disabled={disabled}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  width: "36px",
+                  height: "36px",
+                  padding: "6px",
+                  border: "none",
+                  cursor: disabled ? "default" : "pointer",
+                  opacity: disabled ? 0.5 : 1,
+                  backgroundColor: showCommentsPanel
+                    ? "var(--vscode-toolbar-hoverBackground)"
+                    : "transparent",
+                }}
+              >
+                <i className="codicon codicon-comment-discussion" />
+              </button>
             </div>
 
             <div

@@ -61,16 +61,23 @@ import {
   AutoIndentPlugin,
   LexicalConfigProvider,
   LexicalStatePlugin,
+  CommentThreadNode,
+  CommentPlugin,
 } from "@datalayer/jupyter-lexical";
 import { LexicalToolbar } from "./LexicalToolbar";
 import { RuntimeProgressBar } from "../components/RuntimeProgressBar";
 import type { RuntimeJSON } from "@datalayer/core/lib/client";
-import { LoroCollaborationPlugin } from "@datalayer/lexical-loro";
+import {
+  LoroCollaborationPlugin,
+  CollaborationContext,
+  type CollaborationContextType,
+} from "@datalayer/lexical-loro";
 import { createVSCodeLoroProvider } from "../services/loro/providerFactory";
 import { LexicalVSCodeLLMProvider } from "../services/completion/lexicalLLMProvider";
 import { OutlinePlugin } from "./plugins/OutlinePlugin";
 import { NavigationPlugin } from "./plugins/NavigationPlugin";
 import { InternalCommandsPlugin } from "./plugins/InternalCommandsPlugin";
+import { ContextMenuPlugin } from "./plugins/ContextMenuPlugin";
 import type { OutlineUpdateMessage } from "../types/messages";
 
 /**
@@ -110,6 +117,7 @@ export interface LexicalEditorProps {
   showToolbar?: boolean;
   editable?: boolean;
   collaboration?: CollaborationConfig;
+  userInfo?: { username: string; userColor: string } | null;
   selectedRuntime?: RuntimeJSON;
   showRuntimeSelector?: boolean;
   documentUri?: string;
@@ -296,6 +304,7 @@ export function LexicalEditor({
   showToolbar = true,
   editable = true,
   collaboration,
+  userInfo,
   selectedRuntime,
   showRuntimeSelector = false,
   documentUri,
@@ -308,6 +317,8 @@ export function LexicalEditor({
 }: LexicalEditorProps) {
   const [floatingAnchorElem, setFloatingAnchorElem] =
     useState<HTMLDivElement | null>(null);
+
+  const [showCommentsPanel, setShowCommentsPanel] = useState(false);
 
   const onRef = (_floatingAnchorElem: HTMLDivElement) => {
     if (_floatingAnchorElem !== null) {
@@ -359,6 +370,8 @@ export function LexicalEditor({
       MarkNode,
       OverflowNode,
       HorizontalRuleNode,
+      // Comment nodes (for commenting plugin)
+      CommentThreadNode,
       // Jupyter lexical nodes (must match SaaS editor for collaboration)
       EquationNode,
       ImageNode,
@@ -496,6 +509,10 @@ export function LexicalEditor({
                   selectedRuntime={selectedRuntime}
                   showRuntimeSelector={showRuntimeSelector}
                   showCollaborativeLabel={collaboration?.enabled}
+                  showCommentsPanel={showCommentsPanel}
+                  onToggleComments={() =>
+                    setShowCommentsPanel(!showCommentsPanel)
+                  }
                   lexicalId={lexicalId || undefined}
                   kernelInitializing={kernelInitializing}
                 />
@@ -564,20 +581,63 @@ export function LexicalEditor({
               vscode={vscode as { postMessage: (message: unknown) => void }}
               lexicalId={lexicalId}
             />
+            {/* Comments Plugin - Wrapped in CollaborationContext for username */}
+            {(() => {
+              const username =
+                userInfo?.username || collaboration?.username || "Anonymous";
+              const userColor =
+                userInfo?.userColor || collaboration?.userColor || "#808080";
+
+              // Create CollaborationContext value for CommentPlugin
+              // This provides username/color WITHOUT full Loro sync
+              const collabContextValue: CollaborationContextType = {
+                clientID: 0, // Not needed for local comments
+                color: userColor,
+                isCollabActive: collaboration?.enabled || false,
+                name: username,
+                docMap: new Map(), // Empty map for local files
+              };
+
+              return (
+                <CollaborationContext.Provider value={collabContextValue}>
+                  <CommentPlugin
+                    providerFactory={undefined}
+                    showCommentsPanel={showCommentsPanel}
+                    showFloatingAddButton={false}
+                    showToggleButton={false}
+                  />
+                  {/* Context Menu Plugin - Right-click to add comments */}
+                  <ContextMenuPlugin />
+                </CollaborationContext.Provider>
+              );
+            })()}
             {floatingAnchorElem && (
               <DraggableBlockPlugin anchorElem={floatingAnchorElem} />
             )}
-            {collaboration?.enabled && collaboration.documentId && (
-              <LoroCollaborationPlugin
-                id={collaboration.documentId}
-                shouldBootstrap
-                providerFactory={createVSCodeLoroProvider}
-                websocketUrl={collaboration.websocketUrl || ""}
-                username={collaboration.username}
-                cursorColor={collaboration.userColor}
-                onInitialization={(_isInitialized) => {}}
-              />
-            )}
+            {collaboration?.enabled &&
+              (() => {
+                const username = userInfo?.username || collaboration?.username;
+                const userColor =
+                  userInfo?.userColor || collaboration?.userColor;
+                const docId =
+                  collaboration?.documentId || documentUri || "local";
+
+                console.log(
+                  "[LexicalEditor] Rendering LoroCollaborationPlugin",
+                );
+
+                return (
+                  <LoroCollaborationPlugin
+                    id={docId}
+                    shouldBootstrap
+                    providerFactory={createVSCodeLoroProvider}
+                    websocketUrl={collaboration?.websocketUrl || ""}
+                    username={username}
+                    cursorColor={userColor}
+                    onInitialization={(_isInitialized) => {}}
+                  />
+                );
+              })()}
           </div>
         </LexicalComposer>
       </LexicalConfigProvider>

@@ -137,6 +137,18 @@ export class LexicalCollaborationService {
         user?.displayName || user?.handle || user?.email || "Anonymous";
       const username = `${baseUsername} (VSCode)`;
 
+      console.log("[LexicalCollaboration] Creating config:", {
+        username,
+        baseUsername,
+        user: user
+          ? {
+              displayName: user.displayName,
+              handle: user.handle,
+              email: user.email,
+            }
+          : null,
+      });
+
       return {
         enabled: true,
         websocketUrl,

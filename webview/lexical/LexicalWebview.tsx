@@ -56,6 +56,7 @@ interface WebviewMessage {
   content?: number[];
   editable?: boolean;
   collaboration?: CollaborationConfig;
+  userInfo?: { username: string; userColor: string }; // User info for comments (always sent if logged in)
   theme?: "light" | "dark";
   documentUri?: string; // For logging only
   documentId?: string; // Unique ID for document validation
@@ -149,6 +150,12 @@ function LexicalWebviewInner({
           if (message.collaboration) {
             store.getState().setCollaborationConfig(message.collaboration);
           }
+          if (message.userInfo) {
+            store.getState().setUserInfo(message.userInfo);
+          } else {
+            // Clear userInfo if not present (user logged out)
+            store.getState().setUserInfo(null);
+          }
           if (message.theme) {
             store.getState().setTheme(message.theme);
           }
@@ -157,6 +164,20 @@ function LexicalWebviewInner({
         case "theme-change": {
           if (message.theme) {
             store.getState().setTheme(message.theme);
+          }
+          break;
+        }
+        case "user-info-update": {
+          // Handle real-time userInfo updates (login/logout events)
+          if (message.userInfo) {
+            console.log(
+              "[LexicalWebview] Received userInfo update:",
+              message.userInfo,
+            );
+            store.getState().setUserInfo(message.userInfo);
+          } else {
+            console.log("[LexicalWebview] User logged out, clearing userInfo");
+            store.getState().setUserInfo(null);
           }
           break;
         }
@@ -413,6 +434,7 @@ function LexicalWebviewInner({
   const content = store((state) => state.content);
   const isEditable = store((state) => state.isEditable);
   const collaborationConfig = store((state) => state.collaborationConfig);
+  const userInfo = store((state) => state.userInfo);
   const theme = store((state) => state.theme);
   const documentUri = store((state) => state.documentUri);
   const navigationTarget = store((state) => state.navigationTarget);
@@ -448,6 +470,7 @@ function LexicalWebviewInner({
             showToolbar={true}
             editable={isEditable}
             collaboration={collaborationConfig}
+            userInfo={userInfo}
             selectedRuntime={selectedRuntime}
             showRuntimeSelector={true}
             documentUri={documentUri}

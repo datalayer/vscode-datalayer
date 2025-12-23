@@ -60,6 +60,8 @@ export interface LexicalState {
   // Collaboration state
   /** Configuration for real-time collaboration features */
   collaborationConfig: CollaborationConfig;
+  /** User information for comments (independent of collaboration sync) */
+  userInfo: { username: string; userColor: string } | null;
 
   // Actions
   /**
@@ -108,6 +110,11 @@ export interface LexicalState {
    */
   setCollaborationConfig: (config: CollaborationConfig) => void;
   /**
+   * Updates the user information for comments
+   * @param info User information (username and color) or null if not logged in
+   */
+  setUserInfo: (info: { username: string; userColor: string } | null) => void;
+  /**
    * Resets the entire store to initial state
    */
   reset: () => void;
@@ -140,6 +147,8 @@ const initialState = {
   collaborationConfig: {
     enabled: false,
   },
+  /** Default to no user info (not logged in) */
+  userInfo: null as { username: string; userColor: string } | null,
 };
 
 /**
@@ -163,5 +172,6 @@ export const createLexicalStore = () =>
     setNavigationTarget: (itemId) => set({ navigationTarget: itemId }),
     setLexicalId: (lexicalId) => set({ lexicalId }),
     setCollaborationConfig: (config) => set({ collaborationConfig: config }),
+    setUserInfo: (info) => set({ userInfo: info }),
     reset: () => set(initialState),
   }));

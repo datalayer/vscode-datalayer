@@ -1720,6 +1720,425 @@ index 0000000..8e61ceb
 @@ -0,0 +1 @@
 +{"version":3,"file":"types.js","sourceRoot":"","sources":["../../src/autoindent/types.ts"],"names":[],"mappings":"AAAA;;;;GAIG"}
 \ No newline at end of file
+diff --git a/node_modules/@datalayer/jupyter-lexical/lib/components/Commenting.d.ts b/node_modules/@datalayer/jupyter-lexical/lib/components/Commenting.d.ts
+index 48d5585..8fee0e5 100644
+--- a/node_modules/@datalayer/jupyter-lexical/lib/components/Commenting.d.ts
++++ b/node_modules/@datalayer/jupyter-lexical/lib/components/Commenting.d.ts
+@@ -1,6 +1,4 @@
+ import type { LexicalEditor } from 'lexical';
+-import { WebsocketProvider } from 'y-websocket';
+-import { Array as YArray, Map as YMap } from 'yjs';
+ export type Comment = {
+     author: string;
+     content: string;
+@@ -20,22 +18,28 @@ export declare function createComment(content: string, author: string, id?: stri
+ export declare function createThread(quote: string, comments: Array<Comment>, id?: string): Thread;
+ export declare class CommentStore {
+     _editor: LexicalEditor;
+-    _comments: Comments;
+     _changeListeners: Set<() => void>;
+-    _collabProvider: null | WebsocketProvider;
+     constructor(editor: LexicalEditor);
+-    isCollaborative(): boolean;
++    /**
++     * Get all comments by reading CommentThreadNode instances from the editor state.
++     * These nodes sync automatically via Loro collaboration provider.
++     */
+     getComments(): Comments;
++    /**
++     * Add a comment to an existing thread or create a new thread.
++     * Updates CommentThreadNode in the Lexical editor state, which automatically
++     * syncs via Loro collaboration provider.
++     */
+     addComment(commentOrThread: Comment | Thread, thread?: Thread, offset?: number): void;
++    /**
++     * Delete a comment from a thread or delete an entire thread.
++     * Updates CommentThreadNode in the Lexical editor state, which automatically
++     * syncs via Loro collaboration provider.
++     */
+     deleteCommentOrThread(commentOrThread: Comment | Thread, thread?: Thread): {
+         markedComment: Comment;
+         index: number;
+     } | null;
+     registerOnChange(onChange: () => void): () => void;
+-    _withRemoteTransaction(fn: () => void): void;
+-    _withLocalTransaction(fn: () => void): void;
+-    _getCollabComments(): null | YArray<any>;
+-    _createCollabSharedMap(commentOrThread: Comment | Thread): YMap<any>;
+-    registerCollaboration(provider: WebsocketProvider): () => void;
+ }
+ export declare function useCommentStore(commentStore: CommentStore): Comments;
+diff --git a/node_modules/@datalayer/jupyter-lexical/lib/components/Commenting.js b/node_modules/@datalayer/jupyter-lexical/lib/components/Commenting.js
+index bea4f71..a8875ef 100644
+--- a/node_modules/@datalayer/jupyter-lexical/lib/components/Commenting.js
++++ b/node_modules/@datalayer/jupyter-lexical/lib/components/Commenting.js
+@@ -4,9 +4,8 @@
+  * MIT License
+  */
+ import { useEffect, useState } from 'react';
+-import { TOGGLE_CONNECT_COMMAND } from '@lexical/yjs';
+-import { COMMAND_PRIORITY_LOW } from 'lexical';
+-import { Array as YArray, Map as YMap, YArrayEvent, } from 'yjs';
++import { $getRoot } from 'lexical';
++import { $createCommentThreadNode, $isCommentThreadNode, } from '../nodes/CommentThreadNode';
+ function createUID() {
+     return Math.random()
+         .toString(36)
+@@ -31,14 +30,6 @@ export function createThread(quote, comments, id) {
+         type: 'thread',
+     };
+ }
+-function cloneThread(thread) {
+-    return {
+-        comments: Array.from(thread.comments),
+-        id: thread.id,
+-        quote: thread.quote,
+-        type: 'thread',
+-    };
+-}
+ function markDeleted(comment) {
+     return {
+         author: comment.author,
+@@ -57,101 +48,103 @@ function triggerOnChange(commentStore) {
+ }
+ export class CommentStore {
+     _editor;
+-    _comments;
+     _changeListeners;
+-    _collabProvider;
+     constructor(editor) {
+-        this._comments = [];
+         this._editor = editor;
+-        this._collabProvider = null;
+         this._changeListeners = new Set();
++        // Register update listener to automatically trigger onChange
++        this._editor.registerUpdateListener(() => {
++            triggerOnChange(this);
++        });
+     }
+-    isCollaborative() {
+-        return this._collabProvider !== null;
+-    }
++    /**
++     * Get all comments by reading CommentThreadNode instances from the editor state.
++     * These nodes sync automatically via Loro collaboration provider.
++     */
+     getComments() {
+-        return this._comments;
++        const threads = [];
++        this._editor.getEditorState().read(() => {
++            const root = $getRoot();
++            root.getChildren().forEach(node => {
++                if ($isCommentThreadNode(node)) {
++                    const threadNode = node;
++                    threads.push({
++                        type: 'thread',
++                        id: threadNode.getId(),
++                        quote: threadNode.getQuote(),
++                        comments: threadNode.getComments(),
++                    });
++                }
++            });
++        });
++        return threads;
+     }
++    /**
++     * Add a comment to an existing thread or create a new thread.
++     * Updates CommentThreadNode in the Lexical editor state, which automatically
++     * syncs via Loro collaboration provider.
++     */
+     addComment(commentOrThread, thread, offset) {
+-        const nextComments = Array.from(this._comments);
+-        // The YJS types explicitly use `any` as well.
+-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+-        const sharedCommentsArray = this._getCollabComments();
+-        if (thread !== undefined && commentOrThread.type === 'comment') {
+-            for (let i = 0; i < nextComments.length; i++) {
+-                const comment = nextComments[i];
+-                if (comment.type === 'thread' && comment.id === thread.id) {
+-                    const newThread = cloneThread(comment);
+-                    nextComments.splice(i, 1, newThread);
+-                    const insertOffset = offset !== undefined ? offset : newThread.comments.length;
+-                    if (this.isCollaborative() && sharedCommentsArray !== null) {
+-                        const parentSharedArray = sharedCommentsArray
+-                            .get(i)
+-                            .get('comments');
+-                        this._withRemoteTransaction(() => {
+-                            const sharedMap = this._createCollabSharedMap(commentOrThread);
+-                            parentSharedArray.insert(insertOffset, [sharedMap]);
+-                        });
++        this._editor.update(() => {
++            if (thread !== undefined && commentOrThread.type === 'comment') {
++                // Add comment to existing thread
++                const root = $getRoot();
++                root.getChildren().forEach(node => {
++                    if ($isCommentThreadNode(node)) {
++                        const threadNode = node;
++                        if (threadNode.getId() === thread.id) {
++                            threadNode.addComment(commentOrThread);
++                        }
+                     }
+-                    newThread.comments.splice(insertOffset, 0, commentOrThread);
+-                    break;
+-                }
+-            }
+-        }
+-        else {
+-            const insertOffset = offset !== undefined ? offset : nextComments.length;
+-            if (this.isCollaborative() && sharedCommentsArray !== null) {
+-                this._withRemoteTransaction(() => {
+-                    const sharedMap = this._createCollabSharedMap(commentOrThread);
+-                    sharedCommentsArray.insert(insertOffset, [sharedMap]);
+                 });
+             }
+-            nextComments.splice(insertOffset, 0, commentOrThread);
+-        }
+-        this._comments = nextComments;
+-        triggerOnChange(this);
++            else if (commentOrThread.type === 'thread') {
++                // Create new thread node
++                const threadNode = $createCommentThreadNode(commentOrThread.id, commentOrThread.quote, commentOrThread.comments);
++                $getRoot().append(threadNode);
++            }
++        });
++        // No need to manually trigger onChange - registerUpdateListener handles it
+     }
++    /**
++     * Delete a comment from a thread or delete an entire thread.
++     * Updates CommentThreadNode in the Lexical editor state, which automatically
++     * syncs via Loro collaboration provider.
++     */
+     deleteCommentOrThread(commentOrThread, thread) {
+-        const nextComments = Array.from(this._comments);
+-        // The YJS types explicitly use `any` as well.
+-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+-        const sharedCommentsArray = this._getCollabComments();
+         let commentIndex = null;
+-        if (thread !== undefined) {
+-            for (let i = 0; i < nextComments.length; i++) {
+-                const nextComment = nextComments[i];
+-                if (nextComment.type === 'thread' && nextComment.id === thread.id) {
+-                    const newThread = cloneThread(nextComment);
+-                    nextComments.splice(i, 1, newThread);
+-                    const threadComments = newThread.comments;
+-                    commentIndex = threadComments.indexOf(commentOrThread);
+-                    if (this.isCollaborative() && sharedCommentsArray !== null) {
+-                        const parentSharedArray = sharedCommentsArray
+-                            .get(i)
+-                            .get('comments');
+-                        this._withRemoteTransaction(() => {
+-                            parentSharedArray.delete(commentIndex);
+-                        });
++        this._editor.update(() => {
++            if (thread !== undefined && commentOrThread.type === 'comment') {
++                // Delete comment from existing thread
++                const root = $getRoot();
++                root.getChildren().forEach(node => {
++                    if ($isCommentThreadNode(node)) {
++                        const threadNode = node;
++                        if (threadNode.getId() === thread.id) {
++                            const comments = threadNode.getComments();
++                            commentIndex = comments.findIndex(c => c.id === commentOrThread.id);
++                            threadNode.deleteComment(commentOrThread.id);
++                        }
+                     }
+-                    threadComments.splice(commentIndex, 1);
+-                    break;
+-                }
++                });
+             }
+-        }
+-        else {
+-            commentIndex = nextComments.indexOf(commentOrThread);
+-            if (this.isCollaborative() && sharedCommentsArray !== null) {
+-                this._withRemoteTransaction(() => {
+-                    sharedCommentsArray.delete(commentIndex);
++            else {
++                // Delete entire thread
++                const root = $getRoot();
++                root.getChildren().forEach(node => {
++                    if ($isCommentThreadNode(node)) {
++                        const threadNode = node;
++                        if (threadNode.getId() === commentOrThread.id) {
++                            node.remove();
++                        }
++                    }
+                 });
+             }
+-            nextComments.splice(commentIndex, 1);
+-        }
+-        this._comments = nextComments;
+-        triggerOnChange(this);
++        });
++        // No need to manually trigger onChange - registerUpdateListener handles it
+         if (commentOrThread.type === 'comment') {
+             return {
+-                index: commentIndex,
++                index: commentIndex !== null ? commentIndex : 0,
+                 markedComment: markDeleted(commentOrThread),
+             };
+         }
+@@ -164,151 +157,6 @@ export class CommentStore {
+             changeListeners.delete(onChange);
+         };
+     }
+-    _withRemoteTransaction(fn) {
+-        const provider = this._collabProvider;
+-        if (provider !== null) {
+-            const doc = provider.doc;
+-            doc.transact(fn, this);
+-        }
+-    }
+-    _withLocalTransaction(fn) {
+-        const collabProvider = this._collabProvider;
+-        try {
+-            this._collabProvider = null;
+-            fn();
+-        }
+-        finally {
+-            this._collabProvider = collabProvider;
+-        }
+-    }
+-    _getCollabComments() {
+-        const provider = this._collabProvider;
+-        if (provider !== null) {
+-            const doc = provider.doc;
+-            //      return doc.get('comments', YArray) as YArray<any>;
+-            return doc.get('comments');
+-        }
+-        return null;
+-    }
+-    _createCollabSharedMap(commentOrThread) {
+-        const sharedMap = new YMap();
+-        const type = commentOrThread.type;
+-        const id = commentOrThread.id;
+-        sharedMap.set('type', type);
+-        sharedMap.set('id', id);
+-        if (type === 'comment') {
+-            sharedMap.set('author', commentOrThread.author);
+-            sharedMap.set('content', commentOrThread.content);
+-            sharedMap.set('deleted', commentOrThread.deleted);
+-            sharedMap.set('timeStamp', commentOrThread.timeStamp);
+-        }
+-        else {
+-            sharedMap.set('quote', commentOrThread.quote);
+-            const commentsArray = new YArray();
+-            commentOrThread.comments.forEach((comment, i) => {
+-                const sharedChildComment = this._createCollabSharedMap(comment);
+-                commentsArray.insert(i, [sharedChildComment]);
+-            });
+-            sharedMap.set('comments', commentsArray);
+-        }
+-        return sharedMap;
+-    }
+-    registerCollaboration(provider) {
+-        this._collabProvider = provider;
+-        const sharedCommentsArray = this._getCollabComments();
+-        const connect = () => {
+-            provider.connect();
+-        };
+-        const disconnect = () => {
+-            try {
+-                provider.disconnect();
+-            }
+-            catch (e) {
+-                // Do nothing
+-            }
+-        };
+-        const unsubscribe = this._editor.registerCommand(TOGGLE_CONNECT_COMMAND, payload => {
+-            if (connect !== undefined && disconnect !== undefined) {
+-                const shouldConnect = payload;
+-                if (shouldConnect) {
+-                    // eslint-disable-next-line no-console
+-                    console.log('Comments connected!');
+-                    connect();
+-                }
+-                else {
+-                    // eslint-disable-next-line no-console
+-                    console.log('Comments disconnected!');
+-                    disconnect();
+-                }
+-            }
+-            return false;
+-        }, COMMAND_PRIORITY_LOW);
+-        const onSharedCommentChanges = (
+-        // The YJS types explicitly use `any` as well.
+-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+-        events, transaction) => {
+-            if (transaction.origin !== this) {
+-                for (let i = 0; i < events.length; i++) {
+-                    const event = events[i];
+-                    if (event instanceof YArrayEvent) {
+-                        const target = event.target;
+-                        const deltas = event.delta;
+-                        let offset = 0;
+-                        for (let s = 0; s < deltas.length; s++) {
+-                            const delta = deltas[s];
+-                            const insert = delta.insert;
+-                            const retain = delta.retain;
+-                            const del = delta.delete;
+-                            const parent = target.parent;
+-                            const parentThread = target === sharedCommentsArray
+-                                ? undefined
+-                                : parent instanceof YMap &&
+-                                    this._comments.find(t => t.id === parent.get('id'));
+-                            if (Array.isArray(insert)) {
+-                                insert.forEach((map) => {
+-                                    const id = map.get('id');
+-                                    const type = map.get('type');
+-                                    const commentOrThread = type === 'thread'
+-                                        ? createThread(map.get('quote'), map
+-                                            .get('comments')
+-                                            .toArray()
+-                                            .map((innerComment) => createComment(innerComment.get('content'), innerComment.get('author'), innerComment.get('id'), innerComment.get('timeStamp'), innerComment.get('deleted'))), id)
+-                                        : createComment(map.get('content'), map.get('author'), id, map.get('timeStamp'), map.get('deleted'));
+-                                    this._withLocalTransaction(() => {
+-                                        this.addComment(commentOrThread, parentThread, offset);
+-                                    });
+-                                });
+-                            }
+-                            else if (typeof retain === 'number') {
+-                                offset += retain;
+-                            }
+-                            else if (typeof del === 'number') {
+-                                for (let d = 0; d < del; d++) {
+-                                    const commentOrThread = parentThread === undefined || parentThread === false
+-                                        ? this._comments[offset]
+-                                        : parentThread.comments[offset];
+-                                    this._withLocalTransaction(() => {
+-                                        this.deleteCommentOrThread(commentOrThread, parentThread);
+-                                    });
+-                                    offset++;
+-                                }
+-                            }
+-                        }
+-                    }
+-                }
+-            }
+-        };
+-        if (sharedCommentsArray === null) {
+-            return () => null;
+-        }
+-        sharedCommentsArray.observeDeep(onSharedCommentChanges);
+-        connect();
+-        return () => {
+-            sharedCommentsArray.unobserveDeep(onSharedCommentChanges);
+-            unsubscribe();
+-            this._collabProvider = null;
+-        };
+-    }
+ }
+ export function useCommentStore(commentStore) {
+     const [comments, setComments] = useState(commentStore.getComments());
+diff --git a/node_modules/@datalayer/jupyter-lexical/lib/components/Commenting.js.map b/node_modules/@datalayer/jupyter-lexical/lib/components/Commenting.js.map
+index f5ceb79..c42b2af 100644
+--- a/node_modules/@datalayer/jupyter-lexical/lib/components/Commenting.js.map
++++ b/node_modules/@datalayer/jupyter-lexical/lib/components/Commenting.js.map
+@@ -1 +1 @@
+-{"version":3,"file":"Commenting.js","sourceRoot":"","sources":["../../src/components/Commenting.tsx"],"names":[],"mappings":"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"}
+\ No newline at end of file
++{"version":3,"file":"Commenting.js","sourceRoot":"","sources":["../../src/components/Commenting.tsx"],"names":[],"mappings":"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"}
+\ No newline at end of file
 diff --git a/node_modules/@datalayer/jupyter-lexical/lib/editor/Editor.js b/node_modules/@datalayer/jupyter-lexical/lib/editor/Editor.js
 index 7f3adc2..6068100 100644
 --- a/node_modules/@datalayer/jupyter-lexical/lib/editor/Editor.js
@@ -2468,6 +2887,148 @@ index 8774f4d..2637312 100644
 \ No newline at end of file
 +{"version":3,"file":"index.js","sourceRoot":"","sources":["../src/index.ts"],"names":[],"mappings":"AAAA;;;;GAIG;AAEH,cAAc,cAAc,CAAC;AAC7B,cAAc,cAAc,CAAC;AAC7B,cAAc,WAAW,CAAC;AAC1B,cAAc,WAAW,CAAC;AAC1B,cAAc,UAAU,CAAC;AACzB,cAAc,SAAS,CAAC;AACxB,cAAc,SAAS,CAAC;AACxB,cAAc,WAAW,CAAC;AAC1B,cAAc,UAAU,CAAC;AACzB,cAAc,SAAS,CAAC;AACxB,cAAc,SAAS,CAAC"}
 \ No newline at end of file
+diff --git a/node_modules/@datalayer/jupyter-lexical/lib/nodes/CommentThreadNode.d.ts b/node_modules/@datalayer/jupyter-lexical/lib/nodes/CommentThreadNode.d.ts
+new file mode 100644
+index 0000000..ddbe9f5
+--- /dev/null
++++ b/node_modules/@datalayer/jupyter-lexical/lib/nodes/CommentThreadNode.d.ts
+@@ -0,0 +1,35 @@
++import { DecoratorNode, type EditorConfig, type LexicalEditor, type NodeKey, type SerializedLexicalNode, type Spread } from 'lexical';
++import type { Comment } from '../components/Commenting';
++export type SerializedCommentThreadNode = Spread<{
++    id: string;
++    quote: string;
++    comments: Comment[];
++}, SerializedLexicalNode>;
++/**
++ * CommentThreadNode stores comment thread data as a Lexical node.
++ * This node syncs automatically via the Loro collaboration provider.
++ *
++ * Unlike the original CommentPlugin which used Yjs for comment storage,
++ * this approach stores comments directly in the Lexical editor state,
++ * making them part of the document JSON and enabling automatic sync.
++ */
++export declare class CommentThreadNode extends DecoratorNode<JSX.Element> {
++    __id: string;
++    __quote: string;
++    __comments: Comment[];
++    static getType(): string;
++    static clone(node: CommentThreadNode): CommentThreadNode;
++    static importJSON(json: SerializedCommentThreadNode): CommentThreadNode;
++    exportJSON(): SerializedCommentThreadNode;
++    constructor(id: string, quote: string, comments: Comment[], key?: NodeKey);
++    createDOM(_config: EditorConfig): HTMLElement;
++    updateDOM(): boolean;
++    getId(): string;
++    getQuote(): string;
++    getComments(): Comment[];
++    addComment(comment: Comment): void;
++    deleteComment(commentId: string): void;
++    decorate(_editor: LexicalEditor): JSX.Element;
++}
++export declare function $createCommentThreadNode(id: string, quote: string, comments: Comment[]): CommentThreadNode;
++export declare function $isCommentThreadNode(node: unknown): node is CommentThreadNode;
+diff --git a/node_modules/@datalayer/jupyter-lexical/lib/nodes/CommentThreadNode.js b/node_modules/@datalayer/jupyter-lexical/lib/nodes/CommentThreadNode.js
+new file mode 100644
+index 0000000..4bd4df5
+--- /dev/null
++++ b/node_modules/@datalayer/jupyter-lexical/lib/nodes/CommentThreadNode.js
+@@ -0,0 +1,86 @@
++import { Fragment as _Fragment, jsx as _jsx } from "react/jsx-runtime";
++/*
++ * Copyright (c) 2021-2023 Datalayer, Inc.
++ *
++ * MIT License
++ */
++import { DecoratorNode, } from 'lexical';
++/**
++ * CommentThreadNode stores comment thread data as a Lexical node.
++ * This node syncs automatically via the Loro collaboration provider.
++ *
++ * Unlike the original CommentPlugin which used Yjs for comment storage,
++ * this approach stores comments directly in the Lexical editor state,
++ * making them part of the document JSON and enabling automatic sync.
++ */
++export class CommentThreadNode extends DecoratorNode {
++    __id;
++    __quote;
++    __comments;
++    static getType() {
++        return 'comment-thread';
++    }
++    static clone(node) {
++        return new CommentThreadNode(node.__id, node.__quote, node.__comments, node.__key);
++    }
++    static importJSON(json) {
++        return new CommentThreadNode(json.id, json.quote, json.comments);
++    }
++    exportJSON() {
++        return {
++            type: 'comment-thread',
++            version: 1,
++            id: this.__id,
++            quote: this.__quote,
++            comments: this.__comments,
++        };
++    }
++    constructor(id, quote, comments, key) {
++        super(key);
++        this.__id = id;
++        this.__quote = quote;
++        this.__comments = comments;
++    }
++    createDOM(_config) {
++        // Return invisible div - UI is rendered via decorate()
++        const div = document.createElement('div');
++        div.style.display = 'none';
++        return div;
++    }
++    updateDOM() {
++        // Node is invisible, never needs DOM updates
++        return false;
++    }
++    // Accessors
++    getId() {
++        return this.__id;
++    }
++    getQuote() {
++        return this.__quote;
++    }
++    getComments() {
++        return this.__comments;
++    }
++    // Mutators (create writable copy using getWritable())
++    addComment(comment) {
++        const writable = this.getWritable();
++        writable.__comments = [...writable.__comments, comment];
++    }
++    deleteComment(commentId) {
++        const writable = this.getWritable();
++        writable.__comments = writable.__comments.map(c => c.id === commentId
++            ? { ...c, deleted: true, content: '[Deleted Comment]' }
++            : c);
++    }
++    decorate(_editor) {
++        // Return empty fragment - UI will be handled by CommentPlugin
++        return _jsx(_Fragment, {});
++    }
++}
++export function $createCommentThreadNode(id, quote, comments) {
++    return new CommentThreadNode(id, quote, comments);
++}
++export function $isCommentThreadNode(node) {
++    return node instanceof CommentThreadNode;
++}
++//# sourceMappingURL=CommentThreadNode.js.map
+\ No newline at end of file
+diff --git a/node_modules/@datalayer/jupyter-lexical/lib/nodes/CommentThreadNode.js.map b/node_modules/@datalayer/jupyter-lexical/lib/nodes/CommentThreadNode.js.map
+new file mode 100644
+index 0000000..0ae072f
+--- /dev/null
++++ b/node_modules/@datalayer/jupyter-lexical/lib/nodes/CommentThreadNode.js.map
+@@ -0,0 +1 @@
++{"version":3,"file":"CommentThreadNode.js","sourceRoot":"","sources":["../../src/nodes/CommentThreadNode.tsx"],"names":[],"mappings":";AAAA;;;;GAIG;AAEH,OAAO,EACL,aAAa,GAMd,MAAM,SAAS,CAAC;AAYjB;;;;;;;GAOG;AACH,MAAM,OAAO,iBAAkB,SAAQ,aAA0B;IAC/D,IAAI,CAAS;IACb,OAAO,CAAS;IAChB,UAAU,CAAY;IAEtB,MAAM,CAAC,OAAO;QACZ,OAAO,gBAAgB,CAAC;IAC1B,CAAC;IAED,MAAM,CAAC,KAAK,CAAC,IAAuB;QAClC,OAAO,IAAI,iBAAiB,CAC1B,IAAI,CAAC,IAAI,EACT,IAAI,CAAC,OAAO,EACZ,IAAI,CAAC,UAAU,EACf,IAAI,CAAC,KAAK,CACX,CAAC;IACJ,CAAC;IAED,MAAM,CAAC,UAAU,CAAC,IAAiC;QACjD,OAAO,IAAI,iBAAiB,CAAC,IAAI,CAAC,EAAE,EAAE,IAAI,CAAC,KAAK,EAAE,IAAI,CAAC,QAAQ,CAAC,CAAC;IACnE,CAAC;IAED,UAAU;QACR,OAAO;YACL,IAAI,EAAE,gBAAgB;YACtB,OAAO,EAAE,CAAC;YACV,EAAE,EAAE,IAAI,CAAC,IAAI;YACb,KAAK,EAAE,IAAI,CAAC,OAAO;YACnB,QAAQ,EAAE,IAAI,CAAC,UAAU;SAC1B,CAAC;IACJ,CAAC;IAED,YAAY,EAAU,EAAE,KAAa,EAAE,QAAmB,EAAE,GAAa;QACvE,KAAK,CAAC,GAAG,CAAC,CAAC;QACX,IAAI,CAAC,IAAI,GAAG,EAAE,CAAC;QACf,IAAI,CAAC,OAAO,GAAG,KAAK,CAAC;QACrB,IAAI,CAAC,UAAU,GAAG,QAAQ,CAAC;IAC7B,CAAC;IAED,SAAS,CAAC,OAAqB;QAC7B,uDAAuD;QACvD,MAAM,GAAG,GAAG,QAAQ,CAAC,aAAa,CAAC,KAAK,CAAC,CAAC;QAC1C,GAAG,CAAC,KAAK,CAAC,OAAO,GAAG,MAAM,CAAC;QAC3B,OAAO,GAAG,CAAC;IACb,CAAC;IAED,SAAS;QACP,6CAA6C;QAC7C,OAAO,KAAK,CAAC;IACf,CAAC;IAED,YAAY;IACZ,KAAK;QACH,OAAO,IAAI,CAAC,IAAI,CAAC;IACnB,CAAC;IAED,QAAQ;QACN,OAAO,IAAI,CAAC,OAAO,CAAC;IACtB,CAAC;IAED,WAAW;QACT,OAAO,IAAI,CAAC,UAAU,CAAC;IACzB,CAAC;IAED,sDAAsD;IACtD,UAAU,CAAC,OAAgB;QACzB,MAAM,QAAQ,GAAG,IAAI,CAAC,WAAW,EAAE,CAAC;QACpC,QAAQ,CAAC,UAAU,GAAG,CAAC,GAAG,QAAQ,CAAC,UAAU,EAAE,OAAO,CAAC,CAAC;IAC1D,CAAC;IAED,aAAa,CAAC,SAAiB;QAC7B,MAAM,QAAQ,GAAG,IAAI,CAAC,WAAW,EAAE,CAAC;QACpC,QAAQ,CAAC,UAAU,GAAG,QAAQ,CAAC,UAAU,CAAC,GAAG,CAAC,CAAC,CAAC,EAAE,CAChD,CAAC,CAAC,EAAE,KAAK,SAAS;YAChB,CAAC,CAAC,EAAE,GAAG,CAAC,EAAE,OAAO,EAAE,IAAI,EAAE,OAAO,EAAE,mBAAmB,EAAE;YACvD,CAAC,CAAC,CAAC,CACN,CAAC;IACJ,CAAC;IAED,QAAQ,CAAC,OAAsB;QAC7B,8DAA8D;QAC9D,OAAO,mBAAK,CAAC;IACf,CAAC;CACF;AAED,MAAM,UAAU,wBAAwB,CACtC,EAAU,EACV,KAAa,EACb,QAAmB;IAEnB,OAAO,IAAI,iBAAiB,CAAC,EAAE,EAAE,KAAK,EAAE,QAAQ,CAAC,CAAC;AACpD,CAAC;AAED,MAAM,UAAU,oBAAoB,CAAC,IAAa;IAChD,OAAO,IAAI,YAAY,iBAAiB,CAAC;AAC3C,CAAC"}
+\ No newline at end of file
 diff --git a/node_modules/@datalayer/jupyter-lexical/lib/nodes/JupyterOutputNode.js b/node_modules/@datalayer/jupyter-lexical/lib/nodes/JupyterOutputNode.js
 index 46cac16..d080ae9 100644
 --- a/node_modules/@datalayer/jupyter-lexical/lib/nodes/JupyterOutputNode.js
@@ -2509,6 +3070,36 @@ index f5d8c39..6776c78 100644
 -{"version":3,"file":"JupyterOutputNode.js","sourceRoot":"","sources":["../../src/nodes/JupyterOutputNode.tsx"],"names":[],"mappings":"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"}
 \ No newline at end of file
 +{"version":3,"file":"JupyterOutputNode.js","sourceRoot":"","sources":["../../src/nodes/JupyterOutputNode.tsx"],"names":[],"mappings":"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"}
+\ No newline at end of file
+diff --git a/node_modules/@datalayer/jupyter-lexical/lib/nodes/index.d.ts b/node_modules/@datalayer/jupyter-lexical/lib/nodes/index.d.ts
+index 5639252..38817cf 100644
+--- a/node_modules/@datalayer/jupyter-lexical/lib/nodes/index.d.ts
++++ b/node_modules/@datalayer/jupyter-lexical/lib/nodes/index.d.ts
+@@ -1,3 +1,4 @@
++export * from './CommentThreadNode';
+ export * from './CounterNode';
+ export * from './EquationNode';
+ export * from './ImageNode';
+diff --git a/node_modules/@datalayer/jupyter-lexical/lib/nodes/index.js b/node_modules/@datalayer/jupyter-lexical/lib/nodes/index.js
+index e4031a7..6a78646 100644
+--- a/node_modules/@datalayer/jupyter-lexical/lib/nodes/index.js
++++ b/node_modules/@datalayer/jupyter-lexical/lib/nodes/index.js
+@@ -3,6 +3,7 @@
+  *
+  * MIT License
+  */
++export * from './CommentThreadNode';
+ export * from './CounterNode';
+ export * from './EquationNode';
+ export * from './ImageNode';
+diff --git a/node_modules/@datalayer/jupyter-lexical/lib/nodes/index.js.map b/node_modules/@datalayer/jupyter-lexical/lib/nodes/index.js.map
+index db19697..992f021 100644
+--- a/node_modules/@datalayer/jupyter-lexical/lib/nodes/index.js.map
++++ b/node_modules/@datalayer/jupyter-lexical/lib/nodes/index.js.map
+@@ -1 +1 @@
+-{"version":3,"file":"index.js","sourceRoot":"","sources":["../../src/nodes/index.ts"],"names":[],"mappings":"AAAA;;;;GAIG;AAEH,cAAc,eAAe,CAAC;AAC9B,cAAc,gBAAgB,CAAC;AAC/B,cAAc,aAAa,CAAC;AAC5B,cAAc,6BAA6B,CAAC;AAC5C,cAAc,2BAA2B,CAAC;AAC1C,cAAc,oBAAoB,CAAC;AACnC,cAAc,qBAAqB,CAAC;AACpC,cAAc,mBAAmB,CAAC;AAClC,cAAc,eAAe,CAAC;AAC9B,cAAc,wBAAwB,CAAC"}
+\ No newline at end of file
++{"version":3,"file":"index.js","sourceRoot":"","sources":["../../src/nodes/index.ts"],"names":[],"mappings":"AAAA;;;;GAIG;AAEH,cAAc,qBAAqB,CAAC;AACpC,cAAc,eAAe,CAAC;AAC9B,cAAc,gBAAgB,CAAC;AAC/B,cAAc,aAAa,CAAC;AAC5B,cAAc,6BAA6B,CAAC;AAC5C,cAAc,2BAA2B,CAAC;AAC1C,cAAc,oBAAoB,CAAC;AACnC,cAAc,qBAAqB,CAAC;AACpC,cAAc,mBAAmB,CAAC;AAClC,cAAc,eAAe,CAAC;AAC9B,cAAc,wBAAwB,CAAC"}
 \ No newline at end of file
 diff --git a/node_modules/@datalayer/jupyter-lexical/lib/nodes/jupyterUtils.d.ts b/node_modules/@datalayer/jupyter-lexical/lib/nodes/jupyterUtils.d.ts
 index d8585ea..b783632 100644
@@ -2992,6 +3583,97 @@ index 0000000..a63b6f3
 @@ -0,0 +1 @@
 +{"version":3,"file":"AutoIndentPlugin.js","sourceRoot":"","sources":["../../src/plugins/AutoIndentPlugin.tsx"],"names":[],"mappings":"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"}
 \ No newline at end of file
+diff --git a/node_modules/@datalayer/jupyter-lexical/lib/plugins/CommentPlugin.d.ts b/node_modules/@datalayer/jupyter-lexical/lib/plugins/CommentPlugin.d.ts
+index 0c5402a..5b53794 100644
+--- a/node_modules/@datalayer/jupyter-lexical/lib/plugins/CommentPlugin.d.ts
++++ b/node_modules/@datalayer/jupyter-lexical/lib/plugins/CommentPlugin.d.ts
+@@ -2,7 +2,11 @@ import type { LexicalCommand } from 'lexical';
+ import type { Doc } from 'yjs';
+ import { WebsocketProvider } from 'y-websocket';
+ export declare const INSERT_INLINE_COMMAND: LexicalCommand<void>;
+-export declare function CommentPlugin({ providerFactory, }: {
++export declare function CommentPlugin({ providerFactory, showCommentsPanel, showFloatingAddButton, showToggleButton, commentsPanelContainer, }: {
+     providerFactory?: (id: string, yjsDocMap: Map<string, Doc>) => WebsocketProvider;
++    showCommentsPanel?: boolean;
++    showFloatingAddButton?: boolean;
++    showToggleButton?: boolean;
++    commentsPanelContainer?: HTMLElement;
+ }): JSX.Element;
+ export default CommentPlugin;
+diff --git a/node_modules/@datalayer/jupyter-lexical/lib/plugins/CommentPlugin.js b/node_modules/@datalayer/jupyter-lexical/lib/plugins/CommentPlugin.js
+index 274e240..c886ab9 100644
+--- a/node_modules/@datalayer/jupyter-lexical/lib/plugins/CommentPlugin.js
++++ b/node_modules/@datalayer/jupyter-lexical/lib/plugins/CommentPlugin.js
+@@ -16,7 +16,7 @@ import { $createMarkNode, $getMarkIDs, $isMarkNode, $unwrapMarkNode, $wrapSelect
+ import { LexicalErrorBoundary } from '@lexical/react/LexicalErrorBoundary';
+ import { AutoFocusPlugin } from '@lexical/react/LexicalAutoFocusPlugin';
+ import { ClearEditorPlugin } from '@lexical/react/LexicalClearEditorPlugin';
+-import { useCollaborationContext } from '@lexical/react/LexicalCollaborationContext';
++import { useCollaborationContext } from '@datalayer/lexical-loro';
+ import { LexicalComposer } from '@lexical/react/LexicalComposer';
+ import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext';
+ import { HistoryPlugin } from '@lexical/react/LexicalHistoryPlugin';
+@@ -273,11 +273,12 @@ function CommentsPanel({ activeIDs, deleteCommentOrThread, comments, submitAddCo
+ }
+ function useCollabAuthorName() {
+     const collabContext = useCollaborationContext();
+-    const { yjsDocMap, name } = collabContext;
+-    return yjsDocMap.has('comments') ? name : 'Playground User';
++    const { name } = collabContext;
++    // Use collaboration username (from Datalayer auth or OS username)
++    // No longer checking yjsDocMap since we're using Loro, not Yjs
++    return name || 'User';
+ }
+-export function CommentPlugin({ providerFactory, }) {
+-    const collabContext = useCollaborationContext();
++export function CommentPlugin({ providerFactory, showCommentsPanel = true, showFloatingAddButton = true, showToggleButton = true, commentsPanelContainer, }) {
+     const [editor] = useLexicalComposerContext();
+     const commentStore = useMemo(() => new CommentStore(editor), [editor]);
+     const comments = useCommentStore(commentStore);
+@@ -288,13 +289,10 @@ export function CommentPlugin({ providerFactory, }) {
+     const [activeIDs, setActiveIDs] = useState([]);
+     const [showCommentInput, setShowCommentInput] = useState(false);
+     const [showComments, setShowComments] = useState(false);
+-    const { yjsDocMap } = collabContext;
++    // Sync external showCommentsPanel prop with internal showComments state
+     useEffect(() => {
+-        if (providerFactory) {
+-            const provider = providerFactory('comments', yjsDocMap);
+-            return commentStore.registerCollaboration(provider);
+-        }
+-    }, [commentStore, providerFactory, yjsDocMap]);
++        setShowComments(showCommentsPanel);
++    }, [showCommentsPanel]);
+     const cancelAddComment = useCallback(() => {
+         editor.update(() => {
+             const selection = $getSelection();
+@@ -470,11 +468,13 @@ export function CommentPlugin({ providerFactory, }) {
+         editor.dispatchCommand(INSERT_INLINE_COMMAND, undefined);
+     };
+     return (_jsxs(_Fragment, { children: [showCommentInput &&
+-                createPortal(_jsx(CommentInputBox, { editor: editor, cancelAddComment: cancelAddComment, submitAddComment: submitAddComment }), document.body), activeAnchorKey !== null &&
++                createPortal(_jsx(CommentInputBox, { editor: editor, cancelAddComment: cancelAddComment, submitAddComment: submitAddComment }), document.body), showFloatingAddButton &&
++                activeAnchorKey !== null &&
+                 activeAnchorKey !== undefined &&
+                 !showCommentInput &&
+-                createPortal(_jsx(AddCommentBox, { anchorKey: activeAnchorKey, editor: editor, onAddComment: onAddComment }), document.body), createPortal(_jsx(Button, { className: `CommentPlugin_ShowCommentsButton ${showComments ? 'active' : ''}`, onClick: () => setShowComments(!showComments), title: showComments ? 'Hide Comments' : 'Show Comments', children: _jsx("i", { className: "comments" }) }), document.body), showComments &&
+-                createPortal(_jsx(CommentsPanel, { comments: comments, submitAddComment: submitAddComment, deleteCommentOrThread: deleteCommentOrThread, activeIDs: activeIDs, markNodeMap: markNodeMap }), document.body)] }));
++                createPortal(_jsx(AddCommentBox, { anchorKey: activeAnchorKey, editor: editor, onAddComment: onAddComment }), document.body), showToggleButton &&
++                createPortal(_jsx(Button, { className: `CommentPlugin_ShowCommentsButton ${showComments ? 'active' : ''}`, onClick: () => setShowComments(!showComments), title: showComments ? 'Hide Comments' : 'Show Comments', children: _jsx("i", { className: "comments" }) }), document.body), showComments &&
++                createPortal(_jsx(CommentsPanel, { comments: comments, submitAddComment: submitAddComment, deleteCommentOrThread: deleteCommentOrThread, activeIDs: activeIDs, markNodeMap: markNodeMap }), commentsPanelContainer || document.body)] }));
+ }
+ export default CommentPlugin;
+ //# sourceMappingURL=CommentPlugin.js.map
+\ No newline at end of file
+diff --git a/node_modules/@datalayer/jupyter-lexical/lib/plugins/CommentPlugin.js.map b/node_modules/@datalayer/jupyter-lexical/lib/plugins/CommentPlugin.js.map
+index b71ce0a..bf72357 100644
+--- a/node_modules/@datalayer/jupyter-lexical/lib/plugins/CommentPlugin.js.map
++++ b/node_modules/@datalayer/jupyter-lexical/lib/plugins/CommentPlugin.js.map
+@@ -1 +1 @@
+-{"version":3,"file":"CommentPlugin.js","sourceRoot":"","sources":["../../src/plugins/CommentPlugin.tsx"],"names":[],"mappings":"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"}
+\ No newline at end of file
++{"version":3,"file":"CommentPlugin.js","sourceRoot":"","sources":["../../src/plugins/CommentPlugin.tsx"],"names":[],"mappings":";AAAA;;;;GAIG;AAEH;;;;GAIG;AAEH,OAAO,EAAE,WAAW,EAAE,SAAS,EAAE,OAAO,EAAE,MAAM,EAAE,QAAQ,EAAE,MAAM,OAAO,CAAC;AAC1E,OAAO,EAAE,YAAY,EAAE,MAAM,WAAW,CAAC;AAOzC,OAAO,EACL,aAAa,EACb,aAAa,EACb,iBAAiB,EACjB,WAAW,EACX,oBAAoB,EACpB,uBAAuB,EACvB,aAAa,EACb,kBAAkB,GACnB,MAAM,SAAS,CAAC;AAEjB,OAAO,EACL,eAAe,EACf,WAAW,EACX,WAAW,EACX,eAAe,EACf,wBAAwB,EACxB,QAAQ,GACT,MAAM,eAAe,CAAC;AACvB,OAAO,EAAE,oBAAoB,EAAE,MAAM,qCAAqC,CAAC;AAC3E,OAAO,EAAE,eAAe,EAAE,MAAM,uCAAuC,CAAC;AACxE,OAAO,EAAE,iBAAiB,EAAE,MAAM,yCAAyC,CAAC;AAC5E,OAAO,EAAE,uBAAuB,EAAE,MAAM,yBAAyB,CAAC;AAClE,OAAO,EAAE,eAAe,EAAE,MAAM,gCAAgC,CAAC;AACjE,OAAO,EAAE,yBAAyB,EAAE,MAAM,uCAAuC,CAAC;AAClF,OAAO,EAAE,aAAa,EAAE,MAAM,qCAAqC,CAAC;AACpE,OAAO,EAAE,cAAc,EAAE,MAAM,sCAAsC,CAAC;AACtE,OAAO,EAAE,eAAe,EAAE,MAAM,uCAAuC,CAAC;AACxE,OAAO,EAAE,cAAc,EAAE,uBAAuB,EAAE,MAAM,oBAAoB,CAAC;AAC7E,OAAO,EAAE,uBAAuB,EAAE,gBAAgB,EAAE,MAAM,eAAe,CAAC;AAC1E,OAAO,EAAE,aAAa,EAAE,6BAA6B,EAAE,MAAM,gBAAgB,CAAC;AAE9E,OAAO,EAGL,YAAY,EACZ,aAAa,EACb,YAAY,EAEZ,eAAe,GAChB,MAAM,eAAe,CAAC;AACvB,OAAO,kBAAkB,MAAM,8BAA8B,CAAC;AAC9D,OAAO,EACL,QAAQ,EACR,MAAM,EACN,sBAAsB,IAAI,eAAe,EACzC,WAAW,GACZ,MAAM,IAAI,CAAC;AACZ,OAAO,EAAE,mBAAmB,IAAI,eAAe,EAAE,MAAM,IAAI,CAAC;AAE5D,MAAM,CAAC,MAAM,qBAAqB,GAAyB,aAAa,EAAE,CAAC;AAE3E,SAAS,aAAa,CAAC,EACrB,SAAS,EACT,MAAM,EACN,YAAY,GAKb;IACC,MAAM,MAAM,GAAG,MAAM,CAAiB,IAAI,CAAC,CAAC;IAE5C,MAAM,cAAc,GAAG,WAAW,CAAC,GAAG,EAAE;QACtC,MAAM,OAAO,GAAG,MAAM,CAAC,OAAO,CAAC;QAC/B,MAAM,WAAW,GAAG,MAAM,CAAC,cAAc,EAAE,CAAC;QAC5C,MAAM,aAAa,GAAG,MAAM,CAAC,eAAe,CAAC,SAAS,CAAC,CAAC;QAExD,IAAI,OAAO,KAAK,IAAI,IAAI,WAAW,KAAK,IAAI,IAAI,aAAa,KAAK,IAAI,EAAE,CAAC;YACvE,MAAM,EAAE,KAAK,EAAE,GAAG,WAAW,CAAC,qBAAqB,EAAE,CAAC;YACtD,MAAM,EAAE,GAAG,EAAE,GAAG,aAAa,CAAC,qBAAqB,EAAE,CAAC;YACtD,OAAO,CAAC,KAAK,CAAC,IAAI,GAAG,GAAG,KAAK,GAAG,EAAE,IAAI,CAAC;YACvC,OAAO,CAAC,KAAK,CAAC,GAAG,GAAG,GAAG,GAAG,GAAG,EAAE,IAAI,CAAC;QACtC,CAAC;IACH,CAAC,EAAE,CAAC,SAAS,EAAE,MAAM,CAAC,CAAC,CAAC;IAExB,SAAS,CAAC,GAAG,EAAE;QACb,MAAM,CAAC,gBAAgB,CAAC,QAAQ,EAAE,cAAc,CAAC,CAAC;QAElD,OAAO,GAAG,EAAE;YACV,MAAM,CAAC,mBAAmB,CAAC,QAAQ,EAAE,cAAc,CAAC,CAAC;QACvD,CAAC,CAAC;IACJ,CAAC,EAAE,CAAC,MAAM,EAAE,cAAc,CAAC,CAAC,CAAC;IAE7B,eAAe,CAAC,GAAG,EAAE;QACnB,cAAc,EAAE,CAAC;IACnB,CAAC,EAAE,CAAC,SAAS,EAAE,MAAM,EAAE,cAAc,CAAC,CAAC,CAAC;IAExC,OAAO,CACL,cAAK,SAAS,EAAC,6BAA6B,EAAC,GAAG,EAAE,MAAM,YACtD,iBACE,SAAS,EAAC,oCAAoC,EAC9C,OAAO,EAAE,YAAY,YAErB,YAAG,SAAS,EAAC,kBAAkB,GAAG,GAC3B,GACL,CACP,CAAC;AACJ,CAAC;AAED,SAAS,eAAe,CAAC,EACvB,SAAS,GAGV;IACC,MAAM,CAAC,MAAM,CAAC,GAAG,yBAAyB,EAAE,CAAC;IAE7C,eAAe,CAAC,GAAG,EAAE;QACnB,SAAS,CAAC,OAAO,GAAG,MAAM,CAAC;QAC3B,OAAO,GAAG,EAAE;YACV,SAAS,CAAC,OAAO,GAAG,IAAI,CAAC;QAC3B,CAAC,CAAC;IACJ,CAAC,EAAE,CAAC,MAAM,EAAE,SAAS,CAAC,CAAC,CAAC;IAExB,OAAO,IAAI,CAAC;AACd,CAAC;AAED,SAAS,mBAAmB,CAAC,EAC3B,QAAQ,GAGT;IACC,MAAM,CAAC,MAAM,CAAC,GAAG,yBAAyB,EAAE,CAAC;IAE7C,SAAS,CAAC,GAAG,EAAE;QACb,OAAO,MAAM,CAAC,eAAe,CAC3B,kBAAkB,EAClB,CAAC,KAAoB,EAAE,EAAE;YACvB,OAAO,QAAQ,CAAC,KAAK,CAAC,CAAC;QACzB,CAAC,EACD,CAAC,CACF,CAAC;IACJ,CAAC,EAAE,CAAC,MAAM,EAAE,QAAQ,CAAC,CAAC,CAAC;IAEvB,OAAO,IAAI,CAAC;AACd,CAAC;AAED,SAAS,eAAe,CAAC,EACvB,SAAS,EACT,SAAS,EACT,QAAQ,EACR,QAAQ,EACR,SAAS,EACT,WAAW,GAAG,mBAAmB,GAQlC;IACC,MAAM,aAAa,GAAG;QACpB,SAAS,EAAE,YAAY;QACvB,KAAK,EAAE,EAAE;QACT,OAAO,EAAE,CAAC,KAAY,EAAE,EAAE;YACxB,MAAM,KAAK,CAAC;QACd,CAAC;QACD,KAAK,EAAE,kBAAkB;KAC1B,CAAC;IAEF,OAAO,CACL,KAAC,eAAe,IAAC,aAAa,EAAE,aAAa,YAC3C,eAAK,SAAS,EAAC,6DAA6D,aAC1E,KAAC,eAAe,IACd,eAAe,EAAE,KAAC,eAAe,IAAC,SAAS,EAAE,SAAS,GAAI,EAC1D,WAAW,EAAE,KAAC,WAAW,cAAE,WAAW,GAAe,EACrD,aAAa,EAAE,oBAAoB,GACnC,EACF,KAAC,cAAc,IAAC,QAAQ,EAAE,QAAQ,GAAI,EACtC,KAAC,aAAa,KAAG,EAChB,SAAS,KAAK,KAAK,IAAI,KAAC,eAAe,KAAG,EAC3C,KAAC,mBAAmB,IAAC,QAAQ,EAAE,QAAQ,GAAI,EAC3C,KAAC,iBAAiB,KAAG,EACpB,SAAS,KAAK,SAAS,IAAI,KAAC,eAAe,IAAC,SAAS,EAAE,SAAS,GAAI,IACjE,GACU,CACnB,CAAC;AACJ,CAAC;AAED,SAAS,WAAW,CAClB,UAAkC,EAClC,YAA0C;IAE1C,OAAO,WAAW,CAChB,CAAC,WAAwB,EAAE,OAAsB,EAAE,EAAE;QACnD,WAAW,CAAC,IAAI,CAAC,GAAG,EAAE;YACpB,UAAU,CAAC,gBAAgB,EAAE,CAAC,CAAC;YAC/B,YAAY,CAAC,CAAC,uBAAuB,CAAC,OAAO,CAAC,WAAW,EAAE,EAAE,IAAI,CAAC,CAAC,CAAC;QACtE,CAAC,CAAC,CAAC;IACL,CAAC,EACD,CAAC,YAAY,EAAE,UAAU,CAAC,CAC3B,CAAC;AACJ,CAAC;AAED,SAAS,eAAe,CAAC,EACvB,MAAM,EACN,gBAAgB,EAChB,gBAAgB,GAQjB;IACC,MAAM,CAAC,OAAO,EAAE,UAAU,CAAC,GAAG,QAAQ,CAAC,EAAE,CAAC,CAAC;IAC3C,MAAM,CAAC,SAAS,EAAE,YAAY,CAAC,GAAG,QAAQ,CAAC,KAAK,CAAC,CAAC;IAClD,MAAM,MAAM,GAAG,MAAM,CAAiB,IAAI,CAAC,CAAC;IAC5C,MAAM,cAAc,GAAG,OAAO,CAC5B,GAAG,EAAE,CAAC,CAAC;QACL,SAAS,EAAE,QAAQ,CAAC,aAAa,CAAC,KAAK,CAAC;QACxC,QAAQ,EAAE,EAAE;KACb,CAAC,EACF,EAAE,CACH,CAAC;IACF,MAAM,MAAM,GAAG,mBAAmB,EAAE,CAAC;IAErC,MAAM,cAAc,GAAG,WAAW,CAAC,GAAG,EAAE;QACtC,MAAM,CAAC,cAAc,EAAE,CAAC,IAAI,CAAC,GAAG,EAAE;YAChC,MAAM,SAAS,GAAG,aAAa,EAAE,CAAC;YAElC,IAAI,iBAAiB,CAAC,SAAS,CAAC,EAAE,CAAC;gBACjC,MAAM,MAAM,GAAG,SAAS,CAAC,MAAM,CAAC;gBAChC,MAAM,KAAK,GAAG,SAAS,CAAC,KAAK,CAAC;gBAC9B,MAAM,KAAK,GAAG,cAAc,CAC1B,MAAM,EACN,MAAM,CAAC,OAAO,EAAE,EAChB,MAAM,CAAC,MAAM,EACb,KAAK,CAAC,OAAO,EAAE,EACf,KAAK,CAAC,MAAM,CACb,CAAC;gBACF,MAAM,OAAO,GAAG,MAAM,CAAC,OAAO,CAAC;gBAC/B,IAAI,KAAK,KAAK,IAAI,IAAI,OAAO,KAAK,IAAI,EAAE,CAAC;oBACvC,MAAM,EAAE,IAAI,EAAE,MAAM,EAAE,KAAK,EAAE,GAAG,KAAK,CAAC,qBAAqB,EAAE,CAAC;oBAC9D,MAAM,cAAc,GAAG,uBAAuB,CAAC,MAAM,EAAE,KAAK,CAAC,CAAC;oBAC9D,IAAI,aAAa,GACf,cAAc,CAAC,MAAM,KAAK,CAAC,CAAC,CAAC,CAAC,IAAI,GAAG,KAAK,GAAG,CAAC,GAAG,GAAG,CAAC,CAAC,CAAC,IAAI,GAAG,GAAG,CAAC;oBACpE,IAAI,aAAa,GAAG,EAAE,EAAE,CAAC;wBACvB,aAAa,GAAG,EAAE,CAAC;oBACrB,CAAC;oBACD,OAAO,CAAC,KAAK,CAAC,IAAI,GAAG,GAAG,aAAa,IAAI,CAAC;oBAC1C,OAAO,CAAC,KAAK,CAAC,GAAG,GAAG,GAAG,MAAM,GAAG,EAAE,IAAI,CAAC;oBACvC,MAAM,oBAAoB,GAAG,cAAc,CAAC,MAAM,CAAC;oBACnD,MAAM,EAAE,SAAS,EAAE,GAAG,cAAc,CAAC;oBACrC,MAAM,QAAQ,GAA2B,cAAc,CAAC,QAAQ,CAAC;oBACjE,MAAM,cAAc,GAAG,QAAQ,CAAC,MAAM,CAAC;oBAEvC,KAAK,IAAI,CAAC,GAAG,CAAC,EAAE,CAAC,GAAG,oBAAoB,EAAE,CAAC,EAAE,EAAE,CAAC;wBAC9C,MAAM,aAAa,GAAG,cAAc,CAAC,CAAC,CAAC,CAAC;wBACxC,IAAI,IAAI,GAAoB,QAAQ,CAAC,CAAC,CAAC,CAAC;wBACxC,IAAI,IAAI,KAAK,SAAS,EAAE,CAAC;4BACvB,IAAI,GAAG,QAAQ,CAAC,aAAa,CAAC,MAAM,CAAC,CAAC;4BACtC,QAAQ,CAAC,CAAC,CAAC,GAAG,IAAI,CAAC;4BACnB,SAAS,CAAC,WAAW,CAAC,IAAI,CAAC,CAAC;wBAC9B,CAAC;wBACD,MAAM,KAAK,GAAG,aAAa,CAAC;wBAC5B,MAAM,KAAK,GAAG,yBAAyB,aAAa,CAAC,GAAG,WAAW,aAAa,CAAC,IAAI,aAAa,aAAa,CAAC,MAAM,YAAY,aAAa,CAAC,KAAK,4BAA4B,KAAK,uCAAuC,CAAC;wBAC9N,IAAI,CAAC,KAAK,CAAC,OAAO,GAAG,KAAK,CAAC;oBAC7B,CAAC;oBACD,KAAK,IAAI,CAAC,GAAG,cAAc,GAAG,CAAC,EAAE,CAAC,IAAI,oBAAoB,EAAE,CAAC,EAAE,EAAE,CAAC;wBAChE,MAAM,IAAI,GAAG,QAAQ,CAAC,CAAC,CAAC,CAAC;wBACzB,SAAS,CAAC,WAAW,CAAC,IAAI,CAAC,CAAC;wBAC5B,QAAQ,CAAC,GAAG,EAAE,CAAC;oBACjB,CAAC;gBACH,CAAC;YACH,CAAC;QACH,CAAC,CAAC,CAAC;IACL,CAAC,EAAE,CAAC,MAAM,EAAE,cAAc,CAAC,CAAC,CAAC;IAE7B,eAAe,CAAC,GAAG,EAAE;QACnB,cAAc,EAAE,CAAC;QACjB,MAAM,SAAS,GAAG,cAAc,CAAC,SAAS,CAAC;QAC3C,MAAM,IAAI,GAAG,QAAQ,CAAC,IAAI,CAAC;QAC3B,IAAI,IAAI,KAAK,IAAI,EAAE,CAAC;YAClB,IAAI,CAAC,WAAW,CAAC,SAAS,CAAC,CAAC;YAC5B,OAAO,GAAG,EAAE;gBACV,IAAI,CAAC,WAAW,CAAC,SAAS,CAAC,CAAC;YAC9B,CAAC,CAAC;QACJ,CAAC;IACH,CAAC,EAAE,CAAC,cAAc,CAAC,SAAS,EAAE,cAAc,CAAC,CAAC,CAAC;IAE/C,SAAS,CAAC,GAAG,EAAE;QACb,MAAM,CAAC,gBAAgB,CAAC,QAAQ,EAAE,cAAc,CAAC,CAAC;QAElD,OAAO,GAAG,EAAE;YACV,MAAM,CAAC,mBAAmB,CAAC,QAAQ,EAAE,cAAc,CAAC,CAAC;QACvD,CAAC,CAAC;IACJ,CAAC,EAAE,CAAC,cAAc,CAAC,CAAC,CAAC;IAErB,MAAM,QAAQ,GAAG,CAAC,KAAoB,EAAW,EAAE;QACjD,KAAK,CAAC,cAAc,EAAE,CAAC;QACvB,gBAAgB,EAAE,CAAC;QACnB,OAAO,IAAI,CAAC;IACd,CAAC,CAAC;IAEF,MAAM,aAAa,GAAG,GAAG,EAAE;QACzB,IAAI,SAAS,EAAE,CAAC;YACd,IAAI,KAAK,GAAG,MAAM,CAAC,cAAc,EAAE,CAAC,IAAI,CAAC,GAAG,EAAE;gBAC5C,MAAM,SAAS,GAAG,aAAa,EAAE,CAAC;gBAClC,OAAO,SAAS,KAAK,IAAI,CAAC,CAAC,CAAC,SAAS,CAAC,cAAc,EAAE,CAAC,CAAC,CAAC,EAAE,CAAC;YAC9D,CAAC,CAAC,CAAC;YACH,IAAI,KAAK,CAAC,MAAM,GAAG,GAAG,EAAE,CAAC;gBACvB,KAAK,GAAG,KAAK,CAAC,KAAK,CAAC,CAAC,EAAE,EAAE,CAAC,GAAG,GAAG,CAAC;YACnC,CAAC;YACD,gBAAgB,CACd,YAAY,CAAC,KAAK,EAAE,CAAC,aAAa,CAAC,OAAO,EAAE,MAAM,CAAC,CAAC,CAAC,EACrD,IAAI,CACL,CAAC;QACJ,CAAC;IACH,CAAC,CAAC;IAEF,MAAM,QAAQ,GAAG,WAAW,CAAC,UAAU,EAAE,YAAY,CAAC,CAAC;IAEvD,OAAO,CACL,eAAK,SAAS,EAAC,+BAA+B,EAAC,GAAG,EAAE,MAAM,aACxD,KAAC,eAAe,IACd,SAAS,EAAC,sCAAsC,EAChD,QAAQ,EAAE,QAAQ,EAClB,QAAQ,EAAE,QAAQ,GAClB,EACF,eAAK,SAAS,EAAC,uCAAuC,aACpD,KAAC,MAAM,IACL,OAAO,EAAE,gBAAgB,EACzB,SAAS,EAAC,sCAAsC,uBAGzC,EACT,KAAC,MAAM,IACL,OAAO,EAAE,aAAa,EACtB,QAAQ,EAAE,CAAC,SAAS,EACpB,SAAS,EAAC,8CAA8C,wBAGjD,IACL,IACF,CACP,CAAC;AACJ,CAAC;AAED,SAAS,gBAAgB,CAAC,EACxB,gBAAgB,EAChB,MAAM,EACN,WAAW,GAUZ;IACC,MAAM,CAAC,OAAO,EAAE,UAAU,CAAC,GAAG,QAAQ,CAAC,EAAE,CAAC,CAAC;IAC3C,MAAM,CAAC,SAAS,EAAE,YAAY,CAAC,GAAG,QAAQ,CAAC,KAAK,CAAC,CAAC;IAClD,MAAM,SAAS,GAAG,MAAM,CAAgB,IAAI,CAAC,CAAC;IAC9C,MAAM,MAAM,GAAG,mBAAmB,EAAE,CAAC;IAErC,MAAM,QAAQ,GAAG,WAAW,CAAC,UAAU,EAAE,YAAY,CAAC,CAAC;IAEvD,MAAM,aAAa,GAAG,GAAG,EAAE;QACzB,IAAI,SAAS,EAAE,CAAC;YACd,gBAAgB,CAAC,aAAa,CAAC,OAAO,EAAE,MAAM,CAAC,EAAE,KAAK,EAAE,MAAM,CAAC,CAAC;YAChE,MAAM,MAAM,GAAG,SAAS,CAAC,OAAO,CAAC;YACjC,IAAI,MAAM,KAAK,IAAI,EAAE,CAAC;gBACpB,MAAM,CAAC,eAAe,CAAC,oBAAoB,EAAE,SAAS,CAAC,CAAC;YAC1D,CAAC;QACH,CAAC;IACH,CAAC,CAAC;IAEF,OAAO,CACL,8BACE,KAAC,eAAe,IACd,SAAS,EAAC,oCAAoC,EAC9C,SAAS,EAAE,KAAK,EAChB,QAAQ,EAAE,GAAG,EAAE;oBACb,OAAO,IAAI,CAAC;gBACd,CAAC,EACD,QAAQ,EAAE,QAAQ,EAClB,SAAS,EAAE,SAAS,EACpB,WAAW,EAAE,WAAW,GACxB,EACF,KAAC,MAAM,IACL,SAAS,EAAC,wCAAwC,EAClD,OAAO,EAAE,aAAa,EACtB,QAAQ,EAAE,CAAC,SAAS,YAEpB,YAAG,SAAS,EAAC,MAAM,GAAG,GACf,IACR,CACJ,CAAC;AACJ,CAAC;AAED,SAAS,+BAA+B,CAAC,EACvC,eAAe,EACf,qBAAqB,EACrB,OAAO,EACP,MAAM,GAAG,SAAS,GAWnB;IACC,OAAO,CACL,uEACwC,eAAe,CAAC,IAAI,OAC1D,eAAK,SAAS,EAAC,gBAAgB,aAC7B,KAAC,MAAM,IACL,OAAO,EAAE,GAAG,EAAE;4BACZ,qBAAqB,CAAC,eAAe,EAAE,MAAM,CAAC,CAAC;4BAC/C,OAAO,EAAE,CAAC;wBACZ,CAAC,uBAGM,EAAC,GAAG,EACb,KAAC,MAAM,IACL,OAAO,EAAE,GAAG,EAAE;4BACZ,OAAO,EAAE,CAAC;wBACZ,CAAC,uBAGM,IACL,IACL,CACJ,CAAC;AACJ,CAAC;AAED,SAAS,wBAAwB,CAAC,EAChC,OAAO,EACP,aAAa,EACb,MAAM,EACN,GAAG,GAUJ;IACC,MAAM,OAAO,GAAG,IAAI,CAAC,KAAK,CAAC,CAAC,OAAO,CAAC,SAAS,GAAG,WAAW,CAAC,GAAG,EAAE,CAAC,GAAG,IAAI,CAAC,CAAC;IAC3E,MAAM,OAAO,GAAG,IAAI,CAAC,KAAK,CAAC,OAAO,GAAG,EAAE,CAAC,CAAC;IACzC,MAAM,CAAC,KAAK,EAAE,SAAS,CAAC,GAAG,QAAQ,EAAE,CAAC;IAEtC,OAAO,CACL,cAAI,SAAS,EAAC,0CAA0C,aACtD,eAAK,SAAS,EAAC,0CAA0C,aACvD,eAAM,SAAS,EAAC,iDAAiD,YAC9D,OAAO,CAAC,MAAM,GACV,EACP,gBAAM,SAAS,EAAC,+CAA+C,wBAC1D,OAAO,GAAG,CAAC,EAAE,CAAC,CAAC,CAAC,UAAU,CAAC,CAAC,CAAC,GAAG,CAAC,MAAM,CAAC,OAAO,EAAE,QAAQ,CAAC,IACxD,IACH,EACN,YACE,SAAS,EACP,OAAO,CAAC,OAAO,CAAC,CAAC,CAAC,4CAA4C,CAAC,CAAC,CAAC,EAAE,YAGpE,OAAO,CAAC,OAAO,GACd,EACH,CAAC,OAAO,CAAC,OAAO,IAAI,CACnB,8BACE,KAAC,MAAM,IACL,OAAO,EAAE,GAAG,EAAE;4BACZ,SAAS,CAAC,gBAAgB,EAAE,OAAO,CAAC,EAAE,CAAC,CACrC,KAAC,+BAA+B,IAC9B,eAAe,EAAE,OAAO,EACxB,qBAAqB,EAAE,aAAa,EACpC,MAAM,EAAE,MAAM,EACd,OAAO,EAAE,OAAO,GAChB,CACH,CAAC,CAAC;wBACL,CAAC,EACD,SAAS,EAAC,+CAA+C,YAEzD,YAAG,SAAS,EAAC,QAAQ,GAAG,GACjB,EACR,KAAK,IACL,CACJ,IACE,CACN,CAAC;AACJ,CAAC;AAED,SAAS,iBAAiB,CAAC,EACzB,SAAS,EACT,QAAQ,EACR,qBAAqB,EACrB,OAAO,EACP,gBAAgB,EAChB,WAAW,GAeZ;IACC,MAAM,CAAC,MAAM,CAAC,GAAG,yBAAyB,EAAE,CAAC;IAC7C,MAAM,CAAC,OAAO,EAAE,UAAU,CAAC,GAAG,QAAQ,CAAC,CAAC,CAAC,CAAC;IAC1C,MAAM,CAAC,KAAK,EAAE,SAAS,CAAC,GAAG,QAAQ,EAAE,CAAC;IACtC,MAAM,GAAG,GAAG,OAAO,CACjB,GAAG,EAAE,CACH,IAAI,IAAI,CAAC,kBAAkB,CAAC,IAAI,EAAE;QAChC,aAAa,EAAE,UAAU;QACzB,OAAO,EAAE,MAAM;QACf,KAAK,EAAE,OAAO;KACf,CAAC,EACJ,EAAE,CACH,CAAC;IAEF,SAAS,CAAC,GAAG,EAAE;QACb,yCAAyC;QACzC,MAAM,EAAE,GAAG,UAAU,CAAC,GAAG,EAAE;YACzB,UAAU,CAAC,OAAO,GAAG,CAAC,CAAC,CAAC;QAC1B,CAAC,EAAE,KAAK,CAAC,CAAC;QAEV,OAAO,GAAG,EAAE;YACV,YAAY,CAAC,EAAE,CAAC,CAAC;QACnB,CAAC,CAAC;IACJ,CAAC,EAAE,CAAC,OAAO,CAAC,CAAC,CAAC;IAEd,OAAO,CACL,aAAI,SAAS,EAAC,kCAAkC,EAAC,GAAG,EAAE,OAAO,YAC1D,QAAQ,CAAC,GAAG,CAAC,eAAe,CAAC,EAAE;YAC9B,MAAM,EAAE,GAAG,eAAe,CAAC,EAAE,CAAC;YAC9B,IAAI,eAAe,CAAC,IAAI,KAAK,QAAQ,EAAE,CAAC;gBACtC,MAAM,iBAAiB,GAAG,GAAG,EAAE;oBAC7B,MAAM,YAAY,GAAG,WAAW,CAAC,GAAG,CAAC,EAAE,CAAC,CAAC;oBACzC,IACE,YAAY,KAAK,SAAS;wBAC1B,CAAC,SAAS,KAAK,IAAI,IAAI,SAAS,CAAC,OAAO,CAAC,EAAE,CAAC,KAAK,CAAC,CAAC,CAAC,EACpD,CAAC;wBACD,MAAM,aAAa,GAAG,QAAQ,CAAC,aAAa,CAAC;wBAC7C,sDAAsD;wBACtD,0CAA0C;wBAC1C,MAAM,CAAC,MAAM,CACX,GAAG,EAAE;4BACH,MAAM,WAAW,GAAG,KAAK,CAAC,IAAI,CAAC,YAAY,CAAC,CAAC,CAAC,CAAC,CAAC;4BAChD,MAAM,QAAQ,GAAG,aAAa,CAAW,WAAW,CAAC,CAAC;4BACtD,IAAI,WAAW,CAAC,QAAQ,CAAC,EAAE,CAAC;gCAC1B,QAAQ,CAAC,WAAW,EAAE,CAAC;4BACzB,CAAC;wBACH,CAAC,EACD;4BACE,QAAQ;gCACN,4CAA4C;gCAC5C,IAAI,aAAa,KAAK,IAAI,EAAE,CAAC;oCAC1B,aAA6B,CAAC,KAAK,EAAE,CAAC;gCACzC,CAAC;4BACH,CAAC;yBACF,CACF,CAAC;oBACJ,CAAC;gBACH,CAAC,CAAC;gBAEF,OAAO,CACL,cAEE,OAAO,EAAE,iBAAiB,EAC1B,SAAS,EAAE,2CACT,WAAW,CAAC,GAAG,CAAC,EAAE,CAAC,CAAC,CAAC,CAAC,aAAa,CAAC,CAAC,CAAC,EACxC,IAAI,SAAS,CAAC,OAAO,CAAC,EAAE,CAAC,KAAK,CAAC,CAAC,CAAC,CAAC,CAAC,EAAE,CAAC,CAAC,CAAC,QAAQ,EAAE,aAElD,eAAK,SAAS,EAAC,kDAAkD,aAC/D,sBAAY,SAAS,EAAC,+CAA+C,aAClE,IAAI,EACL,yBAAO,eAAe,CAAC,KAAK,GAAQ,IACzB,EAEb,KAAC,MAAM,IACL,OAAO,EAAE,GAAG,EAAE;wCACZ,SAAS,CAAC,eAAe,EAAE,OAAO,CAAC,EAAE,CAAC,CACpC,KAAC,+BAA+B,IAC9B,eAAe,EAAE,eAAe,EAChC,qBAAqB,EAAE,qBAAqB,EAC5C,OAAO,EAAE,OAAO,GAChB,CACH,CAAC,CAAC;oCACL,CAAC,EACD,SAAS,EAAC,+CAA+C,YAEzD,YAAG,SAAS,EAAC,QAAQ,GAAG,GACjB,EACR,KAAK,IACF,EACN,aAAI,SAAS,EAAC,kDAAkD,YAC7D,eAAe,CAAC,QAAQ,CAAC,GAAG,CAAC,OAAO,CAAC,EAAE,CAAC,CACvC,KAAC,wBAAwB,IAEvB,OAAO,EAAE,OAAO,EAChB,aAAa,EAAE,qBAAqB,EACpC,MAAM,EAAE,eAAe,EACvB,GAAG,EAAE,GAAG,IAJH,OAAO,CAAC,EAAE,CAKf,CACH,CAAC,GACC,EACL,cAAK,SAAS,EAAC,gDAAgD,YAC7D,KAAC,gBAAgB,IACf,gBAAgB,EAAE,gBAAgB,EAClC,MAAM,EAAE,eAAe,EACvB,WAAW,EAAC,qBAAqB,GACjC,GACE,KA7CD,EAAE,CA8CJ,CACN,CAAC;YACJ,CAAC;YACD,OAAO,CACL,KAAC,wBAAwB,IAEvB,OAAO,EAAE,eAAe,EACxB,aAAa,EAAE,qBAAqB,EACpC,GAAG,EAAE,GAAG,IAHH,EAAE,CAIP,CACH,CAAC;QACJ,CAAC,CAAC,GACC,CACN,CAAC;AACJ,CAAC;AAED,SAAS,aAAa,CAAC,EACrB,SAAS,EACT,qBAAqB,EACrB,QAAQ,EACR,gBAAgB,EAChB,WAAW,GAcZ;IACC,MAAM,OAAO,GAAG,MAAM,CAAmB,IAAI,CAAC,CAAC;IAC/C,MAAM,OAAO,GAAG,QAAQ,CAAC,MAAM,KAAK,CAAC,CAAC;IAEtC,OAAO,CACL,eAAK,SAAS,EAAC,2CAA2C,aACxD,aAAI,SAAS,EAAC,qCAAqC,yBAAc,EAChE,OAAO,CAAC,CAAC,CAAC,CACT,cAAK,SAAS,EAAC,mCAAmC,4BAAkB,CACrE,CAAC,CAAC,CAAC,CACF,KAAC,iBAAiB,IAChB,SAAS,EAAE,SAAS,EACpB,QAAQ,EAAE,QAAQ,EAClB,qBAAqB,EAAE,qBAAqB,EAC5C,OAAO,EAAE,OAAO,EAChB,gBAAgB,EAAE,gBAAgB,EAClC,WAAW,EAAE,WAAW,GACxB,CACH,IACG,CACP,CAAC;AACJ,CAAC;AAED,SAAS,mBAAmB;IAC1B,MAAM,aAAa,GAAG,uBAAuB,EAAE,CAAC;IAChD,MAAM,EAAE,IAAI,EAAE,GAAG,aAAa,CAAC;IAC/B,kEAAkE;IAClE,+DAA+D;IAC/D,OAAO,IAAI,IAAI,MAAM,CAAC;AACxB,CAAC;AAED,MAAM,UAAU,aAAa,CAAC,EAC5B,eAAe,EACf,iBAAiB,GAAG,IAAI,EACxB,qBAAqB,GAAG,IAAI,EAC5B,gBAAgB,GAAG,IAAI,EACvB,sBAAsB,GAUvB;IACC,MAAM,CAAC,MAAM,CAAC,GAAG,yBAAyB,EAAE,CAAC;IAC7C,MAAM,YAAY,GAAG,OAAO,CAAC,GAAG,EAAE,CAAC,IAAI,YAAY,CAAC,MAAM,CAAC,EAAE,CAAC,MAAM,CAAC,CAAC,CAAC;IACvE,MAAM,QAAQ,GAAG,eAAe,CAAC,YAAY,CAAC,CAAC;IAC/C,MAAM,WAAW,GAAG,OAAO,CAA4B,GAAG,EAAE;QAC1D,OAAO,IAAI,GAAG,EAAE,CAAC;IACnB,CAAC,EAAE,EAAE,CAAC,CAAC;IACP,MAAM,CAAC,eAAe,EAAE,kBAAkB,CAAC,GAAG,QAAQ,EAAkB,CAAC;IACzE,MAAM,CAAC,SAAS,EAAE,YAAY,CAAC,GAAG,QAAQ,CAAgB,EAAE,CAAC,CAAC;IAC9D,MAAM,CAAC,gBAAgB,EAAE,mBAAmB,CAAC,GAAG,QAAQ,CAAC,KAAK,CAAC,CAAC;IAChE,MAAM,CAAC,YAAY,EAAE,eAAe,CAAC,GAAG,QAAQ,CAAC,KAAK,CAAC,CAAC;IAExD,wEAAwE;IACxE,SAAS,CAAC,GAAG,EAAE;QACb,eAAe,CAAC,iBAAiB,CAAC,CAAC;IACrC,CAAC,EAAE,CAAC,iBAAiB,CAAC,CAAC,CAAC;IAExB,MAAM,gBAAgB,GAAG,WAAW,CAAC,GAAG,EAAE;QACxC,MAAM,CAAC,MAAM,CAAC,GAAG,EAAE;YACjB,MAAM,SAAS,GAAG,aAAa,EAAE,CAAC;YAClC,oBAAoB;YACpB,IAAI,SAAS,KAAK,IAAI,EAAE,CAAC;gBACvB,SAAS,CAAC,KAAK,GAAG,IAAI,CAAC;YACzB,CAAC;QACH,CAAC,CAAC,CAAC;QACH,mBAAmB,CAAC,KAAK,CAAC,CAAC;IAC7B,CAAC,EAAE,CAAC,MAAM,CAAC,CAAC,CAAC;IAEb,MAAM,qBAAqB,GAAG,WAAW,CACvC,CAAC,OAAyB,EAAE,MAAe,EAAE,EAAE;QAC7C,IAAI,OAAO,CAAC,IAAI,KAAK,SAAS,EAAE,CAAC;YAC/B,MAAM,YAAY,GAAG,YAAY,CAAC,qBAAqB,CACrD,OAAO,EACP,MAAM,CACP,CAAC;YACF,IAAI,CAAC,YAAY;gBAAE,OAAO;YAC1B,MAAM,EAAE,aAAa,EAAE,KAAK,EAAE,GAAG,YAAY,CAAC;YAC9C,YAAY,CAAC,UAAU,CAAC,aAAa,EAAE,MAAM,EAAE,KAAK,CAAC,CAAC;QACxD,CAAC;aAAM,CAAC;YACN,YAAY,CAAC,qBAAqB,CAAC,OAAO,CAAC,CAAC;YAC5C,mCAAmC;YACnC,MAAM,EAAE,GAAG,MAAM,KAAK,SAAS,CAAC,CAAC,CAAC,MAAM,CAAC,EAAE,CAAC,CAAC,CAAC,OAAO,CAAC,EAAE,CAAC;YACzD,MAAM,YAAY,GAAG,WAAW,CAAC,GAAG,CAAC,EAAE,CAAC,CAAC;YACzC,IAAI,YAAY,KAAK,SAAS,EAAE,CAAC;gBAC/B,kDAAkD;gBAClD,UAAU,CAAC,GAAG,EAAE;oBACd,MAAM,CAAC,MAAM,CAAC,GAAG,EAAE;wBACjB,KAAK,MAAM,GAAG,IAAI,YAAY,EAAE,CAAC;4BAC/B,MAAM,IAAI,GAAoB,aAAa,CAAC,GAAG,CAAC,CAAC;4BACjD,IAAI,WAAW,CAAC,IAAI,CAAC,EAAE,CAAC;gCACtB,IAAI,CAAC,QAAQ,CAAC,EAAE,CAAC,CAAC;gCAClB,IAAI,IAAI,CAAC,MAAM,EAAE,CAAC,MAAM,KAAK,CAAC,EAAE,CAAC;oCAC/B,eAAe,CAAC,IAAI,CAAC,CAAC;gCACxB,CAAC;4BACH,CAAC;wBACH,CAAC;oBACH,CAAC,CAAC,CAAC;gBACL,CAAC,CAAC,CAAC;YACL,CAAC;QACH,CAAC;IACH,CAAC,EACD,CAAC,YAAY,EAAE,MAAM,EAAE,WAAW,CAAC,CACpC,CAAC;IAEF,MAAM,gBAAgB,GAAG,WAAW,CAClC,CACE,eAAiC,EACjC,eAAwB,EACxB,MAAe,EACf,EAAE;QACF,YAAY,CAAC,UAAU,CAAC,eAAe,EAAE,MAAM,CAAC,CAAC;QACjD,IAAI,eAAe,EAAE,CAAC;YACpB,MAAM,CAAC,MAAM,CAAC,GAAG,EAAE;gBACjB,MAAM,SAAS,GAAG,aAAa,EAAE,CAAC;gBAClC,IAAI,iBAAiB,CAAC,SAAS,CAAC,EAAE,CAAC;oBACjC,MAAM,KAAK,GAAG,SAAS,CAAC,KAAK,CAAC;oBAC9B,MAAM,MAAM,GAAG,SAAS,CAAC,MAAM,CAAC;oBAChC,MAAM,UAAU,GAAG,SAAS,CAAC,UAAU,EAAE,CAAC;oBAC1C,MAAM,EAAE,GAAG,eAAe,CAAC,EAAE,CAAC;oBAE9B,6BAA6B;oBAC7B,wBAAwB,CAAC,SAAS,EAAE,UAAU,EAAE,EAAE,CAAC,CAAC;oBAEpD,sCAAsC;oBACtC,IAAI,UAAU,EAAE,CAAC;wBACf,KAAK,CAAC,GAAG,CAAC,MAAM,CAAC,GAAG,EAAE,MAAM,CAAC,MAAM,EAAE,MAAM,CAAC,IAAI,CAAC,CAAC;oBACpD,CAAC;yBAAM,CAAC;wBACN,MAAM,CAAC,GAAG,CAAC,KAAK,CAAC,GAAG,EAAE,KAAK,CAAC,MAAM,EAAE,KAAK,CAAC,IAAI,CAAC,CAAC;oBAClD,CAAC;gBACH,CAAC;YACH,CAAC,CAAC,CAAC;YACH,mBAAmB,CAAC,KAAK,CAAC,CAAC;QAC7B,CAAC;IACH,CAAC,EACD,CAAC,YAAY,EAAE,MAAM,CAAC,CACvB,CAAC;IAEF,SAAS,CAAC,GAAG,EAAE;QACb,MAAM,YAAY,GAAuB,EAAE,CAAC;QAC5C,KAAK,IAAI,CAAC,GAAG,CAAC,EAAE,CAAC,GAAG,SAAS,CAAC,MAAM,EAAE,CAAC,EAAE,EAAE,CAAC;YAC1C,MAAM,EAAE,GAAG,SAAS,CAAC,CAAC,CAAC,CAAC;YACxB,MAAM,IAAI,GAAG,WAAW,CAAC,GAAG,CAAC,EAAE,CAAC,CAAC;YACjC,IAAI,IAAI,KAAK,SAAS,EAAE,CAAC;gBACvB,KAAK,MAAM,GAAG,IAAI,IAAI,EAAE,CAAC;oBACvB,MAAM,IAAI,GAAG,MAAM,CAAC,eAAe,CAAC,GAAG,CAAC,CAAC;oBACzC,IAAI,IAAI,KAAK,IAAI,EAAE,CAAC;wBAClB,IAAI,CAAC,SAAS,CAAC,GAAG,CAAC,UAAU,CAAC,CAAC;wBAC/B,YAAY,CAAC,IAAI,CAAC,IAAI,CAAC,CAAC;wBACxB,eAAe,CAAC,IAAI,CAAC,CAAC;oBACxB,CAAC;gBACH,CAAC;YACH,CAAC;QACH,CAAC;QACD,OAAO,GAAG,EAAE;YACV,KAAK,IAAI,CAAC,GAAG,CAAC,EAAE,CAAC,GAAG,YAAY,CAAC,MAAM,EAAE,CAAC,EAAE,EAAE,CAAC;gBAC7C,MAAM,WAAW,GAAG,YAAY,CAAC,CAAC,CAAC,CAAC;gBACpC,WAAW,CAAC,SAAS,CAAC,MAAM,CAAC,UAAU,CAAC,CAAC;YAC3C,CAAC;QACH,CAAC,CAAC;IACJ,CAAC,EAAE,CAAC,SAAS,EAAE,MAAM,EAAE,WAAW,CAAC,CAAC,CAAC;IAErC,SAAS,CAAC,GAAG,EAAE;QACb,MAAM,iBAAiB,GAAgC,IAAI,GAAG,EAAE,CAAC;QAEjE,OAAO,aAAa,CAClB,6BAA6B,CAC3B,MAAM,EACN,QAAQ,EACR,CAAC,IAAc,EAAE,EAAE;YACjB,OAAO,eAAe,CAAC,IAAI,CAAC,MAAM,EAAE,CAAC,CAAC;QACxC,CAAC,EACD,CAAC,IAAc,EAAE,EAAY,EAAE,EAAE;YAC/B,gBAAgB;YAChB,MAAM,GAAG,GAAG,IAAI,CAAC,MAAM,EAAE,CAAC;YAC1B,GAAG,CAAC,OAAO,CAAC,EAAE,CAAC,EAAE;gBACf,EAAE,CAAC,KAAK,CAAC,EAAE,CAAC,CAAC;YACf,CAAC,CAAC,CAAC;QACL,CAAC,CACF,EACD,MAAM,CAAC,wBAAwB,CAAC,QAAQ,EAAE,SAAS,CAAC,EAAE;YACpD,MAAM,CAAC,cAAc,EAAE,CAAC,IAAI,CAAC,GAAG,EAAE;gBAChC,KAAK,MAAM,CAAC,GAAG,EAAE,QAAQ,CAAC,IAAI,SAAS,EAAE,CAAC;oBACxC,MAAM,IAAI,GAAoB,aAAa,CAAC,GAAG,CAAC,CAAC;oBACjD,IAAI,GAAG,GAAc,EAAE,CAAC;oBAExB,IAAI,QAAQ,KAAK,WAAW,EAAE,CAAC;wBAC7B,GAAG,GAAG,iBAAiB,CAAC,GAAG,CAAC,GAAG,CAAC,IAAI,EAAE,CAAC;oBACzC,CAAC;yBAAM,IAAI,WAAW,CAAC,IAAI,CAAC,EAAE,CAAC;wBAC7B,GAAG,GAAG,IAAI,CAAC,MAAM,EAAE,CAAC;oBACtB,CAAC;oBAED,KAAK,IAAI,CAAC,GAAG,CAAC,EAAE,CAAC,GAAG,GAAG,CAAC,MAAM,EAAE,CAAC,EAAE,EAAE,CAAC;wBACpC,MAAM,EAAE,GAAG,GAAG,CAAC,CAAC,CAAC,CAAC;wBAClB,IAAI,YAAY,GAAG,WAAW,CAAC,GAAG,CAAC,EAAE,CAAC,CAAC;wBACvC,iBAAiB,CAAC,GAAG,CAAC,GAAG,EAAE,GAAG,CAAC,CAAC;wBAEhC,IAAI,QAAQ,KAAK,WAAW,EAAE,CAAC;4BAC7B,IAAI,YAAY,KAAK,SAAS,EAAE,CAAC;gCAC/B,YAAY,CAAC,MAAM,CAAC,GAAG,CAAC,CAAC;gCACzB,IAAI,YAAY,CAAC,IAAI,KAAK,CAAC,EAAE,CAAC;oCAC5B,WAAW,CAAC,MAAM,CAAC,EAAE,CAAC,CAAC;gCACzB,CAAC;4BACH,CAAC;wBACH,CAAC;6BAAM,CAAC;4BACN,IAAI,YAAY,KAAK,SAAS,EAAE,CAAC;gCAC/B,YAAY,GAAG,IAAI,GAAG,EAAE,CAAC;gCACzB,WAAW,CAAC,GAAG,CAAC,EAAE,EAAE,YAAY,CAAC,CAAC;4BACpC,CAAC;4BACD,IAAI,CAAC,YAAY,CAAC,GAAG,CAAC,GAAG,CAAC,EAAE,CAAC;gCAC3B,YAAY,CAAC,GAAG,CAAC,GAAG,CAAC,CAAC;4BACxB,CAAC;wBACH,CAAC;oBACH,CAAC;gBACH,CAAC;YACH,CAAC,CAAC,CAAC;QACL,CAAC,CAAC,EACF,MAAM,CAAC,sBAAsB,CAAC,CAAC,EAAE,WAAW,EAAE,IAAI,EAAE,EAAE,EAAE;YACtD,WAAW,CAAC,IAAI,CAAC,GAAG,EAAE;gBACpB,MAAM,SAAS,GAAG,aAAa,EAAE,CAAC;gBAClC,IAAI,YAAY,GAAG,KAAK,CAAC;gBACzB,IAAI,YAAY,GAAG,KAAK,CAAC;gBAEzB,IAAI,iBAAiB,CAAC,SAAS,CAAC,EAAE,CAAC;oBACjC,MAAM,UAAU,GAAG,SAAS,CAAC,MAAM,CAAC,OAAO,EAAE,CAAC;oBAE9C,IAAI,WAAW,CAAC,UAAU,CAAC,EAAE,CAAC;wBAC5B,MAAM,UAAU,GAAG,WAAW,CAC5B,UAAU,EACV,SAAS,CAAC,MAAM,CAAC,MAAM,CACxB,CAAC;wBACF,IAAI,UAAU,KAAK,IAAI,EAAE,CAAC;4BACxB,YAAY,CAAC,UAAU,CAAC,CAAC;4BACzB,YAAY,GAAG,IAAI,CAAC;wBACtB,CAAC;wBACD,IAAI,CAAC,SAAS,CAAC,WAAW,EAAE,EAAE,CAAC;4BAC7B,kBAAkB,CAAC,UAAU,CAAC,MAAM,EAAE,CAAC,CAAC;4BACxC,YAAY,GAAG,IAAI,CAAC;wBACtB,CAAC;oBACH,CAAC;gBACH,CAAC;gBACD,IAAI,CAAC,YAAY,EAAE,CAAC;oBAClB,YAAY,CAAC,UAAU,CAAC,EAAE,CACxB,UAAU,CAAC,MAAM,KAAK,CAAC,CAAC,CAAC,CAAC,UAAU,CAAC,CAAC,CAAC,EAAE,CAC1C,CAAC;gBACJ,CAAC;gBACD,IAAI,CAAC,YAAY,EAAE,CAAC;oBAClB,kBAAkB,CAAC,IAAI,CAAC,CAAC;gBAC3B,CAAC;YACH,CAAC,CAAC,CAAC;YACH,IAAI,CAAC,IAAI,CAAC,GAAG,CAAC,eAAe,CAAC,EAAE,CAAC;gBAC/B,mBAAmB,CAAC,KAAK,CAAC,CAAC;YAC7B,CAAC;QACH,CAAC,CAAC,EACF,MAAM,CAAC,eAAe,CACpB,qBAAqB,EACrB,GAAG,EAAE;YACH,MAAM,YAAY,GAAG,MAAM,CAAC,YAAY,EAAE,CAAC;YAC3C,IAAI,YAAY,KAAK,IAAI,EAAE,CAAC;gBAC1B,YAAY,CAAC,eAAe,EAAE,CAAC;YACjC,CAAC;YACD,mBAAmB,CAAC,IAAI,CAAC,CAAC;YAC1B,OAAO,IAAI,CAAC;QACd,CAAC,EACD,uBAAuB,CACxB,CACF,CAAC;IACJ,CAAC,EAAE,CAAC,MAAM,EAAE,WAAW,CAAC,CAAC,CAAC;IAE1B,MAAM,YAAY,GAAG,GAAG,EAAE;QACxB,MAAM,CAAC,eAAe,CAAC,qBAAqB,EAAE,SAAS,CAAC,CAAC;IAC3D,CAAC,CAAC;IAEF,OAAO,CACL,8BACG,gBAAgB;gBACf,YAAY,CACV,KAAC,eAAe,IACd,MAAM,EAAE,MAAM,EACd,gBAAgB,EAAE,gBAAgB,EAClC,gBAAgB,EAAE,gBAAgB,GAClC,EACF,QAAQ,CAAC,IAAI,CACd,EACF,qBAAqB;gBACpB,eAAe,KAAK,IAAI;gBACxB,eAAe,KAAK,SAAS;gBAC7B,CAAC,gBAAgB;gBACjB,YAAY,CACV,KAAC,aAAa,IACZ,SAAS,EAAE,eAAe,EAC1B,MAAM,EAAE,MAAM,EACd,YAAY,EAAE,YAAY,GAC1B,EACF,QAAQ,CAAC,IAAI,CACd,EACF,gBAAgB;gBACf,YAAY,CACV,KAAC,MAAM,IACL,SAAS,EAAE,oCACT,YAAY,CAAC,CAAC,CAAC,QAAQ,CAAC,CAAC,CAAC,EAC5B,EAAE,EACF,OAAO,EAAE,GAAG,EAAE,CAAC,eAAe,CAAC,CAAC,YAAY,CAAC,EAC7C,KAAK,EAAE,YAAY,CAAC,CAAC,CAAC,eAAe,CAAC,CAAC,CAAC,eAAe,YAEvD,YAAG,SAAS,EAAC,UAAU,GAAG,GACnB,EACT,QAAQ,CAAC,IAAI,CACd,EACF,YAAY;gBACX,YAAY,CACV,KAAC,aAAa,IACZ,QAAQ,EAAE,QAAQ,EAClB,gBAAgB,EAAE,gBAAgB,EAClC,qBAAqB,EAAE,qBAAqB,EAC5C,SAAS,EAAE,SAAS,EACpB,WAAW,EAAE,WAAW,GACxB,EACF,sBAAsB,IAAI,QAAQ,CAAC,IAAI,CACxC,IACF,CACJ,CAAC;AACJ,CAAC;AAED,eAAe,aAAa,CAAC"}
+\ No newline at end of file
 diff --git a/node_modules/@datalayer/jupyter-lexical/lib/plugins/ComponentPickerMenuPlugin.js b/node_modules/@datalayer/jupyter-lexical/lib/plugins/ComponentPickerMenuPlugin.js
 index 730a11e..33f35b3 100644
 --- a/node_modules/@datalayer/jupyter-lexical/lib/plugins/ComponentPickerMenuPlugin.js
@@ -3370,6 +4052,215 @@ index 0000000..8bd361a
 +
 +  tags: ['lexical', 'kernel', 'execute', 'code', 'inspection'],
 +};
+diff --git a/node_modules/@datalayer/jupyter-lexical/lib/tools/schemas/listAvailableBlocks.d.ts b/node_modules/@datalayer/jupyter-lexical/lib/tools/schemas/listAvailableBlocks.d.ts
+index 1e7d21c..d33038f 100644
+--- a/node_modules/@datalayer/jupyter-lexical/lib/tools/schemas/listAvailableBlocks.d.ts
++++ b/node_modules/@datalayer/jupyter-lexical/lib/tools/schemas/listAvailableBlocks.d.ts
+@@ -5,22 +5,22 @@
+  */
+ import { z } from 'zod';
+ export declare const blockCategorySchema: z.ZodEnum<{
++    code: "code";
++    table: "table";
+     list: "list";
+     media: "media";
+     text: "text";
+     heading: "heading";
+-    table: "table";
+-    code: "code";
+     jupyter: "jupyter";
+ }>;
+ export declare const listAvailableBlocksParamsSchema: z.ZodObject<{
+     category: z.ZodOptional<z.ZodEnum<{
++        code: "code";
++        table: "table";
+         list: "list";
+         media: "media";
+         text: "text";
+         heading: "heading";
+-        table: "table";
+-        code: "code";
+         jupyter: "jupyter";
+     }>>;
+ }, z.core.$strip>;
+diff --git a/node_modules/@datalayer/jupyter-lexical/style/lexical/CommentPlugin.css b/node_modules/@datalayer/jupyter-lexical/style/lexical/CommentPlugin.css
+index 8ee27d2..c8f4f07 100644
+--- a/node_modules/@datalayer/jupyter-lexical/style/lexical/CommentPlugin.css
++++ b/node_modules/@datalayer/jupyter-lexical/style/lexical/CommentPlugin.css
+@@ -54,8 +54,9 @@ i.add-comment {
+   position: fixed;
+   width: 250px;
+   min-height: 80px;
+-  background-color: #fff;
++  background-color: var(--vscode-editorWidget-background, #fff);
+   box-shadow: 0 0 5px 0 rgba(0, 0, 0, 0.1);
++  border: 1px solid var(--vscode-editorWidget-border, transparent);
+   border-radius: 5px;
+   z-index: 24;
+   animation: show-input-box 0.4s ease;
+@@ -131,18 +132,19 @@ i.add-comment {
+ 
+ .CommentPlugin_CommentInputBox_Editor {
+   position: relative;
+-  border: 1px solid #ccc;
+-  background-color: #fff;
++  border: 1px solid var(--vscode-input-border, #ccc);
++  background-color: var(--vscode-input-background, #fff);
+   border-radius: 5px;
+   font-size: 15px;
+-  caret-color: rgb(5, 5, 5);
++  caret-color: var(--vscode-editorCursor-foreground, rgb(5, 5, 5));
++  color: var(--vscode-input-foreground, #000);
+   display: block;
+   padding: 9px 10px 10px 9px;
+   min-height: 80px;
+ }
+ 
+ .CommentPlugin_CommentInputBox_Editor:focus {
+-  outline: 1px solid rgb(66, 135, 245);
++  outline: 1px solid var(--vscode-focusBorder, rgb(66, 135, 245));
+ }
+ 
+ .CommentPlugin_ShowCommentsButton {
+@@ -176,13 +178,13 @@ i.comments {
+   position: fixed;
+   right: 0;
+   width: 300px;
+-  height: calc(100% - 88px);
+-  top: 88px;
+-  background-color: #fff;
+-  border-top-left-radius: 10px;
++  height: 100%;
++  top: 0;
++  background-color: var(--vscode-sideBar-background, #fff);
+   box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+   animation: show-comments 0.2s ease;
+   z-index: 25;
++  border-left: 1px solid var(--vscode-panel-border, #eee);
+ }
+ 
+ @keyframes show-comments {
+@@ -197,42 +199,50 @@ i.comments {
+ }
+ 
+ .CommentPlugin_CommentsPanel_Heading {
+-  padding-left: 15px;
+-  padding-top: 10px;
++  padding: 11px 20px;
+   margin: 0;
+-  height: 34px;
+-  border-bottom: 1px solid #eee;
+-  font-size: 20px;
++  height: auto;
++  border-bottom: none;
++  font-size: 11px;
++  font-weight: 700;
++  text-transform: uppercase;
++  letter-spacing: 0.5px;
+   display: block;
+   width: 100%;
+-  color: #444;
++  color: var(--vscode-sideBarTitle-foreground, #6c6c6c);
+   overflow: hidden;
+ }
+ 
+ .CommentPlugin_CommentsPanel_Editor {
+   position: relative;
+-  border: 1px solid #ccc;
+-  background-color: #fff;
++  border: 1px solid var(--vscode-input-border, #ccc);
++  background-color: var(--vscode-input-background, #fff);
+   border-radius: 5px;
+   font-size: 15px;
+-  caret-color: rgb(5, 5, 5);
++  caret-color: var(--vscode-editorCursor-foreground, rgb(5, 5, 5));
++  color: var(--vscode-input-foreground, #000);
+   display: block;
+-  padding: 9px 10px 10px 9px;
++  padding: 9px 30px 10px 9px; /* Add right padding for send button */
+   min-height: 20px;
+ }
+ 
+ .CommentPlugin_CommentsPanel_Editor::before {
+-  content: '';
+-  width: 30px;
+-  height: 20px;
+-  float: right;
++  /* Remove float - use padding instead */
++  display: none;
+ }
+ 
+ .CommentPlugin_CommentsPanel_SendButton {
+   position: absolute;
+-  right: 10px;
+-  top: 8px;
++  right: 5px;
++  top: 50%;
++  transform: translateY(-50%); /* Center vertically */
+   background: none;
++  padding: 0;
++  border: none;
++  cursor: pointer;
++  display: flex;
++  align-items: center;
++  justify-content: center;
+ }
+ 
+ .CommentPlugin_CommentsPanel_SendButton:hover {
+@@ -266,7 +276,7 @@ i.send {
+ }
+ 
+ .CommentPlugin_CommentsPanel_Empty {
+-  color: #777;
++  color: var(--vscode-descriptionForeground, #777);
+   font-size: 15px;
+   text-align: center;
+   position: absolute;
+@@ -303,11 +313,11 @@ i.send {
+ 
+ .CommentPlugin_CommentsPanel_List_Comment p {
+   margin: 0;
+-  color: #444;
++  color: var(--vscode-foreground, #444);
+ }
+ 
+ .CommentPlugin_CommentsPanel_List_Details {
+-  color: #444;
++  color: var(--vscode-foreground, #444);
+   padding-bottom: 5px;
+   vertical-align: top;
+ }
+@@ -324,11 +334,11 @@ i.send {
+ .CommentPlugin_CommentsPanel_List_Thread {
+   padding: 0 0 0 0;
+   margin: 0;
+-  border-top: 1px solid #eee;
+-  border-bottom: 1px solid #eee;
++  border-top: 1px solid var(--vscode-panel-border, #eee);
++  border-bottom: 1px solid var(--vscode-panel-border, #eee);
+   position: relative;
+   transition: all 0.2s linear;
+-  border-left: 0 solid #eee;
++  border-left: 0 solid var(--vscode-panel-border, #eee);
+ }
+ 
+ .CommentPlugin_CommentsPanel_List_Thread:first-child,
+@@ -342,12 +352,12 @@ i.send {
+ }
+ 
+ .CommentPlugin_CommentsPanel_List_Thread.interactive:hover {
+-  background-color: #fafafa;
++  background-color: var(--vscode-list-hoverBackground, #fafafa);
+ }
+ 
+ .CommentPlugin_CommentsPanel_List_Thread.active {
+-  background-color: #fafafa;
+-  border-left: 15px solid #eee;
++  background-color: var(--vscode-list-activeSelectionBackground, #fafafa);
++  border-left: 15px solid var(--vscode-panel-border, #eee);
+   cursor: inherit;
+ }
+ 
 diff --git a/node_modules/@datalayer/jupyter-lexical/style/lexical/icons/LICENSE.md b/node_modules/@datalayer/jupyter-lexical/style/lexical/icons/LICENSE.md
 new file mode 100644
 index 0000000..ce74f6a
