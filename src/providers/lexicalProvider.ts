@@ -527,6 +527,7 @@ export class LexicalProvider extends BaseDocumentProvider<LexicalDocument> {
           prefixLength: e.prefix?.length,
           suffixLength: e.suffix?.length,
           language: e.language,
+          contentType: e.contentType,
         });
 
         // Handle LLM completion request from webview
@@ -534,6 +535,7 @@ export class LexicalProvider extends BaseDocumentProvider<LexicalDocument> {
           e.prefix,
           e.suffix,
           e.language,
+          e.contentType || "code", // Default to 'code' for backward compatibility
         );
 
         console.log("[LexicalProvider] Sending LLM completion response", {
@@ -986,6 +988,7 @@ export class LexicalProvider extends BaseDocumentProvider<LexicalDocument> {
     prefix: string,
     suffix: string,
     language: string,
+    contentType: "code" | "prose" = "code",
   ): Promise<string | null> {
     try {
       // Check if Language Model API is available (VS Code 1.90+)
@@ -1009,19 +1012,23 @@ export class LexicalProvider extends BaseDocumentProvider<LexicalDocument> {
 
       const model = models[0];
 
-      // Build prompt
-      const prompt = `Complete the following ${language} code. Only return the completion, no explanations or markdown.
-
-\`\`\`${language}
-${prefix}<CURSOR>${suffix}
-\`\`\`
-
-Complete the code at <CURSOR>:`;
+      // Build prompt based on content type
+      const { getPromptForContentType } = await import("./completionPrompts");
+      const prompt = getPromptForContentType(contentType, {
+        language,
+        prefix,
+        suffix,
+      });
 
       // Send request to LLM
       const messages = [vscode.LanguageModelChatMessage.User(prompt)];
+      const justification =
+        contentType === "code"
+          ? "Code completion for Lexical Jupyter cell"
+          : "Writing assistance for Lexical document";
+
       const response = await model.sendRequest(messages, {
-        justification: "Code completion for Lexical Jupyter cell",
+        justification,
       });
 
       // Collect streamed response
