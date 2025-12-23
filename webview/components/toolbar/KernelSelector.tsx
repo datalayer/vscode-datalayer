@@ -22,7 +22,19 @@ export interface KernelSelectorProps {
   /** Kernel name (for native Jupyter kernels) */
   kernelName?: string;
   /** Kernel status for loading indicator */
-  kernelStatus?: "idle" | "busy" | "disconnected";
+  kernelStatus?:
+    | "idle"
+    | "busy"
+    | "starting"
+    | "restarting"
+    | "autorestarting"
+    | "disconnected"
+    | "dead"
+    | "unknown";
+  /** Whether the sessionContext is ready (kernel is ready for execution) */
+  isSessionReady?: boolean;
+  /** Whether kernel is initializing (sent from extension before kernel is created) */
+  kernelInitializing?: boolean;
   /** Click handler to open kernel selection dialog */
   onClick: () => void;
   /** Whether the selector is disabled */
@@ -39,7 +51,7 @@ export interface KernelSelectorProps {
  * - Otherwise: "Select Kernel"
  *
  * Icon:
- * - Loading spinner when kernelStatus is "busy"
+ * - Loading spinner when kernelStatus is "busy", "starting", "restarting", or "autorestarting"
  * - Server environment icon otherwise
  *
  * Position: Always on the RIGHT side of the toolbar
@@ -50,6 +62,8 @@ export const KernelSelector: React.FC<KernelSelectorProps> = ({
   selectedRuntime,
   kernelName,
   kernelStatus,
+  isSessionReady = false,
+  kernelInitializing = false,
   onClick,
   disabled = false,
 }) => {
@@ -78,13 +92,42 @@ export const KernelSelector: React.FC<KernelSelectorProps> = ({
   };
 
   const getKernelIcon = () => {
-    if (kernelStatus === "busy") {
+    console.log("[KernelSelector] getKernelIcon called with:", {
+      kernelStatus,
+      isSessionReady,
+      kernelInitializing,
+      selectedRuntime: !!selectedRuntime,
+    });
+
+    // Show spinner during kernel initialization:
+    // - kernelInitializing: ALWAYS show spinner (sent from extension before kernel starts)
+    // - starting, restarting, autorestarting: always show spinner
+    // - disconnected with selectedRuntime: show spinner (runtime selected but kernel not created yet)
+    // - unknown with !isSessionReady: show spinner (kernel is initializing)
+    // - unknown with isSessionReady: NO spinner (kernel is ready but quiet)
+    const shouldShowSpinner =
+      kernelInitializing ||
+      kernelStatus === "starting" ||
+      kernelStatus === "restarting" ||
+      kernelStatus === "autorestarting" ||
+      (kernelStatus === "disconnected" && selectedRuntime) ||
+      (kernelStatus === "unknown" && !isSessionReady);
+
+    if (shouldShowSpinner) {
+      console.log("[KernelSelector] Returning SPINNER icon");
       return "codicon codicon-loading codicon-modifier-spin";
     }
+    console.log("[KernelSelector] Returning SERVER icon");
     return "codicon codicon-server-environment";
   };
 
-  const isLoading = kernelStatus === "busy";
+  const isLoading =
+    kernelInitializing ||
+    kernelStatus === "starting" ||
+    kernelStatus === "restarting" ||
+    kernelStatus === "autorestarting" ||
+    (kernelStatus === "disconnected" && !!selectedRuntime) ||
+    (kernelStatus === "unknown" && !isSessionReady);
 
   return (
     <ToolbarButton

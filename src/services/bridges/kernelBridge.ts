@@ -49,6 +49,10 @@ export class KernelBridge implements vscode.Disposable {
   private readonly _webviews = new Map<string, vscode.WebviewPanel>();
   private readonly _localKernels = new Map<string, LocalKernelClient>();
   private readonly _documentKernels = new Map<string, string>(); // documentUri -> kernelId
+  private readonly _pendingPyodideRuntimes = new Map<
+    string,
+    ExtendedRuntimeJSON
+  >(); // documentUri -> runtime (waiting for kernel-ready)
   private _disposed = false;
 
   /**
@@ -85,8 +89,61 @@ export class KernelBridge implements vscode.Disposable {
   }
 
   /**
+   * Sends "kernel-starting" message to webview immediately.
+   * Used to trigger spinner before any async operations.
+   *
+   * @param uri - Document URI
+   * @param runtime - Selected runtime
+   */
+  public async sendKernelStartingMessage(
+    uri: vscode.Uri,
+    runtime: RuntimeDTO,
+  ): Promise<void> {
+    const key = uri.toString();
+    const webview = this._webviews.get(key);
+
+    if (!webview) {
+      // Try to find webview by searching active panels
+      const allWebviews = this.findWebviewsForUri(uri);
+      if (allWebviews.length === 0) {
+        throw new Error("No webview found for document");
+      }
+      // Use first matching webview
+      const webviewPanel = allWebviews[0];
+      this._webviews.set(key, webviewPanel);
+    }
+
+    const targetWebview = this._webviews.get(key);
+    if (!targetWebview) {
+      throw new Error("Failed to get webview panel for document");
+    }
+
+    // Use runtime.toJSON() to get the stable interface, or use runtime directly if it's already a plain object
+    let runtimeData: RuntimeJSON;
+    if (runtime && typeof runtime.toJSON === "function") {
+      runtimeData = runtime.toJSON();
+    } else if (runtime) {
+      // Runtime is already a plain DTO object (e.g., temporary runtime from selector)
+      runtimeData = runtime as unknown as RuntimeJSON;
+    } else {
+      throw new Error("Runtime object is undefined");
+    }
+
+    // Send "kernel-starting" message IMMEDIATELY to trigger spinner
+    await targetWebview.webview.postMessage({
+      type: "kernel-starting",
+      body: {
+        runtime: runtimeData,
+      },
+    });
+  }
+
+  /**
    * Connects a webview document (notebook or lexical) to a runtime.
    * Sends runtime information to the webview for ServiceManager creation.
+   *
+   * NOTE: Caller should call sendKernelStartingMessage() BEFORE this method
+   * to minimize lag between selection and spinner appearance.
    *
    * @param uri - Document URI
    * @param runtime - Selected runtime
@@ -114,12 +171,15 @@ export class KernelBridge implements vscode.Disposable {
       throw new Error("Failed to get webview panel for document");
     }
 
-    // Use runtime.toJSON() to get the stable interface
+    // Use runtime.toJSON() to get the stable interface, or use runtime directly if it's already a plain object
     let runtimeData: RuntimeJSON;
     if (runtime && typeof runtime.toJSON === "function") {
       runtimeData = runtime.toJSON();
+    } else if (runtime) {
+      // Runtime is already a plain DTO object (e.g., temporary runtime from selector)
+      runtimeData = runtime as unknown as RuntimeJSON;
     } else {
-      throw new Error("Runtime object does not have toJSON() method");
+      throw new Error("Runtime object is undefined");
     }
 
     // Use the primary field names from the runtime API
@@ -138,15 +198,15 @@ export class KernelBridge implements vscode.Disposable {
       runtime,
     );
 
-    // Create message with runtime data in body (matches messageHandler expectations)
+    // Send "kernel-selected" message to start kernel creation
+    // The webview will monitor kernel readiness and clear the spinner locally
     const message = {
       type: "kernel-selected",
       body: {
-        runtime: runtimeData, // Use standardized RuntimeJSON data as-is (already has ISO 8601 strings)
+        runtime: runtimeData,
       },
     };
 
-    // Post message to webview
     await targetWebview.webview.postMessage(message);
   }
 
@@ -200,7 +260,16 @@ export class KernelBridge implements vscode.Disposable {
       pyodideRuntime,
     );
 
-    // Send kernel-selected message to webview
+    // Send "kernel-starting" message FIRST to trigger spinner immediately
+    await targetWebview.webview.postMessage({
+      type: "kernel-starting",
+      body: {
+        runtime: pyodideRuntime,
+      },
+    });
+
+    // Send "kernel-selected" message immediately to start kernel creation
+    // The webview will monitor kernel readiness and clear the spinner locally
     const message = {
       type: "kernel-selected",
       body: {
@@ -253,15 +322,8 @@ export class KernelBridge implements vscode.Disposable {
       await new Promise((resolve) => setTimeout(resolve, 500));
     }
 
-    // Create and start the local kernel client
-    const kernelClient = new LocalKernelClient(kernelInfo);
-    await kernelClient.start();
-
-    // Store the kernel client for later use
-    this._localKernels.set(kernelInfo.id, kernelClient);
-    this._documentKernels.set(key, kernelInfo.id);
-
     // Create a mock runtime object that matches the RuntimeJSON interface
+    // IMPORTANT: Create this BEFORE starting the kernel so we can send it to the webview immediately!
     // For Jupyter servers, use the server URL from kernelInfo
     // For local kernels, use a special URL that signals to networkProxy
     // to route messages through the extension instead of making real HTTP/WebSocket requests
@@ -293,8 +355,25 @@ export class KernelBridge implements vscode.Disposable {
       mockRuntime,
     );
 
-    // Send standard kernel-selected message (same as any other kernel type)
-    // No need for special local-kernel-connected message!
+    // Send NEW "kernel-starting" message IMMEDIATELY to trigger spinner in webview
+    // This message is sent BEFORE the kernel starts, so the user sees immediate feedback
+    await targetWebview.webview.postMessage({
+      type: "kernel-starting",
+      body: {
+        runtime: mockRuntime,
+      },
+    });
+
+    // NOW start the local kernel client (this takes 3 seconds)
+    const kernelClient = new LocalKernelClient(kernelInfo);
+    await kernelClient.start();
+
+    // Store the kernel client for later use
+    this._localKernels.set(kernelInfo.id, kernelClient);
+    this._documentKernels.set(key, kernelInfo.id);
+
+    // Send standard kernel-selected message AFTER kernel is started and registered
+    // This ensures the kernel is ready when the webview tries to connect
     const message = {
       type: "kernel-selected",
       body: {
@@ -485,6 +564,50 @@ export class KernelBridge implements vscode.Disposable {
     }
 
     await Promise.all(promises);
+  }
+
+  /**
+   * Handles kernel-ready message from webview.
+   * Sends the pending kernel-selected message to complete kernel initialization.
+   *
+   * @param uri - Document URI
+   */
+  public async handleKernelReady(uri: vscode.Uri): Promise<void> {
+    const key = uri.toString();
+    const pendingRuntime = this._pendingPyodideRuntimes.get(key);
+
+    if (!pendingRuntime) {
+      console.warn(
+        `[KernelBridge] No pending runtime found for ${key}, kernel-ready already handled or timeout occurred`,
+      );
+      return;
+    }
+
+    // Remove from pending map
+    this._pendingPyodideRuntimes.delete(key);
+
+    // Get webview
+    const webview = this._webviews.get(key);
+    if (!webview) {
+      console.error(
+        `[KernelBridge] No webview found for ${key}, cannot send kernel-selected`,
+      );
+      return;
+    }
+
+    console.log(
+      `[KernelBridge] Kernel ready for ${key}, sending kernel-selected message`,
+    );
+
+    // Send kernel-selected message to stop spinner
+    const message = {
+      type: "kernel-selected",
+      body: {
+        runtime: pendingRuntime,
+      },
+    };
+
+    await webview.webview.postMessage(message);
   }
 
   /**

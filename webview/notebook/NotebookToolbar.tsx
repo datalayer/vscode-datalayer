@@ -33,6 +33,8 @@ export interface NotebookToolbarProps {
   isDatalayerNotebook?: boolean;
   /** Selected runtime information for Datalayer notebooks */
   selectedRuntime?: RuntimeJSON;
+  /** Whether kernel is currently initializing (before it's created) */
+  kernelInitializing?: boolean;
 }
 
 /**
@@ -43,16 +45,30 @@ export const NotebookToolbar: React.FC<NotebookToolbarProps> = ({
   notebookId,
   isDatalayerNotebook = false,
   selectedRuntime,
+  kernelInitializing = false,
 }) => {
   const messageHandler = useContext(MessageHandlerContext);
   const [kernelStatus, setKernelStatus] = useState<string>("disconnected");
   const [isScrolled, setIsScrolled] = useState<boolean>(false);
   const [notebook, setNotebook] = useState<any>(null);
+  // Track if sessionContext is ready (kernel is ready for execution)
+  const [isSessionReady, setIsSessionReady] = useState<boolean>(false);
 
   // Monitor notebook state from notebookStore2
   useEffect(() => {
-    if (!notebookId) return undefined;
+    if (!notebookId) {
+      return undefined;
+    }
 
+    // Initial state
+    const storeState = notebookStore2.getState();
+    const initialNotebook = storeState.notebooks.get(notebookId);
+
+    if (initialNotebook) {
+      setNotebook(initialNotebook);
+    }
+
+    // Subscribe to changes
     const unsubscribe = notebookStore2.subscribe((state) => {
       const notebook = state.notebooks.get(notebookId);
       if (notebook) {
@@ -60,7 +76,9 @@ export const NotebookToolbar: React.FC<NotebookToolbarProps> = ({
       }
     });
 
-    return () => unsubscribe();
+    return () => {
+      unsubscribe();
+    };
   }, [notebookId]);
 
   // Add pulse animation styles for collaborative indicator
@@ -156,21 +174,93 @@ export const NotebookToolbar: React.FC<NotebookToolbarProps> = ({
     };
   }, []);
 
+  // Monitor kernel status through sessionContext
   useEffect(() => {
-    if (selectedRuntime) {
-      if (notebook?.adapter?.kernel?.connection) {
-        const kernelConnection = notebook.adapter.kernel.connection;
-        setKernelStatus(kernelConnection.status || "idle");
-      } else {
-        setKernelStatus("idle");
-      }
-    } else if (notebook?.adapter?.kernel?.connection) {
-      const kernelConnection = notebook.adapter.kernel.connection;
-      setKernelStatus(kernelConnection.status || "idle");
-    } else {
+    if (!notebook?.adapter) {
       setKernelStatus("disconnected");
+      setIsSessionReady(false);
+      return undefined;
     }
-  }, [notebook, isDatalayerNotebook, selectedRuntime]);
+
+    const context = (notebook.adapter as any)._context;
+    if (!context?.sessionContext) {
+      setKernelStatus("disconnected");
+      setIsSessionReady(false);
+      return undefined;
+    }
+
+    const sessionContext = context.sessionContext;
+
+    // Track current kernel status subscription to clean up when kernel changes
+    let currentKernelStatusHandler: (() => void) | null = null;
+    let currentKernel: any = null;
+    let sessionReadyHandler: (() => void) | null = null;
+
+    // Function to update kernel status and session ready state
+    const updateKernelStatus = () => {
+      const session = sessionContext.session;
+      const kernel = session?.kernel;
+
+      // Update session ready state
+      setIsSessionReady(sessionContext.isReady);
+
+      // Clean up previous kernel subscription if kernel changed
+      if (
+        currentKernel &&
+        currentKernel !== kernel &&
+        currentKernelStatusHandler
+      ) {
+        currentKernel.statusChanged?.disconnect(currentKernelStatusHandler);
+        currentKernelStatusHandler = null;
+        currentKernel = null;
+      }
+
+      if (kernel) {
+        const rawStatus = kernel.status || "idle";
+        setKernelStatus(rawStatus);
+
+        // Subscribe to this kernel's status changes if not already subscribed
+        if (kernel !== currentKernel) {
+          currentKernel = kernel;
+          currentKernelStatusHandler = () => {
+            const newStatus = kernel.status || "idle";
+            setKernelStatus(newStatus);
+          };
+          kernel.statusChanged?.connect(currentKernelStatusHandler);
+        }
+      } else {
+        setKernelStatus("disconnected");
+        setIsSessionReady(false);
+      }
+    };
+
+    // Initial status check
+    updateKernelStatus();
+
+    // Subscribe to session changes (when session is created/changed)
+    const onSessionChanged = () => {
+      updateKernelStatus();
+    };
+    sessionContext.sessionChanged?.connect(onSessionChanged);
+
+    // Subscribe to sessionContext.statusChanged to detect when session becomes ready
+    sessionReadyHandler = () => {
+      setIsSessionReady(sessionContext.isReady);
+      updateKernelStatus();
+    };
+    sessionContext.statusChanged?.connect(sessionReadyHandler);
+
+    // Cleanup
+    return () => {
+      sessionContext.sessionChanged?.disconnect(onSessionChanged);
+      if (sessionReadyHandler) {
+        sessionContext.statusChanged?.disconnect(sessionReadyHandler);
+      }
+      if (currentKernel && currentKernelStatusHandler) {
+        currentKernel.statusChanged?.disconnect(currentKernelStatusHandler);
+      }
+    };
+  }, [notebook]);
 
   const handleRunAll = () => {
     if (notebookId) {
@@ -320,9 +410,9 @@ export const NotebookToolbar: React.FC<NotebookToolbarProps> = ({
 
             <KernelSelector
               selectedRuntime={selectedRuntime}
-              kernelStatus={
-                kernelStatus as "idle" | "busy" | "disconnected" | undefined
-              }
+              kernelStatus={kernelStatus as any}
+              isSessionReady={isSessionReady}
+              kernelInitializing={kernelInitializing}
               onClick={handleSelectRuntime}
               disabled={
                 kernelStatus !== "disconnected" && !!notebook?.adapter?.kernel

@@ -42,6 +42,12 @@ export interface RuntimeSelectorOptions {
    * Default: false (show existing runtimes)
    */
   hideExistingRuntimes?: boolean;
+
+  /**
+   * Callback called IMMEDIATELY when user selects a runtime (before QuickPick closes).
+   * Used to trigger instant visual feedback like showing a spinner.
+   */
+  onRuntimeSelected?: (runtime: RuntimeDTO) => void | Promise<void>;
 }
 
 /**
@@ -57,7 +63,7 @@ export async function selectDatalayerRuntime(
   authProvider: IAuthProvider,
   options?: RuntimeSelectorOptions,
 ): Promise<RuntimeDTO | undefined> {
-  const { hideExistingRuntimes = false } = options ?? {};
+  const { hideExistingRuntimes = false, onRuntimeSelected } = options ?? {};
 
   // Check authentication first
   if (!authProvider.isAuthenticated()) {
@@ -220,16 +226,45 @@ export async function selectDatalayerRuntime(
     return undefined;
   }
 
-  // Show QuickPick (progress is now dismissed)
-  const selected = await vscode.window.showQuickPick(items, {
-    title: hideExistingRuntimes
-      ? "Create New Runtime"
-      : "Select Datalayer Runtime",
-    placeHolder: hideExistingRuntimes
-      ? "Choose an environment for your new runtime"
-      : "Choose an existing runtime or create a new one",
-    ignoreFocusOut: true,
-  });
+  // Create QuickPick with instant callback support
+  const quickPick = vscode.window.createQuickPick<RuntimeQuickPickItem>();
+  quickPick.title = hideExistingRuntimes
+    ? "Create New Runtime"
+    : "Select Datalayer Runtime";
+  quickPick.placeholder = hideExistingRuntimes
+    ? "Choose an environment for your new runtime"
+    : "Choose an existing runtime or create a new one";
+  quickPick.ignoreFocusOut = true;
+  quickPick.items = items;
+
+  // Call callback IMMEDIATELY when existing runtime is selected
+  // This enables instant visual feedback like showing a spinner
+  if (onRuntimeSelected) {
+    quickPick.onDidChangeSelection((selected) => {
+      if (selected.length > 0 && selected[0].runtime) {
+        // Existing runtime selected - call callback immediately for instant feedback
+        onRuntimeSelected(selected[0].runtime);
+      }
+      // Note: For create actions, callback is called AFTER user accepts all creation options
+      // (see below where createRuntime is called)
+    });
+  }
+
+  const selected = await new Promise<RuntimeQuickPickItem | undefined>(
+    (resolve) => {
+      quickPick.onDidAccept(() => {
+        const selection = quickPick.selectedItems[0];
+        quickPick.hide();
+        resolve(selection);
+      });
+      quickPick.onDidHide(() => {
+        resolve(undefined);
+      });
+      quickPick.show();
+    },
+  );
+
+  quickPick.dispose();
 
   if (!selected) {
     return undefined;
@@ -241,8 +276,13 @@ export async function selectDatalayerRuntime(
     const runtime = selected.runtime;
     return runtime;
   } else if (selected.action === "create" && selected.environment) {
-    // Create new runtime
-    const result = await createRuntime(sdk, selected.environment);
+    // Create new runtime - spinner callback will be triggered AFTER all dialogs are accepted
+    const result = await createRuntime(
+      sdk,
+      selected.environment,
+      undefined,
+      onRuntimeSelected,
+    );
     return result;
   }
 
@@ -353,12 +393,14 @@ async function selectSnapshot(
  * @param sdk - Datalayer SDK instance
  * @param environment - Environment to use
  * @param preSelectedSnapshotId - Optional snapshot ID to restore from (skips snapshot selection)
+ * @param onRuntimeCreating - Optional callback triggered when runtime creation starts (after all dialogs)
  * @returns Created runtime or undefined if failed
  */
 export async function createRuntime(
   sdk: DatalayerClient,
   environment: EnvironmentDTO,
   preSelectedSnapshotId?: string,
+  onRuntimeCreating?: (runtime: RuntimeDTO) => void | Promise<void>,
 ): Promise<RuntimeDTO | undefined> {
   // Step 1: Determine snapshot to use
   let snapshotId: string | undefined = preSelectedSnapshotId;
@@ -536,6 +578,24 @@ export async function createRuntime(
           increment: 0,
           message: "Requesting runtime creation...",
         });
+
+        // Trigger spinner callback NOW - user has accepted all options
+        if (onRuntimeCreating) {
+          const tempRuntime = {
+            uid: "creating",
+            givenName: `Creating ${environment.title || environment.name}...`,
+            podName: "creating",
+            environmentName: environment.name,
+            environmentTitle: environment.title || environment.name,
+            type: "notebook",
+            burningRate: 0,
+            ingress: "",
+            token: "",
+            startedAt: new Date().toISOString(),
+            expiredAt: "",
+          } as unknown as RuntimeDTO;
+          await onRuntimeCreating(tempRuntime);
+        }
 
         // Create the runtime
 

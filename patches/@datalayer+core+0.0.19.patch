@@ -1025,6 +1025,43 @@ index 0000000..911ff75
 +---
 +
 +Built with ❤️ using React, TypeScript, and modern web technologies.
+diff --git a/node_modules/@datalayer/core/lib/components/auth/Login.js b/node_modules/@datalayer/core/lib/components/auth/Login.js
+index e6b1e7c..9a53a54 100644
+--- a/node_modules/@datalayer/core/lib/components/auth/Login.js
++++ b/node_modules/@datalayer/core/lib/components/auth/Login.js
+@@ -3,11 +3,6 @@ import { jsx as _jsx, jsxs as _jsxs, Fragment as _Fragment } from "react/jsx-run
+  * Copyright (c) 2023-2025 Datalayer, Inc.
+  * Distributed under the terms of the Modified BSD License.
+  */
+-/*
+- * Copyright (c) 2021-2024 Datalayer, Inc.
+- *
+- * Datalayer License
+- */
+ import { useEffect, useState } from 'react';
+ import { PageConfig, URLExt } from '@jupyterlab/coreutils';
+ import { EyeIcon, EyeClosedIcon, MarkGithubIcon } from '@primer/octicons-react';
+diff --git a/node_modules/@datalayer/core/lib/components/auth/index.js b/node_modules/@datalayer/core/lib/components/auth/index.js
+index a008d92..6dc6e15 100644
+--- a/node_modules/@datalayer/core/lib/components/auth/index.js
++++ b/node_modules/@datalayer/core/lib/components/auth/index.js
+@@ -2,15 +2,10 @@
+  * Copyright (c) 2023-2025 Datalayer, Inc.
+  * Distributed under the terms of the Modified BSD License.
+  */
+-/*
+- * Copyright (c) 2021-2024 Datalayer, Inc.
+- *
+- * Datalayer License
+- */
+ /**
+  * Authentication components for Datalayer platform
+  */
+ export * from './Login';
+-// LoginCLI is excluded from build - it's meant for CLI apps with full routing
++// LoginCLI is excluded from build - it's meant for CLI apps with full routing.
+ // export * from './LoginCLI';
+ export * from './LoginToken';
 diff --git a/node_modules/@datalayer/core/lib/components/display/VisuallyHidden.d.ts b/node_modules/@datalayer/core/lib/components/display/VisuallyHidden.d.ts
 index 9814d57..23d68bc 100644
 --- a/node_modules/@datalayer/core/lib/components/display/VisuallyHidden.d.ts
@@ -1320,7 +1357,7 @@ index ece4e8a..c4b1597 100644
  export * from './useRef';
  export * from './useRuntimes';
 diff --git a/node_modules/@datalayer/core/lib/hooks/useCache.d.ts b/node_modules/@datalayer/core/lib/hooks/useCache.d.ts
-index 2ccbf59..f2d45a2 100644
+index 2ccbf59..5b5f917 100644
 --- a/node_modules/@datalayer/core/lib/hooks/useCache.d.ts
 +++ b/node_modules/@datalayer/core/lib/hooks/useCache.d.ts
 @@ -515,6 +515,7 @@ export declare const useCache: ({ loginRoute }?: CacheProps) => {
@@ -1345,7 +1382,19 @@ index 2ccbf59..f2d45a2 100644
      useUpdateDocument: () => import("@tanstack/react-query").UseMutationResult<any, Error, {
          id: string;
          name: string;
-@@ -957,5 +965,8 @@ export declare const useCache: ({ loginRoute }?: CacheProps) => {
+@@ -645,7 +653,10 @@ export declare const useCache: ({ loginRoute }?: CacheProps) => {
+     useDatasources: () => import("@tanstack/react-query").UseQueryResult<any, Error>;
+     useCreateDatasource: () => import("@tanstack/react-query").UseMutationResult<any, Error, Omit<IDatasource, "id">, unknown>;
+     useUpdateDatasource: () => import("@tanstack/react-query").UseMutationResult<any, Error, IDatasource, unknown>;
+-    useSecret: (secretId: string) => import("@tanstack/react-query").UseQueryResult<ISecret | null | undefined, Error>;
++    useSecret: (secretId: string, options?: {
++        enabled?: boolean;
++        refetchOnMount?: boolean;
++    }) => import("@tanstack/react-query").UseQueryResult<ISecret | null | undefined, Error>;
+     useSecrets: () => import("@tanstack/react-query").UseQueryResult<any, Error>;
+     useCreateSecret: () => import("@tanstack/react-query").UseMutationResult<any, Error, Omit<ISecret, "id">, unknown>;
+     useUpdateSecret: () => import("@tanstack/react-query").UseMutationResult<any, Error, ISecret, unknown>;
+@@ -957,5 +968,8 @@ export declare const useCache: ({ loginRoute }?: CacheProps) => {
      notebookUploadLoading: boolean;
      notebookUploadProgress: number;
      resetNotebookUpload: () => void;
@@ -1355,7 +1404,7 @@ index 2ccbf59..f2d45a2 100644
  };
  export default useCache;
 diff --git a/node_modules/@datalayer/core/lib/hooks/useCache.js b/node_modules/@datalayer/core/lib/hooks/useCache.js
-index b7c50e1..c652e75 100644
+index b7c50e1..8eeceeb 100644
 --- a/node_modules/@datalayer/core/lib/hooks/useCache.js
 +++ b/node_modules/@datalayer/core/lib/hooks/useCache.js
 @@ -322,6 +322,8 @@ export const useCache = ({ loginRoute = '/login' } = {}) => {
@@ -1484,7 +1533,42 @@ index b7c50e1..c652e75 100644
                  }
              },
          });
-@@ -3352,17 +3383,12 @@ export const useCache = ({ loginRoute = '/login' } = {}) => {
+@@ -1826,6 +1857,7 @@ export const useCache = ({ loginRoute = '/login' } = {}) => {
+                 return [];
+             },
+             ...DEFAULT_QUERY_OPTIONS,
++            refetchOnMount: true, // Override to refetch when stale after invalidation
+         });
+     };
+     /**
+@@ -1896,6 +1928,7 @@ export const useCache = ({ loginRoute = '/login' } = {}) => {
+                 return [];
+             },
+             ...DEFAULT_QUERY_OPTIONS,
++            refetchOnMount: true, // Override to refetch when stale after invalidation
+         });
+     };
+     /**
+@@ -2159,7 +2192,7 @@ export const useCache = ({ loginRoute = '/login' } = {}) => {
+     /**
+      * Get single secret by ID
+      */
+-    const useSecret = (secretId) => {
++    const useSecret = (secretId, options) => {
+         return useQuery({
+             queryKey: queryKeys.secrets.detail(secretId),
+             queryFn: async () => {
+@@ -2173,7 +2206,8 @@ export const useCache = ({ loginRoute = '/login' } = {}) => {
+                 return null;
+             },
+             ...DEFAULT_QUERY_OPTIONS,
+-            enabled: !!secretId,
++            enabled: options?.enabled ?? !!secretId,
++            refetchOnMount: options?.refetchOnMount ?? DEFAULT_QUERY_OPTIONS.refetchOnMount,
+         });
+     };
+     /**
+@@ -3352,17 +3386,12 @@ export const useCache = ({ loginRoute = '/login' } = {}) => {
                      const cell = toCell(resp.cell);
                      // Set detail cache
                      queryClient.setQueryData(queryKeys.cells.detail(cell.id), cell);
@@ -1508,7 +1592,7 @@ index b7c50e1..c652e75 100644
                  }
              },
          });
-@@ -3530,17 +3556,12 @@ export const useCache = ({ loginRoute = '/login' } = {}) => {
+@@ -3530,17 +3559,12 @@ export const useCache = ({ loginRoute = '/login' } = {}) => {
                      const lesson = toLesson(resp.notebook);
                      // Set detail cache
                      queryClient.setQueryData(queryKeys.lessons.detail(lesson.id), lesson);
@@ -1532,7 +1616,7 @@ index b7c50e1..c652e75 100644
                  }
              },
          });
-@@ -3632,17 +3653,12 @@ export const useCache = ({ loginRoute = '/login' } = {}) => {
+@@ -3632,17 +3656,12 @@ export const useCache = ({ loginRoute = '/login' } = {}) => {
                      const exercise = toExercise(resp.exercise);
                      // Set detail cache
                      queryClient.setQueryData(queryKeys.exercises.detail(exercise.id), exercise);
@@ -1556,7 +1640,7 @@ index b7c50e1..c652e75 100644
                  }
              },
          });
-@@ -3703,17 +3719,12 @@ export const useCache = ({ loginRoute = '/login' } = {}) => {
+@@ -3703,17 +3722,12 @@ export const useCache = ({ loginRoute = '/login' } = {}) => {
                      const assignment = toAssignment(resp.notebook);
                      // Set detail cache
                      queryClient.setQueryData(queryKeys.assignments.detail(assignment.id), assignment);
@@ -1580,7 +1664,7 @@ index b7c50e1..c652e75 100644
                  }
              },
          });
-@@ -6046,6 +6057,7 @@ export const useCache = ({ loginRoute = '/login' } = {}) => {
+@@ -6046,6 +6060,7 @@ export const useCache = ({ loginRoute = '/login' } = {}) => {
          // Documents
          useDocument,
          useDocumentsBySpace,
@@ -1588,7 +1672,7 @@ index b7c50e1..c652e75 100644
          useUpdateDocument,
          useUpdateDocumentModel,
          useCloneDocument,
-@@ -6189,6 +6201,9 @@ export const useCache = ({ loginRoute = '/login' } = {}) => {
+@@ -6189,6 +6204,9 @@ export const useCache = ({ loginRoute = '/login' } = {}) => {
          notebookUploadLoading,
          notebookUploadProgress,
          resetNotebookUpload,
@@ -2068,3 +2152,1123 @@ diff --git a/node_modules/@datalayer/core/lib/stories/assets/avif-test-image.avi
 new file mode 100644
 index 0000000..530709b
 Binary files /dev/null and b/node_modules/@datalayer/core/lib/stories/assets/avif-test-image.avif differ
+diff --git a/node_modules/@datalayer/core/lib/utils/cli/index.js b/node_modules/@datalayer/core/lib/utils/cli/index.js
+index 969618e..a151b22 100644
+--- a/node_modules/@datalayer/core/lib/utils/cli/index.js
++++ b/node_modules/@datalayer/core/lib/utils/cli/index.js
+@@ -2,11 +2,6 @@
+  * Copyright (c) 2023-2025 Datalayer, Inc.
+  * Distributed under the terms of the Modified BSD License.
+  */
+-/*
+- * Copyright (c) 2021-2024 Datalayer, Inc.
+- *
+- * Datalayer License
+- */
+ /**
+  * CLI utilities
+  */
+diff --git a/node_modules/@datalayer/core/lib/utils/cli/query.js b/node_modules/@datalayer/core/lib/utils/cli/query.js
+index c7e4193..b9e45a0 100644
+--- a/node_modules/@datalayer/core/lib/utils/cli/query.js
++++ b/node_modules/@datalayer/core/lib/utils/cli/query.js
+@@ -2,11 +2,6 @@
+  * Copyright (c) 2023-2025 Datalayer, Inc.
+  * Distributed under the terms of the Modified BSD License.
+  */
+-/*
+- * Copyright (c) 2021-2024 Datalayer, Inc.
+- *
+- * Datalayer License
+- */
+ import { QueryClient } from '@tanstack/react-query';
+ /**
+  * Shared QueryClient instance for TanStack Query
+diff --git a/node_modules/@datalayer/core/lib/views/datasources/DatasourceDetail.d.ts b/node_modules/@datalayer/core/lib/views/datasources/DatasourceDetail.d.ts
+new file mode 100644
+index 0000000..f7f1554
+--- /dev/null
++++ b/node_modules/@datalayer/core/lib/views/datasources/DatasourceDetail.d.ts
+@@ -0,0 +1,2 @@
++export declare const DatasourceDetail: () => import("react/jsx-runtime").JSX.Element;
++export default DatasourceDetail;
+diff --git a/node_modules/@datalayer/core/lib/views/datasources/DatasourceDetail.js b/node_modules/@datalayer/core/lib/views/datasources/DatasourceDetail.js
+new file mode 100644
+index 0000000..3298176
+--- /dev/null
++++ b/node_modules/@datalayer/core/lib/views/datasources/DatasourceDetail.js
+@@ -0,0 +1,91 @@
++import { jsx as _jsx, jsxs as _jsxs, Fragment as _Fragment } from "react/jsx-runtime";
++/*
++ * Copyright (c) 2023-2025 Datalayer, Inc.
++ * Distributed under the terms of the Modified BSD License.
++ */
++import { useState, useEffect } from 'react';
++import { useParams } from 'react-router-dom';
++import { PageHeader, Heading, Text, Button, TextInput, FormControl, Textarea, Label, } from '@primer/react';
++import { Box } from '@datalayer/primer-addons';
++import { EyeIcon, EyeClosedIcon } from '@primer/octicons-react';
++import { BoringAvatar } from '../../components/avatars';
++import { useCache, useToast } from '../../hooks';
++import { useRunStore } from '../../state';
++export const DatasourceDetail = () => {
++    const { datasourceId } = useParams();
++    const runStore = useRunStore();
++    const { enqueueToast } = useToast();
++    const { useUpdateDatasource, useDatasource } = useCache();
++    const updateDatasourceMutation = useUpdateDatasource();
++    const datasourceQuery = useDatasource(datasourceId);
++    const [datasource, setDatasource] = useState();
++    const [formValues, setFormValues] = useState({
++        name: datasource?.name,
++        description: datasource?.description,
++    });
++    const [validationResult, setValidationResult] = useState({
++        name: undefined,
++        description: undefined,
++    });
++    const [passwordVisibility, setPasswordVisibility] = useState(false);
++    useEffect(() => {
++        if (datasourceQuery.data) {
++            const datasource = datasourceQuery.data;
++            setDatasource(datasource);
++            setFormValues({ ...datasource });
++        }
++    }, [datasourceQuery.data]);
++    const nameNameChange = (event) => {
++        setFormValues(prevFormValues => ({
++            ...prevFormValues,
++            name: event.target.value,
++        }));
++    };
++    const nameDescriptionChange = (event) => {
++        setFormValues(prevFormValues => ({
++            ...prevFormValues,
++            description: event.target.value,
++        }));
++    };
++    useEffect(() => {
++        setValidationResult({
++            ...validationResult,
++            name: formValues.name === undefined
++                ? undefined
++                : formValues.name.length > 2
++                    ? true
++                    : false,
++            description: formValues.description === undefined
++                ? undefined
++                : formValues.description.length > 2
++                    ? true
++                    : false,
++        });
++    }, [formValues]);
++    const nameSubmit = async () => {
++        runStore.layout().showBackdrop();
++        datasource.name = formValues.name;
++        datasource.description = formValues.description;
++        updateDatasourceMutation.mutate(datasource, {
++            onSuccess: (resp) => {
++                if (resp.success) {
++                    enqueueToast('The datasource is successfully updated.', {
++                        variant: 'success',
++                    });
++                    setDatasource(datasource);
++                }
++            },
++            onSettled: () => {
++                runStore.layout().hideBackdrop();
++            },
++        });
++    };
++    return (_jsxs(_Fragment, { children: [_jsx(PageHeader, { children: _jsx(Heading, { sx: { fontSize: 3 }, children: "Datasource" }) }), _jsxs(Box, { display: "flex", children: [_jsxs(Box, { children: [_jsx(BoringAvatar, { displayName: datasource?.name, size: 100, style: { paddingRight: 10 } }), _jsx(Text, { as: "h2", sx: { paddingTop: 3 }, children: datasource?.name }), _jsx(Box, { mt: 3, children: _jsx(Label, { size: "large", children: datasource?.variant }) })] }), _jsx(Box, { ml: 10, children: _jsxs(Box, { sx: { label: { marginTop: 2 } }, children: [_jsxs(FormControl, { children: [_jsx(FormControl.Label, { children: "Name" }), _jsx(TextInput, { block: true, value: formValues.name, onChange: nameNameChange }), validationResult.name === false && (_jsx(FormControl.Validation, { variant: "error", children: "Name must have more than 2 characters." }))] }), _jsxs(FormControl, { children: [_jsx(FormControl.Label, { children: "Description" }), _jsx(Textarea, { block: true, value: formValues.description, onChange: nameDescriptionChange, rows: 5 }), validationResult.description === false && (_jsx(FormControl.Validation, { variant: "error", children: "Description must have more than 2 characters." }))] }), _jsxs(FormControl, { children: [_jsx(FormControl.Label, { children: "Database" }), _jsx(TextInput, { placeholder: "Database", monospace: true, contrast: true, size: "large", type: passwordVisibility ? 'text' : 'password', value: datasource?.database, trailingAction: _jsx(TextInput.Action, { onClick: () => {
++                                                    setPasswordVisibility(!passwordVisibility);
++                                                }, icon: passwordVisibility ? EyeClosedIcon : EyeIcon, "aria-label": passwordVisibility ? 'Hide database' : 'Reveal database', sx: { color: 'var(--fgColor-muted)' } }), sx: { overflow: 'visible' } })] }), _jsxs(FormControl, { children: [_jsx(FormControl.Label, { children: "Output bucket" }), _jsx(TextInput, { placeholder: "Output bucket", monospace: true, contrast: true, size: "large", type: passwordVisibility ? 'text' : 'password', value: datasource?.outputBucket, trailingAction: _jsx(TextInput.Action, { onClick: () => {
++                                                    setPasswordVisibility(!passwordVisibility);
++                                                }, icon: passwordVisibility ? EyeClosedIcon : EyeIcon, "aria-label": passwordVisibility
++                                                    ? 'Hide output bucket'
++                                                    : 'Reveal output bucket', sx: { color: 'var(--fgColor-muted)' } }), sx: { overflow: 'visible' } })] }), _jsx(Button, { variant: "primary", disabled: !validationResult.name || !validationResult.description, sx: { marginTop: 3 }, onClick: nameSubmit, children: "Update datasource" })] }) })] })] }));
++};
++export default DatasourceDetail;
+diff --git a/node_modules/@datalayer/core/lib/views/datasources/DatasourceNew.d.ts b/node_modules/@datalayer/core/lib/views/datasources/DatasourceNew.d.ts
+new file mode 100644
+index 0000000..eb40c07
+--- /dev/null
++++ b/node_modules/@datalayer/core/lib/views/datasources/DatasourceNew.d.ts
+@@ -0,0 +1,2 @@
++export declare const DatasourceNew: () => import("react/jsx-runtime").JSX.Element;
++export default DatasourceNew;
+diff --git a/node_modules/@datalayer/core/lib/views/datasources/DatasourceNew.js b/node_modules/@datalayer/core/lib/views/datasources/DatasourceNew.js
+new file mode 100644
+index 0000000..81ccd2a
+--- /dev/null
++++ b/node_modules/@datalayer/core/lib/views/datasources/DatasourceNew.js
+@@ -0,0 +1,118 @@
++import { jsx as _jsx, jsxs as _jsxs, Fragment as _Fragment } from "react/jsx-runtime";
++/*
++ * Copyright (c) 2023-2025 Datalayer, Inc.
++ * Distributed under the terms of the Modified BSD License.
++ */
++import { useEffect, useState } from 'react';
++import { PageHeader, FormControl, Button, TextInput, Text, Textarea, Select, Flash, Link, } from '@primer/react';
++import { Box } from '@datalayer/primer-addons';
++import { useCache, useNavigate, useToast } from '../../hooks';
++import { useRunStore } from '../../state';
++export const DatasourceNew = () => {
++    const runStore = useRunStore();
++    const { useCreateDatasource } = useCache();
++    const createDatasourceMutation = useCreateDatasource();
++    const navigate = useNavigate();
++    const { enqueueToast } = useToast();
++    const [formValues, setFormValues] = useState({
++        variant: 'athena',
++        database: undefined,
++        outputBucket: undefined,
++        name: undefined,
++        description: undefined,
++    });
++    const [validationResult, setValidationResult] = useState({
++        variant: undefined,
++        database: undefined,
++        outputBucket: undefined,
++        name: undefined,
++        description: undefined,
++    });
++    const valueVariantChange = (event) => {
++        setFormValues(prevFormValues => ({
++            ...prevFormValues,
++            variant: event.target.value,
++        }));
++    };
++    const valueDatabaseChange = (event) => {
++        setFormValues(prevFormValues => ({
++            ...prevFormValues,
++            database: event.target.value,
++        }));
++    };
++    const valueOutputBucketChange = (event) => {
++        setFormValues(prevFormValues => ({
++            ...prevFormValues,
++            outputBucket: event.target.value,
++        }));
++    };
++    const valueNameChange = (event) => {
++        setFormValues(prevFormValues => ({
++            ...prevFormValues,
++            name: event.target.value,
++        }));
++    };
++    const valueDescriptionChange = (event) => {
++        setFormValues(prevFormValues => ({
++            ...prevFormValues,
++            description: event.target.value,
++        }));
++    };
++    useEffect(() => {
++        setValidationResult({
++            ...validationResult,
++            name: formValues.name === undefined
++                ? undefined
++                : formValues.name.length > 2
++                    ? true
++                    : false,
++            description: formValues.description === undefined
++                ? undefined
++                : formValues.description.length > 2
++                    ? true
++                    : false,
++            database: formValues.variant !== 'athena'
++                ? true
++                : formValues.database === undefined
++                    ? undefined
++                    : formValues.database.length > 0
++                        ? true
++                        : false,
++            outputBucket: formValues.variant !== 'athena'
++                ? true
++                : formValues.outputBucket === undefined
++                    ? undefined
++                    : formValues.outputBucket.length > 0
++                        ? true
++                        : false,
++        });
++    }, [formValues]);
++    const submitCreate = () => {
++        runStore.layout().showBackdrop('Creating an datasource...');
++        createDatasourceMutation.mutate({
++            name: formValues.name,
++            variant: formValues.variant,
++            database: formValues.database ?? '',
++            outputBucket: formValues.outputBucket ?? '',
++            description: formValues.description,
++        }, {
++            onSuccess: (resp) => {
++                if (resp.success) {
++                    enqueueToast(resp.message, { variant: 'success' });
++                    navigate(`/settings/integrations/datasources`);
++                }
++            },
++            onSettled: () => {
++                runStore.layout().hideBackdrop();
++            },
++        });
++    };
++    return (_jsxs(Box, { children: [_jsx(PageHeader, { children: _jsx(PageHeader.TitleArea, { variant: "large", children: _jsx(PageHeader.Title, { children: "New Datasource" }) }) }), _jsxs(Flash, { variant: "warning", children: [formValues.variant === 'athena' && (_jsxs(Text, { children: ["For ", _jsx(Link, { href: "https://aws.amazon.com/athena", children: "Amazon Athena" }), ", ensure the following", ' ', _jsx(Link, { href: "javascript: return false;", onClick: e => navigate('/settings/iam/secrets', e), children: "Secrets" }), ' ', "are available:", '  ', _jsx(Text, { as: "code", children: "AWS_SECRET_ACCESS_KEY" }), '  ', _jsx(Text, { as: "code", children: "AWS_ACCESS_KEY_ID" }), '  ', _jsx(Text, { as: "code", children: "AWS_DEFAULT_REGION" })] })), formValues.variant === 'bigquery' && (_jsxs(Text, { children: ["For", ' ', _jsx(Link, { href: "https://cloud.google.com/bigquery", children: "Google Big Query" }), ", ensure the following", ' ', _jsx(Link, { href: "javascript: return false;", onClick: e => navigate('/settings/iam/secrets', e), children: "Secret" }), ' ', "is available:", '  ', _jsx(Text, { as: "code", children: "GOOGLE_APPLICATION_CREDENTIALS" })] })), formValues.variant === 'mssentinel' && (_jsxs(Text, { children: ["For", ' ', _jsx(Link, { href: "https://learn.microsoft.com/en-us/azure/sentinel/overview?tabs=defender-portaly", children: "Microsoft Sentinel" }), ", ensure the following", ' ', _jsx(Link, { href: "javascript: return false;", onClick: e => navigate('/settings/iam/secrets', e), children: "Secret" }), ' ', "is available:", '  ', _jsx(Text, { as: "code", children: "AZURE_TENANT_ID" }), ` `, _jsx(Text, { as: "code", children: "AZURE_CLIENT_ID" }), ` `, _jsx(Text, { as: "code", children: "AZURE_CLIENT_SECRET" }), ` `, _jsx(Text, { as: "code", children: "AZURE_SUBSCRIPTION_ID" }), ` `, _jsx(Text, { as: "code", children: "AZURE_RESOURCE_GROUP" }), ` `, _jsx(Text, { as: "code", children: "MSSENTINEL_WORKSPACE_ID" }), ` `, _jsx(Text, { as: "code", children: "MSSENTINEL_WORKSPACE_NAME" })] })), formValues.variant === 'splunk' && (_jsxs(Text, { children: ["For ", _jsx(Link, { href: "https://www.splunk.com/", children: "Splunk" }), ", ensure the following", ' ', _jsx(Link, { href: "javascript: return false;", onClick: e => navigate('/settings/iam/secrets', e), children: "Secret" }), ' ', "is available:", '  ', _jsx(Text, { as: "code", children: "SPLUNK_HOST" }), ` `, _jsx(Text, { as: "code", children: "SPLUNK_PORT" }), ` `, _jsx(Text, { as: "code", children: "SPLUNK_USERNAME" }), ` `, _jsx(Text, { as: "code", children: "SPLUNK_PASSWORD" })] }))] }), _jsx(Box, { display: "grid", gridTemplateColumns: "1fr 1fr", sx: { gap: 3 }, children: _jsx(Box, { children: _jsxs(Box, { sx: { label: { marginTop: 2 } }, children: [_jsxs(FormControl, { required: true, children: [_jsx(FormControl.Label, { children: "Datasource type" }), _jsxs(Select, { name: "type", value: formValues.variant, onChange: valueVariantChange, children: [_jsx(Select.Option, { value: "athena", children: "Amazon Athena" }), _jsx(Select.Option, { value: "bigquery", children: "Google BigQuery" }), _jsx(Select.Option, { value: "mssentinel", children: "Microsoft Sentinel" }), _jsx(Select.Option, { value: "splunk", children: "Splunk" })] }), _jsx(FormControl.Caption, { children: "Pick the most appropriate datasource type." })] }), _jsxs(FormControl, { required: true, children: [_jsx(FormControl.Label, { children: "Name" }), _jsx(TextInput, { block: true, value: formValues.name, onChange: valueNameChange, autoFocus: true }), _jsx(FormControl.Caption, { children: "Hint: The datasource name is a short name that identifies in a unique way your datasource." }), validationResult.name === false && (_jsx(FormControl.Validation, { variant: "error", children: "Name length must be between 2 and 32 characters." }))] }), formValues.variant === 'athena' && (_jsxs(_Fragment, { children: [_jsxs(FormControl, { required: true, children: [_jsx(FormControl.Label, { children: "Database" }), _jsx(TextInput, { block: true, value: formValues.database, onChange: valueDatabaseChange }), validationResult.database === false && (_jsx(FormControl.Validation, { variant: "error", children: "Database must have more than 1." }))] }), _jsxs(FormControl, { required: true, children: [_jsx(FormControl.Label, { children: "Output Bucket" }), _jsx(TextInput, { block: true, value: formValues.outputBucket, onChange: valueOutputBucketChange }), validationResult.database === false && (_jsx(FormControl.Validation, { variant: "error", children: "Output bucket must have more than 1." }))] })] })), _jsxs(FormControl, { required: true, children: [_jsx(FormControl.Label, { children: "Description" }), _jsx(Textarea, { block: true, value: formValues.description, onChange: valueDescriptionChange }), validationResult.description === false && (_jsx(FormControl.Validation, { variant: "error", children: "Description must have more than 2 characters." }))] }), _jsx(Button, { variant: "primary", disabled: !validationResult.database ||
++                                    !validationResult.outputBucket ||
++                                    !validationResult.name ||
++                                    !validationResult.description, sx: { marginTop: 2 }, onClick: e => {
++                                    e.preventDefault();
++                                    submitCreate();
++                                }, children: "Create a datasource" })] }) }) })] }));
++};
++export default DatasourceNew;
+diff --git a/node_modules/@datalayer/core/lib/views/datasources/Datasources.d.ts b/node_modules/@datalayer/core/lib/views/datasources/Datasources.d.ts
+new file mode 100644
+index 0000000..1ea0d47
+--- /dev/null
++++ b/node_modules/@datalayer/core/lib/views/datasources/Datasources.d.ts
+@@ -0,0 +1,2 @@
++export declare const Datasources: () => import("react/jsx-runtime").JSX.Element;
++export default Datasources;
+diff --git a/node_modules/@datalayer/core/lib/views/datasources/Datasources.js b/node_modules/@datalayer/core/lib/views/datasources/Datasources.js
+new file mode 100644
+index 0000000..b755864
+--- /dev/null
++++ b/node_modules/@datalayer/core/lib/views/datasources/Datasources.js
+@@ -0,0 +1,49 @@
++import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
++/*
++ * Copyright (c) 2023-2025 Datalayer, Inc.
++ * Distributed under the terms of the Modified BSD License.
++ */
++import { useState, useEffect } from 'react';
++import { PageLayout, Button, IconButton, Text, Label } from '@primer/react';
++import { Blankslate, PageHeader, Table, DataTable, } from '@primer/react/experimental';
++import { Box } from '@datalayer/primer-addons';
++import { EditIcon } from '@datalayer/icons-react';
++import { useCache, useNavigate } from '../../hooks';
++const DatasourcesTable = () => {
++    const { useDatasources } = useCache();
++    const datasourcesQuery = useDatasources();
++    const navigate = useNavigate();
++    const [datasources, setDatasources] = useState([]);
++    useEffect(() => {
++        if (datasourcesQuery.data) {
++            setDatasources(datasourcesQuery.data || []);
++        }
++    }, [datasourcesQuery.data]);
++    return datasources.length === 0 ? (_jsxs(Blankslate, { border: true, spacious: true, children: [_jsx(Blankslate.Heading, { children: "Datasources" }), _jsx(Blankslate.Description, { children: _jsx(Text, { sx: { textAlign: 'center' }, children: "No Datasources found." }) })] })) : (_jsxs(Table.Container, { children: [_jsx(Table.Title, { as: "h2", id: "datasources", children: "Datasources" }), _jsx(Table.Subtitle, { as: "p", id: "datasources-subtitle", children: "Your datasources." }), _jsx(DataTable, { "aria-labelledby": "teams", "aria-describedby": "teams-subtitle", data: datasources, columns: [
++                    // @ts-ignore
++                    {
++                        header: 'Type',
++                        field: 'variant',
++                        renderCell: datasource => _jsx(Label, { children: datasource.variant }),
++                    },
++                    {
++                        header: 'Name',
++                        field: 'name',
++                        rowHeader: true,
++                    },
++                    {
++                        header: 'Description',
++                        field: 'description',
++                    },
++                    {
++                        header: '',
++                        field: 'id',
++                        renderCell: datasource => (_jsx(IconButton, { icon: EditIcon, "aria-label": "Edit", size: "small", variant: "invisible", onClick: e => navigate(`${datasource.id}`, e) })),
++                    },
++                ] })] }));
++};
++export const Datasources = () => {
++    const navigate = useNavigate();
++    return (_jsxs(PageLayout, { containerWidth: "full", padding: "normal", style: { overflow: 'visible', minHeight: 'calc(100vh - 45px)' }, children: [_jsx(PageLayout.Header, { children: _jsxs(PageHeader, { children: [_jsx(PageHeader.TitleArea, { variant: "large", children: _jsx(PageHeader.Title, { children: "Datasources" }) }), _jsx(PageHeader.Actions, { children: _jsx(Button, { size: "small", variant: "primary", onClick: e => navigate('/new/datasource', e), children: "New datasource" }) })] }) }), _jsx(PageLayout.Content, { children: _jsx(Box, { children: _jsx(DatasourcesTable, {}) }) })] }));
++};
++export default Datasources;
+diff --git a/node_modules/@datalayer/core/lib/views/datasources/index.d.ts b/node_modules/@datalayer/core/lib/views/datasources/index.d.ts
+new file mode 100644
+index 0000000..b2c94cf
+--- /dev/null
++++ b/node_modules/@datalayer/core/lib/views/datasources/index.d.ts
+@@ -0,0 +1,3 @@
++export * from './DatasourceDetail';
++export * from './DatasourceNew';
++export * from './Datasources';
+diff --git a/node_modules/@datalayer/core/lib/views/datasources/index.js b/node_modules/@datalayer/core/lib/views/datasources/index.js
+new file mode 100644
+index 0000000..f515652
+--- /dev/null
++++ b/node_modules/@datalayer/core/lib/views/datasources/index.js
+@@ -0,0 +1,7 @@
++/*
++ * Copyright (c) 2023-2025 Datalayer, Inc.
++ * Distributed under the terms of the Modified BSD License.
++ */
++export * from './DatasourceDetail';
++export * from './DatasourceNew';
++export * from './Datasources';
+diff --git a/node_modules/@datalayer/core/lib/views/iam-tokens/IAMTokenEdit.d.ts b/node_modules/@datalayer/core/lib/views/iam-tokens/IAMTokenEdit.d.ts
+new file mode 100644
+index 0000000..1b89e53
+--- /dev/null
++++ b/node_modules/@datalayer/core/lib/views/iam-tokens/IAMTokenEdit.d.ts
+@@ -0,0 +1,2 @@
++export declare const IAMTokenEdit: () => import("react/jsx-runtime").JSX.Element;
++export default IAMTokenEdit;
+diff --git a/node_modules/@datalayer/core/lib/views/iam-tokens/IAMTokenEdit.js b/node_modules/@datalayer/core/lib/views/iam-tokens/IAMTokenEdit.js
+new file mode 100644
+index 0000000..ff5ecda
+--- /dev/null
++++ b/node_modules/@datalayer/core/lib/views/iam-tokens/IAMTokenEdit.js
+@@ -0,0 +1,86 @@
++import { jsx as _jsx, jsxs as _jsxs, Fragment as _Fragment } from "react/jsx-runtime";
++/*
++ * Copyright (c) 2023-2025 Datalayer, Inc.
++ * Distributed under the terms of the Modified BSD License.
++ */
++import { useState, useEffect } from 'react';
++import { useParams } from 'react-router-dom';
++import { PageHeader, Heading, Text, Button, TextInput, FormControl, Textarea, Label, } from '@primer/react';
++import { Box } from '@datalayer/primer-addons';
++import { BoringAvatar } from '../../components/avatars';
++import { useCache, useToast } from '../../hooks';
++import { useRunStore } from '../../state';
++export const IAMTokenEdit = () => {
++    const { tokenId } = useParams();
++    const runStore = useRunStore();
++    const { enqueueToast } = useToast();
++    const { useUpdateToken, useToken } = useCache();
++    const getTokenQuery = useToken(tokenId);
++    const updateTokenMutation = useUpdateToken();
++    const [token, setToken] = useState();
++    const [formValues, setFormValues] = useState({
++        name: token?.name,
++        description: token?.description,
++    });
++    const [validationResult, setValidationResult] = useState({
++        name: undefined,
++        description: undefined,
++    });
++    useEffect(() => {
++        if (getTokenQuery.data) {
++            const token = getTokenQuery.data;
++            setToken(token);
++            setFormValues({ ...token });
++        }
++    }, [getTokenQuery.data]);
++    const nameNameChange = (event) => {
++        setFormValues(prevFormValues => ({
++            ...prevFormValues,
++            name: event.target.value,
++        }));
++    };
++    const nameDescriptionChange = (event) => {
++        setFormValues(prevFormValues => ({
++            ...prevFormValues,
++            description: event.target.value,
++        }));
++    };
++    useEffect(() => {
++        setValidationResult({
++            ...validationResult,
++            name: formValues.name === undefined
++                ? undefined
++                : formValues.name.length > 2
++                    ? true
++                    : false,
++            description: formValues.description === undefined
++                ? undefined
++                : formValues.description.length > 2
++                    ? true
++                    : false,
++        });
++    }, [formValues]);
++    const nameSubmit = async () => {
++        runStore.layout().showBackdrop();
++        const updatedToken = {
++            ...token,
++            name: formValues.name,
++            description: formValues.description,
++        };
++        updateTokenMutation.mutate(updatedToken, {
++            onSuccess: (resp) => {
++                if (resp.success) {
++                    enqueueToast('The token is successfully updated.', {
++                        variant: 'success',
++                    });
++                    setToken(updatedToken);
++                }
++            },
++            onSettled: () => {
++                runStore.layout().hideBackdrop();
++            },
++        });
++    };
++    return (_jsxs(_Fragment, { children: [_jsx(PageHeader, { children: _jsx(Heading, { sx: { fontSize: 3 }, children: "IAM Token" }) }), _jsxs(Box, { display: "flex", children: [_jsxs(Box, { children: [_jsx(BoringAvatar, { displayName: token?.name, size: 100, style: { paddingRight: 10 } }), _jsx(Text, { as: "h2", sx: { paddingTop: 3 }, children: token?.name }), _jsx(Box, { mt: 3, children: _jsx(Label, { size: "large", children: token?.variant }) })] }), _jsx(Box, { ml: 10, children: _jsxs(Box, { sx: { label: { marginTop: 2 } }, children: [_jsxs(FormControl, { children: [_jsx(FormControl.Label, { children: "Name" }), _jsx(TextInput, { block: true, value: formValues.name, onChange: nameNameChange }), validationResult.name === false && (_jsx(FormControl.Validation, { variant: "error", children: "Name must have more than 2 characters." }))] }), _jsxs(FormControl, { children: [_jsx(FormControl.Label, { children: "Description" }), _jsx(Textarea, { block: true, value: formValues.description, onChange: nameDescriptionChange, rows: 5 }), validationResult.description === false && (_jsx(FormControl.Validation, { variant: "error", children: "Description must have more than 2 characters." }))] }), _jsxs(FormControl, { children: [_jsx(FormControl.Label, { children: "Expiration date" }), _jsx(TextInput, { block: true, value: token?.expirationDate.toLocaleDateString(), onChange: nameNameChange, disabled: true })] }), _jsx(Button, { variant: "primary", disabled: !validationResult.name || !validationResult.description, sx: { marginTop: 3 }, onClick: nameSubmit, children: "Update token" })] }) })] })] }));
++};
++export default IAMTokenEdit;
+diff --git a/node_modules/@datalayer/core/lib/views/iam-tokens/IAMTokenNew.d.ts b/node_modules/@datalayer/core/lib/views/iam-tokens/IAMTokenNew.d.ts
+new file mode 100644
+index 0000000..d57af92
+--- /dev/null
++++ b/node_modules/@datalayer/core/lib/views/iam-tokens/IAMTokenNew.d.ts
+@@ -0,0 +1,2 @@
++export declare const IAMTokenNew: () => import("react/jsx-runtime").JSX.Element;
++export default IAMTokenNew;
+diff --git a/node_modules/@datalayer/core/lib/views/iam-tokens/IAMTokenNew.js b/node_modules/@datalayer/core/lib/views/iam-tokens/IAMTokenNew.js
+new file mode 100644
+index 0000000..613d4e2
+--- /dev/null
++++ b/node_modules/@datalayer/core/lib/views/iam-tokens/IAMTokenNew.js
+@@ -0,0 +1,118 @@
++import { jsx as _jsx, jsxs as _jsxs, Fragment as _Fragment } from "react/jsx-runtime";
++/*
++ * Copyright (c) 2023-2025 Datalayer, Inc.
++ * Distributed under the terms of the Modified BSD License.
++ */
++import { useEffect, useState } from 'react';
++import { PageHeader, FormControl, Button, TextInput, Textarea, Select, Text, IconButton, } from '@primer/react';
++import { Box } from '@datalayer/primer-addons';
++import { CopyIcon } from '@primer/octicons-react';
++import { Calendar, defaultCalendarStrings } from '@fluentui/react';
++import { useCache, useNavigate, useToast } from '../../hooks';
++import { useRunStore } from '../../state';
++export const IAMTokenNew = () => {
++    const runStore = useRunStore();
++    const { useCreateToken } = useCache();
++    const createTokenMutation = useCreateToken();
++    const navigate = useNavigate();
++    const { enqueueToast } = useToast();
++    const [today, _] = useState(new Date());
++    const [showToken, setShowToken] = useState(false);
++    const [token, setToken] = useState();
++    const [formValues, setFormValues] = useState({
++        variant: 'user_token',
++        name: undefined,
++        description: undefined,
++        expirationDate: undefined,
++    });
++    const [validationResult, setValidationResult] = useState({
++        variant: undefined,
++        name: undefined,
++        description: undefined,
++        expirationDate: undefined,
++    });
++    const valueVariantChange = (event) => {
++        setFormValues(prevFormValues => ({
++            ...prevFormValues,
++            variant: event.target.value,
++        }));
++    };
++    const valueNameChange = (event) => {
++        setFormValues(prevFormValues => ({
++            ...prevFormValues,
++            name: event.target.value,
++        }));
++    };
++    const valueDescriptionChange = (event) => {
++        setFormValues(prevFormValues => ({
++            ...prevFormValues,
++            description: event.target.value,
++        }));
++    };
++    const expirationDateChange = (expirationDate) => {
++        setFormValues(prevFormValues => ({
++            ...prevFormValues,
++            expirationDate,
++        }));
++    };
++    useEffect(() => {
++        setValidationResult({
++            ...validationResult,
++            name: formValues.name === undefined
++                ? undefined
++                : formValues.name.length > 2
++                    ? true
++                    : false,
++            description: formValues.description === undefined
++                ? undefined
++                : formValues.description.length > 2
++                    ? true
++                    : false,
++            expirationDate: formValues.expirationDate === undefined
++                ? undefined
++                : formValues.expirationDate.getTime() > today.getTime()
++                    ? true
++                    : false,
++        });
++    }, [formValues]);
++    const valueSubmit = () => {
++        runStore.layout().showBackdrop('Creating an token...');
++        createTokenMutation.mutate({
++            name: formValues.name,
++            variant: formValues.variant,
++            description: formValues.description,
++            expirationDate: formValues.expirationDate,
++        }, {
++            onSuccess: (resp) => {
++                if (resp.success && resp.token) {
++                    enqueueToast(resp.message, { variant: 'success' });
++                    setToken(resp.token);
++                    setShowToken(true);
++                }
++            },
++            onSettled: () => {
++                runStore.layout().hideBackdrop();
++            },
++        });
++    };
++    return (_jsx(Box, { children: showToken ? (_jsxs(_Fragment, { children: [_jsx(PageHeader, { children: _jsx(PageHeader.TitleArea, { variant: "large", children: _jsx(PageHeader.Title, { children: "Your Token is created" }) }) }), _jsx(Box, { children: _jsx(Text, { children: "Take note of the Token value, you won't be able to see it after." }) }), _jsx(Box, { children: _jsxs(Text, { children: ["Name: ", token?.name] }) }), _jsx(Box, { children: _jsxs(Text, { children: ["Description: ", token?.description] }) }), _jsx(Box, { children: _jsxs(Text, { children: ["Expiration date: ", token?.expirationDate.toISOString()] }) }), _jsxs(Box, { children: [_jsx(Text, { mb: 2, children: "Value: " }), _jsxs(Box, { display: "flex", sx: { alignItems: 'center', gap: 2 }, children: [_jsx(Text, { as: "code", sx: {
++                                        color: 'fg.onEmphasis',
++                                        bg: 'neutral.emphasis',
++                                        p: 2,
++                                        overflowWrap: 'anywhere',
++                                        flex: 1,
++                                    }, children: token?.value }), _jsx(IconButton, { "aria-label": "Copy token to clipboard", icon: CopyIcon, size: "small", onClick: () => {
++                                        if (token?.value) {
++                                            navigator.clipboard.writeText(token.value);
++                                            enqueueToast('Token copied to clipboard', {
++                                                variant: 'success',
++                                            });
++                                        }
++                                    } })] })] }), _jsx(Box, { mt: 3, children: _jsx(Button, { onClick: e => navigate('/settings/iam/tokens', e), children: "List my Tokens" }) })] })) : (_jsxs(_Fragment, { children: [_jsx(PageHeader, { children: _jsx(PageHeader.TitleArea, { variant: "large", children: _jsx(PageHeader.Title, { children: "New IAM Token" }) }) }), _jsx(Box, { display: "grid", gridTemplateColumns: "1fr 1fr", sx: { gap: 3 }, children: _jsx(Box, { children: _jsxs(Box, { sx: { label: { marginTop: 2 } }, children: [_jsxs(FormControl, { required: true, children: [_jsx(FormControl.Label, { children: "Token type" }), _jsx(Select, { name: "type", value: formValues.variant, onChange: valueVariantChange, children: _jsx(Select.Option, { value: "user_token", children: "User Token" }) }), _jsx(FormControl.Caption, { children: "Pick the most appropriate token type." })] }), _jsxs(FormControl, { required: true, children: [_jsx(FormControl.Label, { children: "Name" }), _jsx(TextInput, { block: true, value: formValues.name, onChange: valueNameChange, autoFocus: true }), _jsx(FormControl.Caption, { children: "Hint: The token name is a short name that identifies in a unique way your token." }), validationResult.name === false && (_jsx(FormControl.Validation, { variant: "error", children: "Name length must be between 2 and 32 characters." }))] }), _jsxs(FormControl, { required: true, children: [_jsx(FormControl.Label, { children: "Expiration day" }), _jsx(Calendar, { showGoToToday: true, onSelectDate: expirationDateChange, value: formValues.expirationDate, strings: defaultCalendarStrings }), validationResult.expirationDate !== true ? (_jsx(FormControl.Validation, { variant: "error", children: "Pick an expiration date in the future." })) : (_jsxs(FormControl.Validation, { variant: "success", children: ["Expiration date:", ' ', formValues.expirationDate?.toLocaleDateString(), "."] }))] }), _jsxs(FormControl, { required: true, children: [_jsx(FormControl.Label, { children: "Description" }), _jsx(Textarea, { block: true, value: formValues.description, onChange: valueDescriptionChange }), validationResult.description === false && (_jsx(FormControl.Validation, { variant: "error", children: "Description must have more than 2 characters." }))] }), _jsx(Button, { variant: "primary", disabled: !validationResult.name ||
++                                        !validationResult.description ||
++                                        !validationResult.expirationDate, sx: { marginTop: 2 }, onClick: e => {
++                                        e.preventDefault();
++                                        valueSubmit();
++                                    }, children: "Create a token" })] }) }) })] })) }));
++};
++export default IAMTokenNew;
+diff --git a/node_modules/@datalayer/core/lib/views/iam-tokens/IAMTokens.d.ts b/node_modules/@datalayer/core/lib/views/iam-tokens/IAMTokens.d.ts
+new file mode 100644
+index 0000000..868d8d9
+--- /dev/null
++++ b/node_modules/@datalayer/core/lib/views/iam-tokens/IAMTokens.d.ts
+@@ -0,0 +1,2 @@
++export declare const IAMTokens: () => import("react/jsx-runtime").JSX.Element;
++export default IAMTokens;
+diff --git a/node_modules/@datalayer/core/lib/views/iam-tokens/IAMTokens.js b/node_modules/@datalayer/core/lib/views/iam-tokens/IAMTokens.js
+new file mode 100644
+index 0000000..4f42ca5
+--- /dev/null
++++ b/node_modules/@datalayer/core/lib/views/iam-tokens/IAMTokens.js
+@@ -0,0 +1,53 @@
++import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
++/*
++ * Copyright (c) 2023-2025 Datalayer, Inc.
++ * Distributed under the terms of the Modified BSD License.
++ */
++import { useState, useEffect } from 'react';
++import { PageLayout, Button, IconButton, Text, Label, RelativeTime, } from '@primer/react';
++import { Blankslate, PageHeader, Table, DataTable, } from '@primer/react/experimental';
++import { Box } from '@datalayer/primer-addons';
++import { EditIcon } from '@datalayer/icons-react';
++import { useCache, useNavigate } from '../../hooks';
++const TokensTable = () => {
++    const { useTokens } = useCache();
++    const getTokensQuery = useTokens();
++    const navigate = useNavigate();
++    const [tokens, setTokens] = useState([]);
++    useEffect(() => {
++        if (getTokensQuery.data) {
++            setTokens(getTokensQuery.data);
++        }
++    }, [getTokensQuery.data]);
++    return tokens.length === 0 ? (_jsxs(Blankslate, { border: true, spacious: true, children: [_jsx(Blankslate.Heading, { children: "IAM Tokens" }), _jsx(Blankslate.Description, { children: _jsx(Text, { sx: { textAlign: 'center' }, children: "No IAM Tokens found." }) })] })) : (_jsxs(Table.Container, { children: [_jsx(Table.Title, { as: "h2", id: "tokens", children: "IAM Tokens" }), _jsx(Table.Subtitle, { as: "p", id: "tokens-subtitle", children: "Your tokens." }), _jsx(DataTable, { "aria-labelledby": "teams", "aria-describedby": "teams-subtitle", data: tokens, columns: [
++                    {
++                        header: 'Type',
++                        field: 'variant',
++                        renderCell: token => _jsx(Label, { children: token.variant }),
++                    },
++                    {
++                        header: 'Name',
++                        field: 'name',
++                        rowHeader: true,
++                    },
++                    {
++                        header: 'Description',
++                        field: 'description',
++                    },
++                    {
++                        header: 'Expiration date',
++                        field: 'expirationDate',
++                        renderCell: token => (_jsx(RelativeTime, { date: new Date(token.expirationDate) })),
++                    },
++                    {
++                        header: '',
++                        field: 'id',
++                        renderCell: token => (_jsx(IconButton, { icon: EditIcon, "aria-label": "Edit", size: "small", variant: "invisible", onClick: e => navigate(`${token.id}`, e) })),
++                    },
++                ] })] }));
++};
++export const IAMTokens = () => {
++    const navigate = useNavigate();
++    return (_jsxs(PageLayout, { containerWidth: "full", padding: "normal", style: { overflow: 'visible', minHeight: 'calc(100vh - 45px)' }, children: [_jsx(PageLayout.Header, { children: _jsxs(PageHeader, { children: [_jsx(PageHeader.TitleArea, { variant: "large", children: _jsx(PageHeader.Title, { children: "IAM Tokens" }) }), _jsx(PageHeader.Actions, { children: _jsx(Button, { size: "small", variant: "primary", onClick: e => navigate('/new/token', e), children: "New IAM token" }) })] }) }), _jsx(PageLayout.Content, { children: _jsx(Box, { children: _jsx(TokensTable, {}) }) })] }));
++};
++export default IAMTokens;
+diff --git a/node_modules/@datalayer/core/lib/views/iam-tokens/Tokens.d.ts b/node_modules/@datalayer/core/lib/views/iam-tokens/Tokens.d.ts
+new file mode 100644
+index 0000000..469f7f4
+--- /dev/null
++++ b/node_modules/@datalayer/core/lib/views/iam-tokens/Tokens.d.ts
+@@ -0,0 +1,2 @@
++export declare const Tokens: () => import("react/jsx-runtime").JSX.Element;
++export default Tokens;
+diff --git a/node_modules/@datalayer/core/lib/views/iam-tokens/Tokens.js b/node_modules/@datalayer/core/lib/views/iam-tokens/Tokens.js
+new file mode 100644
+index 0000000..ffea4c4
+--- /dev/null
++++ b/node_modules/@datalayer/core/lib/views/iam-tokens/Tokens.js
+@@ -0,0 +1,53 @@
++import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
++/*
++ * Copyright (c) 2023-2025 Datalayer, Inc.
++ * Distributed under the terms of the Modified BSD License.
++ */
++import { useState, useEffect } from 'react';
++import { PageLayout, Button, IconButton, Text, Label, RelativeTime, } from '@primer/react';
++import { Blankslate, PageHeader, Table, DataTable, } from '@primer/react/experimental';
++import { Box } from '@datalayer/primer-addons';
++import { EditIcon } from '@datalayer/icons-react';
++import { useCache, useNavigate } from '../../hooks';
++const TokensTable = () => {
++    const { useTokens } = useCache();
++    const getTokensQuery = useTokens();
++    const navigate = useNavigate();
++    const [tokens, setTokens] = useState([]);
++    useEffect(() => {
++        if (getTokensQuery.data) {
++            setTokens(getTokensQuery.data);
++        }
++    }, [getTokensQuery.data]);
++    return tokens.length === 0 ? (_jsxs(Blankslate, { border: true, spacious: true, children: [_jsx(Blankslate.Heading, { children: "Tokens" }), _jsx(Blankslate.Description, { children: _jsx(Text, { sx: { textAlign: 'center' }, children: "No Tokens found." }) })] })) : (_jsxs(Table.Container, { children: [_jsx(Table.Title, { as: "h2", id: "tokens", children: "Tokens" }), _jsx(Table.Subtitle, { as: "p", id: "tokens-subtitle", children: "Your tokens." }), _jsx(DataTable, { "aria-labelledby": "teams", "aria-describedby": "teams-subtitle", data: tokens, columns: [
++                    {
++                        header: 'Type',
++                        field: 'variant',
++                        renderCell: token => _jsx(Label, { children: token.variant }),
++                    },
++                    {
++                        header: 'Name',
++                        field: 'name',
++                        rowHeader: true,
++                    },
++                    {
++                        header: 'Description',
++                        field: 'description',
++                    },
++                    {
++                        header: 'Expiration date',
++                        field: 'expirationDate',
++                        renderCell: token => (_jsx(RelativeTime, { date: new Date(token.expirationDate) })),
++                    },
++                    {
++                        header: '',
++                        field: 'id',
++                        renderCell: token => (_jsx(IconButton, { icon: EditIcon, "aria-label": "Edit", size: "small", variant: "invisible", onClick: e => navigate(`${token.id}`, e) })),
++                    },
++                ] })] }));
++};
++export const Tokens = () => {
++    const navigate = useNavigate();
++    return (_jsxs(PageLayout, { containerWidth: "full", padding: "normal", style: { overflow: 'visible', minHeight: 'calc(100vh - 45px)' }, children: [_jsx(PageLayout.Header, { children: _jsxs(PageHeader, { children: [_jsx(PageHeader.TitleArea, { variant: "large", children: _jsx(PageHeader.Title, { children: "Tokens" }) }), _jsx(PageHeader.Actions, { children: _jsx(Button, { size: "small", variant: "primary", onClick: e => navigate('/new/token', e), children: "New token" }) })] }) }), _jsx(PageLayout.Content, { children: _jsx(Box, { children: _jsx(TokensTable, {}) }) })] }));
++};
++export default Tokens;
+diff --git a/node_modules/@datalayer/core/lib/views/iam-tokens/index.d.ts b/node_modules/@datalayer/core/lib/views/iam-tokens/index.d.ts
+new file mode 100644
+index 0000000..f45588f
+--- /dev/null
++++ b/node_modules/@datalayer/core/lib/views/iam-tokens/index.d.ts
+@@ -0,0 +1,3 @@
++export * from './IAMTokenEdit';
++export * from './IAMTokenNew';
++export * from './IAMTokens';
+diff --git a/node_modules/@datalayer/core/lib/views/iam-tokens/index.js b/node_modules/@datalayer/core/lib/views/iam-tokens/index.js
+new file mode 100644
+index 0000000..f980183
+--- /dev/null
++++ b/node_modules/@datalayer/core/lib/views/iam-tokens/index.js
+@@ -0,0 +1,7 @@
++/*
++ * Copyright (c) 2023-2025 Datalayer, Inc.
++ * Distributed under the terms of the Modified BSD License.
++ */
++export * from './IAMTokenEdit';
++export * from './IAMTokenNew';
++export * from './IAMTokens';
+diff --git a/node_modules/@datalayer/core/lib/views/index.d.ts b/node_modules/@datalayer/core/lib/views/index.d.ts
+new file mode 100644
+index 0000000..cb0ff5c
+--- /dev/null
++++ b/node_modules/@datalayer/core/lib/views/index.d.ts
+@@ -0,0 +1 @@
++export {};
+diff --git a/node_modules/@datalayer/core/lib/views/index.js b/node_modules/@datalayer/core/lib/views/index.js
+new file mode 100644
+index 0000000..9117f19
+--- /dev/null
++++ b/node_modules/@datalayer/core/lib/views/index.js
+@@ -0,0 +1,5 @@
++export {};
++/*
++ * Copyright (c) 2023-2025 Datalayer, Inc.
++ * Distributed under the terms of the Modified BSD License.
++ */
+diff --git a/node_modules/@datalayer/core/lib/views/secrets/SecretEdit.d.ts b/node_modules/@datalayer/core/lib/views/secrets/SecretEdit.d.ts
+new file mode 100644
+index 0000000..e40f001
+--- /dev/null
++++ b/node_modules/@datalayer/core/lib/views/secrets/SecretEdit.d.ts
+@@ -0,0 +1,2 @@
++export declare const SecretEdit: () => import("react/jsx-runtime").JSX.Element;
++export default SecretEdit;
+diff --git a/node_modules/@datalayer/core/lib/views/secrets/SecretEdit.js b/node_modules/@datalayer/core/lib/views/secrets/SecretEdit.js
+new file mode 100644
+index 0000000..78370a7
+--- /dev/null
++++ b/node_modules/@datalayer/core/lib/views/secrets/SecretEdit.js
+@@ -0,0 +1,149 @@
++import { jsx as _jsx, jsxs as _jsxs, Fragment as _Fragment } from "react/jsx-runtime";
++/*
++ * Copyright (c) 2023-2025 Datalayer, Inc.
++ * Distributed under the terms of the Modified BSD License.
++ */
++import { useState, useEffect } from 'react';
++import { useParams } from 'react-router-dom';
++import { PageHeader, Heading, Text, Button, TextInput, FormControl, Textarea, Label, } from '@primer/react';
++import { Box } from '@datalayer/primer-addons';
++import { EyeIcon, EyeClosedIcon } from '@primer/octicons-react';
++import { BoringAvatar } from '../../components/avatars';
++import { useCache, useNavigate, useToast } from '../../hooks';
++import { useRunStore } from '../../state';
++export const SecretEdit = () => {
++    const { secretId } = useParams();
++    const runStore = useRunStore();
++    const navigate = useNavigate();
++    const { enqueueToast } = useToast();
++    const { useUpdateSecret, useSecret, useDeleteSecret } = useCache();
++    const updateSecretMutation = useUpdateSecret();
++    const deleteSecretMutation = useDeleteSecret();
++    const secretQuery = useSecret(secretId, {
++        refetchOnMount: true,
++    });
++    const [secret, setSecret] = useState();
++    const [formValues, setFormValues] = useState({
++        name: '',
++        nameConfirm: '',
++        description: '',
++        value: '',
++    });
++    const [validationResult, setValidationResult] = useState({
++        name: undefined,
++        nameConfirm: undefined,
++        description: undefined,
++        value: undefined,
++    });
++    const [passwordVisible, setPasswordVisible] = useState(false);
++    useEffect(() => {
++        if (secretQuery.data) {
++            const secret = secretQuery.data;
++            setSecret(secret);
++            setFormValues({
++                name: secret.name || '',
++                nameConfirm: '',
++                description: secret.description || '',
++                value: secret.value ? atob(secret.value) : '',
++            });
++        }
++    }, [secretQuery.data]);
++    const secretNameChanged = (event) => {
++        setFormValues(prevFormValues => ({
++            ...prevFormValues,
++            name: event.target.value,
++        }));
++    };
++    const secretNameConfirmChanged = (event) => {
++        setFormValues(prevFormValues => ({
++            ...prevFormValues,
++            nameConfirm: event.target.value,
++        }));
++    };
++    const secretDescriptionChanged = (event) => {
++        setFormValues(prevFormValues => ({
++            ...prevFormValues,
++            description: event.target.value,
++        }));
++    };
++    const secretValueChanged = (event) => {
++        setFormValues(prevFormValues => ({
++            ...prevFormValues,
++            value: event.target.value,
++        }));
++    };
++    useEffect(() => {
++        setValidationResult({
++            ...validationResult,
++            name: formValues.name === undefined
++                ? undefined
++                : formValues.name.length > 2
++                    ? true
++                    : false,
++            nameConfirm: formValues.nameConfirm === secret?.name ? true : false,
++            description: formValues.description === undefined
++                ? undefined
++                : formValues.description.length > 2
++                    ? true
++                    : false,
++            value: formValues.value === undefined
++                ? undefined
++                : formValues.value.length > 0 && formValues.value.length < 4096
++                    ? true
++                    : false,
++        });
++    }, [formValues]);
++    const submitUpdate = async () => {
++        runStore.layout().showBackdrop('Updating the secret...');
++        secret.name = formValues.name;
++        secret.description = formValues.description;
++        secret.value = btoa(formValues.value);
++        updateSecretMutation.mutate(secret, {
++            onSuccess: (resp) => {
++                if (resp.success) {
++                    enqueueToast('The secret is successfully updated.', {
++                        variant: 'success',
++                    });
++                    setSecret(secret);
++                }
++            },
++            onSettled: () => {
++                runStore.layout().hideBackdrop();
++            },
++        });
++    };
++    const submitDelete = async () => {
++        runStore.layout().showBackdrop('Deleting the secret...');
++        deleteSecretMutation.mutate(secret.id, {
++            onSuccess: (resp) => {
++                if (resp.success) {
++                    enqueueToast('The secret is successfully deleted.', {
++                        variant: 'success',
++                    });
++                    navigate(`/settings/iam/secrets`);
++                }
++            },
++            onSettled: () => {
++                runStore.layout().hideBackdrop();
++            },
++        });
++    };
++    return (_jsxs(_Fragment, { children: [_jsx(PageHeader, { children: _jsx(Heading, { sx: { fontSize: 3 }, children: "Secret" }) }), _jsxs(Box, { display: "flex", children: [_jsxs(Box, { children: [_jsx(BoringAvatar, { displayName: secret?.name, size: 100, style: { paddingRight: 10 } }), _jsx(Text, { as: "h2", sx: { paddingTop: 3 }, children: secret?.name }), _jsx(Box, { mt: 3, children: _jsx(Label, { size: "large", children: secret?.variant }) })] }), _jsxs(Box, { ml: 10, children: [_jsxs(Box, { sx: { label: { marginTop: 2 } }, children: [_jsxs(FormControl, { children: [_jsx(FormControl.Label, { children: "Name" }), _jsx(TextInput, { block: true, value: formValues.name, onChange: secretNameChanged }), validationResult.name === false && (_jsx(FormControl.Validation, { variant: "error", children: "Name must have more than 2 characters." }))] }), _jsxs(FormControl, { children: [_jsx(FormControl.Label, { children: "Description" }), _jsx(Textarea, { block: true, value: formValues.description, onChange: secretDescriptionChanged, rows: 5 }), validationResult.description === false && (_jsx(FormControl.Validation, { variant: "error", children: "Description must have more than 2 characters." }))] }), _jsxs(FormControl, { children: [_jsx(FormControl.Label, { children: "Value" }), _jsx(TextInput, { placeholder: "Value", monospace: true, size: "large", contrast: !passwordVisible, disabled: !passwordVisible, onChange: secretValueChanged, type: passwordVisible ? 'text' : 'password', value: formValues.value, trailingAction: _jsx(TextInput.Action, { onClick: () => {
++                                                        setPasswordVisible(!passwordVisible);
++                                                    }, icon: passwordVisible ? EyeClosedIcon : EyeIcon, "aria-label": passwordVisible ? 'Hide secret' : 'Reveal secret', sx: { color: 'var(--fgColor-muted)' } }), sx: { overflow: 'visible' } }), validationResult.value === false && (_jsx(FormControl.Validation, { variant: "error", children: "Value must have more than 1 and less than 4096 characters." }))] }), _jsx(Box, { sx: { marginTop: 3 }, children: _jsx(Button, { variant: "primary", disabled: !validationResult.name || !validationResult.description, onClick: submitUpdate, children: "Update secret" }) })] }), _jsxs(Box, { sx: { marginTop: 3 }, children: [_jsx(Heading, { as: "h2", sx: {
++                                            fontSize: 4,
++                                            fontWeight: 'normal',
++                                            color: 'danger.fg',
++                                            mb: 2,
++                                        }, children: "Danger zone" }), _jsxs(Box, { sx: {
++                                            border: '1px solid',
++                                            borderColor: 'danger.emphasis',
++                                            borderRadius: 2,
++                                            p: 3,
++                                            display: 'flex',
++                                            alignItems: 'center',
++                                            justifyContent: 'space-between',
++                                            gap: 3,
++                                        }, children: [_jsxs(Box, { sx: { display: 'grid', gap: 1 }, children: [_jsx(Text, { sx: { fontSize: 1, fontWeight: 'bold', color: 'danger.fg' }, children: "Confirm the secret name to delete" }), _jsx(FormControl, { children: _jsx(TextInput, { block: true, value: formValues.nameConfirm, onChange: secretNameConfirmChanged }) }), _jsx(Text, { sx: { fontSize: 1, color: 'fg.muted' }, children: "This operation is not reversible." })] }), _jsx(Button, { variant: "danger", disabled: !validationResult.nameConfirm, onClick: submitDelete, children: "Delete secret" })] })] })] })] })] }));
++};
++export default SecretEdit;
+diff --git a/node_modules/@datalayer/core/lib/views/secrets/SecretNew.d.ts b/node_modules/@datalayer/core/lib/views/secrets/SecretNew.d.ts
+new file mode 100644
+index 0000000..d6ee27e
+--- /dev/null
++++ b/node_modules/@datalayer/core/lib/views/secrets/SecretNew.d.ts
+@@ -0,0 +1,2 @@
++export declare const SecretNew: () => import("react/jsx-runtime").JSX.Element;
++export default SecretNew;
+diff --git a/node_modules/@datalayer/core/lib/views/secrets/SecretNew.js b/node_modules/@datalayer/core/lib/views/secrets/SecretNew.js
+new file mode 100644
+index 0000000..df6f31f
+--- /dev/null
++++ b/node_modules/@datalayer/core/lib/views/secrets/SecretNew.js
+@@ -0,0 +1,99 @@
++import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
++/*
++ * Copyright (c) 2023-2025 Datalayer, Inc.
++ * Distributed under the terms of the Modified BSD License.
++ */
++import { useEffect, useState } from 'react';
++import { PageHeader, FormControl, Button, TextInput, Textarea, Select, } from '@primer/react';
++import { Box } from '@datalayer/primer-addons';
++import { useCache, useNavigate, useToast } from '../../hooks';
++import { useRunStore } from '../../state';
++export const SecretNew = () => {
++    const runStore = useRunStore();
++    const navigate = useNavigate();
++    const { useCreateSecret } = useCache();
++    const createSecretMutation = useCreateSecret();
++    const { enqueueToast } = useToast();
++    const [formValues, setFormValues] = useState({
++        variant: 'generic',
++        value: undefined,
++        name: undefined,
++        description: undefined,
++    });
++    const [validationResult, setValidationResult] = useState({
++        variant: undefined,
++        value: undefined,
++        name: undefined,
++        description: undefined,
++    });
++    const secretVariantChanged = (event) => {
++        setFormValues(prevFormValues => ({
++            ...prevFormValues,
++            variant: event.target.value,
++        }));
++    };
++    const secretValueChanged = (event) => {
++        setFormValues(prevFormValues => ({
++            ...prevFormValues,
++            value: event.target.value,
++        }));
++    };
++    const secretNameChanged = (event) => {
++        setFormValues(prevFormValues => ({
++            ...prevFormValues,
++            name: event.target.value,
++        }));
++    };
++    const secretDescriptionChanged = (event) => {
++        setFormValues(prevFormValues => ({
++            ...prevFormValues,
++            description: event.target.value,
++        }));
++    };
++    useEffect(() => {
++        setValidationResult({
++            ...validationResult,
++            name: formValues.name === undefined
++                ? undefined
++                : formValues.name.length > 2
++                    ? true
++                    : false,
++            description: formValues.description === undefined
++                ? undefined
++                : formValues.description.length > 2
++                    ? true
++                    : false,
++            value: formValues.value === undefined
++                ? undefined
++                : formValues.value.length > 0 && formValues.value.length < 4096
++                    ? true
++                    : false,
++        });
++    }, [formValues]);
++    const submitCreate = () => {
++        runStore.layout().showBackdrop('Creating an secret...');
++        createSecretMutation.mutate({
++            variant: formValues.variant,
++            name: formValues.name,
++            description: formValues.description,
++            value: btoa(formValues.value),
++        }, {
++            onSuccess: (resp) => {
++                if (resp.success) {
++                    enqueueToast(resp.message, { variant: 'success' });
++                    navigate(`/settings/iam/secrets`);
++                }
++            },
++            onSettled: () => {
++                runStore.layout().hideBackdrop();
++            },
++        });
++    };
++    return (_jsxs(Box, { children: [_jsx(PageHeader, { children: _jsx(PageHeader.TitleArea, { variant: "large", children: _jsx(PageHeader.Title, { children: "New Secret" }) }) }), _jsx(Box, { display: "grid", gridTemplateColumns: "1fr 1fr", sx: { gap: 3 }, children: _jsx(Box, { children: _jsxs(Box, { sx: { label: { marginTop: 2 } }, children: [_jsxs(FormControl, { required: true, children: [_jsx(FormControl.Label, { children: "Secret type" }), _jsxs(Select, { name: "type", value: formValues.variant, onChange: secretVariantChanged, children: [_jsx(Select.Option, { value: "generic", children: "Generic" }), _jsx(Select.Option, { value: "password", children: "Password" }), _jsx(Select.Option, { value: "key", children: "Key" }), _jsx(Select.Option, { value: "token", children: "Token" })] }), _jsx(FormControl.Caption, { children: "Pick the most appropriate secret type." })] }), _jsxs(FormControl, { required: true, children: [_jsx(FormControl.Label, { children: "Name" }), _jsx(TextInput, { block: true, value: formValues.name, onChange: secretNameChanged, autoFocus: true }), _jsx(FormControl.Caption, { children: "Hint: The secret name is a short name that identifies in a unique way your secret." }), validationResult.name === false && (_jsx(FormControl.Validation, { variant: "error", children: "Name length must be between 2 and 32 characters." }))] }), _jsxs(FormControl, { required: true, children: [_jsx(FormControl.Label, { children: "Description" }), _jsx(Textarea, { block: true, value: formValues.description, onChange: secretDescriptionChanged, rows: 3 }), validationResult.description === false && (_jsx(FormControl.Validation, { variant: "error", children: "Description must have more than 2 characters." }))] }), _jsxs(FormControl, { required: true, children: [_jsx(FormControl.Label, { children: "Value" }), _jsx(Textarea, { block: true, value: formValues.value, onChange: secretValueChanged, rows: 5 }), validationResult.value === false && (_jsx(FormControl.Validation, { variant: "error", children: "Value must have more than 1 and less than 4096 characters." }))] }), _jsx(Button, { variant: "primary", disabled: !validationResult.value ||
++                                    !validationResult.name ||
++                                    !validationResult.description, sx: { marginTop: 2 }, onClick: e => {
++                                    e.preventDefault();
++                                    submitCreate();
++                                }, children: "Create a secret" })] }) }) })] }));
++};
++export default SecretNew;
+diff --git a/node_modules/@datalayer/core/lib/views/secrets/Secrets.d.ts b/node_modules/@datalayer/core/lib/views/secrets/Secrets.d.ts
+new file mode 100644
+index 0000000..cadce34
+--- /dev/null
++++ b/node_modules/@datalayer/core/lib/views/secrets/Secrets.d.ts
+@@ -0,0 +1,2 @@
++export declare const Secrets: () => import("react/jsx-runtime").JSX.Element;
++export default Secrets;
+diff --git a/node_modules/@datalayer/core/lib/views/secrets/Secrets.js b/node_modules/@datalayer/core/lib/views/secrets/Secrets.js
+new file mode 100644
+index 0000000..31909f2
+--- /dev/null
++++ b/node_modules/@datalayer/core/lib/views/secrets/Secrets.js
+@@ -0,0 +1,48 @@
++import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
++/*
++ * Copyright (c) 2023-2025 Datalayer, Inc.
++ * Distributed under the terms of the Modified BSD License.
++ */
++import { useState, useEffect } from 'react';
++import { PageLayout, Button, IconButton, Text, Label } from '@primer/react';
++import { Blankslate, PageHeader, Table, DataTable, } from '@primer/react/experimental';
++import { Box } from '@datalayer/primer-addons';
++import { EditIcon } from '@datalayer/icons-react';
++import { useCache, useNavigate } from '../../hooks';
++const SecretsTable = () => {
++    const { useSecrets } = useCache();
++    const secretsQuery = useSecrets();
++    const navigate = useNavigate();
++    const [secrets, setSecrets] = useState([]);
++    useEffect(() => {
++        if (secretsQuery.data) {
++            setSecrets(secretsQuery.data || []);
++        }
++    }, [secretsQuery.data]);
++    return secrets.length === 0 ? (_jsxs(Blankslate, { border: true, spacious: true, children: [_jsx(Blankslate.Heading, { children: "Secrets" }), _jsx(Blankslate.Description, { children: _jsx(Text, { sx: { textAlign: 'center' }, children: "No Secrets found." }) })] })) : (_jsxs(Table.Container, { children: [_jsx(Table.Title, { as: "h2", id: "secrets", children: "Secrets" }), _jsx(DataTable, { "aria-labelledby": "secrets", "aria-describedby": "secrets-subtitle", data: secrets, columns: [
++                    {
++                        header: 'Type',
++                        field: 'variant',
++                        renderCell: secret => _jsx(Label, { children: secret.variant }),
++                    },
++                    {
++                        header: 'Name',
++                        field: 'name',
++                        rowHeader: true,
++                    },
++                    {
++                        header: 'Description',
++                        field: 'description',
++                    },
++                    {
++                        header: '',
++                        field: 'id',
++                        renderCell: secret => (_jsx(IconButton, { icon: EditIcon, "aria-label": "Edit", size: "small", variant: "invisible", onClick: e => navigate(`${secret.id}`, e) })),
++                    },
++                ] })] }));
++};
++export const Secrets = () => {
++    const navigate = useNavigate();
++    return (_jsxs(PageLayout, { containerWidth: "full", padding: "normal", style: { overflow: 'visible', minHeight: 'calc(100vh - 45px)' }, children: [_jsx(PageLayout.Header, { children: _jsxs(PageHeader, { children: [_jsx(PageHeader.TitleArea, { variant: "large", children: _jsx(PageHeader.Title, { children: "Secrets" }) }), _jsx(PageHeader.Actions, { children: _jsx(Button, { size: "small", variant: "primary", onClick: e => navigate('/new/secret', e), children: "New secret" }) })] }) }), _jsx(PageLayout.Content, { children: _jsx(Box, { children: _jsx(SecretsTable, {}) }) })] }));
++};
++export default Secrets;
+diff --git a/node_modules/@datalayer/core/lib/views/secrets/index.d.ts b/node_modules/@datalayer/core/lib/views/secrets/index.d.ts
+new file mode 100644
+index 0000000..1375883
+--- /dev/null
++++ b/node_modules/@datalayer/core/lib/views/secrets/index.d.ts
+@@ -0,0 +1,3 @@
++export * from './SecretEdit';
++export * from './SecretNew';
++export * from './Secrets';
+diff --git a/node_modules/@datalayer/core/lib/views/secrets/index.js b/node_modules/@datalayer/core/lib/views/secrets/index.js
+new file mode 100644
+index 0000000..7532a28
+--- /dev/null
++++ b/node_modules/@datalayer/core/lib/views/secrets/index.js
+@@ -0,0 +1,7 @@
++/*
++ * Copyright (c) 2023-2025 Datalayer, Inc.
++ * Distributed under the terms of the Modified BSD License.
++ */
++export * from './SecretEdit';
++export * from './SecretNew';
++export * from './Secrets';

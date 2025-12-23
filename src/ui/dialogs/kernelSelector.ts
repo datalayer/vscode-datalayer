@@ -49,11 +49,6 @@ export async function showKernelSelector(
     "../../services/kernel/nativeKernelIntegration"
   );
 
-  console.log("[KernelSelector] showKernelSelector called", {
-    documentUri: documentUri?.toString(),
-    currentRuntime,
-  });
-
   const options: KernelOption[] = [
     {
       label: "Datalayer Platform",
@@ -88,14 +83,31 @@ export async function showKernelSelector(
             console.log("[KernelSelector] User successfully authenticated");
           }
 
-          // Now select runtime
-          const runtime = await selectDatalayerRuntime(sdk, authProvider);
+          // Now select runtime with instant spinner callback
+          const runtime = await selectDatalayerRuntime(sdk, authProvider, {
+            // CRITICAL: Send "kernel-starting" IMMEDIATELY when runtime is selected
+            // This callback is called BEFORE QuickPick closes for instant feedback
+            onRuntimeSelected: documentUri
+              ? async (selectedRuntime) => {
+                  console.log(
+                    "[KernelSelector] Runtime selected (instant callback):",
+                    selectedRuntime.uid,
+                  );
+                  await kernelBridge.sendKernelStartingMessage(
+                    documentUri,
+                    selectedRuntime,
+                  );
+                }
+              : undefined,
+          });
           console.log("[KernelSelector] Runtime selected:", runtime?.uid);
 
           if (runtime) {
             // If we have a document URI, connect it to the runtime
             if (documentUri) {
               console.log("[KernelSelector] Connecting document to runtime");
+
+              // Spinner message already sent via onRuntimeSelected callback
               await kernelBridge.connectWebviewDocument(documentUri, runtime);
               vscode.window.showInformationMessage(
                 `Connected to runtime "${runtime.givenName || runtime.podName}"`,
@@ -220,13 +232,6 @@ export async function showKernelSelector(
     },
   ];
 
-  console.log(
-    "[KernelSelector] Options array created, length:",
-    options.length,
-    "labels:",
-    options.map((o) => o.label),
-  );
-
   // Add "Terminate Runtime" option if a runtime is currently selected
   if (currentRuntime) {
     const runtimeObj = currentRuntime as {
@@ -289,13 +294,6 @@ export async function showKernelSelector(
 
     return result;
   });
-
-  console.log(
-    "[KernelSelector] Items to show in QuickPick:",
-    items.length,
-    "labels:",
-    items.map((i) => i.label),
-  );
 
   const selected = await vscode.window.showQuickPick(items, {
     placeHolder: "Select a kernel source or manage current runtime",

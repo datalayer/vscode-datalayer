@@ -23,8 +23,13 @@ jobs:
         with:
           node-version: "20"
 
+      - name: Install system dependencies for keytar
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libsecret-1-dev
+
       - name: Install dependencies
-        run: npm install
+        run: npm install --ignore-engines
 
       - name: Build extension
         run: npm run compile
@@ -140,6 +145,12 @@ jobs:
             echo "⚠️ VSCE_KEY secret not found - skipping VS Code Marketplace publishing"
           fi
 
+      - name: Install system dependencies for keytar
+        if: steps.check_VSCE_KEY.outputs.has_secret == 'true'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libsecret-1-dev
+
       - name: Download universal VSIX artifact
         if: steps.check_VSCE_KEY.outputs.has_secret == 'true'
         uses: actions/download-artifact@v7
@@ -148,7 +159,7 @@ jobs:
 
       - name: Install dependencies
         if: steps.check_VSCE_KEY.outputs.has_secret == 'true'
-        run: npm install
+        run: npm install --ignore-engines
 
       - name: Publish universal VSIX to Marketplace
         if: steps.check_VSCE_KEY.outputs.has_secret == 'true'

@@ -66,10 +66,29 @@ export interface KernelSelectedMessage {
   };
 }
 
+/** Kernel is starting (sent before kernel is created to trigger spinner) */
+export interface KernelStartingMessage {
+  /** Message type discriminator */
+  type: "kernel-starting";
+  /** Kernel starting payload */
+  body: {
+    /** Runtime that is being started */
+    runtime: RuntimeJSON;
+  };
+}
+
 /** Kernel was terminated */
 export interface KernelTerminatedMessage {
   /** Message type discriminator */
   type: "kernel-terminated";
+}
+
+/** Kernel is ready (sent from webview when Pyodide kernel finishes preloading) */
+export interface KernelReadyMessage {
+  /** Message type discriminator */
+  type: "kernel-ready";
+  /** Empty payload */
+  body: Record<string, never>;
 }
 
 /** Runtime selected (legacy alias for kernel-selected) */
@@ -315,6 +334,7 @@ export type ExtensionToWebviewMessage =
   | ThemeChangeMessage
   | RuntimeSelectedMessage
   | KernelSelectedMessage
+  | KernelStartingMessage
   | KernelTerminatedMessage
   | RuntimeTerminatedMessage
   | SetRuntimeMessage
@@ -555,6 +575,7 @@ export type WebviewToExtensionMessage =
   | SelectRuntimeRequestMessage
   | SelectKernelRequestMessage
   | TerminateRuntimeRequestMessage
+  | KernelReadyMessage
   | WebSocketOpenMessage
   | WebSocketCloseMessage
   | WebSocketProxyMessage

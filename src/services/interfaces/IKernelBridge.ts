@@ -46,6 +46,18 @@ export interface IKernelBridge {
   unregisterWebview(uri: vscode.Uri): void;
 
   /**
+   * Sends "kernel-starting" message to webview immediately.
+   * Used to trigger spinner before any async operations.
+   *
+   * @param uri - Document URI
+   * @param runtime - Selected runtime
+   */
+  sendKernelStartingMessage(
+    uri: vscode.Uri,
+    runtime: RuntimeDTO,
+  ): Promise<void>;
+
+  /**
    * Connects a webview document (notebook or lexical) to a runtime.
    * Sends runtime information to the webview for ServiceManager creation.
    *
@@ -95,4 +107,12 @@ export interface IKernelBridge {
    * Used when a runtime is terminated that affects multiple documents.
    */
   broadcastKernelTerminated(): Promise<void>;
+
+  /**
+   * Handles kernel-ready message from webview.
+   * Clears pending Pyodide runtime state.
+   *
+   * @param uri - Document URI
+   */
+  handleKernelReady(uri: vscode.Uri): Promise<void>;
 }

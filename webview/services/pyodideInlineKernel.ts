@@ -110,7 +110,23 @@ export class PyodideInlineKernel implements Kernel.IKernelConnection {
   private _anyMessage = new Signal<this, Kernel.IAnyMessageArgs>(this);
   private _unhandledMessage = new Signal<this, KernelMessage.IMessage>(this);
   private _pendingInput = new Signal<this, boolean>(this);
-  private _status: Kernel.Status = "idle"; // Start as idle to prevent immediate shutdown
+
+  /**
+   * Current kernel status as exposed to Jupyter clients.
+   *
+   * - The kernel starts in the "starting" state while the inline Web Worker
+   *   bootstraps Pyodide and loads the Python kernel code.
+   * - Once the worker has finished initialization, it sends a WorkerReadyMessage
+   *   back to the main thread.
+   * - The worker message handler in this class updates `_status` to "idle" when
+   *   the ready message is received and emits the `_statusChanged` signal.
+   * - Subsequent transitions (e.g. "busy" during execution, "idle" on completion)
+   *   are driven by WorkerStatusMessage messages sent by the worker.
+   *
+   * @see WorkerReadyMessage
+   * @see WorkerStatusMessage
+   */
+  private _status: Kernel.Status = "starting";
   private _connectionStatus: Kernel.ConnectionStatus = "connected"; // Start as connected
   private _isReady = false; // Track if Pyodide worker is fully initialized
   private _executionCount = 0;

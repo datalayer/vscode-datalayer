@@ -118,6 +118,7 @@ export interface LexicalEditorProps {
   onNavigated?: () => void;
   serviceManager: ServiceManager.IManager;
   lexicalId?: string | null;
+  kernelInitializing?: boolean;
 }
 
 /**
@@ -303,6 +304,7 @@ export function LexicalEditor({
   onNavigated,
   serviceManager,
   lexicalId,
+  kernelInitializing = false,
 }: LexicalEditorProps) {
   const [floatingAnchorElem, setFloatingAnchorElem] =
     useState<HTMLDivElement | null>(null);
@@ -495,6 +497,7 @@ export function LexicalEditor({
                   showRuntimeSelector={showRuntimeSelector}
                   showCollaborativeLabel={collaboration?.enabled}
                   lexicalId={lexicalId || undefined}
+                  kernelInitializing={kernelInitializing}
                 />
               )}
             </div>

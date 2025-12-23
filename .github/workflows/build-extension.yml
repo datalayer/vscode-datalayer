@@ -44,6 +44,11 @@ jobs:
         with:
           node-version: "20"
 
+      - name: Install system dependencies for keytar
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libsecret-1-dev
+
       - name: Install dependencies
         run: |
           set +e  # Don't exit on error so we can see full output
