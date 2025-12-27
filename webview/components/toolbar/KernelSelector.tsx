@@ -92,13 +92,6 @@ export const KernelSelector: React.FC<KernelSelectorProps> = ({
   };
 
   const getKernelIcon = () => {
-    console.log("[KernelSelector] getKernelIcon called with:", {
-      kernelStatus,
-      isSessionReady,
-      kernelInitializing,
-      selectedRuntime: !!selectedRuntime,
-    });
-
     // Show spinner during kernel initialization:
     // - kernelInitializing: ALWAYS show spinner (sent from extension before kernel starts)
     // - starting, restarting, autorestarting: always show spinner
@@ -114,10 +107,8 @@ export const KernelSelector: React.FC<KernelSelectorProps> = ({
       (kernelStatus === "unknown" && !isSessionReady);
 
     if (shouldShowSpinner) {
-      console.log("[KernelSelector] Returning SPINNER icon");
       return "codicon codicon-loading codicon-modifier-spin";
     }
-    console.log("[KernelSelector] Returning SERVER icon");
     return "codicon codicon-server-environment";
   };
 

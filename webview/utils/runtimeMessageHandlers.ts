@@ -49,7 +49,6 @@ export function handleKernelStarting(
   _message: KernelStartingMessage,
   setKernelInitializing: KernelInitializingCallback,
 ): void {
-  console.log("[RuntimeHandler] Kernel starting - showing spinner");
   setKernelInitializing(true);
 }
 
@@ -82,12 +81,8 @@ export function handleRuntimeSelected(
   setKernelInitializing?: KernelInitializingCallback,
 ): void {
   const { body } = message;
-  console.log(`[RuntimeHandler] Received ${message.type}:`, body?.runtime);
 
   if (body?.runtime) {
-    console.log(
-      `[RuntimeHandler] Setting runtime with ingress: ${body.runtime.ingress}`,
-    );
     selectRuntime(body.runtime);
     updateStore?.(body.runtime);
 
@@ -101,15 +96,7 @@ export function handleRuntimeSelected(
     // until the webview monitoring code detects the kernel is ready (status='idle')
     // For local/remote kernels, clear the spinner immediately since they're ready
     if (!isPyodide && !isDatalayerCloud) {
-      console.log(
-        "[RuntimeHandler] Clearing spinner for local/remote kernel (ready immediately)",
-      );
       setKernelInitializing?.(false);
-    } else {
-      console.log(
-        `[RuntimeHandler] Keeping spinner visible for ${isPyodide ? "Pyodide" : "Datalayer cloud"} kernel (will clear when ready)`,
-      );
-      // Spinner will be cleared by kernel monitoring code in NotebookEditor/LexicalWebview
     }
   }
 }
@@ -135,8 +122,6 @@ export function handleRuntimeTerminated(
   updateStore?: RuntimeSelectCallback,
   delay: number = 100,
 ): void {
-  console.log("[RuntimeHandler] Runtime terminated - clearing runtime");
-
   setTimeout(() => {
     selectRuntime(undefined);
     updateStore?.(undefined);
@@ -163,8 +148,6 @@ export function handleRuntimeExpired(
   updateStore?: RuntimeSelectCallback,
   delay: number = 100,
 ): void {
-  console.log("[RuntimeHandler] Runtime expired - resetting to mock");
-
   setTimeout(() => {
     selectRuntime(undefined);
     updateStore?.(undefined);
@@ -204,10 +187,6 @@ export function handleSetRuntime(
   const { body } = message;
 
   if (body.baseUrl) {
-    console.log(
-      `[RuntimeHandler] Setting local Jupyter server runtime: ${body.baseUrl}`,
-    );
-
     const runtimeInfo: RuntimeWithCredits = {
       uid: "local-runtime",
       givenName: "Jupyter Server",

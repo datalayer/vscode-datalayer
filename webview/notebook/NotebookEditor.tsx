@@ -118,9 +118,6 @@ function NotebookEditorCore({
   // Wrap handleNotebookModelChanged to capture the model for outline
   const handleNotebookModelChangedWithOutline = useCallback(
     (model: unknown) => {
-      console.log("[NotebookEditor] Model changed, updating state", {
-        hasModel: !!model,
-      });
       notebookModelRef.current = model;
       setNotebookModel(model); // Update state to trigger re-render
       handleNotebookModelChanged(model);
@@ -148,17 +145,11 @@ function NotebookEditorCore({
     vscode: vscodeApi,
   });
 
-  // Log documentUri for debugging
-  useEffect(() => {
-    console.log("[NotebookEditor] documentUri from store:", documentUri);
-  }, [documentUri]);
-
   // Create notebook extensions (sidebar)
   const extensions = useMemo(() => [new CellSidebarExtension({})], []);
 
   // Create LLM completion provider for VS Code
   const llmProvider = useMemo(() => {
-    console.log("[NotebookEditor] Creating VSCodeLLMProvider");
     return new VSCodeLLMProvider();
   }, []);
 
@@ -202,12 +193,6 @@ function NotebookEditorCore({
         case "init": {
           const { body } = message;
 
-          console.log("[NotebookEditor] Received init message", {
-            hasDocumentUri: !!body.documentUri,
-            documentUri: body.documentUri,
-            notebookId: body.notebookId,
-          });
-
           // CRITICAL: Detect when webview is reused for a different document
           if (
             body.notebookId &&
@@ -246,13 +231,7 @@ function NotebookEditorCore({
           }
 
           if (body.documentUri) {
-            console.log(
-              "[NotebookEditor] Setting documentUri in store",
-              body.documentUri,
-            );
             store.getState().setDocumentUri(body.documentUri);
-          } else {
-            console.warn("[NotebookEditor] No documentUri in init message!");
           }
 
           if (body.serverUrl) {
@@ -460,12 +439,6 @@ function NotebookEditorCore({
           const { body, requestId } = message;
           const { index } = body;
 
-          console.log("[Webview] Received read-cell-request:", {
-            index,
-            requestId,
-            notebookId,
-          });
-
           try {
             // Read cell directly from the model
             const notebookState = notebookStore2.getState();
@@ -518,8 +491,6 @@ function NotebookEditorCore({
                   outputs,
                 },
               });
-
-              console.log("[Webview] Sent response for cell index:", index);
             } else {
               console.error("[Webview] Cell not found at index:", index);
             }
@@ -663,7 +634,6 @@ function NotebookEditorCore({
     const notebook = notebookState.notebooks.get(documentId || notebookId);
 
     if (!notebook?.adapter?.panel?.sessionContext) {
-      console.warn("[NotebookEditor] No SessionContext found");
       return;
     }
 
@@ -727,8 +697,6 @@ function NotebookEditorCore({
       return undefined;
     }
 
-    console.log("[NotebookEditor] Monitoring kernel readiness...");
-
     // Get notebook from store
     const currentNotebookId = documentId || notebookId;
     if (!currentNotebookId) {
@@ -737,16 +705,12 @@ function NotebookEditorCore({
 
     const notebook = notebookStore2.getState().notebooks.get(currentNotebookId);
     if (!notebook?.adapter) {
-      console.log("[NotebookEditor] No adapter yet, waiting for kernel...");
       return undefined;
     }
 
     const context = (notebook.adapter as any)._context;
     const sessionContext = context?.sessionContext;
     if (!sessionContext) {
-      console.log(
-        "[NotebookEditor] No sessionContext yet, waiting for kernel...",
-      );
       return undefined;
     }
 
@@ -757,22 +721,11 @@ function NotebookEditorCore({
       const isReady = sessionContext.isReady;
       const kernelStatus = kernel?.status;
 
-      console.log("[NotebookEditor] Checking kernel ready:", {
-        hasKernel: !!kernel,
-        kernelStatus,
-        isReady,
-        kernelInitializing,
-      });
-
       // Kernel is ready when:
       // 1. SessionContext is ready (sessionContext.isReady = true)
       // 2. Kernel status is 'idle' (not 'starting', 'unknown', etc.)
       // 3. We were previously in kernel initializing state
       if (kernel && kernelStatus === "idle" && isReady && kernelInitializing) {
-        console.log(
-          "[NotebookEditor] Kernel is ready! Sending kernel-ready message",
-        );
-
         // Send kernel-ready message to extension
         messageHandler.send({
           type: "kernel-ready",
@@ -803,12 +756,8 @@ function NotebookEditorCore({
       const kernel = session?.kernel;
 
       if (kernel) {
-        console.log("[NotebookEditor] Subscribing to kernel status changes");
         currentKernel = kernel;
         currentKernelStatusHandler = () => {
-          console.log(
-            "[NotebookEditor] Kernel status changed, checking kernel ready...",
-          );
           checkKernelReady();
         };
         kernel.statusChanged?.connect(currentKernelStatusHandler);
@@ -820,16 +769,12 @@ function NotebookEditorCore({
 
     // Subscribe to session changes
     const onSessionChanged = () => {
-      console.log("[NotebookEditor] Session changed, checking kernel ready...");
       subscribeToKernel(); // Re-subscribe to the new kernel
     };
     sessionContext.sessionChanged?.connect(onSessionChanged);
 
     // Subscribe to sessionContext status changes (when isReady changes)
     const onStatusChanged = () => {
-      console.log(
-        "[NotebookEditor] SessionContext status changed, checking kernel ready...",
-      );
       checkKernelReady();
     };
     sessionContext.statusChanged?.connect(onStatusChanged);
@@ -853,9 +798,6 @@ function NotebookEditorCore({
   useEffect(() => {
     // Wait for notebookId to be available
     if (!notebookId) {
-      console.warn(
-        "[NotebookEditor] No notebookId available yet, skipping tool execution setup",
-      );
       return;
     }
 
@@ -874,11 +816,6 @@ function NotebookEditorCore({
       runner,
       vsCodeAPI,
       mutableServiceManager || undefined,
-    );
-
-    console.log(
-      "[NotebookEditor] Tool execution listener registered with Runner for notebookId:",
-      notebookId,
     );
 
     return cleanup;
@@ -1022,13 +959,7 @@ function NotebookEditorCore({
             height={notebookHeight}
             cellSidebarMargin={cellSidebarMargin}
             extensions={extensions}
-            inlineProviders={(() => {
-              console.log(
-                "[NotebookEditor] Passing inlineProviders to Notebook2:",
-                [llmProvider],
-              );
-              return [llmProvider];
-            })()}
+            inlineProviders={[llmProvider]}
             onNotebookModelChanged={handleNotebookModelChangedWithOutline}
           />
         </Box>

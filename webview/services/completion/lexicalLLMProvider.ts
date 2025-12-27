@@ -49,6 +49,8 @@ interface CompletionRequest {
   offset: number;
   /** Programming language (e.g., 'python') */
   language?: string;
+  /** Content type ('code' or 'prose') */
+  contentType?: "code" | "prose";
 }
 
 /**

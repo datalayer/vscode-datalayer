@@ -175,9 +175,10 @@ export function getNotebookHtml(
 
           Note: 'unsafe-inline' is required for typestyle dynamic style injection.
           Note: 'unsafe-eval' is required for AJV (JSON schema validator used by Jupyter dependencies).
+          Note: sha256 hash allows specific inline script from ipywidgets manager library.
           This is acceptable as we control the extension code and use nonces for scripts.
           -->
-          <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src ${webview.cspSource} blob: data:; style-src ${webview.cspSource} 'unsafe-inline'; font-src ${webview.cspSource}; script-src 'nonce-${nonce}' 'unsafe-eval'; connect-src ${webview.cspSource} https: wss:; worker-src blob:;" />
+          <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src ${webview.cspSource} blob: data:; style-src ${webview.cspSource} 'unsafe-inline'; font-src ${webview.cspSource}; script-src 'nonce-${nonce}' 'unsafe-eval' 'sha256-QUWd+IhSNNnJ1kUF1ufqJr+KJPFFB3LireYMloM7v9U=' https://cdnjs.cloudflare.com; connect-src ${webview.cspSource} https: wss:; worker-src blob:;" />
 
         </head>
 

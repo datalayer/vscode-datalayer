@@ -155,10 +155,6 @@ export function registerVSCodeTools(
     ToolOperation<unknown, unknown>
   > = combinedOperations,
 ): void {
-  console.log(
-    `[Datalayer Tools] Registering ${definitions.length} tools with unified architecture`,
-  );
-
   // Validate all definitions before registration
   const validation = validateToolDefinitions(definitions, operations);
   if (!validation.valid) {
@@ -198,10 +194,6 @@ export function registerVSCodeTools(
       context.subscriptions.push(
         vscode.lm.registerTool(definition.name, adapter),
       );
-
-      console.log(
-        `[Datalayer Tools] ✓ Registered ${definition.name} → ${definition.operation}`,
-      );
     } catch (error) {
       console.error(
         `[Datalayer Tools] Failed to register tool ${definition.name}:`,
@@ -209,10 +201,6 @@ export function registerVSCodeTools(
       );
     }
   }
-
-  console.log(
-    `[Datalayer Tools] Successfully registered ${definitions.length} tools`,
-  );
 }
 
 /**

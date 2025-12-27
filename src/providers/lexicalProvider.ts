@@ -665,12 +665,6 @@ export class LexicalProvider extends BaseDocumentProvider<LexicalDocument> {
         ? `${document.uri.toString()}::${collaborationConfig.documentId}`
         : document.uri.toString();
 
-      console.log(
-        `[LexicalProvider] Sending lexicalId to webview:`,
-        lexicalId,
-        `for document:`,
-        document.uri.toString(),
-      );
       webviewPanel.webview.postMessage({
         type: "update",
         content: contentArray,
@@ -791,8 +785,9 @@ export class LexicalProvider extends BaseDocumentProvider<LexicalDocument> {
 
         Note: 'wasm-unsafe-eval' is required for loro-crdt WASM CRDT library
         Note: 'unsafe-eval' is required for AJV (JSON schema validator used by Jupyter dependencies)
+        Note: sha256 hash allows specific inline script from ipywidgets manager library
         -->
-        <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src ${webview.cspSource} https: blob: data:; style-src ${webview.cspSource} 'unsafe-inline'; font-src ${webview.cspSource}; script-src 'nonce-${nonce}' 'wasm-unsafe-eval' 'unsafe-eval'; connect-src ${webview.cspSource} https: wss: ws: data:; worker-src ${webview.cspSource} blob:; frame-src https://www.youtube.com;">
+        <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src ${webview.cspSource} https: blob: data:; style-src ${webview.cspSource} 'unsafe-inline'; font-src ${webview.cspSource}; script-src 'nonce-${nonce}' 'wasm-unsafe-eval' 'unsafe-eval' 'sha256-QUWd+IhSNNnJ1kUF1ufqJr+KJPFFB3LireYMloM7v9U=' https://cdnjs.cloudflare.com; connect-src ${webview.cspSource} https: wss: ws: data:; worker-src ${webview.cspSource} blob:; frame-src https://www.youtube.com;">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Datalayer Lexical Editor</title>
         <script nonce="${nonce}">
@@ -1113,10 +1108,6 @@ export class LexicalProvider extends BaseDocumentProvider<LexicalDocument> {
             `[LexicalProvider] Strategy "${result.strategyName}" succeeded but provided no runtime`,
           );
         }
-      } else {
-        console.log(
-          `[LexicalProvider] Auto-connect skipped or failed for ${documentUri.fsPath}`,
-        );
       }
     } catch (error) {
       console.error(

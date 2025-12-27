@@ -429,24 +429,12 @@ export class NotebookProvider extends BaseDocumentProvider<NotebookDocument> {
           }
         }
       } else if (e.type === "llm-completion-request") {
-        console.log("[NotebookProvider] LLM completion request received", {
-          requestId: e.requestId,
-          prefixLength: e.prefix?.length,
-          suffixLength: e.suffix?.length,
-          language: e.language,
-        });
-
         // Handle LLM completion request from webview
         const completion = await this.getLLMCompletion(
           e.prefix,
           e.suffix,
           e.language,
         );
-
-        console.log("[NotebookProvider] Sending LLM completion response", {
-          requestId: e.requestId,
-          completionLength: completion?.length,
-        });
 
         webviewPanel.webview.postMessage({
           type: "llm-completion-response",
@@ -867,10 +855,6 @@ Complete the code at <CURSOR>:`;
       );
 
       if (result) {
-        console.log(
-          `[NotebookProvider] Auto-connect successful using "${result.strategyName}" for ${documentUri.fsPath}`,
-        );
-
         // Connect the webview to the runtime via kernel bridge
         if (result.strategyName === "Pyodide") {
           // Use Pyodide-specific connection method
@@ -883,21 +867,9 @@ Complete the code at <CURSOR>:`;
             documentUri,
             result.runtime,
           );
-        } else {
-          console.warn(
-            `[NotebookProvider] Strategy "${result.strategyName}" succeeded but provided no runtime`,
-          );
         }
-      } else {
-        console.log(
-          `[NotebookProvider] Auto-connect skipped or failed for ${documentUri.fsPath}`,
-        );
       }
     } catch (error) {
-      console.error(
-        `[NotebookProvider] Auto-connect error for ${documentUri.fsPath}:`,
-        error,
-      );
       // Don't show error to user - auto-connect is optional
     }
   }

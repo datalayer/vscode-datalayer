@@ -116,8 +116,6 @@ export class LocalKernelConnection implements Kernel.IKernelConnection {
       // Store resolver to be called when we receive kernel_info_reply
       this._resolveInfo = resolve;
     });
-
-    console.log(`[LocalKernelConnection] Created for kernel ${this._id}`);
   }
 
   /**
@@ -130,10 +128,6 @@ export class LocalKernelConnection implements Kernel.IKernelConnection {
       const msgWithChannel = msg as KernelMessage.IMessage & {
         channel?: string;
       };
-
-      console.log(
-        `[LocalKernelConnection] Received message: ${msg.header.msg_type}, channel: ${msgWithChannel.channel}`,
-      );
 
       // Emit anyMessage signal
       this._anyMessage.emit({ msg, direction: "recv" });
@@ -150,9 +144,6 @@ export class LocalKernelConnection implements Kernel.IKernelConnection {
           if (newStatus && newStatus !== this._status) {
             this._status = newStatus;
             this._statusChanged.emit(this._status);
-            console.log(
-              `[LocalKernelConnection] Status changed to: ${this._status}`,
-            );
           }
         }
       } else if (channel === "shell") {
@@ -162,9 +153,6 @@ export class LocalKernelConnection implements Kernel.IKernelConnection {
           if (content.status === "ok") {
             this._infoReply = content;
             this._resolveInfo(content); // Resolve the promise
-            console.log(
-              `[LocalKernelConnection] Received kernel_info_reply, kernel is ready`,
-            );
           }
         }
       }
@@ -308,9 +296,6 @@ export class LocalKernelConnection implements Kernel.IKernelConnection {
     this._ws.close();
     this._disposed.emit();
     Signal.clearData(this);
-    console.log(
-      `[LocalKernelConnection] Disposed kernel connection ${this._id}`,
-    );
   }
 
   /**
@@ -364,9 +349,6 @@ export class LocalKernelConnection implements Kernel.IKernelConnection {
    * @returns A resolved promise.
    */
   reconnect(): Promise<void> {
-    console.log(
-      `[LocalKernelConnection] Reconnect called (no-op for local kernels)`,
-    );
     return Promise.resolve();
   }
 
@@ -375,7 +357,6 @@ export class LocalKernelConnection implements Kernel.IKernelConnection {
    * @returns A resolved promise.
    */
   shutdown(): Promise<void> {
-    console.log(`[LocalKernelConnection] Shutdown called`);
     this.dispose();
     return Promise.resolve();
   }
@@ -401,9 +382,7 @@ export class LocalKernelConnection implements Kernel.IKernelConnection {
    * @returns A resolved promise.
    */
   interrupt(): Promise<void> {
-    console.log(`[LocalKernelConnection] Interrupt called`);
     // For local kernels, this would send an interrupt signal to the process
-    // For now, we'll just log it
     return Promise.resolve();
   }
 
@@ -412,9 +391,7 @@ export class LocalKernelConnection implements Kernel.IKernelConnection {
    * @returns A resolved promise.
    */
   restart(): Promise<void> {
-    console.log(`[LocalKernelConnection] Restart called`);
     // For local kernels, this would restart the kernel process
-    // For now, we'll just log it
     return Promise.resolve();
   }
 
@@ -471,8 +448,6 @@ export class LocalKernelConnection implements Kernel.IKernelConnection {
    * @returns A promise that resolves with the kernel info reply.
    */
   requestKernelInfo(): Promise<KernelMessage.IInfoReplyMsg | undefined> {
-    console.log(`[LocalKernelConnection] Requesting kernel info`);
-
     // If we already have info, return it
     if (this._infoReply) {
       return Promise.resolve({
@@ -556,10 +531,6 @@ export class LocalKernelConnection implements Kernel.IKernelConnection {
   async requestHistory(
     _content: KernelMessage.IHistoryRequestMsg["content"],
   ): Promise<KernelMessage.IHistoryReplyMsg> {
-    console.log(
-      `[LocalKernelConnection] requestHistory called (returning empty history)`,
-    );
-
     // Return empty history - we don't track history for local kernels
     const reply: KernelMessage.IHistoryReplyMsg = {
       header: {
@@ -597,8 +568,6 @@ export class LocalKernelConnection implements Kernel.IKernelConnection {
     KernelMessage.IExecuteRequestMsg,
     KernelMessage.IExecuteReplyMsg
   > {
-    console.log(`[LocalKernelConnection] Executing code:`, content.code);
-
     const msg: KernelMessage.IExecuteRequestMsg = {
       header: {
         msg_id: `execute_request-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,

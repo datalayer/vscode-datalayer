@@ -54,33 +54,18 @@ export async function showKernelSelector(
       label: "Datalayer Platform",
       action: async () => {
         try {
-          console.log("[KernelSelector] Datalayer Platform selected");
-
           // Check authentication first
           if (!authProvider.isAuthenticated()) {
-            console.log(
-              "[KernelSelector] User not authenticated, triggering login",
-            );
-
             // Trigger login directly (same as status bar click)
             await vscode.commands.executeCommand("datalayer.login");
 
-            console.log(
-              "[KernelSelector] Login command executed, checking auth state",
-            );
-
             // Check again after login attempt
             if (!authProvider.isAuthenticated()) {
-              console.log(
-                "[KernelSelector] User still not authenticated after login attempt",
-              );
               vscode.window.showWarningMessage(
                 "You must be logged in to use Datalayer Platform kernels",
               );
               return;
             }
-
-            console.log("[KernelSelector] User successfully authenticated");
           }
 
           // Now select runtime with instant spinner callback
@@ -89,10 +74,6 @@ export async function showKernelSelector(
             // This callback is called BEFORE QuickPick closes for instant feedback
             onRuntimeSelected: documentUri
               ? async (selectedRuntime) => {
-                  console.log(
-                    "[KernelSelector] Runtime selected (instant callback):",
-                    selectedRuntime.uid,
-                  );
                   await kernelBridge.sendKernelStartingMessage(
                     documentUri,
                     selectedRuntime,
@@ -100,23 +81,16 @@ export async function showKernelSelector(
                 }
               : undefined,
           });
-          console.log("[KernelSelector] Runtime selected:", runtime?.uid);
 
           if (runtime) {
             // If we have a document URI, connect it to the runtime
             if (documentUri) {
-              console.log("[KernelSelector] Connecting document to runtime");
-
               // Spinner message already sent via onRuntimeSelected callback
               await kernelBridge.connectWebviewDocument(documentUri, runtime);
               vscode.window.showInformationMessage(
                 `Connected to runtime "${runtime.givenName || runtime.podName}"`,
               );
             }
-          } else {
-            console.log(
-              "[KernelSelector] No runtime selected (user cancelled)",
-            );
           }
         } catch (error) {
           console.error(
@@ -157,12 +131,8 @@ export async function showKernelSelector(
       action: async () => {
         if (documentUri) {
           try {
-            console.log(
-              "[KernelSelector] Pyodide selected, calling kernelBridge",
-            );
             // Connect to Pyodide kernel via kernel bridge (same as other kernel types)
             await kernelBridge.connectWebviewDocumentToPyodide(documentUri);
-            console.log("[KernelSelector] Successfully connected to Pyodide");
             vscode.window.showInformationMessage(
               "Switched to Pyodide (Browser Python). Python code will run in your browser.",
             );
@@ -175,10 +145,6 @@ export async function showKernelSelector(
               `Failed to switch to Pyodide: ${error}`,
             );
           }
-        } else {
-          console.warn(
-            "[KernelSelector] No documentUri provided for Pyodide selection",
-          );
         }
       },
     },
