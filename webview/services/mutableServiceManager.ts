@@ -179,6 +179,10 @@ export class MutableServiceManager {
         }
 
         // Dispose the service manager
+        // NOTE: For remote kernels, disposal triggers async refreshRunning() calls
+        // that may fail with CORS/502 errors if the runtime has terminated.
+        // These errors are expected and harmless - JupyterLab is just cleaning up.
+        // They appear in console but don't affect functionality.
         oldSm.dispose();
       } catch (error) {
         console.error(

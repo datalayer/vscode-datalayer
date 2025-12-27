@@ -522,14 +522,6 @@ export class LexicalProvider extends BaseDocumentProvider<LexicalDocument> {
           }
         }
       } else if (e.type === "llm-completion-request") {
-        console.log("[LexicalProvider] LLM completion request received", {
-          requestId: e.requestId,
-          prefixLength: e.prefix?.length,
-          suffixLength: e.suffix?.length,
-          language: e.language,
-          contentType: e.contentType,
-        });
-
         // Handle LLM completion request from webview
         const completion = await this.getLLMCompletion(
           e.prefix,
@@ -537,11 +529,6 @@ export class LexicalProvider extends BaseDocumentProvider<LexicalDocument> {
           e.language,
           e.contentType || "code", // Default to 'code' for backward compatibility
         );
-
-        console.log("[LexicalProvider] Sending LLM completion response", {
-          requestId: e.requestId,
-          completionLength: completion?.length,
-        });
 
         webviewPanel.webview.postMessage({
           type: "llm-completion-response",
