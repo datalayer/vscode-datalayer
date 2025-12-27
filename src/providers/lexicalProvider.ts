@@ -638,7 +638,6 @@ export class LexicalProvider extends BaseDocumentProvider<LexicalDocument> {
             "#" + Math.floor(Math.random() * 16777215).toString(16);
 
           userInfo = { username, userColor };
-          console.log("[LexicalProvider] User info for comments:", userInfo);
         }
       } catch (error) {
         console.error("[LexicalProvider] Failed to get user info:", error);

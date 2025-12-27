@@ -554,7 +554,7 @@ export function LexicalEditor({
             <YouTubePlugin />
             <AutoEmbedPlugin />
             <JupyterCellPlugin />
-            <AutoIndentPlugin defaultLanguage="python" debug={true} />
+            <AutoIndentPlugin defaultLanguage="python" />
             {/* Wrap kernel plugins with Jupyter provider - only these remount on runtime change */}
             <Jupyter
               key={selectedRuntime?.ingress || "no-runtime"}
