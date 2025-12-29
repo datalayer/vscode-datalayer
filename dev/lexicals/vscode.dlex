@@ -133,16 +133,6 @@
         "tag": "ul"
       },
       {
-        "children": [],
-        "direction": null,
-        "format": "",
-        "indent": 0,
-        "type": "paragraph",
-        "version": 1,
-        "textFormat": 0,
-        "textStyle": ""
-      },
-      {
         "children": [
           {
             "detail": 0,
@@ -631,6 +621,10 @@
             "text": "But this is not executable",
             "type": "text",
             "version": 1
+          },
+          {
+            "type": "linebreak",
+            "version": 1
           }
         ],
         "direction": null,
@@ -699,6 +693,25 @@
           },
           {
             "type": "linebreak",
+            "version": 1
+          },
+          {
+            "detail": 0,
+            "format": 0,
+            "mode": "normal",
+            "style": "",
+            "text": "import",
+            "type": "jupyter-input-highlight",
+            "version": 1,
+            "highlightType": "keyword"
+          },
+          {
+            "detail": 0,
+            "format": 0,
+            "mode": "normal",
+            "style": "",
+            "text": " random",
+            "type": "jupyter-input-highlight",
             "version": 1
           },
           {
@@ -1009,6 +1022,127 @@
             "format": 0,
             "mode": "normal",
             "style": "",
+            "text": "random",
+            "type": "jupyter-input-highlight",
+            "version": 1
+          },
+          {
+            "detail": 0,
+            "format": 0,
+            "mode": "normal",
+            "style": "",
+            "text": ".",
+            "type": "jupyter-input-highlight",
+            "version": 1,
+            "highlightType": "punctuation"
+          },
+          {
+            "detail": 0,
+            "format": 0,
+            "mode": "normal",
+            "style": "",
+            "text": "randint",
+            "type": "jupyter-input-highlight",
+            "version": 1
+          },
+          {
+            "detail": 0,
+            "format": 0,
+            "mode": "normal",
+            "style": "",
+            "text": "(",
+            "type": "jupyter-input-highlight",
+            "version": 1,
+            "highlightType": "punctuation"
+          },
+          {
+            "detail": 0,
+            "format": 0,
+            "mode": "normal",
+            "style": "",
+            "text": "1",
+            "type": "jupyter-input-highlight",
+            "version": 1,
+            "highlightType": "number"
+          },
+          {
+            "detail": 0,
+            "format": 0,
+            "mode": "normal",
+            "style": "",
+            "text": ",",
+            "type": "jupyter-input-highlight",
+            "version": 1,
+            "highlightType": "punctuation"
+          },
+          {
+            "detail": 0,
+            "format": 0,
+            "mode": "normal",
+            "style": "",
+            "text": " ",
+            "type": "jupyter-input-highlight",
+            "version": 1
+          },
+          {
+            "detail": 0,
+            "format": 0,
+            "mode": "normal",
+            "style": "",
+            "text": "10",
+            "type": "jupyter-input-highlight",
+            "version": 1,
+            "highlightType": "number"
+          },
+          {
+            "detail": 0,
+            "format": 0,
+            "mode": "normal",
+            "style": "",
+            "text": ")",
+            "type": "jupyter-input-highlight",
+            "version": 1,
+            "highlightType": "punctuation"
+          },
+          {
+            "detail": 0,
+            "format": 0,
+            "mode": "normal",
+            "style": "",
+            "text": ")",
+            "type": "jupyter-input-highlight",
+            "version": 1,
+            "highlightType": "punctuation"
+          },
+          {
+            "type": "linebreak",
+            "version": 1
+          },
+          {
+            "detail": 0,
+            "format": 0,
+            "mode": "normal",
+            "style": "",
+            "text": "print",
+            "type": "jupyter-input-highlight",
+            "version": 1,
+            "highlightType": "keyword"
+          },
+          {
+            "detail": 0,
+            "format": 0,
+            "mode": "normal",
+            "style": "",
+            "text": "(",
+            "type": "jupyter-input-highlight",
+            "version": 1,
+            "highlightType": "punctuation"
+          },
+          {
+            "detail": 0,
+            "format": 0,
+            "mode": "normal",
+            "style": "",
             "text": "platform",
             "type": "jupyter-input-highlight",
             "version": 1
@@ -1147,6 +1281,84 @@
           {
             "type": "linebreak",
             "version": 1
+          },
+          {
+            "detail": 0,
+            "format": 0,
+            "mode": "normal",
+            "style": "",
+            "text": "print",
+            "type": "jupyter-input-highlight",
+            "version": 1,
+            "highlightType": "keyword"
+          },
+          {
+            "detail": 0,
+            "format": 0,
+            "mode": "normal",
+            "style": "",
+            "text": "(",
+            "type": "jupyter-input-highlight",
+            "version": 1,
+            "highlightType": "punctuation"
+          },
+          {
+            "detail": 0,
+            "format": 0,
+            "mode": "normal",
+            "style": "",
+            "text": "platform",
+            "type": "jupyter-input-highlight",
+            "version": 1
+          },
+          {
+            "detail": 0,
+            "format": 0,
+            "mode": "normal",
+            "style": "",
+            "text": ".",
+            "type": "jupyter-input-highlight",
+            "version": 1,
+            "highlightType": "punctuation"
+          },
+          {
+            "detail": 0,
+            "format": 0,
+            "mode": "normal",
+            "style": "",
+            "text": "platform",
+            "type": "jupyter-input-highlight",
+            "version": 1
+          },
+          {
+            "detail": 0,
+            "format": 0,
+            "mode": "normal",
+            "style": "",
+            "text": "(",
+            "type": "jupyter-input-highlight",
+            "version": 1,
+            "highlightType": "punctuation"
+          },
+          {
+            "detail": 0,
+            "format": 0,
+            "mode": "normal",
+            "style": "",
+            "text": ")",
+            "type": "jupyter-input-highlight",
+            "version": 1,
+            "highlightType": "punctuation"
+          },
+          {
+            "detail": 0,
+            "format": 0,
+            "mode": "normal",
+            "style": "",
+            "text": ")",
+            "type": "jupyter-input-highlight",
+            "version": 1,
+            "highlightType": "punctuation"
           }
         ],
         "direction": null,
@@ -1155,15 +1367,31 @@
         "type": "jupyter-input",
         "version": 1,
         "language": "python",
-        "jupyterInputNodeUuid": "00a63edd-20db-41ba-a6af-311b0d09df67"
+        "jupyterInputNodeUuid": "44c6ff61-c6af-4dee-b97a-5816e0428cee"
       },
       {
         "type": "jupyter-output",
-        "source": "# This is a test cell that can be executed when connected to a runtime!\n\nimport platform\n\n\ndef plus(x, y):\n    \"\"\"test\"\"\"\n    return x + y\n\n\nprint(plus(1, 2))\nprint(platform.system())\nprint(platform.node())\n",
-        "outputs": [],
-        "jupyterInputNodeUuid": "00a63edd-20db-41ba-a6af-311b0d09df67",
-        "jupyterOutputNodeUuid": "445eeacf-7ed6-4737-95eb-77931a5a250a",
+        "source": "# This is a test cell that can be executed when connected to a runtime!\n\nimport platform\nimport random\n\ndef plus(x, y):\n    \"\"\"test\"\"\"\n    return x + y\n\n\nprint(plus(1, 2))\nprint(random.randint(1, 10))\nprint(platform.system())\nprint(platform.node())\nprint(platform.platform())",
+        "outputs": [
+          {
+            "name": "stdout",
+            "text": "3\n6\nLinux\nruntime-01kdnd2j9dpnq62t2mx9122wb9\nLinux-5.15.0-1084-azure-x86_64-with-glibc2.39\n",
+            "output_type": "stream"
+          }
+        ],
+        "jupyterInputNodeUuid": "44c6ff61-c6af-4dee-b97a-5816e0428cee",
+        "jupyterOutputNodeUuid": "014ccbc5-1b0d-45ad-a2fc-99e095aecdb2",
         "version": 1
+      },
+      {
+        "children": [],
+        "direction": null,
+        "format": "",
+        "indent": 0,
+        "type": "paragraph",
+        "version": 1,
+        "textFormat": 0,
+        "textStyle": ""
       }
     ],
     "direction": "ltr",
@@ -1171,6 +1399,6 @@
     "indent": 0,
     "type": "root",
     "version": 1,
-    "textStyle": "font-family: Courier New;"
+    "textStyle": "font-family: Times New Roman; font-size: 18pt;"
   }
 }

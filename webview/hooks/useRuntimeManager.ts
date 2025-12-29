@@ -55,11 +55,20 @@ export function useRuntimeManager(initialRuntime?: RuntimeJSON) {
         const kernelId =
           initialRuntime.ingress.match(/local-kernel-([^.]+)/)?.[1];
         if (kernelId) {
-          mutableManagerRef.current.updateToLocal(
-            kernelId,
-            initialRuntime.environmentName || "python3",
-            initialRuntime.ingress,
-          );
+          // Note: We don't await here because this runs during ref initialization
+          // The updateToLocal will complete asynchronously, which is fine
+          mutableManagerRef.current
+            .updateToLocal(
+              kernelId,
+              initialRuntime.environmentName || "python3",
+              initialRuntime.ingress,
+            )
+            .catch((error) => {
+              console.error(
+                `[useRuntimeManager] Failed to initialize local kernel:`,
+                error,
+              );
+            });
 
           // Start the kernel to set _activeKernel (required for tool execution)
           mutableManagerRef.current.current.kernels
@@ -72,10 +81,16 @@ export function useRuntimeManager(initialRuntime?: RuntimeJSON) {
             });
         }
       } else {
-        mutableManagerRef.current.updateToRemote(
-          initialRuntime.ingress,
-          initialRuntime.token || "",
-        );
+        // Note: We don't await here because this runs during ref initialization
+        // The updateToRemote will complete asynchronously, which is fine
+        mutableManagerRef.current
+          .updateToRemote(initialRuntime.ingress, initialRuntime.token || "")
+          .catch((error) => {
+            console.error(
+              `[useRuntimeManager] Failed to initialize remote runtime:`,
+              error,
+            );
+          });
 
         // NOTE: For remote Datalayer runtimes, the kernel is already running on the server.
         // We don't call startNew() here - SessionContext will find the existing kernel.
@@ -91,73 +106,78 @@ export function useRuntimeManager(initialRuntime?: RuntimeJSON) {
   /**
    * Select a runtime and update the underlying service manager.
    * The MutableServiceManager reference stays stable - no component re-renders!
+   * MUST be awaited to ensure clean service manager disposal.
    */
-  const selectRuntime = useCallback((runtime: RuntimeJSON | undefined) => {
-    setSelectedRuntime(runtime);
+  const selectRuntime = useCallback(
+    async (runtime: RuntimeJSON | undefined) => {
+      setSelectedRuntime(runtime);
 
-    if (runtime?.ingress) {
-      // Detect Pyodide runtimes (ingress === "http://pyodide-local")
-      const isPyodide = runtime.ingress === "http://pyodide-local";
+      if (runtime?.ingress) {
+        // Detect Pyodide runtimes (ingress === "http://pyodide-local")
+        const isPyodide = runtime.ingress === "http://pyodide-local";
 
-      // Detect local kernel runtimes using shared utility
-      const isLocalKernel = isLocalKernelUrl(runtime.ingress);
+        // Detect local kernel runtimes using shared utility
+        const isLocalKernel = isLocalKernelUrl(runtime.ingress);
 
-      if (isPyodide) {
-        mutableManagerRef.current?.updateToPyodide();
-        // No need to start kernel here - Pyodide starts on first execution
-      } else if (isLocalKernel) {
-        // Extract kernel ID from URL (format: http://local-kernel-<kernelId>.localhost)
-        const kernelId = runtime.ingress.match(/local-kernel-([^.]+)/)?.[1];
-        if (!kernelId) {
-          console.error(
-            `[useRuntimeManager] Could not extract kernel ID from URL: ${runtime.ingress}`,
+        if (isPyodide) {
+          await mutableManagerRef.current?.updateToPyodide();
+          // No need to start kernel here - Pyodide starts on first execution
+        } else if (isLocalKernel) {
+          // Extract kernel ID from URL (format: http://local-kernel-<kernelId>.localhost)
+          const kernelId = runtime.ingress.match(/local-kernel-([^.]+)/)?.[1];
+          if (!kernelId) {
+            console.error(
+              `[useRuntimeManager] Could not extract kernel ID from URL: ${runtime.ingress}`,
+            );
+            await mutableManagerRef.current?.updateToMock();
+            return;
+          }
+
+          // Switch to local kernel service manager
+          await mutableManagerRef.current?.updateToLocal(
+            kernelId,
+            runtime.environmentName || "python3",
+            runtime.ingress,
           );
-          mutableManagerRef.current?.updateToMock();
-          return;
-        }
 
-        // Switch to local kernel service manager
-        mutableManagerRef.current?.updateToLocal(
-          kernelId,
-          runtime.environmentName || "python3",
-          runtime.ingress,
-        );
+          // CRITICAL: Start the kernel to set _activeKernel
+          // This is required for tool execution (e.g., executeCode) to work
+          // UI execution works without this because it uses SessionContext,
+          // but tool execution path checks serviceManager.kernels.running()
+          if (mutableManagerRef.current) {
+            mutableManagerRef.current.current.kernels
+              .startNew()
+              .catch((error) => {
+                console.error(
+                  `[useRuntimeManager] Failed to start kernel:`,
+                  error,
+                );
+              });
+          }
+        } else {
+          // Regular remote runtime - use standard connection
+          await mutableManagerRef.current?.updateToRemote(
+            runtime.ingress,
+            runtime.token || "",
+          );
 
-        // CRITICAL: Start the kernel to set _activeKernel
-        // This is required for tool execution (e.g., executeCode) to work
-        // UI execution works without this because it uses SessionContext,
-        // but tool execution path checks serviceManager.kernels.running()
-        if (mutableManagerRef.current) {
-          mutableManagerRef.current.current.kernels
-            .startNew()
-            .catch((error) => {
-              console.error(
-                `[useRuntimeManager] Failed to start kernel:`,
-                error,
-              );
-            });
+          // NOTE: For remote Datalayer runtimes, the kernel is already running on the server.
+          // We DON'T call startNew() here because:
+          // 1. The webview cannot make cross-origin HTTP requests (CORS policy blocks it)
+          // 2. The kernel is already running - we just need to connect to it
+          // 3. SessionContext will find the existing kernel via kernels.running()
+          //
+          // For local kernels, we DO need startNew() because we're creating a new kernel.
+          // But for remote runtimes, the kernel is provisioned and started by the platform.
         }
       } else {
-        // Regular remote runtime - use standard connection
-        mutableManagerRef.current?.updateToRemote(
-          runtime.ingress,
-          runtime.token || "",
-        );
-
-        // NOTE: For remote Datalayer runtimes, the kernel is already running on the server.
-        // We DON'T call startNew() here because:
-        // 1. The webview cannot make cross-origin HTTP requests (CORS policy blocks it)
-        // 2. The kernel is already running - we just need to connect to it
-        // 3. SessionContext will find the existing kernel via kernels.running()
-        //
-        // For local kernels, we DO need startNew() because we're creating a new kernel.
-        // But for remote runtimes, the kernel is provisioned and started by the platform.
+        // Reset to mock service manager (reference stays stable)
+        // CRITICAL: AWAIT this to ensure sessions are fully shutdown before disposal
+        await mutableManagerRef.current?.updateToMock();
       }
-    } else {
-      // Reset to mock service manager (reference stays stable)
-      mutableManagerRef.current?.updateToMock();
-    }
-  }, []);
+    },
+    [],
+  );
 
   // Return the proxy for seamless integration
   // The proxy forwards all property access to the current underlying service manager

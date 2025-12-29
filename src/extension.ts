@@ -25,7 +25,6 @@ import {
 } from "./services/bridges/documentBridge";
 import { DatalayerFileSystemProvider } from "./providers/documentsFileSystemProvider";
 import type { ExtensionUI } from "./services/ui/uiSetup";
-import { registerChatContextProvider } from "./chat/chatContextProvider";
 
 // Global service container instance
 let services: ServiceContainer | undefined;
@@ -256,16 +255,6 @@ export async function activate(
       },
     );
     activationTimer.checkpoint("native_notebook_preload_started");
-
-    // Register chat context provider for notebooks and lexical documents
-    logger.debug("Registering chat context providers for Copilot");
-    try {
-      context.subscriptions.push(registerChatContextProvider(context));
-      logger.info("Chat context providers registered successfully");
-    } catch (err: unknown) {
-      const error = err as Error;
-      logger.error("Failed to register chat context providers", error);
-    }
 
     // Register Datalayer chat participant (@datalayer)
     logger.debug("Registering Datalayer chat participant");

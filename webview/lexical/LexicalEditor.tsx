@@ -228,34 +228,39 @@ function LoadContentPlugin({
     }
 
     isFirstRender.current = false;
-    try {
-      // First try to parse as JSON to validate format
-      const parsed = JSON.parse(content);
 
-      // Check if it's a valid Lexical editor state
-      if (parsed && typeof parsed === "object" && parsed.root) {
-        const editorState = editor.parseEditorState(content);
-        // Use setEditorState with skipHistoryPush option to avoid adding to undo stack
-        editor.setEditorState(editorState, {
-          tag: "history-merge",
-        });
-      } else {
-        throw new Error("Invalid Lexical editor state format");
+    // Use queueMicrotask to defer editor updates outside render cycle
+    // This prevents React flushSync warnings
+    queueMicrotask(() => {
+      try {
+        // First try to parse as JSON to validate format
+        const parsed = JSON.parse(content);
+
+        // Check if it's a valid Lexical editor state
+        if (parsed && typeof parsed === "object" && parsed.root) {
+          const editorState = editor.parseEditorState(content);
+          // Use setEditorState with skipHistoryPush option to avoid adding to undo stack
+          editor.setEditorState(editorState, {
+            tag: "history-merge",
+          });
+        } else {
+          throw new Error("Invalid Lexical editor state format");
+        }
+      } catch (error) {
+        // Create a default empty state if parsing fails
+        editor.update(
+          () => {
+            const root = $getRoot();
+            root.clear();
+            const paragraph = $createParagraphNode();
+            root.append(paragraph);
+          },
+          {
+            tag: "history-merge",
+          },
+        );
       }
-    } catch (error) {
-      // Create a default empty state if parsing fails
-      editor.update(
-        () => {
-          const root = $getRoot();
-          root.clear();
-          const paragraph = $createParagraphNode();
-          root.append(paragraph);
-        },
-        {
-          tag: "history-merge",
-        },
-      );
-    }
+    });
   }, [content, editor, skipLoad]);
 
   return null;
@@ -549,7 +554,7 @@ export function LexicalEditor({
             <YouTubePlugin />
             <AutoEmbedPlugin />
             <JupyterCellPlugin />
-            <AutoIndentPlugin defaultLanguage="python" debug={true} />
+            <AutoIndentPlugin defaultLanguage="python" />
             {/* Wrap kernel plugins with Jupyter provider - only these remount on runtime change */}
             <Jupyter
               key={selectedRuntime?.ingress || "no-runtime"}

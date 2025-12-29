@@ -21,9 +21,6 @@
     "vscode": "^1.107.0",
     "node": ">=20.0.0 <21.0.0"
   },
-  "enabledApiProposals": [
-    "chatContextProvider"
-  ],
   "main": "./dist/extension.js",
   "scripts": {
     "build:icons": "node scripts/build-icons.js",

@@ -18,12 +18,20 @@ import type {
   RuntimeSelectedMessage,
   SetRuntimeMessage,
 } from "../types/messages";
+import { disableKernelReconnect } from "@datalayer/jupyter-react";
+import {
+  type MutableServiceManager,
+  markRuntimeUrlExpired,
+} from "../services/mutableServiceManager";
 
 /**
  * Callback function type for runtime selection.
  * Both editors should implement this to update their runtime state.
+ * MUST be awaited to ensure clean service manager disposal.
  */
-export type RuntimeSelectCallback = (runtime: RuntimeJSON | undefined) => void;
+export type RuntimeSelectCallback = (
+  runtime: RuntimeJSON | undefined,
+) => Promise<void>;
 
 /**
  * Callback function type for kernel initialization state.
@@ -49,7 +57,6 @@ export function handleKernelStarting(
   _message: KernelStartingMessage,
   setKernelInitializing: KernelInitializingCallback,
 ): void {
-  console.log("[RuntimeHandler] Kernel starting - showing spinner");
   setKernelInitializing(true);
 }
 
@@ -71,25 +78,37 @@ export function handleKernelStarting(
  * ```typescript
  * case "kernel-selected":
  * case "runtime-selected":
- *   handleRuntimeSelected(message, selectRuntime, (rt) => store.getState().setRuntime(rt), setKernelInitializing);
+ *   await handleRuntimeSelected(message, selectRuntime, (rt) => store.getState().setRuntime(rt), setKernelInitializing);
  *   break;
  * ```
  */
-export function handleRuntimeSelected(
+export async function handleRuntimeSelected(
   message: KernelSelectedMessage | RuntimeSelectedMessage,
   selectRuntime: RuntimeSelectCallback,
   updateStore?: RuntimeSelectCallback,
   setKernelInitializing?: KernelInitializingCallback,
-): void {
+): Promise<void> {
   const { body } = message;
-  console.log(`[RuntimeHandler] Received ${message.type}:`, body?.runtime);
 
   if (body?.runtime) {
-    console.log(
-      `[RuntimeHandler] Setting runtime with ingress: ${body.runtime.ingress}`,
-    );
-    selectRuntime(body.runtime);
-    updateStore?.(body.runtime);
+    // CRITICAL: Check if runtime URL has been marked as expired/terminated
+    // This prevents creating new ServiceManager with dead server URLs
+    if (body.runtime.ingress) {
+      const { isRuntimeUrlExpired } = await import(
+        "../services/mutableServiceManager"
+      );
+      const isExpired = isRuntimeUrlExpired(body.runtime.ingress);
+
+      if (isExpired) {
+        console.warn(
+          `[RuntimeMessageHandlers] Blocked runtime-selected for expired URL: ${body.runtime.ingress}`,
+        );
+        return; // Don't select expired runtimes
+      }
+    }
+
+    await selectRuntime(body.runtime);
+    await updateStore?.(body.runtime);
 
     // Detect runtime types that require async initialization
     const isPyodide = body.runtime.ingress === "http://pyodide-local";
@@ -101,15 +120,7 @@ export function handleRuntimeSelected(
     // until the webview monitoring code detects the kernel is ready (status='idle')
     // For local/remote kernels, clear the spinner immediately since they're ready
     if (!isPyodide && !isDatalayerCloud) {
-      console.log(
-        "[RuntimeHandler] Clearing spinner for local/remote kernel (ready immediately)",
-      );
       setKernelInitializing?.(false);
-    } else {
-      console.log(
-        `[RuntimeHandler] Keeping spinner visible for ${isPyodide ? "Pyodide" : "Datalayer cloud"} kernel (will clear when ready)`,
-      );
-      // Spinner will be cleared by kernel monitoring code in NotebookEditor/LexicalWebview
     }
   }
 }
@@ -120,27 +131,91 @@ export function handleRuntimeSelected(
  *
  * @param selectRuntime - Callback to update runtime state (from useRuntimeManager)
  * @param updateStore - Optional callback to update editor-specific store
+ * @param setKernelInitializing - Optional callback to clear kernel initialization state
  * @param delay - Delay in ms before clearing runtime (default: 100ms)
  *
  * @example
  * ```typescript
  * case "kernel-terminated":
  * case "runtime-terminated":
- *   handleRuntimeTerminated(selectRuntime, (rt) => store.getState().setRuntime(rt));
+ *   handleRuntimeTerminated(selectRuntime, (rt) => store.getState().setRuntime(rt), setKernelInitializing);
  *   break;
  * ```
  */
 export function handleRuntimeTerminated(
   selectRuntime: RuntimeSelectCallback,
   updateStore?: RuntimeSelectCallback,
+  setKernelInitializing?: KernelInitializingCallback,
   delay: number = 100,
 ): void {
-  console.log("[RuntimeHandler] Runtime terminated - clearing runtime");
+  setTimeout(async () => {
+    // Clear kernel initializing state to revert UI to "Select Runtime" mode
+    if (setKernelInitializing) {
+      setKernelInitializing(false);
+    }
 
-  setTimeout(() => {
-    selectRuntime(undefined);
-    updateStore?.(undefined);
+    await selectRuntime(undefined);
+    await updateStore?.(undefined);
   }, delay);
+}
+
+/**
+ * Handler for runtime-pre-termination messages.
+ * Called BEFORE runtime terminates (e.g., 5 seconds early) to gracefully shutdown
+ * connections while the server is still alive. This prevents CORS/502 errors.
+ *
+ * @param selectRuntime - Callback to update runtime state (from useRuntimeManager)
+ * @param updateStore - Optional callback to update editor-specific store
+ * @param mutableServiceManager - Optional service manager for kernel cleanup
+ * @param currentRuntime - Current runtime to mark as expired
+ * @param setKernelInitializing - Optional callback to clear kernel initialization state
+ *
+ * @example
+ * ```typescript
+ * case "runtime-pre-termination":
+ *   await handleRuntimePreTermination(selectRuntime, (rt) => store.getState().setRuntime(rt), mutableServiceManager, currentRuntime, setKernelInitializing);
+ *   break;
+ * ```
+ */
+export async function handleRuntimePreTermination(
+  selectRuntime: RuntimeSelectCallback,
+  updateStore?: RuntimeSelectCallback,
+  mutableServiceManager?: MutableServiceManager,
+  currentRuntime?: RuntimeJSON,
+  setKernelInitializing?: KernelInitializingCallback,
+): Promise<void> {
+  // Mark the current runtime URL as expired
+  // This prevents reconnection attempts if the runtime is re-selected after termination
+  if (currentRuntime?.ingress) {
+    markRuntimeUrlExpired(currentRuntime.ingress);
+  }
+
+  // Skip shutdown() methods to avoid CORS errors
+  // shutdown() internally calls refreshRunning() which hits the terminating server
+  // Instead: just disable reconnect and let disposal close WebSockets
+  if (mutableServiceManager) {
+    const currentServiceManager = mutableServiceManager.current;
+    if (currentServiceManager) {
+      // Disable reconnect on ALL kernels (sessions + orphaned)
+      disableKernelReconnect(currentServiceManager);
+    }
+  }
+
+  // Clear kernel initializing state to revert UI to "Select Runtime" mode
+  // Without this, the cell remains in a hanging/loading state after termination
+  if (setKernelInitializing) {
+    setKernelInitializing(false);
+  }
+
+  // Skip disposal and clear runtime
+  // The server is already dead, so disposal would just cause CORS errors
+  if (mutableServiceManager) {
+    await mutableServiceManager.updateToMock(true); // Skip disposal - call on instance, not proxy
+  }
+
+  // Clear runtime state - this will update React but won't touch service manager
+  await selectRuntime(undefined);
+  await updateStore?.(undefined);
 }
 
 /**
@@ -149,25 +224,30 @@ export function handleRuntimeTerminated(
  *
  * @param selectRuntime - Callback to update runtime state (from useRuntimeManager)
  * @param updateStore - Optional callback to update editor-specific store
+ * @param setKernelInitializing - Optional callback to clear kernel initialization state
  * @param delay - Delay in ms before clearing runtime (default: 100ms)
  *
  * @example
  * ```typescript
  * case "runtime-expired":
- *   handleRuntimeExpired(selectRuntime, (rt) => store.getState().setRuntime(rt));
+ *   handleRuntimeExpired(selectRuntime, (rt) => store.getState().setRuntime(rt), setKernelInitializing);
  *   break;
  * ```
  */
 export function handleRuntimeExpired(
   selectRuntime: RuntimeSelectCallback,
   updateStore?: RuntimeSelectCallback,
+  setKernelInitializing?: KernelInitializingCallback,
   delay: number = 100,
 ): void {
-  console.log("[RuntimeHandler] Runtime expired - resetting to mock");
+  setTimeout(async () => {
+    // Clear kernel initializing state to revert UI to "Select Runtime" mode
+    if (setKernelInitializing) {
+      setKernelInitializing(false);
+    }
 
-  setTimeout(() => {
-    selectRuntime(undefined);
-    updateStore?.(undefined);
+    await selectRuntime(undefined);
+    await updateStore?.(undefined);
   }, delay);
 }
 
@@ -192,22 +272,18 @@ export interface RuntimeWithCredits extends RuntimeJSON {
  * @example
  * ```typescript
  * case "set-runtime":
- *   handleSetRuntime(message, selectRuntime, (rt) => store.getState().setRuntime(rt));
+ *   await handleSetRuntime(message, selectRuntime, (rt) => store.getState().setRuntime(rt));
  *   break;
  * ```
  */
-export function handleSetRuntime(
+export async function handleSetRuntime(
   message: SetRuntimeMessage,
   selectRuntime: RuntimeSelectCallback,
   updateStore?: RuntimeSelectCallback,
-): void {
+): Promise<void> {
   const { body } = message;
 
   if (body.baseUrl) {
-    console.log(
-      `[RuntimeHandler] Setting local Jupyter server runtime: ${body.baseUrl}`,
-    );
-
     const runtimeInfo: RuntimeWithCredits = {
       uid: "local-runtime",
       givenName: "Jupyter Server",
@@ -222,8 +298,8 @@ export function handleSetRuntime(
       expiredAt: "",
     };
 
-    selectRuntime(runtimeInfo);
-    updateStore?.(runtimeInfo);
+    await selectRuntime(runtimeInfo);
+    await updateStore?.(runtimeInfo);
   }
 }
 
@@ -265,6 +341,8 @@ export function createRuntimeMessageHandlers(
   selectRuntime: RuntimeSelectCallback,
   setKernelInitializing: KernelInitializingCallback,
   updateStore?: RuntimeSelectCallback,
+  mutableServiceManager?: MutableServiceManager,
+  getCurrentRuntime?: () => RuntimeJSON | undefined,
 ) {
   return {
     /** Handler for kernel-starting messages */
@@ -284,10 +362,25 @@ export function createRuntimeMessageHandlers(
 
     /** Handler for kernel-terminated and runtime-terminated messages */
     onRuntimeTerminated: () =>
-      handleRuntimeTerminated(selectRuntime, updateStore),
+      handleRuntimeTerminated(
+        selectRuntime,
+        updateStore,
+        setKernelInitializing,
+      ),
+
+    /** Handler for runtime-pre-termination messages (5s before termination) */
+    onRuntimePreTermination: () =>
+      handleRuntimePreTermination(
+        selectRuntime,
+        updateStore,
+        mutableServiceManager,
+        getCurrentRuntime?.(),
+        setKernelInitializing,
+      ),
 
     /** Handler for runtime-expired messages */
-    onRuntimeExpired: () => handleRuntimeExpired(selectRuntime, updateStore),
+    onRuntimeExpired: () =>
+      handleRuntimeExpired(selectRuntime, updateStore, setKernelInitializing),
 
     /** Handler for set-runtime messages from local Jupyter server */
     onSetRuntime: (message: SetRuntimeMessage) =>

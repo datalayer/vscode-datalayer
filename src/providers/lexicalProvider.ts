@@ -522,24 +522,13 @@ export class LexicalProvider extends BaseDocumentProvider<LexicalDocument> {
           }
         }
       } else if (e.type === "llm-completion-request") {
-        console.log("[LexicalProvider] LLM completion request received", {
-          requestId: e.requestId,
-          prefixLength: e.prefix?.length,
-          suffixLength: e.suffix?.length,
-          language: e.language,
-        });
-
         // Handle LLM completion request from webview
         const completion = await this.getLLMCompletion(
           e.prefix,
           e.suffix,
           e.language,
+          e.contentType || "code", // Default to 'code' for backward compatibility
         );
-
-        console.log("[LexicalProvider] Sending LLM completion response", {
-          requestId: e.requestId,
-          completionLength: completion?.length,
-        });
 
         webviewPanel.webview.postMessage({
           type: "llm-completion-response",
@@ -636,7 +625,6 @@ export class LexicalProvider extends BaseDocumentProvider<LexicalDocument> {
             "#" + Math.floor(Math.random() * 16777215).toString(16);
 
           userInfo = { username, userColor };
-          console.log("[LexicalProvider] User info for comments:", userInfo);
         }
       } catch (error) {
         console.error("[LexicalProvider] Failed to get user info:", error);
@@ -663,12 +651,6 @@ export class LexicalProvider extends BaseDocumentProvider<LexicalDocument> {
         ? `${document.uri.toString()}::${collaborationConfig.documentId}`
         : document.uri.toString();
 
-      console.log(
-        `[LexicalProvider] Sending lexicalId to webview:`,
-        lexicalId,
-        `for document:`,
-        document.uri.toString(),
-      );
       webviewPanel.webview.postMessage({
         type: "update",
         content: contentArray,
@@ -789,8 +771,9 @@ export class LexicalProvider extends BaseDocumentProvider<LexicalDocument> {
 
         Note: 'wasm-unsafe-eval' is required for loro-crdt WASM CRDT library
         Note: 'unsafe-eval' is required for AJV (JSON schema validator used by Jupyter dependencies)
+        Note: sha256 hash allows specific inline script from ipywidgets manager library
         -->
-        <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src ${webview.cspSource} https: blob: data:; style-src ${webview.cspSource} 'unsafe-inline'; font-src ${webview.cspSource}; script-src 'nonce-${nonce}' 'wasm-unsafe-eval' 'unsafe-eval'; connect-src ${webview.cspSource} https: wss: ws: data:; worker-src ${webview.cspSource} blob:; frame-src https://www.youtube.com;">
+        <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src ${webview.cspSource} https: blob: data:; style-src ${webview.cspSource} 'unsafe-inline'; font-src ${webview.cspSource}; script-src 'nonce-${nonce}' 'wasm-unsafe-eval' 'unsafe-eval' 'sha256-QUWd+IhSNNnJ1kUF1ufqJr+KJPFFB3LireYMloM7v9U=' https://cdnjs.cloudflare.com; connect-src ${webview.cspSource} https: wss: ws: data:; worker-src ${webview.cspSource} blob:; frame-src https://www.youtube.com;">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Datalayer Lexical Editor</title>
         <script nonce="${nonce}">
@@ -986,6 +969,7 @@ export class LexicalProvider extends BaseDocumentProvider<LexicalDocument> {
     prefix: string,
     suffix: string,
     language: string,
+    contentType: "code" | "prose" = "code",
   ): Promise<string | null> {
     try {
       // Check if Language Model API is available (VS Code 1.90+)
@@ -1009,19 +993,23 @@ export class LexicalProvider extends BaseDocumentProvider<LexicalDocument> {
 
       const model = models[0];
 
-      // Build prompt
-      const prompt = `Complete the following ${language} code. Only return the completion, no explanations or markdown.
-
-\`\`\`${language}
-${prefix}<CURSOR>${suffix}
-\`\`\`
-
-Complete the code at <CURSOR>:`;
+      // Build prompt based on content type
+      const { getPromptForContentType } = await import("./completionPrompts");
+      const prompt = getPromptForContentType(contentType, {
+        language,
+        prefix,
+        suffix,
+      });
 
       // Send request to LLM
       const messages = [vscode.LanguageModelChatMessage.User(prompt)];
+      const justification =
+        contentType === "code"
+          ? "Code completion for Lexical Jupyter cell"
+          : "Writing assistance for Lexical document";
+
       const response = await model.sendRequest(messages, {
-        justification: "Code completion for Lexical Jupyter cell",
+        justification,
       });
 
       // Collect streamed response
@@ -1106,10 +1094,6 @@ Complete the code at <CURSOR>:`;
             `[LexicalProvider] Strategy "${result.strategyName}" succeeded but provided no runtime`,
           );
         }
-      } else {
-        console.log(
-          `[LexicalProvider] Auto-connect skipped or failed for ${documentUri.fsPath}`,
-        );
       }
     } catch (error) {
       console.error(

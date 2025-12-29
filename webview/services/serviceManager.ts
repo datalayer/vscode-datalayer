@@ -23,12 +23,6 @@ import { MessageHandler, type ExtensionMessage } from "./messageHandler";
 import { isLocalKernelUrl } from "../../src/constants/kernelConstants";
 
 /**
- * Enable verbose debug logging for WebSocket messages.
- * Set to true during development, false in production.
- */
-const DEBUG_WEBSOCKET = false;
-
-/**
  * Forward HTTP request through postMessage to the extension.
  *
  * @param request HTTP request
@@ -401,15 +395,9 @@ export class ProxiedWebSocket extends EventTarget {
     // before the async websocket-open message can arrive from the extension
     // We must do this synchronously because JupyterLab checks immediately in the same call stack
     if (isLocalKernelUrl(this.url)) {
-      console.log(
-        `[ProxiedWebSocket] Local kernel detected, SYNCHRONOUSLY opening: ${this.url}`,
-      );
       this._readyState = ProxiedWebSocket.OPEN;
       // Dispatch open event synchronously - JupyterLab is checking in the same call stack
       this.dispatchEvent(new Event("open"));
-      console.log(
-        `[ProxiedWebSocket] Dispatched SYNCHRONOUS 'open' event for local kernel, readyState=${this._readyState}`,
-      );
     }
   }
 
@@ -645,50 +633,13 @@ export class ProxiedWebSocket extends EventTarget {
             );
           }
           // MessageEvent constructor expects { data: ... } not the body directly
-          if (DEBUG_WEBSOCKET) {
-            console.log(
-              `[WebviewWebSocket] Dispatching message event for clientId=${this.clientId}:`,
-              typeof bodyData.data === "string" ? "JSON string" : "object",
-            );
-          }
-          if (DEBUG_WEBSOCKET && typeof bodyData.data === "string") {
-            try {
-              const parsed = JSON.parse(bodyData.data);
-              console.log(
-                `[WebviewWebSocket] Message type: ${parsed.header?.msg_type}, channel: ${parsed.channel}`,
-              );
-
-              // Extra logging for kernel_info_reply
-              if (parsed.header?.msg_type === "kernel_info_reply") {
-                console.log(`[WebviewWebSocket] kernel_info_reply details:`, {
-                  msg_id: parsed.header?.msg_id,
-                  parent_msg_id: parsed.parent_header?.msg_id,
-                  session: parsed.header?.session,
-                  status: parsed.content?.status,
-                  hasLanguageInfo: !!parsed.content?.language_info,
-                });
-              }
-            } catch (e) {
-              // Ignore parse errors
-            }
-          }
           this.dispatchEvent(
             new MessageEvent("message", { data: bodyData.data }),
           );
           break;
         case "websocket-open": {
-          if (DEBUG_WEBSOCKET) {
-            console.log(
-              `[WebviewWebSocket] Received websocket-open for clientId=${this.clientId}, url=${this.url}`,
-            );
-          }
           this._readyState = WebSocket.OPEN;
           this.dispatchEvent(new Event("open"));
-          if (DEBUG_WEBSOCKET) {
-            console.log(
-              `[WebviewWebSocket] Dispatched 'open' event, readyState=${this._readyState}`,
-            );
-          }
           break;
         }
         case "websocket-close":

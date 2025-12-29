@@ -27,16 +27,7 @@ export class WebviewRunner {
     private documentId: string | null = null,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     private executor: any = null,
-  ) {
-    console.log(
-      "[WebviewRunner] Created with documentId:",
-      documentId,
-      "operations:",
-      Object.keys(operations),
-      "executor:",
-      !!executor,
-    );
-  }
+  ) {}
 
   /**
    * Executes a tool operation by name.
@@ -59,18 +50,6 @@ export class WebviewRunner {
       throw new Error(`Unknown operation: ${operationName}`);
     }
 
-    console.log(
-      `[WebviewRunner] Executing operation: ${operationName}`,
-      args,
-      `format: ${format}`,
-    );
-    console.log(
-      `[WebviewRunner] this.documentId =`,
-      this.documentId,
-      `type:`,
-      typeof this.documentId,
-    );
-
     // Execute the operation directly in webview context
     // DefaultExecutor pattern: executor performs direct state manipulation
     // Include documentId in context for both lexical and notebook operations
@@ -81,29 +60,12 @@ export class WebviewRunner {
       documentId: this.documentId, // Universal document ID for both lexical and notebook operations
     } as any; // eslint-disable-line @typescript-eslint/no-explicit-any
 
-    console.log(
-      `[WebviewRunner] Executing with context:`,
-      JSON.stringify(context, null, 2),
-    );
-
     // Step 1: Execute operation (returns pure typed data)
     const result = await operation.execute(args, context);
-
-    console.log(
-      `[WebviewRunner] Operation completed: ${operationName}`,
-      result,
-    );
 
     // Step 2: Apply formatting based on context.format
     // This matches the OperationRunner pattern from core library
     const formattedResult = formatResponse(result, context.format);
-
-    console.log(
-      `[WebviewRunner] Formatted result (format=${context.format}):`,
-      typeof formattedResult === "string"
-        ? formattedResult.substring(0, 100) + "..."
-        : formattedResult,
-    );
 
     return formattedResult;
   }
@@ -157,13 +119,6 @@ export function createNotebookRunner(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   executor: any,
 ): WebviewRunner {
-  console.log(
-    "[createNotebookRunner] Creating runner with operations:",
-    Object.keys(notebookToolOperations),
-    "executor:",
-    !!executor,
-  );
-
   return new WebviewRunner(notebookToolOperations, notebookId, executor);
 }
 
@@ -196,13 +151,6 @@ export function createLexicalRunner(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   executor: any,
 ): WebviewRunner {
-  console.log(
-    "[createLexicalRunner] Creating runner with operations:",
-    Object.keys(lexicalToolOperations),
-    "executor:",
-    !!executor,
-  );
-
   return new WebviewRunner(lexicalToolOperations, lexicalId, executor);
 }
 
@@ -227,19 +175,18 @@ export function setupToolExecutionListener(
   runner: WebviewRunner,
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   vscodeAPI: { postMessage: (message: any) => void },
-  mutableServiceManager?: { updateToPyodide: (url?: string) => void },
+  mutableServiceManager?: { updateToPyodide: (url?: string) => Promise<void> },
 ): () => void {
   const messageListener = (event: MessageEvent) => {
     const message = event.data;
 
     // Handle switch-to-pyodide message
     if (message.type === "switch-to-pyodide") {
-      console.log("[ToolExecutionListener] Switching to Pyodide kernel");
       if (mutableServiceManager) {
-        mutableServiceManager.updateToPyodide();
-        console.log(
-          "[ToolExecutionListener] Pyodide service manager created, kernel will start on first execution",
-        );
+        // Start async operation without awaiting (fire-and-forget)
+        mutableServiceManager.updateToPyodide().catch((error: unknown) => {
+          console.error(`[runnerSetup] Failed to switch to Pyodide:`, error);
+        });
       }
       return;
     }
@@ -252,11 +199,6 @@ export function setupToolExecutionListener(
         args: unknown;
         format?: "json" | "toon"; // Format from VS Code configuration
       };
-
-      console.log(
-        `[ToolExecutionListener] Received tool-execution: ${operationName}`,
-        { requestId, args, format },
-      );
 
       // Check if operation is available
       if (!runner.hasOperation(operationName)) {
@@ -278,11 +220,6 @@ export function setupToolExecutionListener(
       runner
         .execute(operationName, args, format || "toon")
         .then((result) => {
-          console.log(
-            `[ToolExecutionListener] Tool execution success: ${operationName}`,
-            result,
-          );
-
           vscodeAPI.postMessage({
             type: "tool-execution-response",
             requestId,
@@ -306,15 +243,8 @@ export function setupToolExecutionListener(
 
   window.addEventListener("message", messageListener);
 
-  console.log(
-    "[ToolExecutionListener] Registered listener for tool-execution messages",
-  );
-
   // Return cleanup function
   return () => {
     window.removeEventListener("message", messageListener);
-    console.log(
-      "[ToolExecutionListener] Removed listener for tool-execution messages",
-    );
   };
 }

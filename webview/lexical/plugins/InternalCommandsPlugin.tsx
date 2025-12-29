@@ -50,32 +50,14 @@ export function InternalCommandsPlugin({
 
   // Set up tool execution listener using Runner pattern
   useEffect(() => {
-    console.log(
-      "[InternalCommandsPlugin] useEffect triggered with lexicalId:",
-      lexicalId,
-      "vscode:",
-      !!vscode,
-    );
-
     if (!vscode) {
-      console.warn(
-        "[InternalCommandsPlugin] No vscode API provided, skipping tool execution setup",
-      );
       return;
     }
 
     // Check if lexicalId is available
     if (!lexicalId) {
-      console.warn(
-        "[InternalCommandsPlugin] No lexicalId available yet, skipping tool execution setup",
-      );
       return;
     }
-
-    console.log(
-      "[InternalCommandsPlugin] Creating runner with lexicalId:",
-      lexicalId,
-    );
 
     // Create DefaultExecutor for direct state manipulation
     const executor = new LexicalDefaultExecutor(lexicalId, lexicalStoreState);
@@ -90,19 +72,12 @@ export function InternalCommandsPlugin({
     // Set up listener for tool-execution messages from extension
     const cleanup = setupToolExecutionListener(runner, vscode);
 
-    console.log(
-      "[InternalCommandsPlugin] Tool execution listener registered with Runner for lexicalId:",
-      lexicalId,
-    );
-
     return cleanup;
   }, [vscode, lexicalId, lexicalStoreState]); // Recreate runner when lexicalId or store changes
 
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
       const message = event.data;
-
-      console.log(`[InternalCommandsPlugin] Received message:`, message.type);
 
       switch (message.type) {
         case "lexical-get-blocks": {
@@ -140,15 +115,7 @@ export function InternalCommandsPlugin({
 
         case "lexical-insert-block": {
           // Insert a new block using the document controller
-          console.log(
-            `[InternalCommandsPlugin] Received lexical-insert-block message:`,
-            message,
-          );
           const { block, afterBlockId } = message.body;
-          console.log(`[InternalCommandsPlugin] Block data:`, {
-            block,
-            afterBlockId,
-          });
 
           if (!controllerRef.current) {
             console.error(
@@ -171,7 +138,6 @@ export function InternalCommandsPlugin({
           controllerRef.current
             .insertBlock(block as LexicalBlock, afterBlockId)
             .then((result: { success: boolean; error?: string }) => {
-              console.log(`[InternalCommandsPlugin] Insert result:`, result);
               if (message.requestId && vscode) {
                 vscode.postMessage({
                   type: "response",
@@ -224,10 +190,6 @@ export function InternalCommandsPlugin({
           controllerRef.current
             .insertBlocks(blocks, afterBlockId)
             .then((result: { success: boolean; error?: string }) => {
-              console.log(
-                `[InternalCommandsPlugin] Insert blocks result:`,
-                result,
-              );
               if (message.requestId && vscode) {
                 vscode.postMessage({
                   type: "response",
@@ -280,7 +242,6 @@ export function InternalCommandsPlugin({
           controllerRef.current
             .deleteBlock(blockId)
             .then((result: { success: boolean; error?: string }) => {
-              console.log(`[InternalCommandsPlugin] Delete result:`, result);
               if (message.requestId && vscode) {
                 vscode.postMessage({
                   type: "response",
@@ -333,7 +294,6 @@ export function InternalCommandsPlugin({
           controllerRef.current
             .updateBlock(blockId, block as LexicalBlock)
             .then((result: { success: boolean; error?: string }) => {
-              console.log(`[InternalCommandsPlugin] Update result:`, result);
               if (message.requestId && vscode) {
                 vscode.postMessage({
                   type: "response",
@@ -378,23 +338,13 @@ export function InternalCommandsPlugin({
 
         case "dispatch-lexical-command": {
           // Dispatch a Lexical editor command (e.g., INSERT_JUPYTER_INPUT_OUTPUT_COMMAND)
-          console.log(
-            `[InternalCommandsPlugin] Dispatching Lexical command: ${message.commandType}`,
-            message.payload,
-          );
 
           if (message.commandType === "INSERT_JUPYTER_INPUT_OUTPUT") {
             editor.dispatchCommand(
               INSERT_JUPYTER_INPUT_OUTPUT_COMMAND,
               message.payload,
             );
-            console.log(
-              `[InternalCommandsPlugin] ✓ Jupyter cell command dispatched`,
-            );
           } else {
-            console.warn(
-              `[InternalCommandsPlugin] Unknown command type: ${message.commandType}`,
-            );
           }
           break;
         }

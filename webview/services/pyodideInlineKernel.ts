@@ -163,11 +163,6 @@ export class PyodideInlineKernel implements Kernel.IKernelConnection {
       name: this.name,
     };
 
-    // FORCE VISIBLE DEBUG - Use console.error to ensure it shows
-    console.error(
-      `🔴🔴🔴 [KERNEL CONSTRUCTOR] PyodideInlineKernel created! ID: ${this.id} 🔴🔴🔴`,
-    );
-
     // Create worker from raw TypeScript code using Blob URL (bypasses CSP restrictions)
     // We import the worker file as a string and create a Blob from it
     const blob = new Blob([pyodideWorkerCode], {
@@ -277,23 +272,10 @@ export class PyodideInlineKernel implements Kernel.IKernelConnection {
           "[PyodideInlineKernel] Failed to fetch Pyodide script:",
           error,
         );
-        console.error(
-          "[PyodideInlineKernel] Attempted URL:",
-          `${pyodideBaseUrl}/pyodide.js`,
-        );
       });
   }
 
   private _handleWorkerMessage(msg: WorkerMessage): void {
-    // Log errors with full details
-    if (msg.type === "error") {
-      console.error("[PyodideInlineKernel] Error details:", {
-        ename: msg.ename,
-        evalue: msg.evalue,
-        traceback: msg.traceback,
-      });
-    }
-
     // IMPORTANT: Get the correct parent header for this execution
     // Each message has an 'id' that corresponds to the execution msgId
     // WorkerReadyMessage and WorkerFetchRequestMessage don't have execution-related IDs
@@ -303,13 +285,6 @@ export class PyodideInlineKernel implements Kernel.IKernelConnection {
       msgId !== undefined
         ? this._executionHeaders.get(msgId) || this._currentExecuteHeader || {}
         : this._currentExecuteHeader || {};
-
-    // Debug logging for message routing
-    if (msg.type === "stream" || msg.type === "execute_result") {
-      console.log(
-        `[PyodideInlineKernel] <<<<<< RECEIVED FROM WORKER: type=${msg.type}, msg.id="${msg.id}" (type: ${typeof msg.id}), parentHeader.msg_id="${(parentHeader as any).msg_id}" >>>>>>`,
-      );
-    }
 
     if (msg.type === "status") {
       const status = msg.status as Kernel.Status;
@@ -395,15 +370,6 @@ export class PyodideInlineKernel implements Kernel.IKernelConnection {
       this._iopubMessage.emit(createMessageArgs(iopubMsg));
       this._anyMessage.emit(createMessageArgs(iopubMsg));
     } else if (msg.type === "execute_result") {
-      const resultKeys =
-        msg.result && typeof msg.result === "object"
-          ? Object.keys(msg.result)
-          : [];
-      console.error(
-        "🔵🔵🔵 [PyodideInlineKernel] execute_result! Result keys:",
-        resultKeys.join(", "),
-      );
-
       // Get the execution count for this specific execution
       const executionCount =
         msg.id !== undefined
@@ -430,28 +396,14 @@ export class PyodideInlineKernel implements Kernel.IKernelConnection {
 
         if (hasMimeType) {
           // It's already a MIME bundle
-          console.error(
-            "✅✅✅ MIME bundle in execute_result! Keys:",
-            keys.join(", "),
-          );
           data = msg.result as Record<string, any>;
 
           // Filter out text/html if Plotly JSON exists (same as display_data)
           if (data["application/vnd.plotly.v1+json"]) {
-            console.error(
-              "🎯🎯🎯 PLOTLY JSON in execute_result - REMOVING text/html!",
-            );
             delete data["text/html"];
-            console.error(
-              "🎯🎯🎯 After filtering, keys:",
-              Object.keys(data).join(", "),
-            );
           }
         } else {
           // Regular object, stringify it
-          console.error(
-            "⚠️⚠️⚠️ Non-MIME object in execute_result, stringifying",
-          );
           data = {
             "text/plain": String(msg.result),
           };
@@ -485,12 +437,6 @@ export class PyodideInlineKernel implements Kernel.IKernelConnection {
       this._anyMessage.emit(createMessageArgs(iopubMsg));
     } else if (msg.type === "display_data") {
       // Emit display_data (e.g., matplotlib figures, Plotly) as iopub message
-      const dataKeys = msg.data ? Object.keys(msg.data) : [];
-      console.error(
-        "🎨 [PyodideInlineKernel] display_data received! Keys:",
-        dataKeys.join(", "),
-      );
-
       const iopubMsg = {
         header: {
           msg_id: `display_data_${Date.now()}`,
@@ -511,10 +457,6 @@ export class PyodideInlineKernel implements Kernel.IKernelConnection {
       this._iopubMessage.emit(createMessageArgs(iopubMsg));
       this._anyMessage.emit(createMessageArgs(iopubMsg));
     } else if (msg.type === "error") {
-      console.error(
-        `🔴🔴🔴 [PyodideInlineKernel] ERROR received! ename="${msg.ename}", evalue="${msg.evalue}" 🔴🔴🔴`,
-      );
-
       // Emit error as iopub message
       const iopubMsg = {
         header: {
@@ -536,9 +478,6 @@ export class PyodideInlineKernel implements Kernel.IKernelConnection {
       this._iopubMessage.emit(createMessageArgs(iopubMsg));
       this._anyMessage.emit(createMessageArgs(iopubMsg));
     } else if (msg.type === "ready") {
-      console.log(
-        "[PyodideInlineKernel] Worker is ready! Setting _isReady = true",
-      );
       this._isReady = true;
       this._status = "idle";
       this._connectionStatus = "connected";
@@ -661,23 +600,14 @@ export class PyodideInlineKernel implements Kernel.IKernelConnection {
   private async _processExecutionQueue(): Promise<void> {
     // If already executing, return - the current loop will pick up new items
     if (this._isExecuting) {
-      console.log(
-        `[PyodideInlineKernel] _processExecutionQueue: already executing, queue length=${this._executionQueue.length}`,
-      );
       return;
     }
 
     // If queue is empty, nothing to do
     if (this._executionQueue.length === 0) {
-      console.log(
-        `[PyodideInlineKernel] _processExecutionQueue: queue is empty`,
-      );
       return;
     }
 
-    console.log(
-      `[PyodideInlineKernel] ========== STARTING QUEUE PROCESSING: ${this._executionQueue.length} items ==========`,
-    );
     this._isExecuting = true;
 
     // Process ALL queued items - while loop will keep going as new items are added
@@ -688,10 +618,6 @@ export class PyodideInlineKernel implements Kernel.IKernelConnection {
       }
 
       const { msgId, code, executeRequestHeader } = item;
-
-      console.log(
-        `[PyodideInlineKernel] ========== DEQUEUED CELL msgId=${msgId}, parent_msg_id="${executeRequestHeader.msg_id}", queue remaining: ${this._executionQueue.length} ==========`,
-      );
 
       // Set as current execution
       this._currentExecuteHeader = executeRequestHeader;
@@ -735,9 +661,6 @@ export class PyodideInlineKernel implements Kernel.IKernelConnection {
           this._iopubMessage.connect(statusHandler);
 
           // Send execute message to worker
-          console.log(
-            `[PyodideInlineKernel] >>>>>> POSTING TO WORKER: id=${msgId}, parent_msg_id="${executeRequestHeader.msg_id}" <<<<<<`,
-          );
           this._worker.postMessage({
             id: msgId,
             type: "execute",
@@ -745,12 +668,9 @@ export class PyodideInlineKernel implements Kernel.IKernelConnection {
             parent_msg_id: executeRequestHeader.msg_id, // String msg_id for Python
           });
         });
-        console.log(
-          `[PyodideInlineKernel] ========== CELL ${msgId} COMPLETED SUCCESSFULLY ==========`,
-        );
       } catch (error) {
         console.error(
-          `[PyodideInlineKernel] ========== CELL ${msgId} FAILED, STOPPING QUEUE ==========`,
+          `[PyodideInlineKernel] Cell ${msgId} failed, stopping queue:`,
           error,
         );
 
@@ -765,21 +685,11 @@ export class PyodideInlineKernel implements Kernel.IKernelConnection {
     }
 
     this._isExecuting = false;
-    console.log(
-      "[PyodideInlineKernel] ========== QUEUE PROCESSING COMPLETE ==========",
-    );
   }
 
   requestExecute(content: any, _disposeOnDone?: boolean, _metadata?: any): any {
     const msgId = this._messageId++;
     const startTime = new Date().toISOString();
-
-    console.error(
-      `🔴🔴🔴 [KERNEL EXECUTE] requestExecute called! msgId=${msgId}, queue length=${this._executionQueue.length} 🔴🔴🔴`,
-    );
-    console.log(
-      `[PyodideInlineKernel ${this.id}] ========== requestExecute called: msgId=${msgId} ==========`,
-    );
 
     // CRITICAL: Check if kernel is disposed before executing
     if (this.isDisposed) {
@@ -887,9 +797,6 @@ export class PyodideInlineKernel implements Kernel.IKernelConnection {
     this._executionHeaders.set(msgId, executeRequestHeader);
 
     // Add to execution queue (JupyterLite pattern - ensures sequential execution)
-    console.log(
-      `[PyodideInlineKernel] Adding cell ${msgId} to queue (current queue size: ${this._executionQueue.length})`,
-    );
     this._executionQueue.push({
       msgId,
       code: content.code,

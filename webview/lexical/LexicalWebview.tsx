@@ -18,6 +18,7 @@ import { LexicalEditor } from "./LexicalEditor";
 import { vsCodeAPI } from "../services/messageHandler";
 import type { RuntimeJSON } from "@datalayer/core/lib/client";
 import { useRuntimeManager } from "../hooks/useRuntimeManager";
+import type { MutableServiceManager } from "../services/mutableServiceManager";
 import {
   createLexicalStore,
   type CollaborationConfig,
@@ -72,10 +73,12 @@ function LexicalWebviewInner({
   selectedRuntime,
   onRuntimeSelected,
   serviceManager,
+  mutableServiceManager,
 }: {
   selectedRuntime?: RuntimeJSON;
-  onRuntimeSelected: (runtime: RuntimeJSON | undefined) => void;
+  onRuntimeSelected: (runtime: RuntimeJSON | undefined) => Promise<void>;
   serviceManager: ServiceManager.IManager;
+  mutableServiceManager: MutableServiceManager | null;
 }) {
   // Create per-instance store - prevents global state sharing
   const [store] = useState(() => createLexicalStore());
@@ -90,8 +93,14 @@ function LexicalWebviewInner({
   // Create runtime message handlers using shared utilities
   const runtimeHandlers = React.useMemo(
     () =>
-      createRuntimeMessageHandlers(onRuntimeSelected, setKernelInitializing),
-    [onRuntimeSelected],
+      createRuntimeMessageHandlers(
+        onRuntimeSelected,
+        setKernelInitializing,
+        undefined, // updateStore not needed for Lexical
+        mutableServiceManager || undefined,
+        () => selectedRuntime, // getCurrentRuntime callback
+      ),
+    [onRuntimeSelected, mutableServiceManager, selectedRuntime],
   );
 
   useEffect(() => {
@@ -130,8 +139,6 @@ function LexicalWebviewInner({
           // Store lexicalId for tool execution context
           if (message.lexicalId) {
             store.getState().setLexicalId(message.lexicalId);
-          } else {
-            console.warn("[LexicalWebview] No lexicalId in message");
           }
 
           // Handle content (even if empty)
@@ -170,13 +177,8 @@ function LexicalWebviewInner({
         case "user-info-update": {
           // Handle real-time userInfo updates (login/logout events)
           if (message.userInfo) {
-            console.log(
-              "[LexicalWebview] Received userInfo update:",
-              message.userInfo,
-            );
             store.getState().setUserInfo(message.userInfo);
           } else {
-            console.log("[LexicalWebview] User logged out, clearing userInfo");
             store.getState().setUserInfo(null);
           }
           break;
@@ -199,10 +201,7 @@ function LexicalWebviewInner({
             const parsed = JSON.parse(currentContent);
             formattedContent = JSON.stringify(parsed, null, 2);
           } catch (error) {
-            console.warn(
-              "[LexicalWebview] Failed to format JSON, using raw content:",
-              error,
-            );
+            // Use raw content if JSON parsing fails
           }
 
           const encoder = new TextEncoder();
@@ -228,6 +227,11 @@ function LexicalWebviewInner({
         case "kernel-terminated":
         case "runtime-terminated":
           runtimeHandlers.onRuntimeTerminated();
+          break;
+
+        case "runtime-pre-termination":
+          // 5 seconds before termination - dispose while server is still alive
+          runtimeHandlers.onRuntimePreTermination();
           break;
 
         case "runtime-expired":
@@ -259,12 +263,9 @@ function LexicalWebviewInner({
       return undefined;
     }
 
-    console.log("[LexicalWebview] Monitoring kernel readiness...");
-
     // Get lexicalId from store
     const lexicalId = store.getState().lexicalId;
     if (!lexicalId) {
-      console.log("[LexicalWebview] No lexicalId yet, waiting...");
       return undefined;
     }
 
@@ -278,14 +279,12 @@ function LexicalWebviewInner({
       const lexical = lexicalStore.getState().lexicals.get(lexicalId);
       const adapter = lexical?.adapter;
       if (!adapter) {
-        console.log("[LexicalWebview] No adapter yet, waiting...");
         return;
       }
 
       // Access serviceManager from adapter (now exposed as public getter)
       const serviceManager = (adapter as any).serviceManager;
       if (!serviceManager) {
-        console.log("[LexicalWebview] No serviceManager yet, waiting...");
         return;
       }
 
@@ -297,7 +296,6 @@ function LexicalWebviewInner({
         ) as any[];
 
         if (runningKernels.length === 0) {
-          console.log("[LexicalWebview] No running kernels yet, waiting...");
           return;
         }
 
@@ -321,24 +319,14 @@ function LexicalWebviewInner({
             );
           }
 
-          console.log("[LexicalWebview] Subscribing to kernel status changes");
           currentKernelConnection = kernelConnection;
 
           // Function to check if kernel is ready
           const checkKernelReady = () => {
             const kernelStatus = kernelConnection.status;
 
-            console.log("[LexicalWebview] Checking kernel ready:", {
-              kernelStatus,
-              kernelInitializing,
-            });
-
             // Kernel is ready when status is 'idle' AND we were in initializing state
             if (kernelStatus === "idle" && kernelInitializing) {
-              console.log(
-                "[LexicalWebview] Kernel is ready! Sending kernel-ready message",
-              );
-
               // Send kernel-ready message to extension
               vscode.postMessage({
                 type: "kernel-ready",
@@ -352,9 +340,6 @@ function LexicalWebviewInner({
 
           // Subscribe to kernel status changes
           currentKernelStatusHandler = () => {
-            console.log(
-              "[LexicalWebview] Kernel status changed, checking kernel ready...",
-            );
             checkKernelReady();
           };
           kernelConnection.statusChanged?.connect(currentKernelStatusHandler);
@@ -363,7 +348,7 @@ function LexicalWebviewInner({
           checkKernelReady();
         }
       } catch (error) {
-        console.log("[LexicalWebview] Error connecting to kernel:", error);
+        console.error("[LexicalWebview] Error connecting to kernel:", error);
       }
     };
 
@@ -506,8 +491,12 @@ function LexicalWebviewInner({
  */
 function LexicalWebview() {
   // Use the runtime manager hook - no forced remounts!
-  const { selectedRuntime, serviceManager, selectRuntime } =
-    useRuntimeManager();
+  const {
+    selectedRuntime,
+    serviceManager,
+    selectRuntime,
+    mutableServiceManager,
+  } = useRuntimeManager();
   const [isReady, setIsReady] = useState(false);
 
   // NOTE: We do NOT call setJupyterServerUrl/setJupyterServerToken here!
@@ -570,6 +559,7 @@ function LexicalWebview() {
       selectedRuntime={selectedRuntime}
       onRuntimeSelected={selectRuntime}
       serviceManager={serviceManager}
+      mutableServiceManager={mutableServiceManager}
     />
   );
 }

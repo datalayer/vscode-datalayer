@@ -115,7 +115,6 @@ export async function initializeUI(
       // When a text editor becomes active (not our custom webview editors),
       // clear the outline since regular files don't have outline support
       if (editor) {
-        console.log("[UISetup] Active text editor changed, clearing outline");
         outlineTreeProvider.setActiveDocument(undefined);
       }
     }),
@@ -129,7 +128,6 @@ export async function initializeUI(
         .find((tab) => tab.isActive);
 
       if (!activeTab) {
-        console.log("[UISetup] No active tab, clearing outline");
         outlineTreeProvider.setActiveDocument(undefined);
         return;
       }
@@ -139,9 +137,6 @@ export async function initializeUI(
         !(activeTab.input instanceof vscode.TabInputCustom) &&
         !(activeTab.input instanceof vscode.TabInputNotebook)
       ) {
-        console.log(
-          "[UISetup] Active tab is not custom editor, clearing outline",
-        );
         outlineTreeProvider.setActiveDocument(undefined);
       }
     }),

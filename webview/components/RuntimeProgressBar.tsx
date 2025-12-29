@@ -87,6 +87,11 @@ export function RuntimeProgressBar({
     setPercentage(Math.max(0, Math.min(100, initialPercentage)));
 
     let currentSeconds = initialSeconds;
+    let preTerminationSent = false;
+
+    // CRITICAL: Pre-emptive cleanup threshold (seconds before termination)
+    // Dispose connections BEFORE server terminates to avoid CORS/502 errors
+    const PRE_TERMINATION_THRESHOLD = 5;
 
     const interval = setInterval(() => {
       currentSeconds = Math.max(0, currentSeconds - 1);
@@ -96,6 +101,29 @@ export function RuntimeProgressBar({
       const pct = totalSeconds > 0 ? (elapsed / totalSeconds) * 100 : 100;
 
       setPercentage(Math.max(0, Math.min(100, pct)));
+
+      // CRITICAL: Pre-emptive cleanup BEFORE runtime terminates
+      // When we're N seconds from termination, dispose connections NOW while server is still alive
+      // This prevents CORS/502 errors from auto-reconnection after server dies
+      if (currentSeconds <= PRE_TERMINATION_THRESHOLD && !preTerminationSent) {
+        preTerminationSent = true;
+
+        console.log(
+          `[RuntimeProgressBar] Runtime expiring in ${currentSeconds}s - disposing connections pre-emptively`,
+        );
+
+        // Send pre-termination message to trigger graceful shutdown
+        if (messageHandler) {
+          const preTerminationMessage = {
+            type: "runtime-pre-termination",
+            body: {
+              runtime: runtime,
+              secondsRemaining: currentSeconds,
+            },
+          };
+          messageHandler.send(preTerminationMessage);
+        }
+      }
 
       if (currentSeconds === 0 && !isExpired) {
         setIsExpired(true);

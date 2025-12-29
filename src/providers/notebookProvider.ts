@@ -54,11 +54,17 @@ export class NotebookProvider extends BaseDocumentProvider<NotebookDocument> {
       vscode.commands.registerCommand(
         "datalayer.internal.document.sendToWebview",
         async (uriString: string, message: unknown) => {
+          console.log(
+            `[NotebookProvider] sendToWebview command received: uri=${uriString}, message type=${(message as { type?: string })?.type}`,
+          );
           const uri = vscode.Uri.parse(uriString);
 
           // Try notebook webviews first
-          const webviewPanels = provider.webviews.get(uri);
-          if (webviewPanels) {
+          const webviewPanels = Array.from(provider.webviews.get(uri));
+          if (webviewPanels.length > 0) {
+            console.log(
+              `[NotebookProvider] Found ${webviewPanels.length} notebook webview(s), posting message`,
+            );
             for (const panel of webviewPanels) {
               await panel.webview.postMessage(message);
             }
@@ -66,9 +72,15 @@ export class NotebookProvider extends BaseDocumentProvider<NotebookDocument> {
           }
 
           // Try Lexical webviews
+          console.log(
+            `[NotebookProvider] No notebook webviews found, trying LexicalProvider`,
+          );
           const { LexicalProvider } = await import("./lexicalProvider");
           const lexicalProvider = LexicalProvider.getInstance();
           if (lexicalProvider) {
+            console.log(
+              `[NotebookProvider] LexicalProvider instance found, calling sendToWebview`,
+            );
             await lexicalProvider.sendToWebview(uri, message);
           } else {
             console.warn(
@@ -429,24 +441,12 @@ export class NotebookProvider extends BaseDocumentProvider<NotebookDocument> {
           }
         }
       } else if (e.type === "llm-completion-request") {
-        console.log("[NotebookProvider] LLM completion request received", {
-          requestId: e.requestId,
-          prefixLength: e.prefix?.length,
-          suffixLength: e.suffix?.length,
-          language: e.language,
-        });
-
         // Handle LLM completion request from webview
         const completion = await this.getLLMCompletion(
           e.prefix,
           e.suffix,
           e.language,
         );
-
-        console.log("[NotebookProvider] Sending LLM completion response", {
-          requestId: e.requestId,
-          completionLength: completion?.length,
-        });
 
         webviewPanel.webview.postMessage({
           type: "llm-completion-response",
@@ -867,10 +867,6 @@ Complete the code at <CURSOR>:`;
       );
 
       if (result) {
-        console.log(
-          `[NotebookProvider] Auto-connect successful using "${result.strategyName}" for ${documentUri.fsPath}`,
-        );
-
         // Connect the webview to the runtime via kernel bridge
         if (result.strategyName === "Pyodide") {
           // Use Pyodide-specific connection method
@@ -883,21 +879,9 @@ Complete the code at <CURSOR>:`;
             documentUri,
             result.runtime,
           );
-        } else {
-          console.warn(
-            `[NotebookProvider] Strategy "${result.strategyName}" succeeded but provided no runtime`,
-          );
         }
-      } else {
-        console.log(
-          `[NotebookProvider] Auto-connect skipped or failed for ${documentUri.fsPath}`,
-        );
       }
     } catch (error) {
-      console.error(
-        `[NotebookProvider] Auto-connect error for ${documentUri.fsPath}:`,
-        error,
-      );
       // Don't show error to user - auto-connect is optional
     }
   }

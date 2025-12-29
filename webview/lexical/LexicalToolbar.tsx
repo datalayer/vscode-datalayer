@@ -325,23 +325,7 @@ export function LexicalToolbar({
     return undefined;
   }, [lexical, selectedRuntime]);
 
-  // Add pulse animation for collaborative indicator
-  React.useEffect(() => {
-    if (showCollaborativeLabel) {
-      const style = document.createElement("style");
-      style.textContent = `
-        @keyframes pulse {
-          0%, 100% { opacity: 1; transform: scale(1); }
-          50% { opacity: 0.7; transform: scale(1.1); }
-        }
-      `;
-      document.head.appendChild(style);
-      return () => {
-        document.head.removeChild(style);
-      };
-    }
-    return undefined;
-  }, [showCollaborativeLabel]);
+  // Pulse animation is defined in global CSS, no need to inject dynamically
 
   const updateToolbar = useCallback(() => {
     const selection = $getSelection();

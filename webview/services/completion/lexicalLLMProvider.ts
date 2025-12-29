@@ -49,6 +49,8 @@ interface CompletionRequest {
   offset: number;
   /** Programming language (e.g., 'python') */
   language?: string;
+  /** Content type ('code' or 'prose') */
+  contentType?: "code" | "prose";
 }
 
 /**
@@ -122,9 +124,15 @@ export class LexicalVSCodeLLMProvider implements IInlineCompletionProvider {
         context.before || request.text.substring(0, request.offset);
       const suffix = context.after || request.text.substring(request.offset);
       const language = request.language || "python";
+      const contentType = request.contentType || "code";
 
       // Call VS Code Language Model API via message passing
-      const completion = await this.getLLMCompletion(prefix, suffix, language);
+      const completion = await this.getLLMCompletion(
+        prefix,
+        suffix,
+        language,
+        contentType,
+      );
 
       if (!completion) {
         return { items: [] };
@@ -172,9 +180,10 @@ export class LexicalVSCodeLLMProvider implements IInlineCompletionProvider {
    * Requests completion from extension host via message passing.
    * Implements request/response pattern with timeout protection.
    *
-   * @param prefix - Code before cursor
-   * @param suffix - Code after cursor
+   * @param prefix - Code/text before cursor
+   * @param suffix - Code/text after cursor
    * @param language - Programming language identifier
+   * @param contentType - Content type ('code' or 'prose')
    * @returns Completion text or null if timeout/error
    *
    * @remarks
@@ -185,6 +194,7 @@ export class LexicalVSCodeLLMProvider implements IInlineCompletionProvider {
     prefix: string,
     suffix: string,
     language: string,
+    contentType: "code" | "prose" = "code",
   ): Promise<string | null> {
     return new Promise((resolve) => {
       // Generate request ID for matching response
@@ -211,6 +221,7 @@ export class LexicalVSCodeLLMProvider implements IInlineCompletionProvider {
         prefix,
         suffix,
         language,
+        contentType,
       });
 
       // Timeout after 15 seconds
