@@ -1430,3 +1430,160 @@ input[type="color"]:disabled {
     transform: scale(1.1);
   }
 }
+
+/* ========================================
+   Kernel Action Menu (Three-Dot Menu) - VS Code Theme
+   ======================================== */
+
+/* IconButton (kebab menu) - remove GitHub Primer styling and use VS Code colors */
+button[aria-labelledby][class*="IconButton"],
+button[class*="IconButton"][aria-labelledby] {
+  background-color: transparent !important;
+  color: var(--vscode-icon-foreground) !important;
+  border: none !important;
+  padding: 4px !important;
+  border-radius: 4px !important;
+  cursor: pointer !important;
+  transition: background-color 0.1s ease !important;
+}
+
+button[aria-labelledby][class*="IconButton"]:hover,
+button[class*="IconButton"][aria-labelledby]:hover {
+  background-color: var(--vscode-toolbar-hoverBackground) !important;
+}
+
+button[aria-labelledby][class*="IconButton"]:active,
+button[class*="IconButton"][aria-labelledby]:active {
+  background-color: var(--vscode-toolbar-activeBackground) !important;
+}
+
+/* ActionMenu overlay container - NUCLEAR selectors to catch portal anywhere */
+div[class*="Overlay"],
+div[class*="overlay"],
+[role="menu"],
+[data-portal-root] > div,
+body > div[class*="Overlay"],
+#root ~ div[class*="Overlay"] {
+  background-color: var(--vscode-menu-background) !important;
+  border: 1px solid var(--vscode-menu-border) !important;
+  border-radius: 4px !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4) !important;
+  padding: 4px !important;
+}
+
+/* ActionList container - target ALL ul elements in overlays */
+div[class*="Overlay"] ul,
+div[class*="overlay"] ul,
+[role="menu"] ul,
+ul[class*="ActionList"] {
+  list-style: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  background-color: transparent !important;
+}
+
+/* ActionList items - NUCLEAR specificity */
+div[class*="Overlay"] li,
+div[class*="overlay"] li,
+[role="menu"] li,
+li[class*="ActionList"],
+li[class*="Item"] {
+  padding: 6px 12px !important;
+  cursor: pointer !important;
+  border-radius: 3px !important;
+  margin: 2px 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  color: var(--vscode-menu-foreground) !important;
+  background-color: transparent !important;
+  font-family: var(--vscode-font-family) !important;
+  font-size: 13px !important;
+  transition: background-color 0.1s ease !important;
+  white-space: nowrap !important;
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+/* ActionList item hover - NUCLEAR specificity */
+div[class*="Overlay"] li:hover,
+div[class*="overlay"] li:hover,
+[role="menu"] li:hover,
+li[class*="ActionList"]:hover,
+li[class*="Item"]:hover {
+  background-color: var(--vscode-menu-selectionBackground) !important;
+  color: var(--vscode-menu-selectionForeground) !important;
+}
+
+/* ActionList item danger variant (for "Clear outputs") */
+div[class*="Overlay"] li[data-variant="danger"],
+li[class*="ActionList"][data-variant="danger"],
+li[class*="Item"][data-variant="danger"] {
+  color: var(--vscode-errorForeground) !important;
+}
+
+div[class*="Overlay"] li[data-variant="danger"]:hover,
+li[class*="ActionList"][data-variant="danger"]:hover,
+li[class*="Item"][data-variant="danger"]:hover {
+  background-color: var(--vscode-inputValidation-errorBackground) !important;
+  color: var(--vscode-errorForeground) !important;
+}
+
+/* ActionList leading visual (icons) - target all SVGs in menu */
+div[class*="Overlay"] svg,
+div[class*="overlay"] svg,
+[role="menu"] svg,
+span[class*="LeadingVisual"],
+[class*="ActionList"] svg {
+  width: 16px !important;
+  height: 16px !important;
+  color: currentColor !important;
+  flex-shrink: 0 !important;
+}
+
+/* CRITICAL: Force text visibility in menu items - target ALL text-containing elements */
+div[class*="Overlay"] li *,
+div[class*="overlay"] li *,
+[role="menu"] li *,
+li[class*="ActionList"] *,
+li[class*="Item"] * {
+  color: inherit !important;
+}
+
+/* Ensure text content specifically is visible */
+div[class*="Overlay"] li span,
+div[class*="overlay"] li span,
+[role="menu"] li span,
+li[class*="ActionList"] span:not([class*="LeadingVisual"]),
+li[class*="Item"] span:not([class*="LeadingVisual"]) {
+  color: var(--vscode-menu-foreground) !important;
+}
+
+/* Ensure hovered text is visible */
+div[class*="Overlay"] li:hover span,
+div[class*="overlay"] li:hover span,
+[role="menu"] li:hover span,
+li[class*="ActionList"]:hover span:not([class*="LeadingVisual"]),
+li[class*="Item"]:hover span:not([class*="LeadingVisual"]) {
+  color: var(--vscode-menu-selectionForeground) !important;
+}
+
+/* Remove ALL Primer Box backgrounds ANYWHERE */
+div[class*="Overlay"] div[class*="Box"],
+div[class*="overlay"] div[class*="Box"],
+[role="menu"] div[class*="Box"],
+div[class*="BaseStyles"] {
+  background-color: transparent !important;
+}
+
+/* Remove focus rings from menu items */
+div[class*="Overlay"] li:focus,
+div[class*="Overlay"] li:focus-visible,
+li[class*="ActionList"]:focus,
+li[class*="ActionList"]:focus-visible,
+button[class*="IconButton"]:focus,
+button[class*="IconButton"]:focus-visible {
+  outline: none !important;
+  box-shadow: none !important;
+}

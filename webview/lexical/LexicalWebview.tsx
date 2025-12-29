@@ -18,6 +18,7 @@ import { LexicalEditor } from "./LexicalEditor";
 import { vsCodeAPI } from "../services/messageHandler";
 import type { RuntimeJSON } from "@datalayer/core/lib/client";
 import { useRuntimeManager } from "../hooks/useRuntimeManager";
+import type { MutableServiceManager } from "../services/mutableServiceManager";
 import {
   createLexicalStore,
   type CollaborationConfig,
@@ -72,10 +73,12 @@ function LexicalWebviewInner({
   selectedRuntime,
   onRuntimeSelected,
   serviceManager,
+  mutableServiceManager,
 }: {
   selectedRuntime?: RuntimeJSON;
-  onRuntimeSelected: (runtime: RuntimeJSON | undefined) => void;
+  onRuntimeSelected: (runtime: RuntimeJSON | undefined) => Promise<void>;
   serviceManager: ServiceManager.IManager;
+  mutableServiceManager: MutableServiceManager | null;
 }) {
   // Create per-instance store - prevents global state sharing
   const [store] = useState(() => createLexicalStore());
@@ -90,8 +93,14 @@ function LexicalWebviewInner({
   // Create runtime message handlers using shared utilities
   const runtimeHandlers = React.useMemo(
     () =>
-      createRuntimeMessageHandlers(onRuntimeSelected, setKernelInitializing),
-    [onRuntimeSelected],
+      createRuntimeMessageHandlers(
+        onRuntimeSelected,
+        setKernelInitializing,
+        undefined, // updateStore not needed for Lexical
+        mutableServiceManager || undefined,
+        () => selectedRuntime, // getCurrentRuntime callback
+      ),
+    [onRuntimeSelected, mutableServiceManager, selectedRuntime],
   );
 
   useEffect(() => {
@@ -218,6 +227,11 @@ function LexicalWebviewInner({
         case "kernel-terminated":
         case "runtime-terminated":
           runtimeHandlers.onRuntimeTerminated();
+          break;
+
+        case "runtime-pre-termination":
+          // 5 seconds before termination - dispose while server is still alive
+          runtimeHandlers.onRuntimePreTermination();
           break;
 
         case "runtime-expired":
@@ -477,8 +491,12 @@ function LexicalWebviewInner({
  */
 function LexicalWebview() {
   // Use the runtime manager hook - no forced remounts!
-  const { selectedRuntime, serviceManager, selectRuntime } =
-    useRuntimeManager();
+  const {
+    selectedRuntime,
+    serviceManager,
+    selectRuntime,
+    mutableServiceManager,
+  } = useRuntimeManager();
   const [isReady, setIsReady] = useState(false);
 
   // NOTE: We do NOT call setJupyterServerUrl/setJupyterServerToken here!
@@ -541,6 +559,7 @@ function LexicalWebview() {
       selectedRuntime={selectedRuntime}
       onRuntimeSelected={selectRuntime}
       serviceManager={serviceManager}
+      mutableServiceManager={mutableServiceManager}
     />
   );
 }

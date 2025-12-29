@@ -54,11 +54,17 @@ export class NotebookProvider extends BaseDocumentProvider<NotebookDocument> {
       vscode.commands.registerCommand(
         "datalayer.internal.document.sendToWebview",
         async (uriString: string, message: unknown) => {
+          console.log(
+            `[NotebookProvider] sendToWebview command received: uri=${uriString}, message type=${(message as { type?: string })?.type}`,
+          );
           const uri = vscode.Uri.parse(uriString);
 
           // Try notebook webviews first
-          const webviewPanels = provider.webviews.get(uri);
-          if (webviewPanels) {
+          const webviewPanels = Array.from(provider.webviews.get(uri));
+          if (webviewPanels.length > 0) {
+            console.log(
+              `[NotebookProvider] Found ${webviewPanels.length} notebook webview(s), posting message`,
+            );
             for (const panel of webviewPanels) {
               await panel.webview.postMessage(message);
             }
@@ -66,9 +72,15 @@ export class NotebookProvider extends BaseDocumentProvider<NotebookDocument> {
           }
 
           // Try Lexical webviews
+          console.log(
+            `[NotebookProvider] No notebook webviews found, trying LexicalProvider`,
+          );
           const { LexicalProvider } = await import("./lexicalProvider");
           const lexicalProvider = LexicalProvider.getInstance();
           if (lexicalProvider) {
+            console.log(
+              `[NotebookProvider] LexicalProvider instance found, calling sendToWebview`,
+            );
             await lexicalProvider.sendToWebview(uri, message);
           } else {
             console.warn(

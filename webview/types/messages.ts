@@ -109,6 +109,11 @@ export interface RuntimeTerminatedMessage {
 }
 
 /** Runtime has expired */
+export interface RuntimePreTerminationMessage {
+  /** Message type discriminator */
+  type: "runtime-pre-termination";
+}
+
 export interface RuntimeExpiredMessage {
   /** Message type discriminator */
   type: "runtime-expired";
@@ -337,6 +342,7 @@ export type ExtensionToWebviewMessage =
   | KernelStartingMessage
   | KernelTerminatedMessage
   | RuntimeTerminatedMessage
+  | RuntimePreTerminationMessage
   | SetRuntimeMessage
   | GetFileDataRequestMessage
   | SavedMessage

@@ -180,9 +180,13 @@ function NotebookEditorCore({
       createRuntimeMessageHandlers(
         selectRuntime,
         setKernelInitializing,
-        (runtime) => store.getState().setRuntime(runtime),
+        async (runtime) => {
+          store.getState().setRuntime(runtime);
+        },
+        mutableServiceManager || undefined,
+        () => selectedRuntime, // getCurrentRuntime callback
       ),
-    [selectRuntime, store],
+    [selectRuntime, store, mutableServiceManager, selectedRuntime],
   );
 
   // Handle messages from the extension
@@ -277,6 +281,11 @@ function NotebookEditorCore({
         case "kernel-terminated":
         case "runtime-terminated":
           runtimeHandlers.onRuntimeTerminated();
+          break;
+
+        case "runtime-pre-termination":
+          // 5 seconds before termination - dispose while server is still alive
+          runtimeHandlers.onRuntimePreTermination();
           break;
 
         case "runtime-expired":

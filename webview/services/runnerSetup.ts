@@ -175,7 +175,7 @@ export function setupToolExecutionListener(
   runner: WebviewRunner,
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   vscodeAPI: { postMessage: (message: any) => void },
-  mutableServiceManager?: { updateToPyodide: (url?: string) => void },
+  mutableServiceManager?: { updateToPyodide: (url?: string) => Promise<void> },
 ): () => void {
   const messageListener = (event: MessageEvent) => {
     const message = event.data;
@@ -183,7 +183,10 @@ export function setupToolExecutionListener(
     // Handle switch-to-pyodide message
     if (message.type === "switch-to-pyodide") {
       if (mutableServiceManager) {
-        mutableServiceManager.updateToPyodide();
+        // Start async operation without awaiting (fire-and-forget)
+        mutableServiceManager.updateToPyodide().catch((error: unknown) => {
+          console.error(`[runnerSetup] Failed to switch to Pyodide:`, error);
+        });
       }
       return;
     }

@@ -20,6 +20,12 @@ import * as vscode from "vscode";
 const connectedRuntimes = new Map<string, unknown>();
 
 /**
+ * Map of document URIs to their runtime expiration timers.
+ * Used to send pre-termination warnings 5 seconds before expiration.
+ */
+const expirationTimers = new Map<string, NodeJS.Timeout>();
+
+/**
  * Callback type for runtime termination notifications.
  * Used by providers to register handlers for runtime termination events.
  */
@@ -112,7 +118,85 @@ export function registerInternalCommands(
     vscode.commands.registerCommand(
       "datalayer.internal.runtime.connected",
       (uri: vscode.Uri, runtime: unknown) => {
-        connectedRuntimes.set(uri.toString(), runtime);
+        const uriString = uri.toString();
+        connectedRuntimes.set(uriString, runtime);
+
+        // Clear any existing expiration timer for this document
+        const existingTimer = expirationTimers.get(uriString);
+        if (existingTimer) {
+          clearTimeout(existingTimer);
+          expirationTimers.delete(uriString);
+        }
+
+        // Set up expiration monitoring if runtime has expiration time
+        const runtimeObj = runtime as {
+          expiredAt?: string;
+          expiresAt?: string;
+        };
+        const expirationTime = runtimeObj?.expiredAt || runtimeObj?.expiresAt;
+
+        if (expirationTime) {
+          const expiresAt = new Date(expirationTime).getTime();
+          const now = Date.now();
+          const timeUntilExpiration = expiresAt - now;
+
+          // Send pre-termination warning 5 seconds before expiration
+          const PRE_TERMINATION_THRESHOLD_MS = 5000;
+          const timeUntilPreTermination =
+            timeUntilExpiration - PRE_TERMINATION_THRESHOLD_MS;
+
+          if (timeUntilPreTermination > 0) {
+            // Set timeout to send pre-termination message
+            const timer = setTimeout(async () => {
+              console.log(
+                `[internal.ts] Runtime expiring in 5s for ${uriString} - sending pre-termination message`,
+              );
+
+              try {
+                // Send runtime-pre-termination message to webview
+                await vscode.commands.executeCommand(
+                  "datalayer.internal.document.sendToWebview",
+                  uriString,
+                  {
+                    type: "runtime-pre-termination",
+                    body: {},
+                  },
+                );
+
+                console.log(
+                  `[internal.ts] Pre-termination message sent via executeCommand for ${uriString}`,
+                );
+              } catch (error) {
+                console.error(
+                  `[internal.ts] ERROR sending pre-termination message:`,
+                  error,
+                );
+              }
+
+              // Clean up the timer
+              expirationTimers.delete(uriString);
+            }, timeUntilPreTermination);
+
+            // Store the timer so we can cancel it if runtime changes
+            expirationTimers.set(uriString, timer);
+            console.log(
+              `[internal.ts] Set pre-termination timer for ${uriString} - will fire in ${timeUntilPreTermination}ms`,
+            );
+          } else if (timeUntilExpiration > 0) {
+            // Runtime expires in less than 5 seconds - send pre-termination immediately
+            console.log(
+              `[internal.ts] Runtime expires in ${timeUntilExpiration}ms (<5s) - sending pre-termination immediately`,
+            );
+            vscode.commands.executeCommand(
+              "datalayer.internal.document.sendToWebview",
+              uriString,
+              {
+                type: "runtime-pre-termination",
+                body: {},
+              },
+            );
+          }
+        }
       },
     ),
   );
@@ -659,5 +743,13 @@ export function getConnectedRuntime(uri: vscode.Uri): unknown {
  * @param uri - Document URI
  */
 export function clearConnectedRuntime(uri: vscode.Uri): void {
-  connectedRuntimes.delete(uri.toString());
+  const uriString = uri.toString();
+  connectedRuntimes.delete(uriString);
+
+  // Clear any expiration timer for this document
+  const timer = expirationTimers.get(uriString);
+  if (timer) {
+    clearTimeout(timer);
+    expirationTimers.delete(uriString);
+  }
 }
