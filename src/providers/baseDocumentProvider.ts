@@ -236,8 +236,6 @@ export abstract class BaseDocumentProvider<
       this._runners.delete(webviewPanel);
     });
 
-    console.log(`[BaseDocumentProvider] Initialized Runner for webview panel`);
-
     return runner;
   }
 
@@ -329,10 +327,6 @@ export abstract class BaseDocumentProvider<
     this._messageRouter.registerHandler(
       "kernel-ready",
       async (_message, context) => {
-        console.log(
-          "[BaseDocumentProvider] Received kernel-ready message for:",
-          context.documentUri,
-        );
         const { getServiceContainer } = await import("../extension");
         const uri = vscode.Uri.parse(context.documentUri);
         await getServiceContainer().kernelBridge.handleKernelReady(uri);
@@ -341,29 +335,14 @@ export abstract class BaseDocumentProvider<
 
     // Register outline-update handler
     this._messageRouter.registerHandler("outline-update", async (message) => {
-      console.log("[BaseDocumentProvider] Received outline-update message", {
-        type: message.type,
-        hasOutlineProvider: !!getOutlineTreeProvider(),
-      });
-
       const outlineProvider = getOutlineTreeProvider();
       if (outlineProvider && message.type === "outline-update") {
         const outlineMsg = message as unknown as OutlineUpdateMessage;
-        console.log("[BaseDocumentProvider] Calling updateOutline", {
-          documentUri: outlineMsg.documentUri,
-          itemCount: outlineMsg.items.length,
-          activeItemId: outlineMsg.activeItemId,
-        });
         outlineProvider.updateOutline(
           outlineMsg.documentUri,
           outlineMsg.items,
           outlineMsg.activeItemId,
         );
-      } else {
-        console.warn("[BaseDocumentProvider] Skipping outline update", {
-          hasProvider: !!outlineProvider,
-          messageType: message.type,
-        });
       }
     });
   }

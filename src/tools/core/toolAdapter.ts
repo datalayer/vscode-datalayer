@@ -83,25 +83,16 @@ export class VSCodeToolAdapter<TParams>
     options: vscode.LanguageModelToolInvocationOptions<TParams>,
     _token: vscode.CancellationToken,
   ) {
-    console.log(`[Datalayer ${this.definition.name}] Tool invoked`);
-    console.log(
-      `[Datalayer ${this.definition.name}] Operation: ${this.definition.operation}`,
-    );
-    console.log(`[Datalayer ${this.definition.name}] Input:`, options.input);
-
     try {
       // Build execution context (includes format from VS Code config)
       const context = await this.buildExecutionContext(options.input);
-
-      console.log(
-        `[Datalayer ${this.definition.name}] Operation execute() called`,
-      );
 
       // Step 1: Execute the core operation (returns pure typed data)
       const result = await this.operation.execute(options.input, context);
 
       // Step 2: Apply formatting (TOON or JSON) based on context.format
       // This matches the WebviewRunner pattern
+      // Format response using bundled formatResponse from @datalayer/jupyter-react
       const formattedResult = formatResponse(result, context.format || "toon");
 
       // Special post-execution for create operations: Open the created document
@@ -155,19 +146,6 @@ export class VSCodeToolAdapter<TParams>
 
     // ALWAYS get all opened documents - provides complete context to ALL tools
     const documentsContext = getAllOpenedDocuments();
-    console.log(`[VSCodeToolAdapter] Documents context:`, {
-      activeDocument: documentsContext.activeDocument
-        ? {
-            fileName: documentsContext.activeDocument.fileName,
-            type: documentsContext.activeDocument.type,
-            editorType: documentsContext.activeDocument.editorType,
-            viewType: documentsContext.activeDocument.viewType,
-            scheme: documentsContext.activeDocument.scheme,
-          }
-        : "NONE",
-      totalCount: documentsContext.totalCount,
-      counts: documentsContext.counts,
-    });
 
     // Check if this tool needs a document ID
     const needsCellDocument = this.definition.tags?.includes("cell");
@@ -226,13 +204,6 @@ export class VSCodeToolAdapter<TParams>
 
     // Analyze open documents (notebooks + lexicals)
     const documentAnalysis = analyzeOpenDocuments();
-
-    console.log("[VSCodeToolAdapter] Document analysis:", {
-      native: documentAnalysis.nativeNotebooks.length,
-      local: documentAnalysis.localDatalayerDocuments.length,
-      cloud: documentAnalysis.cloudDatalayerDocuments.length,
-      majorityType: documentAnalysis.majorityType,
-    });
 
     return {
       // SDK and auth for cloud notebook creation
@@ -481,19 +452,11 @@ export class VSCodeToolAdapter<TParams>
     let targetUri: vscode.Uri | undefined;
 
     if (uriString) {
-      console.log(
-        `[VSCodeToolAdapter] Using documentUri from params: ${uriString}`,
-      );
       targetUri = vscode.Uri.parse(uriString);
     } else {
       // Lexical documents are custom editors, not text editors
       // We need to check active tab in tab groups
       const activeTab = vscode.window.tabGroups.activeTabGroup.activeTab;
-
-      console.log(`[VSCodeToolAdapter] Active tab: ${activeTab?.label}`);
-      console.log(
-        `[VSCodeToolAdapter] Tab input type: ${activeTab?.input?.constructor.name}`,
-      );
 
       if (activeTab?.input && typeof activeTab.input === "object") {
         const tabInput = activeTab.input as {
@@ -501,19 +464,9 @@ export class VSCodeToolAdapter<TParams>
           viewType?: string;
         };
 
-        console.log(`[VSCodeToolAdapter] Tab URI: ${tabInput.uri?.toString()}`);
-        console.log(`[VSCodeToolAdapter] Tab viewType: ${tabInput.viewType}`);
-
         // Check if it's a Lexical custom editor
         if (tabInput.uri && tabInput.viewType === "datalayer.lexical-editor") {
           targetUri = tabInput.uri;
-          console.log(
-            `[VSCodeToolAdapter] ✓ Found active Lexical document: ${targetUri.toString()}`,
-          );
-        } else {
-          console.log(
-            `[VSCodeToolAdapter] ✗ Active tab is not a Lexical editor (viewType: ${tabInput.viewType})`,
-          );
         }
       }
 
@@ -632,11 +585,6 @@ export class VSCodeToolAdapter<TParams>
         .get<string>("responseFormat", "toon") as "json" | "toon";
 
       // Send execution request to webview
-      console.log(
-        `[VSCodeToolAdapter] Sending tool-execution to webview: ${operationName}`,
-        { args, format },
-      );
-
       webviewPanel.webview
         .postMessage({
           type: "tool-execution",
@@ -647,9 +595,7 @@ export class VSCodeToolAdapter<TParams>
         })
         .then(
           () => {
-            console.log(
-              `[VSCodeToolAdapter] ✓ Sent tool-execution: ${operationName}`,
-            );
+            // Message sent successfully
           },
           (error) => {
             // Failed to send message

@@ -15,15 +15,11 @@ import type { ToolDefinition, ToolOperation } from "@datalayer/jupyter-react";
 import { VSCodeToolAdapter } from "./toolAdapter";
 import { createNotebookOperation } from "../operations/createNotebook";
 import { createLexicalOperation } from "../operations/createLexical";
-import { allToolDefinitions } from "../definitions";
+import { getAllToolDefinitionsAsync } from "../definitions";
 import { getActiveDocumentOperation } from "../operations/getActiveDocument";
 import { listKernelsOperation } from "../operations/listKernels";
 import { selectKernelOperation } from "../operations/selectKernel";
 import { executeCodeOperation } from "../operations/executeCode";
-
-// Import all notebook and lexical tools
-import { notebookToolOperations } from "@datalayer/jupyter-react";
-import { lexicalToolOperations } from "@datalayer/jupyter-lexical";
 
 /**
  * Combined operations registry type
@@ -48,43 +44,38 @@ export interface CombinedOperations {
 }
 
 /**
- * Combined operations registry (all operations from packages + VS Code-specific)
+ * Get combined operations registry
  *
- * This registry is exported for use by Runner setup and tool execution handlers.
- *
- * ALL tools now use the unified ToolOperation pattern and are registered uniformly
- * through the VSCodeToolAdapter. No special cases or direct VS Code API implementations.
- *
- * Benefits of the unified pattern:
- * - Consistent registration flow for all 22 tools
- * - Automatic response formatting (JSON/TOON)
- * - Standardized error handling
- * - Easy testing and validation
- * - Same adapter works for all tools
- *
- * Note: VS Code-specific operations are added last to override package operations:
- * - getActiveDocument: VS Code document access (refactored to use ToolOperation)
- * - executeCode: Unified routing operation (overrides package executeCode)
+ * @returns Combined operations registry
+ * @internal
  */
-export const combinedOperations: CombinedOperations = {
-  // Notebook operations (from datalayer-react)
-  ...notebookToolOperations,
+export function getCombinedOperations(): CombinedOperations {
+  // Import package operations from /tools export (Node.js compatible, excludes React components)
+  const { notebookToolOperations } = require("@datalayer/jupyter-react/tools");
+  const {
+    lexicalToolOperations,
+  } = require("@datalayer/jupyter-lexical/lib/tools");
 
-  // Lexical operations (from datalayer-lexical)
-  ...lexicalToolOperations,
+  return {
+    // Notebook operations (from datalayer-react)
+    ...notebookToolOperations,
 
-  // Kernel management operations
-  listKernels: listKernelsOperation,
-  selectKernel: selectKernelOperation,
+    // Lexical operations (from datalayer-lexical)
+    ...lexicalToolOperations,
 
-  // VS Code-specific operations (all use standard ToolOperation pattern)
-  getActiveDocument: getActiveDocumentOperation,
-  createNotebook: createNotebookOperation,
-  createLexical: createLexicalOperation,
+    // Kernel management operations
+    listKernels: listKernelsOperation,
+    selectKernel: selectKernelOperation,
 
-  // Unified code execution (overrides package executeCode operations)
-  executeCode: executeCodeOperation,
-};
+    // VS Code-specific operations (all use standard ToolOperation pattern)
+    getActiveDocument: getActiveDocumentOperation,
+    createNotebook: createNotebookOperation,
+    createLexical: createLexicalOperation,
+
+    // Unified code execution (overrides package executeCode operations)
+    executeCode: executeCodeOperation,
+  };
+}
 
 /**
  * Validation result for tool definitions
@@ -138,36 +129,37 @@ export function validateToolDefinitions(
  * registration based on tool definitions and core operations.
  *
  * @param context - VS Code extension context
- * @param definitions - Array of tool definitions (defaults to all)
- * @param operations - Registry of core operations (defaults to all)
+ * @param definitions - Optional array of tool definitions (if not provided, will be loaded dynamically)
+ * @param operations - Optional registry of core operations (if not provided, will be loaded dynamically)
  *
  * @example
  * ```typescript
  * // In extension.ts activate():
- * registerVSCodeTools(context);
+ * await registerVSCodeTools(context);
  * ```
  */
-export function registerVSCodeTools(
+export async function registerVSCodeTools(
   context: vscode.ExtensionContext,
-  definitions: readonly ToolDefinition[] = allToolDefinitions,
-  operations: Record<
-    string,
-    ToolOperation<unknown, unknown>
-  > = combinedOperations,
-): void {
-  console.log(
-    `[Datalayer Tools] Registering ${definitions.length} tools with unified architecture`,
-  );
+  definitions?: readonly ToolDefinition[],
+  operations?: Record<string, ToolOperation<unknown, unknown>>,
+): Promise<void> {
+  // Load definitions and operations if not provided
+  const resolvedDefinitions =
+    definitions ?? (await getAllToolDefinitionsAsync());
+  const resolvedOperations = operations ?? getCombinedOperations();
 
   // Validate all definitions before registration
-  const validation = validateToolDefinitions(definitions, operations);
+  const validation = validateToolDefinitions(
+    resolvedDefinitions,
+    resolvedOperations,
+  );
   if (!validation.valid) {
     const errorMessage = [
       "[Datalayer Tools] ❌ Tool validation failed:",
       ...validation.errors.map((err) => `  - ${err}`),
       "",
       "Available operations:",
-      ...Object.keys(operations).map((op) => `  - ${op}`),
+      ...Object.keys(resolvedOperations).map((op) => `  - ${op}`),
     ].join("\n");
 
     console.error(errorMessage);
@@ -180,10 +172,10 @@ export function registerVSCodeTools(
     }
   }
 
-  for (const definition of definitions) {
+  for (const definition of resolvedDefinitions) {
     try {
       // Find the operation for this tool
-      const operation = operations[definition.operation];
+      const operation = resolvedOperations[definition.operation];
 
       if (!operation) {
         console.warn(
@@ -198,10 +190,6 @@ export function registerVSCodeTools(
       context.subscriptions.push(
         vscode.lm.registerTool(definition.name, adapter),
       );
-
-      console.log(
-        `[Datalayer Tools] ✓ Registered ${definition.name} → ${definition.operation}`,
-      );
     } catch (error) {
       console.error(
         `[Datalayer Tools] Failed to register tool ${definition.name}:`,
@@ -209,10 +197,6 @@ export function registerVSCodeTools(
       );
     }
   }
-
-  console.log(
-    `[Datalayer Tools] Successfully registered ${definitions.length} tools`,
-  );
 }
 
 /**

@@ -142,6 +142,11 @@ function getZeroMQ(): typeof import("zeromq") {
 
   console.log(`[RawSocket] ZeroMQ prebuilds path: ${zmqPrebuildsPath}`);
 
+  // CRITICAL: Preload 'os' module before loading zeromq to prevent cmake-ts error
+  // cmake-ts (used by zeromq) calls os.platform() at module load time
+  // This ensures the os module is available when cmake-ts initializes
+  require("os");
+
   try {
     // Try primary zeromq with prebuilds path hint
     if (fs.existsSync(zmqPrebuildsPath)) {

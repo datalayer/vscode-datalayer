@@ -265,7 +265,11 @@ export function createLocalKernelServiceManager(
   );
 
   // Create minimal contents manager with required methods
+  // CRITICAL: Context calls contents.normalize()!
   const contentsManager = {
+    normalize(path: string): string {
+      return path;
+    },
     driveName(_path: string): string {
       return "";
     },

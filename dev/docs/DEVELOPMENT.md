@@ -14,6 +14,10 @@ This document provides comprehensive information for developers who want to cont
 
 ```bash
 # Install dependencies
+# Note: Use --ignore-scripts to bypass @datalayer/core postinstall issues
+npm install --ignore-scripts
+
+# Or if postinstall works for you
 npm install
 
 # Watch for changes (development)
@@ -31,6 +35,8 @@ npm run package
 # Create VSIX package
 npm run vsix
 ```
+
+**Note on Installation**: If you encounter errors about missing `scripts/apply-patches.sh` during `npm install`, use `npm install --ignore-scripts` instead. This bypasses postinstall scripts in dependencies that aren't needed for VS Code extension development.
 
 ## Working with Jupyter Packages
 
@@ -465,6 +471,23 @@ npm run clean  # Removes dist/, out/, *.vsix
 ```
 
 ### Common Tasks
+
+#### Clean Install from Scratch
+
+If you need to start fresh with dependencies:
+
+```bash
+# Remove existing dependencies
+rm -rf node_modules
+
+# Clean install (bypass postinstall issues)
+npm install --ignore-scripts
+
+# Rebuild extension
+npm run compile
+```
+
+**Why --ignore-scripts?** The `@datalayer/core` package (version ^0.0.20 from npm) has a postinstall script that expects files only available in the development repository, not in the published npm package. Using `--ignore-scripts` bypasses this issue without affecting extension functionality.
 
 #### Adding a New Command
 

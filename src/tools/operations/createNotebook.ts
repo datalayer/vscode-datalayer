@@ -11,6 +11,7 @@
  */
 
 import type { ToolOperation } from "@datalayer/jupyter-react";
+import { validateWithZod } from "@datalayer/jupyter-react";
 import {
   createDocumentOperation,
   type CreateDocumentResult,
@@ -19,7 +20,6 @@ import {
   createNotebookParamsSchema,
   type CreateNotebookParams,
 } from "../schemas/createNotebook";
-import { validateWithZod } from "@datalayer/jupyter-react/lib/tools/core/zodUtils";
 
 /**
  * Notebook creation parameters

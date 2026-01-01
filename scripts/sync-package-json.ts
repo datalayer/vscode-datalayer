@@ -18,8 +18,8 @@
  * Run: npm run sync:tools
  */
 
-import { notebookToolDefinitions, type ToolDefinition } from '@datalayer/jupyter-react/lib/tools/index.js';
-import { lexicalToolDefinitions } from '@datalayer/jupyter-lexical/lib/tools/index.js';
+import { notebookToolDefinitions, type ToolDefinition } from '@datalayer/jupyter-react/tools';
+import { lexicalToolDefinitions } from '@datalayer/jupyter-lexical/lib/tools';
 import * as fs from 'fs';
 import * as path from 'path';
 import { fileURLToPath } from 'url';

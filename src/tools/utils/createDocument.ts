@@ -14,13 +14,13 @@
  */
 
 import type { ToolOperation } from "@datalayer/jupyter-react";
+import { validateWithZod } from "@datalayer/jupyter-react";
 import {
   createCloudNotebook,
   createLocalNotebook,
 } from "./createNotebookHelpers";
 import { createCloudLexical, createLocalLexical } from "./createLexicalHelpers";
 import { createDocumentParamsSchema } from "../schemas/createDocument";
-import { validateWithZod } from "@datalayer/jupyter-react/lib/tools/core/zodUtils";
 
 /** Document location type: local file system or cloud platform */
 type DocumentLocation = "local" | "cloud";

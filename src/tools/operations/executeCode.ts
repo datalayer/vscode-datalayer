@@ -6,11 +6,7 @@
 
 import * as vscode from "vscode";
 import type { ToolOperation } from "@datalayer/jupyter-react";
-import {
-  notebookToolOperations,
-  formatResponse,
-} from "@datalayer/jupyter-react";
-import { lexicalToolOperations } from "@datalayer/jupyter-lexical";
+import { formatResponse } from "@datalayer/jupyter-react";
 import { ActiveRuntimeStrategy } from "../../services/autoConnect/strategies/activeRuntimeStrategy";
 import { getRuntimesTreeProvider, getServiceContainer } from "../../extension";
 import { executeOnRuntime } from "../utils/runtimeExecutor";
@@ -117,6 +113,11 @@ export const executeCodeOperation: ToolOperation<ExecuteCodeParams, unknown> = {
           "[executeCode] ✓ Delegating to Datalayer notebook executeCode",
         );
         try {
+          // Import notebook operations from /tools export (Node.js compatible, excludes React components)
+          const {
+            notebookToolOperations,
+          } = require("@datalayer/jupyter-react/tools");
+
           // Resolve documentId from URI
           const services = getServiceContainer();
           const documentId = services.documentRegistry.getIdFromUri(
@@ -147,6 +148,11 @@ export const executeCodeOperation: ToolOperation<ExecuteCodeParams, unknown> = {
           hasExecutor: !!context.executor,
         });
         try {
+          // Import lexical operations from /tools export (Node.js compatible, excludes React components)
+          const {
+            lexicalToolOperations,
+          } = require("@datalayer/jupyter-lexical/lib/tools");
+
           // Resolve documentId from URI
           const services = getServiceContainer();
           const documentId = services.documentRegistry.getIdFromUri(
@@ -193,7 +199,7 @@ export const executeCodeOperation: ToolOperation<ExecuteCodeParams, unknown> = {
     const runtimesTreeProvider = getRuntimesTreeProvider();
     if (!runtimesTreeProvider) {
       console.error("[executeCode] RuntimesTreeProvider is NULL");
-      return formatResponse(
+      return await formatResponse(
         {
           success: false,
           error:

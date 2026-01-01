@@ -332,13 +332,8 @@ export abstract class BaseSessionManager implements Session.IManager {
    * @param message - Log message
    * @param args - Additional arguments
    */
-  protected log(message: string, ...args: unknown[]): void {
-    const prefix = `[${this.managerType}SessionManager]`;
-    if (args.length > 0) {
-      console.log(prefix, message, ...args);
-    } else {
-      console.log(prefix, message);
-    }
+  protected log(_message: string, ..._args: unknown[]): void {
+    // Logging disabled to reduce console clutter
   }
 
   /**

@@ -15,9 +15,10 @@
  */
 
 import { ServerConnection, KernelManager, Kernel } from "@jupyterlab/services";
-import { KernelExecutor } from "@datalayer/jupyter-react";
 import type { RuntimeDTO } from "@datalayer/core/lib/models/RuntimeDTO";
 import type { IOutput } from "@jupyterlab/nbformat";
+
+// KernelExecutor will be dynamically imported to avoid loading React at extension startup
 
 /**
  * Result of code execution on a runtime.
@@ -76,7 +77,10 @@ export async function executeOnRuntime(
 
     console.log(`[runtimeExecutor] Kernel connected: ${kernelConnection.id}`);
 
-    // Step 2: Create executor and execute code
+    // Step 2: Dynamically import KernelExecutor to avoid loading React at extension startup
+    const { KernelExecutor } = await import("@datalayer/jupyter-react");
+
+    // Step 3: Create executor and execute code
     const executor = new KernelExecutor({
       connection: kernelConnection,
       suppressCodeExecutionErrors: true, // Don't throw on execution errors
@@ -105,7 +109,7 @@ export async function executeOnRuntime(
       `[runtimeExecutor] Execution complete, ${executor.outputs.length} outputs`,
     );
 
-    // Step 3: Extract outputs
+    // Step 4: Extract outputs
     const outputs = executor.outputs;
     // execution_count is in the reply message, not available directly in future.msg
     const executionCount = undefined; // TODO: Get from reply message if needed

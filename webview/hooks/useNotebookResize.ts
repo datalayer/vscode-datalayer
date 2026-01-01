@@ -11,7 +11,7 @@
  */
 
 import { useEffect } from "react";
-import { notebookStore2 } from "@datalayer/jupyter-react";
+import { notebookStore } from "@datalayer/jupyter-react";
 
 /**
  * Hook to set up ResizeObserver for notebook container.
@@ -47,7 +47,7 @@ export function useNotebookResize(
           }
 
           // Get notebook from store and update Lumino panel
-          const notebook = notebookStore2.getState().notebooks.get(notebookId);
+          const notebook = notebookStore.getState().notebooks.get(notebookId);
           if (notebook?.adapter?.panel) {
             notebook.adapter.panel.update();
           }

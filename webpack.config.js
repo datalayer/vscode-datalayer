@@ -20,7 +20,7 @@ const CopyPlugin = require("copy-webpack-plugin");
 const extensionConfig = {
   target: "node", // VS Code extensions run in a Node.js-context 📖 -> https://webpack.js.org/configuration/node/
   mode: "none", // this leaves the source code as close as possible to the original (when packaging we set this to 'production')
-  entry: "./src/extension.ts", // the entry point of this extension, 📖 -> https://webpack.js.org/configuration/entry-context/
+  entry: "./src/preload.ts", // CHANGED: Use preload.ts to force os module loading BEFORE any other code, 📖 -> https://webpack.js.org/configuration/entry-context/
   output: {
     // the bundle is stored in the 'dist' folder (check package.json), 📖 -> https://webpack.js.org/configuration/output/
     path: path.resolve(__dirname, "dist"),
@@ -29,11 +29,30 @@ const extensionConfig = {
   },
   externals: {
     vscode: "commonjs vscode", // the vscode-module is created on-the-fly and must be excluded. Add other modules that cannot be webpack'ed, 📖 -> https://webpack.js.org/configuration/externals/
+    os: "commonjs os", // Node.js built-in - must be external to ensure require cache works correctly
     zeromq: "commonjs zeromq", // zeromq has native bindings that must be excluded from webpack
     zeromqold: "commonjs zeromqold", // zeromqold (fallback) also has native bindings
     "cmake-ts": "commonjs cmake-ts", // required by zeromq for loading native modules
+    "prebuild-install": "commonjs prebuild-install", // used by native modules, has os.platform() calls
+    ws: "commonjs ws", // WebSocket library with optional native bindings (bufferUtil), pulls in prebuild-install
+    bufferutil: "commonjs bufferutil", // Optional native module for ws
+    "utf-8-validate": "commonjs utf-8-validate", // Optional native module for ws
     pyodide: "commonjs pyodide", // pyodide package is HUGE (~10MB+ WASM), must be external to avoid heap overflow during webpack bundling
     keytar: "commonjs keytar", // keytar has native bindings for OS keyring access
+    // React packages must be EXTERNAL - they should NOT run in Node.js extension context
+    // React code with hooks causes "Invalid hook call" warnings when bundled into extension.js
+    react: "commonjs react",
+    "react-dom": "commonjs react-dom",
+    "@primer/react": "commonjs @primer/react", // Has CSS imports that fail in Node.js 22
+    // @datalayer packages are BUNDLED (not external) so webpack can handle their React dependencies
+    // When webpack encounters React imports in these packages, it externalizes them (because React is external above)
+    // This prevents Node.js from trying to load packages with CSS imports at runtime
+    "@jupyterlab/application": "commonjs @jupyterlab/application",
+    "@jupyterlab/notebook": "commonjs @jupyterlab/notebook",
+    "@jupyterlab/cells": "commonjs @jupyterlab/cells",
+    "@jupyterlab/completer": "commonjs @jupyterlab/completer",
+    "@lexical/react": "commonjs @lexical/react",
+    lexical: "commonjs lexical",
     // modules added here also need to be added in the .vscodeignore file
   },
   resolve: {
@@ -42,6 +61,14 @@ const extensionConfig = {
   },
   module: {
     rules: [
+      {
+        test: /\.css$/,
+        use: "null-loader", // Ignore CSS imports in extension context (Node.js 22 can't load CSS)
+      },
+      {
+        test: /\.(woff|woff2|eot|ttf|otf|svg|png|jpg|jpeg|gif)$/,
+        type: "asset/resource", // Handle font/image assets
+      },
       {
         test: /\.ts$/,
         exclude: /node_modules/,
@@ -385,14 +412,6 @@ const lexicalWebviewConfig = {
           filename: "schema/[name][ext][query]",
         },
       },
-      // Ship the JupyterLite service worker.
-      {
-        resourceQuery: /text/,
-        type: "asset/resource",
-        generator: {
-          filename: "[name][ext]",
-        },
-      },
     ],
   },
   resolve: {
@@ -587,14 +606,6 @@ const aguiExampleConfig = {
         type: "asset/resource",
         generator: {
           filename: "schema/[name][ext][query]",
-        },
-      },
-      // Ship the JupyterLite service worker.
-      {
-        resourceQuery: /text/,
-        type: "asset/resource",
-        generator: {
-          filename: "[name][ext]",
         },
       },
     ],

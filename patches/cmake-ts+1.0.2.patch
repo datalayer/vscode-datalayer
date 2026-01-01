@@ -1,0 +1,32 @@
+diff --git a/node_modules/cmake-ts/src/urlRegistry.ts b/node_modules/cmake-ts/src/urlRegistry.ts
+index 2400f3f..cf9313e 100644
+--- a/node_modules/cmake-ts/src/urlRegistry.ts
++++ b/node_modules/cmake-ts/src/urlRegistry.ts
+@@ -8,7 +8,26 @@ const NODE_MIRROR = getEnvVar("NVM_NODEJS_ORG_MIRROR") ?? "https://nodejs.org/di
+ const IOJS_MIRROR = getEnvVar("NVM_IOJS_ORG_MIRROR") ?? "https://iojs.org/dist"
+ const ELECTRON_MIRROR = getEnvVar("ELECTRON_MIRROR") ?? "https://artifacts.electronjs.org/headers/dist"
+ 
+-export const HOME_DIRECTORY = process.env[os.platform() === "win32" ? "USERPROFILE" : "HOME"] as string
++// PATCHED: Lazy evaluation to defer os.platform() call until actually needed
++// This prevents "Cannot read properties of undefined (reading 'platform')" error
++// Original line was: export const HOME_DIRECTORY = process.env[os.platform() === "win32" ? "USERPROFILE" : "HOME"] as string
++let _homeDirectory: string | undefined
++export function getHomeDirectory(): string {
++  if (_homeDirectory === undefined) {
++    _homeDirectory = process.env[os.platform() === "win32" ? "USERPROFILE" : "HOME"] as string
++  }
++  return _homeDirectory
++}
++
++// Deprecated: Use getHomeDirectory() instead for better lazy loading
++// Kept for backward compatibility but will throw if accessed before Node.js is fully initialized
++Object.defineProperty(exports, 'HOME_DIRECTORY', {
++  get() {
++    return getHomeDirectory()
++  },
++  enumerable: true,
++  configurable: true
++})
+ 
+ export function getPathsForConfig(config: BuildConfiguration) {
+   switch (config.runtime) {

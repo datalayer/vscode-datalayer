@@ -13,6 +13,8 @@
  * @module tools/definitions
  */
 
+import type { ToolDefinition } from "@datalayer/jupyter-react";
+
 // Document creation tools
 export * from "./createNotebook";
 export * from "./createLexical";
@@ -35,23 +37,60 @@ import { listKernelsTool } from "./listKernels";
 import { selectKernelTool } from "./selectKernel";
 import { executeCodeTool } from "./executeCode";
 
-// Import package tool definitions
-import { notebookToolDefinitions } from "@datalayer/jupyter-react";
-import { lexicalToolDefinitions } from "@datalayer/jupyter-lexical";
+/**
+ * Get all tool definitions
+ *
+ * This function loads tool definitions from packages.
+ *
+ * @returns Promise resolving to array of all tool definitions
+ * @internal
+ */
+async function getAllToolDefinitionsAsync() {
+  // Import package tool definitions from /tools export (Node.js compatible, excludes React components)
+  const { notebookToolDefinitions } = require("@datalayer/jupyter-react/tools");
+  const {
+    lexicalToolDefinitions,
+  } = require("@datalayer/jupyter-lexical/lib/tools");
 
-// Filter out executeCode from package tools to avoid duplication
-// Also filter out tools that have missing operations
-const notebookToolsFiltered = notebookToolDefinitions.filter(
-  (tool) =>
-    tool.name !== "datalayer_executeCode" &&
-    tool.name !== "datalayer_insertCells", // Operation doesn't exist
-);
-const lexicalToolsFiltered = lexicalToolDefinitions.filter(
-  (tool) => tool.name !== "datalayer_executeCode_lexical",
-);
+  // Filter out executeCode from package tools to avoid duplication
+  // Also filter out tools that have missing operations
+  const notebookToolsFiltered = notebookToolDefinitions.filter(
+    (tool: ToolDefinition) =>
+      tool.name !== "datalayer_executeCode" &&
+      tool.name !== "datalayer_insertCells", // Operation doesn't exist
+  );
+  const lexicalToolsFiltered = lexicalToolDefinitions.filter(
+    (tool: ToolDefinition) => tool.name !== "datalayer_executeCode_lexical",
+  );
+
+  return [
+    // Document access (1 tool)
+    getActiveDocumentTool,
+
+    // Document creation (2 unified smart tools)
+    createNotebookTool,
+    createLexicalTool,
+
+    // Kernel management (2 tools)
+    listKernelsTool,
+    selectKernelTool,
+
+    // Code execution (1 unified tool)
+    executeCodeTool,
+
+    // Notebook tools from package (7 tools, excluding executeCode and insertCells)
+    ...notebookToolsFiltered,
+
+    // Lexical tools from package (9 tools, excluding executeCode)
+    ...lexicalToolsFiltered,
+  ] as const;
+}
 
 /**
  * Array of all tool definitions (VS Code-specific + package tools)
+ *
+ * DEPRECATED: Use getAllToolDefinitionsAsync() instead to avoid loading React at startup.
+ * This export is kept for backwards compatibility but will be removed.
  *
  * This includes 22 tools total (after unifying executeCode and filtering broken tools):
  * - 6 VS Code-specific tools:
@@ -83,9 +122,12 @@ export const allToolDefinitions = [
   // Code execution (1 unified tool)
   executeCodeTool,
 
-  // Notebook tools from package (7 tools, excluding executeCode and insertCells)
-  ...notebookToolsFiltered,
-
-  // Lexical tools from package (9 tools, excluding executeCode)
-  ...lexicalToolsFiltered,
+  // NOTE: Package tools (notebook/lexical) are NOT included in this static export
+  // to avoid loading React at module evaluation time.
+  // Use getAllToolDefinitionsAsync() in registration.ts instead.
 ] as const;
+
+/**
+ * Export the async function for use in registration
+ */
+export { getAllToolDefinitionsAsync };

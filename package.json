@@ -19,11 +19,8 @@
   },
   "engines": {
     "vscode": "^1.107.0",
-    "node": ">=20.0.0 <21.0.0"
+    "node": ">=22.0.0 <23.0.0"
   },
-  "enabledApiProposals": [
-    "chatContextProvider"
-  ],
   "main": "./dist/extension.js",
   "scripts": {
     "build:icons": "node scripts/build-icons.js",
@@ -62,7 +59,7 @@
     "docs:markdown": "typedoc --plugin typedoc-plugin-markdown --out docs-markdown",
     "docs:coverage": "typedoc --validation || true",
     "postinstall": "bash scripts/apply-patches.sh && node scripts/downloadZmqBinaries.js",
-    "sync:tools": "tsx scripts/sync-package-json.ts"
+    "sync:tools": "tsx --require ./scripts/ignore-css.js scripts/sync-package-json.ts"
   },
   "dependencies": {
     "@codemirror/autocomplete": "^6.18.7",
@@ -74,9 +71,9 @@
     "@codemirror/view": "^6.38.3",
     "@copilotkit/react-core": "^1.10.6",
     "@copilotkit/react-ui": "^1.10.6",
-    "@datalayer/core": "^0.0.19",
+    "@datalayer/core": "^0.0.20",
     "@datalayer/jupyter-lexical": "^1.0.7",
-    "@datalayer/jupyter-react": "^1.1.9",
+    "@datalayer/jupyter-react": "^2.0.1",
     "@datalayer/lexical-loro": "^0.1.0",
     "@datalayer/primer-addons": "^1.0.4",
     "@jupyter/ydoc": "^2.0.0",

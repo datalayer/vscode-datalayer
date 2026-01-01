@@ -8,6 +8,9 @@
  * Main extension module for the Datalayer VS Code extension.
  * Orchestrates the initialization of all services, UI components, and commands.
  *
+ * NOTE: The os module is preloaded by preload.ts (the webpack entry point)
+ * to ensure it's available before cmake-ts tries to call os.platform()
+ *
  * @module extension
  */
 
@@ -201,7 +204,7 @@ export async function activate(
     logger.debug("Registering unified MCP tools with new architecture");
     const { registerVSCodeTools } = await import("./tools/core/registration");
 
-    registerVSCodeTools(context);
+    await registerVSCodeTools(context);
     activationTimer.checkpoint("mcp_tools_registered");
     logger.info(
       "Registered all embedded MCP tools for Copilot using unified architecture",

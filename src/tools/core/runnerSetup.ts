@@ -15,7 +15,10 @@
 
 import * as vscode from "vscode";
 import type { ToolOperation } from "@datalayer/jupyter-react";
-import { combinedOperations } from "./registration";
+import { getCombinedOperations } from "./registration";
+
+// Get combined operations at module load time (now safe since React is bundled)
+const combinedOperations = getCombinedOperations();
 
 /**
  * Simple Runner implementation for tool execution.

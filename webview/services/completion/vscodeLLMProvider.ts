@@ -75,15 +75,9 @@ export class VSCodeLLMProvider
   /** Unique identifier for this completion provider */
   readonly identifier = "@vscode/llm-copilot";
 
-  constructor() {
-    console.log("[VSCodeLLMProvider] Constructor called", {
-      name: this.name,
-      identifier: this.identifier,
-    });
-  }
+  constructor() {}
 
   get schema() {
-    console.log("[VSCodeLLMProvider] schema getter called");
     return {
       default: {
         debouncerDelay: 200, // 200ms debounce (same as notebook-intelligence)
@@ -104,37 +98,16 @@ export class VSCodeLLMProvider
     context: IInlineCompletionContext,
   ): Promise<IInlineCompletionList<IInlineCompletionItem>> {
     try {
-      console.log("[VSCodeLLMProvider] fetch() called", {
-        text: request.text.substring(0, 50) + "...",
-        offset: request.offset,
-        textLength: request.text.length,
-      });
-
       // Extract context from notebook cells
       const { prefix, suffix, language } = this.extractContext(
         request,
         context,
       );
 
-      console.log("[VSCodeLLMProvider] Context extracted", {
-        prefixLength: prefix.length,
-        suffixLength: suffix.length,
-        language,
-        prefixPreview: prefix.slice(-100),
-        suffixPreview: suffix.slice(0, 100),
-      });
-
       // Call VS Code Language Model API
       const completion = await this.getLLMCompletion(prefix, suffix, language);
 
-      console.log("[VSCodeLLMProvider] Completion received", {
-        hasCompletion: !!completion,
-        completionLength: completion?.length,
-        completionPreview: completion?.substring(0, 100),
-      });
-
       if (!completion) {
-        console.log("[VSCodeLLMProvider] No completion returned");
         return { items: [] };
       }
 
@@ -145,11 +118,6 @@ export class VSCodeLLMProvider
       // If completion starts with the prefix, remove the prefix
       if (completion.startsWith(prefix)) {
         insertText = completion.slice(prefix.length);
-        console.log("[VSCodeLLMProvider] Removed prefix from completion", {
-          originalLength: completion.length,
-          prefixLength: prefix.length,
-          newLength: insertText.length,
-        });
       } else {
         // Try to find where the completion overlaps with the prefix
         // This handles cases where LLM returns partial prefix + new text
@@ -161,10 +129,6 @@ export class VSCodeLLMProvider
         }
         if (overlap > 0) {
           insertText = completion.slice(overlap);
-          console.log("[VSCodeLLMProvider] Found overlap, removed", {
-            overlap,
-            newLength: insertText.length,
-          });
         }
       }
 
