@@ -118,7 +118,7 @@
     "yjs": "^13.6.18",
     "zeromq": "^6.0.0-beta.20",
     "zeromqold": "npm:zeromq@^6.0.0-beta.6",
-    "zod": "^4.1.13"
+    "zod": "^4.3.5"
   },
   "devDependencies": {
     "@jupyterlab/theme-light-extension": "^4.4.10",
