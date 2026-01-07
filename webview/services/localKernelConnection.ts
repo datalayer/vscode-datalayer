@@ -757,8 +757,7 @@ export class LocalKernelConnection implements Kernel.IKernelConnection {
 class KernelShellFuture<
   REQUEST extends KernelMessage.IShellMessage = KernelMessage.IShellMessage,
   REPLY extends KernelMessage.IShellMessage = KernelMessage.IShellMessage,
-> implements Kernel.IShellFuture<REQUEST, REPLY>
-{
+> implements Kernel.IShellFuture<REQUEST, REPLY> {
   /** Signal that emits all kernel messages. */
   private _anyMessage: Signal<unknown, Kernel.IAnyMessageArgs>;
   /** Signal emitted when the future is done. */
@@ -923,8 +922,7 @@ class KernelShellFuture<
 class KernelControlFuture<
   REQUEST extends KernelMessage.IControlMessage = KernelMessage.IControlMessage,
   REPLY extends KernelMessage.IControlMessage = KernelMessage.IControlMessage,
-> implements Kernel.IControlFuture<REQUEST, REPLY>
-{
+> implements Kernel.IControlFuture<REQUEST, REPLY> {
   /** Signal that emits all kernel messages. */
   private _anyMessage: Signal<unknown, Kernel.IAnyMessageArgs>;
   /** Signal emitted when the future is done. */

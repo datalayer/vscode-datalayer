@@ -81,9 +81,8 @@ export function registerRuntimeCommands(
             const uri = (input as { uri: vscode.Uri }).uri;
 
             // Show runtime selector for lexical editor
-            const { selectDatalayerRuntime } = await import(
-              "../ui/dialogs/runtimeSelector"
-            );
+            const { selectDatalayerRuntime } =
+              await import("../ui/dialogs/runtimeSelector");
             const selectedRuntime = await selectDatalayerRuntime(
               sdk,
               authProvider,
@@ -601,9 +600,8 @@ export function registerRuntimeCommands(
   context.subscriptions.push(
     vscode.commands.registerCommand("datalayer.runtimes.create", async () => {
       // Import runtime selector directly to avoid document requirement
-      const { selectDatalayerRuntime } = await import(
-        "../ui/dialogs/runtimeSelector"
-      );
+      const { selectDatalayerRuntime } =
+        await import("../ui/dialogs/runtimeSelector");
 
       // Hide existing runtimes - user explicitly wants to CREATE a new one
       const selectedRuntime = await selectDatalayerRuntime(sdk, authProvider, {
@@ -633,7 +631,14 @@ export function registerRuntimeCommands(
         vscode.window.showInformationMessage(
           `Runtime "${selectedRuntime.givenName || selectedRuntime.uid}" is ready`,
         );
+        // Immediately refresh to show the runtime (may use cached data)
         runtimesTreeProvider?.refresh();
+        // Wait for server to fully propagate the change, then refresh again
+        setTimeout(() => {
+          runtimesTreeProvider?.refresh();
+        }, 1000);
+        // Also refresh controllers to pick up the new runtime
+        await controllerManager.refreshControllers();
         await notifyAllDocuments();
       }
     }),

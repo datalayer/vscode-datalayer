@@ -19,7 +19,7 @@ import { NotebookProvider } from "../../providers/notebookProvider";
 import { LexicalProvider } from "../../providers/lexicalProvider";
 import { OutlineTreeProvider } from "../../providers/outlineTreeProvider";
 import { RuntimesTreeProvider } from "../../providers/runtimesTreeProvider";
-import { SnapshotsTreeProvider } from "../../providers/snapshotsTreeProvider";
+import { SettingsTreeProvider } from "../../providers/settingsTreeProvider";
 import { SDKAuthProvider } from "../core/authProvider";
 import { EnvironmentCache } from "../cache/environmentCache";
 import type { DatalayerClient } from "@datalayer/core/lib/client";
@@ -37,8 +37,8 @@ export interface ExtensionUI {
   spacesTreeProvider: SpacesTreeProvider;
   /** Tree view provider for runtimes */
   runtimesTreeProvider: RuntimesTreeProvider;
-  /** Tree view provider for snapshots */
-  snapshotsTreeProvider: SnapshotsTreeProvider;
+  /** Tree view provider for settings (secrets + datasources) */
+  settingsTreeProvider: SettingsTreeProvider;
   /** Smart dynamic controller manager for runtime selection and switching */
   controllerManager: SmartDynamicControllerManager;
 }
@@ -156,19 +156,21 @@ export async function initializeUI(
     }),
   );
 
-  // 3. Runtimes tree provider (THIRD)
+  // 3. Runtimes tree provider (THIRD) - includes Runtimes + Snapshots sections
   const runtimesTreeProvider = new RuntimesTreeProvider(authProvider);
   context.subscriptions.push(
     vscode.window.createTreeView("datalayerRuntimes", {
       treeDataProvider: runtimesTreeProvider,
+      showCollapseAll: true,
     }),
   );
 
-  // 4. Snapshots tree provider (FOURTH)
-  const snapshotsTreeProvider = new SnapshotsTreeProvider(authProvider);
+  // 4. Settings tree provider (FOURTH) - includes Secrets + Datasources sections
+  const settingsTreeProvider = new SettingsTreeProvider(authProvider);
   context.subscriptions.push(
-    vscode.window.createTreeView("datalayerSnapshots", {
-      treeDataProvider: snapshotsTreeProvider,
+    vscode.window.createTreeView("datalayerSettings", {
+      treeDataProvider: settingsTreeProvider,
+      showCollapseAll: true,
     }),
   );
 
@@ -177,7 +179,7 @@ export async function initializeUI(
     outlineTreeProvider,
     spacesTreeProvider,
     runtimesTreeProvider,
-    snapshotsTreeProvider,
+    settingsTreeProvider,
     controllerManager,
   };
 }

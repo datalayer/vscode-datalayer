@@ -531,9 +531,8 @@ export class NotebookProvider extends BaseDocumentProvider<NotebookDocument> {
               // If still no document ID, try metadata lookup as last resort
               if (!documentId) {
                 try {
-                  const { DocumentBridge } = await import(
-                    "../services/bridges/documentBridge"
-                  );
+                  const { DocumentBridge } =
+                    await import("../services/bridges/documentBridge");
                   const documentBridge =
                     await DocumentBridge.getInstanceAsync();
                   const metadata = documentBridge.getDocumentMetadata(

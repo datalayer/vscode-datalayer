@@ -5,12 +5,12 @@
  */
 
 /**
- * Entry point for Primer Showcase webview
+ * Entry point for Datasource Dialog webview
  */
 
 import React from "react";
 import { createRoot } from "react-dom/client";
-import { PrimerShowcase } from "./PrimerShowcase";
+import { DatasourceDialog } from "./DatasourceDialog";
 
 // Get initial theme from VS Code
 const getInitialTheme = (): "light" | "dark" => {
@@ -31,7 +31,7 @@ const root = createRoot(container);
 
 // Render function
 function render() {
-  root.render(<PrimerShowcase colorMode={currentTheme} />);
+  root.render(<DatasourceDialog colorMode={currentTheme} />);
 }
 
 // Listen for theme changes from extension

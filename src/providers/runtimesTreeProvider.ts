@@ -6,7 +6,8 @@
 
 /**
  * Tree data provider for the Datalayer Runtimes view.
- * Displays running runtimes with auto-refresh capabilities.
+ * Displays running runtimes and snapshots in separate collapsible sections
+ * with auto-refresh capabilities for runtimes.
  *
  * @see https://code.visualstudio.com/api/extension-guides/tree-view
  * @module providers/runtimesTreeProvider
@@ -14,14 +15,19 @@
 
 import * as vscode from "vscode";
 import { RuntimeTreeItem } from "../models/runtimeTreeItem";
+import { SnapshotTreeItem } from "../models/snapshotTreeItem";
+import { TreeSectionItem } from "../models/treeSectionItem";
+import type { RuntimesTreeItem } from "../models/runtimesTreeItem";
 import { SDKAuthProvider } from "../services/core/authProvider";
 import { getServiceContainer } from "../extension";
 import type { RuntimeDTO } from "@datalayer/core/lib/models/RuntimeDTO";
+import type { RuntimeSnapshotDTO } from "@datalayer/core/lib/models/RuntimeSnapshotDTO";
 
 /**
  * Tree data provider for the Datalayer Runtimes view.
  * Implements VS Code's TreeDataProvider interface to display running runtimes
- * with automatic refresh for time remaining updates.
+ * and snapshots in separate collapsible sections with automatic refresh
+ * for time remaining updates.
  *
  * @example
  * ```typescript
@@ -29,18 +35,17 @@ import type { RuntimeDTO } from "@datalayer/core/lib/models/RuntimeDTO";
  * provider.refresh(); // Refresh entire tree
  * ```
  */
-export class RuntimesTreeProvider
-  implements vscode.TreeDataProvider<RuntimeTreeItem>
-{
+export class RuntimesTreeProvider implements vscode.TreeDataProvider<RuntimesTreeItem> {
   private _onDidChangeTreeData: vscode.EventEmitter<
-    RuntimeTreeItem | undefined | void
-  > = new vscode.EventEmitter<RuntimeTreeItem | undefined | void>();
+    RuntimesTreeItem | undefined | void
+  > = new vscode.EventEmitter<RuntimesTreeItem | undefined | void>();
   readonly onDidChangeTreeData: vscode.Event<
-    RuntimeTreeItem | undefined | void
+    RuntimesTreeItem | undefined | void
   > = this._onDidChangeTreeData.event;
 
   private authService: SDKAuthProvider;
   private runtimesCache: RuntimeDTO[] = [];
+  private snapshotsCache: RuntimeSnapshotDTO[] = [];
   private refreshTimer?: NodeJS.Timeout;
 
   /**
@@ -63,6 +68,7 @@ export class RuntimesTreeProvider
    */
   refresh(): void {
     this.runtimesCache = [];
+    this.snapshotsCache = [];
     this._onDidChangeTreeData.fire();
   }
 
@@ -72,7 +78,7 @@ export class RuntimesTreeProvider
    * @param element - The tree item to convert
    * @returns The tree item for VS Code to display
    */
-  getTreeItem(element: RuntimeTreeItem): vscode.TreeItem {
+  getTreeItem(element: RuntimesTreeItem): vscode.TreeItem {
     return element;
   }
 
@@ -80,9 +86,9 @@ export class RuntimesTreeProvider
    * Gets the children of a tree item.
    *
    * @param element - The parent element, or undefined for root
-   * @returns Array of runtime tree items
+   * @returns Array of runtime, snapshot, or section tree items
    */
-  async getChildren(element?: RuntimeTreeItem): Promise<RuntimeTreeItem[]> {
+  async getChildren(element?: RuntimesTreeItem): Promise<RuntimesTreeItem[]> {
     const authState = this.authService.getAuthState();
 
     // Check authentication
@@ -90,16 +96,30 @@ export class RuntimesTreeProvider
       return [];
     }
 
-    // Root level - return runtime items
+    // Root level - return two section headers
     if (!element) {
-      await this.loadRuntimes();
-      if (this.runtimesCache.length === 0) {
-        return [];
-      }
-      return this.runtimesCache.map((runtime) => new RuntimeTreeItem(runtime));
+      return [
+        new TreeSectionItem("Runtimes", "runtimes-section", "vm"),
+        new TreeSectionItem("Snapshots", "snapshots-section", "archive"),
+      ];
     }
 
-    // No children for runtime items
+    // Section level - return items for that section
+    if (element instanceof TreeSectionItem) {
+      if (element.sectionType === "runtimes-section") {
+        await this.loadRuntimes();
+        return this.runtimesCache.map(
+          (runtime) => new RuntimeTreeItem(runtime),
+        );
+      } else if (element.sectionType === "snapshots-section") {
+        await this.loadSnapshots();
+        return this.snapshotsCache.map(
+          (snapshot) => new SnapshotTreeItem(snapshot),
+        );
+      }
+    }
+
+    // No children for runtime/snapshot items
     return [];
   }
 
@@ -119,6 +139,38 @@ export class RuntimesTreeProvider
     } catch (error) {
       // Silently fail - tree will be empty
       this.runtimesCache = [];
+    }
+  }
+
+  /**
+   * Loads snapshots from the SDK.
+   * Updates the cache with fresh snapshot data, filtering out deleted snapshots.
+   */
+  private async loadSnapshots(): Promise<void> {
+    if (!this.authService.isAuthenticated()) {
+      this.snapshotsCache = [];
+      return;
+    }
+
+    try {
+      const sdk = getServiceContainer().sdk;
+      const allSnapshots = (await sdk.listSnapshots()) ?? [];
+
+      // Filter out deleted snapshots by checking raw data status
+      this.snapshotsCache = allSnapshots.filter((snapshot) => {
+        const rawData = snapshot.rawData();
+        // Skip deleted snapshots (status might be "deleted", "DELETED", or similar)
+        if (
+          rawData.status &&
+          rawData.status.toLowerCase().includes("deleted")
+        ) {
+          return false;
+        }
+        return true;
+      });
+    } catch (error) {
+      // Silently fail - tree will be empty
+      this.snapshotsCache = [];
     }
   }
 

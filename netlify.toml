@@ -58,7 +58,7 @@
 # Security and performance
 [build.environment]
   # Don't set NODE_ENV to production - we need devDependencies for TypeDoc
-  NODE_VERSION = "20.18.1"
+  NODE_VERSION = "22.19.0"
   GENERATE_SOURCEMAP = "false"
   CI = "true"
   # Increase Node.js heap size for large documentation builds

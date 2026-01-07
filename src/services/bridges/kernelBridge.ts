@@ -23,8 +23,10 @@ import type { NativeKernelInfo } from "../kernel/nativeKernelIntegration";
  * Extended runtime interface for webview communication.
  * Includes additional time fields needed for progress calculations.
  */
-interface ExtendedRuntimeJSON
-  extends Omit<RuntimeJSON, "startedAt" | "expiredAt"> {
+interface ExtendedRuntimeJSON extends Omit<
+  RuntimeJSON,
+  "startedAt" | "expiredAt"
+> {
   // Time fields for progress calculations (Unix timestamps or ISO strings)
   startedAt: number | string;
   expiredAt: number | string;

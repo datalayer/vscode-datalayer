@@ -17,6 +17,8 @@ import { registerAuthCommands } from "./auth";
 import { registerDocumentCommands } from "./documents";
 import { registerRuntimeCommands } from "./runtimes";
 import { registerSnapshotCommands } from "./snapshots";
+import { registerSecretsCommands } from "./secrets";
+import { registerDatasourcesCommands } from "./datasources";
 import { registerInternalCommands, getConnectedRuntime } from "./internal";
 import { registerCreateCommands } from "./create";
 import { registerThemeCommands } from "./theme";
@@ -27,7 +29,7 @@ import { SDKAuthProvider } from "../services/core/authProvider";
 import { DocumentBridge } from "../services/bridges/documentBridge";
 import { SpacesTreeProvider } from "../providers/spacesTreeProvider";
 import { RuntimesTreeProvider } from "../providers/runtimesTreeProvider";
-import { SnapshotsTreeProvider } from "../providers/snapshotsTreeProvider";
+import { SettingsTreeProvider } from "../providers/settingsTreeProvider";
 import { OutlineTreeProvider } from "../providers/outlineTreeProvider";
 import { SmartDynamicControllerManager } from "../providers/smartDynamicControllerManager";
 
@@ -45,7 +47,7 @@ export interface CommandServices {
   /** Controller manager for native notebook controller integration */
   controllerManager: SmartDynamicControllerManager;
   runtimesTreeProvider: RuntimesTreeProvider;
-  snapshotsTreeProvider: SnapshotsTreeProvider;
+  settingsTreeProvider: SettingsTreeProvider;
   outlineTreeProvider: OutlineTreeProvider;
 }
 
@@ -85,11 +87,14 @@ export function registerAllCommands(
   );
 
   // Register snapshot management commands
-  registerSnapshotCommands(
-    context,
-    services.snapshotsTreeProvider,
-    services.runtimesTreeProvider,
-  );
+  // Snapshots are now part of runtimesTreeProvider (merged tree)
+  registerSnapshotCommands(context, services.runtimesTreeProvider);
+
+  // Register secrets management commands
+  registerSecretsCommands(context, services.settingsTreeProvider);
+
+  // Register datasources management commands (placeholder)
+  registerDatasourcesCommands(context, services.settingsTreeProvider);
 
   // Register smart create commands (context-aware notebook/lexical creation)
   registerCreateCommands(context);

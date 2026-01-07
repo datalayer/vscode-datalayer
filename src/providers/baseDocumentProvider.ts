@@ -29,8 +29,7 @@ import { Runner, createExtensionRunner } from "../tools/core/runnerSetup";
  */
 export abstract class BaseDocumentProvider<
   TDocument extends vscode.CustomDocument,
-> implements vscode.CustomEditorProvider<TDocument>
-{
+> implements vscode.CustomEditorProvider<TDocument> {
   /**
    * VS Code extension context providing access to storage, subscriptions, etc.
    */

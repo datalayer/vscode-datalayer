@@ -36,9 +36,9 @@ import type { Document } from "../../models/spaceItem";
  * - Confirmation dialog generation
  * - Result formatting for VS Code
  */
-export class VSCodeToolAdapter<TParams>
-  implements vscode.LanguageModelTool<TParams>
-{
+export class VSCodeToolAdapter<
+  TParams,
+> implements vscode.LanguageModelTool<TParams> {
   constructor(
     private readonly definition: ToolDefinition,
     private readonly operation: ToolOperation<TParams, unknown>,

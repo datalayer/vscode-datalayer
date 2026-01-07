@@ -28,6 +28,7 @@
     "clean:dist": "rm -rf dist",
     "clean:out": "rm -rf out",
     "clean:vsix": "rm -rf *.vsix",
+    "rebuild:keytar": "electron-rebuild -f -w keytar -v 33.2.0",
     "vscode:prepublish": "npm run build:icons && npm run sync:tools && npm run package:noclean",
     "compile": "npm run sync:pyodide-version && npm run build:icons && npm run sync:tools && npm run clean:dist && npm run copy:pyodide && cross-env NODE_OPTIONS=--max-old-space-size=8192 webpack",
     "watch": "npm run clean:dist && webpack --watch",
@@ -58,7 +59,7 @@
     "docs:watch": "typedoc --watch",
     "docs:markdown": "typedoc --plugin typedoc-plugin-markdown --out docs-markdown",
     "docs:coverage": "typedoc --validation || true",
-    "postinstall": "bash scripts/apply-patches.sh && node scripts/downloadZmqBinaries.js",
+    "postinstall": "npm run rebuild:keytar && bash scripts/apply-patches.sh && node scripts/downloadZmqBinaries.js",
     "sync:tools": "tsx --require ./scripts/ignore-css.js scripts/sync-package-json.ts"
   },
   "dependencies": {
@@ -71,9 +72,9 @@
     "@codemirror/view": "^6.38.3",
     "@copilotkit/react-core": "^1.10.6",
     "@copilotkit/react-ui": "^1.10.6",
-    "@datalayer/core": "^0.0.20",
-    "@datalayer/jupyter-lexical": "^1.0.7",
-    "@datalayer/jupyter-react": "^2.0.1",
+    "@datalayer/core": "^0.0.23",
+    "@datalayer/jupyter-lexical": "^1.0.8",
+    "@datalayer/jupyter-react": "^2.0.2",
     "@datalayer/lexical-loro": "^0.1.0",
     "@datalayer/primer-addons": "^1.0.4",
     "@jupyter/ydoc": "^2.0.0",
@@ -118,6 +119,7 @@
     "zod": "^4.1.13"
   },
   "devDependencies": {
+    "@electron/rebuild": "^4.0.2",
     "@jupyterlab/theme-light-extension": "^4.4.10",
     "@tailwindcss/postcss": "^4.1.17",
     "@types/jest": "^30.0.0",
@@ -146,6 +148,7 @@
     "postcss": "^8.5.6",
     "prettier": "^3.6.2",
     "process": "^0.11.10",
+    "stream-browserify": "^3.0.0",
     "style-loader": "^2.0.0",
     "svg-inline-loader": "^0.8.2",
     "svg2ttf": "^6.0.3",
@@ -254,6 +257,63 @@
         "command": "datalayer.terminateRuntimes",
         "title": "Terminate Runtimes",
         "category": "Datalayer"
+      },
+      {
+        "command": "datalayer.createSecret",
+        "title": "Create Secret",
+        "category": "Datalayer",
+        "icon": "$(add)"
+      },
+      {
+        "command": "datalayer.viewSecret",
+        "title": "View Secret Value",
+        "category": "Datalayer"
+      },
+      {
+        "command": "datalayer.copySecretValue",
+        "title": "Copy Secret Value",
+        "category": "Datalayer",
+        "icon": "$(copy)"
+      },
+      {
+        "command": "datalayer.renameSecret",
+        "title": "Rename Secret",
+        "category": "Datalayer"
+      },
+      {
+        "command": "datalayer.deleteSecret",
+        "title": "Delete Secret",
+        "category": "Datalayer",
+        "icon": "$(trash)"
+      },
+      {
+        "command": "datalayer.refreshSecrets",
+        "title": "Refresh Secrets",
+        "category": "Datalayer",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "datalayer.createDatasource",
+        "title": "Create Datasource",
+        "category": "Datalayer",
+        "icon": "$(add)"
+      },
+      {
+        "command": "datalayer.editDatasource",
+        "title": "Edit Datasource",
+        "category": "Datalayer"
+      },
+      {
+        "command": "datalayer.deleteDatasource",
+        "title": "Delete Datasource",
+        "category": "Datalayer",
+        "icon": "$(trash)"
+      },
+      {
+        "command": "datalayer.refreshDatasources",
+        "title": "Refresh Datasources",
+        "category": "Datalayer",
+        "icon": "$(refresh)"
       },
       {
         "command": "datalayer.refreshSpaces",
@@ -377,10 +437,10 @@
           "contextualTitle": "Datalayer Runtimes"
         },
         {
-          "id": "datalayerSnapshots",
-          "name": "Snapshots",
-          "icon": "$(archive)",
-          "contextualTitle": "Datalayer Snapshots"
+          "id": "datalayerSettings",
+          "name": "Settings",
+          "icon": "$(settings-gear)",
+          "contextualTitle": "Datalayer Settings"
         }
       ]
     },
@@ -521,8 +581,8 @@
         },
         {
           "command": "datalayer.snapshots.refresh",
-          "when": "view == datalayerSnapshots",
-          "group": "navigation@1"
+          "when": "view == datalayerRuntimes",
+          "group": "navigation@2"
         },
         {
           "command": "datalayer.outline.refresh",
@@ -608,13 +668,63 @@
         },
         {
           "command": "datalayer.snapshots.restore",
-          "when": "view == datalayerSnapshots && viewItem == snapshot",
+          "when": "view == datalayerRuntimes && viewItem == snapshot",
           "group": "1_restore"
         },
         {
           "command": "datalayer.snapshots.delete",
-          "when": "view == datalayerSnapshots && viewItem == snapshot",
+          "when": "view == datalayerRuntimes && viewItem == snapshot",
           "group": "2_delete"
+        },
+        {
+          "command": "datalayer.createSecret",
+          "when": "view == datalayerSettings && viewItem == secrets-section",
+          "group": "inline"
+        },
+        {
+          "command": "datalayer.refreshSecrets",
+          "when": "view == datalayerSettings && viewItem == secrets-section",
+          "group": "navigation"
+        },
+        {
+          "command": "datalayer.viewSecret",
+          "when": "view == datalayerSettings && viewItem == secret",
+          "group": "1_view"
+        },
+        {
+          "command": "datalayer.copySecretValue",
+          "when": "view == datalayerSettings && viewItem == secret",
+          "group": "1_view"
+        },
+        {
+          "command": "datalayer.renameSecret",
+          "when": "view == datalayerSettings && viewItem == secret",
+          "group": "2_edit"
+        },
+        {
+          "command": "datalayer.deleteSecret",
+          "when": "view == datalayerSettings && viewItem == secret",
+          "group": "3_delete"
+        },
+        {
+          "command": "datalayer.createDatasource",
+          "when": "view == datalayerSettings && viewItem == datasources-section",
+          "group": "inline"
+        },
+        {
+          "command": "datalayer.refreshDatasources",
+          "when": "view == datalayerSettings && viewItem == datasources-section",
+          "group": "navigation"
+        },
+        {
+          "command": "datalayer.editDatasource",
+          "when": "view == datalayerSettings && viewItem == datasource",
+          "group": "1_edit"
+        },
+        {
+          "command": "datalayer.deleteDatasource",
+          "when": "view == datalayerSettings && viewItem == datasource",
+          "group": "3_delete"
         }
       ],
       "explorer/context": [
@@ -852,7 +962,11 @@
           "type": "object",
           "properties": {
             "indices": {
-              "description": "Array of cell indices (0-based) to delete. Cells will be deleted in reverse order (highest index first) to prevent index shifting."
+              "description": "Array of cell indices (0-based) to delete. Cells will be deleted in reverse order (highest index first) to prevent index shifting.",
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
             }
           },
           "required": [
@@ -978,7 +1092,8 @@
               "type": "string"
             },
             "properties": {
-              "description": "Optional block metadata and properties"
+              "description": "Optional block metadata and properties",
+              "type": "string"
             }
           },
           "required": [
@@ -1010,7 +1125,8 @@
               "type": "string"
             },
             "properties": {
-              "description": "New block metadata and properties"
+              "description": "New block metadata and properties",
+              "type": "string"
             }
           },
           "required": [
@@ -1028,7 +1144,11 @@
           "type": "object",
           "properties": {
             "ids": {
-              "description": "Array of block IDs to delete"
+              "description": "Array of block IDs to delete",
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
             }
           },
           "required": [
@@ -1276,7 +1396,7 @@
         "datalayer.pyodide.version": {
           "type": "string",
           "default": "0.27.3",
-          "markdownDescription": "Pyodide version for **Datalayer webview notebooks only**. Native VS Code notebooks use a fixed version (v0.29.0 from npm package). Changes require closing and reopening notebooks."
+          "markdownDescription": "Pyodide version for **Datalayer webview notebooks only**. Native VS Code notebooks use a fixed version (v0.29.1 from npm package). Changes require closing and reopening notebooks."
         },
         "datalayer.pyodide.preloadPackages": {
           "type": "array",

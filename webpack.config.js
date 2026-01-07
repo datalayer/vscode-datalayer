@@ -38,7 +38,7 @@ const extensionConfig = {
     bufferutil: "commonjs bufferutil", // Optional native module for ws
     "utf-8-validate": "commonjs utf-8-validate", // Optional native module for ws
     pyodide: "commonjs pyodide", // pyodide package is HUGE (~10MB+ WASM), must be external to avoid heap overflow during webpack bundling
-    keytar: "commonjs keytar", // keytar has native bindings for OS keyring access
+    keytar: "commonjs keytar", // keytar has native bindings for OS keyring access - rebuilt for Electron
     // React packages must be EXTERNAL - they should NOT run in Node.js extension context
     // React code with hooks causes "Invalid hook call" warnings when bundled into extension.js
     react: "commonjs react",
@@ -129,17 +129,9 @@ const webviewConfig = {
     filename: "webview.js",
   },
   optimization: {
-    // Split React into a separate chunk to ensure single instance
-    splitChunks: {
-      cacheGroups: {
-        react: {
-          test: /[\\/]node_modules[\\/](react|react-dom|scheduler)[\\/]/,
-          name: "react-vendors",
-          chunks: "all",
-          priority: 20,
-        },
-      },
-    },
+    // Disable code splitting to avoid RuntimeIdRuntimeModule conflicts with WASM
+    splitChunks: false,
+    runtimeChunk: false,
   },
   // Suppress warnings from external dependencies
   ignoreWarnings: [
@@ -156,6 +148,7 @@ const webviewConfig = {
       process: require.resolve("process/browser"),
       stream: false,
       buffer: require.resolve("buffer/"),
+      assert: false,
     },
     // Deduplicate CodeMirror modules to prevent multiple instances
     alias: {
@@ -314,16 +307,29 @@ const webviewConfig = {
 // Config for Lexical editor webview
 const lexicalWebviewConfig = {
   ...webviewConfig,
-  entry: "./webview/lexical/main.ts",
+  entry: {
+    main: "./webview/lexical/main.ts",
+  },
   output: {
     path: path.resolve(__dirname, "dist"),
-    filename: "lexicalWebview.js",
+    filename: (pathData) => {
+      return pathData.chunk.name === "main"
+        ? "lexicalWebview.js"
+        : "[name].lexical.js";
+    },
+    chunkFilename: "[name].lexical.chunk.js",
     // This will be overridden at runtime by __webpack_public_path__
     publicPath: "auto",
     webassemblyModuleFilename: "[hash].module.wasm",
   },
   experiments: {
     asyncWebAssembly: true,
+  },
+  optimization: {
+    runtimeChunk: {
+      name: "lexical-runtime",
+    },
+    splitChunks: false,
   },
   // Suppress warnings from external dependencies (inherited from webviewConfig)
   ignoreWarnings: [
@@ -421,6 +427,7 @@ const lexicalWebviewConfig = {
       process: require.resolve("process/browser"),
       stream: false,
       buffer: require.resolve("buffer/"),
+      assert: false,
     },
     // Deduplicate CodeMirror modules to prevent multiple instances
     alias: {
@@ -617,10 +624,144 @@ const aguiExampleConfig = {
   ],
 };
 
+// Config for Datasource Dialog webview
+const datasourceDialogConfig = {
+  target: "web",
+  mode: "none",
+  devtool: "inline-source-map",
+  entry: "./webview/datasource/main.tsx",
+  output: {
+    path: path.resolve(__dirname, "dist"),
+    filename: "datasourceDialog.js",
+  },
+  resolve: {
+    extensions: [".ts", ".tsx", ".js", ".jsx", ".json", ".svg"],
+    symlinks: true,
+    fallback: {
+      process: require.resolve("process/browser"),
+      buffer: require.resolve("buffer/"),
+      stream: require.resolve("stream-browserify"),
+      // Disable node modules not needed in browser
+      fs: false,
+      path: false,
+      crypto: false,
+    },
+    alias: {
+      react: path.resolve(__dirname, "./node_modules/react"),
+      "react-dom": path.resolve(__dirname, "./node_modules/react-dom"),
+      // Stub out react-router-dom since we don't use navigation in webview
+      "react-router-dom": false,
+    },
+  },
+  module: {
+    rules: [
+      {
+        test: /\.tsx?$/,
+        exclude: /node_modules/,
+        use: {
+          loader: "ts-loader",
+          options: {
+            configFile: path.join(__dirname, "tsconfig.webview.json"),
+            experimentalWatchApi: true,
+            transpileOnly: true,
+          },
+        },
+      },
+      {
+        test: /\.css$/,
+        use: [require.resolve("style-loader"), require.resolve("css-loader")],
+      },
+      {
+        test: /\.svg$/,
+        type: "asset/inline",
+      },
+      {
+        test: /\.(c|m)?js/,
+        resolve: {
+          fullySpecified: false,
+        },
+      },
+    ],
+  },
+  plugins: [
+    new webpack.ProvidePlugin({
+      process: "process/browser",
+    }),
+  ],
+};
+
+// Config for Datasource Edit Dialog webview
+const datasourceEditDialogConfig = {
+  target: "web",
+  mode: "none",
+  devtool: "inline-source-map",
+  entry: "./webview/datasource/editMain.tsx",
+  output: {
+    path: path.resolve(__dirname, "dist"),
+    filename: "datasourceEditDialog.js",
+  },
+  resolve: {
+    extensions: [".ts", ".tsx", ".js", ".jsx", ".json", ".svg"],
+    symlinks: true,
+    fallback: {
+      process: require.resolve("process/browser"),
+      buffer: require.resolve("buffer/"),
+      stream: require.resolve("stream-browserify"),
+      // Disable node modules not needed in browser
+      fs: false,
+      path: false,
+      crypto: false,
+    },
+    alias: {
+      react: path.resolve(__dirname, "./node_modules/react"),
+      "react-dom": path.resolve(__dirname, "./node_modules/react-dom"),
+      // Stub out react-router-dom since we don't use navigation in webview
+      "react-router-dom": false,
+    },
+  },
+  module: {
+    rules: [
+      {
+        test: /\.tsx?$/,
+        exclude: /node_modules/,
+        use: {
+          loader: "ts-loader",
+          options: {
+            configFile: path.join(__dirname, "tsconfig.webview.json"),
+            experimentalWatchApi: true,
+            transpileOnly: true,
+          },
+        },
+      },
+      {
+        test: /\.css$/,
+        use: [require.resolve("style-loader"), require.resolve("css-loader")],
+      },
+      {
+        test: /\.svg$/,
+        type: "asset/inline",
+      },
+      {
+        test: /\.(c|m)?js/,
+        resolve: {
+          fullySpecified: false,
+        },
+      },
+    ],
+  },
+  plugins: [
+    new webpack.ProvidePlugin({
+      process: "process/browser",
+    }),
+  ],
+};
+
 module.exports = [
   extensionConfig,
   webviewConfig,
   lexicalWebviewConfig,
   showcaseWebviewConfig,
+  datasourceDialogConfig,
+  datasourceEditDialogConfig,
   // aguiExampleConfig, // Commented out - file doesn't exist
 ];

@@ -12,7 +12,6 @@
  */
 
 import * as vscode from "vscode";
-import { SnapshotsTreeProvider } from "../providers/snapshotsTreeProvider";
 import { RuntimesTreeProvider } from "../providers/runtimesTreeProvider";
 import { SnapshotTreeItem } from "../models/snapshotTreeItem";
 import { showTwoStepConfirmation } from "../ui/dialogs/confirmationDialog";
@@ -21,24 +20,23 @@ import { getServiceContainer } from "../extension";
 
 /**
  * Registers all snapshot-related commands.
+ * Snapshots are now part of the runtimes tree view.
  *
  * @param context - Extension context for command subscriptions
- * @param snapshotsTreeProvider - The Snapshots tree view provider for refresh
- * @param runtimesTreeProvider - The Runtimes tree view provider for refresh after restore
+ * @param runtimesTreeProvider - The Runtimes tree view provider (includes snapshots section)
  */
 export function registerSnapshotCommands(
   context: vscode.ExtensionContext,
-  snapshotsTreeProvider?: SnapshotsTreeProvider,
   runtimesTreeProvider?: RuntimesTreeProvider,
 ): void {
   /**
    * Command: datalayer.snapshots.refresh
-   * Refreshes the snapshots list in the tree view.
+   * Refreshes the snapshots section in the runtimes tree view.
    */
   context.subscriptions.push(
     vscode.commands.registerCommand("datalayer.snapshots.refresh", () => {
-      if (snapshotsTreeProvider) {
-        snapshotsTreeProvider.refresh();
+      if (runtimesTreeProvider) {
+        runtimesTreeProvider.refresh();
       }
     }),
   );
@@ -109,9 +107,8 @@ export function registerSnapshotCommands(
             vscode.window.showInformationMessage(
               `Runtime "${runtime.givenName}" created from snapshot "${snapshotName}"!`,
             );
-            // Refresh both trees to show the new runtime and update snapshots
+            // Refresh runtimes tree to show the new runtime and update snapshots section
             runtimesTreeProvider?.refresh();
-            snapshotsTreeProvider?.refresh();
           }
         } catch (error) {
           vscode.window.showErrorMessage(
@@ -167,8 +164,8 @@ export function registerSnapshotCommands(
               vscode.window.showInformationMessage(
                 `Snapshot "${snapshotName}" deleted successfully`,
               );
-              // Refresh the snapshots tree
-              snapshotsTreeProvider?.refresh();
+              // Refresh the runtimes tree (includes snapshots section)
+              runtimesTreeProvider?.refresh();
             },
           );
         } catch (error) {

@@ -228,9 +228,8 @@ export class DatalayerJupyterServerProvider
     console.log("[DatalayerJupyterServerProvider] createGpuRuntime started");
 
     try {
-      const { EnvironmentCache } = await import(
-        "../services/cache/environmentCache"
-      );
+      const { EnvironmentCache } =
+        await import("../services/cache/environmentCache");
       const { createRuntime } = await import("../ui/dialogs/runtimeSelector");
 
       // Get GPU environment
@@ -298,9 +297,8 @@ export class DatalayerJupyterServerProvider
     console.log("[DatalayerJupyterServerProvider] createCpuRuntime started");
 
     try {
-      const { EnvironmentCache } = await import(
-        "../services/cache/environmentCache"
-      );
+      const { EnvironmentCache } =
+        await import("../services/cache/environmentCache");
       const { createRuntime } = await import("../ui/dialogs/runtimeSelector");
 
       // Get CPU environment

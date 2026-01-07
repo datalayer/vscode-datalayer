@@ -268,7 +268,7 @@ export class PyodidePreloader implements vscode.Disposable {
     const fs = await import("fs/promises");
 
     // IMPORTANT: Native notebooks use npm package version (0.29.0), NOT config version!
-    const npmPyodideVersion = "0.29.0";
+    const npmPyodideVersion = "0.29.1";
 
     // Create cache directory path (same location as runtime!)
     const cacheDir = path.join(

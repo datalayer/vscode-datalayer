@@ -65,6 +65,14 @@ export function getRuntimesTreeProvider() {
 }
 
 /**
+ * Get the settings tree provider instance.
+ * @returns The settings tree provider or undefined if not initialized
+ */
+export function getSettingsTreeProvider() {
+  return ui?.settingsTreeProvider;
+}
+
+/**
  * Activates the Datalayer VS Code extension.
  * This function is called when the extension is activated by VS Code.
  * It orchestrates the initialization of all components using the service container.
@@ -108,7 +116,7 @@ export async function activate(
     });
 
     // Initialize UI with performance tracking (now that logger is available)
-    // This creates all tree providers in order: outline, spaces, runtimes, snapshots
+    // This creates all tree providers in order: outline, spaces, runtimes, settings
     ui = await PerformanceLogger.trackOperation(
       "initialize_ui",
       () =>
@@ -148,6 +156,7 @@ export async function activate(
       ui.spacesTreeProvider,
       ui.controllerManager,
       ui.runtimesTreeProvider,
+      ui.settingsTreeProvider,
     );
     activationTimer.checkpoint("auth_state_setup");
 
@@ -165,7 +174,7 @@ export async function activate(
         spacesTreeProvider: ui.spacesTreeProvider,
         controllerManager: ui.controllerManager,
         runtimesTreeProvider: ui.runtimesTreeProvider,
-        snapshotsTreeProvider: ui.snapshotsTreeProvider,
+        settingsTreeProvider: ui.settingsTreeProvider,
         outlineTreeProvider: ui.outlineTreeProvider,
       },
       updateAuthState,
@@ -176,9 +185,8 @@ export async function activate(
     // This adds "Datalayer" to the kernel picker with runtime servers + commands
     logger.debug("Registering Datalayer Jupyter Server Collection");
     try {
-      const { DatalayerJupyterServerProvider } = await import(
-        "./jupyter/serverProvider"
-      );
+      const { DatalayerJupyterServerProvider } =
+        await import("./jupyter/serverProvider");
       const jupyterServerProvider = new DatalayerJupyterServerProvider(
         services!.sdk,
         services!.authProvider as SDKAuthProvider,
@@ -214,9 +222,8 @@ export async function activate(
     logger.debug(
       "Proactively activating Python extension for kernel discovery",
     );
-    const { ensurePythonExtensionActive } = await import(
-      "./tools/utils/pythonExtensionActivation"
-    );
+    const { ensurePythonExtensionActive } =
+      await import("./tools/utils/pythonExtensionActivation");
     // Fire-and-forget activation (don't block extension startup)
     ensurePythonExtensionActive()
       .then((isActive) => {
@@ -233,9 +240,8 @@ export async function activate(
 
     // Initialize Pyodide preloader (handles package caching for webview notebooks)
     logger.debug("Initializing Pyodide preloader for webview notebooks");
-    const { PyodidePreloader } = await import(
-      "./services/pyodide/pyodidePreloader"
-    );
+    const { PyodidePreloader } =
+      await import("./services/pyodide/pyodidePreloader");
     const pyodidePreloader = new PyodidePreloader(context, logger);
     context.subscriptions.push(pyodidePreloader);
     // Initialize preloader (prompts user if configured)
@@ -246,9 +252,8 @@ export async function activate(
 
     // Preload packages for native notebooks (uses bundled npm Pyodide v0.29.0)
     logger.debug("Preloading packages for native notebooks");
-    const { preloadPackagesForNativeNotebooks } = await import(
-      "./services/pyodide/nativeNotebookPreloader"
-    );
+    const { preloadPackagesForNativeNotebooks } =
+      await import("./services/pyodide/nativeNotebookPreloader");
     // Fire-and-forget preload (don't block activation)
     preloadPackagesForNativeNotebooks(context, logger).catch(
       (error: unknown) => {
@@ -273,9 +278,8 @@ export async function activate(
     // Register Datalayer chat participant (@datalayer)
     logger.debug("Registering Datalayer chat participant");
     try {
-      const { DatalayerChatParticipant } = await import(
-        "./chat/datalayerChatParticipant"
-      );
+      const { DatalayerChatParticipant } =
+        await import("./chat/datalayerChatParticipant");
       const chatParticipant = new DatalayerChatParticipant(context);
       context.subscriptions.push(chatParticipant.register());
       logger.info("Datalayer chat participant registered (@datalayer)");

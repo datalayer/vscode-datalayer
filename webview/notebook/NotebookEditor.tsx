@@ -931,9 +931,9 @@ function NotebookEditorCore({
   // Datalayer runtimes have an ingress URL and environment name that's not "jupyter"
   const isDatalayerRuntime = Boolean(
     selectedRuntime &&
-      selectedRuntime.ingress &&
-      selectedRuntime.environmentName &&
-      selectedRuntime.environmentName !== "jupyter",
+    selectedRuntime.ingress &&
+    selectedRuntime.environmentName &&
+    selectedRuntime.environmentName !== "jupyter",
   );
 
   return (

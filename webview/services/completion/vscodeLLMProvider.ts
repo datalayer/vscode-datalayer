@@ -67,9 +67,7 @@ import { vsCodeAPI } from "../messageHandler";
  * Uses VS Code's Language Model API (Copilot and other registered LLM providers)
  * to provide intelligent code completions in notebook cells.
  */
-export class VSCodeLLMProvider
-  implements IInlineCompletionProvider<IInlineCompletionItem>
-{
+export class VSCodeLLMProvider implements IInlineCompletionProvider<IInlineCompletionItem> {
   /** Human-readable name displayed in UI */
   readonly name = "VS Code Copilot";
   /** Unique identifier for this completion provider */

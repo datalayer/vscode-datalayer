@@ -81,6 +81,15 @@
 - Environment type indicators (CPU/GPU, memory, duration, etc.)
 - Health status monitoring and automatic recovery
 
+**Datalayer Settings** (Explorer Sidebar)
+
+- **Datasources** - Manage connections to external data sources (Athena, BigQuery, MS Sentinel, Splunk)
+  - Create and configure datasources with database and output bucket settings
+  - Click to edit datasource properties
+  - Quick access via right-click context menu
+  - Type indicator shows datasource variant (athena, bigquery, mssentinel, splunk)
+- **Secrets** - Secure credential management for datasource authentication
+
 ### ⚙️ **Smart Runtime Management**
 
 - **Auto-connect** - Documents automatically connect to available runtimes (configurable)
