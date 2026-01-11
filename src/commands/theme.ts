@@ -12,6 +12,7 @@
 
 import * as vscode from "vscode";
 import * as path from "path";
+import { getPrimerVSCodeThemeCSS } from "../ui/styles/primerVSCodeTheme";
 
 /**
  * Registers theme-related commands.
@@ -110,61 +111,13 @@ function getWebviewContent(
             background-color: var(--vscode-editor-background);
             overflow-x: hidden;
         }
-        
+
         #root {
             width: 100%;
             height: 100%;
         }
-        
-        /* CRITICAL: Override Primer colors with VSCode CSS variables using !important */
-        :root {
-            /* Base colors */
-            --bgColor-default: var(--vscode-editor-background) !important;
-            --fgColor-default: var(--vscode-editor-foreground) !important;
-            --fgColor-muted: var(--vscode-descriptionForeground) !important;
-            --bgColor-muted: var(--vscode-editorWidget-background) !important;
-            --borderColor-default: var(--vscode-panel-border) !important;
-            
-            /* Button variant colors - Default */
-            --button-default-bgColor-rest: var(--vscode-button-secondaryBackground) !important;
-            --button-default-bgColor-hover: var(--vscode-button-secondaryHoverBackground) !important;
-            --button-default-fgColor-rest: var(--vscode-button-secondaryForeground) !important;
-            --button-default-borderColor-rest: var(--vscode-button-border) !important;
-            
-            /* Button variant colors - Primary */
-            --button-primary-bgColor-rest: var(--vscode-button-background) !important;
-            --button-primary-bgColor-hover: var(--vscode-button-hoverBackground) !important;
-            --button-primary-fgColor-rest: var(--vscode-button-foreground) !important;
-            --button-primary-borderColor-rest: var(--vscode-button-border) !important;
-            
-            /* Button variant colors - Danger */
-            --button-danger-bgColor-rest: transparent !important;
-            --button-danger-bgColor-hover: var(--vscode-errorForeground) !important;
-            --button-danger-fgColor-rest: var(--vscode-errorForeground) !important;
-            --button-danger-fgColor-hover: var(--vscode-button-foreground) !important;
-            --button-danger-borderColor-rest: var(--vscode-errorForeground) !important;
-            
-            /* Flash/Banner colors - use bgColor and fgColor patterns */
-            --bgColor-success-muted: color-mix(in srgb, var(--vscode-testing-iconPassed) 15%, transparent) !important;
-            --fgColor-success: var(--vscode-testing-iconPassed) !important;
-            --borderColor-success-muted: var(--vscode-testing-iconPassed) !important;
-            
-            --bgColor-danger-muted: color-mix(in srgb, var(--vscode-errorForeground) 15%, transparent) !important;
-            --fgColor-danger: var(--vscode-errorForeground) !important;
-            --borderColor-danger-muted: var(--vscode-errorForeground) !important;
-            --borderColor-danger-emphasis: var(--vscode-errorForeground) !important;
-            
-            --bgColor-attention-muted: color-mix(in srgb, var(--vscode-editorWarning-foreground) 15%, transparent) !important;
-            --fgColor-attention: var(--vscode-editorWarning-foreground) !important;
-            --borderColor-attention-muted: var(--vscode-editorWarning-foreground) !important;
-            --borderColor-attention-emphasis: var(--vscode-editorWarning-foreground) !important;
-            
-            /* Label colors - Labels use emphasis variants for borders */
-            --bgColor-success-emphasis: var(--vscode-testing-iconPassed) !important;
-            
-            /* Progress bar */
-            --progressBar-bgColor: var(--vscode-testing-iconPassed) !important;
-        }
+
+        ${getPrimerVSCodeThemeCSS()}
     </style>
 </head>
 <body>

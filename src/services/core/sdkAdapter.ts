@@ -67,6 +67,7 @@ export function createVSCodeSDK(config: VSCodeSDKConfig): DatalayerClient {
       runtimesRunUrl,
       spacerRunUrl,
       contextId: context.extension.id,
+      storageType: "NodeStorage (keytar)",
     });
   }
 
@@ -75,6 +76,10 @@ export function createVSCodeSDK(config: VSCodeSDKConfig): DatalayerClient {
     iamRunUrl,
     runtimesRunUrl,
     spacerRunUrl,
+
+    // Use default NodeStorage (keytar) - automatically rebuilt for Electron via postinstall
+    // Shares credentials with CLI - login once, works everywhere
+    // No custom storage needed - core package uses keytar by default
 
     // Enhanced handlers with comprehensive logging
     handlers: DatalayerClientOperationTracker.createEnhancedSDKHandlers(),

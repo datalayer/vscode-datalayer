@@ -217,9 +217,8 @@ export class OAuthFlowManager extends BaseService {
       const authzResponse = await this.logger.timeAsync(
         "get_oauth_authz_url",
         async () => {
-          const { getOAuth2AuthzUrl } = await import(
-            "@datalayer/core/lib/api/iam/oauth2"
-          );
+          const { getOAuth2AuthzUrl } =
+            await import("@datalayer/core/lib/api/iam/oauth2");
           return getOAuth2AuthzUrl(provider, callbackUri, state);
         },
         {

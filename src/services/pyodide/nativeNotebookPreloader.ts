@@ -91,7 +91,7 @@ async function _executePreload(
 
     // IMPORTANT: Native notebooks use npm package version (0.29.0)
     // The datalayer.pyodide.version config is ONLY for webview notebooks (CDN)
-    const pyodideVersion = "0.29.0";
+    const pyodideVersion = "0.29.1";
 
     // Create cache directory path (same location as runtime!)
     const cacheDir = path.join(

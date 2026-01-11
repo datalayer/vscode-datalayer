@@ -13,13 +13,13 @@
 import * as vscode from "vscode";
 import type { PythonExtension } from "@vscode/python-extension";
 import type { ToolOperation } from "@datalayer/jupyter-react";
+import { validateWithZod } from "@datalayer/jupyter-react";
 import type { DatalayerClient } from "@datalayer/core/lib/client";
 import type { IAuthProvider } from "../../services/interfaces/IAuthProvider";
 import {
   listKernelsParamsSchema,
   type ListKernelsParams,
 } from "../schemas/listKernels";
-import { validateWithZod } from "@datalayer/jupyter-react/lib/tools/core/zodUtils";
 import { hasIpykernel } from "../utils/ipykernelDetection";
 import { ensurePythonExtensionActive } from "../utils/pythonExtensionActivation";
 

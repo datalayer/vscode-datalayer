@@ -11,13 +11,13 @@
  */
 
 import type { ToolOperation } from "@datalayer/jupyter-react";
+import { validateWithZod } from "@datalayer/jupyter-react";
 import {
   startRuntimeParamsSchema,
   connectRuntimeParamsSchema,
   type StartRuntimeParams,
   type ConnectRuntimeParams,
 } from "../schemas/manageRuntime";
-import { validateWithZod } from "@datalayer/jupyter-react/lib/tools/core/zodUtils";
 
 /**
  * Runtime information structure

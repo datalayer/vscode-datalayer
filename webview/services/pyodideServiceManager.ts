@@ -222,12 +222,8 @@ class MinimalSessionManager extends BaseSessionManager {
  * @param pyodideUrl - Optional Pyodide CDN URL (default: official CDN)
  */
 export function createPyodideServiceManager(
-  pyodideUrl?: string,
+  _pyodideUrl?: string,
 ): ServiceManager.IManager {
-  console.log(
-    "[PyodideServiceManager] createPyodideServiceManager called with URL:",
-    pyodideUrl || "default CDN",
-  );
   const serverSettings = ServerConnection.makeSettings({
     baseUrl: "http://pyodide-local",
     wsUrl: "ws://pyodide-local",
@@ -352,7 +348,6 @@ export function createPyodideServiceManager(
       return new Signal(serviceManager as any);
     },
     dispose: () => {
-      console.log("[PyodideServiceManager] Disposing service manager");
       // CRITICAL: Shutdown all kernels when service manager is disposed
       kernelManager.shutdownAll().catch((error) => {
         console.error(

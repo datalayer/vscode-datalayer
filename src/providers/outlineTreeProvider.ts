@@ -18,9 +18,7 @@ import type { OutlineItem } from "../../webview/types/messages";
  * Tree provider for document outline view.
  * Manages outline data from multiple documents and handles navigation.
  */
-export class OutlineTreeProvider
-  implements vscode.TreeDataProvider<OutlineTreeItem>
-{
+export class OutlineTreeProvider implements vscode.TreeDataProvider<OutlineTreeItem> {
   private _onDidChangeTreeData = new vscode.EventEmitter<
     OutlineTreeItem | undefined | null | void
   >();

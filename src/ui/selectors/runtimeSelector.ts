@@ -215,9 +215,8 @@ export class DatalayerRuntimeSelector {
    * Shows creation flow (snapshot, name, duration) and auto-connects.
    */
   private async createGpuRuntime(): Promise<void> {
-    const { EnvironmentCache } = await import(
-      "../../services/cache/environmentCache"
-    );
+    const { EnvironmentCache } =
+      await import("../../services/cache/environmentCache");
     const { createRuntime } = await import("../dialogs/runtimeSelector");
 
     // Get GPU environment
@@ -251,9 +250,8 @@ export class DatalayerRuntimeSelector {
    * Shows creation flow (snapshot, name, duration) and auto-connects.
    */
   private async createCpuRuntime(): Promise<void> {
-    const { EnvironmentCache } = await import(
-      "../../services/cache/environmentCache"
-    );
+    const { EnvironmentCache } =
+      await import("../../services/cache/environmentCache");
     const { createRuntime } = await import("../dialogs/runtimeSelector");
 
     // Get CPU environment

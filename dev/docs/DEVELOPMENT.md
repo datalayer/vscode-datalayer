@@ -14,6 +14,10 @@ This document provides comprehensive information for developers who want to cont
 
 ```bash
 # Install dependencies
+# Note: Use --ignore-scripts to bypass @datalayer/core postinstall issues
+npm install --ignore-scripts
+
+# Or if postinstall works for you
 npm install
 
 # Watch for changes (development)
@@ -31,6 +35,8 @@ npm run package
 # Create VSIX package
 npm run vsix
 ```
+
+**Note on Installation**: If you encounter errors about missing `scripts/apply-patches.sh` during `npm install`, use `npm install --ignore-scripts` instead. This bypasses postinstall scripts in dependencies that aren't needed for VS Code extension development.
 
 ## Working with Jupyter Packages
 
@@ -281,6 +287,50 @@ npm run vsix
 - `diff@^8.0.2` (not 7.0.0)
 - Run `npm install @toon-format/toon@^1.3.0 diff@^8.0.2` to fix version mismatches
 
+### Keytar for Credential Storage
+
+The extension uses **keytar** for secure OS keyring access (macOS Keychain, Windows Credential Manager, Linux Secret Service). This enables credential sharing between the VS Code extension and the Datalayer CLI.
+
+**Keytar Dependencies**:
+
+- `keytar@^7.9.0` - Native Node.js module for OS keyring access
+- `@electron/rebuild@^4.0.2` - Rebuilds native modules for Electron (devDependency)
+
+**Automatic Rebuild**:
+
+Keytar is automatically rebuilt for Electron during `npm install` via the `postinstall` hook:
+
+```bash
+# Postinstall workflow (runs automatically)
+npm run rebuild:keytar           # Rebuild keytar for Electron 33.2.0
+bash scripts/apply-patches.sh    # Apply package patches
+node scripts/downloadZmqBinaries.js  # Download ZMQ binaries
+```
+
+**Manual Rebuild** (if needed):
+
+```bash
+# Rebuild keytar manually for Electron 33.2.0 (VS Code 1.107.0)
+npm run rebuild:keytar
+```
+
+**How it works**:
+
+1. During `npm install`, the `postinstall` script runs `npm run rebuild:keytar`
+2. This rebuilds keytar's native bindings for Electron 33.2.0 (VS Code's Electron version)
+3. The rebuilt module is compatible with VS Code's Node.js runtime
+4. Credentials stored by the CLI are accessible to the extension and vice versa
+
+**Benefits**:
+
+- ✅ **Secure credential storage** - Uses OS-native keyring APIs
+- ✅ **Cross-tool credential sharing** - CLI and VS Code share the same credentials
+- ✅ **No duplicate logins** - Login once, works everywhere
+- ✅ **Automatic rebuild** - No manual intervention needed
+- ✅ **Cross-platform** - Works on macOS, Windows, and Linux
+
+**Important**: The extension uses `NodeStorage` from `@datalayer/core` which automatically detects and uses keytar for credential storage. This ensures credentials are stored securely in the OS keyring and shared between the CLI and VS Code extension.
+
 ## Code Quality & Validation
 
 The project enforces strict quality standards with zero-tolerance for errors.
@@ -465,6 +515,23 @@ npm run clean  # Removes dist/, out/, *.vsix
 ```
 
 ### Common Tasks
+
+#### Clean Install from Scratch
+
+If you need to start fresh with dependencies:
+
+```bash
+# Remove existing dependencies
+rm -rf node_modules
+
+# Clean install (bypass postinstall issues)
+npm install --ignore-scripts
+
+# Rebuild extension
+npm run compile
+```
+
+**Why --ignore-scripts?** The `@datalayer/core` package (version ^0.0.20 from npm) has a postinstall script that expects files only available in the development repository, not in the published npm package. Using `--ignore-scripts` bypasses this issue without affecting extension functionality.
 
 #### Adding a New Command
 
@@ -838,7 +905,129 @@ The extension uses a Template Method pattern for kernel management, eliminating 
 4. **Debugging**: Runtime type identification via `managerType` property
 5. **UX**: Stable references prevent unnecessary React re-renders
 
-## Documentation
+## Datasource Management (January 2025)
+
+### Overview
+
+The extension provides a complete datasource management system in the Settings tree view, allowing users to create and configure connections to external data sources (Athena, BigQuery, MS Sentinel, Splunk).
+
+### Architecture
+
+**Components**:
+
+- **Settings Tree Provider** (`src/providers/settingsTreeProvider.ts`) - Manages datasources and secrets sections
+- **Datasource Tree Item** (`src/models/datasourceTreeItem.ts`) - Tree item with click handler and context menu
+- **Create Dialog** (`webview/datasource/DatasourceDialog.tsx`) - React form for creating datasources
+- **Edit Dialog** (`webview/datasource/DatasourceEditDialog.tsx`) - Separate React form for editing
+
+**Commands**:
+
+- `datalayer.createDatasource` - Opens create dialog
+- `datalayer.editDatasource` - Opens edit dialog (triggered by click or right-click)
+- `datalayer.deleteDatasource` - Deletes datasource with confirmation
+- `datalayer.refreshDatasources` - Refreshes tree view
+
+### Implementation Patterns
+
+#### Separate Create and Edit Components
+
+**CRITICAL**: Create and edit dialogs are separate components, NOT conditional logic in one component.
+
+```typescript
+// ✅ CORRECT - Separate components
+export function DatasourceDialog({ colorMode }: Props) { ... }
+export function DatasourceEditDialog({ colorMode }: Props) { ... }
+
+// ❌ WRONG - Conditional logic in one component
+export function DatasourceDialog({ mode, colorMode }: Props) {
+  if (mode === 'edit') { ... } else { ... }
+}
+```
+
+#### Webview Ready Pattern
+
+Always wait for webview ready before sending data:
+
+```typescript
+// Wait for webview ready
+const readyPromise = new Promise<void>((resolve) => {
+  const disposable = panel.webview.onDidReceiveMessage((message) => {
+    if (message.type === "ready") {
+      disposable.dispose();
+      resolve();
+    }
+  });
+});
+
+await readyPromise;
+
+// Now safe to send data
+panel.webview.postMessage({ type: "init-edit", body: {...} });
+```
+
+#### Tree Item Click Handler
+
+Tree items can have click commands for direct interaction:
+
+```typescript
+this.command = {
+  command: "datalayer.editDatasource",
+  title: "Edit Datasource",
+  arguments: [this],
+};
+```
+
+### Icon Management
+
+**WebView Panel Icons**:
+
+- WebView panels require **file URIs**, not `ThemeIcon`
+- Use `panel.iconPath = vscode.Uri.joinPath(context.extensionUri, "images", "icon.png")`
+- Cannot use `fill="currentColor"` - icons need explicit colors or theme-aware variants
+
+**Tree View Icons**:
+
+- Tree items can use `ThemeIcon`: `this.iconPath = new vscode.ThemeIcon("database")`
+- `ThemeIcon` automatically adapts to VS Code theme
+
+### Message Flow
+
+**Extension → Webview**:
+
+```typescript
+panel.webview.postMessage({
+  type: "init-edit",
+  body: { datasource: {...} }
+});
+```
+
+**Webview → Extension**:
+
+```typescript
+// Webview sends
+vscode.postMessage({ type: "update-datasource", body: {...} });
+
+// Extension receives
+panel.webview.onDidReceiveMessage(async (message) => {
+  if (message.type === "update-datasource") { ... }
+});
+```
+
+### Files Reference
+
+- `src/commands/createDatasourceDialog.ts` - Dialog command handlers and webview setup
+- `src/commands/datasources.ts` - CRUD command registration
+- `src/providers/settingsTreeProvider.ts` - Tree data provider with datasources section
+- `src/models/datasourceTreeItem.ts` - Tree item with click handler
+- `webview/datasource/DatasourceDialog.tsx` - Create form component
+- `webview/datasource/DatasourceEditDialog.tsx` - Edit form component (separate!)
+- `webview/datasource/main.tsx` - Create dialog entry point
+- `webview/datasource/editMain.tsx` - Edit dialog entry point
+- `src/ui/templates/datasourceTemplate.ts` - Create dialog HTML template
+- `src/ui/templates/datasourceEditTemplate.ts` - Edit dialog HTML template
+- `webpack.config.js` - Separate webpack entries for create and edit dialogs
+
+## API Documentation
 
 ### Generate Documentation
 

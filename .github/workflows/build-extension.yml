@@ -42,7 +42,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v6
         with:
-          node-version: "20"
+          node-version: "22"
 
       - name: Install system dependencies for keytar
         run: |
@@ -50,67 +50,7 @@ jobs:
           sudo apt-get install -y libsecret-1-dev
 
       - name: Install dependencies
-        run: |
-          set +e  # Don't exit on error so we can see full output
-          npm install --ignore-engines
-          NPM_EXIT_CODE=$?
-          echo ""
-          echo "📊 npm install exit code: $NPM_EXIT_CODE"
-          echo ""
-          echo "📂 Workspace root after install:"
-          ls -la
-          echo ""
-          echo "📦 node_modules/@datalayer:"
-          ls -la node_modules/@datalayer/ || echo "Directory not found"
-          echo ""
-          echo "🔍 Checking @datalayer/jupyter-lexical structure:"
-          if [ -d "node_modules/@datalayer/jupyter-lexical" ]; then
-            echo "✓ Package directory exists"
-            PACKAGE_VERSION=$(cat node_modules/@datalayer/jupyter-lexical/package.json | grep '"version"' | head -1)
-            echo "  Version: $PACKAGE_VERSION"
-            echo ""
-            echo "  Top-level contents:"
-            ls -la node_modules/@datalayer/jupyter-lexical/ | head -20
-            echo ""
-            if [ -d "node_modules/@datalayer/jupyter-lexical/lib" ]; then
-              echo "  ✓ lib/ directory exists"
-              if [ -d "node_modules/@datalayer/jupyter-lexical/lib/plugins" ]; then
-                echo "  ✓ lib/plugins/ directory exists"
-                echo "    Plugin files:"
-                ls node_modules/@datalayer/jupyter-lexical/lib/plugins/*.js 2>/dev/null | head -10
-              else
-                echo "  ✗ lib/plugins/ directory NOT FOUND"
-                echo "    lib/ contents:"
-                ls -la node_modules/@datalayer/jupyter-lexical/lib/
-              fi
-            else
-              echo "  ✗ lib/ directory NOT FOUND"
-            fi
-          else
-            echo "✗ Package NOT installed"
-          fi
-          echo ""
-          echo "🔍 Verifying zeromq binaries (all platforms):"
-          if [ -d "node_modules/zeromq/prebuilds" ]; then
-            echo "✓ zeromq prebuilds directory exists"
-            echo "  Platform binaries:"
-            ls -la node_modules/zeromq/prebuilds/ | head -20
-          else
-            echo "✗ zeromq prebuilds directory NOT FOUND"
-          fi
-          echo ""
-          if [ $NPM_EXIT_CODE -ne 0 ]; then
-            echo "❌ npm install failed with exit code $NPM_EXIT_CODE"
-            exit $NPM_EXIT_CODE
-          fi
-          echo "✅ npm install succeeded"
-        shell: bash
-
-      - name: Debug - Show package.json dependencies
-        run: |
-          echo "📄 package.json dependencies:"
-          cat package.json | grep -A 50 '"dependencies"' | head -60
-        shell: bash
+        run: npm install --ignore-engines
 
       - name: Build VS Code extension
         run: npm run compile
@@ -263,7 +203,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v6
         with:
-          node-version: "20"
+          node-version: "22"
 
       - name: Download extension artifact
         uses: actions/download-artifact@v7

@@ -5,7 +5,7 @@
  */
 
 import type { ToolDefinition } from "@datalayer/jupyter-react";
-import { zodToToolParameters } from "@datalayer/jupyter-react/lib/tools/core/zodUtils";
+import { zodToToolParameters } from "@datalayer/jupyter-react";
 import { selectKernelParamsSchema } from "../schemas/selectKernel";
 
 /**

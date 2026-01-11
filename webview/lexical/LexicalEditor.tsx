@@ -35,7 +35,7 @@ import { TableCellNode, TableNode, TableRowNode } from "@lexical/table";
 import { ListPlugin } from "@lexical/react/LexicalListPlugin";
 import { CheckListPlugin } from "@lexical/react/LexicalCheckListPlugin";
 import { LinkPlugin } from "@lexical/react/LexicalLinkPlugin";
-import { Jupyter, useJupyter } from "@datalayer/jupyter-react";
+import { useJupyter } from "@datalayer/jupyter-react";
 import { ServiceManager } from "@jupyterlab/services";
 import {
   JupyterInputNode,
@@ -263,15 +263,27 @@ function LoadContentPlugin({
 
 /**
  * Wrapper component for kernel-dependent Jupyter plugins.
- * This component is wrapped with Jupyter provider and uses runtime ingress as key,
- * so only these plugins remount when runtime changes (not the entire editor).
+ * Uses useJupyter hook with serviceManager to get the default kernel.
+ * Remounts when runtime changes (via key prop).
  */
-function JupyterKernelPlugins() {
-  const { defaultKernel } = useJupyter();
+function JupyterKernelPlugins({
+  serviceManager,
+  startDefaultKernel,
+}: {
+  serviceManager: ServiceManager.IManager;
+  startDefaultKernel: boolean;
+}) {
+  const { defaultKernel } = useJupyter({
+    serviceManager,
+    startDefaultKernel,
+    defaultKernelName: "python",
+  });
 
   return (
     <>
+      {/* @ts-ignore - Type mismatch between duplicate Kernel types from different module instances */}
       <ComponentPickerMenuPlugin kernel={defaultKernel} />
+      {/* @ts-ignore - Type mismatch between duplicate Kernel types from different module instances */}
       <JupyterInputOutputPlugin kernel={defaultKernel} />
     </>
   );
@@ -550,19 +562,12 @@ export function LexicalEditor({
             <AutoEmbedPlugin />
             <JupyterCellPlugin />
             <AutoIndentPlugin defaultLanguage="python" debug={true} />
-            {/* Wrap kernel plugins with Jupyter provider - only these remount on runtime change */}
-            <Jupyter
+            {/* Kernel plugins - remount when runtime changes */}
+            <JupyterKernelPlugins
               key={selectedRuntime?.ingress || "no-runtime"}
-              // @ts-ignore - Type mismatch between @jupyterlab/services versions
               serviceManager={serviceManager}
               startDefaultKernel={!!selectedRuntime}
-              defaultKernelName="python"
-              lite={false}
-              collaborative={false}
-              terminals={false}
-            >
-              <JupyterKernelPlugins />
-            </Jupyter>
+            />
             <LexicalInlineCompletionPlugin
               providers={[lexicalLLMProvider]}
               debounceMs={200}

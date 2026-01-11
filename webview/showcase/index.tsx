@@ -22,6 +22,18 @@ const getInitialTheme = (): "light" | "dark" => {
 
 let currentTheme: "light" | "dark" = getInitialTheme();
 
+// Create root once
+const container = document.getElementById("root");
+if (!container) {
+  throw new Error("Root container not found");
+}
+const root = createRoot(container);
+
+// Render function
+function render() {
+  root.render(<PrimerShowcase colorMode={currentTheme} />);
+}
+
 // Listen for theme changes from extension
 window.addEventListener("message", (event) => {
   const message = event.data;
@@ -30,15 +42,6 @@ window.addEventListener("message", (event) => {
     render();
   }
 });
-
-// Render function
-function render() {
-  const container = document.getElementById("root");
-  if (!container) return;
-
-  const root = createRoot(container);
-  root.render(<PrimerShowcase colorMode={currentTheme} />);
-}
 
 // Initial render
 render();

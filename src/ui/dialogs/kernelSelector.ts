@@ -45,9 +45,8 @@ export async function showKernelSelector(
   currentRuntime?: unknown,
 ): Promise<void> {
   // Import native kernel integration
-  const { showPythonEnvironmentPicker, showJupyterServerPicker } = await import(
-    "../../services/kernel/nativeKernelIntegration"
-  );
+  const { showPythonEnvironmentPicker, showJupyterServerPicker } =
+    await import("../../services/kernel/nativeKernelIntegration");
 
   const options: KernelOption[] = [
     {
@@ -112,6 +111,19 @@ export async function showKernelSelector(
               vscode.window.showInformationMessage(
                 `Connected to runtime "${runtime.givenName || runtime.podName}"`,
               );
+
+              // Refresh the runtimes tree to show the new/selected runtime
+              const { getRuntimesTreeProvider } =
+                await import("../../extension");
+              const runtimesTreeProvider = getRuntimesTreeProvider();
+              if (runtimesTreeProvider) {
+                // Immediately refresh to show the runtime
+                runtimesTreeProvider.refresh();
+                // Wait for server to fully propagate the change, then refresh again
+                setTimeout(() => {
+                  runtimesTreeProvider.refresh();
+                }, 1000);
+              }
             }
           } else {
             console.log(
@@ -255,9 +267,8 @@ export async function showKernelSelector(
       isSeparator: true, // Mark as needing separator before it
       action: async () => {
         // Import confirmation utilities
-        const { showTwoStepConfirmation, CommonConfirmations } = await import(
-          "./confirmationDialog"
-        );
+        const { showTwoStepConfirmation, CommonConfirmations } =
+          await import("./confirmationDialog");
 
         const confirmed = await showTwoStepConfirmation(
           CommonConfirmations.terminateRuntime(runtimeName),

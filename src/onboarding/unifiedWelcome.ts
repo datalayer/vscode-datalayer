@@ -113,13 +113,9 @@ export async function showUnifiedWelcomePrompt(
     false,
   );
 
-  console.log("[DATALAYER ONBOARDING] Onboarding state:", { completed });
   logger.info("Onboarding state check", { completed });
 
   if (completed) {
-    console.log(
-      "[DATALAYER ONBOARDING] Onboarding already completed, skipping",
-    );
     logger.info("Onboarding already completed, skipping");
     return;
   }
@@ -251,12 +247,6 @@ async function applyRecommendedSettings(
   isDefaultEditor: boolean,
   logger: ILogger,
 ): Promise<void> {
-  console.log("[DATALAYER ONBOARDING] applyRecommendedSettings called with:", {
-    hasJupyter,
-    jupyterToolsEnabled,
-    isDefaultEditor,
-  });
-
   const config = vscode.workspace.getConfiguration();
 
   // 1. Set default notebook editor
@@ -276,21 +266,12 @@ async function applyRecommendedSettings(
   }
 
   // 2. Disable Jupyter tools if needed
-  console.log("[DATALAYER ONBOARDING] Checking Jupyter tools:", {
-    hasJupyter,
-    jupyterToolsEnabled,
-  });
-
   if (hasJupyter && jupyterToolsEnabled) {
     try {
       const currentValue = vscode.workspace
         .getConfiguration("jupyter")
         .get("languageModelTools.enabled");
 
-      console.log(
-        "[DATALAYER ONBOARDING] Attempting to disable Jupyter tools, current value:",
-        currentValue,
-      );
       logger.info("Attempting to disable Jupyter tools", {
         hasJupyter,
         jupyterToolsEnabled,
@@ -310,25 +291,13 @@ async function applyRecommendedSettings(
         .getConfiguration("jupyter")
         .get("languageModelTools.enabled");
 
-      console.log(
-        "[DATALAYER ONBOARDING] After update, Jupyter tools value:",
-        newValue,
-      );
       logger.info("Applied: Disabled Jupyter tools", {
         newValue,
         success: newValue === false,
       });
     } catch (error) {
-      console.log(
-        "[DATALAYER ONBOARDING] ERROR disabling Jupyter tools:",
-        error,
-      );
       logger.error("Failed to disable Jupyter tools", error as Error);
     }
-  } else {
-    console.log(
-      "[DATALAYER ONBOARDING] Skipping Jupyter tools (not needed or already disabled)",
-    );
   }
 }
 

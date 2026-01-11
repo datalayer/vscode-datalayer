@@ -363,13 +363,8 @@ export abstract class BaseKernelManager implements ITypedKernelManager {
    * // Output: [PyodideKernelManager] Starting kernel { name: "python3" }
    * ```
    */
-  protected log(message: string, ...args: unknown[]): void {
-    const prefix = `[${this.managerType}KernelManager]`;
-    if (args.length > 0) {
-      console.log(prefix, message, ...args);
-    } else {
-      console.log(prefix, message);
-    }
+  protected log(_message: string, ..._args: unknown[]): void {
+    // Logging disabled to reduce console clutter
   }
 
   /**

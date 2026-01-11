@@ -11,7 +11,7 @@
  */
 
 import React, { useState, useEffect, useContext } from "react";
-import { notebookStore2 } from "@datalayer/jupyter-react";
+import { notebookStore } from "@datalayer/jupyter-react";
 import { MessageHandlerContext } from "../services/messageHandler";
 import type { RuntimeJSON } from "@datalayer/core/lib/client";
 
@@ -54,14 +54,14 @@ export const NotebookToolbar: React.FC<NotebookToolbarProps> = ({
   // Track if sessionContext is ready (kernel is ready for execution)
   const [isSessionReady, setIsSessionReady] = useState<boolean>(false);
 
-  // Monitor notebook state from notebookStore2
+  // Monitor notebook state from notebookStore
   useEffect(() => {
     if (!notebookId) {
       return undefined;
     }
 
     // Initial state
-    const storeState = notebookStore2.getState();
+    const storeState = notebookStore.getState();
     const initialNotebook = storeState.notebooks.get(notebookId);
 
     if (initialNotebook) {
@@ -69,7 +69,7 @@ export const NotebookToolbar: React.FC<NotebookToolbarProps> = ({
     }
 
     // Subscribe to changes
-    const unsubscribe = notebookStore2.subscribe((state) => {
+    const unsubscribe = notebookStore.subscribe((state: any) => {
       const notebook = state.notebooks.get(notebookId);
       if (notebook) {
         setNotebook(notebook);
@@ -264,31 +264,31 @@ export const NotebookToolbar: React.FC<NotebookToolbarProps> = ({
 
   const handleRunAll = () => {
     if (notebookId) {
-      notebookStore2.getState().runAll(notebookId);
+      notebookStore.getState().runAll(notebookId);
     }
   };
 
   const handleRunCell = () => {
     if (notebookId) {
-      notebookStore2.getState().run(notebookId);
+      notebookStore.getState().run(notebookId);
     }
   };
 
   const handleClearAllOutputs = () => {
     if (notebookId) {
-      notebookStore2.getState().clearAllOutputs(notebookId);
+      notebookStore.getState().clearAllOutputs(notebookId);
     }
   };
 
   const handleAddCodeCell = () => {
     if (notebookId) {
-      notebookStore2.getState().insertBelow(notebookId, "code");
+      notebookStore.getState().insertBelow(notebookId, "code");
     }
   };
 
   const handleAddMarkdownCell = () => {
     if (notebookId) {
-      notebookStore2.getState().insertBelow(notebookId, "markdown");
+      notebookStore.getState().insertBelow(notebookId, "markdown");
     }
   };
 
@@ -414,9 +414,7 @@ export const NotebookToolbar: React.FC<NotebookToolbarProps> = ({
               isSessionReady={isSessionReady}
               kernelInitializing={kernelInitializing}
               onClick={handleSelectRuntime}
-              disabled={
-                kernelStatus !== "disconnected" && !!notebook?.adapter?.kernel
-              }
+              disabled={false}
             />
           </>
         }
