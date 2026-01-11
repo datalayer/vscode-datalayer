@@ -333,6 +333,17 @@
         "title": "Delete"
       },
       {
+        "command": "datalayer.downloadDocument",
+        "title": "Download",
+        "icon": "$(cloud-download)"
+      },
+      {
+        "command": "datalayer.copyLocalFileToSpace",
+        "title": "Copy to Datalayer Space",
+        "category": "Datalayer",
+        "icon": "$(cloud-upload)"
+      },
+      {
         "command": "datalayer.runtimes.refresh",
         "title": "Refresh Runtimes",
         "icon": "$(refresh)"
@@ -496,6 +507,14 @@
           "when": "false"
         },
         {
+          "command": "datalayer.downloadDocument",
+          "when": "false"
+        },
+        {
+          "command": "datalayer.copyLocalFileToSpace",
+          "when": "false"
+        },
+        {
           "command": "datalayer.runtimes.refresh",
           "when": "false"
         },
@@ -609,7 +628,12 @@
         {
           "command": "datalayer.openDocument",
           "when": "view == datalayerSpaces && (viewItem == notebook || viewItem == document)",
-          "group": "2_open"
+          "group": "2_open@1"
+        },
+        {
+          "command": "datalayer.downloadDocument",
+          "when": "view == datalayerSpaces && (viewItem == notebook || viewItem == document)",
+          "group": "2_open@2"
         },
         {
           "command": "datalayer.renameItem",
@@ -735,6 +759,11 @@
         {
           "command": "datalayer.newLocalLexicalDocument",
           "group": "navigation@11"
+        },
+        {
+          "command": "datalayer.copyLocalFileToSpace",
+          "when": "resourceExtname == .ipynb || resourceExtname == .dlex || resourceExtname == .lexical",
+          "group": "5_cutcopypaste@100"
         }
       ],
       "editor/title": [

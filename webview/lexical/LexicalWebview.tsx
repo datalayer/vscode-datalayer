@@ -78,7 +78,9 @@ function LexicalWebviewInner({
   serviceManager: ServiceManager.IManager;
 }) {
   // Create per-instance store - prevents global state sharing
-  const [store] = useState(() => createLexicalStore());
+  const [store] = useState(() => {
+    return createLexicalStore();
+  });
   // Track this document's unique ID to validate incoming messages
   // CRITICAL: Use ref instead of state to avoid stale closure issues!
   // The messageHandler closure needs to see the LATEST value, not the value when useEffect ran.
@@ -170,13 +172,8 @@ function LexicalWebviewInner({
         case "user-info-update": {
           // Handle real-time userInfo updates (login/logout events)
           if (message.userInfo) {
-            console.log(
-              "[LexicalWebview] Received userInfo update:",
-              message.userInfo,
-            );
             store.getState().setUserInfo(message.userInfo);
           } else {
-            console.log("[LexicalWebview] User logged out, clearing userInfo");
             store.getState().setUserInfo(null);
           }
           break;
@@ -199,10 +196,7 @@ function LexicalWebviewInner({
             const parsed = JSON.parse(currentContent);
             formattedContent = JSON.stringify(parsed, null, 2);
           } catch (error) {
-            console.warn(
-              "[LexicalWebview] Failed to format JSON, using raw content:",
-              error,
-            );
+            // Failed to format JSON, using raw content
           }
 
           const encoder = new TextEncoder();
@@ -259,12 +253,9 @@ function LexicalWebviewInner({
       return undefined;
     }
 
-    console.log("[LexicalWebview] Monitoring kernel readiness...");
-
     // Get lexicalId from store
     const lexicalId = store.getState().lexicalId;
     if (!lexicalId) {
-      console.log("[LexicalWebview] No lexicalId yet, waiting...");
       return undefined;
     }
 
@@ -278,14 +269,12 @@ function LexicalWebviewInner({
       const lexical = lexicalStore.getState().lexicals.get(lexicalId);
       const adapter = lexical?.adapter;
       if (!adapter) {
-        console.log("[LexicalWebview] No adapter yet, waiting...");
         return;
       }
 
       // Access serviceManager from adapter (now exposed as public getter)
       const serviceManager = (adapter as any).serviceManager;
       if (!serviceManager) {
-        console.log("[LexicalWebview] No serviceManager yet, waiting...");
         return;
       }
 
@@ -297,7 +286,6 @@ function LexicalWebviewInner({
         ) as any[];
 
         if (runningKernels.length === 0) {
-          console.log("[LexicalWebview] No running kernels yet, waiting...");
           return;
         }
 
@@ -321,24 +309,14 @@ function LexicalWebviewInner({
             );
           }
 
-          console.log("[LexicalWebview] Subscribing to kernel status changes");
           currentKernelConnection = kernelConnection;
 
           // Function to check if kernel is ready
           const checkKernelReady = () => {
             const kernelStatus = kernelConnection.status;
 
-            console.log("[LexicalWebview] Checking kernel ready:", {
-              kernelStatus,
-              kernelInitializing,
-            });
-
             // Kernel is ready when status is 'idle' AND we were in initializing state
             if (kernelStatus === "idle" && kernelInitializing) {
-              console.log(
-                "[LexicalWebview] Kernel is ready! Sending kernel-ready message",
-              );
-
               // Send kernel-ready message to extension
               vscode.postMessage({
                 type: "kernel-ready",
@@ -352,9 +330,6 @@ function LexicalWebviewInner({
 
           // Subscribe to kernel status changes
           currentKernelStatusHandler = () => {
-            console.log(
-              "[LexicalWebview] Kernel status changed, checking kernel ready...",
-            );
             checkKernelReady();
           };
           kernelConnection.statusChanged?.connect(currentKernelStatusHandler);
@@ -362,9 +337,7 @@ function LexicalWebviewInner({
           // Check immediately after subscribing
           checkKernelReady();
         }
-      } catch (error) {
-        console.log("[LexicalWebview] Error connecting to kernel:", error);
-      }
+      } catch (error) {}
     };
 
     // Check immediately
@@ -462,39 +435,45 @@ function LexicalWebviewInner({
           padding: 0,
         }}
       >
-        {isReady ? (
-          <LexicalEditor
-            initialContent={content}
-            onSave={handleSave}
-            onContentChange={handleContentChange}
-            showToolbar={true}
-            editable={isEditable}
-            collaboration={collaborationConfig}
-            userInfo={userInfo}
-            selectedRuntime={selectedRuntime}
-            showRuntimeSelector={true}
-            documentUri={documentUri}
-            vscode={{ postMessage: (msg) => vscode.postMessage(msg) }}
-            navigationTarget={navigationTarget}
-            onNavigated={handleNavigated}
-            serviceManager={serviceManager}
-            lexicalId={lexicalId}
-            kernelInitializing={kernelInitializing}
-          />
-        ) : (
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "center",
-              alignItems: "center",
-              height: "100vh",
-              backgroundColor: "var(--vscode-editor-background)",
-              color: "var(--vscode-descriptionForeground)",
-            }}
-          >
-            Loading editor...
-          </div>
-        )}
+        {isReady
+          ? (() => {
+              return (
+                <LexicalEditor
+                  initialContent={content}
+                  onSave={handleSave}
+                  onContentChange={handleContentChange}
+                  showToolbar={true}
+                  editable={isEditable}
+                  collaboration={collaborationConfig}
+                  userInfo={userInfo}
+                  selectedRuntime={selectedRuntime}
+                  showRuntimeSelector={true}
+                  documentUri={documentUri}
+                  vscode={{ postMessage: (msg) => vscode.postMessage(msg) }}
+                  navigationTarget={navigationTarget}
+                  onNavigated={handleNavigated}
+                  serviceManager={serviceManager}
+                  lexicalId={lexicalId}
+                  kernelInitializing={kernelInitializing}
+                />
+              );
+            })()
+          : (() => {
+              return (
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "center",
+                    alignItems: "center",
+                    height: "100vh",
+                    backgroundColor: "var(--vscode-editor-background)",
+                    color: "var(--vscode-descriptionForeground)",
+                  }}
+                >
+                  Loading editor...
+                </div>
+              );
+            })()}
       </div>
     </VSCodeTheme>
   );
@@ -581,6 +560,10 @@ if (container) {
     const root = ReactDOM.createRoot(container);
     root.render(<LexicalWebview />);
   } catch (error) {
+    console.error(
+      "[LexicalWebview] Failed to create/render React root:",
+      error,
+    );
     container.innerHTML = `
       <div style="padding: 20px; background-color: var(--vscode-editor-background); color: var(--vscode-errorForeground); font-family: var(--vscode-editor-font-family); min-height: 100vh;">
         <h3>Failed to load Lexical Editor</h3>
@@ -589,4 +572,13 @@ if (container) {
       </div>
     `;
   }
+} else {
+  console.error("[LexicalWebview] Root element not found!");
+  document.body.innerHTML = `
+    <div style="padding: 20px; background-color: var(--vscode-editor-background); color: var(--vscode-errorForeground); font-family: var(--vscode-editor-font-family); min-height: 100vh;">
+      <h3>Failed to load Lexical Editor</h3>
+      <p>Error: Root element not found</p>
+      <p>Please try reloading the editor.</p>
+    </div>
+  `;
 }

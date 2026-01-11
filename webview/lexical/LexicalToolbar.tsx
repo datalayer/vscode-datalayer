@@ -688,8 +688,7 @@ export function LexicalToolbar({
         lexicalId,
       );
       try {
-        const result = await lexicalStore.getState().clearAllOutputs(lexicalId);
-        console.log("[LexicalToolbar] clearAllOutputs result:", result);
+        await lexicalStore.getState().clearAllOutputs(lexicalId);
       } catch (error) {
         console.error("[LexicalToolbar] clearAllOutputs error:", error);
       }

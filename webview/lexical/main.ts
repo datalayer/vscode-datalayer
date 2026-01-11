@@ -11,6 +11,7 @@
  */
 
 import { initializeRequireJSStub } from "../utils/requirejsStub";
+
 import "./LexicalWebview";
 
 // Configure webpack public path for WASM loading (loro-crdt)
