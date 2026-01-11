@@ -95,7 +95,7 @@
     "@lumino/signaling": "^2.1.1",
     "@nteract/messaging": "^7.0.20",
     "@primer/react": "^37.19.0",
-    "@primer/react-brand": "^0.58.1",
+    "@primer/react-brand": "^0.61.0",
     "@toon-format/toon": "^1.0.0",
     "@vscode/codicons": "^0.0.44",
     "@vscode/jupyter-extension": "^1.1.1",
