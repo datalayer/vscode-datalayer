@@ -326,6 +326,8 @@ const lexicalWebviewConfig = {
     asyncWebAssembly: true,
   },
   optimization: {
+    // WASM async loading (loro-crdt) requires runtime chunk
+    // Creates lexical-runtime.js that must load BEFORE main bundle
     runtimeChunk: {
       name: "lexical-runtime",
     },

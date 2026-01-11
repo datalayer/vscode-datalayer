@@ -197,7 +197,7 @@ Open settings (`Ctrl+,` / `Cmd+,`) and search "Datalayer":
 
 - **TypeDoc API Documentation**: Complete API documentation now available at [vscode-datalayer.netlify.app](https://vscode-datalayer.netlify.app)
 - **Zero TypeDoc Warnings**: All exported types properly documented
-- **Node.js 20 Compatibility**: Fully updated to match VS Code 1.98.0 runtime requirements
+- **Node.js 22 Compatibility**: Fully updated to match VS Code 1.107.0 runtime requirements
 
 ## Developer Resources
 

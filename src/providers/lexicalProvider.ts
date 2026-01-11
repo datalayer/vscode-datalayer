@@ -752,6 +752,15 @@ export class LexicalProvider extends BaseDocumentProvider<LexicalDocument> {
    * @returns HTML content for the webview
    */
   private getHtmlForWebview(webview: vscode.Webview): string {
+    // Runtime chunk (required for WASM async loading)
+    const runtimeUri = webview.asWebviewUri(
+      vscode.Uri.joinPath(
+        this._context.extensionUri,
+        "dist",
+        "lexical-runtime.lexical.js",
+      ),
+    );
+    // Main bundle
     const scriptUri = webview.asWebviewUri(
       vscode.Uri.joinPath(
         this._context.extensionUri,
@@ -770,12 +779,14 @@ export class LexicalProvider extends BaseDocumentProvider<LexicalDocument> {
       .getConfiguration("datalayer.pyodide")
       .get<string>("version", "0.27.3");
 
+    // Add cache busting to force fresh load
+    const cacheBust = `?v=${Date.now()}`;
+
     return /* html */ `
       <!DOCTYPE html>
       <html lang="en">
       <head>
         <meta charset="UTF-8">
-        <base href="${distUri}/">
         <!--
         Content Security Policy for Lexical Editor:
         - default-src 'none': Deny all by default for security
@@ -804,7 +815,10 @@ export class LexicalProvider extends BaseDocumentProvider<LexicalDocument> {
         <script nonce="${nonce}">
           window.__PYODIDE_BASE_URI__ = "https://cdn.jsdelivr.net/pyodide/v${pyodideVersion}/full";
         </script>
-        <script nonce="${nonce}" src="${scriptUri}"></script>
+        <!-- Load runtime chunk FIRST (required for WASM async loading) -->
+        <script nonce="${nonce}" src="${runtimeUri}${cacheBust}"></script>
+        <!-- Then load main bundle -->
+        <script nonce="${nonce}" src="${scriptUri}${cacheBust}"></script>
       </body>
       </html>`;
   }

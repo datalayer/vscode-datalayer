@@ -4,11 +4,11 @@ This document provides comprehensive information for developers who want to cont
 
 ## Prerequisites
 
-- Node.js >= 20.0.0 and < 21.0.0 (use `.nvmrc` for version management)
-- VS Code >= 1.98.0
+- Node.js >= 22.0.0 and < 23.0.0 (use `.nvmrc` for version management)
+- VS Code >= 1.107.0
 - npm (not yarn)
 
-**Important**: The extension runs in VS Code's Node.js 20 runtime. Using Node.js 20 for development ensures compatibility.
+**Important**: The extension runs in VS Code's Node.js 22 runtime. Using Node.js 22 for development ensures compatibility.
 
 ## Setup
 
@@ -580,7 +580,7 @@ The extension follows a layered architecture:
 
 1. **Extension Host** (`src/extension.ts`)
    - Entry point, activation, command registration
-   - Runs in Node.js 20 environment
+   - Runs in Node.js 22 environment
 
 2. **Commands** (`src/commands/`)
    - Thin command handlers

@@ -6,7 +6,7 @@
 
 /**
  * Document management commands for the Datalayer VS Code extension.
- * Handles opening, creating, renaming, and deleting notebooks and lexical documents.
+ * Handles opening, creating, renaming, deleting, downloading, and copying notebooks and lexical documents.
  *
  * @see https://code.visualstudio.com/api/extension-guides/command
  * @module commands/documents
@@ -18,10 +18,13 @@
  * - `datalayer.createLexicalInSpace` - Creates new lexical document in selected space
  * - `datalayer.renameItem` - Renames documents with validation and confirmation
  * - `datalayer.deleteItem` - Deletes documents with mandatory confirmation dialog
+ * - `datalayer.downloadDocument` - Downloads documents to local filesystem
+ * - `datalayer.copyLocalFileToSpace` - Copies local files to default Datalayer space
  * - `datalayer.refreshSpaces` - Refreshes spaces tree view to reflect latest state
  */
 
 import * as vscode from "vscode";
+import * as fs from "fs";
 import { getServiceContainer } from "../extension";
 import { DocumentBridge } from "../services/bridges/documentBridge";
 import { SpacesTreeProvider } from "../providers/spacesTreeProvider";
@@ -529,6 +532,359 @@ export function registerDocumentCommands(
         } catch (error) {
           vscode.window.showErrorMessage(
             `Failed to delete item: ${
+              error instanceof Error ? error.message : "Unknown error"
+            }`,
+          );
+        }
+      },
+    ),
+  );
+
+  /**
+   * Command: datalayer.downloadDocument
+   * Downloads a document from Datalayer to the local filesystem.
+   * Prompts user for save location and handles both notebooks and lexical documents.
+   */
+  context.subscriptions.push(
+    vscode.commands.registerCommand(
+      "datalayer.downloadDocument",
+      async (item: unknown) => {
+        try {
+          const itemWithData = item as {
+            data?: { document?: Document; spaceName?: string };
+          };
+
+          if (!itemWithData.data?.document) {
+            vscode.window.showErrorMessage(
+              "Please select a document to download",
+            );
+            return;
+          }
+
+          const document = itemWithData.data.document;
+          const docName = document.name;
+          const spaceName = itemWithData.data.spaceName || "Unknown Space";
+          const typeInfo = detectDocumentType(document);
+          const { isNotebook, isLexical } = typeInfo;
+
+          // Determine file extension
+          let extension = "";
+          let defaultFilename = docName;
+          if (isNotebook) {
+            extension = ".ipynb";
+            if (!defaultFilename.endsWith(extension)) {
+              defaultFilename = `${defaultFilename}${extension}`;
+            }
+          } else if (isLexical) {
+            extension = ".dlex";
+            // Strip existing .lexical or .dlex extensions
+            defaultFilename = defaultFilename.replace(/\.(lexical|dlex)$/, "");
+            defaultFilename = `${defaultFilename}${extension}`;
+          } else {
+            vscode.window.showErrorMessage(
+              `Cannot download document of type: ${typeInfo.type}`,
+            );
+            return;
+          }
+
+          // Prompt user for save location
+          const uri = await vscode.window.showSaveDialog({
+            defaultUri: vscode.Uri.file(defaultFilename),
+            filters: isNotebook
+              ? {
+                  "Jupyter Notebooks": ["ipynb"],
+                  "All Files": ["*"],
+                }
+              : {
+                  "Lexical Documents": ["dlex"],
+                  "All Files": ["*"],
+                },
+            title: `Download ${isNotebook ? "Notebook" : "Document"} from ${spaceName}`,
+          });
+
+          if (!uri) {
+            return; // User cancelled
+          }
+
+          await vscode.window.withProgress(
+            {
+              location: vscode.ProgressLocation.Notification,
+              title: `Downloading "${docName}"...`,
+              cancellable: false,
+            },
+            async (progress) => {
+              progress.report({
+                increment: 0,
+                message: "Fetching content from Datalayer...",
+              });
+
+              // Fetch content from the document
+              let content: string | object | undefined;
+              let retries = 3;
+              let lastError: Error | unknown;
+
+              while (retries > 0) {
+                try {
+                  content = await document.getContent();
+                  if (content !== undefined && content !== null) {
+                    break; // Success
+                  }
+                } catch (error) {
+                  lastError = error;
+                }
+
+                retries--;
+                if (retries > 0) {
+                  progress.report({
+                    message: `Retrying... (${3 - retries}/3)`,
+                  });
+                  await new Promise((resolve) => setTimeout(resolve, 1000));
+                }
+              }
+
+              if (content === undefined || content === null) {
+                throw (
+                  lastError ||
+                  new Error("Failed to fetch document content from Datalayer")
+                );
+              }
+
+              progress.report({
+                increment: 50,
+                message: "Saving to disk...",
+              });
+
+              // Write content to the selected location
+              if (typeof content === "string") {
+                fs.writeFileSync(uri.fsPath, content, "utf8");
+              } else {
+                fs.writeFileSync(
+                  uri.fsPath,
+                  JSON.stringify(content, null, 2),
+                  "utf8",
+                );
+              }
+
+              progress.report({
+                increment: 100,
+                message: "Done!",
+              });
+
+              vscode.window.showInformationMessage(
+                `Successfully downloaded "${docName}" to ${uri.fsPath}`,
+              );
+            },
+          );
+        } catch (error) {
+          vscode.window.showErrorMessage(
+            `Failed to download document: ${
+              error instanceof Error ? error.message : "Unknown error"
+            }`,
+          );
+        }
+      },
+    ),
+  );
+
+  /**
+   * Command: datalayer.copyLocalFileToSpace
+   * Copies local .ipynb or .dlex/.lexical files to the user's default Datalayer space.
+   * Supports single file or multiple file selection.
+   * Uses single-step upload via multipart/form-data for efficient file transfer.
+   * If user is not authenticated, prompts for login first.
+   */
+  context.subscriptions.push(
+    vscode.commands.registerCommand(
+      "datalayer.copyLocalFileToSpace",
+      async (uri: vscode.Uri, uris?: vscode.Uri[]) => {
+        try {
+          // Check authentication status
+          const authProvider = getServiceContainer().authProvider;
+          if (!authProvider.isAuthenticated()) {
+            // Show the authentication dialog (same as clicking status bar icon)
+            await vscode.commands.executeCommand("datalayer.login");
+
+            // Check if login was successful
+            if (!authProvider.isAuthenticated()) {
+              // Login failed or was cancelled - show a message
+              vscode.window.showInformationMessage(
+                "Authentication required to copy files to Datalayer space.",
+              );
+              return;
+            }
+          }
+
+          // Handle multiple file selection: use uris array if provided, otherwise single uri
+          const filesToCopy = uris && uris.length > 0 ? uris : [uri];
+
+          if (!filesToCopy || filesToCopy.length === 0) {
+            vscode.window.showErrorMessage("Please select files to copy");
+            return;
+          }
+
+          // Filter to only supported file types
+          const supportedFiles = filesToCopy.filter((fileUri) => {
+            const fileName = fileUri.fsPath.split(/[\\/]/).pop() || "";
+            return (
+              fileName.endsWith(".ipynb") ||
+              fileName.endsWith(".dlex") ||
+              fileName.endsWith(".lexical")
+            );
+          });
+
+          if (supportedFiles.length === 0) {
+            vscode.window.showErrorMessage(
+              "No supported files selected. Only .ipynb, .dlex, and .lexical files are supported.",
+            );
+            return;
+          }
+
+          // Inform user about unsupported files if any were filtered out
+          const filteredCount = filesToCopy.length - supportedFiles.length;
+          if (filteredCount > 0) {
+            vscode.window.showWarningMessage(
+              `${filteredCount} file(s) skipped (unsupported type). Only .ipynb, .dlex, and .lexical files are supported.`,
+            );
+          }
+
+          const totalFiles = supportedFiles.length;
+          const isMultiple = totalFiles > 1;
+
+          await vscode.window.withProgress(
+            {
+              location: vscode.ProgressLocation.Notification,
+              title: isMultiple
+                ? `Copying ${totalFiles} files to Datalayer...`
+                : `Copying file to Datalayer...`,
+              cancellable: false,
+            },
+            async (progress) => {
+              // Get default space once for all files
+              progress.report({
+                increment: 0,
+                message: "Finding default space...",
+              });
+
+              const spaces = await sdk.getMySpaces();
+              if (!spaces || spaces.length === 0) {
+                throw new Error(
+                  "No spaces available. Please create a space first.",
+                );
+              }
+
+              const defaultSpace = spaces.find((s) => s.variant === "default");
+              if (!defaultSpace) {
+                throw new Error(
+                  "No default space found. Please create a default space first.",
+                );
+              }
+
+              let successCount = 0;
+              let failureCount = 0;
+              const errors: string[] = [];
+
+              // Process each file
+              for (let i = 0; i < supportedFiles.length; i++) {
+                const fileUri = supportedFiles[i];
+                const filePath = fileUri.fsPath;
+                const fileName = filePath.split(/[\\/]/).pop() || "document";
+
+                const progressPercent = (i / totalFiles) * 100;
+                progress.report({
+                  increment: progressPercent,
+                  message: isMultiple
+                    ? `[${i + 1}/${totalFiles}] ${fileName}...`
+                    : `Uploading ${fileName}...`,
+                });
+
+                try {
+                  // Read file content
+                  const content = fs.readFileSync(filePath, "utf8");
+
+                  // Validate JSON
+                  try {
+                    JSON.parse(content);
+                  } catch (error) {
+                    throw new Error(`Invalid JSON in ${fileName}`);
+                  }
+
+                  // Determine file type
+                  const isNotebook = fileName.endsWith(".ipynb");
+                  const isLexical =
+                    fileName.endsWith(".dlex") || fileName.endsWith(".lexical");
+
+                  // Create document name (strip extension)
+                  const docName = fileName.replace(
+                    /\.(ipynb|dlex|lexical)$/,
+                    "",
+                  );
+
+                  // Create Blob from content
+                  const blob = new Blob([content], {
+                    type: "application/json",
+                  });
+
+                  // Upload to Datalayer
+                  let newDocument;
+                  if (isNotebook) {
+                    newDocument = await sdk.createNotebook(
+                      defaultSpace.uid,
+                      docName,
+                      "",
+                      blob,
+                    );
+                  } else if (isLexical) {
+                    newDocument = await sdk.createLexical(
+                      defaultSpace.uid,
+                      docName,
+                      "",
+                      blob,
+                    );
+                  }
+
+                  if (newDocument) {
+                    successCount++;
+                  } else {
+                    failureCount++;
+                    errors.push(`${fileName}: Failed to create document`);
+                  }
+                } catch (error) {
+                  failureCount++;
+                  const errorMsg =
+                    error instanceof Error ? error.message : "Unknown error";
+                  errors.push(`${fileName}: ${errorMsg}`);
+                }
+              }
+
+              progress.report({
+                increment: 100,
+                message: "Done!",
+              });
+
+              // Refresh the spaces tree to show new documents
+              spacesTreeProvider.refreshSpace(defaultSpace.uid);
+
+              // Show summary
+              if (failureCount === 0) {
+                vscode.window.showInformationMessage(
+                  isMultiple
+                    ? `Successfully copied ${successCount} file(s) to space "${defaultSpace.name}"`
+                    : `Successfully copied "${supportedFiles[0].fsPath.split(/[\\/]/).pop()}" to space "${defaultSpace.name}"`,
+                );
+              } else if (successCount === 0) {
+                vscode.window.showErrorMessage(
+                  `Failed to copy ${failureCount} file(s):\n${errors.join("\n")}`,
+                );
+              } else {
+                vscode.window.showWarningMessage(
+                  `Copied ${successCount} file(s), but ${failureCount} failed:\n${errors.join("\n")}`,
+                );
+              }
+            },
+          );
+        } catch (error) {
+          vscode.window.showErrorMessage(
+            `Failed to copy files to Datalayer: ${
               error instanceof Error ? error.message : "Unknown error"
             }`,
           );
