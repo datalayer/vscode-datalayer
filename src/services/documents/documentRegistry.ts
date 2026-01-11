@@ -77,10 +77,6 @@ class DocumentRegistry {
     };
     this.idToEntry.set(documentId, entry);
     this.uriToId.set(documentUri, documentId);
-
-    console.log(
-      `[DocumentRegistry] Registered ${type}: ${documentId.substring(0, 20)}... → ${documentUri.substring(0, 50)}... ${webviewPanel ? "(with webview)" : ""}`,
-    );
   }
 
   /**

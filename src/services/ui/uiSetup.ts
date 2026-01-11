@@ -129,7 +129,6 @@ export async function initializeUI(
         .find((tab) => tab.isActive);
 
       if (!activeTab) {
-        console.log("[UISetup] No active tab, clearing outline");
         outlineTreeProvider.setActiveDocument(undefined);
         return;
       }

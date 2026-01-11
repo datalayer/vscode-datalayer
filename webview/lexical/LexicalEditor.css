@@ -564,7 +564,8 @@ code[data-highlight-language] {
 }
 
 /* Modal overlay - full screen backdrop */
-.Modal__overlay {
+.Modal__overlay,
+.TableInsertModal__overlay {
   position: fixed !important;
   top: 0 !important;
   left: 0 !important;
@@ -578,19 +579,23 @@ code[data-highlight-language] {
 }
 
 /* Modal container */
-.Modal__modal {
+.Modal__modal,
+.TableInsertModal__modal {
   background-color: var(--vscode-editorWidget-background) !important;
   border: 1px solid var(--vscode-editorWidget-border) !important;
   border-radius: 6px !important;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5) !important;
   padding: 20px !important;
   min-width: 400px !important;
-  max-width: 600px !important;
+  max-width: 90vw !important;
+  max-height: 90vh !important;
   position: relative !important;
+  overflow: hidden !important;
 }
 
 /* Modal title */
-.Modal__title {
+.Modal__title,
+.TableInsertModal__title {
   color: var(--vscode-editorWidget-foreground) !important;
   font-size: 16px !important;
   font-weight: 600 !important;
@@ -625,9 +630,73 @@ code[data-highlight-language] {
 }
 
 /* Modal content area */
-.Modal__content {
+.Modal__content,
+.TableInsertModal__content {
   color: var(--vscode-editorWidget-foreground) !important;
   font-family: var(--vscode-font-family) !important;
+}
+
+/* TableInsertModal specific styles */
+.TableInsertModal__field {
+  margin-bottom: 16px !important;
+}
+
+.TableInsertModal__field label {
+  display: block !important;
+  color: var(--vscode-foreground) !important;
+  font-family: var(--vscode-font-family) !important;
+  font-size: 13px !important;
+  margin-bottom: 6px !important;
+  font-weight: 500 !important;
+}
+
+.TableInsertModal__field input {
+  width: 100% !important;
+  background-color: var(--vscode-input-background) !important;
+  color: var(--vscode-input-foreground) !important;
+  border: 1px solid var(--vscode-input-border) !important;
+  padding: 8px 12px !important;
+  border-radius: 3px !important;
+  font-family: var(--vscode-editor-font-family) !important;
+  font-size: 14px !important;
+  box-sizing: border-box !important;
+}
+
+.TableInsertModal__field input:focus {
+  outline: 1px solid var(--vscode-focusBorder) !important;
+  border-color: var(--vscode-focusBorder) !important;
+}
+
+.TableInsertModal__actions {
+  display: flex !important;
+  justify-content: flex-end !important;
+  gap: 8px !important;
+  margin-top: 20px !important;
+}
+
+.TableInsertModal__button {
+  background-color: var(--vscode-button-background) !important;
+  color: var(--vscode-button-foreground) !important;
+  border: none !important;
+  padding: 8px 16px !important;
+  border-radius: 3px !important;
+  cursor: pointer !important;
+  font-family: var(--vscode-font-family) !important;
+  font-size: 13px !important;
+  font-weight: 500 !important;
+}
+
+.TableInsertModal__button:hover {
+  background-color: var(--vscode-button-hoverBackground) !important;
+}
+
+.TableInsertModal__button--cancel {
+  background-color: var(--vscode-button-secondaryBackground) !important;
+  color: var(--vscode-button-secondaryForeground) !important;
+}
+
+.TableInsertModal__button--cancel:hover {
+  background-color: var(--vscode-button-secondaryHoverBackground) !important;
 }
 
 /* Dialog backdrop/overlay (for other dialogs) */
@@ -1147,17 +1216,214 @@ iframe[title="YouTube video"] {
   color: var(--vscode-list-activeSelectionForeground) !important;
 }
 
-/* Icon styling */
+/* Icon styling - VS Code theme aware */
 .component-picker-menu-item-icon,
-.typeahead-popover .icon {
+.typeahead-popover .icon,
+.typeahead-popover li .icon {
   width: 18px !important;
   height: 18px !important;
   display: inline-flex !important;
   align-items: center !important;
   justify-content: center !important;
   font-size: 14px !important;
-  opacity: 0.8 !important;
   flex-shrink: 0 !important;
+  /* Use VS Code quickInput foreground color for icons - matches menu text */
+  background-color: var(
+    --vscode-quickInput-foreground,
+    var(--vscode-foreground)
+  ) !important;
+  /* Remove any background image */
+  background-image: none !important;
+  /* Mask mode to allow theming - SVG becomes the shape, color comes from background */
+  mask-size: contain !important;
+  mask-repeat: no-repeat !important;
+  mask-position: center !important;
+  -webkit-mask-size: contain !important;
+  -webkit-mask-repeat: no-repeat !important;
+  -webkit-mask-position: center !important;
+}
+
+/* Specific icon masks - copy background-image to mask-image */
+.typeahead-popover .icon.code,
+.typeahead-popover li .icon.code {
+  mask-image: var(
+    --icon-code,
+    url("../../node_modules/@datalayer/jupyter-lexical/style/lexical/icons/code.svg")
+  ) !important;
+  -webkit-mask-image: var(
+    --icon-code,
+    url("../../node_modules/@datalayer/jupyter-lexical/style/lexical/icons/code.svg")
+  ) !important;
+}
+
+.typeahead-popover .icon.paragraph {
+  mask-image: var(
+    --icon-paragraph,
+    url("../../node_modules/@datalayer/jupyter-lexical/style/lexical/icons/text-paragraph.svg")
+  ) !important;
+  -webkit-mask-image: var(
+    --icon-paragraph,
+    url("../../node_modules/@datalayer/jupyter-lexical/style/lexical/icons/text-paragraph.svg")
+  ) !important;
+}
+
+.typeahead-popover .icon.h1,
+.typeahead-popover .icon.h2,
+.typeahead-popover .icon.h3 {
+  mask-image: var(
+    --icon-heading,
+    url("../../node_modules/@datalayer/jupyter-lexical/style/lexical/icons/type-h1.svg")
+  ) !important;
+  -webkit-mask-image: var(
+    --icon-heading,
+    url("../../node_modules/@datalayer/jupyter-lexical/style/lexical/icons/type-h1.svg")
+  ) !important;
+}
+
+.typeahead-popover .icon.number {
+  mask-image: var(
+    --icon-number,
+    url("../../node_modules/@datalayer/jupyter-lexical/style/lexical/icons/list-ol.svg")
+  ) !important;
+  -webkit-mask-image: var(
+    --icon-number,
+    url("../../node_modules/@datalayer/jupyter-lexical/style/lexical/icons/list-ol.svg")
+  ) !important;
+}
+
+.typeahead-popover .icon.bullet {
+  mask-image: var(
+    --icon-bullet,
+    url("../../node_modules/@datalayer/jupyter-lexical/style/lexical/icons/list-ul.svg")
+  ) !important;
+  -webkit-mask-image: var(
+    --icon-bullet,
+    url("../../node_modules/@datalayer/jupyter-lexical/style/lexical/icons/list-ul.svg")
+  ) !important;
+}
+
+.typeahead-popover .icon.check {
+  mask-image: var(
+    --icon-check,
+    url("../../node_modules/@datalayer/jupyter-lexical/style/lexical/icons/card-checklist.svg")
+  ) !important;
+  -webkit-mask-image: var(
+    --icon-check,
+    url("../../node_modules/@datalayer/jupyter-lexical/style/lexical/icons/card-checklist.svg")
+  ) !important;
+}
+
+.typeahead-popover .icon.table {
+  mask-image: var(
+    --icon-table,
+    url("../../node_modules/@datalayer/jupyter-lexical/style/lexical/icons/table.svg")
+  ) !important;
+  -webkit-mask-image: var(
+    --icon-table,
+    url("../../node_modules/@datalayer/jupyter-lexical/style/lexical/icons/table.svg")
+  ) !important;
+}
+
+.typeahead-popover .icon.chevron-down {
+  mask-image: var(
+    --icon-chevron-down,
+    url("../../node_modules/@datalayer/jupyter-lexical/style/lexical/icons/chevron-down.svg")
+  ) !important;
+  -webkit-mask-image: var(
+    --icon-chevron-down,
+    url("../../node_modules/@datalayer/jupyter-lexical/style/lexical/icons/chevron-down.svg")
+  ) !important;
+}
+
+.typeahead-popover .icon.diagram-2 {
+  mask-image: var(
+    --icon-diagram,
+    url("../../node_modules/@datalayer/jupyter-lexical/style/lexical/icons/diagram-2.svg")
+  ) !important;
+  -webkit-mask-image: var(
+    --icon-diagram,
+    url("../../node_modules/@datalayer/jupyter-lexical/style/lexical/icons/diagram-2.svg")
+  ) !important;
+}
+
+.typeahead-popover .icon.quote {
+  mask-image: var(
+    --icon-quote,
+    url("../../node_modules/@datalayer/jupyter-lexical/style/lexical/icons/chat-square-quote.svg")
+  ) !important;
+  -webkit-mask-image: var(
+    --icon-quote,
+    url("../../node_modules/@datalayer/jupyter-lexical/style/lexical/icons/chat-square-quote.svg")
+  ) !important;
+}
+
+.typeahead-popover .icon.horizontal-rule {
+  mask-image: var(
+    --icon-hr,
+    url("../../node_modules/@datalayer/jupyter-lexical/style/lexical/icons/horizontal-rule.svg")
+  ) !important;
+  -webkit-mask-image: var(
+    --icon-hr,
+    url("../../node_modules/@datalayer/jupyter-lexical/style/lexical/icons/horizontal-rule.svg")
+  ) !important;
+}
+
+.typeahead-popover .icon.youtube {
+  mask-image: var(
+    --icon-youtube,
+    url("../../node_modules/@datalayer/jupyter-lexical/style/lexical/icons/youtube.svg")
+  ) !important;
+  -webkit-mask-image: var(
+    --icon-youtube,
+    url("../../node_modules/@datalayer/jupyter-lexical/style/lexical/icons/youtube.svg")
+  ) !important;
+}
+
+.typeahead-popover .icon.equation {
+  mask-image: var(
+    --icon-equation,
+    url("../../node_modules/@datalayer/jupyter-lexical/style/lexical/icons/plus-slash-minus.svg")
+  ) !important;
+  -webkit-mask-image: var(
+    --icon-equation,
+    url("../../node_modules/@datalayer/jupyter-lexical/style/lexical/icons/plus-slash-minus.svg")
+  ) !important;
+}
+
+.typeahead-popover .icon.gif {
+  mask-image: var(
+    --icon-gif,
+    url("../../node_modules/@datalayer/jupyter-lexical/style/lexical/icons/filetype-gif.svg")
+  ) !important;
+  -webkit-mask-image: var(
+    --icon-gif,
+    url("../../node_modules/@datalayer/jupyter-lexical/style/lexical/icons/filetype-gif.svg")
+  ) !important;
+}
+
+.typeahead-popover .icon.image {
+  mask-image: var(
+    --icon-image,
+    url("../../node_modules/@datalayer/jupyter-lexical/style/lexical/icons/file-image.svg")
+  ) !important;
+  -webkit-mask-image: var(
+    --icon-image,
+    url("../../node_modules/@datalayer/jupyter-lexical/style/lexical/icons/file-image.svg")
+  ) !important;
+}
+
+.typeahead-popover .icon.left-align,
+.typeahead-popover .icon.center-align,
+.typeahead-popover .icon.right-align,
+.typeahead-popover .icon.justify-align {
+  mask-image: var(
+    --icon-align,
+    url("../../node_modules/@datalayer/jupyter-lexical/style/lexical/icons/text-left.svg")
+  ) !important;
+  -webkit-mask-image: var(
+    --icon-align,
+    url("../../node_modules/@datalayer/jupyter-lexical/style/lexical/icons/text-left.svg")
+  ) !important;
 }
 
 /* Text content */
@@ -1405,6 +1671,255 @@ input[type="color"]:disabled {
 }
 
 /* ========================================
+   Table Styling - VS Code Theme
+   ======================================== */
+
+.lexical-table,
+.PlaygroundEditorTheme__table {
+  border-collapse: collapse !important;
+  border-spacing: 0 !important;
+  max-width: 100% !important;
+  overflow-y: scroll !important;
+  table-layout: fixed !important;
+  width: max-content !important;
+  margin: 20px 0 !important;
+  border: 2px solid var(--vscode-editorGroup-border, rgba(128, 128, 128, 0.8)) !important;
+  background-color: var(--vscode-editor-background) !important;
+}
+
+.lexical-table-cell,
+.PlaygroundEditorTheme__tableCell {
+  border: 1px solid var(--vscode-editorGroup-border, rgba(128, 128, 128, 0.8)) !important;
+  min-width: 75px !important;
+  width: 75px !important;
+  vertical-align: top !important;
+  text-align: start !important;
+  padding: 8px 10px !important;
+  position: relative !important;
+  outline: none !important;
+  background-color: var(--vscode-editor-background, transparent) !important;
+  color: var(--vscode-editor-foreground, inherit) !important;
+}
+
+.lexical-table-cell-header,
+.PlaygroundEditorTheme__tableCellHeader {
+  border: 1px solid var(--vscode-editorGroup-border, rgba(128, 128, 128, 0.8)) !important;
+  background-color: var(
+    --vscode-editorGroupHeader-tabsBackground,
+    rgba(128, 128, 128, 0.2)
+  ) !important;
+  color: var(--vscode-editor-foreground, inherit) !important;
+  font-weight: bold !important;
+  padding: 8px 10px !important;
+  min-width: 75px !important;
+  width: 75px !important;
+  vertical-align: top !important;
+  text-align: start !important;
+  position: relative !important;
+  outline: none !important;
+}
+
+/* Table hover actions - add row/column buttons */
+.lexical-table-add-columns,
+.PlaygroundEditorTheme__tableAddColumns {
+  position: absolute !important;
+  /* Let plugin control position via inline styles */
+  /* Let plugin control width/height via inline styles, just set max constraints */
+  min-width: 15px !important;
+  max-width: 20px !important;
+  min-height: 15px !important;
+  background-color: var(--vscode-editorWidget-background, #eee) !important;
+  animation: table-controls-fade-in 0.2s ease !important;
+  border: 0 !important;
+  cursor: pointer !important;
+  z-index: 999 !important;
+  display: block !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
+}
+
+.lexical-table-add-columns:after,
+.PlaygroundEditorTheme__tableAddColumns:after {
+  content: "+" !important;
+  display: block !important;
+  font-size: 12px !important;
+  line-height: 15px !important;
+  text-align: center !important;
+  color: var(--vscode-editor-foreground, #222) !important;
+  opacity: 0.6 !important;
+}
+
+.lexical-table-add-rows,
+.PlaygroundEditorTheme__tableAddRows {
+  position: absolute !important;
+  /* Let plugin control width/height via inline styles, just set max constraints */
+  min-height: 15px !important;
+  max-height: 20px !important;
+  min-width: 50px !important;
+  background-color: var(--vscode-editorWidget-background, #eee) !important;
+  animation: table-controls-fade-in 0.2s ease !important;
+  border: 0 !important;
+  cursor: pointer !important;
+  z-index: 999 !important;
+  display: block !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
+}
+
+.lexical-table-add-rows:after,
+.PlaygroundEditorTheme__tableAddRows:after {
+  content: "+" !important;
+  display: block !important;
+  font-size: 12px !important;
+  line-height: 15px !important;
+  text-align: center !important;
+  color: var(--vscode-editor-foreground, #222) !important;
+  opacity: 0.6 !important;
+}
+
+.lexical-table-add-columns:hover,
+.lexical-table-add-rows:hover,
+.PlaygroundEditorTheme__tableAddColumns:hover,
+.PlaygroundEditorTheme__tableAddRows:hover {
+  background-color: var(--vscode-list-hoverBackground, #c9dbf0) !important;
+}
+
+@keyframes table-controls-fade-in {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+/* Table cell action button (dropdown menu CHEVRON) */
+.lexical-table-cell-action-button-container,
+.PlaygroundEditorTheme__tableCellActionButtonContainer {
+  display: flex !important;
+  right: 5px !important;
+  top: 6px !important;
+  position: absolute !important;
+  z-index: 999 !important;
+  width: auto !important;
+  height: auto !important;
+  gap: 4px !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+.lexical-table-cell-action-button,
+.PlaygroundEditorTheme__tableCellActionButton {
+  background-color: var(--vscode-editorWidget-background, #eee) !important;
+  display: flex !important;
+  justify-content: center !important;
+  align-items: center !important;
+  border: 1px solid var(--vscode-editorGroup-border, rgba(128, 128, 128, 0.5)) !important;
+  border-radius: 4px !important;
+  width: 24px !important;
+  height: 24px !important;
+  min-width: 24px !important;
+  min-height: 24px !important;
+  color: var(--vscode-editor-foreground, #222) !important;
+  cursor: pointer !important;
+  padding: 4px !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
+}
+
+.lexical-table-cell-action-button:after,
+.PlaygroundEditorTheme__tableCellActionButton:after {
+  content: "▼" !important;
+  font-size: 10px !important;
+  display: block !important;
+  line-height: 1 !important;
+}
+
+.lexical-table-cell-action-button:hover,
+.PlaygroundEditorTheme__tableCellActionButton:hover {
+  background-color: var(--vscode-list-hoverBackground, #ddd) !important;
+}
+
+/* Table cell resizer - Current class names used by TableCellResizerPlugin */
+.TableCellResizer__resizer {
+  position: absolute !important;
+  background-color: transparent !important;
+  user-select: none !important;
+  pointer-events: auto !important;
+  display: block !important;
+  z-index: 999 !important;
+  cursor: ew-resize !important;
+  /* Width is set by inline styles from plugin based on hover state */
+}
+
+.TableCellResizer__resizer:hover {
+  background-color: var(
+    --vscode-focusBorder,
+    rgba(60, 132, 244, 0.5)
+  ) !important;
+}
+
+.TableCellResizer__resizer:active {
+  background-color: var(
+    --vscode-focusBorder,
+    rgba(60, 132, 244, 0.7)
+  ) !important;
+}
+
+.TableCellResizer__ui {
+  /* Base UI class */
+  transition: background-color 0.1s ease !important;
+}
+
+/* Table selection states */
+.lexical-table-cell-selected {
+  background-color: var(
+    --vscode-list-inactiveSelectionBackground,
+    rgba(60, 132, 244, 0.15)
+  ) !important;
+}
+
+.lexical-table-selected {
+  outline: 2px solid var(--vscode-focusBorder, rgb(60, 132, 244));
+}
+
+.lexical-table-selection {
+  background-color: var(
+    --vscode-list-inactiveSelectionBackground,
+    rgba(60, 132, 244, 0.15)
+  );
+}
+
+/* Additional table features */
+.lexical-table-frozen-column,
+.lexical-table-frozen-row {
+  background-color: var(--vscode-editor-background, #f9f9f9);
+}
+
+.lexical-table-row-striping {
+  background-color: var(--vscode-editor-background, rgba(0, 0, 0, 0.03));
+}
+
+.lexical-table-scrollable-wrapper {
+  overflow: auto;
+  max-width: 100%;
+}
+
+.lexical-table-alignment-center {
+  text-align: center !important;
+}
+
+.lexical-table-alignment-right {
+  text-align: right !important;
+}
+
+.lexical-table-cell:focus {
+  outline: 2px solid var(--vscode-focusBorder) !important;
+  outline-offset: -2px !important;
+}
+
+/* ========================================
    Draggable Block Plugin - VS Code Theme
    ======================================== */
 
@@ -1416,4 +1931,578 @@ input[type="color"]:disabled {
 /* VS Code themed target line color (drop indicator) */
 .vscode-draggable-block-target-line {
   background: var(--vscode-focusBorder) !important;
+}
+
+/* ========================================
+   Table Context Menu Dropdown - VS Code Theme
+   ======================================== */
+
+.dropdown {
+  background-color: var(--vscode-menu-background, #252526) !important;
+  border: 1px solid var(--vscode-menu-border, rgba(128, 128, 128, 0.35)) !important;
+  border-radius: 4px !important;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3) !important;
+  color: var(--vscode-menu-foreground, #cccccc) !important;
+  padding: 4px 0 !important;
+  min-width: 160px !important;
+  max-width: 200px !important;
+  width: max-content !important;
+  z-index: 1000 !important;
+  overflow: hidden !important; /* Clip any overflow from hover states */
+  box-sizing: border-box !important;
+}
+
+.dropdown .item {
+  background-color: transparent !important;
+  border: 0 !important;
+  color: var(--vscode-menu-foreground, #cccccc) !important;
+  cursor: pointer !important;
+  display: flex !important;
+  align-items: center !important;
+  padding: 6px 12px !important;
+  text-align: left !important;
+  width: 100% !important;
+  font-size: 13px !important;
+  transition: background-color 0.1s ease !important;
+  white-space: nowrap !important;
+  box-sizing: border-box !important;
+  margin: 0 !important; /* Ensure no margin expands beyond container */
+}
+
+.dropdown .item:hover,
+.dropdown button.item:hover {
+  background-color: var(--vscode-menu-selectionBackground, #094771) !important;
+  color: var(--vscode-menu-selectionForeground, #ffffff) !important;
+  margin: 0 !important; /* Keep no margin on hover */
+  box-sizing: border-box !important;
+}
+
+.dropdown .item:focus,
+.dropdown button.item:focus {
+  background-color: var(--vscode-menu-selectionBackground, #094771) !important;
+  color: var(--vscode-menu-selectionForeground, #ffffff) !important;
+  outline: none !important;
+}
+
+.dropdown .item:active,
+.dropdown button.item:active {
+  background-color: var(--vscode-menu-selectionBackground, #094771) !important;
+  color: var(--vscode-menu-selectionForeground, #ffffff) !important;
+}
+
+.dropdown .item .text {
+  flex: 1 !important;
+  color: inherit !important;
+}
+
+.dropdown .item .icon {
+  margin-right: 8px !important;
+  width: 16px !important;
+  height: 16px !important;
+  display: inline-block !important;
+}
+
+.dropdown .divider {
+  border-top: 1px solid
+    var(--vscode-menu-separatorBackground, rgba(128, 128, 128, 0.35)) !important;
+  margin: 4px 0 !important;
+}
+
+/* ========================================
+   Table Hover Actions V2 - VS Code Theme Adaptation
+   ======================================== */
+
+/* Sort/Filter dropdown button (chevron icon at top of columns) */
+.floating-filter-indicator {
+  /* Size */
+  width: 18px !important;
+  height: 18px !important;
+  box-sizing: border-box !important;
+  /* Background for button */
+  background-color: var(--vscode-editorWidget-background, #ffffff) !important;
+  /* Adapt border color to VS Code theme */
+  border: 1px solid var(--vscode-editorGroup-border, #d0d0d0) !important;
+  border-radius: 2px !important;
+  /* Use VS Code box shadow */
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25) !important;
+  /* Ensure visibility */
+  opacity: 1 !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
+  cursor: pointer !important;
+  z-index: 10 !important;
+  transition: opacity 80ms ease !important;
+  /* Theme-aware text color */
+  color: var(--vscode-editor-foreground, #222) !important;
+  display: flex !important;
+  justify-content: center !important;
+  align-items: center !important;
+}
+
+/* Use same pattern as working table cell action button - text content instead of mask */
+.floating-filter-indicator i.chevron-down {
+  /* Remove background and mask approach */
+  background: none !important;
+  mask-image: none !important;
+  -webkit-mask-image: none !important;
+  width: auto !important;
+  height: auto !important;
+}
+
+.floating-filter-indicator i.chevron-down::before {
+  /* Use unicode chevron character - inherits color from parent button */
+  content: "▼" !important;
+  font-size: 10px !important;
+  display: block !important;
+  line-height: 1 !important;
+}
+
+.floating-filter-indicator:hover {
+  background-color: var(--vscode-list-hoverBackground, #f3f3f3) !important;
+  border-color: var(--vscode-focusBorder, #007acc) !important;
+}
+
+/* Add column/row buttons (+ icons near table edges) */
+.floating-add-indicator {
+  /* Size */
+  width: 18px !important;
+  height: 18px !important;
+  box-sizing: border-box !important;
+  /* Background for button */
+  background-color: var(--vscode-editorWidget-background, #ffffff) !important;
+  /* Adapt border color to VS Code theme */
+  border: 1px solid var(--vscode-editorGroup-border, #d0d0d0) !important;
+  border-radius: 2px !important;
+  /* Use VS Code box shadow */
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25) !important;
+  /* Allow React inline styles to control visibility */
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto !important;
+  cursor: pointer !important;
+  z-index: 10 !important;
+  transition: opacity 80ms ease !important;
+  /* Theme-aware text color */
+  color: var(--vscode-editor-foreground, #222) !important;
+  display: flex;
+  justify-content: center !important;
+  align-items: center !important;
+  font-size: 14px !important;
+  font-weight: bold !important;
+}
+
+.floating-add-indicator::after {
+  content: "+" !important;
+  display: block !important;
+  line-height: 1 !important;
+}
+
+.floating-add-indicator:hover {
+  background-color: var(--vscode-list-hoverBackground, #f3f3f3) !important;
+  border-color: var(--vscode-focusBorder, #007acc) !important;
+}
+
+/* Container for top row actions (filter + add buttons) */
+.floating-top-actions {
+  /* Ensure proper display */
+  display: flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+  /* DO NOT override position - floating-ui sets position: fixed via inline styles */
+  visibility: visible !important;
+  z-index: 999 !important;
+}
+
+/* ========================================
+   Collapsible Sections - VS Code Theme Adaptation
+   ======================================== */
+
+/* Remove bullet point and add padding to collapsible container */
+.Collapsible__container {
+  list-style-type: none !important;
+  list-style: none !important;
+  padding: 12px 16px !important;
+  margin: 8px 0 !important;
+  background-color: var(--vscode-editor-background) !important;
+  border: 1px solid var(--vscode-panel-border, rgba(128, 128, 128, 0.35)) !important;
+  border-radius: 4px !important;
+}
+
+/* Remove default list padding/margin */
+.Collapsible__container::before {
+  display: none !important;
+}
+
+/* Style the collapsible trigger/title */
+.Collapsible__container summary,
+.Collapsible__container > div:first-child,
+.Collapsible__container [role="button"] {
+  padding: 4px 0 4px 24px !important;
+  cursor: pointer !important;
+  user-select: none !important;
+  color: var(--vscode-editor-foreground) !important;
+  position: relative !important;
+}
+
+/* Arrow icon for collapsible title - collapsed state (right arrow) */
+.Collapsible__container > .Collapsible__title::before,
+.Collapsible__title::before {
+  content: "▶" !important;
+  position: absolute !important;
+  left: 4px !important;
+  top: 50% !important;
+  transform: translateY(-50%) !important;
+  font-size: 10px !important;
+  color: var(--vscode-editor-foreground, #ccc) !important;
+  opacity: 0.8 !important;
+  transition: all 0.15s ease !important;
+}
+
+/* Arrow icon - expanded state (down arrow) for div[open] (Chrome/VS Code) */
+.Collapsible__container[open] > .Collapsible__title::before {
+  content: "▼" !important;
+  opacity: 1 !important;
+}
+
+/* Content area padding when expanded */
+.Collapsible__container[open] > *:not(summary):not(:first-child),
+.Collapsible__container.open > *:not(:first-child) {
+  padding-top: 12px !important;
+}
+
+/* ========================================
+   Floating Text Format Toolbar - VS Code Theme Adaptation
+   ======================================== */
+
+/* Container for floating format toolbar */
+.floating-text-format-popup {
+  display: flex !important;
+  align-items: center !important;
+  gap: 2px !important;
+  padding: 4px !important;
+  background-color: var(--vscode-editorWidget-background, #252526) !important;
+  border: 1px solid var(--vscode-editorWidget-border, rgba(128, 128, 128, 0.35)) !important;
+  border-radius: 4px !important;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.35) !important;
+  z-index: 1000 !important;
+}
+
+/* Format toolbar buttons */
+.floating-text-format-popup .popup-item {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 32px !important;
+  height: 32px !important;
+  padding: 6px !important;
+  background-color: transparent !important;
+  border: none !important;
+  border-radius: 3px !important;
+  cursor: pointer !important;
+  transition: background-color 0.1s ease !important;
+  color: var(--vscode-editor-foreground, #cccccc) !important;
+}
+
+/* Hover state */
+.floating-text-format-popup .popup-item:hover {
+  background-color: var(
+    --vscode-toolbar-hoverBackground,
+    rgba(90, 93, 94, 0.31)
+  ) !important;
+}
+
+/* Active/selected state */
+.floating-text-format-popup .popup-item.active {
+  background-color: var(
+    --vscode-list-activeSelectionBackground,
+    #094771
+  ) !important;
+  color: var(--vscode-list-activeSelectionForeground, #ffffff) !important;
+}
+
+/* Format icons - use CSS mask pattern for theme-adaptive icons */
+/* This matches the ComponentPickerMenuPlugin pattern */
+.floating-text-format-popup .format {
+  display: block !important;
+  width: 18px !important;
+  height: 18px !important;
+  flex-shrink: 0 !important;
+  /* Background color provides the icon color - inherits from button text color */
+  background-color: currentColor !important;
+  /* Remove any background image */
+  background-image: none !important;
+  /* Mask mode - SVG becomes the shape, color comes from background */
+  mask-size: contain !important;
+  mask-repeat: no-repeat !important;
+  mask-position: center !important;
+  -webkit-mask-size: contain !important;
+  -webkit-mask-repeat: no-repeat !important;
+  -webkit-mask-position: center !important;
+  opacity: 0.85 !important;
+}
+
+/* Bold */
+.floating-text-format-popup i.bold {
+  mask-image: url(icons/type-bold.svg) !important;
+  -webkit-mask-image: url(icons/type-bold.svg) !important;
+}
+
+/* Italic */
+.floating-text-format-popup i.italic {
+  mask-image: url(icons/type-italic.svg) !important;
+  -webkit-mask-image: url(icons/type-italic.svg) !important;
+}
+
+/* Underline */
+.floating-text-format-popup i.underline {
+  mask-image: url(icons/type-underline.svg) !important;
+  -webkit-mask-image: url(icons/type-underline.svg) !important;
+}
+
+/* Strikethrough */
+.floating-text-format-popup i.strikethrough {
+  mask-image: url(icons/type-strikethrough.svg) !important;
+  -webkit-mask-image: url(icons/type-strikethrough.svg) !important;
+}
+
+/* Subscript */
+.floating-text-format-popup i.subscript {
+  mask-image: url(icons/type-subscript.svg) !important;
+  -webkit-mask-image: url(icons/type-subscript.svg) !important;
+}
+
+/* Superscript */
+.floating-text-format-popup i.superscript {
+  mask-image: url(icons/type-superscript.svg) !important;
+  -webkit-mask-image: url(icons/type-superscript.svg) !important;
+}
+
+/* Code */
+.floating-text-format-popup i.code {
+  mask-image: url(icons/code.svg) !important;
+  -webkit-mask-image: url(icons/code.svg) !important;
+}
+
+/* Link */
+.floating-text-format-popup i.link {
+  mask-image: url(icons/link.svg) !important;
+  -webkit-mask-image: url(icons/link.svg) !important;
+}
+
+/* Add comment */
+.floating-text-format-popup i.add-comment {
+  mask-image: url(icons/comments.svg) !important;
+  -webkit-mask-image: url(icons/comments.svg) !important;
+}
+
+/* Active button icons - full opacity */
+.floating-text-format-popup .popup-item.active .format {
+  opacity: 1 !important;
+}
+
+/* Spaced buttons - add margin */
+.floating-text-format-popup .popup-item.spaced {
+  margin-right: 2px !important;
+}
+
+.floating-text-format-popup .popup-item.spaced:last-child {
+  margin-right: 0 !important;
+}
+
+/* ========================================
+   Floating Link Editor - VS Code Theme Adaptation
+   ======================================== */
+
+/* Disable clicks on all editor content links - use Cmd+Click to open */
+.lexical-editor-container a,
+.lexical-editor-inner a,
+.editor a,
+.ContentEditable__root a {
+  pointer-events: none !important;
+  cursor: default !important;
+}
+
+/* Link editor container */
+.link-editor {
+  position: absolute !important;
+  top: 0 !important;
+  left: 0 !important;
+  z-index: 10 !important;
+  max-width: 400px !important;
+  width: 100% !important;
+  /* Don't use !important on opacity - plugin controls it via inline styles */
+  opacity: 0;
+  background-color: var(--vscode-editorWidget-background, #252526) !important;
+  border: 1px solid var(--vscode-editorWidget-border, rgba(128, 128, 128, 0.35)) !important;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.35) !important;
+  border-radius: 4px !important;
+  transition: opacity 0.5s !important;
+  will-change: transform !important;
+}
+
+/* Link editor row */
+.link-editor .link-editor-row {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  padding: 8px 12px !important;
+}
+
+/* Link input field */
+.link-editor .link-input {
+  flex: 1 !important;
+  box-sizing: border-box !important;
+  padding: 8px 12px !important;
+  border-radius: 3px !important;
+  background-color: var(--vscode-input-background, #3c3c3c) !important;
+  font-size: 13px !important;
+  color: var(--vscode-input-foreground, #cccccc) !important;
+  border: 1px solid var(--vscode-input-border, rgba(128, 128, 128, 0.35)) !important;
+  outline: 0 !important;
+  font-family: inherit !important;
+}
+
+.link-editor .link-input:focus {
+  border-color: var(--vscode-focusBorder, #007acc) !important;
+}
+
+/* Link view (read-only display) */
+.link-editor .link-view {
+  flex: 1 !important;
+  padding: 8px 12px !important;
+  border-radius: 3px !important;
+  font-size: 13px !important;
+  color: var(--vscode-editor-foreground, #cccccc) !important;
+  border: 0 !important;
+  outline: 0 !important;
+  font-family: inherit !important;
+}
+
+.link-editor .link-view a {
+  display: block !important;
+  word-break: break-word !important;
+  width: 100% !important;
+  color: var(--vscode-textLink-foreground, #3794ff) !important;
+  text-decoration: none !important;
+  /* Enable clicking on dialog link - this overrides the global link disable */
+  pointer-events: auto !important;
+  cursor: pointer !important;
+}
+
+.link-editor .link-view a:hover {
+  text-decoration: underline !important;
+}
+
+/* Edit button - use SVG icon with CSS mask */
+.link-editor div.link-edit {
+  border: 0 !important;
+  background-color: currentColor !important;
+  border-radius: 3px !important;
+  display: block !important;
+  height: 32px !important;
+  width: 32px !important;
+  cursor: pointer !important;
+  flex-shrink: 0 !important;
+  color: var(--vscode-editor-foreground, #cccccc) !important;
+  transition: opacity 0.1s ease !important;
+  /* CSS mask pattern for theme-adaptive icon */
+  mask-image: url(icons/pencil-fill.svg) !important;
+  -webkit-mask-image: url(icons/pencil-fill.svg) !important;
+  mask-size: 18px 18px !important;
+  mask-repeat: no-repeat !important;
+  mask-position: center !important;
+  -webkit-mask-size: 18px 18px !important;
+  -webkit-mask-repeat: no-repeat !important;
+  -webkit-mask-position: center !important;
+  opacity: 0.85 !important;
+}
+
+.link-editor div.link-edit:hover {
+  opacity: 1 !important;
+}
+
+/* Trash/delete button - use SVG icon with CSS mask */
+.link-editor div.link-trash {
+  border: 0 !important;
+  background-color: currentColor !important;
+  border-radius: 3px !important;
+  display: block !important;
+  height: 32px !important;
+  width: 32px !important;
+  cursor: pointer !important;
+  flex-shrink: 0 !important;
+  color: var(--vscode-editor-foreground, #cccccc) !important;
+  transition: opacity 0.1s ease !important;
+  /* CSS mask pattern for theme-adaptive icon */
+  mask-image: url(icons/trash.svg) !important;
+  -webkit-mask-image: url(icons/trash.svg) !important;
+  mask-size: 18px 18px !important;
+  mask-repeat: no-repeat !important;
+  mask-position: center !important;
+  -webkit-mask-size: 18px 18px !important;
+  -webkit-mask-repeat: no-repeat !important;
+  -webkit-mask-position: center !important;
+  opacity: 0.85 !important;
+}
+
+.link-editor div.link-trash:hover {
+  opacity: 1 !important;
+}
+
+/* Cancel button */
+.link-editor .link-cancel {
+  border: 0 !important;
+  background-color: transparent !important;
+  background-image: none !important;
+  border-radius: 3px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  height: 32px !important;
+  width: 32px !important;
+  cursor: pointer !important;
+  flex-shrink: 0 !important;
+  color: var(--vscode-editor-foreground, #cccccc) !important;
+  transition: background-color 0.1s ease !important;
+}
+
+.link-editor .link-cancel::before {
+  content: "✕" !important;
+  font-size: 16px !important;
+  display: block !important;
+}
+
+.link-editor .link-cancel:hover {
+  background-color: var(
+    --vscode-toolbar-hoverBackground,
+    rgba(90, 93, 94, 0.31)
+  ) !important;
+}
+
+/* Confirm button */
+.link-editor .link-confirm {
+  border: 1px solid var(--vscode-button-border, #007acc) !important;
+  background-color: var(--vscode-button-background, #007acc) !important;
+  background-image: none !important;
+  border-radius: 3px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  height: 32px !important;
+  width: 32px !important;
+  cursor: pointer !important;
+  flex-shrink: 0 !important;
+  color: var(--vscode-button-foreground, #ffffff) !important;
+  transition: background-color 0.1s ease !important;
+}
+
+.link-editor .link-confirm::before {
+  content: "✓" !important;
+  font-size: 16px !important;
+  display: block !important;
+  font-weight: bold !important;
+}
+
+.link-editor .link-confirm:hover {
+  background-color: var(--vscode-button-hoverBackground, #005a9e) !important;
 }

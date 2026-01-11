@@ -47,6 +47,7 @@ import {
   JupyterCellPlugin,
   JupyterInputOutputPlugin,
   DraggableBlockPlugin,
+  FloatingTextFormatToolbarPlugin,
   registerCodeHighlighting,
   LexicalInlineCompletionPlugin,
   EquationNode,
@@ -57,12 +58,27 @@ import {
   EquationsPlugin,
   YouTubePlugin,
   AutoLinkPlugin,
+  FloatingLinkEditorPlugin,
   AutoEmbedPlugin,
   AutoIndentPlugin,
   LexicalConfigProvider,
   LexicalStatePlugin,
   CommentThreadNode,
   CommentPlugin,
+  EmbedHandlersContext,
+  CollapsibleContainerNode,
+  CollapsibleContentNode,
+  CollapsibleTitleNode,
+  CollapsiblePlugin,
+  ExcalidrawNode,
+  ExcalidrawPlugin,
+  TablePlugin,
+  TableActionMenuPlugin,
+  TableHoverActionsV2Plugin,
+  TableScrollShadowPlugin,
+  TableCellResizerPlugin,
+  CommentsProvider,
+  useComments,
 } from "@datalayer/jupyter-lexical";
 import { LexicalToolbar } from "./LexicalToolbar";
 import { RuntimeProgressBar } from "../components/RuntimeProgressBar";
@@ -79,6 +95,7 @@ import { NavigationPlugin } from "./plugins/NavigationPlugin";
 import { InternalCommandsPlugin } from "./plugins/InternalCommandsPlugin";
 import { ContextMenuPlugin } from "./plugins/ContextMenuPlugin";
 import type { OutlineUpdateMessage } from "../types/messages";
+import { vsCodeAPI } from "../services/messageHandler";
 
 /**
  * Collaboration configuration for Lexical documents
@@ -228,34 +245,38 @@ function LoadContentPlugin({
     }
 
     isFirstRender.current = false;
-    try {
-      // First try to parse as JSON to validate format
-      const parsed = JSON.parse(content);
 
-      // Check if it's a valid Lexical editor state
-      if (parsed && typeof parsed === "object" && parsed.root) {
-        const editorState = editor.parseEditorState(content);
-        // Use setEditorState with skipHistoryPush option to avoid adding to undo stack
-        editor.setEditorState(editorState, {
-          tag: "history-merge",
-        });
-      } else {
-        throw new Error("Invalid Lexical editor state format");
+    // Defer to next microtask to avoid flushSync warning during lifecycle
+    queueMicrotask(() => {
+      try {
+        // First try to parse as JSON to validate format
+        const parsed = JSON.parse(content);
+
+        // Check if it's a valid Lexical editor state
+        if (parsed && typeof parsed === "object" && parsed.root) {
+          const editorState = editor.parseEditorState(content);
+          // Use setEditorState with skipHistoryPush option to avoid adding to undo stack
+          editor.setEditorState(editorState, {
+            tag: "history-merge",
+          });
+        } else {
+          throw new Error("Invalid Lexical editor state format");
+        }
+      } catch (error) {
+        // Create a default empty state if parsing fails
+        editor.update(
+          () => {
+            const root = $getRoot();
+            root.clear();
+            const paragraph = $createParagraphNode();
+            root.append(paragraph);
+          },
+          {
+            tag: "history-merge",
+          },
+        );
       }
-    } catch (error) {
-      // Create a default empty state if parsing fails
-      editor.update(
-        () => {
-          const root = $getRoot();
-          root.clear();
-          const paragraph = $createParagraphNode();
-          root.append(paragraph);
-        },
-        {
-          tag: "history-merge",
-        },
-      );
-    }
+    });
   }, [content, editor, skipLoad]);
 
   return null;
@@ -330,7 +351,7 @@ export function LexicalEditor({
   const [floatingAnchorElem, setFloatingAnchorElem] =
     useState<HTMLDivElement | null>(null);
 
-  const [showCommentsPanel, setShowCommentsPanel] = useState(false);
+  const [isLinkEditMode, setIsLinkEditMode] = useState(false);
 
   const onRef = (_floatingAnchorElem: HTMLDivElement) => {
     if (_floatingAnchorElem !== null) {
@@ -344,6 +365,18 @@ export function LexicalEditor({
    */
   const lexicalLLMProvider = React.useMemo(() => {
     return new LexicalVSCodeLLMProvider();
+  }, []);
+
+  /**
+   * Handler for YouTube embeds in VS Code.
+   * Opens videos in external browser (Simple Browser has sandbox restrictions).
+   */
+  const handleYouTubeClick = useCallback((videoID: string) => {
+    vsCodeAPI.postMessage({
+      type: "open-external-url",
+      url: `https://www.youtube.com/watch?v=${videoID}`,
+      useSimpleBrowser: false,
+    });
   }, []);
 
   // DEBUG: Log element positions and styles to find the gap
@@ -384,8 +417,13 @@ export function LexicalEditor({
       HorizontalRuleNode,
       // Comment nodes (for commenting plugin)
       CommentThreadNode,
+      // Collapsible nodes
+      CollapsibleContainerNode,
+      CollapsibleContentNode,
+      CollapsibleTitleNode,
       // Jupyter lexical nodes (must match SaaS editor for collaboration)
       EquationNode,
+      ExcalidrawNode,
       ImageNode,
       YouTubeNode,
       JupyterCellNode,
@@ -460,6 +498,26 @@ export function LexicalEditor({
       },
       draggableBlockMenu: "vscode-draggable-block-menu",
       draggableBlockTargetLine: "vscode-draggable-block-target-line",
+      table: "PlaygroundEditorTheme__table",
+      tableAddColumns: "PlaygroundEditorTheme__tableAddColumns",
+      tableAddRows: "PlaygroundEditorTheme__tableAddRows",
+      tableAlignment: {
+        center: "PlaygroundEditorTheme__tableAlignmentCenter",
+        right: "PlaygroundEditorTheme__tableAlignmentRight",
+      },
+      tableCell: "PlaygroundEditorTheme__tableCell",
+      tableCellActionButton: "PlaygroundEditorTheme__tableCellActionButton",
+      tableCellActionButtonContainer:
+        "PlaygroundEditorTheme__tableCellActionButtonContainer",
+      tableCellHeader: "PlaygroundEditorTheme__tableCellHeader",
+      tableCellResizer: "PlaygroundEditorTheme__tableCellResizer",
+      tableCellSelected: "PlaygroundEditorTheme__tableCellSelected",
+      tableFrozenColumn: "PlaygroundEditorTheme__tableFrozenColumn",
+      tableFrozenRow: "PlaygroundEditorTheme__tableFrozenRow",
+      tableRowStriping: "PlaygroundEditorTheme__tableRowStriping",
+      tableScrollableWrapper: "PlaygroundEditorTheme__tableScrollableWrapper",
+      tableSelected: "PlaygroundEditorTheme__tableSelected",
+      tableSelection: "PlaygroundEditorTheme__tableSelection",
     },
     onError(_error: Error) {
       // Silently handle Lexical errors
@@ -496,156 +554,234 @@ export function LexicalEditor({
         lexicalId={lexicalId || documentUri || ""}
         serviceManager={serviceManager}
       >
-        <LexicalComposer initialConfig={editorConfig}>
-          {/* CRITICAL: LexicalStatePlugin registers the adapter in the store */}
-          <LexicalStatePlugin />
-          {(showToolbar || collaboration?.enabled) && (
-            <div
-              className="lexical-toolbar-wrapper"
-              style={{
-                display: "flex",
-                alignItems: "flex-start",
-                justifyContent: "space-between",
-                backgroundColor: "var(--vscode-editor-background)",
-                width: "100%",
-                maxWidth: "100%",
-                overflow: "hidden",
-                border: "none !important",
-                outline: "none !important",
-                boxShadow: "none !important",
-              }}
-            >
-              {showToolbar && (
-                <LexicalToolbar
-                  disabled={!editable}
-                  selectedRuntime={selectedRuntime}
-                  showRuntimeSelector={showRuntimeSelector}
-                  showCollaborativeLabel={collaboration?.enabled}
-                  showCommentsPanel={showCommentsPanel}
-                  onToggleComments={() =>
-                    setShowCommentsPanel(!showCommentsPanel)
-                  }
-                  lexicalId={lexicalId || undefined}
-                  kernelInitializing={kernelInitializing}
-                />
-              )}
-            </div>
-          )}
-          <div className="lexical-editor-inner" ref={onRef}>
-            <RichTextPlugin
-              contentEditable={
-                <ContentEditable
-                  className="lexical-editor-content"
-                  aria-label="Lexical Editor"
-                />
-              }
-              ErrorBoundary={LexicalErrorBoundary}
-            />
-            <OnChangePlugin onChange={handleChange} />
-            <HistoryPlugin />
-            <AutoFocusPlugin />
-            <ListPlugin />
-            <CheckListPlugin />
-            <LinkPlugin />
-            <AutoLinkPlugin />
-            <MarkdownShortcutPlugin transformers={TRANSFORMERS} />
-            <SavePlugin onSave={editable ? onSave : undefined} />
-            <LoadContentPlugin
-              content={initialContent}
-              skipLoad={collaboration?.enabled}
-            />
-            <CodeHighlightPlugin />
-            <ImagesPlugin captionsEnabled={false} />
-            <HorizontalRulePlugin />
-            <EquationsPlugin />
-            <YouTubePlugin />
-            <AutoEmbedPlugin />
-            <JupyterCellPlugin />
-            <AutoIndentPlugin defaultLanguage="python" debug={true} />
-            {/* Kernel plugins - remount when runtime changes */}
-            <JupyterKernelPlugins
-              key={selectedRuntime?.ingress || "no-runtime"}
-              serviceManager={serviceManager}
-              startDefaultKernel={!!selectedRuntime}
-            />
-            <LexicalInlineCompletionPlugin
-              providers={[lexicalLLMProvider]}
-              debounceMs={200}
-              enabled={editable}
-            />
-            {documentUri && vscode && (
-              <OutlinePlugin documentUri={documentUri} vscode={vscode} />
-            )}
-            {navigationTarget && onNavigated && (
-              <NavigationPlugin
+        <EmbedHandlersContext.Provider
+          value={{ onYouTubeClick: handleYouTubeClick }}
+        >
+          <LexicalComposer initialConfig={editorConfig}>
+            {/* CRITICAL: LexicalStatePlugin registers the adapter in the store */}
+            <LexicalStatePlugin />
+            <CommentsProvider>
+              <LexicalEditorInner
+                showToolbar={showToolbar}
+                collaboration={collaboration}
+                editable={editable}
+                selectedRuntime={selectedRuntime}
+                showRuntimeSelector={showRuntimeSelector}
+                lexicalId={lexicalId}
+                kernelInitializing={kernelInitializing}
+                onRef={onRef}
+                handleChange={handleChange}
+                onSave={onSave}
+                initialContent={initialContent}
+                serviceManager={serviceManager}
+                documentUri={documentUri}
+                vscode={vscode}
                 navigationTarget={navigationTarget}
                 onNavigated={onNavigated}
+                userInfo={userInfo}
+                floatingAnchorElem={floatingAnchorElem}
+                isLinkEditMode={isLinkEditMode}
+                setIsLinkEditMode={setIsLinkEditMode}
+                lexicalLLMProvider={lexicalLLMProvider}
               />
-            )}
-            <InternalCommandsPlugin
-              vscode={vscode as { postMessage: (message: unknown) => void }}
-              lexicalId={lexicalId}
-            />
-            {/* Comments Plugin - Wrapped in CollaborationContext for username */}
-            {(() => {
-              const username =
-                userInfo?.username || collaboration?.username || "Anonymous";
-              const userColor =
-                userInfo?.userColor || collaboration?.userColor || "#808080";
-
-              // Create CollaborationContext value for CommentPlugin
-              // This provides username/color WITHOUT full Loro sync
-              const collabContextValue: CollaborationContextType = {
-                clientID: 0, // Not needed for local comments
-                color: userColor,
-                isCollabActive: collaboration?.enabled || false,
-                name: username,
-                docMap: new Map(), // Empty map for local files
-              };
-
-              return (
-                <CollaborationContext.Provider value={collabContextValue}>
-                  <CommentPlugin
-                    providerFactory={undefined}
-                    showCommentsPanel={showCommentsPanel}
-                    showFloatingAddButton={false}
-                    showToggleButton={false}
-                  />
-                  {/* Context Menu Plugin - Right-click to add comments */}
-                  <ContextMenuPlugin />
-                </CollaborationContext.Provider>
-              );
-            })()}
-            {floatingAnchorElem && (
-              <DraggableBlockPlugin anchorElem={floatingAnchorElem} />
-            )}
-            {collaboration?.enabled &&
-              (() => {
-                const username = userInfo?.username || collaboration?.username;
-                const userColor =
-                  userInfo?.userColor || collaboration?.userColor;
-                const docId =
-                  collaboration?.documentId || documentUri || "local";
-
-                console.log(
-                  "[LexicalEditor] Rendering LoroCollaborationPlugin",
-                );
-
-                return (
-                  <LoroCollaborationPlugin
-                    id={docId}
-                    shouldBootstrap
-                    providerFactory={createVSCodeLoroProvider}
-                    websocketUrl={collaboration?.websocketUrl || ""}
-                    username={username}
-                    cursorColor={userColor}
-                    onInitialization={(_isInitialized) => {}}
-                  />
-                );
-              })()}
-          </div>
-        </LexicalComposer>
+            </CommentsProvider>
+          </LexicalComposer>
+        </EmbedHandlersContext.Provider>
       </LexicalConfigProvider>
     </div>
+  );
+}
+
+/**
+ * Inner component wrapped in CommentsProvider to enable useComments hook
+ */
+function LexicalEditorInner({
+  showToolbar,
+  collaboration,
+  editable,
+  selectedRuntime,
+  showRuntimeSelector,
+  lexicalId,
+  kernelInitializing,
+  onRef,
+  handleChange,
+  onSave,
+  initialContent,
+  serviceManager,
+  documentUri,
+  vscode,
+  navigationTarget,
+  onNavigated,
+  userInfo,
+  floatingAnchorElem,
+  isLinkEditMode,
+  setIsLinkEditMode,
+  lexicalLLMProvider,
+}: any) {
+  const { showComments, toggleComments } = useComments();
+
+  return (
+    <>
+      {(showToolbar || collaboration?.enabled) && (
+        <div
+          className="lexical-toolbar-wrapper"
+          style={{
+            display: "flex",
+            alignItems: "flex-start",
+            justifyContent: "space-between",
+            backgroundColor: "var(--vscode-editor-background)",
+            width: "100%",
+            maxWidth: "100%",
+            overflow: "hidden",
+            border: "none !important",
+            outline: "none !important",
+            boxShadow: "none !important",
+          }}
+        >
+          {showToolbar && (
+            <LexicalToolbar
+              disabled={!editable}
+              selectedRuntime={selectedRuntime}
+              showRuntimeSelector={showRuntimeSelector}
+              showCollaborativeLabel={collaboration?.enabled}
+              showCommentsPanel={showComments}
+              onToggleComments={toggleComments}
+              lexicalId={lexicalId || undefined}
+              kernelInitializing={kernelInitializing}
+              setIsLinkEditMode={setIsLinkEditMode}
+            />
+          )}
+        </div>
+      )}
+      <div className="lexical-editor-inner" ref={onRef}>
+        <RichTextPlugin
+          contentEditable={
+            <ContentEditable
+              className="lexical-editor-content"
+              aria-label="Lexical Editor"
+            />
+          }
+          ErrorBoundary={LexicalErrorBoundary}
+        />
+        <OnChangePlugin onChange={handleChange} />
+        <HistoryPlugin />
+        <AutoFocusPlugin />
+        <ListPlugin />
+        <CheckListPlugin />
+        <TablePlugin />
+        <TableCellResizerPlugin />
+        <TableActionMenuPlugin />
+        <TableHoverActionsV2Plugin />
+        <TableScrollShadowPlugin />
+        <LinkPlugin
+          validateUrl={(url: string) => {
+            return /^(?:http(s)?:\/\/)?[\w.-]+(?:\.[\w\.-]+)+[\w\-\._~:/?#[\]@!\$&'\(\)\*\+,;=.]+$/.test(
+              url,
+            );
+          }}
+        />
+        <AutoLinkPlugin />
+        <MarkdownShortcutPlugin transformers={TRANSFORMERS} />
+        <SavePlugin onSave={editable ? onSave : undefined} />
+        <LoadContentPlugin
+          content={initialContent}
+          skipLoad={collaboration?.enabled}
+        />
+        <CodeHighlightPlugin />
+        <ImagesPlugin captionsEnabled={false} />
+        <HorizontalRulePlugin />
+        <EquationsPlugin />
+        <YouTubePlugin />
+        <CollapsiblePlugin />
+        <ExcalidrawPlugin />
+        <AutoEmbedPlugin />
+        <JupyterCellPlugin />
+        <AutoIndentPlugin defaultLanguage="python" debug={false} />
+        {/* Kernel plugins - remount when runtime changes */}
+        <JupyterKernelPlugins
+          key={selectedRuntime?.ingress || "no-runtime"}
+          serviceManager={serviceManager}
+          startDefaultKernel={!!selectedRuntime}
+        />
+        <LexicalInlineCompletionPlugin
+          providers={[lexicalLLMProvider]}
+          debounceMs={200}
+          enabled={editable}
+        />
+        {documentUri && vscode && (
+          <OutlinePlugin documentUri={documentUri} vscode={vscode} />
+        )}
+        {navigationTarget && onNavigated && (
+          <NavigationPlugin
+            navigationTarget={navigationTarget}
+            onNavigated={onNavigated}
+          />
+        )}
+        <InternalCommandsPlugin
+          vscode={vscode as { postMessage: (message: unknown) => void }}
+          lexicalId={lexicalId}
+        />
+        {/* Comments Plugin - Wrapped in CollaborationContext for username */}
+        {(() => {
+          const username =
+            userInfo?.username || collaboration?.username || "Anonymous";
+          const userColor =
+            userInfo?.userColor || collaboration?.userColor || "#808080";
+
+          // Create CollaborationContext value for CommentPlugin
+          // This provides username/color WITHOUT full Loro sync
+          const collabContextValue: CollaborationContextType = {
+            clientID: 0, // Not needed for local comments
+            color: userColor,
+            isCollabActive: collaboration?.enabled || false,
+            name: username,
+            docMap: new Map(), // Empty map for local files
+          };
+
+          return (
+            <CollaborationContext.Provider value={collabContextValue}>
+              <CommentPlugin
+                providerFactory={undefined}
+                showFloatingAddButton={false}
+              />
+              {/* Context Menu Plugin - Right-click to add comments */}
+              <ContextMenuPlugin />
+            </CollaborationContext.Provider>
+          );
+        })()}
+        {floatingAnchorElem && (
+          <>
+            <DraggableBlockPlugin anchorElem={floatingAnchorElem} />
+            <FloatingLinkEditorPlugin
+              anchorElem={floatingAnchorElem}
+              isLinkEditMode={isLinkEditMode}
+              setIsLinkEditMode={setIsLinkEditMode}
+            />
+            <FloatingTextFormatToolbarPlugin
+              anchorElem={floatingAnchorElem}
+              setIsLinkEditMode={setIsLinkEditMode}
+            />
+          </>
+        )}
+        {collaboration?.enabled &&
+          (() => {
+            const username = userInfo?.username || collaboration?.username;
+            const userColor = userInfo?.userColor || collaboration?.userColor;
+            const docId = collaboration?.documentId || documentUri || "local";
+
+            return (
+              <LoroCollaborationPlugin
+                id={docId}
+                shouldBootstrap
+                providerFactory={createVSCodeLoroProvider}
+                websocketUrl={collaboration?.websocketUrl || ""}
+                username={username}
+                cursorColor={userColor}
+                onInitialization={(_isInitialized) => {}}
+              />
+            );
+          })()}
+      </div>
+    </>
   );
 }

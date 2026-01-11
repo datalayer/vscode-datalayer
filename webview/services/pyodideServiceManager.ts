@@ -219,7 +219,7 @@ class MinimalSessionManager extends BaseSessionManager {
 /**
  * Minimal ServiceManager for Pyodide - NO HTTP REQUESTS
  *
- * @param pyodideUrl - Optional Pyodide CDN URL (default: official CDN)
+ * @param _pyodideUrl - Optional Pyodide CDN URL (unused - default: official CDN)
  */
 export function createPyodideServiceManager(
   _pyodideUrl?: string,

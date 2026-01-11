@@ -202,6 +202,152 @@ function VSCodeCSSInjector({ colorMode }: { colorMode: "light" | "dark" }) {
         background: var(--vscode-editor-selectionBackground) !important;
         background-color: var(--vscode-editor-selectionBackground) !important;
       }
+
+      /* ========================================
+         Excalidraw Theme Integration
+         ======================================== */
+      /* Comprehensive mapping of Excalidraw CSS variables to VS Code theme colors */
+      /* This keeps jupyter-lexical package VS Code-agnostic while providing deep integration */
+
+      /* Dark theme Excalidraw overrides */
+      .ExcalidrawModal__row .excalidraw.theme--dark {
+        /* Core Colors */
+        --color-primary: var(--vscode-button-background, #0e639c);
+        --color-primary-darker: var(--vscode-button-hoverBackground, #1177bb);
+        --color-primary-darkest: var(--vscode-button-hoverBackground, #0a5285);
+        --color-primary-hover: var(--vscode-button-hoverBackground, #1177bb);
+        --color-primary-light: var(--vscode-list-activeSelectionBackground, #094771);
+        --color-surface-primary: var(--vscode-editor-background, #1e1e1e);
+        --default-bg-color: var(--vscode-editor-background, #1e1e1e);
+        --color-on-surface: var(--vscode-editor-foreground, #d4d4d4);
+        --text-primary-color: var(--vscode-editor-foreground, #d4d4d4);
+        --popup-text-color: var(--vscode-editor-foreground, #d4d4d4);
+
+        /* Primary Container Colors (for selected/active states) */
+        --color-surface-primary-container: var(--vscode-list-activeSelectionBackground, #094771);
+        --color-on-primary-container: var(--vscode-list-activeSelectionForeground, #ffffff);
+
+        /* Brand/Interactive Colors */
+        --color-brand-hover: var(--vscode-button-hoverBackground, #1177bb);
+        --color-brand-active: var(--vscode-focusBorder, #007fd4);
+
+        /* Icon Colors */
+        --color-icon-white: #ffffff;
+
+        /* Surface Variations */
+        --island-bg-color: var(--vscode-editorWidget-background, #252526);
+        --sidebar-bg-color: var(--vscode-sideBar-background, #252526);
+        --popup-bg-color: var(--vscode-editorWidget-background, #252526);
+        --popup-secondary-bg-color: var(--vscode-dropdown-background, #3c3c3c);
+        --color-surface-high: var(--vscode-editorWidget-background, #2e2d39);
+        --color-surface-mid: var(--vscode-sideBar-background, #252526);
+        --color-surface-low: var(--vscode-editor-background, #1e1e1e);
+        --color-surface-lowest: var(--vscode-editor-background, #1e1e1e);
+
+        /* Buttons */
+        --button-gray-1: var(--vscode-button-secondaryBackground, #3a3d41);
+        --button-gray-2: var(--vscode-button-secondaryHoverBackground, #45494e);
+        --button-gray-3: var(--vscode-button-secondaryHoverBackground, #45494e);
+        --button-hover-bg: var(--vscode-list-hoverBackground, #2a2d2e);
+        --button-active-bg: var(--vscode-list-activeSelectionBackground, #094771);
+        --button-color: var(--vscode-button-foreground, #ffffff);
+        --button-hover-color: var(--vscode-button-foreground, #ffffff);
+        --button-bg: var(--vscode-button-background, #0e639c);
+
+        /* Input Fields */
+        --input-bg-color: var(--vscode-input-background, #3c3c3c);
+        --input-border-color: var(--vscode-input-border, #3c3c3c);
+        --input-hover-bg-color: var(--vscode-list-hoverBackground, #2a2d2e);
+
+        /* Borders */
+        --default-border-color: var(--vscode-panel-border, #3c3c3c);
+        --color-border-outline: var(--vscode-editorWidget-border, #454545);
+        --color-border-outline-variant: var(--vscode-panel-border, #3c3c3c);
+        --sidebar-border-color: var(--vscode-panel-border, #3c3c3c);
+        --dialog-border-color: var(--vscode-editorWidget-border, #454545);
+
+        /* Focus and Selection */
+        --focus-highlight-color: var(--vscode-focusBorder, #007fd4);
+        --select-highlight-color: var(--vscode-editor-selectionBackground, #264f78);
+        --color-selection: var(--vscode-editor-selectionBackground, #264f78);
+        --button-active-border: var(--vscode-focusBorder, #007fd4);
+
+        /* Links, Scrollbar, Icons */
+        --link-color: var(--vscode-textLink-foreground, #3794ff);
+        --scrollbar-thumb: var(--vscode-scrollbarSlider-background, rgba(121, 121, 121, 0.4));
+        --scrollbar-thumb-hover: var(--vscode-scrollbarSlider-hoverBackground, rgba(100, 100, 100, 0.7));
+        --icon-fill-color: var(--vscode-icon-foreground, #c5c5c5);
+      }
+
+      /* Light theme Excalidraw overrides */
+      .ExcalidrawModal__row .excalidraw.theme--light {
+        /* Core Colors */
+        --color-primary: var(--vscode-button-background, #007acc);
+        --color-primary-darker: var(--vscode-button-hoverBackground, #005a9e);
+        --color-primary-darkest: var(--vscode-button-hoverBackground, #004578);
+        --color-primary-hover: var(--vscode-button-hoverBackground, #005a9e);
+        --color-primary-light: var(--vscode-list-activeSelectionBackground, #0060c0);
+        --color-surface-primary: var(--vscode-editor-background, #ffffff);
+        --default-bg-color: var(--vscode-editor-background, #ffffff);
+        --color-on-surface: var(--vscode-editor-foreground, #000000);
+        --text-primary-color: var(--vscode-editor-foreground, #000000);
+        --popup-text-color: var(--vscode-editor-foreground, #000000);
+
+        /* Primary Container Colors (for selected/active states) */
+        --color-surface-primary-container: var(--vscode-list-activeSelectionBackground, #0060c0);
+        --color-on-primary-container: var(--vscode-list-activeSelectionForeground, #ffffff);
+
+        /* Brand/Interactive Colors */
+        --color-brand-hover: var(--vscode-button-hoverBackground, #005a9e);
+        --color-brand-active: var(--vscode-focusBorder, #0090f1);
+
+        /* Icon Colors */
+        --color-icon-white: #ffffff;
+
+        /* Surface Variations */
+        --island-bg-color: var(--vscode-editorWidget-background, #f3f3f3);
+        --sidebar-bg-color: var(--vscode-sideBar-background, #f3f3f3);
+        --popup-bg-color: var(--vscode-editorWidget-background, #f3f3f3);
+        --popup-secondary-bg-color: var(--vscode-dropdown-background, #ffffff);
+        --color-surface-high: var(--vscode-editorWidget-background, #f1f0ff);
+        --color-surface-mid: var(--vscode-sideBar-background, #f3f3f3);
+        --color-surface-low: var(--vscode-editor-background, #ffffff);
+        --color-surface-lowest: var(--vscode-editor-background, #ffffff);
+
+        /* Buttons */
+        --button-gray-1: var(--vscode-button-secondaryBackground, #e1e1e1);
+        --button-gray-2: var(--vscode-button-secondaryHoverBackground, #d0d0d0);
+        --button-gray-3: var(--vscode-button-secondaryHoverBackground, #d0d0d0);
+        --button-hover-bg: var(--vscode-list-hoverBackground, #f0f0f0);
+        --button-active-bg: var(--vscode-list-activeSelectionBackground, #0060c0);
+        --button-color: var(--vscode-button-foreground, #ffffff);
+        --button-hover-color: var(--vscode-button-foreground, #ffffff);
+        --button-bg: var(--vscode-button-background, #007acc);
+
+        /* Input Fields */
+        --input-bg-color: var(--vscode-input-background, #ffffff);
+        --input-border-color: var(--vscode-input-border, #cecece);
+        --input-hover-bg-color: var(--vscode-list-hoverBackground, #f0f0f0);
+
+        /* Borders */
+        --default-border-color: var(--vscode-panel-border, #e0e0e0);
+        --color-border-outline: var(--vscode-editorWidget-border, #c8c8c8);
+        --color-border-outline-variant: var(--vscode-panel-border, #e0e0e0);
+        --sidebar-border-color: var(--vscode-panel-border, #e0e0e0);
+        --dialog-border-color: var(--vscode-editorWidget-border, #c8c8c8);
+
+        /* Focus and Selection */
+        --focus-highlight-color: var(--vscode-focusBorder, #0090f1);
+        --select-highlight-color: var(--vscode-editor-selectionBackground, #add6ff);
+        --color-selection: var(--vscode-editor-selectionBackground, #add6ff);
+        --button-active-border: var(--vscode-focusBorder, #0090f1);
+
+        /* Links, Scrollbar, Icons */
+        --link-color: var(--vscode-textLink-foreground, #006ab1);
+        --scrollbar-thumb: var(--vscode-scrollbarSlider-background, rgba(100, 100, 100, 0.4));
+        --scrollbar-thumb-hover: var(--vscode-scrollbarSlider-hoverBackground, rgba(100, 100, 100, 0.7));
+        --icon-fill-color: var(--vscode-icon-foreground, #424242);
+      }
     `;
 
     return () => {

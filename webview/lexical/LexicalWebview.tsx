@@ -11,6 +11,8 @@
  * @module lexical/lexicalWebview
  */
 
+import "../styles/collapsible-vscode.css";
+
 import React, { useEffect, useState, useCallback, useRef } from "react";
 import ReactDOM from "react-dom/client";
 import { ServiceManager } from "@jupyterlab/services";
@@ -29,6 +31,7 @@ import type {
   RuntimeSelectedMessage,
 } from "../types/messages";
 import { VSCodeTheme } from "../theme/VSCodeTheme";
+import { ThemeProvider } from "../contexts/ThemeContext";
 import "@vscode/codicons/dist/codicon.css";
 import "@datalayer/jupyter-lexical/style/index.css";
 // Import Prism language grammars explicitly (webpack needs this!)
@@ -420,61 +423,63 @@ function LexicalWebviewInner({
 
   return (
     <VSCodeTheme colorMode={theme}>
-      <div
-        data-theme={theme}
-        style={{
-          height: "100vh",
-          width: "100vw",
-          maxWidth: "100vw",
-          overflow: "hidden",
-          overflowX: "hidden",
-          backgroundColor: "var(--vscode-editor-background)",
-          color: "var(--vscode-editor-foreground)",
-          boxSizing: "border-box",
-          margin: 0,
-          padding: 0,
-        }}
-      >
-        {isReady
-          ? (() => {
-              return (
-                <LexicalEditor
-                  initialContent={content}
-                  onSave={handleSave}
-                  onContentChange={handleContentChange}
-                  showToolbar={true}
-                  editable={isEditable}
-                  collaboration={collaborationConfig}
-                  userInfo={userInfo}
-                  selectedRuntime={selectedRuntime}
-                  showRuntimeSelector={true}
-                  documentUri={documentUri}
-                  vscode={{ postMessage: (msg) => vscode.postMessage(msg) }}
-                  navigationTarget={navigationTarget}
-                  onNavigated={handleNavigated}
-                  serviceManager={serviceManager}
-                  lexicalId={lexicalId}
-                  kernelInitializing={kernelInitializing}
-                />
-              );
-            })()
-          : (() => {
-              return (
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "center",
-                    alignItems: "center",
-                    height: "100vh",
-                    backgroundColor: "var(--vscode-editor-background)",
-                    color: "var(--vscode-descriptionForeground)",
-                  }}
-                >
-                  Loading editor...
-                </div>
-              );
-            })()}
-      </div>
+      <ThemeProvider theme={theme}>
+        <div
+          data-theme={theme}
+          style={{
+            height: "100vh",
+            width: "100vw",
+            maxWidth: "100vw",
+            overflow: "hidden",
+            overflowX: "hidden",
+            backgroundColor: "var(--vscode-editor-background)",
+            color: "var(--vscode-editor-foreground)",
+            boxSizing: "border-box",
+            margin: 0,
+            padding: 0,
+          }}
+        >
+          {isReady
+            ? (() => {
+                return (
+                  <LexicalEditor
+                    initialContent={content}
+                    onSave={handleSave}
+                    onContentChange={handleContentChange}
+                    showToolbar={true}
+                    editable={isEditable}
+                    collaboration={collaborationConfig}
+                    userInfo={userInfo}
+                    selectedRuntime={selectedRuntime}
+                    showRuntimeSelector={true}
+                    documentUri={documentUri}
+                    vscode={{ postMessage: (msg) => vscode.postMessage(msg) }}
+                    navigationTarget={navigationTarget}
+                    onNavigated={handleNavigated}
+                    serviceManager={serviceManager}
+                    lexicalId={lexicalId}
+                    kernelInitializing={kernelInitializing}
+                  />
+                );
+              })()
+            : (() => {
+                return (
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "center",
+                      alignItems: "center",
+                      height: "100vh",
+                      backgroundColor: "var(--vscode-editor-background)",
+                      color: "var(--vscode-descriptionForeground)",
+                    }}
+                  >
+                    Loading editor...
+                  </div>
+                );
+              })()}
+        </div>
+      </ThemeProvider>
     </VSCodeTheme>
   );
 }

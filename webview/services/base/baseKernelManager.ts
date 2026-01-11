@@ -354,8 +354,8 @@ export abstract class BaseKernelManager implements ITypedKernelManager {
   /**
    * Unified logging helper with manager type prefix.
    *
-   * @param message - Log message
-   * @param args - Additional arguments to log
+   * @param _message - Log message (unused - logging disabled)
+   * @param _args - Additional arguments to log (unused - logging disabled)
    *
    * @example
    * ```typescript
