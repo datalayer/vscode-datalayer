@@ -79,7 +79,7 @@
     "@datalayer/primer-addons": "^1.0.4",
     "@jupyter/ydoc": "^2.0.0",
     "@jupyterlab/services": "^7.0.0",
-    "@lexical/code": "^0.35.0",
+    "@lexical/code": "^0.39.0",
     "@lexical/html": "^0.35.0",
     "@lexical/link": "^0.35.0",
     "@lexical/list": "^0.35.0",
