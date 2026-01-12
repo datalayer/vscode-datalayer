@@ -124,7 +124,7 @@
     "@tailwindcss/postcss": "^4.1.17",
     "@types/jest": "^30.0.0",
     "@types/mocha": "^10.0.10",
-    "@types/node": "^24.8.1",
+    "@types/node": "^25.0.6",
     "@types/react": "18.3.20",
     "@types/react-dom": "18.3.6",
     "@types/uuid": "^8.3.4",
