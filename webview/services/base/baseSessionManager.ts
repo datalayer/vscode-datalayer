@@ -329,8 +329,8 @@ export abstract class BaseSessionManager implements Session.IManager {
   /**
    * Unified logging helper.
    *
-   * @param message - Log message
-   * @param args - Additional arguments
+   * @param _message - Log message (unused - logging disabled)
+   * @param _args - Additional arguments (unused - logging disabled)
    */
   protected log(_message: string, ..._args: unknown[]): void {
     // Logging disabled to reduce console clutter

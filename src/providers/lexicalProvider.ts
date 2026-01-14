@@ -136,13 +136,8 @@ export class LexicalProvider extends BaseDocumentProvider<LexicalDocument> {
    * Send a message to a specific Lexical webview
    */
   public async sendToWebview(uri: vscode.Uri, message: unknown): Promise<void> {
-    console.log(
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      `[LexicalProvider] sendToWebview: uri=${uri.toString()}, message type=${(message as any)?.type}`,
-    );
     const entry = this.webviews.get(uri.toString());
     if (entry) {
-      console.log(`[LexicalProvider] Posting message to webview:`, message);
       await entry.webviewPanel.webview.postMessage(message);
     } else {
       console.warn(
@@ -160,10 +155,6 @@ export class LexicalProvider extends BaseDocumentProvider<LexicalDocument> {
    * Called when auth state changes (login/logout) to update usernames.
    */
   public async refreshCollaborationConfigs(): Promise<void> {
-    console.log(
-      `[LexicalProvider] Refreshing collaboration configs for ${this.webviews.size} webview(s)`,
-    );
-
     for (const [uriString, entry] of this.webviews.entries()) {
       try {
         const uri = vscode.Uri.parse(uriString);
@@ -193,9 +184,6 @@ export class LexicalProvider extends BaseDocumentProvider<LexicalDocument> {
             type: "update",
             collaboration: collaborationConfig,
           });
-          console.log(
-            `[LexicalProvider] Updated collaboration config for ${uriString}`,
-          );
         }
       } catch (error) {
         console.error(
@@ -214,10 +202,6 @@ export class LexicalProvider extends BaseDocumentProvider<LexicalDocument> {
     message: unknown,
     requestId: string,
   ): Promise<unknown> {
-    console.log(
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      `[LexicalProvider] sendToWebviewWithResponse: uri=${uri.toString()}, message type=${(message as any)?.type}, requestId=${requestId}`,
-    );
     const entry = this.webviews.get(uri.toString());
     if (!entry) {
       console.warn(
@@ -246,7 +230,6 @@ export class LexicalProvider extends BaseDocumentProvider<LexicalDocument> {
       });
 
       // Send message to webview
-      console.log(`[LexicalProvider] Posting message to webview:`, message);
       entry.webviewPanel.webview.postMessage(message).then(
         () => {
           // Message sent successfully
@@ -329,12 +312,6 @@ export class LexicalProvider extends BaseDocumentProvider<LexicalDocument> {
       const userColor = "#" + Math.floor(Math.random() * 16777215).toString(16);
 
       userInfo = { username, userColor };
-      console.log(
-        "[LexicalProvider] Updating userInfo across all webviews:",
-        userInfo,
-      );
-    } else {
-      console.log("[LexicalProvider] Clearing userInfo (user logged out)");
     }
 
     // Send update to all open lexical webviews
@@ -510,6 +487,9 @@ export class LexicalProvider extends BaseDocumentProvider<LexicalDocument> {
 
     webviewPanel.webview.html = this.getHtmlForWebview(webviewPanel.webview);
 
+    // NOTE: Initial theme is now sent in the "update" message (in sendInitialContent)
+    // to ensure it arrives after the webview's message handler is set up
+
     webviewPanel.webview.onDidReceiveMessage(async (e) => {
       if (e.type === "response") {
         // Handle response messages from webview (for sendToWebviewWithResponse)
@@ -522,24 +502,12 @@ export class LexicalProvider extends BaseDocumentProvider<LexicalDocument> {
           }
         }
       } else if (e.type === "llm-completion-request") {
-        console.log("[LexicalProvider] LLM completion request received", {
-          requestId: e.requestId,
-          prefixLength: e.prefix?.length,
-          suffixLength: e.suffix?.length,
-          language: e.language,
-        });
-
         // Handle LLM completion request from webview
         const completion = await this.getLLMCompletion(
           e.prefix,
           e.suffix,
           e.language,
         );
-
-        console.log("[LexicalProvider] Sending LLM completion response", {
-          requestId: e.requestId,
-          completionLength: completion?.length,
-        });
 
         webviewPanel.webview.postMessage({
           type: "llm-completion-response",
@@ -636,7 +604,6 @@ export class LexicalProvider extends BaseDocumentProvider<LexicalDocument> {
             "#" + Math.floor(Math.random() * 16777215).toString(16);
 
           userInfo = { username, userColor };
-          console.log("[LexicalProvider] User info for comments:", userInfo);
         }
       } catch (error) {
         console.error("[LexicalProvider] Failed to get user info:", error);
@@ -663,18 +630,19 @@ export class LexicalProvider extends BaseDocumentProvider<LexicalDocument> {
         ? `${document.uri.toString()}::${collaborationConfig.documentId}`
         : document.uri.toString();
 
-      console.log(
-        `[LexicalProvider] Sending lexicalId to webview:`,
-        lexicalId,
-        `for document:`,
-        document.uri.toString(),
-      );
+      // Get current theme
+      const currentTheme =
+        vscode.window.activeColorTheme.kind === vscode.ColorThemeKind.Dark
+          ? "dark"
+          : "light";
+
       webviewPanel.webview.postMessage({
         type: "update",
         content: contentArray,
         editable: true,
         collaboration: collaborationConfig,
         userInfo, // Always send if logged in, even for local files
+        theme: currentTheme, // Include initial theme in update message
         documentUri: document.uri.toString(), // Still include for logging
         documentId: uniqueDocId, // Unique ID for validation
         lexicalId: lexicalId, // Pass lexicalId for tool execution context
@@ -792,7 +760,7 @@ export class LexicalProvider extends BaseDocumentProvider<LexicalDocument> {
         - default-src 'none': Deny all by default for security
         - img-src: Allow images from extension and blob URLs
         - style-src: Allow styles from extension and inline styles (required for Lexical editor)
-        - font-src: Allow fonts from extension
+        - font-src: Allow fonts from extension and external sources (Excalidraw)
         - script-src: Require nonce for scripts, allow WASM execution (loro-crdt CRDT library)
         - connect-src: Allow secure connections for collaboration (WebSocket) and API calls
         - worker-src: Allow web workers from extension and blob URLs (required for Y.js collaboration)
@@ -801,12 +769,14 @@ export class LexicalProvider extends BaseDocumentProvider<LexicalDocument> {
         Note: 'wasm-unsafe-eval' is required for loro-crdt WASM CRDT library
         Note: 'unsafe-eval' is required for AJV (JSON schema validator used by Jupyter dependencies)
         -->
-        <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src ${webview.cspSource} https: blob: data:; style-src ${webview.cspSource} 'unsafe-inline'; font-src ${webview.cspSource}; script-src 'nonce-${nonce}' 'wasm-unsafe-eval' 'unsafe-eval'; connect-src ${webview.cspSource} https: wss: ws: data:; worker-src ${webview.cspSource} blob:; frame-src https://www.youtube.com;">
+        <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src ${webview.cspSource} https: blob: data:; style-src ${webview.cspSource} 'unsafe-inline'; font-src ${webview.cspSource} https: data:; script-src ${webview.cspSource} 'nonce-${nonce}' 'wasm-unsafe-eval' 'unsafe-eval'; connect-src ${webview.cspSource} https: wss: ws: data:; worker-src ${webview.cspSource} blob:; frame-src https://www.youtube.com/">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Datalayer Lexical Editor</title>
         <script nonce="${nonce}">
           // Set webpack public path for dynamic imports and WASM loading
           window.__webpack_public_path__ = '${distUri}/';
+          // Set webpack nonce for CSP compliance on dynamically created script tags
+          window.__webpack_nonce__ = '${nonce}';
         </script>
       </head>
       <body style="margin: 0; padding: 0; background-color: var(--vscode-editor-background); color: var(--vscode-editor-foreground);">
@@ -851,6 +821,35 @@ export class LexicalProvider extends BaseDocumentProvider<LexicalDocument> {
         vscode.commands.executeCommand("workbench.action.files.save");
       }
     });
+
+    // Handler for opening external URLs (e.g., YouTube videos)
+    this._messageRouter.registerHandler(
+      "open-external-url",
+      async (message) => {
+        const payload = message as unknown as {
+          url: string;
+          useSimpleBrowser?: boolean;
+        };
+        try {
+          const uri = vscode.Uri.parse(payload.url);
+
+          if (payload.useSimpleBrowser) {
+            // Use VS Code's Simple Browser - stays within VS Code UI
+            await vscode.commands.executeCommand(
+              "simpleBrowser.show",
+              payload.url,
+            );
+          } else {
+            // Open in external default browser
+            await vscode.env.openExternal(uri);
+          }
+        } catch (error) {
+          vscode.window.showErrorMessage(
+            `Failed to open URL: ${error instanceof Error ? error.message : String(error)}`,
+          );
+        }
+      },
+    );
   }
 
   /**
@@ -1099,10 +1098,6 @@ Complete the code at <CURSOR>:`;
       );
 
       if (result) {
-        console.log(
-          `[LexicalProvider] Auto-connect successful using "${result.strategyName}" for ${documentUri.fsPath}`,
-        );
-
         // Connect the webview to the runtime via kernel bridge
         if (result.strategyName === "Pyodide") {
           // Use Pyodide-specific connection method
@@ -1120,10 +1115,6 @@ Complete the code at <CURSOR>:`;
             `[LexicalProvider] Strategy "${result.strategyName}" succeeded but provided no runtime`,
           );
         }
-      } else {
-        console.log(
-          `[LexicalProvider] Auto-connect skipped or failed for ${documentUri.fsPath}`,
-        );
       }
     } catch (error) {
       console.error(

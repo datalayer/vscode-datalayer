@@ -1,0 +1,52 @@
+/**
+ * Copyright (c) 2021-2025 Datalayer, Inc.
+ *
+ * MIT License
+ *
+ * VS Code-specific overrides for Collapsible containers
+ */
+
+/* Use higher specificity to override generic styles */
+.Collapsible__container.Collapsible__container {
+  background: var(
+    --vscode-editor-inactiveSelectionBackground,
+    #f3f3f3
+  ) !important;
+  border: 1px solid var(--vscode-editorWidget-border, #e0e0e0) !important;
+}
+
+.Collapsible__title.Collapsible__title {
+  color: var(--vscode-foreground, #333) !important;
+}
+
+.Collapsible__title.Collapsible__title:hover {
+  background-color: var(
+    --vscode-list-hoverBackground,
+    rgba(90, 93, 94, 0.1)
+  ) !important;
+}
+
+.Collapsible__title.Collapsible__title::before {
+  color: var(--vscode-foreground, #333) !important;
+}
+
+/* Dark theme adjustments for VS Code */
+@media (prefers-color-scheme: dark) {
+  .Collapsible__container.Collapsible__container {
+    background: var(
+      --vscode-editor-inactiveSelectionBackground,
+      rgba(255, 255, 255, 0.04)
+    ) !important;
+    border-color: var(
+      --vscode-editorWidget-border,
+      rgba(255, 255, 255, 0.1)
+    ) !important;
+  }
+
+  .Collapsible__title.Collapsible__title:hover {
+    background-color: var(
+      --vscode-list-hoverBackground,
+      rgba(255, 255, 255, 0.08)
+    ) !important;
+  }
+}

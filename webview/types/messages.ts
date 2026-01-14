@@ -565,6 +565,16 @@ export interface OutlineUpdateMessage {
   activeItemId?: string;
 }
 
+/** Open external URL in default browser or Simple Browser */
+export interface OpenExternalUrlMessage {
+  /** Message type discriminator */
+  type: "open-external-url";
+  /** URL to open */
+  url: string;
+  /** Whether to use VS Code's Simple Browser (embedded) vs external browser */
+  useSimpleBrowser?: boolean;
+}
+
 /**
  * Union of all Webview → Extension messages
  */
@@ -582,7 +592,8 @@ export type WebviewToExtensionMessage =
   | HttpRequestMessage
   | WebviewErrorMessage
   | LLMCompletionRequestMessage
-  | OutlineUpdateMessage;
+  | OutlineUpdateMessage
+  | OpenExternalUrlMessage;
 
 /**
  * Bidirectional message type (for backward compatibility)

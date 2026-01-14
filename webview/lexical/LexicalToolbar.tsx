@@ -43,6 +43,11 @@ import {
   INSERT_CHECK_LIST_COMMAND,
   $isListNode,
 } from "@lexical/list";
+import {
+  INSERT_COLLAPSIBLE_COMMAND,
+  INSERT_EXCALIDRAW_COMMAND,
+  INSERT_TABLE_WITH_DIALOG_COMMAND,
+} from "@datalayer/jupyter-lexical";
 import { $setBlocksType } from "@lexical/selection";
 import { $findMatchingParent } from "@lexical/utils";
 import { INSERT_HORIZONTAL_RULE_COMMAND } from "@lexical/react/LexicalHorizontalRuleNode";
@@ -73,7 +78,7 @@ import {
   Dropdown,
 } from "../components/toolbar";
 import type { ToolbarAction, DropdownItem } from "../components/toolbar";
-import { InsertYouTubeDialog, InsertLinkDialog } from "../components/dialogs";
+import { InsertYouTubeDialog } from "../components/dialogs";
 import { lexicalStore } from "@datalayer/jupyter-lexical";
 
 /**
@@ -96,6 +101,8 @@ export interface LexicalToolbarProps {
   showCommentsPanel?: boolean;
   /** Callback to toggle comments panel */
   onToggleComments?: () => void;
+  /** Callback to set link edit mode for FloatingLinkEditorPlugin */
+  setIsLinkEditMode?: (value: boolean) => void;
 }
 
 // Font family options
@@ -240,6 +247,7 @@ export function LexicalToolbar({
   kernelInitializing = false,
   showCommentsPanel = false,
   onToggleComments,
+  setIsLinkEditMode,
 }: LexicalToolbarProps = {}) {
   const [editor] = useLexicalComposerContext();
   const messageHandler = useContext(MessageHandlerContext);
@@ -577,42 +585,30 @@ export function LexicalToolbar({
   const insertLink = () => {
     if (isLink) {
       // Remove existing link
+      if (setIsLinkEditMode) {
+        setIsLinkEditMode(false);
+      }
       editor.dispatchCommand(TOGGLE_LINK_COMMAND, null);
     } else {
-      // Get selected text
-      let selectedText = "";
-      editor.getEditorState().read(() => {
-        const selection = $getSelection();
-        if ($isRangeSelection(selection)) {
-          selectedText = selection.getTextContent();
-        }
-      });
-
-      // Show link dialog
-      showModal("Insert Link", (onClose) => (
-        <InsertLinkDialog
-          initialText={selectedText}
-          initialUrl="https://"
-          onInsert={(url, text) => {
-            // Insert the link text at the selection
-            editor.update(() => {
-              const selection = $getSelection();
-              if ($isRangeSelection(selection)) {
-                selection.insertText(text);
-              }
-            });
-
-            // Apply the link
-            editor.dispatchCommand(TOGGLE_LINK_COMMAND, url);
-          }}
-          onClose={onClose}
-        />
-      ));
+      // Create link with placeholder URL that passes validation - FloatingLinkEditorPlugin will show for editing
+      if (setIsLinkEditMode) {
+        setIsLinkEditMode(true);
+      }
+      editor.dispatchCommand(TOGGLE_LINK_COMMAND, "https://example.com");
     }
   };
 
   const insertHorizontalRule = () =>
     editor.dispatchCommand(INSERT_HORIZONTAL_RULE_COMMAND, undefined);
+
+  const insertTable = () =>
+    editor.dispatchCommand(INSERT_TABLE_WITH_DIALOG_COMMAND, undefined);
+
+  const insertCollapsible = () =>
+    editor.dispatchCommand(INSERT_COLLAPSIBLE_COMMAND, undefined);
+
+  const insertExcalidraw = () =>
+    editor.dispatchCommand(INSERT_EXCALIDRAW_COMMAND, undefined);
 
   const insertImage = () => {
     showModal("Insert Image", (onClose) => (
@@ -683,10 +679,6 @@ export function LexicalToolbar({
 
   const handleClearAllOutputs = useCallback(async () => {
     if (lexicalId) {
-      console.log(
-        "[LexicalToolbar] Clearing all outputs for lexicalId:",
-        lexicalId,
-      );
       try {
         await lexicalStore.getState().clearAllOutputs(lexicalId);
       } catch (error) {
@@ -953,9 +945,24 @@ export function LexicalToolbar({
       label: "YouTube Video",
       onClick: insertYouTube,
     },
+    {
+      id: "insert-table",
+      label: "Table",
+      onClick: insertTable,
+    },
+    {
+      id: "insert-collapsible",
+      label: "Collapsible Container",
+      onClick: insertCollapsible,
+    },
+    {
+      id: "insert-excalidraw",
+      label: "Excalidraw",
+      onClick: insertExcalidraw,
+    },
     // TODO: Add more insert options when available:
-    // Page Break, Excalidraw, Table, Poll, Columns Layout,
-    // Sticky Note, Collapsible container, Date, Tweet, Figma
+    // Page Break, Poll, Columns Layout,
+    // Sticky Note, Date, Tweet, Figma
   ];
 
   // Text formatting dropdown (like SaaS "Aa" dropdown)
@@ -1441,7 +1448,11 @@ export function LexicalToolbar({
               <button
                 type="button"
                 className="toolbar-button"
-                onClick={onToggleComments}
+                onClick={() => {
+                  if (onToggleComments) {
+                    onToggleComments();
+                  }
+                }}
                 disabled={disabled}
                 style={{
                   display: "flex",
