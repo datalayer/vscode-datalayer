@@ -49,8 +49,10 @@ export interface CombinedOperations {
  * @returns Combined operations registry
  * @internal
  */
-export function getCombinedOperations(): CombinedOperations {
-  // Import package operations from /tools export (Node.js compatible, excludes React components)
+export async function getCombinedOperations(): Promise<CombinedOperations> {
+  // IMPORTANT: Lazy-load these packages to avoid triggering browser imports at module load time
+  // These packages have browser dependencies (@primer/react, etc.) that can't load in Node.js/extension host
+  // Using require inside async function to defer loading until actually needed
   const { notebookToolOperations } = require("@datalayer/jupyter-react/tools");
   const {
     lexicalToolOperations,
@@ -146,7 +148,7 @@ export async function registerVSCodeTools(
   // Load definitions and operations if not provided
   const resolvedDefinitions =
     definitions ?? (await getAllToolDefinitionsAsync());
-  const resolvedOperations = operations ?? getCombinedOperations();
+  const resolvedOperations = operations ?? (await getCombinedOperations());
 
   // Validate all definitions before registration
   const validation = validateToolDefinitions(

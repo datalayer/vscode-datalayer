@@ -215,17 +215,17 @@ export abstract class BaseDocumentProvider<
    * ```typescript
    * async resolveCustomEditor(document, webviewPanel, token) {
    *   // Initialize Runner for this webview
-   *   this.initializeRunnerForWebview(webviewPanel);
+   *   await this.initializeRunnerForWebview(webviewPanel);
    *
    *   // ... rest of setup
    * }
    * ```
    */
-  protected initializeRunnerForWebview(
+  protected async initializeRunnerForWebview(
     webviewPanel: vscode.WebviewPanel,
-  ): Runner {
-    // Create Runner with BridgeExecutor
-    const runner = createExtensionRunner(webviewPanel);
+  ): Promise<Runner> {
+    // Create Runner with BridgeExecutor (lazy-loads operations to avoid CSS imports)
+    const runner = await createExtensionRunner(webviewPanel);
 
     // Store in map for later access
     this._runners.set(webviewPanel, runner);

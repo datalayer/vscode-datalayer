@@ -1,0 +1,123 @@
+name: VSIX Smoke Test
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "src/**"
+      - "webview/**"
+      - "*.json"
+      - "*.ts"
+      - ".github/workflows/vsix-smoke-test.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "src/**"
+      - "webview/**"
+      - "*.json"
+      - "*.ts"
+      - ".github/workflows/vsix-smoke-test.yml"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  vsix-smoke-test:
+    name: VSIX Smoke Test (${{ matrix.os }})
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: "22"
+
+      - name: Install system dependencies (Ubuntu only)
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libsecret-1-dev \
+            xvfb \
+            libx11-xcb1 \
+            libxcb-dri3-0 \
+            libdrm2 \
+            libgbm1 \
+            libasound2t64 \
+            libgtk-3-0 \
+            libnotify4 \
+            libnss3 \
+            libxss1 \
+            libxtst6
+
+      - name: Install dependencies
+        run: npm install --ignore-engines
+
+      - name: Install VS Code CLI (Ubuntu)
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          wget -O vscode.tar.gz "https://update.code.visualstudio.com/latest/linux-x64/stable"
+          tar -xzf vscode.tar.gz
+          sudo mv VSCode-linux-x64 /opt/vscode
+          sudo ln -s /opt/vscode/bin/code /usr/local/bin/code
+          code --version
+        shell: bash
+
+      - name: Install VS Code CLI (macOS)
+        if: matrix.os == 'macos-latest'
+        run: |
+          brew install --cask visual-studio-code
+          # Add to PATH
+          export PATH="/Applications/Visual Studio Code.app/Contents/Resources/app/bin:$PATH"
+          echo "/Applications/Visual Studio Code.app/Contents/Resources/app/bin" >> $GITHUB_PATH
+          code --version
+        shell: bash
+
+      - name: Install VS Code CLI (Windows)
+        if: matrix.os == 'windows-latest'
+        run: |
+          choco install vscode -y
+          # Refresh PATH
+          $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
+          code --version
+        shell: pwsh
+
+      - name: Build VSIX package
+        run: npm run vsix
+
+      - name: Run VSIX activation test (Ubuntu with xvfb)
+        if: matrix.os == 'ubuntu-latest'
+        run: xvfb-run -a npm run test:vsix
+        shell: bash
+
+      - name: Run VSIX activation test (macOS/Windows)
+        if: matrix.os != 'ubuntu-latest'
+        run: npm run test:vsix
+        shell: bash
+
+      - name: Upload VSIX artifact on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: failed-vsix-${{ matrix.os }}
+          path: "*.vsix"
+          retention-days: 7
+
+      - name: Upload test logs on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-logs-${{ matrix.os }}
+          path: |
+            /tmp/vsix-test-*
+            ${{ runner.temp }}/vsix-test-*
+          retention-days: 7
+          if-no-files-found: ignore
