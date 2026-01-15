@@ -138,10 +138,6 @@ if not os.environ.get('MPLBACKEND'):
     // Set up callbacks ONCE during initialization (JupyterLite pattern)
     // These callbacks will use the msg_id passed from Python
     const publishExecutionResult = (msg_id, _prompt_count, data, metadata) => {
-      console.log(
-        `[PyodideWorker] publishExecutionResult called with msg_id="${msg_id}" (type: ${typeof msg_id})`,
-      );
-
       // Convert Python dict to plain JavaScript object
       const dataObj = data.toJs ? data.toJs() : data;
       const metadataObj =
@@ -160,9 +156,6 @@ if not os.environ.get('MPLBACKEND'):
     };
 
     const publishStreamCallback = (msg_id, name, text) => {
-      console.log(
-        `[PyodideWorker] publishStreamCallback called with msg_id="${msg_id}" (type: ${typeof msg_id}), text="${text.substring(0, 50)}"`,
-      );
       self.postMessage({ id: msg_id, type: "stream", name, text });
     };
 
@@ -315,9 +308,6 @@ self.addEventListener("message", async (event) => {
       });
     }
   } else if (type === "execute") {
-    console.log(
-      `[PyodideWorker] ========== EXECUTE START: id=${id}, parent_msg_id=${parent_msg_id} ==========`,
-    );
     try {
       if (!pyodide) {
         throw new Error("Pyodide not initialized");
@@ -329,19 +319,9 @@ self.addEventListener("message", async (event) => {
       // This is the execute_request msg_id that matches parent_header in iopub messages
       // Python callbacks will send this back so outputs route to the correct cell
       const msgIdForPython = parent_msg_id || id;
-      console.log(
-        `[PyodideWorker] Setting _current_msg_id to: "${msgIdForPython}" (type: ${typeof msgIdForPython})`,
-      );
       await pyodide.runPythonAsync(
         `import builtins\nbuiltins._current_msg_id = "${msgIdForPython}"`,
       );
-
-      // Verify it was set correctly
-      const verifyId = await pyodide.runPythonAsync(`
-import builtins
-builtins._current_msg_id
-`);
-      console.log(`[PyodideWorker] Verified _current_msg_id = "${verifyId}"`);
 
       // Auto-load packages
       try {
@@ -358,7 +338,6 @@ sys.stdout = pyodide_kernel.stdout_stream
 sys.stderr = pyodide_kernel.stderr_stream
 `);
 
-      console.log(`[PyodideWorker] Executing code for id=${id}`);
       // Execute code using IPython shell
       // For async code, run_cell returns a coroutine/PyodideTask, which we must NOT access attributes on
       // Just execute and let the callbacks handle all output
@@ -370,9 +349,6 @@ shell = pyodide_kernel.ipython_shell
 shell.run_cell(__code__, store_history=True, silent=False)
 `);
 
-      console.log(
-        `[PyodideWorker] ========== EXECUTE COMPLETE: id=${id} ==========`,
-      );
       self.postMessage({ id, type: "status", status: "idle" });
     } catch (error) {
       self.postMessage({

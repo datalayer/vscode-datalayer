@@ -65,6 +65,91 @@ function copyRecursive(src, dest) {
       copyRecursive(path.join(src, entry), path.join(dest, entry));
     }
   } else if (stats.isFile()) {
+    // Skip development builds to reduce bundle size
+    const filename = path.basename(src);
+    const isLexicalPackage = src.includes('/lexical/') || src.includes('/@lexical/');
+    const isReactPackage = src.includes('/react/') || src.includes('/react-dom/');
+
+    // Skip Primer React build-time metadata (not needed at runtime)
+    if (src.includes('@primer/react/generated/')) {
+      return;
+    }
+
+    // ALWAYS skip UMD builds (not used by webpack, even for React/Lexical)
+    if (src.includes('/umd/')) {
+      return;
+    }
+
+    // ALWAYS skip profiling builds (not needed in production)
+    if (filename.includes('.profiling.')) {
+      return;
+    }
+
+    // Skip dev builds for most packages, but KEEP for React/Lexical
+    //
+    // Why React/Lexical need both dev and prod builds:
+    // React and Lexical use conditional requires based on process.env.NODE_ENV:
+    //   if (process.env.NODE_ENV === 'production') {
+    //     module.exports = require('./react.production.min.js');
+    //   } else {
+    //     module.exports = require('./react.development.js');
+    //   }
+    //
+    // Even though webpack is in production mode, the require() happens at runtime
+    // in the VS Code webview context, not at webpack build time. If we exclude
+    // dev builds, the conditional require will fail in development scenarios.
+    //
+    // Size impact: ~1-2 MB total (acceptable for development flexibility)
+    if (!isLexicalPackage && !isReactPackage) {
+      if (filename.includes('.development.') || filename.includes('.dev.')) {
+        return;
+      }
+    }
+
+    // Skip React SSR and server-only modules (not needed in browser webviews)
+    //
+    // React Server-Side Rendering (SSR) modules:
+    // - react-dom/server - Node.js SSR (renderToString, etc.)
+    // - react-dom/server.browser - Browser-based SSR
+    // - react-server-dom-* - React Server Components (RSC)
+    //
+    // Why we exclude these:
+    // - VS Code webviews run in browser context (no Node.js SSR)
+    // - SSR modules are large and not needed for client-side rendering
+    // - Typical savings: 200-500 KB per SSR module
+    //
+    // Pattern rationale:
+    // - Use .endsWith() instead of .includes() to avoid false positives
+    // - 'my-server-utils.js' should NOT be excluded (legitimate utility)
+    // - 'react-dom-server.js' SHOULD be excluded (SSR module)
+    if (
+      filename.endsWith('-server.js') ||
+      filename.endsWith('-server.mjs') ||
+      filename.endsWith('-server.cjs') ||
+      filename.endsWith('-server.browser.js') ||
+      filename.endsWith('-server.browser.mjs') ||
+      filename.endsWith('-server.node.js') ||
+      filename.endsWith('-server.node.mjs') ||
+      // React Server Components (React 18+)
+      filename.includes('react-server-dom') ||
+      // Next.js server runtime (if ever used)
+      filename.includes('server-runtime')
+    ) {
+      return;
+    }
+
+    // Skip metadata files (documentation and type definitions)
+    if (filename === 'LICENSE' ||
+        filename === 'LICENSE.txt' ||
+        filename === 'README.md' ||
+        filename === 'CHANGELOG.md' ||
+        filename === 'CHANGELOG' ||
+        filename === 'tsconfig.json' ||
+        filename.endsWith('.d.ts') ||
+        filename.endsWith('.d.mts')) {
+      return;
+    }
+
     fs.copyFileSync(src, dest);
   }
 }

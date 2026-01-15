@@ -31,7 +31,9 @@
     "rebuild:keytar": "electron-rebuild -f -w keytar -v 33.2.0",
     "vscode:prepublish": "npm run build:icons && npm run sync:tools && npm run package:noclean",
     "compile": "npm run sync:pyodide-version && npm run build:icons && npm run sync:tools && npm run clean:dist && npm run copy:pyodide && cross-env NODE_OPTIONS=--max-old-space-size=8192 webpack",
+    "compile:debug": "cross-env WEBVIEW_DEBUG=1 npm run compile",
     "watch": "npm run clean:dist && webpack --watch",
+    "watch:debug": "npm run clean:dist && cross-env WEBVIEW_DEBUG=1 webpack --watch",
     "watch:lib": "tsc --project tsconfig.json --rootDir src --outDir lib --declaration --declarationDir lib --watch --preserveWatchOutput",
     "sync:pyodide-version": "node scripts/validate-pyodide-version.js",
     "copy:pyodide": "node scripts/copy-pyodide.js",
@@ -56,7 +58,7 @@
     "test": "vscode-test",
     "test:vsix": "npm run vsix && node scripts/test-vsix-activation.js",
     "test:vsix-manual": "npm run vsix && bash scripts/test-vsix-installation.sh",
-    "vsix": "npm run clean:vsix && npm run package && node scripts/copyZmqBinaries.js && node scripts/copy-external-deps.js && npx @vscode/vsce package --no-yarn --no-dependencies",
+    "vsix": "npm run clean:vsix && npm run package && node scripts/copyZmqBinaries.js && node scripts/copy-external-deps.js && node scripts/optimize-primer.js && npx @vscode/vsce package --no-yarn --no-dependencies",
     "docs": "typedoc",
     "docs:watch": "typedoc --watch",
     "docs:markdown": "typedoc --plugin typedoc-plugin-markdown --out docs-markdown",
@@ -118,7 +120,6 @@
     "y-websocket": "3.0.0",
     "yjs": "^13.6.18",
     "zeromq": "^6.0.0-beta.20",
-    "zeromqold": "npm:zeromq@^6.0.0-beta.6",
     "zod": "^4.1.13"
   },
   "devDependencies": {

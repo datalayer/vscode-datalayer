@@ -38,12 +38,33 @@ async function main() {
       include: ['lib', 'prebuilds', 'build', 'package.json']  // build/ contains manifest.json for cmake-ts
     },
     {
-      name: 'zeromqold',
-      include: ['lib', 'prebuilds', 'build', 'package.json']
+      name: 'cmake-ts',
+      // Structure in dist/node_modules/cmake-ts/:
+      //   package.json (root) ← from include
+      //   build/loader.js ← from buildFiles
+      //   build/loader.mjs ← from buildFiles
+      include: ['package.json'],
+      buildFiles: ['loader.js', 'loader.mjs']  // Only runtime loaders needed, not build tools
     },
     {
-      name: 'cmake-ts',
-      include: ['build', 'package.json']  // cmake-ts only needs build/ folder
+      name: 'keytar',
+      include: ['lib', 'build', 'package.json']  // Includes rebuilt native binding for Electron
+    },
+    {
+      name: 'ws',
+      include: ['lib', 'package.json']  // WebSocket library used by kernel clients and Loro collaboration
+    },
+    {
+      name: 'prebuild-install',
+      include: ['lib', 'bin', 'rc.js', 'asset.js', 'index.js', 'download.js', 'util.js', 'error.js', 'proxy.js', 'package.json']  // Used by native modules like keytar
+    },
+    {
+      name: 'bufferutil',
+      include: ['index.js', 'fallback.js', 'build', 'package.json']  // Optional performance optimization for ws
+    },
+    {
+      name: 'utf-8-validate',
+      include: ['index.js', 'fallback.js', 'build', 'package.json']  // Optional performance optimization for ws
     }
   ];
 
@@ -71,6 +92,21 @@ async function main() {
         if (stats.isDirectory()) {
           copyDir(srcPath, destPath);
         } else {
+          fs.copyFileSync(srcPath, destPath);
+        }
+      }
+    }
+
+    // Copy specific build files if specified (for cmake-ts optimization)
+    if (config.buildFiles) {
+      const buildDir = path.join(destRoot, 'build');
+      if (!fs.existsSync(buildDir)) {
+        fs.mkdirSync(buildDir, { recursive: true });
+      }
+      for (const buildFile of config.buildFiles) {
+        const srcPath = path.join(srcRoot, 'build', buildFile);
+        const destPath = path.join(buildDir, buildFile);
+        if (fs.existsSync(srcPath)) {
           fs.copyFileSync(srcPath, destPath);
         }
       }

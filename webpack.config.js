@@ -31,7 +31,6 @@ const extensionConfig = {
     vscode: "commonjs vscode", // the vscode-module is created on-the-fly and must be excluded. Add other modules that cannot be webpack'ed, 📖 -> https://webpack.js.org/configuration/externals/
     os: "commonjs os", // Node.js built-in - must be external to ensure require cache works correctly
     zeromq: "commonjs zeromq", // zeromq has native bindings that must be excluded from webpack
-    zeromqold: "commonjs zeromqold", // zeromqold (fallback) also has native bindings
     "cmake-ts": "commonjs cmake-ts", // required by zeromq for loading native modules
     "prebuild-install": "commonjs prebuild-install", // used by native modules, has os.platform() calls
     ws: "commonjs ws", // WebSocket library with optional native bindings (bufferUtil), pulls in prebuild-install
@@ -119,10 +118,14 @@ const extensionConfig = {
 
 const webviewConfig = {
   target: "web",
-  mode: "none",
-  // Use inline source map to ease debug of webview
-  // Xref. https://github.com/microsoft/vscode/issues/145292#issuecomment-1072879043
-  devtool: "inline-source-map",
+  mode: "production", // Enable webpack production optimizations
+  // Source map strategy:
+  // - Development (WEBVIEW_DEBUG=1): inline-source-map for easy debugging
+  // - Production (default): hidden-source-map generates .map files without bundle bloat
+  // Reference: https://github.com/microsoft/vscode/issues/145292#issuecomment-1072879043
+  devtool: process.env.WEBVIEW_DEBUG
+    ? "inline-source-map"
+    : "hidden-source-map",
   entry: "./webview/notebook/main.ts",
   output: {
     path: path.resolve(__dirname, "dist"),
@@ -629,8 +632,10 @@ const aguiExampleConfig = {
 // Config for Datasource Dialog webview
 const datasourceDialogConfig = {
   target: "web",
-  mode: "none",
-  devtool: "inline-source-map",
+  mode: "production", // Enable webpack production optimizations
+  devtool: process.env.WEBVIEW_DEBUG
+    ? "inline-source-map"
+    : "hidden-source-map",
   entry: "./webview/datasource/main.tsx",
   output: {
     path: path.resolve(__dirname, "dist"),
@@ -695,8 +700,10 @@ const datasourceDialogConfig = {
 // Config for Datasource Edit Dialog webview
 const datasourceEditDialogConfig = {
   target: "web",
-  mode: "none",
-  devtool: "inline-source-map",
+  mode: "production", // Enable webpack production optimizations
+  devtool: process.env.WEBVIEW_DEBUG
+    ? "inline-source-map"
+    : "hidden-source-map",
   entry: "./webview/datasource/editMain.tsx",
   output: {
     path: path.resolve(__dirname, "dist"),
