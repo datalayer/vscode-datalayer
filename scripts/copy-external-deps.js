@@ -65,6 +65,50 @@ function copyRecursive(src, dest) {
       copyRecursive(path.join(src, entry), path.join(dest, entry));
     }
   } else if (stats.isFile()) {
+    // Skip development builds to reduce bundle size
+    const filename = path.basename(src);
+    const isLexicalPackage = src.includes('/lexical/') || src.includes('/@lexical/');
+    const isReactPackage = src.includes('/react/') || src.includes('/react-dom/');
+
+    // Skip Primer React build-time metadata (not needed at runtime)
+    if (src.includes('@primer/react/generated/')) {
+      return;
+    }
+
+    // ALWAYS skip UMD builds (not used by webpack, even for React/Lexical)
+    if (src.includes('/umd/')) {
+      return;
+    }
+
+    // ALWAYS skip profiling builds (not needed in production)
+    if (filename.includes('.profiling.')) {
+      return;
+    }
+
+    // Skip dev builds for other packages (but keep for React/Lexical - they use conditional requires)
+    if (!isLexicalPackage && !isReactPackage) {
+      if (filename.includes('.development.') || filename.includes('.dev.')) {
+        return;
+      }
+    }
+
+    // Skip server-side rendering modules (not needed in browser webviews)
+    if (filename.includes('-server')) {
+      return;
+    }
+
+    // Skip metadata files (documentation and type definitions)
+    if (filename === 'LICENSE' ||
+        filename === 'LICENSE.txt' ||
+        filename === 'README.md' ||
+        filename === 'CHANGELOG.md' ||
+        filename === 'CHANGELOG' ||
+        filename === 'tsconfig.json' ||
+        filename.endsWith('.d.ts') ||
+        filename.endsWith('.d.mts')) {
+      return;
+    }
+
     fs.copyFileSync(src, dest);
   }
 }

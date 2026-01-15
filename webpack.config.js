@@ -119,7 +119,7 @@ const extensionConfig = {
 
 const webviewConfig = {
   target: "web",
-  mode: "none",
+  mode: "production", // Enable webpack production optimizations
   // Use inline source map to ease debug of webview
   // Xref. https://github.com/microsoft/vscode/issues/145292#issuecomment-1072879043
   devtool: "inline-source-map",
@@ -629,7 +629,7 @@ const aguiExampleConfig = {
 // Config for Datasource Dialog webview
 const datasourceDialogConfig = {
   target: "web",
-  mode: "none",
+  mode: "production", // Enable webpack production optimizations
   devtool: "inline-source-map",
   entry: "./webview/datasource/main.tsx",
   output: {
@@ -695,7 +695,7 @@ const datasourceDialogConfig = {
 // Config for Datasource Edit Dialog webview
 const datasourceEditDialogConfig = {
   target: "web",
-  mode: "none",
+  mode: "production", // Enable webpack production optimizations
   devtool: "inline-source-map",
   entry: "./webview/datasource/editMain.tsx",
   output: {

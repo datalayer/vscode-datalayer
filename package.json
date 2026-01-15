@@ -56,7 +56,7 @@
     "test": "vscode-test",
     "test:vsix": "npm run vsix && node scripts/test-vsix-activation.js",
     "test:vsix-manual": "npm run vsix && bash scripts/test-vsix-installation.sh",
-    "vsix": "npm run clean:vsix && npm run package && node scripts/copyZmqBinaries.js && node scripts/copy-external-deps.js && npx @vscode/vsce package --no-yarn --no-dependencies",
+    "vsix": "npm run clean:vsix && npm run package && node scripts/copyZmqBinaries.js && node scripts/copy-external-deps.js && node scripts/optimize-primer.js && npx @vscode/vsce package --no-yarn --no-dependencies",
     "docs": "typedoc",
     "docs:watch": "typedoc --watch",
     "docs:markdown": "typedoc --plugin typedoc-plugin-markdown --out docs-markdown",
