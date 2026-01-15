@@ -17,8 +17,25 @@ import * as vscode from "vscode";
 import type { ToolOperation } from "@datalayer/jupyter-react";
 import { getCombinedOperations } from "./registration";
 
-// Get combined operations at module load time (now safe since React is bundled)
-const combinedOperations = getCombinedOperations();
+// IMPORTANT: Don't load operations at module level to avoid triggering browser imports
+// Operations are loaded lazily in createExtensionRunner()
+let combinedOperationsCache: Record<
+  string,
+  ToolOperation<unknown, unknown>
+> | null = null;
+
+/**
+ * Get combined operations, loading them once and caching
+ * @internal
+ */
+async function getOrLoadOperations(): Promise<
+  Record<string, ToolOperation<unknown, unknown>>
+> {
+  if (!combinedOperationsCache) {
+    combinedOperationsCache = await getCombinedOperations();
+  }
+  return combinedOperationsCache;
+}
 
 /**
  * Simple Runner implementation for tool execution.
@@ -99,20 +116,22 @@ const VS_CODE_OPERATIONS = new Set([
  * - Bridges notebook/lexical operations to webview (they need document state)
  *
  * @param webviewPanel - VS Code webview panel for message communication
- * @returns Runner instance configured with smart executor
+ * @returns Promise resolving to Runner instance configured with smart executor
  *
  * @example
  * ```typescript
- * const runner = createExtensionRunner(webviewPanel);
+ * const runner = await createExtensionRunner(webviewPanel);
  * const result = await runner.execute("insertCell", {
  *   cellType: "code",
  *   source: "print('hello')"
  * });
  * ```
  */
-export function createExtensionRunner(
+export async function createExtensionRunner(
   webviewPanel: vscode.WebviewPanel,
-): Runner {
+): Promise<Runner> {
+  // Load operations lazily to avoid triggering browser imports at module load time
+  const combinedOperations = await getOrLoadOperations();
   // Create a smart executor that routes operations appropriately
   const smartExecutor: BridgeExecutor = {
     async execute(operationName: string, args: unknown): Promise<unknown> {

@@ -1,18 +1,24 @@
 /*
- * Copyright (c) 2021-2023 Datalayer, Inc.
+ * Copyright (c) 2021-2025 Datalayer, Inc.
  *
  * MIT License
  */
 
+/**
+ * This file is intentionally left minimal.
+ * Activation tests are in extension.activation.test.ts
+ * External dependency tests are in extension.dependencies.test.ts
+ * Preload verification tests are in extension.preload.test.ts
+ * Integration tests are in integration/full-activation.integration.test.ts
+ */
+
 import * as assert from "assert";
-// You can import and use all API from the 'vscode' module as well as import your extension to test it
 import * as vscode from "vscode";
-// import * as jupyterNotebookExtension from '../../extension';
 
 suite("Extension Test Suite", () => {
-  vscode.window.showInformationMessage("Start all tests.");
-  test("Sample test", () => {
-    assert.strictEqual(-1, [1, 2, 3].indexOf(5));
-    assert.strictEqual(-1, [1, 2, 3].indexOf(0));
+  test("VS Code test framework is working", () => {
+    // Simple test to verify test infrastructure is working
+    assert.strictEqual(typeof vscode.window, "object");
+    assert.strictEqual(typeof vscode.commands, "object");
   });
 });
