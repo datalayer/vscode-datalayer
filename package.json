@@ -214,6 +214,22 @@
         "category": "Datalayer"
       },
       {
+        "command": "datalayer.agentChat.open",
+        "title": "Open Agent Chat",
+        "category": "Datalayer",
+        "icon": "$(comment-discussion)"
+      },
+      {
+        "command": "datalayer.agentChat.clear",
+        "title": "Clear Agent Chat",
+        "category": "Datalayer"
+      },
+      {
+        "command": "datalayer.agentChat.newChat",
+        "title": "New Agent Chat",
+        "category": "Datalayer"
+      },
+      {
         "command": "datalayer.internal.resetOnboarding",
         "title": "Reset Onboarding (Dev)",
         "category": "Datalayer"
@@ -456,6 +472,13 @@
           "name": "Settings",
           "icon": "$(settings-gear)",
           "contextualTitle": "Datalayer Settings"
+        },
+        {
+          "id": "datalayer.agentChat",
+          "name": "Agent Chat",
+          "icon": "$(comment-discussion)",
+          "contextualTitle": "Datalayer Agent Chat",
+          "type": "webview"
         }
       ]
     },

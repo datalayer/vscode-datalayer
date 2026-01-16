@@ -25,6 +25,7 @@ import { createVSCodeSDK } from "./sdkAdapter";
 import { SDKAuthProvider } from "./authProvider";
 import { DocumentBridge } from "../bridges/documentBridge";
 import { KernelBridge } from "../bridges/kernelBridge";
+import { AgentRuntimeBridge } from "../bridges/agentRuntimeBridge";
 import { NotebookNetworkService } from "../network/networkProxy";
 import { ErrorHandler } from "./errorHandler";
 import { ILifecycle } from "./baseService";
@@ -51,6 +52,9 @@ export interface IServiceContainer extends ILifecycle {
   readonly documentBridge: IDocumentBridge;
   readonly kernelBridge: IKernelBridge;
   readonly notebookNetwork: NotebookNetworkService;
+
+  // Agent services
+  readonly agentRuntimeBridge: AgentRuntimeBridge;
 }
 
 /**
@@ -121,6 +125,12 @@ export class ServiceContainer implements IServiceContainer {
    * @private
    */
   private _documentRegistry?: DocumentRegistry;
+
+  /**
+   * Lazily initialized agent runtime bridge for chat operations.
+   * @private
+   */
+  private _agentRuntimeBridge?: AgentRuntimeBridge;
 
   /**
    * Creates a new service container instance.
@@ -258,6 +268,21 @@ export class ServiceContainer implements IServiceContainer {
       this._notebookNetwork = new NotebookNetworkService(this.kernelBridge);
     }
     return this._notebookNetwork;
+  }
+
+  /**
+   * Gets or lazily initializes the agent runtime bridge service.
+   * Creates a new AgentRuntimeBridge instance on first access.
+   * Routes messages between webview and agent-runtimes API.
+   *
+   * @returns The initialized AgentRuntimeBridge instance
+   */
+  get agentRuntimeBridge(): AgentRuntimeBridge {
+    if (!this._agentRuntimeBridge) {
+      this.logger.debug("Lazily initializing AgentRuntimeBridge service");
+      this._agentRuntimeBridge = AgentRuntimeBridge.getInstance();
+    }
+    return this._agentRuntimeBridge;
   }
 
   /**
