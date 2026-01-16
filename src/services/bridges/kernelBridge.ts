@@ -579,9 +579,7 @@ export class KernelBridge implements vscode.Disposable {
     const pendingRuntime = this._pendingPyodideRuntimes.get(key);
 
     if (!pendingRuntime) {
-      console.warn(
-        `[KernelBridge] No pending runtime found for ${key}, kernel-ready already handled or timeout occurred`,
-      );
+      // Already handled or timeout occurred - this is normal
       return;
     }
 

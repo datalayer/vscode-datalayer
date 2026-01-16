@@ -38,6 +38,46 @@ npm run vsix
 
 **Note on Installation**: If you encounter errors about missing `scripts/apply-patches.sh` during `npm install`, use `npm install --ignore-scripts` instead. This bypasses postinstall scripts in dependencies that aren't needed for VS Code extension development.
 
+## Debugging Webviews
+
+By default, webview builds use `hidden-source-map` to keep bundle size small (~15-20 MB savings). This generates `.map` files but doesn't embed them in the bundle.
+
+### Enable Inline Source Maps for Debugging
+
+To enable inline source maps for easier debugging in VS Code DevTools:
+
+```bash
+# One-time compile with inline source maps
+WEBVIEW_DEBUG=1 npm run compile
+
+# Or use the convenience script
+npm run compile:debug
+
+# For watch mode with inline source maps
+npm run watch:debug
+```
+
+**When to use inline source maps:**
+- Debugging webview code in Extension Development Host
+- Tracing errors in React components
+- Understanding webpack bundling issues
+
+**When to use hidden source maps (default):**
+- Creating VSIX packages for distribution
+- Testing bundle size optimizations
+- Production builds
+
+**How it works:**
+- The `WEBVIEW_DEBUG` environment variable controls the webpack `devtool` setting
+- When enabled: Full source code embedded in bundles (larger but easier debugging)
+- When disabled: External `.map` files generated but not referenced in bundles (smaller, post-mortem debugging only)
+
+**Manual source map loading:**
+If you have a production build with hidden source maps and need to debug:
+1. Open browser DevTools in the webview
+2. Right-click in Sources panel → "Add source map"
+3. Point to the `.map` file in `dist/` directory
+
 ## Working with Jupyter Packages
 
 The extension depends on local packages from the monorepo:

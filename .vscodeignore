@@ -12,7 +12,6 @@ node_modules/**
 !node_modules/@jupyterlab/**
 !node_modules/@primer/**
 !node_modules/zeromq/**
-!node_modules/zeromqold/**
 !node_modules/cmake-ts/**
 !node_modules/prebuild-install/**
 !node_modules/ws/**
@@ -32,3 +31,6 @@ vsc-extension-quickstart.md
 **/.vscode-test.*
 .mypy_cache/**
 **/.mypy_cache/**
+patches/**
+dist/showcase.js
+dist/showcase.js.LICENSE.txt
