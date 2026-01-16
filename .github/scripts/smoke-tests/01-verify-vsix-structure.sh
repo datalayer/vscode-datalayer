@@ -97,25 +97,25 @@ fi
 
 echo ""
 
-# Verify ZeroMQ modules (following the same pattern as Pyodide)
-echo "🔍 Verifying ZeroMQ modules..."
-ZEROMQ_MODULES=("zeromq" "zeromqold" "cmake-ts")
-MISSING_ZEROMQ=()
+# Verify native modules (ZeroMQ and other native dependencies)
+echo "🔍 Verifying native modules..."
+NATIVE_MODULES=("zeromq" "cmake-ts" "keytar" "ws" "prebuild-install" "bufferutil" "utf-8-validate")
+MISSING_MODULES=()
 
-for module in "${ZEROMQ_MODULES[@]}"; do
+for module in "${NATIVE_MODULES[@]}"; do
   MODULE_PATH="$TEMP_DIR/extension/dist/node_modules/$module"
   if [ -d "$MODULE_PATH" ]; then
     SIZE=$(du -sh "$MODULE_PATH" 2>/dev/null | cut -f1 || echo "unknown")
     echo "  ✓ $module ($SIZE)"
   else
     echo "  ✗ $module (missing)"
-    MISSING_ZEROMQ+=("$module")
+    MISSING_MODULES+=("$module")
   fi
 done
 
-if [ ${#MISSING_ZEROMQ[@]} -gt 0 ]; then
+if [ ${#MISSING_MODULES[@]} -gt 0 ]; then
   echo ""
-  echo "❌ ERROR: Missing ${#MISSING_ZEROMQ[@]} ZeroMQ module(s)"
+  echo "❌ ERROR: Missing ${#MISSING_MODULES[@]} native module(s)"
   exit 1
 fi
 

@@ -119,7 +119,7 @@ const extensionConfig = {
 
 const webviewConfig = {
   target: "web",
-  mode: "none",
+  mode: "production", // Enable webpack production optimizations
   // Use inline source map to ease debug of webview
   // Xref. https://github.com/microsoft/vscode/issues/145292#issuecomment-1072879043
   devtool: "inline-source-map",
@@ -629,7 +629,7 @@ const aguiExampleConfig = {
 // Config for Datasource Dialog webview
 const datasourceDialogConfig = {
   target: "web",
-  mode: "none",
+  mode: "production", // Enable webpack production optimizations
   devtool: "inline-source-map",
   entry: "./webview/datasource/main.tsx",
   output: {
@@ -695,12 +695,78 @@ const datasourceDialogConfig = {
 // Config for Datasource Edit Dialog webview
 const datasourceEditDialogConfig = {
   target: "web",
-  mode: "none",
+  mode: "production", // Enable webpack production optimizations
   devtool: "inline-source-map",
   entry: "./webview/datasource/editMain.tsx",
   output: {
     path: path.resolve(__dirname, "dist"),
     filename: "datasourceEditDialog.js",
+  },
+  resolve: {
+    extensions: [".ts", ".tsx", ".js", ".jsx", ".json", ".svg"],
+    symlinks: true,
+    fallback: {
+      process: require.resolve("process/browser"),
+      buffer: require.resolve("buffer/"),
+      stream: require.resolve("stream-browserify"),
+      // Disable node modules not needed in browser
+      fs: false,
+      path: false,
+      crypto: false,
+    },
+    alias: {
+      react: path.resolve(__dirname, "./node_modules/react"),
+      "react-dom": path.resolve(__dirname, "./node_modules/react-dom"),
+      // Stub out react-router-dom since we don't use navigation in webview
+      "react-router-dom": false,
+    },
+  },
+  module: {
+    rules: [
+      {
+        test: /\.tsx?$/,
+        exclude: /node_modules/,
+        use: {
+          loader: "ts-loader",
+          options: {
+            configFile: path.join(__dirname, "tsconfig.webview.json"),
+            experimentalWatchApi: true,
+            transpileOnly: true,
+          },
+        },
+      },
+      {
+        test: /\.css$/,
+        use: [require.resolve("style-loader"), require.resolve("css-loader")],
+      },
+      {
+        test: /\.svg$/,
+        type: "asset/inline",
+      },
+      {
+        test: /\.(c|m)?js/,
+        resolve: {
+          fullySpecified: false,
+        },
+      },
+    ],
+  },
+  plugins: [
+    new webpack.ProvidePlugin({
+      process: "process/browser",
+    }),
+  ],
+};
+
+// Config for Agent Chat webview
+const agentChatWebviewConfig = {
+  target: "web",
+  mode: "production", // Enable webpack production optimizations
+  devtool: process.env.WEBVIEW_DEBUG ? "inline-source-map" : "hidden-source-map",
+  entry: "./webview/agentChat/agentChatWebview.tsx",
+  output: {
+    path: path.resolve(__dirname, "dist"),
+    filename: "agentChatWebview.js",
   },
   resolve: {
     extensions: [".ts", ".tsx", ".js", ".jsx", ".json", ".svg"],
@@ -765,5 +831,6 @@ module.exports = [
   showcaseWebviewConfig,
   datasourceDialogConfig,
   datasourceEditDialogConfig,
+  agentChatWebviewConfig,
   // aguiExampleConfig, // Commented out - file doesn't exist
 ];

@@ -56,7 +56,7 @@
     "test": "vscode-test",
     "test:vsix": "npm run vsix && node scripts/test-vsix-activation.js",
     "test:vsix-manual": "npm run vsix && bash scripts/test-vsix-installation.sh",
-    "vsix": "npm run clean:vsix && npm run package && node scripts/copyZmqBinaries.js && node scripts/copy-external-deps.js && npx @vscode/vsce package --no-yarn --no-dependencies",
+    "vsix": "npm run clean:vsix && npm run package && node scripts/copyZmqBinaries.js && node scripts/copy-external-deps.js && node scripts/optimize-primer.js && npx @vscode/vsce package --no-yarn --no-dependencies",
     "docs": "typedoc",
     "docs:watch": "typedoc --watch",
     "docs:markdown": "typedoc --plugin typedoc-plugin-markdown --out docs-markdown",
@@ -74,6 +74,7 @@
     "@codemirror/view": "^6.38.3",
     "@copilotkit/react-core": "^1.10.6",
     "@copilotkit/react-ui": "^1.10.6",
+    "@datalayer/agent-runtimes": "^0.0.5",
     "@datalayer/core": "^0.0.23",
     "@datalayer/jupyter-lexical": "^1.0.8",
     "@datalayer/jupyter-react": "^2.0.2",
@@ -210,6 +211,22 @@
       {
         "command": "datalayer.help",
         "title": "Help and Feedback",
+        "category": "Datalayer"
+      },
+      {
+        "command": "datalayer.agentChat.open",
+        "title": "Open Agent Chat",
+        "category": "Datalayer",
+        "icon": "$(comment-discussion)"
+      },
+      {
+        "command": "datalayer.agentChat.clear",
+        "title": "Clear Agent Chat",
+        "category": "Datalayer"
+      },
+      {
+        "command": "datalayer.agentChat.newChat",
+        "title": "New Agent Chat",
         "category": "Datalayer"
       },
       {
@@ -455,6 +472,13 @@
           "name": "Settings",
           "icon": "$(settings-gear)",
           "contextualTitle": "Datalayer Settings"
+        },
+        {
+          "id": "datalayer.agentChat",
+          "name": "Agent Chat",
+          "icon": "$(comment-discussion)",
+          "contextualTitle": "Datalayer Agent Chat",
+          "type": "webview"
         }
       ]
     },

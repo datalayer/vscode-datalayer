@@ -27,6 +27,8 @@ import {
   notifyExtensionReady,
 } from "./services/bridges/documentBridge";
 import { DatalayerFileSystemProvider } from "./providers/documentsFileSystemProvider";
+import { AgentChatProvider } from "./providers/agentChatProvider";
+import { registerAgentRuntimeCommands } from "./commands/agentRuntimes";
 import type { ExtensionUI } from "./services/ui/uiSetup";
 import { registerChatContextProvider } from "./chat/chatContextProvider";
 
@@ -164,6 +166,19 @@ export async function activate(
     (
       globalThis as typeof globalThis & { __datalayerAuth?: unknown }
     ).__datalayerAuth = services.authProvider;
+
+    // Register Agent Chat webview view provider
+    logger.debug("Registering Agent Chat provider");
+    const agentChatProvider = new AgentChatProvider(context);
+    context.subscriptions.push(
+      vscode.window.registerWebviewViewProvider(
+        AgentChatProvider.viewType,
+        agentChatProvider
+      )
+    );
+    registerAgentRuntimeCommands(context, agentChatProvider);
+    activationTimer.checkpoint("agent_chat_registered");
+    logger.info("Agent Chat provider registered successfully");
 
     logger.debug("Setting up commands registration");
     registerAllCommands(

@@ -163,10 +163,7 @@ export class PyodideInlineKernel implements Kernel.IKernelConnection {
       name: this.name,
     };
 
-    // FORCE VISIBLE DEBUG - Use console.error to ensure it shows
-    console.error(
-      `🔴🔴🔴 [KERNEL CONSTRUCTOR] PyodideInlineKernel created! ID: ${this.id} 🔴🔴🔴`,
-    );
+    // Kernel created successfully
 
     // Create worker from raw TypeScript code using Blob URL (bypasses CSP restrictions)
     // We import the worker file as a string and create a Blob from it
@@ -743,10 +740,6 @@ export class PyodideInlineKernel implements Kernel.IKernelConnection {
   requestExecute(content: any, _disposeOnDone?: boolean, _metadata?: any): any {
     const msgId = this._messageId++;
     const startTime = new Date().toISOString();
-
-    console.error(
-      `🔴🔴🔴 [KERNEL EXECUTE] requestExecute called! msgId=${msgId}, queue length=${this._executionQueue.length} 🔴🔴🔴`,
-    );
 
     // CRITICAL: Check if kernel is disposed before executing
     if (this.isDisposed) {
