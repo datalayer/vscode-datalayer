@@ -1,0 +1,79 @@
+/**
+ * VS Code Theme Integration for Primer React Components
+ *
+ * This file overrides Primer React component styles to match VS Code themes.
+ * Specifically targets ActionMenu/ActionList used in KernelActionMenu.
+ */
+
+/* ActionMenu container background and border */
+[class*="ActionMenu-ActionMenuContainer"] {
+  background-color: var(--vscode-menu-background) !important;
+  border: 1px solid var(--vscode-menu-border, var(--vscode-widget-border)) !important;
+  box-shadow: 0 2px 8px var(--vscode-widget-shadow) !important;
+}
+
+/* ActionList base styles */
+[class*="ActionList-ActionList"] {
+  background-color: var(--vscode-menu-background) !important;
+  color: var(--vscode-menu-foreground) !important;
+}
+
+/* ActionList items */
+[class*="ActionList-ActionListItem"] {
+  background-color: var(--vscode-menu-background) !important;
+  color: var(--vscode-menu-foreground) !important;
+}
+
+/* ActionList item hover state */
+[class*="ActionList-ActionListItem"]:hover:not([aria-disabled="true"]) {
+  background-color: var(--vscode-list-hoverBackground) !important;
+}
+
+/* ActionList item focus state */
+[class*="ActionList-ActionListItem"]:focus {
+  background-color: var(
+    --vscode-list-focusBackground,
+    var(--vscode-list-hoverBackground)
+  ) !important;
+  outline: 1px solid var(--vscode-focusBorder) !important;
+  outline-offset: -1px !important;
+}
+
+/* ActionList item disabled state */
+[class*="ActionList-ActionListItem"][aria-disabled="true"] {
+  opacity: 0.5 !important;
+  cursor: not-allowed !important;
+}
+
+/* ActionList item label */
+[class*="ActionList-ItemLabel"] {
+  color: var(--vscode-menu-foreground) !important;
+}
+
+/* ActionList item danger variant */
+[class*="ActionList-ActionListItem"][data-variant="danger"]
+  [class*="ActionList-ItemLabel"] {
+  color: var(--vscode-errorForeground) !important;
+}
+
+/* ActionList item danger variant hover */
+[class*="ActionList-ActionListItem"][data-variant="danger"]:hover:not(
+    [aria-disabled="true"]
+  ) {
+  background-color: var(
+    --vscode-inputValidation-errorBackground,
+    rgba(255, 0, 0, 0.1)
+  ) !important;
+}
+
+/* Icons in action items */
+[class*="ActionList-LeadingVisual"] svg {
+  color: var(--vscode-menu-foreground) !important;
+}
+
+/* Danger variant icon color */
+[class*="ActionList-ActionListItem"][data-variant="danger"]
+  [class*="ActionList-LeadingVisual"]
+  svg {
+  color: var(--vscode-errorForeground) !important;
+}

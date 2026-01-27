@@ -4,6 +4,45 @@
 
 ## Critical Recent Changes
 
+### Jupyter Output UI Improvements (January 2025)
+
+**Status**: ✅ FULLY WORKING - KernelActionMenu, progress bar, and clear outputs all functional
+
+**Changes**:
+
+1. **KernelActionMenu Always Visible**: Three dot menu now visible regardless of kernel connection state
+   - All menu items always rendered with appropriate disabled states
+   - "Interrupt kernel" and "Restart kernel" disabled when no kernel
+   - "Clear outputs" always enabled
+
+2. **Progress Bar Conditional Display**: Progress bar only shows when kernel is connected and not idle
+   - Space preserved with transparent background when inactive
+   - Prevents visual jumping
+
+3. **Clear Outputs Functionality**: Works from both toolbar and menu, with or without kernel
+   - Fixed adapter/propsAdapter logic to match rendering behavior
+   - Added `onClearOutputs` callback pattern for proper state management
+
+4. **VS Code Theme Integration**: Primer ActionMenu components now themed with VS Code colors
+   - Uses VS Code CSS variables (`--vscode-menu-background`, `--vscode-menu-foreground`, etc.)
+   - Platform-specific CSS moved to `vscode-datalayer` package for better architecture
+
+**Files Modified**:
+
+- `jupyter-ui/packages/react/src/components/output/Output.tsx` - Progress bar, handleClearOutputs callback
+- `jupyter-ui/packages/react/src/components/kernel/KernelActionMenu.tsx` - Always-visible menu with disabled states
+- `vscode-datalayer/webview/styles/vscode-primer-overrides.css` - NEW FILE for VS Code theme overrides
+- `vscode-datalayer/webview/lexical/lexicalWebview.tsx` - Import new CSS file
+
+**Key Technical Details**:
+
+- Removed adapter dependency wrapper (`{adapter && (`) that prevented menu from rendering
+- Changed from conditional rendering to `disabled` props for menu items
+- Fixed `handleClearOutputs` to check both `adapter` and `propsAdapter` (matches rendering logic at line 356)
+- Architecture improvement: VS Code-specific styles now in `vscode-datalayer` package, not generic `jupyter-ui` library
+
+**Console Logging**: Added extensive logging for debugging clear outputs functionality (can be removed in future cleanup)
+
 ### Kernel Switching Fix (January 2025)
 
 **Status**: ✅ FULLY WORKING - All runtime switching scenarios work perfectly

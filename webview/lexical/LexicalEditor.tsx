@@ -48,7 +48,7 @@ import {
   JupyterInputOutputPlugin,
   DraggableBlockPlugin,
   FloatingTextFormatToolbarPlugin,
-  registerCodeHighlighting,
+  CodeBlockHighlightPlugin,
   LexicalInlineCompletionPlugin,
   EquationNode,
   ImageNode,
@@ -194,23 +194,6 @@ function SavePlugin({ onSave }: { onSave?: (content: string) => void }) {
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [editor, onSave]);
-
-  return null;
-}
-
-/**
- * Lexical plugin for Jupyter code syntax highlighting.
- * Registers the code highlighting functionality for JupyterInputNode cells.
- *
- * @hidden
- * @returns {null} This is a React effect-only component
- */
-function CodeHighlightPlugin() {
-  const [editor] = useLexicalComposerContext();
-
-  useEffect(() => {
-    return registerCodeHighlighting(editor);
-  }, [editor]);
 
   return null;
 }
@@ -687,7 +670,7 @@ function LexicalEditorInner({
           content={initialContent}
           skipLoad={collaboration?.enabled}
         />
-        <CodeHighlightPlugin />
+        <CodeBlockHighlightPlugin />
         <ImagesPlugin captionsEnabled={false} />
         <HorizontalRulePlugin />
         <EquationsPlugin />

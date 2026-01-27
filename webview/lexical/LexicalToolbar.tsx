@@ -52,7 +52,6 @@ import { $setBlocksType } from "@lexical/selection";
 import { $findMatchingParent } from "@lexical/utils";
 import { INSERT_HORIZONTAL_RULE_COMMAND } from "@lexical/react/LexicalHorizontalRuleNode";
 import { TOGGLE_LINK_COMMAND, $isLinkNode } from "@lexical/link";
-import { createCommand, LexicalCommand } from "lexical";
 import {
   INSERT_YOUTUBE_COMMAND,
   INSERT_JUPYTER_INPUT_OUTPUT_COMMAND,
@@ -66,11 +65,6 @@ import {
 import { useJupyter } from "@datalayer/jupyter-react";
 import type { RuntimeJSON } from "@datalayer/core/lib/client";
 import { MessageHandlerContext } from "../services/messageHandler";
-
-// Define Jupyter commands locally (not exported from jupyter-lexical)
-const RESTART_JUPYTER_KERNEL_COMMAND: LexicalCommand<undefined> = createCommand(
-  "RESTART_JUPYTER_KERNEL_COMMAND",
-);
 import {
   BaseToolbar,
   ToolbarButton,
@@ -658,24 +652,43 @@ export function LexicalToolbar({
     }
   };
 
-  const handleRunCell = useCallback(() => {
+  const handleRunCell = useCallback(async () => {
     if (lexicalId) {
-      // Use adapter pattern - no blockId means "run current block"
-      lexicalStore.getState().runBlock(lexicalId);
+      try {
+        // Use adapter pattern - no blockId means "run current block"
+        await lexicalStore.getState().runBlock(lexicalId);
+      } catch (error) {
+        console.error("[LexicalToolbar] runBlock error:", error);
+      }
+    } else {
+      console.error("[LexicalToolbar] Cannot run cell: no lexicalId");
     }
-  }, [lexicalId]);
+  }, [lexicalId, defaultKernel, kernelStatus]);
 
-  const handleRunAll = useCallback(() => {
+  const handleRunAll = useCallback(async () => {
     if (lexicalId) {
-      // Use lexicalStore for consistency with NotebookToolbar
-      lexicalStore.getState().runAllBlocks(lexicalId);
+      try {
+        // Use lexicalStore for consistency with NotebookToolbar
+        await lexicalStore.getState().runAllBlocks(lexicalId);
+      } catch (error) {
+        console.error("[LexicalToolbar] runAllBlocks error:", error);
+      }
+    } else {
+      console.error("[LexicalToolbar] Cannot run all: no lexicalId");
     }
-  }, [lexicalId]);
+  }, [lexicalId, defaultKernel, kernelStatus]);
 
-  const handleRestartKernel = useCallback(() => {
-    // This operation is not yet in LexicalAdapter, use editor command
-    editor.dispatchCommand(RESTART_JUPYTER_KERNEL_COMMAND, undefined);
-  }, [editor]);
+  const handleRestartKernel = useCallback(async () => {
+    if (lexicalId) {
+      try {
+        await lexicalStore.getState().restartKernel(lexicalId);
+      } catch (error) {
+        console.error("[LexicalToolbar] restartKernel error:", error);
+      }
+    } else {
+      console.error("[LexicalToolbar] Cannot restart kernel: no lexicalId");
+    }
+  }, [defaultKernel, lexicalId, kernelStatus]);
 
   const handleClearAllOutputs = useCallback(async () => {
     if (lexicalId) {
@@ -687,7 +700,7 @@ export function LexicalToolbar({
     } else {
       console.warn("[LexicalToolbar] Cannot clear outputs: no lexicalId");
     }
-  }, [lexicalId]);
+  }, [lexicalId, defaultKernel]);
 
   const applyFontFamily = (font: string) => {
     editor.update(() => {
@@ -1074,7 +1087,7 @@ export function LexicalToolbar({
       title: "Clear All Cell Outputs",
       onClick: handleClearAllOutputs,
       priority: 4,
-      disabled: !hasKernel,
+      disabled: false,
     },
     {
       id: "restartKernel",

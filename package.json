@@ -1106,7 +1106,7 @@
         "name": "datalayer_insertBlock",
         "displayName": "Insert Lexical Block",
         "toolReferenceName": "insertBlock",
-        "modelDescription": "Insert different type of content with blocks. Use listAvailableBlocks to get availables blocks. When inserting MULTIPLE blocks sequentially (e.g., creating a document outline with heading + paragraph + code), ALWAYS use afterId: 'BOTTOM' for each insertion to append blocks in order. For single insertions, call readAllBlocks first to see document structure. Position blocks using afterId: 'TOP' (beginning), 'BOTTOM' (end - REQUIRED for sequential inserts), or a specific block_id value from readAllBlocks. IMPORTANT: heading blocks are semantic HTML (NOT markdown) - use plain text in source field without # symbols, specify tag property (h1-h6) instead. Use listAvailableBlocks to see all supported types. Works on active .lexical file. **IMPORTANT: Always ensure you call getActiveDocument before running this operation.**",
+        "modelDescription": "CRITICAL: DO NOT use markdown syntax in source field. Heading blocks use PLAIN TEXT (no # symbols) - specify tag metadata (h1-h6) instead. Inline formatting like **bold** or *italic* is automatically converted. ALWAYS call listAvailableBlocks FIRST to see block types and required metadata format. Insert different types of content blocks. When inserting MULTIPLE blocks sequentially (e.g., creating a document outline with heading + paragraph + code), ALWAYS use afterId: 'BOTTOM' for each insertion to append blocks in order. For single insertions, call readAllBlocks first to see document structure. Position blocks using afterId: 'TOP' (beginning), 'BOTTOM' (end - REQUIRED for sequential inserts), or a specific block_id value from readAllBlocks. To insert blocks INSIDE a collapsible: 1) First insert collapsible (type='collapsible'), which returns a blockId, 2) Then insert nested blocks with metadata.collapsible set to that RETURNED BLOCK ID (NOT 'TOP' or 'BOTTOM'). Example: result = insertBlock({type: 'collapsible', source: 'Section', afterId: 'BOTTOM'}); insertBlock({type: 'paragraph', source: 'text', metadata: {collapsible: result.blockId}, afterId: 'BOTTOM'}). DO NOT use position markers (TOP/BOTTOM) as collapsible IDs - they are only for afterId positioning. Works on active .lexical file. **IMPORTANT: Always ensure you call getActiveDocument before running this operation.**",
         "canBeReferencedInPrompt": true,
         "inputSchema": {
           "type": "object",
@@ -1123,15 +1123,15 @@
               "description": "Block source content",
               "type": "string"
             },
-            "properties": {
-              "description": "Optional block metadata and properties",
+            "metadata": {
               "type": "string"
             }
           },
           "required": [
             "afterId",
             "type",
-            "source"
+            "source",
+            "metadata"
           ]
         }
       },
@@ -1139,7 +1139,7 @@
         "name": "datalayer_updateBlock",
         "displayName": "Update Lexical Block",
         "toolReferenceName": "updateBlock",
-        "modelDescription": "Update an existing block in the currently open Lexical document. Use listAvailableBlocks to get available blocks. Can modify block type, source content, and/or properties. Requires id from readAllBlocks. At least one of type, source, or properties must be provided. Properties are merged with existing metadata. Works on active .lexical file. **IMPORTANT: Always ensure you call getActiveDocument before running this operation.**",
+        "modelDescription": "Update an existing block in the currently open Lexical document. CRITICAL: DO NOT use markdown syntax (like # for headings) in source field - use plain text and specify block type/metadata instead. Inline formatting like **bold** or *italic* is automatically converted. Use listAvailableBlocks to get available block types. Can modify block type, source content, and/or metadata. Requires id from readAllBlocks. At least one of type, source, or metadata must be provided. Metadata is merged with existing metadata. Works on active .lexical file. **IMPORTANT: Always ensure you call getActiveDocument before running this operation.**",
         "canBeReferencedInPrompt": true,
         "inputSchema": {
           "type": "object",
@@ -1156,13 +1156,13 @@
               "description": "New block source content",
               "type": "string"
             },
-            "properties": {
-              "description": "New block metadata and properties",
+            "metadata": {
               "type": "string"
             }
           },
           "required": [
-            "id"
+            "id",
+            "metadata"
           ]
         }
       },
@@ -1192,7 +1192,7 @@
         "name": "datalayer_readBlock",
         "displayName": "Read Lexical Block",
         "toolReferenceName": "readBlock",
-        "modelDescription": "Read a single block from the currently open Lexical document by its block_id. Use listAvailableBlocks to get available blocks. Returns the block with: block_id, block_type (e.g. 'heading', 'paragraph', 'jupyter-cell'), source (content as string), metadata (properties like level, language). Use block_id values from readAllBlocks. Works on active .lexical file. **IMPORTANT: Always ensure you call getActiveDocument before running this operation.**",
+        "modelDescription": "Read a single block from the currently open Lexical document by its block_id. Use listAvailableBlocks to get available block types. Returns the block with: block_id, block_type (e.g. 'heading', 'paragraph', 'jupyter-cell'), source (content as string), metadata (properties like level, language). Use block_id values from readAllBlocks. Works on active .lexical file. **IMPORTANT: Always ensure you call getActiveDocument before running this operation.**",
         "canBeReferencedInPrompt": true,
         "inputSchema": {
           "type": "object",
@@ -1211,7 +1211,7 @@
         "name": "datalayer_readAllBlocks",
         "displayName": "Read All Lexical Blocks",
         "toolReferenceName": "readAllBlocks",
-        "modelDescription": "Read all blocks from the currently open Lexical document. Use listAvailableBlocks to get available blocks. Supports two response formats: 'brief' (default, ~1,100 tokens) returns block_id, block_type, and 40-char content preview for structure queries; 'detailed' (~20,000 tokens) returns full content with source, metadata, and properties. Use brief when you need to see document structure, count blocks, or quickly scan content. Use detailed when you need to read full content. Brief format preview shows: lists as comma-separated items, code/jupyter-cell as first line, horizontalrule as empty string. Returns array of blocks with: block_id (stable identifier for insertion), block_type (e.g. 'heading', 'paragraph', 'jupyter-cell'), preview (brief only), and optionally source/metadata (detailed only). CRITICAL: Use the block_id values from this result for insertBlock's afterId parameter. Works on active .lexical file. **IMPORTANT: Always ensure you call getActiveDocument before running this operation.**",
+        "modelDescription": "Read all blocks from the currently open Lexical document. Use listAvailableBlocks to get available block types. Supports two response formats: 'brief' (default, ~1,100 tokens) returns block_id, block_type, and 40-char content preview for structure queries; 'detailed' (~20,000 tokens) returns full content with source, metadata, and properties. Use brief when you need to see document structure, count blocks, or quickly scan content. Use detailed when you need to read full content. Brief format preview shows: lists as comma-separated items, code/jupyter-cell as first line, horizontalrule as empty string. Returns array of blocks with: block_id (stable identifier for insertion), block_type (e.g. 'heading', 'paragraph', 'jupyter-cell'), preview (brief only), and optionally source/metadata (detailed only). CRITICAL: Use the block_id values from this result for insertBlock's afterId parameter. Works on active .lexical file. **IMPORTANT: Always ensure you call getActiveDocument before running this operation.**",
         "canBeReferencedInPrompt": true,
         "inputSchema": {
           "type": "object",
@@ -1274,26 +1274,18 @@
         "name": "datalayer_listAvailableBlocks",
         "displayName": "List Available Lexical Blocks",
         "toolReferenceName": "listAvailableBlocks",
-        "modelDescription": "Discover available block types for the currently open Lexical document. Returns schema for all registered blocks including: 'jupyter-cell' (executable code cell with language property), standard blocks (paragraph, heading [NOT markdown - semantic HTML with tag property], code, quote, list, table). Use this to see exact block type names and required properties before calling insertBlock. **IMPORTANT: Always ensure you call getActiveDocument before running this operation.**",
+        "modelDescription": "Discover available block types for the currently open Lexical document. Available blocks: paragraph, heading, quote, code, list, horizontalrule, jupyter-cell (executable), equation, image, youtube (video embed), table (data table), collapsible (expandable section). Returns detailed schema including required/optional metadata for each block type. Set type parameter to specific block type (e.g., 'youtube', 'table') or 'all' (default) for all blocks. Use this BEFORE calling insertBlock to see exact type names and required metadata format. **IMPORTANT: Always ensure you call getActiveDocument before running this operation.**",
         "canBeReferencedInPrompt": true,
         "inputSchema": {
           "type": "object",
           "properties": {
-            "category": {
-              "description": "Optional category filter for block types",
-              "type": "string",
-              "enum": [
-                "text",
-                "heading",
-                "code",
-                "media",
-                "list",
-                "table",
-                "jupyter"
-              ]
+            "type": {
+              "type": "string"
             }
           },
-          "required": []
+          "required": [
+            "type"
+          ]
         }
       }
     ],
