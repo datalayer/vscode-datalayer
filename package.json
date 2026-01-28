@@ -82,7 +82,7 @@
     "@datalayer/lexical-loro": "^0.1.0",
     "@datalayer/primer-addons": "^1.0.4",
     "@jupyter/ydoc": "^2.0.0",
-    "@jupyterlab/services": "^7.0.0",
+    "@jupyterlab/services": "^7.5.3",
     "@lexical/code": "^0.35.0",
     "@lexical/html": "^0.35.0",
     "@lexical/link": "^0.35.0",
@@ -124,7 +124,7 @@
   },
   "devDependencies": {
     "@electron/rebuild": "^4.0.2",
-    "@jupyterlab/theme-light-extension": "^4.4.10",
+    "@jupyterlab/theme-light-extension": "^4.5.3",
     "@tailwindcss/postcss": "^4.1.17",
     "@types/jest": "^30.0.0",
     "@types/mocha": "^10.0.10",
