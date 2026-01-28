@@ -367,7 +367,7 @@ export class KernelBridge implements vscode.Disposable {
     });
 
     // NOW start the local kernel client (this takes 3 seconds)
-    const kernelClient = new LocalKernelClient(kernelInfo);
+    const kernelClient = new LocalKernelClient(kernelInfo, uri);
     await kernelClient.start();
 
     // Store the kernel client for later use

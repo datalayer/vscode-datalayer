@@ -12,6 +12,7 @@
  */
 
 import "../styles/collapsible-vscode.css";
+import "../styles/vscode-primer-overrides.css";
 
 import React, { useEffect, useState, useCallback, useRef } from "react";
 import ReactDOM from "react-dom/client";

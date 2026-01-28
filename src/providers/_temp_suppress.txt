@@ -1,0 +1,3 @@
+Lines 1151-1250: getLLMCompletion and cleanCompletion methods
+These are unused because the handler already returns null.
+Will be removed once we implement proper inline completion API.

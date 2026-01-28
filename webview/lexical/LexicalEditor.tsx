@@ -48,7 +48,7 @@ import {
   JupyterInputOutputPlugin,
   DraggableBlockPlugin,
   FloatingTextFormatToolbarPlugin,
-  registerCodeHighlighting,
+  CodeBlockHighlightPlugin,
   LexicalInlineCompletionPlugin,
   EquationNode,
   ImageNode,
@@ -79,6 +79,9 @@ import {
   TableCellResizerPlugin,
   CommentsProvider,
   useComments,
+  LSPTabCompletionPlugin,
+  LexicalLSPCompletionProvider,
+  LSPDocumentSyncPlugin,
 } from "@datalayer/jupyter-lexical";
 import { LexicalToolbar } from "./LexicalToolbar";
 import { RuntimeProgressBar } from "../components/RuntimeProgressBar";
@@ -194,23 +197,6 @@ function SavePlugin({ onSave }: { onSave?: (content: string) => void }) {
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [editor, onSave]);
-
-  return null;
-}
-
-/**
- * Lexical plugin for Jupyter code syntax highlighting.
- * Registers the code highlighting functionality for JupyterInputNode cells.
- *
- * @hidden
- * @returns {null} This is a React effect-only component
- */
-function CodeHighlightPlugin() {
-  const [editor] = useLexicalComposerContext();
-
-  useEffect(() => {
-    return registerCodeHighlighting(editor);
-  }, [editor]);
 
   return null;
 }
@@ -366,6 +352,24 @@ export function LexicalEditor({
   const lexicalLLMProvider = React.useMemo(() => {
     return new LexicalVSCodeLLMProvider();
   }, []);
+
+  /**
+   * LSP completion provider instance for Tab dropdown completions.
+   * Integrates Pylance and Markdown language servers with Lexical editor.
+   */
+  const lexicalLSPProvider = React.useMemo(() => {
+    return new LexicalLSPCompletionProvider(
+      lexicalId || documentUri || "",
+      vscode,
+    );
+  }, [lexicalId, documentUri, vscode]);
+
+  // Dispose provider on unmount or when deps change
+  React.useEffect(() => {
+    return () => {
+      lexicalLSPProvider.dispose();
+    };
+  }, [lexicalLSPProvider]);
 
   /**
    * Handler for YouTube embeds in VS Code.
@@ -524,12 +528,26 @@ export function LexicalEditor({
     },
   };
 
+  // Track previous root content to detect actual content changes (not just cursor movements)
+  const previousRootRef = useRef<string | null>(null);
+
   const handleChange = useCallback(
     (editorState: EditorState) => {
       try {
-        const jsonString = JSON.stringify(editorState);
-        if (onContentChange) {
-          onContentChange(jsonString);
+        // Only serialize the root (content) to compare, not the entire EditorState
+        // EditorState includes selection (cursor position) which changes on every cursor movement
+        // We only want to mark dirty when actual content changes
+        const currentRoot = JSON.stringify(editorState.toJSON().root);
+
+        // Check if content actually changed (not just cursor movement)
+        if (currentRoot !== previousRootRef.current) {
+          previousRootRef.current = currentRoot;
+
+          // Serialize full EditorState for storage
+          const jsonString = JSON.stringify(editorState);
+          if (onContentChange) {
+            onContentChange(jsonString);
+          }
         }
       } catch (error) {
         // Ignore serialization errors (e.g., JupyterOutputNode without kernel)
@@ -583,6 +601,7 @@ export function LexicalEditor({
                 isLinkEditMode={isLinkEditMode}
                 setIsLinkEditMode={setIsLinkEditMode}
                 lexicalLLMProvider={lexicalLLMProvider}
+                lexicalLSPProvider={lexicalLSPProvider}
               />
             </CommentsProvider>
           </LexicalComposer>
@@ -617,6 +636,7 @@ function LexicalEditorInner({
   isLinkEditMode,
   setIsLinkEditMode,
   lexicalLLMProvider,
+  lexicalLSPProvider,
 }: any) {
   const { showComments, toggleComments } = useComments();
 
@@ -687,7 +707,7 @@ function LexicalEditorInner({
           content={initialContent}
           skipLoad={collaboration?.enabled}
         />
-        <CodeHighlightPlugin />
+        <CodeBlockHighlightPlugin />
         <ImagesPlugin captionsEnabled={false} />
         <HorizontalRulePlugin />
         <EquationsPlugin />
@@ -708,6 +728,45 @@ function LexicalEditorInner({
           debounceMs={200}
           enabled={editable}
         />
+        {/* LSP Tab completion plugin for dropdown completions */}
+        <LSPTabCompletionPlugin
+          providers={[lexicalLSPProvider]}
+          disabled={!editable}
+        />
+        {/* LSP document sync plugin to keep temp files updated */}
+        {lexicalId && vscode && (
+          <LSPDocumentSyncPlugin
+            lexicalId={lexicalId}
+            onDocumentOpen={(data) => {
+              vscode.postMessage({
+                type: "lsp-document-open",
+                cellId: data.cellId,
+                notebookId: data.notebookId,
+                content: data.content,
+                language: data.language,
+                source: "lexical",
+              });
+            }}
+            onDocumentSync={(data) => {
+              vscode.postMessage({
+                type: "lsp-document-sync",
+                cellId: data.cellId,
+                content: data.content,
+                version: data.version,
+                source: "lexical",
+                lexicalId: lexicalId,
+              });
+            }}
+            onDocumentClose={(cellId) => {
+              vscode.postMessage({
+                type: "lsp-document-close",
+                cellId: cellId,
+                source: "lexical",
+              });
+            }}
+            disabled={!editable}
+          />
+        )}
         {documentUri && vscode && (
           <OutlinePlugin documentUri={documentUri} vscode={vscode} />
         )}

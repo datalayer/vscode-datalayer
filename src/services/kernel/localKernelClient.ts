@@ -15,6 +15,7 @@ import * as fs from "fs";
 import * as path from "path";
 import * as os from "os";
 import * as crypto from "crypto";
+import * as vscode from "vscode";
 import type { Kernel } from "@jupyterlab/services";
 import { NativeKernelInfo } from "./nativeKernelIntegration";
 import { createRawKernel, IKernelConnection } from "./rawSocket";
@@ -39,12 +40,17 @@ export class LocalKernelClient {
   /** The JupyterLab kernel connection instance */
   private _realKernel: Kernel.IKernelConnection | undefined;
 
+  /** Optional document URI for setting kernel working directory */
+  private _documentUri?: vscode.Uri;
+
   /**
    * Creates a new LocalKernelClient instance.
    * @param kernelInfo - Kernel information including Python path and kernel spec
+   * @param documentUri - Optional document URI for setting kernel working directory
    */
-  constructor(kernelInfo: NativeKernelInfo) {
+  constructor(kernelInfo: NativeKernelInfo, documentUri?: vscode.Uri) {
     this._kernelInfo = kernelInfo;
+    this._documentUri = documentUri;
   }
 
   /**
@@ -73,6 +79,58 @@ export class LocalKernelClient {
   }
 
   /**
+   * Get the working directory for the kernel process.
+   * - For file URIs: Returns the parent directory of the file
+   * - For virtual URIs (datalayer://): Returns workspace root folder
+   * - If no URI or workspace: Returns undefined (uses process cwd)
+   *
+   * @returns Absolute path to use as kernel working directory
+   */
+  private getKernelWorkingDirectory(): string | undefined {
+    if (!this._documentUri) {
+      console.log(
+        "[LocalKernelClient] No document URI provided, using default working directory",
+      );
+      return undefined;
+    }
+
+    // Handle file:// URIs - extract parent directory
+    if (this._documentUri.scheme === "file") {
+      const filePath = this._documentUri.fsPath;
+      const directory = path.dirname(filePath);
+
+      console.log(
+        `[LocalKernelClient] Using kernel working directory from file URI: ${directory}`,
+      );
+
+      // Validate directory exists
+      if (fs.existsSync(directory)) {
+        return directory;
+      } else {
+        console.warn(
+          `[LocalKernelClient] Directory does not exist: ${directory}, using workspace root`,
+        );
+      }
+    }
+
+    // For virtual URIs (datalayer://), use workspace root
+    // This matches VS Code's behavior for untitled files
+    const workspaceFolders = vscode.workspace.workspaceFolders;
+    if (workspaceFolders && workspaceFolders.length > 0) {
+      const workspaceRoot = workspaceFolders[0].uri.fsPath;
+      console.log(
+        `[LocalKernelClient] Using workspace root as working directory: ${workspaceRoot}`,
+      );
+      return workspaceRoot;
+    }
+
+    console.log(
+      "[LocalKernelClient] No workspace folder found, using default working directory",
+    );
+    return undefined;
+  }
+
+  /**
    * Spawn the ipykernel process and create ZMQ connection.
    */
   private async spawnKernelProcess(): Promise<void> {
@@ -85,14 +143,21 @@ export class LocalKernelClient {
     console.log("[LocalKernelClient] Connection file:", this._connectionFile);
     console.log("[LocalKernelClient] Connection config:", connection.config);
 
+    // Get working directory for kernel (notebook file's directory or workspace root)
+    const cwd = this.getKernelWorkingDirectory();
+
     // Spawn ipykernel with connection file
     const args = ["-m", "ipykernel_launcher", "-f", this._connectionFile];
 
     console.log("[LocalKernelClient] Spawning:", pythonPath, args.join(" "));
+    if (cwd) {
+      console.log("[LocalKernelClient] Working directory:", cwd);
+    }
 
     this._kernelProcess = spawn(pythonPath, args, {
       stdio: ["ignore", "pipe", "pipe"],
       env: { ...process.env },
+      cwd: cwd,
     });
 
     // Monitor kernel process output

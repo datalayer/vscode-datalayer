@@ -16,7 +16,7 @@ export const listKernelsTool: ToolDefinition = {
   displayName: "List Kernels",
   toolReferenceName: "listKernels",
   description:
-    "Lists all available kernels for executing notebook code. Returns both local Jupyter kernels (Python) and cloud Datalayer runtimes. Use this to discover available compute environments before selecting one.",
+    "Lists all available kernels for executing notebook code. Returns local Jupyter kernels (Python environments), cloud Datalayer runtimes, and Pyodide (browser-based Python, always available). Use this to discover available compute environments before selecting one with selectKernel.",
 
   parameters: {
     type: "object",
@@ -48,5 +48,5 @@ export const listKernelsTool: ToolDefinition = {
     priority: "high",
   },
 
-  tags: ["kernel", "runtime", "list", "discover"],
+  tags: ["kernel", "runtime", "list", "discover", "pyodide"],
 };

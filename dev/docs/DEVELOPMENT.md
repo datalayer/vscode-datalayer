@@ -169,6 +169,73 @@ Or simply use watch mode which handles all of this automatically: `npm run sync:
 
 These are needed because `@datalayer/jupyter-lexical/style/index.css` uses `@import 'tailwindcss'`.
 
+### Recent Improvements (January 2025)
+
+#### Inline Completion UX Fixes
+
+Three critical UX issues with inline LLM completions in the Lexical editor have been fixed:
+
+##### 1. Improved Debouncing (500ms)
+
+- Increased debounce delay from 200ms to 500ms for better typing experience
+- Completion requests now only trigger after typing has stopped for half a second
+- Prevents excessive API calls and UI flickering during fast typing
+
+##### 2. LSP Dropdown Interaction
+
+- Added inter-plugin communication via `LSP_MENU_STATE_COMMAND`
+- LSP tab completion dropdown now properly blocks inline completions
+- When LSP menu opens:
+  - Cancels any pending inline completion timers
+  - Clears visible inline completions
+  - Prevents new inline requests until menu closes
+- Fixes issue where both completion types would appear simultaneously
+
+##### 3. Cursor Position After Accepting
+
+- Tab acceptance now correctly moves cursor to end of inserted text
+- Previously cursor stayed at insertion point, breaking typing flow
+- Implementation uses explicit selection positioning after text node replacement
+
+##### 4. Dynamic Filtering for LSP Dropdown
+
+- LSP completion dropdown now filters results in real-time as user types
+- Filter text is calculated from characters typed after menu initially opens
+- Filtering happens client-side without re-querying LSP server
+- Results are sorted with priority:
+  1. **Exact prefix matches**: Items starting with typed text (case-insensitive)
+  2. **Partial matches**: Items containing typed text anywhere
+  3. **Non-matches**: Excluded from dropdown
+- Menu automatically closes if no matches remain
+- Mirrors VS Code's native completion behavior
+
+**Implementation Details**:
+
+- Tracks cursor offset when menu first opens (`menuOpenOffsetRef`)
+- Monitors text changes via Lexical's `registerUpdateListener`
+- Calculates filter text by comparing current offset to initial offset
+- Uses `filterAndSortCompletions()` to process cached results
+- When user selects completion, replaces typed filter text with full completion text
+
+##### Files Modified
+
+- `jupyter-ui/packages/lexical/src/plugins/LexicalInlineCompletionPlugin.tsx`
+- `jupyter-ui/packages/lexical/src/plugins/LSPTabCompletionPlugin.tsx`
+
+##### How to Test
+
+1. Open a `.dlex` file with Python code cells
+2. Type code - inline completion should appear after 500ms pause
+3. Press Tab to trigger LSP dropdown - inline completion should disappear
+4. **Test dynamic filtering**:
+   - Type `sys.` and press Tab to show LSP dropdown
+   - Continue typing `p` - dropdown should filter to show only items starting with `p` (like `path`, `platform`)
+   - Type more letters - dropdown updates in real-time
+   - Backspace to delete typed text - dropdown shows more items again
+   - Menu closes if no matches remain
+5. Select LSP completion - dropdown should close without inline interference
+6. Accept inline completion with Tab - cursor should move to end of inserted text
+
 ## Custom Icon Font System
 
 The extension uses a custom WOFF icon font for consistent Datalayer branding across the VS Code UI.
@@ -732,6 +799,443 @@ The editor is encapsulated within an iframe. All communications between the edit
 2. **Message Serialization**: Requests are serialized and posted to the extension
 3. **Extension Processing**: The extension deserializes and makes actual network requests
 4. **Response Handling**: Responses are serialized and posted back to the webview
+
+### LSP Integration (January 2025)
+
+The extension provides **Language Server Protocol (LSP)** integration for notebook cells, enabling IntelliSense features like completions, hover documentation, and diagnostics for Python (via Pylance) and Markdown cells.
+
+#### Architecture
+
+**Two Completion Types**:
+
+1. **Inline Completions (Ghost Text)**: Automatic suggestions shown as faded text while typing (like GitHub Copilot)
+   - Provider: `LSPCompletionProvider` implements `IInlineCompletionProvider`
+   - File: `webview/services/completion/lspProvider.ts`
+   - Trigger: Automatic, continuous as you type
+   - Accept: Press Tab key
+
+2. **Tab Completions (Dropdown Menu)**: Traditional dropdown menu with completion options
+   - Provider: `LSPTabCompletionProvider` implements JupyterLab `ICompleterProvider`
+   - File: `webview/services/completion/lspTabProvider.ts`
+   - Trigger: Press Tab key or Ctrl+Space
+   - Accept: Press Enter to select, Arrow keys to navigate
+
+**Extension Host Components** (`src/services/lsp/`):
+
+- **LSPDocumentManager**: Creates temporary files in `.vscode/datalayer-cells/` for each notebook cell
+  - Uses real files with `file://` URIs (required by Pylance)
+  - Python cells: `{cellId}.py`
+  - Markdown cells: `{cellId}.md`
+  - Synchronizes cell content changes to disk
+  - Waits 500ms after file creation for Pylance to analyze
+
+- **LSPCompletionService**: Routes completion requests to appropriate language servers
+  - Python cells → Pylance language server
+  - Markdown cells → VS Code's built-in markdown language server
+  - Calls `vscode.executeCompletionItemProvider` with file URI
+  - Formats results for webview consumption
+
+- **LSPBridge**: Message routing between webview and extension host
+  - Handles: completion requests, hover requests, document sync
+  - Message types:
+    - `lsp-completion-request` → `lsp-completion-response`
+    - `lsp-document-open` / `lsp-document-sync` / `lsp-document-close`
+    - `lsp-error` for failures
+
+**Message Flow**:
+
+```text
+User types in cell
+      ↓
+LSPProvider (webview) detects language (Python/Markdown)
+      ↓
+postMessage('lsp-completion-request', { cellId, language, position })
+      ↓
+LSPBridge routes to LSPCompletionService
+      ↓
+LSPCompletionService:
+  1. Gets temp file URI from LSPDocumentManager
+  2. Ensures Pylance/Markdown LSP is active
+  3. Calls vscode.executeCompletionItemProvider
+      ↓
+Language server returns completions (Pylance or Markdown LSP)
+      ↓
+postMessage('lsp-completion-response', { completions })
+      ↓
+LSPProvider formats for inline display (suffix only)
+LSPTabProvider formats for dropdown (full items with metadata)
+      ↓
+User sees ghost text or dropdown menu
+```
+
+**Key Design Decisions**:
+
+- **Temp Files in Workspace**: Originally used `/tmp/` but moved to `.vscode/datalayer-cells/` so Pylance can index files (Pylance only analyzes files within workspace)
+- **Real Files, Not Virtual URIs**: Pylance only supports specific URI schemes (`file://`, `untitled://`, `vscode-notebook://`). Custom schemes like `datalayer-lsp://` don't work.
+- **Suffix Extraction**: Inline completions show only the remaining text to type, not the full word. Extracts `textEdit.range` to calculate already-typed characters.
+- **500ms Analysis Delay**: After creating a Python file, wait 500ms before accepting completion requests to give Pylance time to analyze the file.
+- **15 Second Timeout**: LSP requests timeout after 15 seconds (increased from 5s) to accommodate Pylance's initial analysis time.
+
+**Current Configuration** (as of January 2025):
+
+The extension uses **separate providers** for inline completions (ghost text) and Tab completions (dropdown menu):
+
+```typescript
+// In NotebookEditor.tsx
+const notebook = (
+  <Notebook
+    inlineProviders={[llmProvider]}  // Only LLM for inline (LSP disabled for inline)
+    providers={[lspTabProvider]}      // Only LSP for Tab dropdown
+    // ...
+  />
+);
+```
+
+**Why LSP Inline is Disabled**:
+
+- Tab key conflict: Inline LSP ghost text would interfere with Tab key invoking dropdown menu
+- User workflow: Tab key should always trigger dropdown completions immediately
+- LLM inline suggestions remain active (different use case - multi-line code suggestions)
+
+**Tab Completion Without Kernel**:
+
+The `LSPTabCompletionProvider` implements `isApplicable()` to enable Tab completions even when no kernel is connected:
+
+```typescript
+// In lspTabProvider.ts
+export class LSPTabCompletionProvider {
+  readonly name = "LSP (Python & Markdown)";
+  readonly rank = 600;  // Higher than kernel's 550
+
+  async isApplicable(context: any): Promise<boolean> {
+    // LSP completions work without a kernel, unlike KernelCompleterProvider
+    const language = this.detectCellLanguage(context);
+    return language === "python" || language === "markdown";
+  }
+}
+```
+
+This overrides the default JupyterLab behavior where Tab completions only work with kernel connections. Now Python and Markdown cells get LSP-powered Tab completions regardless of kernel state.
+
+**Tab Key Cancellation Behavior**:
+
+The Tab key handler in `NotebookBase.tsx` ensures Tab always invokes dropdown completions immediately:
+
+```typescript
+// In NotebookBase.tsx handleKeyDown
+if (event.key === 'Tab') {
+  if (inlineCompleter?.current) {
+    // Visible inline suggestion → accept it
+    inlineCompleter.accept();
+  } else if (inlineCompleter?.model) {
+    // No visible suggestion but pending request → cancel it
+    inlineCompleter.model.reset();
+    // Let Tab propagate to invoke dropdown completer
+  }
+}
+```
+
+This prevents pending inline completion requests from delaying dropdown invocation. If user types and immediately presses Tab, any in-flight inline requests are cancelled and dropdown appears instantly.
+
+**Integration Points**:
+
+- **jupyter-ui Modified**: Added `providers` prop to `NotebookBase` and `Notebook` components to accept custom Tab completion providers
+- **ProviderReconciliator**: JupyterLab's reconciliator now accepts both:
+  - `inlineProviders`: Array of inline completion providers (ghost text)
+  - `providers`: Array of Tab completion providers (dropdown)
+- **NotebookEditor.tsx**: Instantiates and passes both provider types to Notebook component
+- **Tab Key Handler**: Modified in `NotebookBase.tsx` to cancel pending inline requests
+
+**Cell Content Synchronization**:
+
+```typescript
+// In NotebookEditor.tsx
+useEffect(() => {
+  notebook.model?.cells.forEach((cell) => {
+    const language = detectCellLanguage(cell); // python | markdown | unknown
+    if (language === 'python' || language === 'markdown') {
+      vscode.postMessage({
+        type: 'lsp-document-open',
+        cellId: cell.id,
+        notebookId: notebookId,
+        content: cell.sharedModel.getSource(),
+        language: language
+      });
+    }
+  });
+
+  // Listen for content changes
+  notebook.model?.contentChanged.connect(() => {
+    vscode.postMessage({
+      type: 'lsp-document-sync',
+      cellId: cell.id,
+      content: cell.sharedModel.getSource()
+    });
+  });
+}, [notebook]);
+```
+
+**Files Modified**:
+
+- `src/services/lsp/lspDocumentManager.ts` - Temp file management
+- `src/services/lsp/lspCompletionService.ts` - LSP request handling
+- `src/services/lsp/types.ts` - Type definitions
+- `src/services/bridges/lspBridge.ts` - Message routing
+- `webview/services/completion/lspProvider.ts` - Inline completions provider
+- `webview/services/completion/lspTabProvider.ts` - Tab completions provider (NEW)
+- `webview/notebook/NotebookEditor.tsx` - Provider instantiation
+- `jupyter-ui/packages/react/src/components/notebook/NotebookBase.tsx` - Added `providers` prop
+- `jupyter-ui/packages/react/src/components/notebook/Notebook.tsx` - Added `providers` prop
+
+**Testing**:
+
+1. Open notebook, create Python cell: `import sys`
+2. New cell: Type `sys.` → Should see inline ghost text and dropdown menu with completions
+3. Markdown cell: Type `[link](./` → Should see file/folder suggestions
+4. Verify temp files created in `.vscode/datalayer-cells/`
+5. Check completions show suffix only (not full word) for inline completions
+
+**Known Limitations**:
+
+- Pylance needs workspace context (files outside workspace aren't analyzed)
+- Initial request may timeout if Pylance hasn't finished indexing
+- Temp files persist in `.vscode/datalayer-cells/` until extension deactivates
+
+#### Lexical Editor LSP Integration
+
+The extension also provides **LSP integration for Lexical editors** (`.dlex` files), enabling the same IntelliSense features for Python and Markdown code blocks within Lexical documents.
+
+**Architecture Differences from Notebooks**:
+
+1. **Code Block Structure**: Lexical uses `JupyterInputNode` (DecoratorNode) for code blocks instead of notebook cells
+2. **No Inline Completions**: Lexical editors use LLM inline completions exclusively (handled by `LexicalInlineCompletionPlugin`)
+3. **Tab Dropdown Only**: LSP provides **Tab key dropdown completions only**, not inline ghost text
+4. **Priority System**: Tab key priority ensures proper coexistence:
+   - `COMMAND_PRIORITY_CRITICAL (4)`: LSP Tab completions
+   - `COMMAND_PRIORITY_HIGH (3)`: AutoIndent, LLM inline acceptance
+   - LSP Tab command checks for active inline completions before triggering
+
+**Lexical-Specific Components** (`jupyter-ui/packages/lexical/src/plugins/`):
+
+- **lspTypes.ts**: Type definitions for Lexical LSP integration
+  - `CellLanguage`, `LSPCompletionItem`, `ILSPCompletionProvider` interfaces
+  - Message types: `LSPCompletionRequestMessage`, `LSPMessage`
+
+- **LSPTabCompletionProvider.ts**: Provider for fetching completions from extension host
+  - Implements `ILSPCompletionProvider` interface
+  - Uses postMessage to request completions (15 second timeout)
+  - Handles `lsp-completion-response` and `lsp-error` messages
+  - Supports Python and Markdown code blocks
+
+- **LSPTabCompletionPlugin.tsx**: Lexical plugin for Tab dropdown completions
+  - Registers Tab key handler at `COMMAND_PRIORITY_CRITICAL` (highest priority)
+  - Uses `LexicalTypeaheadMenuPlugin` for dropdown UI
+  - Checks for active inline completions: `hasActiveInlineCompletion()` returns false to allow LSP Tab
+  - Extracts code content and cursor position from `JupyterInputNode`
+  - Displays completions in dropdown menu
+
+- **LSPDocumentSyncPlugin.tsx**: Syncs code block content with extension host
+  - Sends `lsp-document-open`, `lsp-document-sync`, `lsp-document-close` messages
+  - Tracks Python and Markdown `JupyterInputNode` instances only
+  - Cleans up on unmount to prevent memory leaks
+
+**Integration in LexicalEditor.tsx**:
+
+```typescript
+import {
+  LSPTabCompletionPlugin,
+  LexicalLSPCompletionProvider,
+  LSPDocumentSyncPlugin,
+} from "@datalayer/jupyter-lexical";
+
+const lexicalLSPProvider = React.useMemo(() => {
+  return new LexicalLSPCompletionProvider(
+    lexicalId || documentUri || "",
+    vscode,
+  );
+}, [lexicalId, documentUri, vscode]);
+
+// In plugin tree:
+<LSPTabCompletionPlugin providers={[lexicalLSPProvider]} disabled={!editable} />
+<LSPDocumentSyncPlugin lexicalId={lexicalId} vscodeAPI={vscode} disabled={!editable} />
+```
+
+**Message Flow for Lexical**:
+
+```text
+User presses Tab in code block
+      ↓
+LSPTabCompletionPlugin checks hasActiveInlineCompletion()
+      ↓
+postMessage('lsp-completion-request', {
+  cellId: nodeUuid,
+  language,
+  position,
+  source: 'lexical',
+  lexicalId
+})
+      ↓
+LSPBridge routes to LSPCompletionService (same as notebooks)
+      ↓
+LSPCompletionService creates temp file and requests completions
+      ↓
+postMessage('lsp-completion-response', { completions })
+      ↓
+LSPTabCompletionPlugin displays dropdown menu via LexicalTypeaheadMenuPlugin
+```
+
+**Coexistence with LLM Inline Completions**:
+
+- **Inline LLM Ghost Text**: Handled by `LexicalInlineCompletionPlugin` (priority: HIGH)
+  - Multi-line code suggestions from LLM
+  - Accepts on Tab key when visible
+  - Uses `hasActiveInlineCompletion()` to signal active state
+
+- **LSP Tab Dropdown**: Handled by `LSPTabCompletionPlugin` (priority: CRITICAL)
+  - Traditional dropdown completions from Pylance/Markdown LSP
+  - Only triggers when `hasActiveInlineCompletion()` returns false
+  - Prevents conflict by checking inline state first
+
+**Tab Key Priority Logic**:
+
+```typescript
+// In LSPTabCompletionPlugin.tsx
+editor.registerCommand(KEY_TAB_COMMAND, (event) => {
+  // Check if inline completion is active
+  if (hasActiveInlineCompletion(jupyterInputNode)) {
+    return false; // Let inline completion handle Tab
+  }
+
+  if (isMenuOpen) {
+    return false; // Menu already open
+  }
+
+  event?.preventDefault();
+  fetchCompletions(jupyterInputNode, offset);
+  return true; // LSP handles Tab
+}, COMMAND_PRIORITY_CRITICAL);
+```
+
+**Reused Infrastructure**:
+
+- `LSPDocumentManager`: Same temp file management (`.vscode/datalayer-cells/`)
+- `LSPCompletionService`: Same LSP request routing (Pylance/Markdown)
+- `LSPBridge`: Already had message routing for Lexical (lines 517-537 in `lexicalProvider.ts`)
+- No changes needed to extension host services
+
+**Files Modified/Created**:
+
+- `jupyter-ui/packages/lexical/src/plugins/lspTypes.ts` (NEW)
+- `jupyter-ui/packages/lexical/src/plugins/LSPTabCompletionProvider.ts` (NEW)
+- `jupyter-ui/packages/lexical/src/plugins/LSPTabCompletionPlugin.tsx` (NEW)
+- `jupyter-ui/packages/lexical/src/plugins/LSPDocumentSyncPlugin.tsx` (NEW)
+- `jupyter-ui/packages/lexical/src/plugins/index.ts` (MODIFIED - exports)
+- `vscode-datalayer/webview/lexical/LexicalEditor.tsx` (MODIFIED - integration)
+
+**Testing Lexical LSP**:
+
+1. Open `.dlex` file in VS Code
+2. Create Python code block: `import sys`
+3. New line: Type `sys.` and press Tab → Should see dropdown with completions
+4. Markdown code block: Type `[link](./` and press Tab → Should see file suggestions
+5. Verify no conflict with LLM inline completions (ghost text still works)
+6. Check temp files created in `.vscode/datalayer-cells/`
+
+#### Critical Fixes (January 2025)
+
+**Race Condition in LSPTabCompletionProvider** (`LSPTabCompletionProvider.ts`):
+
+Initial implementation had a race condition where the completion response from the extension host would arrive before the resolver was registered in the pending requests map. This caused "No resolver found for requestId" errors.
+
+```typescript
+// WRONG - Race condition (resolver registered AFTER sending message)
+this.vscodeAPI.postMessage(message);
+return new Promise(resolve => {
+  this.pendingRequests.set(requestId, resolver); // Response may arrive before this!
+});
+
+// CORRECT - Resolver registered BEFORE sending message
+return new Promise(resolve => {
+  this.pendingRequests.set(requestId, resolver); // Register first
+  this.vscodeAPI.postMessage(message);           // Then send
+});
+```
+
+**Memory Leak in Event Listener Cleanup**:
+
+The `dispose()` method attempted to remove the event listener using `.bind(this)`, which creates a new function reference each time and won't match the originally registered handler.
+
+```typescript
+// WRONG - Memory leak (creates new function reference)
+constructor() {
+  window.addEventListener('message', this.handleMessage.bind(this));
+}
+dispose() {
+  window.removeEventListener('message', this.handleMessage.bind(this)); // Won't match!
+}
+
+// CORRECT - Save bound reference
+constructor() {
+  this.boundHandleMessage = this.handleMessage.bind(this);
+  window.addEventListener('message', this.boundHandleMessage);
+}
+dispose() {
+  window.removeEventListener('message', this.boundHandleMessage); // Matches!
+}
+```
+
+**Menu Rendering Issue in LSPTabCompletionPlugin** (`LSPTabCompletionPlugin.tsx`):
+
+`LexicalTypeaheadMenuPlugin` only evaluates `triggerFn` during editor state updates. Setting `isMenuOpen=true` asynchronously after completions arrive doesn't trigger re-evaluation, so the menu never renders. The second Tab press was ignored because `isMenuOpen` was already true, causing default Tab behavior (inserting a tab character).
+
+```typescript
+// WRONG - No menu rendering
+if (allCompletions.length > 0) {
+  setIsMenuOpen(true); // Plugin never re-evaluates triggerFn
+}
+
+// CORRECT - Force editor update to trigger re-evaluation
+if (allCompletions.length > 0) {
+  setIsMenuOpen(true);
+
+  // Force editor update to trigger typeahead plugin re-evaluation
+  editor.update(() => {
+    const selection = $getSelection();
+    if ($isRangeSelection(selection)) {
+      // Trigger a no-op selection change to force typeahead re-evaluation
+      selection.dirty = true;
+    }
+  });
+}
+```
+
+**Provider Instance Cleanup Issue** (`LexicalEditor.tsx`):
+
+The LSP completion provider was created with `useMemo` but never disposed when dependencies changed (lexicalId, documentUri, vscode). This caused multiple provider instances to accumulate, each with its own message event listener, resulting in the same completion response being received by 3 different instances.
+
+```typescript
+// WRONG - No cleanup, instances accumulate
+const lexicalLSPProvider = React.useMemo(() => {
+  return new LexicalLSPCompletionProvider(lexicalId || documentUri || "", vscode);
+}, [lexicalId, documentUri, vscode]);
+
+// CORRECT - Dispose on cleanup
+const lexicalLSPProvider = React.useMemo(() => {
+  return new LexicalLSPCompletionProvider(lexicalId || documentUri || "", vscode);
+}, [lexicalId, documentUri, vscode]);
+
+React.useEffect(() => {
+  return () => {
+    lexicalLSPProvider.dispose(); // Clean up old instances
+  };
+}, [lexicalLSPProvider]);
+```
+
+**Symptoms Before Fixes**:
+- First Tab press: Completions fetched (98 items) but no dropdown appeared
+- Second Tab press: Ignored ("menu already open"), default Tab inserted tab character
+- Console: "No resolver found for requestId" appeared twice before resolving (3 provider instances)
+- Memory leak from uncleaned event listeners accumulating on provider re-creation
 
 ## Project Structure
 

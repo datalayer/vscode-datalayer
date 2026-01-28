@@ -28,6 +28,10 @@ import { selectDatalayerRuntime } from "../ui/dialogs/runtimeSelector";
 import { BaseDocumentProvider } from "./baseDocumentProvider";
 import { AutoConnectService } from "../services/autoConnect/autoConnectService";
 import type { RuntimeDTO } from "@datalayer/core/lib/models/RuntimeDTO";
+import {
+  selectBestLanguageModel,
+  isLanguageModelAPIAvailable,
+} from "../config/llmModels";
 
 /**
  * Custom editor provider for Jupyter notebooks with dual-mode support.
@@ -190,6 +194,12 @@ export class NotebookProvider extends BaseDocumentProvider<NotebookDocument> {
   private readonly autoConnectService = new AutoConnectService();
 
   /**
+   * Maps document URIs to NotebookDocument instances.
+   * Used to retrieve documents for makeEdit calls from webview content changes.
+   */
+  private readonly documents = new Map<string, NotebookDocument>();
+
+  /**
    * Creates a new NotebookProvider.
    *
    * @param context - Extension context for resource access
@@ -321,6 +331,9 @@ export class NotebookProvider extends BaseDocumentProvider<NotebookDocument> {
       },
     );
 
+    // Store document in map for access from message handlers
+    this.documents.set(uri.toString(), document);
+
     const listeners: vscode.Disposable[] = [];
 
     listeners.push(
@@ -352,7 +365,11 @@ export class NotebookProvider extends BaseDocumentProvider<NotebookDocument> {
       ),
     );
 
-    document.onDidDispose(() => disposeAll(listeners));
+    document.onDidDispose(() => {
+      disposeAll(listeners);
+      // Remove document from map on disposal
+      this.documents.delete(uri.toString());
+    });
 
     return document;
   }
@@ -394,9 +411,9 @@ export class NotebookProvider extends BaseDocumentProvider<NotebookDocument> {
     };
     webviewPanel.webview.html = this.getHtmlForWebview(webviewPanel.webview);
 
-    webviewPanel.webview.onDidReceiveMessage((e) =>
-      this.onMessage(webviewPanel, document, e),
-    );
+    webviewPanel.webview.onDidReceiveMessage((e) => {
+      this.onMessage(webviewPanel, document, e);
+    });
 
     // Listen for theme changes
     const themeChangeDisposable = vscode.window.onDidChangeActiveColorTheme(
@@ -429,13 +446,6 @@ export class NotebookProvider extends BaseDocumentProvider<NotebookDocument> {
           }
         }
       } else if (e.type === "llm-completion-request") {
-        console.log("[NotebookProvider] LLM completion request received", {
-          requestId: e.requestId,
-          prefixLength: e.prefix?.length,
-          suffixLength: e.suffix?.length,
-          language: e.language,
-        });
-
         // Handle LLM completion request from webview
         const completion = await this.getLLMCompletion(
           e.prefix,
@@ -443,16 +453,26 @@ export class NotebookProvider extends BaseDocumentProvider<NotebookDocument> {
           e.language,
         );
 
-        console.log("[NotebookProvider] Sending LLM completion response", {
-          requestId: e.requestId,
-          completionLength: completion?.length,
-        });
-
         webviewPanel.webview.postMessage({
           type: "llm-completion-response",
           requestId: e.requestId,
           completion,
         });
+      } else if (
+        e.type === "lsp-completion-request" ||
+        e.type === "lsp-hover-request" ||
+        e.type === "lsp-document-sync" ||
+        e.type === "lsp-document-open" ||
+        e.type === "lsp-document-close"
+      ) {
+        // Handle LSP messages (completions, hover, document sync)
+        // Forward to LSP bridge
+        const { getLSPBridge } = await import("../extension");
+        const lspBridge = getLSPBridge();
+
+        if (lspBridge) {
+          await lspBridge.handleMessage(e, webviewPanel.webview);
+        }
       } else if (e.type === "ready") {
         // Detect VS Code theme
         const theme =
@@ -485,6 +505,10 @@ export class NotebookProvider extends BaseDocumentProvider<NotebookDocument> {
             notebookId,
             documentUri: document.uri.toString(), // For logging
           });
+
+          // 🚀 PROACTIVE LSP: Create virtual documents for untitled notebooks too
+          // Fire-and-forget: Don't block notebook opening
+          this.createProactiveLSPDocuments(notebookId, value);
         } else {
           const editable = vscode.workspace.fs.isWritableFileSystem(
             document.uri.scheme,
@@ -572,11 +596,117 @@ export class NotebookProvider extends BaseDocumentProvider<NotebookDocument> {
             documentUri: document.uri.toString(), // For logging
           });
 
+          // 🚀 PROACTIVE LSP: Create virtual documents IMMEDIATELY for fast completions
+          // Fire-and-forget: Don't block notebook opening waiting for documents
+          // Pylance will analyze in the background while webview loads
+          this.createProactiveLSPDocuments(notebookId, document.documentData);
+
           // Try auto-connect after init
           await this.tryAutoConnect(document.uri);
         }
       }
     });
+  }
+
+  /**
+   * Proactively create LSP virtual documents for all Python and Markdown cells.
+   * This allows Pylance to start analyzing BEFORE the webview finishes loading,
+   * providing instant completions when the user presses Tab.
+   *
+   * Native VS Code notebooks create TextDocuments immediately when opening,
+   * giving Pylance time to analyze. Datalayer notebooks now do the same!
+   *
+   * @param notebookId - Unique notebook identifier
+   * @param documentData - Raw .ipynb file bytes
+   */
+  private async createProactiveLSPDocuments(
+    notebookId: string,
+    documentData: Uint8Array,
+  ): Promise<void> {
+    try {
+      // Parse .ipynb JSON
+      const notebookJson = JSON.parse(new TextDecoder().decode(documentData));
+      const cells = notebookJson.cells || [];
+
+      // Get LSP bridge
+      const { getLSPBridge } = await import("../extension");
+      const lspBridge = getLSPBridge();
+
+      if (!lspBridge) {
+        console.warn(
+          "[PROACTIVE-LSP] LSP bridge not available, skipping proactive document creation",
+        );
+        return;
+      }
+
+      // 🚀 PARALLEL OPTIMIZATION: Create all documents in parallel instead of sequentially!
+      // Sequential: 10 cells × 50ms = 500ms
+      // Parallel: 10 cells at once = 50ms
+      const documentCreationPromises: Promise<void>[] = [];
+
+      for (let i = 0; i < cells.length; i++) {
+        const cell = cells[i];
+        const cellType = cell.cell_type;
+
+        // Determine language for LSP
+        let language: "python" | "markdown" | null = null;
+
+        if (cellType === "code") {
+          // Code cells - check language from metadata or assume Python
+          const cellLanguage =
+            cell.metadata?.language_info?.name ||
+            cell.metadata?.kernelspec?.language ||
+            "python";
+
+          if (
+            cellLanguage === "python" ||
+            cellLanguage === "py" ||
+            cellLanguage === "ipython"
+          ) {
+            language = "python";
+          }
+        } else if (cellType === "markdown") {
+          language = "markdown";
+        }
+
+        // Only create documents for Python and Markdown cells
+        if (language) {
+          // Cell ID: use cell.id if available, otherwise generate from index
+          // IMPORTANT: Must match ID generation in NotebookEditor.tsx (line 244)
+          const cellId = cell.id || `cell-${i}`;
+
+          // Get cell source (can be string or array of strings)
+          const source = Array.isArray(cell.source)
+            ? cell.source.join("")
+            : cell.source || "";
+
+          // Queue the document creation (don't await yet!)
+          const promise = lspBridge.handleMessage(
+            {
+              type: "lsp-document-open",
+              cellId,
+              notebookId,
+              content: source,
+              language,
+              source: "notebook",
+            },
+            // No webview needed for document creation
+            null,
+          );
+
+          documentCreationPromises.push(promise);
+        }
+      }
+
+      // Wait for ALL documents to be created in parallel
+      await Promise.all(documentCreationPromises);
+    } catch (error) {
+      console.error(
+        "[PROACTIVE-LSP] Error creating proactive LSP documents:",
+        error,
+      );
+      // Don't throw - this is a performance optimization, not critical
+    }
   }
 
   /**
@@ -594,25 +724,18 @@ export class NotebookProvider extends BaseDocumentProvider<NotebookDocument> {
   ): Promise<string | null> {
     try {
       // Check if Language Model API is available (VS Code 1.90+)
-      if (!vscode.lm) {
+      if (!isLanguageModelAPIAvailable()) {
         console.warn("[NotebookProvider] Language Model API not available");
         return null;
       }
 
-      // Select available chat models (prefer Copilot)
-      let models = await vscode.lm.selectChatModels({ vendor: "copilot" });
+      // Use centralized model selection
+      const model = await selectBestLanguageModel("NotebookProvider");
 
-      // Fallback to any available model
-      if (models.length === 0) {
-        models = await vscode.lm.selectChatModels();
-      }
-
-      if (models.length === 0) {
+      if (!model) {
         console.warn("[NotebookProvider] No language models available");
         return null;
       }
-
-      const model = models[0];
 
       // Build prompt
       const prompt = `Complete the following ${language} code. Only return the completion, no explanations or markdown.
@@ -749,9 +872,9 @@ Complete the code at <CURSOR>:`;
       "notebook-content-changed",
       async (message, context) => {
         // Only track changes for local notebooks, not Datalayer space notebooks
-        const isDatalayerNotebook = !context.isFromDatalayer;
+        const isLocalNotebook = !context.isFromDatalayer;
 
-        if (isDatalayerNotebook) {
+        if (isLocalNotebook) {
           const messageBody = message.body as {
             content?: Uint8Array | number[];
           };
@@ -766,19 +889,13 @@ Complete the code at <CURSOR>:`;
             return;
           }
 
-          // We need the document instance - get it from webviews
-          const documentUri = vscode.Uri.parse(context.documentUri);
-          const webviewPanel = Array.from(this.webviews.get(documentUri))[0];
-          if (webviewPanel) {
-            const doc = (
-              webviewPanel as unknown as { document: NotebookDocument }
-            ).document;
-            if (doc) {
-              doc.makeEdit({
-                type: "content-update",
-                content: content,
-              });
-            }
+          // Get the document instance from our documents map
+          const doc = this.documents.get(context.documentUri);
+          if (doc) {
+            doc.makeEdit({
+              type: "content-update",
+              content: content,
+            });
           }
         }
       },

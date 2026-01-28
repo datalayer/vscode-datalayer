@@ -10,6 +10,7 @@ node_modules/
 
 # IDE
 .vscode-test/
+.vscode/datalayer-cells/
 *.suo
 *.ntvs*
 *.njsproj

@@ -219,8 +219,8 @@
             "indent": 0,
             "type": "autolink",
             "version": 1,
-            "rel": null,
-            "target": null,
+            "rel": "noopener noreferrer",
+            "target": "_blank",
             "title": null,
             "url": "https://datalayer.io",
             "isUnlinked": false
@@ -743,18 +743,8 @@
             "format": 0,
             "mode": "normal",
             "style": "",
-            "text": "def",
-            "type": "jupyter-input-highlight",
-            "version": 1,
-            "highlightType": "keyword"
-          },
-          {
-            "detail": 0,
-            "format": 0,
-            "mode": "normal",
-            "style": "",
-            "text": " ",
-            "type": "jupyter-input-highlight",
+            "text": "def ",
+            "type": "code-highlight",
             "version": 1
           },
           {
@@ -763,7 +753,7 @@
             "mode": "normal",
             "style": "",
             "text": "greet",
-            "type": "jupyter-input-highlight",
+            "type": "code-highlight",
             "version": 1,
             "highlightType": "function"
           },
@@ -773,7 +763,7 @@
             "mode": "normal",
             "style": "",
             "text": "(",
-            "type": "jupyter-input-highlight",
+            "type": "code-highlight",
             "version": 1,
             "highlightType": "punctuation"
           },
@@ -783,7 +773,7 @@
             "mode": "normal",
             "style": "",
             "text": "name",
-            "type": "jupyter-input-highlight",
+            "type": "code-highlight",
             "version": 1
           },
           {
@@ -792,7 +782,7 @@
             "mode": "normal",
             "style": "",
             "text": ")",
-            "type": "jupyter-input-highlight",
+            "type": "code-highlight",
             "version": 1,
             "highlightType": "punctuation"
           },
@@ -802,9 +792,9 @@
             "mode": "normal",
             "style": "",
             "text": ":",
-            "type": "jupyter-input-highlight",
+            "type": "code-highlight",
             "version": 1,
-            "highlightType": "punctuation"
+            "highlightType": "operator"
           },
           {
             "type": "linebreak",
@@ -816,7 +806,7 @@
             "mode": "normal",
             "style": "",
             "text": "    ",
-            "type": "jupyter-input-highlight",
+            "type": "code-highlight",
             "version": 1
           },
           {
@@ -825,7 +815,7 @@
             "mode": "normal",
             "style": "",
             "text": "return",
-            "type": "jupyter-input-highlight",
+            "type": "code-highlight",
             "version": 1,
             "highlightType": "keyword"
           },
@@ -834,8 +824,8 @@
             "format": 0,
             "mode": "normal",
             "style": "",
-            "text": " ",
-            "type": "jupyter-input-highlight",
+            "text": " f",
+            "type": "code-highlight",
             "version": 1
           },
           {
@@ -843,47 +833,8 @@
             "format": 0,
             "mode": "normal",
             "style": "",
-            "text": "f\"Hello, ",
-            "type": "jupyter-input-highlight",
-            "version": 1,
-            "highlightType": "string"
-          },
-          {
-            "detail": 0,
-            "format": 0,
-            "mode": "normal",
-            "style": "",
-            "text": "{",
-            "type": "jupyter-input-highlight",
-            "version": 1,
-            "highlightType": "punctuation"
-          },
-          {
-            "detail": 0,
-            "format": 0,
-            "mode": "normal",
-            "style": "",
-            "text": "name",
-            "type": "jupyter-input-highlight",
-            "version": 1
-          },
-          {
-            "detail": 0,
-            "format": 0,
-            "mode": "normal",
-            "style": "",
-            "text": "}",
-            "type": "jupyter-input-highlight",
-            "version": 1,
-            "highlightType": "punctuation"
-          },
-          {
-            "detail": 0,
-            "format": 0,
-            "mode": "normal",
-            "style": "",
-            "text": "!\"",
-            "type": "jupyter-input-highlight",
+            "text": "\"Hello, {name}!\"",
+            "type": "code-highlight",
             "version": 1,
             "highlightType": "string"
           },
@@ -901,9 +852,9 @@
             "mode": "normal",
             "style": "",
             "text": "print",
-            "type": "jupyter-input-highlight",
+            "type": "code-highlight",
             "version": 1,
-            "highlightType": "keyword"
+            "highlightType": "function"
           },
           {
             "detail": 0,
@@ -911,7 +862,7 @@
             "mode": "normal",
             "style": "",
             "text": "(",
-            "type": "jupyter-input-highlight",
+            "type": "code-highlight",
             "version": 1,
             "highlightType": "punctuation"
           },
@@ -921,8 +872,9 @@
             "mode": "normal",
             "style": "",
             "text": "greet",
-            "type": "jupyter-input-highlight",
-            "version": 1
+            "type": "code-highlight",
+            "version": 1,
+            "highlightType": "function"
           },
           {
             "detail": 0,
@@ -930,7 +882,7 @@
             "mode": "normal",
             "style": "",
             "text": "(",
-            "type": "jupyter-input-highlight",
+            "type": "code-highlight",
             "version": 1,
             "highlightType": "punctuation"
           },
@@ -940,7 +892,7 @@
             "mode": "normal",
             "style": "",
             "text": "\"World\"",
-            "type": "jupyter-input-highlight",
+            "type": "code-highlight",
             "version": 1,
             "highlightType": "string"
           },
@@ -950,7 +902,7 @@
             "mode": "normal",
             "style": "",
             "text": ")",
-            "type": "jupyter-input-highlight",
+            "type": "code-highlight",
             "version": 1,
             "highlightType": "punctuation"
           },
@@ -960,7 +912,7 @@
             "mode": "normal",
             "style": "",
             "text": ")",
-            "type": "jupyter-input-highlight",
+            "type": "code-highlight",
             "version": 1,
             "highlightType": "punctuation"
           }
@@ -968,10 +920,9 @@
         "direction": null,
         "format": "",
         "indent": 0,
-        "type": "jupyter-input",
+        "type": "code",
         "version": 1,
-        "language": "python",
-        "jupyterInputNodeUuid": "54c531d6-4b1c-44e0-828d-0935a89c57b4"
+        "language": "javascript"
       },
       {
         "children": [
@@ -1000,8 +951,264 @@
             "format": 0,
             "mode": "normal",
             "style": "",
-            "text": "const greet = (name) => {",
-            "type": "text",
+            "text": "const",
+            "type": "code-highlight",
+            "version": 1,
+            "highlightType": "keyword"
+          },
+          {
+            "detail": 0,
+            "format": 0,
+            "mode": "normal",
+            "style": "",
+            "text": " ",
+            "type": "code-highlight",
+            "version": 1
+          },
+          {
+            "detail": 0,
+            "format": 0,
+            "mode": "normal",
+            "style": "",
+            "text": "greet",
+            "type": "code-highlight",
+            "version": 1,
+            "highlightType": "function-variable"
+          },
+          {
+            "detail": 0,
+            "format": 0,
+            "mode": "normal",
+            "style": "",
+            "text": " ",
+            "type": "code-highlight",
+            "version": 1
+          },
+          {
+            "detail": 0,
+            "format": 0,
+            "mode": "normal",
+            "style": "",
+            "text": "=",
+            "type": "code-highlight",
+            "version": 1,
+            "highlightType": "operator"
+          },
+          {
+            "detail": 0,
+            "format": 0,
+            "mode": "normal",
+            "style": "",
+            "text": " ",
+            "type": "code-highlight",
+            "version": 1
+          },
+          {
+            "detail": 0,
+            "format": 0,
+            "mode": "normal",
+            "style": "",
+            "text": "(",
+            "type": "code-highlight",
+            "version": 1,
+            "highlightType": "punctuation"
+          },
+          {
+            "detail": 0,
+            "format": 0,
+            "mode": "normal",
+            "style": "",
+            "text": "name",
+            "type": "code-highlight",
+            "version": 1,
+            "highlightType": "parameter"
+          },
+          {
+            "detail": 0,
+            "format": 0,
+            "mode": "normal",
+            "style": "",
+            "text": ")",
+            "type": "code-highlight",
+            "version": 1,
+            "highlightType": "punctuation"
+          },
+          {
+            "detail": 0,
+            "format": 0,
+            "mode": "normal",
+            "style": "",
+            "text": " ",
+            "type": "code-highlight",
+            "version": 1
+          },
+          {
+            "detail": 0,
+            "format": 0,
+            "mode": "normal",
+            "style": "",
+            "text": "=>",
+            "type": "code-highlight",
+            "version": 1,
+            "highlightType": "operator"
+          },
+          {
+            "detail": 0,
+            "format": 0,
+            "mode": "normal",
+            "style": "",
+            "text": " ",
+            "type": "code-highlight",
+            "version": 1
+          },
+          {
+            "detail": 0,
+            "format": 0,
+            "mode": "normal",
+            "style": "",
+            "text": "{",
+            "type": "code-highlight",
+            "version": 1,
+            "highlightType": "punctuation"
+          },
+          {
+            "type": "linebreak",
+            "version": 1
+          },
+          {
+            "detail": 0,
+            "format": 0,
+            "mode": "normal",
+            "style": "",
+            "text": "  ",
+            "type": "code-highlight",
+            "version": 1
+          },
+          {
+            "detail": 0,
+            "format": 0,
+            "mode": "normal",
+            "style": "",
+            "text": "return",
+            "type": "code-highlight",
+            "version": 1,
+            "highlightType": "keyword"
+          },
+          {
+            "detail": 0,
+            "format": 0,
+            "mode": "normal",
+            "style": "",
+            "text": " ",
+            "type": "code-highlight",
+            "version": 1
+          },
+          {
+            "detail": 0,
+            "format": 0,
+            "mode": "normal",
+            "style": "",
+            "text": "`",
+            "type": "code-highlight",
+            "version": 1,
+            "highlightType": "template-punctuation"
+          },
+          {
+            "detail": 0,
+            "format": 0,
+            "mode": "normal",
+            "style": "",
+            "text": "Hello, ",
+            "type": "code-highlight",
+            "version": 1,
+            "highlightType": "string"
+          },
+          {
+            "detail": 0,
+            "format": 0,
+            "mode": "normal",
+            "style": "",
+            "text": "${",
+            "type": "code-highlight",
+            "version": 1,
+            "highlightType": "interpolation-punctuation"
+          },
+          {
+            "detail": 0,
+            "format": 0,
+            "mode": "normal",
+            "style": "",
+            "text": "name",
+            "type": "code-highlight",
+            "version": 1,
+            "highlightType": "interpolation"
+          },
+          {
+            "detail": 0,
+            "format": 0,
+            "mode": "normal",
+            "style": "",
+            "text": "}",
+            "type": "code-highlight",
+            "version": 1,
+            "highlightType": "interpolation-punctuation"
+          },
+          {
+            "detail": 0,
+            "format": 0,
+            "mode": "normal",
+            "style": "",
+            "text": "!",
+            "type": "code-highlight",
+            "version": 1,
+            "highlightType": "string"
+          },
+          {
+            "detail": 0,
+            "format": 0,
+            "mode": "normal",
+            "style": "",
+            "text": "`",
+            "type": "code-highlight",
+            "version": 1,
+            "highlightType": "template-punctuation"
+          },
+          {
+            "detail": 0,
+            "format": 0,
+            "mode": "normal",
+            "style": "",
+            "text": ";",
+            "type": "code-highlight",
+            "version": 1,
+            "highlightType": "punctuation"
+          },
+          {
+            "type": "linebreak",
+            "version": 1
+          },
+          {
+            "detail": 0,
+            "format": 0,
+            "mode": "normal",
+            "style": "",
+            "text": "}",
+            "type": "code-highlight",
+            "version": 1,
+            "highlightType": "punctuation"
+          },
+          {
+            "detail": 0,
+            "format": 0,
+            "mode": "normal",
+            "style": "",
+            "text": ";",
+            "type": "code-highlight",
+            "version": 1,
+            "highlightType": "punctuation"
+          },
+          {
+            "type": "linebreak",
             "version": 1
           },
           {
@@ -1013,12 +1220,8 @@
             "format": 0,
             "mode": "normal",
             "style": "",
-            "text": "  return `Hello, ${name}!`;",
-            "type": "text",
-            "version": 1
-          },
-          {
-            "type": "linebreak",
+            "text": "console",
+            "type": "code-highlight",
             "version": 1
           },
           {
@@ -1026,35 +1229,98 @@
             "format": 0,
             "mode": "normal",
             "style": "",
-            "text": "};",
-            "type": "text",
-            "version": 1
-          },
-          {
-            "type": "linebreak",
-            "version": 1
-          },
-          {
-            "type": "linebreak",
-            "version": 1
+            "text": ".",
+            "type": "code-highlight",
+            "version": 1,
+            "highlightType": "punctuation"
           },
           {
             "detail": 0,
             "format": 0,
             "mode": "normal",
             "style": "",
-            "text": "console.log(greet(\"World\"));",
-            "type": "text",
-            "version": 1
+            "text": "log",
+            "type": "code-highlight",
+            "version": 1,
+            "highlightType": "function"
+          },
+          {
+            "detail": 0,
+            "format": 0,
+            "mode": "normal",
+            "style": "",
+            "text": "(",
+            "type": "code-highlight",
+            "version": 1,
+            "highlightType": "punctuation"
+          },
+          {
+            "detail": 0,
+            "format": 0,
+            "mode": "normal",
+            "style": "",
+            "text": "greet",
+            "type": "code-highlight",
+            "version": 1,
+            "highlightType": "function"
+          },
+          {
+            "detail": 0,
+            "format": 0,
+            "mode": "normal",
+            "style": "",
+            "text": "(",
+            "type": "code-highlight",
+            "version": 1,
+            "highlightType": "punctuation"
+          },
+          {
+            "detail": 0,
+            "format": 0,
+            "mode": "normal",
+            "style": "",
+            "text": "\"World\"",
+            "type": "code-highlight",
+            "version": 1,
+            "highlightType": "string"
+          },
+          {
+            "detail": 0,
+            "format": 0,
+            "mode": "normal",
+            "style": "",
+            "text": ")",
+            "type": "code-highlight",
+            "version": 1,
+            "highlightType": "punctuation"
+          },
+          {
+            "detail": 0,
+            "format": 0,
+            "mode": "normal",
+            "style": "",
+            "text": ")",
+            "type": "code-highlight",
+            "version": 1,
+            "highlightType": "punctuation"
+          },
+          {
+            "detail": 0,
+            "format": 0,
+            "mode": "normal",
+            "style": "",
+            "text": ";",
+            "type": "code-highlight",
+            "version": 1,
+            "highlightType": "punctuation"
           }
         ],
         "direction": null,
         "format": "",
         "indent": 0,
-        "type": "jupyter-input",
+        "type": "code",
         "version": 1,
-        "language": "python",
-        "jupyterInputNodeUuid": "241420b5-fb01-46e0-af43-f9e37165a927"
+        "language": "javascript"
       },
       {
         "type": "horizontalrule",
@@ -1854,6 +2120,56 @@
                     "format": 0,
                     "mode": "normal",
                     "style": "",
+                    "text": "import",
+                    "type": "jupyter-input-highlight",
+                    "version": 1,
+                    "highlightType": "keyword"
+                  },
+                  {
+                    "detail": 0,
+                    "format": 0,
+                    "mode": "normal",
+                    "style": "",
+                    "text": " time",
+                    "type": "jupyter-input-highlight",
+                    "version": 1
+                  },
+                  {
+                    "type": "linebreak",
+                    "version": 1
+                  },
+                  {
+                    "detail": 0,
+                    "format": 0,
+                    "mode": "normal",
+                    "style": "",
+                    "text": "import",
+                    "type": "jupyter-input-highlight",
+                    "version": 1,
+                    "highlightType": "keyword"
+                  },
+                  {
+                    "detail": 0,
+                    "format": 0,
+                    "mode": "normal",
+                    "style": "",
+                    "text": " os",
+                    "type": "jupyter-input-highlight",
+                    "version": 1
+                  },
+                  {
+                    "type": "linebreak",
+                    "version": 1
+                  },
+                  {
+                    "type": "linebreak",
+                    "version": 1
+                  },
+                  {
+                    "detail": 0,
+                    "format": 0,
+                    "mode": "normal",
+                    "style": "",
                     "text": "print",
                     "type": "jupyter-input-highlight",
                     "version": 1,
@@ -1874,7 +2190,51 @@
                     "format": 0,
                     "mode": "normal",
                     "style": "",
-                    "text": "'Hidden content!'",
+                    "text": "'Hello'",
+                    "type": "jupyter-input-highlight",
+                    "version": 1,
+                    "highlightType": "string"
+                  },
+                  {
+                    "detail": 0,
+                    "format": 0,
+                    "mode": "normal",
+                    "style": "",
+                    "text": ")",
+                    "type": "jupyter-input-highlight",
+                    "version": 1,
+                    "highlightType": "punctuation"
+                  },
+                  {
+                    "type": "linebreak",
+                    "version": 1
+                  },
+                  {
+                    "detail": 0,
+                    "format": 0,
+                    "mode": "normal",
+                    "style": "",
+                    "text": "print",
+                    "type": "jupyter-input-highlight",
+                    "version": 1,
+                    "highlightType": "keyword"
+                  },
+                  {
+                    "detail": 0,
+                    "format": 0,
+                    "mode": "normal",
+                    "style": "",
+                    "text": "(",
+                    "type": "jupyter-input-highlight",
+                    "version": 1,
+                    "highlightType": "punctuation"
+                  },
+                  {
+                    "detail": 0,
+                    "format": 0,
+                    "mode": "normal",
+                    "style": "",
+                    "text": "'World!'",
                     "type": "jupyter-input-highlight",
                     "version": 1,
                     "highlightType": "string"
@@ -1900,12 +2260,12 @@
               },
               {
                 "type": "jupyter-output",
-                "source": "print('Hidden content!')",
+                "source": "import time\n\nprint('Hello')\ntime.sleep(2)\nprint('World!')",
                 "outputs": [
                   {
-                    "output_type": "stream",
-                    "name": "stderr",
-                    "text": "⚠️  No runtime connected. Please connect to a runtime to execute code.\n"
+                    "name": "stdout",
+                    "text": "Hello\nWorld!\n",
+                    "output_type": "stream"
                   }
                 ],
                 "jupyterInputNodeUuid": "20738959-cc85-45b0-8ac9-142858337683",
@@ -2335,7 +2695,7 @@
             "format": 0,
             "mode": "normal",
             "style": "",
-            "text": "'Simple Plot'",
+            "text": "'Simple Plot 2'",
             "type": "jupyter-input-highlight",
             "version": 1,
             "highlightType": "string"
@@ -2361,12 +2721,15 @@
       },
       {
         "type": "jupyter-output",
-        "source": "import matplotlib.pyplot as plt\nplt.plot([1, 2, 3, 4, 5])\nplt.title('Simple Plot')",
+        "source": "const greet = (name) => {\n  return `Hello, ${name}!`;\n};\n\nconsole.log(greet(\"World\"));",
         "outputs": [
           {
-            "output_type": "stream",
-            "name": "stderr",
-            "text": "⚠️  No runtime connected. Please connect to a runtime to execute code.\n"
+            "ename": "SyntaxError",
+            "evalue": "invalid syntax (<ipython-input-6-4b80d67bd850>, line 1)",
+            "traceback": [
+              "\u001b[0;36m  Cell \u001b[0;32mIn[6], line 1\u001b[0;36m\u001b[0m\n\u001b[0;31m    const greet = (name) => {\u001b[0m\n\u001b[0m          ^\u001b[0m\n\u001b[0;31mSyntaxError\u001b[0m\u001b[0;31m:\u001b[0m invalid syntax\n"
+            ],
+            "output_type": "error"
           }
         ],
         "jupyterInputNodeUuid": "0cbe03d5-9488-4906-bd9c-2bee1a6589a9",

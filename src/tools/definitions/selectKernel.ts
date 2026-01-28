@@ -21,7 +21,9 @@ export const selectKernelTool: ToolDefinition = {
   description:
     "Selects and connects a kernel to the active document (notebook or lexical), enabling code execution. " +
     "Always connects to the currently active document. " +
+    "IMPORTANT: Call listKernels first to see all available kernels if unsure which kernel to use. " +
     "EXAMPLES OF NATURAL LANGUAGE TO PARAMETER MAPPING: " +
+    "User says 'connect to pyodide' → use kernelId: 'pyodide'. " +
     "User says 'connect to new runtime' → use kernelId: 'new'. " +
     "User says 'connect to active runtime' → use kernelId: 'active'. " +
     "User says 'connect to local ipykernel' → use kernelId: 'local'. " +
@@ -47,5 +49,7 @@ export const selectKernelTool: ToolDefinition = {
     "attach",
     "ipykernel",
     "python",
+    "pyodide",
+    "browser",
   ],
 };

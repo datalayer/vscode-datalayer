@@ -17,17 +17,15 @@ VSCODE_ROOT="$( cd "$SCRIPT_DIR/.." && pwd )"
 
 cd "$VSCODE_ROOT"
 
-# On Netlify or other CI with caching issues, force reinstall packages that need patches
-# This ensures we have clean npm versions before applying patches
-if [ "$NETLIFY" = "true" ] || [ "$CI" = "true" ]; then
-  echo -e "${YELLOW}🔄 CI detected - force reinstalling packages that need patches...${NC}"
+# Always force reinstall packages that need patches to ensure clean state
+# This handles both CI and local dev where packages may have been overwritten by sync
+echo -e "${YELLOW}🔄 Force reinstalling packages that need patches...${NC}"
 
-  # Remove the specific packages that need patches
-  rm -rf node_modules/cmake-ts
+# Remove the specific packages that need patches
+rm -rf node_modules/cmake-ts node_modules/@datalayer/jupyter-lexical node_modules/@datalayer/jupyter-react
 
-  # Reinstall them fresh from npm (with --ignore-scripts to prevent infinite loop)
-  npm install cmake-ts --no-save --ignore-scripts
-fi
+# Reinstall them fresh from npm (with --ignore-scripts to prevent infinite loop)
+npm install cmake-ts @datalayer/jupyter-lexical @datalayer/jupyter-react --no-save --ignore-scripts
 
 echo -e "${BLUE}📝 Applying patches...${NC}"
 
