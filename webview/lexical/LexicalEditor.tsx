@@ -528,12 +528,26 @@ export function LexicalEditor({
     },
   };
 
+  // Track previous root content to detect actual content changes (not just cursor movements)
+  const previousRootRef = useRef<string | null>(null);
+
   const handleChange = useCallback(
     (editorState: EditorState) => {
       try {
-        const jsonString = JSON.stringify(editorState);
-        if (onContentChange) {
-          onContentChange(jsonString);
+        // Only serialize the root (content) to compare, not the entire EditorState
+        // EditorState includes selection (cursor position) which changes on every cursor movement
+        // We only want to mark dirty when actual content changes
+        const currentRoot = JSON.stringify(editorState.toJSON().root);
+
+        // Check if content actually changed (not just cursor movement)
+        if (currentRoot !== previousRootRef.current) {
+          previousRootRef.current = currentRoot;
+
+          // Serialize full EditorState for storage
+          const jsonString = JSON.stringify(editorState);
+          if (onContentChange) {
+            onContentChange(jsonString);
+          }
         }
       } catch (error) {
         // Ignore serialization errors (e.g., JupyterOutputNode without kernel)

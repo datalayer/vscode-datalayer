@@ -227,13 +227,6 @@ function NotebookEditorCore({
       }
 
       isSetup = true;
-      console.log(
-        "🔍🔍🔍 [LSP-DEBUG] Setting up LSP cell synchronization for notebook:",
-        notebookId,
-        "with",
-        notebookModel.cells.length,
-        "cells",
-      );
 
       // Send document-open for all existing Python and Markdown cells
       for (let i = 0; i < notebookModel.cells.length; i++) {
@@ -243,10 +236,6 @@ function NotebookEditorCore({
         if (language === "python" || language === "markdown") {
           const cellId = cell.id || `cell-${i}`;
           const content = cell.sharedModel?.getSource() || "";
-
-          console.log(
-            `🔍🔍🔍 [LSP-DEBUG] Opening LSP document for cell ${cellId} (${language})`,
-          );
 
           messageHandler.send({
             type: "lsp-document-open",
@@ -269,10 +258,6 @@ function NotebookEditorCore({
               const cellId = cell.id;
               const content = cell.sharedModel?.getSource() || "";
 
-              console.log(
-                `🔍🔍🔍 [LSP-DEBUG] Syncing LSP document for cell ${cellId}`,
-              );
-
               messageHandler.send({
                 type: "lsp-document-sync",
                 cellId: cellId,
@@ -292,10 +277,6 @@ function NotebookEditorCore({
               const cellId = cell.id || `cell-${args.newIndex + idx}`;
               const content = cell.sharedModel?.getSource() || "";
 
-              console.log(
-                `🔍🔍🔍 [LSP-DEBUG] Opening LSP document for new cell ${cellId} (${language})`,
-              );
-
               messageHandler.send({
                 type: "lsp-document-open",
                 cellId: cellId,
@@ -314,10 +295,6 @@ function NotebookEditorCore({
 
             if (language === "python" || language === "markdown") {
               const cellId = cell.id;
-
-              console.log(
-                `🔍🔍🔍 [LSP-DEBUG] Closing LSP document for removed cell ${cellId}`,
-              );
 
               messageHandler.send({
                 type: "lsp-document-close",
@@ -372,11 +349,6 @@ function NotebookEditorCore({
 
     // Cleanup
     return () => {
-      console.log(
-        "🔍🔍🔍 [LSP-DEBUG] Cleaning up LSP cell synchronization for notebook:",
-        notebookId,
-      );
-
       unsubscribe();
 
       if (notebookModel && onCellsChanged) {
@@ -1094,10 +1066,9 @@ function NotebookEditorCore({
     // Create DefaultExecutor for direct state manipulation
     const executor = new DefaultExecutor(notebookId, notebookStoreState);
 
-    // Create runner with notebook operations, notebookId, AND executor
+    // Create runner with notebook operations and executor
     const runner = createNotebookRunner(
       notebookToolOperations as Record<string, ToolOperation<unknown, unknown>>,
-      notebookId,
       executor,
     );
 

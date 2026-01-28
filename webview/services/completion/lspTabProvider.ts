@@ -54,10 +54,6 @@ export class LSPTabCompletionProvider {
     this.messageHandlerDisposable = MessageHandler.instance.on(
       this.handleMessage.bind(this),
     );
-
-    console.log(
-      "🔥🐛LSP-COMPLETION-DEBUG🐛🔥 [TabProvider] Registered with MessageHandler",
-    );
   }
 
   /**
@@ -73,10 +69,6 @@ export class LSPTabCompletionProvider {
     const language = this.detectCellLanguage(context);
     const isSupported = language === "python" || language === "markdown";
 
-    console.log(
-      `🔍🔍🔍 [LSP-DEBUG-TabProvider] isApplicable called: language=${language}, supported=${isSupported}`,
-    );
-
     return isSupported;
   }
 
@@ -85,47 +77,14 @@ export class LSPTabCompletionProvider {
    * Called by MessageHandler with the message data directly (not MessageEvent).
    */
   private handleMessage(message: any): void {
-    // Log ALL messages to see what's coming through
-    if (message.type?.startsWith("lsp-")) {
-      console.log(
-        "🔥🐛LSP-COMPLETION-DEBUG🐛🔥 [TabProvider] Received message from extension:",
-        {
-          type: message.type,
-          requestId: message.requestId,
-          completionsCount: message.completions?.length,
-          completionLabels: message.completions?.map((c: any) => c.label),
-        },
-      );
-    }
-
     if (message.type === "lsp-completion-response") {
-      console.log(
-        "🔥🐛LSP-COMPLETION-DEBUG🐛🔥 [TabProvider] Looking for resolver:",
-        message.requestId,
-      );
-      console.log(
-        "🔥🐛LSP-COMPLETION-DEBUG🐛🔥 [TabProvider] Pending requests:",
-        Array.from(this.pendingRequests.keys()),
-      );
-
       const resolver = this.pendingRequests.get(message.requestId);
       if (resolver) {
-        console.log(
-          "🔥🐛LSP-COMPLETION-DEBUG🐛🔥 [TabProvider] Resolving with completions:",
-          message.completions,
-        );
         resolver(message.completions || []);
         this.pendingRequests.delete(message.requestId);
-      } else {
-        console.warn(
-          "🔥🐛LSP-COMPLETION-DEBUG🐛🔥 [TabProvider] No resolver found for requestId:",
-          message.requestId,
-        );
       }
     } else if (message.type === "lsp-error") {
-      console.error(
-        `🔍🔍🔍 [LSP-DEBUG-TabProvider] Error from extension: ${message.error}`,
-      );
+      console.error(`[TabProvider] LSP error: ${message.error}`);
       const resolver = this.pendingRequests.get(message.requestId);
       if (resolver) {
         resolver([]); // Return empty on error
@@ -145,33 +104,18 @@ export class LSPTabCompletionProvider {
     request: CompletionHandler.IRequest,
     context: any,
   ): Promise<CompletionHandler.ICompletionItemsReply> {
-    console.log("🔥🐛LSP-COMPLETION-DEBUG🐛🔥 [TabProvider] fetch() called", {
-      offset: request.offset,
-      text: request.text,
-    });
-
     try {
       // Detect cell language
       const language = this.detectCellLanguage(context);
-      console.log(
-        "🔥🐛LSP-COMPLETION-DEBUG🐛🔥 [TabProvider] Detected language:",
-        language,
-      );
 
       // Only provide LSP completions for Python and Markdown cells
       if (language === "unknown") {
-        console.log(
-          "🔥🐛LSP-COMPLETION-DEBUG🐛🔥 [TabProvider] Skipping: unknown language",
-        );
         return { start: request.offset, end: request.offset, items: [] };
       }
 
       // Get cell ID from context
       const cellId = this.getCellId(context);
       if (!cellId) {
-        console.log(
-          "🔥🐛LSP-COMPLETION-DEBUG🐛🔥 [TabProvider] Skipping: no cell ID",
-        );
         return { start: request.offset, end: request.offset, items: [] };
       }
 
@@ -181,20 +125,11 @@ export class LSPTabCompletionProvider {
         request.offset || 0,
       );
 
-      console.log(
-        `🔥🐛LSP-COMPLETION-DEBUG🐛🔥 [TabProvider] Requesting completions for cell ${cellId} (${language}) at ${position.line}:${position.character}`,
-      );
-
       // Request completions from extension host
       const completions = await this.requestCompletions(
         cellId,
         language,
         position,
-      );
-
-      console.log(
-        `🔥🐛LSP-COMPLETION-DEBUG🐛🔥 [TabProvider] Received ${completions.length} completions:`,
-        completions.map((c: any) => c.label),
       );
 
       // Convert LSP completions to JupyterLab dropdown format
@@ -224,19 +159,6 @@ export class LSPTabCompletionProvider {
 
           start = wordStart;
           end = request.offset;
-
-          console.log(
-            "🔥🐛LSP-COMPLETION-DEBUG🐛🔥 [TabProvider] Calculated word range:",
-            {
-              text: text.substring(
-                Math.max(0, wordStart - 10),
-                request.offset + 10,
-              ),
-              wordStart,
-              offset: request.offset,
-              word: text.substring(wordStart, request.offset),
-            },
-          );
         }
 
         return {
@@ -269,24 +191,8 @@ export class LSPTabCompletionProvider {
         items: items,
       };
 
-      console.log(
-        "🔥🐛LSP-COMPLETION-DEBUG🐛🔥 [TabProvider] Returning completion reply:",
-        {
-          start: result.start,
-          end: result.end,
-          itemCount: result.items.length,
-          itemLabels: result.items.map((i: any) => i.label),
-          firstItemFull: items[0], // Log FULL first item for debugging
-        },
-      );
-
       // Auto-apply single completion results
       if (items.length === 1 && context.editor) {
-        console.log(
-          "🔥🐛LSP-COMPLETION-DEBUG🐛🔥 [TabProvider] Single completion - auto-applying:",
-          items[0].label,
-        );
-
         // Declare variables outside try block for catch block access
         const editor = context.editor;
         const model = editor.model;
@@ -304,23 +210,8 @@ export class LSPTabCompletionProvider {
 
           // Check if completion is already applied (prevents duplicate application from racing fetch() calls)
           if (currentText === expectedText) {
-            console.log(
-              "🔥🐛LSP-COMPLETION-DEBUG🐛🔥 [TabProvider] Completion already applied, skipping",
-            );
             return { start: request.offset, end: request.offset, items: [] };
           }
-
-          console.log(
-            "🔥🐛LSP-COMPLETION-DEBUG🐛🔥 [TabProvider] Applying completion:",
-            {
-              beforeCompletion,
-              insertText: items[0].insertText,
-              afterCompletion,
-              expectedText,
-              currentText,
-              oldCursorPos: cursorPos,
-            },
-          );
 
           // Update the model
           model.sharedModel.setSource(expectedText);
@@ -338,27 +229,13 @@ export class LSPTabCompletionProvider {
 
           const newPosition = { line: cursorPos.line, column: newColumn };
 
-          console.log(
-            "🔥🐛LSP-COMPLETION-DEBUG🐛🔥 [TabProvider] Setting cursor position:",
-            {
-              oldPosition: cursorPos,
-              minStart,
-              maxEnd,
-              lineStartOffset,
-              columnOffsetOfMinStart,
-              charsAdded,
-              newColumn,
-              newPosition,
-            },
-          );
-
           // Try to set cursor position, but don't fail if it errors
           // The text update is what matters most
           try {
             editor.setCursorPosition(newPosition);
           } catch (cursorError) {
             console.error(
-              "🔥🐛LSP-COMPLETION-DEBUG🐛🔥 [TabProvider] Cursor positioning failed (text was still updated):",
+              "[TabProvider] Cursor positioning failed (text was still updated):",
               cursorError,
             );
           }
@@ -367,10 +244,7 @@ export class LSPTabCompletionProvider {
           // The text was updated, so we must prevent dropdown from showing
           return { start: request.offset, end: request.offset, items: [] };
         } catch (error) {
-          console.error(
-            "🔥🐛LSP-COMPLETION-DEBUG🐛🔥 [TabProvider] Error auto-applying completion:",
-            error,
-          );
+          console.error("[TabProvider] Error auto-applying completion:", error);
           // Only fall through if the text update itself failed
           // Check if text was updated anyway (race condition)
           const currentText = model.sharedModel.getSource();
@@ -378,9 +252,6 @@ export class LSPTabCompletionProvider {
             beforeCompletion + items[0].insertText + afterCompletion;
           if (currentText === expectedText) {
             // Text was updated despite error, return empty to prevent dropdown
-            console.log(
-              "🔥🐛LSP-COMPLETION-DEBUG🐛🔥 [TabProvider] Text was updated despite error, preventing dropdown",
-            );
             return { start: request.offset, end: request.offset, items: [] };
           }
           // Fall through to return the result normally
@@ -389,10 +260,7 @@ export class LSPTabCompletionProvider {
 
       return result;
     } catch (error) {
-      console.error(
-        "🔥🐛LSP-COMPLETION-DEBUG🐛🔥 [TabProvider] Error fetching completions:",
-        error,
-      );
+      console.error("[TabProvider] Error fetching completions:", error);
       return { start: request.offset, end: request.offset, items: [] };
     }
   }
@@ -489,9 +357,6 @@ export class LSPTabCompletionProvider {
       ) {
         return "python";
       }
-      console.warn(
-        `🔍🔍🔍 [LSP-DEBUG-TabProvider] Code cell with unsupported mimeType: ${mimeType}`,
-      );
     }
 
     return "unknown";
@@ -578,10 +443,6 @@ export class LSPTabCompletionProvider {
     // Check if we already have an in-flight request for this exact position
     const cachedPromise = this.inflightCache.get(cacheKey);
     if (cachedPromise) {
-      console.log(
-        "🔥🐛LSP-COMPLETION-DEBUG🐛🔥 [TabProvider] Using cached request for",
-        cacheKey,
-      );
       return cachedPromise;
     }
 
@@ -596,18 +457,11 @@ export class LSPTabCompletionProvider {
       position,
     };
 
-    console.log(
-      "🔍🔍🔍 [LSP-DEBUG-TabProvider] Sending message to extension host:",
-      message,
-    );
     vsCodeAPI.postMessage(message);
 
     // Wait for response with timeout
     const promise = new Promise<any[]>((resolve) => {
       const timeout = setTimeout(() => {
-        console.warn(
-          `🔍🔍🔍 [LSP-DEBUG-TabProvider] Request ${requestId} timed out`,
-        );
         this.pendingRequests.delete(requestId);
         this.inflightCache.delete(cacheKey); // Clear cache on timeout
         resolve([]);
@@ -630,7 +484,6 @@ export class LSPTabCompletionProvider {
    * Dispose of the provider and clean up resources.
    */
   dispose(): void {
-    console.log("🔥🐛LSP-COMPLETION-DEBUG🐛🔥 [TabProvider] Disposing");
     // Clear all pending requests
     this.pendingRequests.clear();
     // Clear in-flight cache

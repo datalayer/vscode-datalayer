@@ -68,10 +68,9 @@ export function InternalCommandsPlugin({
     // Create DefaultExecutor for direct state manipulation
     const executor = new LexicalDefaultExecutor(lexicalId, lexicalStoreState);
 
-    // Create runner with lexical operations, lexicalId, AND executor
+    // Create runner with lexical operations and executor
     const runner = createLexicalRunner(
       lexicalToolOperations as Record<string, ToolOperation<unknown, unknown>>,
-      lexicalId,
       executor,
     );
 

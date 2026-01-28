@@ -579,10 +579,10 @@ export class VSCodeToolAdapter<
         }
       });
 
-      // Read format from VS Code configuration (default: "toon" for AI responses)
-      const format = vscode.workspace
-        .getConfiguration("datalayer.tools")
-        .get<string>("responseFormat", "toon") as "json" | "toon";
+      // ALWAYS request raw JSON data from webview executor
+      // Formatting happens at the final boundary (invoke() method) after all operations complete
+      // This ensures internal operation calls (like deleteBlock → readAllBlocks) get raw arrays
+      const format = "json";
 
       // Send execution request to webview
       webviewPanel.webview
@@ -591,7 +591,7 @@ export class VSCodeToolAdapter<
           requestId,
           operationName,
           args,
-          format, // Include format from VS Code configuration
+          format, // Always "json" for raw data - TOON formatting happens in invoke()
         })
         .then(
           () => {

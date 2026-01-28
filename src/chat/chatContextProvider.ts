@@ -16,7 +16,7 @@
 import * as vscode from "vscode";
 
 /**
- * Registers a chat context provider for Datalayer notebooks (.ipynb) and lexical documents (.lexical).
+ * Registers a chat context provider for Datalayer notebooks (.ipynb) and lexical documents (.lexical, .dlex).
  * This allows Copilot Chat to automatically access the content of these files
  * when they are open, without requiring manual file attachment.
  */
@@ -56,7 +56,7 @@ export function registerChatContextProvider(
     ),
   );
 
-  // Register provider for lexical files
+  // Register provider for lexical files (.lexical and .dlex)
   disposables.push(
     (
       vscode as unknown as {
@@ -67,7 +67,7 @@ export function registerChatContextProvider(
         };
       }
     ).chat.registerChatContextProvider(
-      [{ pattern: "**/*.lexical" }],
+      [{ pattern: "**/*.lexical" }, { pattern: "**/*.dlex" }],
       "datalayer-lexical",
       {
         provideChatContextForResource: async (
@@ -127,7 +127,7 @@ async function getNotebookContext(uri: vscode.Uri): Promise<
     return {
       icon: new vscode.ThemeIcon("notebook"),
       label: fileName,
-      modelDescription: `Jupyter Notebook: ${fileName}`,
+      modelDescription: `Jupyter Notebook (.ipynb): ${fileName}. Use insertCell tool to add cells to this notebook (NOT insertBlock - that's for .dlex files).`,
       value: value || "Empty notebook",
     };
   } catch (error) {
@@ -159,7 +159,7 @@ async function getLexicalContext(uri: vscode.Uri): Promise<
     return {
       icon: new vscode.ThemeIcon("file-text"),
       label: fileName,
-      modelDescription: `Lexical Document: ${fileName}`,
+      modelDescription: `Lexical Document (.dlex): ${fileName}. IMPORTANT: Lexical documents can contain EXECUTABLE jupyter-cell blocks that run code via kernel, just like .ipynb notebooks. Use insertBlock with type="jupyter-cell" to add executable code cells.`,
       value: textContent || "Empty document",
     };
   } catch (error) {

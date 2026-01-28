@@ -194,6 +194,12 @@ export class NotebookProvider extends BaseDocumentProvider<NotebookDocument> {
   private readonly autoConnectService = new AutoConnectService();
 
   /**
+   * Maps document URIs to NotebookDocument instances.
+   * Used to retrieve documents for makeEdit calls from webview content changes.
+   */
+  private readonly documents = new Map<string, NotebookDocument>();
+
+  /**
    * Creates a new NotebookProvider.
    *
    * @param context - Extension context for resource access
@@ -325,6 +331,9 @@ export class NotebookProvider extends BaseDocumentProvider<NotebookDocument> {
       },
     );
 
+    // Store document in map for access from message handlers
+    this.documents.set(uri.toString(), document);
+
     const listeners: vscode.Disposable[] = [];
 
     listeners.push(
@@ -356,7 +365,11 @@ export class NotebookProvider extends BaseDocumentProvider<NotebookDocument> {
       ),
     );
 
-    document.onDidDispose(() => disposeAll(listeners));
+    document.onDidDispose(() => {
+      disposeAll(listeners);
+      // Remove document from map on disposal
+      this.documents.delete(uri.toString());
+    });
 
     return document;
   }
@@ -399,9 +412,6 @@ export class NotebookProvider extends BaseDocumentProvider<NotebookDocument> {
     webviewPanel.webview.html = this.getHtmlForWebview(webviewPanel.webview);
 
     webviewPanel.webview.onDidReceiveMessage((e) => {
-      console.log(
-        `[NotebookProvider] First handler received message: ${e.type}`,
-      );
       this.onMessage(webviewPanel, document, e);
     });
 
@@ -425,9 +435,6 @@ export class NotebookProvider extends BaseDocumentProvider<NotebookDocument> {
 
     // Wait for the webview to be properly ready before we init
     webviewPanel.webview.onDidReceiveMessage(async (e) => {
-      console.log(
-        `[NotebookProvider] Second handler received message: ${e.type}`,
-      );
       if (e.type === "response") {
         // Handle response messages from webview (for sendToWebviewWithResponse)
         const { requestId, body } = e;
@@ -439,24 +446,12 @@ export class NotebookProvider extends BaseDocumentProvider<NotebookDocument> {
           }
         }
       } else if (e.type === "llm-completion-request") {
-        console.log("[NotebookProvider] LLM completion request received", {
-          requestId: e.requestId,
-          prefixLength: e.prefix?.length,
-          suffixLength: e.suffix?.length,
-          language: e.language,
-        });
-
         // Handle LLM completion request from webview
         const completion = await this.getLLMCompletion(
           e.prefix,
           e.suffix,
           e.language,
         );
-
-        console.log("[NotebookProvider] Sending LLM completion response", {
-          requestId: e.requestId,
-          completionLength: completion?.length,
-        });
 
         webviewPanel.webview.postMessage({
           type: "llm-completion-response",
@@ -476,13 +471,7 @@ export class NotebookProvider extends BaseDocumentProvider<NotebookDocument> {
         const lspBridge = getLSPBridge();
 
         if (lspBridge) {
-          console.log("[NotebookProvider] Forwarding to LSP bridge");
           await lspBridge.handleMessage(e, webviewPanel.webview);
-          console.log("[NotebookProvider] LSP bridge handleMessage completed");
-        } else {
-          console.warn(
-            "[NotebookProvider] LSP bridge not available, ignoring message",
-          );
         }
       } else if (e.type === "ready") {
         // Detect VS Code theme
@@ -639,10 +628,6 @@ export class NotebookProvider extends BaseDocumentProvider<NotebookDocument> {
       const notebookJson = JSON.parse(new TextDecoder().decode(documentData));
       const cells = notebookJson.cells || [];
 
-      console.log(
-        `🚀 [PROACTIVE-LSP] Creating virtual documents for ${cells.length} cells in notebook ${notebookId}`,
-      );
-
       // Get LSP bridge
       const { getLSPBridge } = await import("../extension");
       const lspBridge = getLSPBridge();
@@ -695,10 +680,6 @@ export class NotebookProvider extends BaseDocumentProvider<NotebookDocument> {
             ? cell.source.join("")
             : cell.source || "";
 
-          console.log(
-            `🚀 [PROACTIVE-LSP] Queuing document creation for cell ${i} (${language}): ${cellId}`,
-          );
-
           // Queue the document creation (don't await yet!)
           const promise = lspBridge.handleMessage(
             {
@@ -718,15 +699,7 @@ export class NotebookProvider extends BaseDocumentProvider<NotebookDocument> {
       }
 
       // Wait for ALL documents to be created in parallel
-      console.log(
-        `🚀 [PROACTIVE-LSP] Creating ${documentCreationPromises.length} virtual documents in parallel...`,
-      );
-
       await Promise.all(documentCreationPromises);
-
-      console.log(
-        `🚀 [PROACTIVE-LSP] ✅ Finished creating ${documentCreationPromises.length} virtual documents for notebook ${notebookId}`,
-      );
     } catch (error) {
       console.error(
         "[PROACTIVE-LSP] Error creating proactive LSP documents:",
@@ -899,9 +872,9 @@ Complete the code at <CURSOR>:`;
       "notebook-content-changed",
       async (message, context) => {
         // Only track changes for local notebooks, not Datalayer space notebooks
-        const isDatalayerNotebook = !context.isFromDatalayer;
+        const isLocalNotebook = !context.isFromDatalayer;
 
-        if (isDatalayerNotebook) {
+        if (isLocalNotebook) {
           const messageBody = message.body as {
             content?: Uint8Array | number[];
           };
@@ -916,19 +889,13 @@ Complete the code at <CURSOR>:`;
             return;
           }
 
-          // We need the document instance - get it from webviews
-          const documentUri = vscode.Uri.parse(context.documentUri);
-          const webviewPanel = Array.from(this.webviews.get(documentUri))[0];
-          if (webviewPanel) {
-            const doc = (
-              webviewPanel as unknown as { document: NotebookDocument }
-            ).document;
-            if (doc) {
-              doc.makeEdit({
-                type: "content-update",
-                content: content,
-              });
-            }
+          // Get the document instance from our documents map
+          const doc = this.documents.get(context.documentUri);
+          if (doc) {
+            doc.makeEdit({
+              type: "content-update",
+              content: content,
+            });
           }
         }
       },

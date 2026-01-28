@@ -22,6 +22,7 @@ export const selectKernelParamsSchema = z.object({
     .describe(
       "REQUIRED: Kernel identifier or alias. " +
         "Common aliases for natural language: " +
+        "'pyodide' (when user says 'pyodide', 'browser python', 'connect to pyodide'), " +
         "'new' (when user says 'new runtime', 'create runtime', 'connect to new'), " +
         "'active' (when user says 'active runtime', 'current runtime'), " +
         "'local' (when user says 'local kernel', 'ipykernel', 'local ipykernel'). " +

@@ -24,48 +24,44 @@ export class WebviewRunner {
   constructor(
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     private operations: Record<string, any>,
-    private documentId: string | null = null,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     private executor: any = null,
   ) {}
 
   /**
-   * Executes a tool operation by name.
-   * Follows the OperationRunner pattern: execute operation + apply formatting.
+   * Executes a state method via the executor.
    *
-   * @param operationName - Name of the operation to execute
-   * @param args - Arguments for the operation
+   * This method is called when receiving messages from BridgeExecutor (VS Code context).
+   * It does NOT call operations - operations only run in extension host where validation happens.
+   * It calls the executor which directly invokes state methods.
+   *
+   * @param operationName - Name of the state method to execute
+   * @param args - Arguments for the state method (already in state parameter format)
    * @param format - Response format ("json" or "toon"), defaults to "toon"
-   * @returns Promise resolving to the formatted operation result
-   * @throws Error if operation is not found
+   * @returns Promise resolving to the formatted result
+   * @throws Error if executor is not available
    */
   async execute(
     operationName: string,
     args: unknown,
     format: "json" | "toon" = "toon",
   ): Promise<unknown> {
-    const operation = this.operations[operationName];
-
-    if (!operation) {
-      throw new Error(`Unknown operation: ${operationName}`);
+    if (!this.executor) {
+      throw new Error(`Executor not available for operation: ${operationName}`);
     }
 
-    // Execute the operation directly in webview context
-    // DefaultExecutor pattern: executor performs direct state manipulation
-    // Include documentId in context for both lexical and notebook operations
-    const context = {
-      executor: this.executor,
-      format, // Use format from VS Code configuration (passed from extension)
-      extras: {},
-      documentId: this.documentId, // Universal document ID for both lexical and notebook operations
-    } as any; // eslint-disable-line @typescript-eslint/no-explicit-any
+    // Call executor directly (state method)
+    // NO validation here - validation already happened in extension host operation
+    // Args are already in state method parameter format (e.g., {id, blockIds} not {ids})
+    const result = await this.executor.execute(operationName, args);
 
-    // Step 1: Execute operation (returns pure typed data)
-    const result = await operation.execute(args, context);
+    // Apply formatting based on format parameter
+    if (format === "json") {
+      return result; // Return raw data
+    }
 
-    // Step 2: Apply formatting based on context.format
-    // This matches the OperationRunner pattern from core library
-    const formattedResult = formatResponse(result, context.format);
+    // Format for TOON display (human-readable for LLMs)
+    const formattedResult = formatResponse(result, format);
 
     return formattedResult;
   }
@@ -94,7 +90,6 @@ export class WebviewRunner {
  * Creates a Runner instance for notebook webview with all notebook operations.
  *
  * @param notebookToolOperations - Notebook tool operations from @datalayer/jupyter-react
- * @param notebookId - Unique identifier for the notebook document
  * @param executor - DefaultExecutor instance for executing operations (NotebookDefaultExecutor)
  * @returns WebviewRunner configured with notebook operations
  *
@@ -105,7 +100,7 @@ export class WebviewRunner {
  *
  * const notebookStore = useNotebookStore2();
  * const executor = new DefaultExecutor(notebookId, notebookStore);
- * const runner = createNotebookRunner(notebookToolOperations, notebookId, executor);
+ * const runner = createNotebookRunner(notebookToolOperations, executor);
  * const result = await runner.execute("insertCell", {
  *   cellType: "code",
  *   source: "print('hello')"
@@ -115,18 +110,16 @@ export class WebviewRunner {
 export function createNotebookRunner(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   notebookToolOperations: any,
-  notebookId: string,
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   executor: any,
 ): WebviewRunner {
-  return new WebviewRunner(notebookToolOperations, notebookId, executor);
+  return new WebviewRunner(notebookToolOperations, executor);
 }
 
 /**
  * Creates a Runner instance for lexical webview with all lexical operations.
  *
  * @param lexicalToolOperations - Lexical tool operations from @datalayer/jupyter-lexical
- * @param lexicalId - Unique identifier for the lexical document
  * @param executor - DefaultExecutor instance for executing operations (LexicalDefaultExecutor)
  * @returns WebviewRunner configured with lexical operations
  *
@@ -137,7 +130,7 @@ export function createNotebookRunner(
  *
  * const lexicalState = useLexicalStore();
  * const executor = new DefaultExecutor(lexicalId, lexicalState);
- * const runner = createLexicalRunner(lexicalToolOperations, lexicalId, executor);
+ * const runner = createLexicalRunner(lexicalToolOperations, executor);
  * const result = await runner.execute("insertBlock", {
  *   blockType: "code",
  *   source: "print('hello')"
@@ -147,11 +140,10 @@ export function createNotebookRunner(
 export function createLexicalRunner(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   lexicalToolOperations: any,
-  lexicalId: string,
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   executor: any,
 ): WebviewRunner {
-  return new WebviewRunner(lexicalToolOperations, lexicalId, executor);
+  return new WebviewRunner(lexicalToolOperations, executor);
 }
 
 /**
