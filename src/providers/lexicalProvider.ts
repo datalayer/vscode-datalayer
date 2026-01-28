@@ -33,6 +33,10 @@ import { BaseDocumentProvider } from "./baseDocumentProvider";
 import { LoroWebSocketAdapter } from "../services/collaboration/loroWebSocketAdapter";
 import { AutoConnectService } from "../services/autoConnect/autoConnectService";
 import { SDKAuthProvider } from "../services/core/authProvider";
+import {
+  selectBestLanguageModel,
+  isLanguageModelAPIAvailable,
+} from "../config/llmModels";
 
 /**
  * Custom editor provider for Lexical documents.
@@ -502,18 +506,50 @@ export class LexicalProvider extends BaseDocumentProvider<LexicalDocument> {
           }
         }
       } else if (e.type === "llm-completion-request") {
-        // Handle LLM completion request from webview
+        // Handle LLM completion request with detailed logging
+        console.log("[LexicalProvider] 🚀 Received llm-completion-request:", {
+          requestId: e.requestId,
+          prefix: e.prefix?.substring(0, 50) + "...",
+          suffix: e.suffix?.substring(0, 50) + "...",
+          language: e.language,
+        });
+
         const completion = await this.getLLMCompletion(
           e.prefix,
           e.suffix,
           e.language,
         );
 
+        console.log("[LexicalProvider] 📤 Sending llm-completion-response:", {
+          requestId: e.requestId,
+          hasCompletion: !!completion,
+          completionLength: completion?.length || 0,
+        });
+
         webviewPanel.webview.postMessage({
           type: "llm-completion-response",
           requestId: e.requestId,
-          completion,
+          completion: completion,
         });
+      } else if (
+        e.type === "lsp-completion-request" ||
+        e.type === "lsp-hover-request" ||
+        e.type === "lsp-document-sync" ||
+        e.type === "lsp-document-open" ||
+        e.type === "lsp-document-close"
+      ) {
+        // Handle LSP messages (completions, hover, document sync)
+        // Forward to LSP bridge
+        const { getLSPBridge } = await import("../extension");
+        const lspBridge = getLSPBridge();
+
+        if (lspBridge) {
+          await lspBridge.handleMessage(e, webviewPanel.webview);
+        } else {
+          console.warn(
+            "[LexicalProvider] LSP bridge not available, ignoring message",
+          );
+        }
       } else if (e.type === "ready") {
         // Send content when webview signals it's ready
         // NOTE: This can be called multiple times if webview is reused for different documents
@@ -648,9 +684,165 @@ export class LexicalProvider extends BaseDocumentProvider<LexicalDocument> {
         lexicalId: lexicalId, // Pass lexicalId for tool execution context
       });
 
+      // 🚀 PROACTIVE LSP: Create virtual documents IMMEDIATELY for fast completions
+      // Fire-and-forget: Don't block lexical opening waiting for documents
+      // Pylance will analyze in the background while webview loads
+      this.createProactiveLSPDocuments(lexicalId, document.documentData);
+
       // Try auto-connect after sending initial content
       await this.tryAutoConnect(document.uri);
     };
+  }
+
+  /**
+   * Proactively create LSP virtual documents for all Python and Markdown JupyterInputNodes.
+   * Parses the Lexical editor state JSON and extracts code blocks.
+   * This allows Pylance to start analyzing BEFORE the webview finishes loading,
+   * providing instant completions when the user presses Tab.
+   *
+   * @param lexicalId - Unique lexical document identifier
+   * @param documentData - Raw .dlex file bytes (Lexical editor state JSON)
+   */
+  private async createProactiveLSPDocuments(
+    lexicalId: string,
+    documentData: Uint8Array,
+  ): Promise<void> {
+    try {
+      // Parse Lexical editor state JSON
+      const stateJson = JSON.parse(new TextDecoder().decode(documentData));
+
+      // Lexical state structure can be:
+      // 1. { root: { children: [...] } } - Direct root
+      // 2. { editorState: { root: { children: [...] } } } - Wrapped in editorState
+      let rootNode = stateJson?.root || stateJson?.editorState?.root;
+
+      if (!rootNode || !rootNode.children) {
+        return;
+      }
+
+      // Get LSP bridge
+      const { getLSPBridge } = await import("../extension");
+      const lspBridge = getLSPBridge();
+
+      if (!lspBridge) {
+        console.warn(
+          "[LexicalProvider] LSP bridge not available, skipping proactive document creation",
+        );
+        return;
+      }
+
+      // Recursively find all JupyterInputNodes
+      const jupyterInputNodes: Array<{
+        uuid: string;
+        language: string;
+        content: string;
+      }> = [];
+
+      const traverse = (node: unknown, depth: number = 0): void => {
+        if (typeof node !== "object" || node === null) {
+          return;
+        }
+        const nodeObj = node as Record<string, unknown>;
+        if (nodeObj.type === "jupyter-input") {
+          // JupyterInputNode found!
+          // In serialized JSON, the UUID is stored as 'jupyterInputNodeUuid'
+          // (at runtime it's just 'uuid', but we're reading the raw JSON here)
+          const uuid =
+            (nodeObj.jupyterInputNodeUuid as string) ||
+            (nodeObj.uuid as string) ||
+            (nodeObj.__uuid as string);
+          const language = (nodeObj.language as string) || "python";
+
+          // Extract text content from children
+          let content = "";
+          if (nodeObj.children && Array.isArray(nodeObj.children)) {
+            for (const child of nodeObj.children) {
+              const childObj = child as Record<string, unknown>;
+              if (
+                childObj.type === "code" &&
+                childObj.children &&
+                Array.isArray(childObj.children)
+              ) {
+                // Code block - concatenate text nodes
+                for (const textNode of childObj.children) {
+                  const textNodeObj = textNode as Record<string, unknown>;
+                  if (
+                    textNodeObj.type === "code-highlight" &&
+                    textNodeObj.children &&
+                    Array.isArray(textNodeObj.children)
+                  ) {
+                    for (const highlight of textNodeObj.children) {
+                      const highlightObj = highlight as Record<string, unknown>;
+                      if (highlightObj.text) {
+                        content += highlightObj.text as string;
+                      }
+                    }
+                  } else if (textNodeObj.text) {
+                    content += textNodeObj.text as string;
+                  }
+                }
+              } else if (childObj.text) {
+                content += childObj.text as string;
+              }
+            }
+          }
+
+          // Determine LSP language
+          let lspLanguage: "python" | "markdown" | null = null;
+          if (language === "python" || language === "py") {
+            lspLanguage = "python";
+          } else if (language === "markdown" || language === "md") {
+            lspLanguage = "markdown";
+          }
+
+          if (lspLanguage && uuid) {
+            jupyterInputNodes.push({ uuid, language: lspLanguage, content });
+          }
+        }
+
+        // Recursively traverse children
+        if (nodeObj.children && Array.isArray(nodeObj.children)) {
+          for (const child of nodeObj.children) {
+            traverse(child, depth + 1);
+          }
+        }
+      };
+
+      // Start traversal from root
+      for (const child of rootNode.children) {
+        traverse(child, 0);
+      }
+
+      // Create virtual documents in parallel for all Python and Markdown cells
+      const documentCreationPromises: Promise<void>[] = [];
+
+      for (const node of jupyterInputNodes) {
+        // Queue the document creation (don't await yet!)
+        const promise = lspBridge.handleMessage(
+          {
+            type: "lsp-document-open",
+            cellId: node.uuid,
+            notebookId: lexicalId,
+            content: node.content,
+            language: node.language as "python" | "markdown",
+            source: "lexical",
+          },
+          // No webview needed for document creation
+          null,
+        );
+
+        documentCreationPromises.push(promise);
+      }
+
+      // Wait for ALL documents to be created in parallel
+      await Promise.all(documentCreationPromises);
+    } catch (error) {
+      console.error(
+        "[LexicalProvider] Error creating proactive LSP documents:",
+        error,
+      );
+      // Don't throw - this is a performance optimization, not critical
+    }
   }
 
   /**
@@ -1002,27 +1194,20 @@ export class LexicalProvider extends BaseDocumentProvider<LexicalDocument> {
   ): Promise<string | null> {
     try {
       // Check if Language Model API is available (VS Code 1.90+)
-      if (!vscode.lm) {
-        console.warn("[LexicalProvider] Language Model API not available");
+      if (!isLanguageModelAPIAvailable()) {
+        console.log("[LexicalProvider] Language Model API not available");
         return null;
       }
 
-      // Select available chat models (prefer Copilot)
-      let models = await vscode.lm.selectChatModels({ vendor: "copilot" });
+      // Use centralized model selection
+      const model = await selectBestLanguageModel("LexicalProvider");
 
-      // Fallback to any available model
-      if (models.length === 0) {
-        models = await vscode.lm.selectChatModels();
-      }
-
-      if (models.length === 0) {
-        console.warn("[LexicalProvider] No language models available");
+      if (!model) {
+        console.warn("[LexicalProvider] ⚠️ No chat models available");
         return null;
       }
 
-      const model = models[0];
-
-      // Build prompt
+      // Build prompt for code completion
       const prompt = `Complete the following ${language} code. Only return the completion, no explanations or markdown.
 
 \`\`\`${language}
@@ -1031,11 +1216,17 @@ ${prefix}<CURSOR>${suffix}
 
 Complete the code at <CURSOR>:`;
 
+      console.log(
+        `[LexicalProvider] 📤 Sending completion request to model "${model.id}"...`,
+      );
+
       // Send request to LLM
       const messages = [vscode.LanguageModelChatMessage.User(prompt)];
       const response = await model.sendRequest(messages, {
         justification: "Code completion for Lexical Jupyter cell",
       });
+
+      console.log("[LexicalProvider] 📥 Receiving response...");
 
       // Collect streamed response
       let completion = "";
@@ -1043,10 +1234,19 @@ Complete the code at <CURSOR>:`;
         completion += chunk;
       }
 
+      console.log(
+        `[LexicalProvider] ✅ Got completion (${completion.length} chars)`,
+      );
+
       // Clean up (remove markdown blocks if present)
       return this.cleanCompletion(completion);
     } catch (error) {
-      console.error("[LexicalProvider] LLM completion error:", error);
+      console.error("[LexicalProvider] ❌ LLM completion error:", error);
+      console.error("[LexicalProvider] Error details:", {
+        name: (error as Error).name,
+        message: (error as Error).message,
+        stack: (error as Error).stack,
+      });
       return null;
     }
   }

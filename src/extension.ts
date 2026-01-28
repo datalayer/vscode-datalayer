@@ -33,6 +33,7 @@ import { registerChatContextProvider } from "./chat/chatContextProvider";
 // Global service container instance
 let services: ServiceContainer | undefined;
 let ui: ExtensionUI | undefined;
+let lspBridge: import("./services/bridges/lspBridge").LSPBridge | undefined;
 
 /**
  * Get the global service container instance.
@@ -70,6 +71,14 @@ export function getRuntimesTreeProvider() {
  */
 export function getSettingsTreeProvider() {
   return ui?.settingsTreeProvider;
+}
+
+/**
+ * Get the LSP bridge instance for notebook cell LSP integration.
+ * @returns The LSP bridge or undefined if not initialized
+ */
+export function getLSPBridge() {
+  return lspBridge;
 }
 
 /**
@@ -143,6 +152,26 @@ export async function activate(
       ),
     );
     activationTimer.checkpoint("filesystem_provider_registered");
+
+    // Register LSP infrastructure for notebook cells (Python and Markdown completions + hover)
+    logger.debug("Registering LSP infrastructure for notebook cells");
+    const { LSPBridge } = await import("./services/bridges/lspBridge");
+
+    lspBridge = new LSPBridge();
+
+    // No need to register TextDocumentContentProvider - we use real files on disk
+    // with file:// URIs which Pylance fully supports
+
+    context.subscriptions.push({
+      dispose: () => {
+        lspBridge?.dispose();
+      },
+    });
+
+    activationTimer.checkpoint("lsp_infrastructure_registered");
+    logger.info(
+      "LSP infrastructure registered for Python and Markdown cells (completions + hover)",
+    );
 
     // Subscribe to runtime creation events from controller manager to refresh tree
     context.subscriptions.push(

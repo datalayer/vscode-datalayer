@@ -28,6 +28,10 @@ import { selectDatalayerRuntime } from "../ui/dialogs/runtimeSelector";
 import { BaseDocumentProvider } from "./baseDocumentProvider";
 import { AutoConnectService } from "../services/autoConnect/autoConnectService";
 import type { RuntimeDTO } from "@datalayer/core/lib/models/RuntimeDTO";
+import {
+  selectBestLanguageModel,
+  isLanguageModelAPIAvailable,
+} from "../config/llmModels";
 
 /**
  * Custom editor provider for Jupyter notebooks with dual-mode support.
@@ -394,9 +398,12 @@ export class NotebookProvider extends BaseDocumentProvider<NotebookDocument> {
     };
     webviewPanel.webview.html = this.getHtmlForWebview(webviewPanel.webview);
 
-    webviewPanel.webview.onDidReceiveMessage((e) =>
-      this.onMessage(webviewPanel, document, e),
-    );
+    webviewPanel.webview.onDidReceiveMessage((e) => {
+      console.log(
+        `[NotebookProvider] First handler received message: ${e.type}`,
+      );
+      this.onMessage(webviewPanel, document, e);
+    });
 
     // Listen for theme changes
     const themeChangeDisposable = vscode.window.onDidChangeActiveColorTheme(
@@ -418,6 +425,9 @@ export class NotebookProvider extends BaseDocumentProvider<NotebookDocument> {
 
     // Wait for the webview to be properly ready before we init
     webviewPanel.webview.onDidReceiveMessage(async (e) => {
+      console.log(
+        `[NotebookProvider] Second handler received message: ${e.type}`,
+      );
       if (e.type === "response") {
         // Handle response messages from webview (for sendToWebviewWithResponse)
         const { requestId, body } = e;
@@ -453,6 +463,27 @@ export class NotebookProvider extends BaseDocumentProvider<NotebookDocument> {
           requestId: e.requestId,
           completion,
         });
+      } else if (
+        e.type === "lsp-completion-request" ||
+        e.type === "lsp-hover-request" ||
+        e.type === "lsp-document-sync" ||
+        e.type === "lsp-document-open" ||
+        e.type === "lsp-document-close"
+      ) {
+        // Handle LSP messages (completions, hover, document sync)
+        // Forward to LSP bridge
+        const { getLSPBridge } = await import("../extension");
+        const lspBridge = getLSPBridge();
+
+        if (lspBridge) {
+          console.log("[NotebookProvider] Forwarding to LSP bridge");
+          await lspBridge.handleMessage(e, webviewPanel.webview);
+          console.log("[NotebookProvider] LSP bridge handleMessage completed");
+        } else {
+          console.warn(
+            "[NotebookProvider] LSP bridge not available, ignoring message",
+          );
+        }
       } else if (e.type === "ready") {
         // Detect VS Code theme
         const theme =
@@ -485,6 +516,10 @@ export class NotebookProvider extends BaseDocumentProvider<NotebookDocument> {
             notebookId,
             documentUri: document.uri.toString(), // For logging
           });
+
+          // 🚀 PROACTIVE LSP: Create virtual documents for untitled notebooks too
+          // Fire-and-forget: Don't block notebook opening
+          this.createProactiveLSPDocuments(notebookId, value);
         } else {
           const editable = vscode.workspace.fs.isWritableFileSystem(
             document.uri.scheme,
@@ -572,11 +607,133 @@ export class NotebookProvider extends BaseDocumentProvider<NotebookDocument> {
             documentUri: document.uri.toString(), // For logging
           });
 
+          // 🚀 PROACTIVE LSP: Create virtual documents IMMEDIATELY for fast completions
+          // Fire-and-forget: Don't block notebook opening waiting for documents
+          // Pylance will analyze in the background while webview loads
+          this.createProactiveLSPDocuments(notebookId, document.documentData);
+
           // Try auto-connect after init
           await this.tryAutoConnect(document.uri);
         }
       }
     });
+  }
+
+  /**
+   * Proactively create LSP virtual documents for all Python and Markdown cells.
+   * This allows Pylance to start analyzing BEFORE the webview finishes loading,
+   * providing instant completions when the user presses Tab.
+   *
+   * Native VS Code notebooks create TextDocuments immediately when opening,
+   * giving Pylance time to analyze. Datalayer notebooks now do the same!
+   *
+   * @param notebookId - Unique notebook identifier
+   * @param documentData - Raw .ipynb file bytes
+   */
+  private async createProactiveLSPDocuments(
+    notebookId: string,
+    documentData: Uint8Array,
+  ): Promise<void> {
+    try {
+      // Parse .ipynb JSON
+      const notebookJson = JSON.parse(new TextDecoder().decode(documentData));
+      const cells = notebookJson.cells || [];
+
+      console.log(
+        `🚀 [PROACTIVE-LSP] Creating virtual documents for ${cells.length} cells in notebook ${notebookId}`,
+      );
+
+      // Get LSP bridge
+      const { getLSPBridge } = await import("../extension");
+      const lspBridge = getLSPBridge();
+
+      if (!lspBridge) {
+        console.warn(
+          "[PROACTIVE-LSP] LSP bridge not available, skipping proactive document creation",
+        );
+        return;
+      }
+
+      // 🚀 PARALLEL OPTIMIZATION: Create all documents in parallel instead of sequentially!
+      // Sequential: 10 cells × 50ms = 500ms
+      // Parallel: 10 cells at once = 50ms
+      const documentCreationPromises: Promise<void>[] = [];
+
+      for (let i = 0; i < cells.length; i++) {
+        const cell = cells[i];
+        const cellType = cell.cell_type;
+
+        // Determine language for LSP
+        let language: "python" | "markdown" | null = null;
+
+        if (cellType === "code") {
+          // Code cells - check language from metadata or assume Python
+          const cellLanguage =
+            cell.metadata?.language_info?.name ||
+            cell.metadata?.kernelspec?.language ||
+            "python";
+
+          if (
+            cellLanguage === "python" ||
+            cellLanguage === "py" ||
+            cellLanguage === "ipython"
+          ) {
+            language = "python";
+          }
+        } else if (cellType === "markdown") {
+          language = "markdown";
+        }
+
+        // Only create documents for Python and Markdown cells
+        if (language) {
+          // Cell ID: use cell.id if available, otherwise generate from index
+          // IMPORTANT: Must match ID generation in NotebookEditor.tsx (line 244)
+          const cellId = cell.id || `cell-${i}`;
+
+          // Get cell source (can be string or array of strings)
+          const source = Array.isArray(cell.source)
+            ? cell.source.join("")
+            : cell.source || "";
+
+          console.log(
+            `🚀 [PROACTIVE-LSP] Queuing document creation for cell ${i} (${language}): ${cellId}`,
+          );
+
+          // Queue the document creation (don't await yet!)
+          const promise = lspBridge.handleMessage(
+            {
+              type: "lsp-document-open",
+              cellId,
+              notebookId,
+              content: source,
+              language,
+              source: "notebook",
+            },
+            // No webview needed for document creation
+            null,
+          );
+
+          documentCreationPromises.push(promise);
+        }
+      }
+
+      // Wait for ALL documents to be created in parallel
+      console.log(
+        `🚀 [PROACTIVE-LSP] Creating ${documentCreationPromises.length} virtual documents in parallel...`,
+      );
+
+      await Promise.all(documentCreationPromises);
+
+      console.log(
+        `🚀 [PROACTIVE-LSP] ✅ Finished creating ${documentCreationPromises.length} virtual documents for notebook ${notebookId}`,
+      );
+    } catch (error) {
+      console.error(
+        "[PROACTIVE-LSP] Error creating proactive LSP documents:",
+        error,
+      );
+      // Don't throw - this is a performance optimization, not critical
+    }
   }
 
   /**
@@ -594,25 +751,18 @@ export class NotebookProvider extends BaseDocumentProvider<NotebookDocument> {
   ): Promise<string | null> {
     try {
       // Check if Language Model API is available (VS Code 1.90+)
-      if (!vscode.lm) {
+      if (!isLanguageModelAPIAvailable()) {
         console.warn("[NotebookProvider] Language Model API not available");
         return null;
       }
 
-      // Select available chat models (prefer Copilot)
-      let models = await vscode.lm.selectChatModels({ vendor: "copilot" });
+      // Use centralized model selection
+      const model = await selectBestLanguageModel("NotebookProvider");
 
-      // Fallback to any available model
-      if (models.length === 0) {
-        models = await vscode.lm.selectChatModels();
-      }
-
-      if (models.length === 0) {
+      if (!model) {
         console.warn("[NotebookProvider] No language models available");
         return null;
       }
-
-      const model = models[0];
 
       // Build prompt
       const prompt = `Complete the following ${language} code. Only return the completion, no explanations or markdown.

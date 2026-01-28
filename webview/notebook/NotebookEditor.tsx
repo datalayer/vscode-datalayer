@@ -60,6 +60,8 @@ import {
   cellSidebarMargin,
 } from "../components/notebookStyles";
 import { VSCodeLLMProvider } from "../services/completion/vscodeLLMProvider";
+import { LSPCompletionProvider } from "../services/completion/lspProvider";
+import { LSPTabCompletionProvider } from "../services/completion/lspTabProvider";
 import { createRuntimeMessageHandlers } from "../utils/runtimeMessageHandlers";
 import {
   createNotebookRunner,
@@ -152,6 +154,258 @@ function NotebookEditorCore({
   const llmProvider = useMemo(() => {
     return new VSCodeLLMProvider();
   }, []);
+
+  // Create LSP completion provider for Python and Markdown cells (inline ghost text)
+  const lspProvider = useMemo(() => {
+    return new LSPCompletionProvider();
+  }, []);
+
+  // Create LSP Tab completion provider for dropdown menu
+  const lspTabProvider = useMemo(() => {
+    return new LSPTabCompletionProvider();
+  }, []);
+
+  // Cleanup LSP providers on unmount
+  useEffect(() => {
+    return () => {
+      lspProvider.dispose();
+      lspTabProvider.dispose();
+    };
+  }, [lspProvider, lspTabProvider]);
+
+  /**
+   * Helper function to detect cell language for LSP synchronization.
+   * Only Python and Markdown cells are synchronized with LSP.
+   */
+  const detectCellLanguage = useCallback(
+    (cell: any): "python" | "markdown" | "unknown" => {
+      if (!cell || !cell.type) {
+        return "unknown";
+      }
+
+      if (cell.type === "markdown") {
+        return "markdown";
+      } else if (cell.type === "code") {
+        const mimeType = cell.mimeType;
+        if (
+          mimeType === "text/x-python" ||
+          mimeType === "text/python" ||
+          mimeType === "python" ||
+          mimeType === "text/x-ipython" // IPython/Jupyter notebook cells
+        ) {
+          return "python";
+        }
+      }
+
+      return "unknown";
+    },
+    [],
+  );
+
+  // Synchronize cell content with LSP (document open/change/close)
+  useEffect(() => {
+    if (!notebookId) {
+      return undefined;
+    }
+
+    let isSetup = false;
+    let notebookModel: any = null;
+    let onCellsChanged: any = null;
+    const cellContentListeners = new Map<string, any>();
+
+    // Function to set up LSP synchronization once notebook is available
+    const setupLSPSync = (notebook: any) => {
+      if (isSetup || !notebook?.adapter?.panel?.content) {
+        return;
+      }
+
+      const notebookWidget = notebook.adapter.panel.content;
+      notebookModel = notebookWidget.model;
+
+      if (!notebookModel) {
+        return;
+      }
+
+      isSetup = true;
+      console.log(
+        "🔍🔍🔍 [LSP-DEBUG] Setting up LSP cell synchronization for notebook:",
+        notebookId,
+        "with",
+        notebookModel.cells.length,
+        "cells",
+      );
+
+      // Send document-open for all existing Python and Markdown cells
+      for (let i = 0; i < notebookModel.cells.length; i++) {
+        const cell = notebookModel.cells.get(i);
+        const language = detectCellLanguage(cell);
+
+        if (language === "python" || language === "markdown") {
+          const cellId = cell.id || `cell-${i}`;
+          const content = cell.sharedModel?.getSource() || "";
+
+          console.log(
+            `🔍🔍🔍 [LSP-DEBUG] Opening LSP document for cell ${cellId} (${language})`,
+          );
+
+          messageHandler.send({
+            type: "lsp-document-open",
+            cellId: cellId,
+            notebookId: notebookId,
+            content: content,
+            language: language,
+          });
+        }
+      }
+
+      // Listen for cell content changes
+      onCellsChanged = (_sender: any, args: any) => {
+        // Handle content changes in existing cells
+        if (args.type === "set" && args.newValues) {
+          args.newValues.forEach((cell: any) => {
+            const language = detectCellLanguage(cell);
+
+            if (language === "python" || language === "markdown") {
+              const cellId = cell.id;
+              const content = cell.sharedModel?.getSource() || "";
+
+              console.log(
+                `🔍🔍🔍 [LSP-DEBUG] Syncing LSP document for cell ${cellId}`,
+              );
+
+              messageHandler.send({
+                type: "lsp-document-sync",
+                cellId: cellId,
+                content: content,
+                version: Date.now(),
+              });
+            }
+          });
+        }
+
+        // Handle new cells being added
+        if (args.type === "add" && args.newValues) {
+          args.newValues.forEach((cell: any, idx: number) => {
+            const language = detectCellLanguage(cell);
+
+            if (language === "python" || language === "markdown") {
+              const cellId = cell.id || `cell-${args.newIndex + idx}`;
+              const content = cell.sharedModel?.getSource() || "";
+
+              console.log(
+                `🔍🔍🔍 [LSP-DEBUG] Opening LSP document for new cell ${cellId} (${language})`,
+              );
+
+              messageHandler.send({
+                type: "lsp-document-open",
+                cellId: cellId,
+                notebookId: notebookId,
+                content: content,
+                language: language,
+              });
+            }
+          });
+        }
+
+        // Handle cells being removed
+        if (args.type === "remove" && args.oldValues) {
+          args.oldValues.forEach((cell: any) => {
+            const language = detectCellLanguage(cell);
+
+            if (language === "python" || language === "markdown") {
+              const cellId = cell.id;
+
+              console.log(
+                `🔍🔍🔍 [LSP-DEBUG] Closing LSP document for removed cell ${cellId}`,
+              );
+
+              messageHandler.send({
+                type: "lsp-document-close",
+                cellId: cellId,
+              });
+            }
+          });
+        }
+      };
+
+      notebookModel.cells.changed.connect(onCellsChanged);
+
+      // Listen for content changes within individual cells
+      for (let i = 0; i < notebookModel.cells.length; i++) {
+        const cell = notebookModel.cells.get(i);
+        const language = detectCellLanguage(cell);
+
+        if (language === "python" || language === "markdown") {
+          const cellId = cell.id;
+
+          const onSourceChanged = () => {
+            const content = cell.sharedModel?.getSource() || "";
+
+            messageHandler.send({
+              type: "lsp-document-sync",
+              cellId: cellId,
+              content: content,
+              version: Date.now(),
+            });
+          };
+
+          cell.sharedModel?.changed?.connect(onSourceChanged);
+          cellContentListeners.set(cellId, { cell, handler: onSourceChanged });
+        }
+      }
+    };
+
+    // Try to setup immediately
+    const initialNotebook = notebookStore.getState().notebooks.get(notebookId);
+    if (initialNotebook) {
+      setupLSPSync(initialNotebook);
+    } else {
+    }
+
+    // Subscribe to store changes to detect when notebook becomes available
+    const unsubscribe = notebookStore.subscribe((state: any) => {
+      const notebook = state.notebooks.get(notebookId);
+      if (notebook && !isSetup) {
+        setupLSPSync(notebook);
+      }
+    });
+
+    // Cleanup
+    return () => {
+      console.log(
+        "🔍🔍🔍 [LSP-DEBUG] Cleaning up LSP cell synchronization for notebook:",
+        notebookId,
+      );
+
+      unsubscribe();
+
+      if (notebookModel && onCellsChanged) {
+        notebookModel.cells.changed.disconnect(onCellsChanged);
+      }
+
+      // Disconnect all cell content listeners
+      cellContentListeners.forEach(({ cell, handler }) => {
+        cell.sharedModel?.changed?.disconnect(handler);
+      });
+
+      // Send document-close for all cells on cleanup
+      if (notebookModel) {
+        for (let i = 0; i < notebookModel.cells.length; i++) {
+          const cell = notebookModel.cells.get(i);
+          const language = detectCellLanguage(cell);
+
+          if (language === "python" || language === "markdown") {
+            const cellId = cell.id;
+
+            messageHandler.send({
+              type: "lsp-document-close",
+              cellId: cellId,
+            });
+          }
+        }
+      }
+    };
+  }, [notebookId, detectCellLanguage, messageHandler]);
 
   // Create collaboration provider for Datalayer notebooks
   const collaborationProvider = useMemo(() => {
@@ -996,6 +1250,7 @@ function NotebookEditorCore({
             cellSidebarMargin={cellSidebarMargin}
             extensions={extensions}
             inlineProviders={[llmProvider]}
+            providers={[lspTabProvider]}
             onNotebookModelChanged={handleNotebookModelChangedWithOutline}
           />
         </Box>

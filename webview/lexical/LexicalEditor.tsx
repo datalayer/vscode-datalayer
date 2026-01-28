@@ -79,6 +79,9 @@ import {
   TableCellResizerPlugin,
   CommentsProvider,
   useComments,
+  LSPTabCompletionPlugin,
+  LexicalLSPCompletionProvider,
+  LSPDocumentSyncPlugin,
 } from "@datalayer/jupyter-lexical";
 import { LexicalToolbar } from "./LexicalToolbar";
 import { RuntimeProgressBar } from "../components/RuntimeProgressBar";
@@ -351,6 +354,24 @@ export function LexicalEditor({
   }, []);
 
   /**
+   * LSP completion provider instance for Tab dropdown completions.
+   * Integrates Pylance and Markdown language servers with Lexical editor.
+   */
+  const lexicalLSPProvider = React.useMemo(() => {
+    return new LexicalLSPCompletionProvider(
+      lexicalId || documentUri || "",
+      vscode,
+    );
+  }, [lexicalId, documentUri, vscode]);
+
+  // Dispose provider on unmount or when deps change
+  React.useEffect(() => {
+    return () => {
+      lexicalLSPProvider.dispose();
+    };
+  }, [lexicalLSPProvider]);
+
+  /**
    * Handler for YouTube embeds in VS Code.
    * Opens videos in external browser (Simple Browser has sandbox restrictions).
    */
@@ -566,6 +587,7 @@ export function LexicalEditor({
                 isLinkEditMode={isLinkEditMode}
                 setIsLinkEditMode={setIsLinkEditMode}
                 lexicalLLMProvider={lexicalLLMProvider}
+                lexicalLSPProvider={lexicalLSPProvider}
               />
             </CommentsProvider>
           </LexicalComposer>
@@ -600,6 +622,7 @@ function LexicalEditorInner({
   isLinkEditMode,
   setIsLinkEditMode,
   lexicalLLMProvider,
+  lexicalLSPProvider,
 }: any) {
   const { showComments, toggleComments } = useComments();
 
@@ -691,6 +714,45 @@ function LexicalEditorInner({
           debounceMs={200}
           enabled={editable}
         />
+        {/* LSP Tab completion plugin for dropdown completions */}
+        <LSPTabCompletionPlugin
+          providers={[lexicalLSPProvider]}
+          disabled={!editable}
+        />
+        {/* LSP document sync plugin to keep temp files updated */}
+        {lexicalId && vscode && (
+          <LSPDocumentSyncPlugin
+            lexicalId={lexicalId}
+            onDocumentOpen={(data) => {
+              vscode.postMessage({
+                type: "lsp-document-open",
+                cellId: data.cellId,
+                notebookId: data.notebookId,
+                content: data.content,
+                language: data.language,
+                source: "lexical",
+              });
+            }}
+            onDocumentSync={(data) => {
+              vscode.postMessage({
+                type: "lsp-document-sync",
+                cellId: data.cellId,
+                content: data.content,
+                version: data.version,
+                source: "lexical",
+                lexicalId: lexicalId,
+              });
+            }}
+            onDocumentClose={(cellId) => {
+              vscode.postMessage({
+                type: "lsp-document-close",
+                cellId: cellId,
+                source: "lexical",
+              });
+            }}
+            disabled={!editable}
+          />
+        )}
         {documentUri && vscode && (
           <OutlinePlugin documentUri={documentUri} vscode={vscode} />
         )}
