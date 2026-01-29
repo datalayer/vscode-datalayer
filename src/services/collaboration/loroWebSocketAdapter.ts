@@ -12,10 +12,59 @@
  */
 
 import * as vscode from "vscode";
-import * as ws from "ws";
+// import * as ws from "ws"; // Removed to avoid potential runtime conflicts with require
 
-// Use require for better webpack compatibility
-const WebSocket = ws.WebSocket || require("ws");
+// Define robust types compatible with ws package
+type WebSocketConstructor = new (url: string) => WebSocketInstance;
+
+interface WebSocketInstance {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  on?(event: string, listener: (...args: any[]) => void): void;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  addEventListener?(event: string, listener: (...args: any[]) => void): void;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  send(data: any): void;
+  close(): void;
+  readyState: number;
+}
+
+// Robust WebSocket resolution with detailed logging
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let WebSocketCtor: any = null;
+
+try {
+  // Try loading 'ws' module first (preferred for Node.js environment)
+  const wsModule = require("ws");
+  
+  if (wsModule.WebSocket) {
+    WebSocketCtor = wsModule.WebSocket;
+  } else if (typeof wsModule === 'function') {
+    WebSocketCtor = wsModule;
+  } else if (wsModule.default) {
+    WebSocketCtor = wsModule.default;
+  }
+} catch (e) {
+  // Ignore
+}
+
+// Fallback to global WebSocket (Node.js 20+, Electron, etc.)
+if (!WebSocketCtor && typeof global.WebSocket === 'function') {
+  console.log('[LoroAdapter] Using global.WebSocket.');
+  WebSocketCtor = global.WebSocket as unknown as WebSocketConstructor;
+}
+
+// Final fallback to dummy to prevent crash
+if (!WebSocketCtor) {
+  console.error('[LoroAdapter] FATAL: Could not find any WebSocket constructor.');
+  WebSocketCtor = class DummyWebSocket {
+    on() {}
+    send() {}
+    close() {}
+    addEventListener() {}
+    removeEventListener() {}
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  } as any;
+}
 
 /**
  * Message types exchanged between extension and webview for Loro collaboration
@@ -32,7 +81,7 @@ export interface LoroMessage {
  */
 export class LoroWebSocketAdapter {
   /** The underlying WebSocket connection to the Loro server */
-  private ws: ws.WebSocket | null = null;
+  private ws: WebSocketInstance | null = null;
   /** Timer for scheduled reconnection attempts */
   private reconnectTimer: NodeJS.Timeout | null = null;
   /** Current delay in milliseconds before next reconnection attempt */
@@ -74,9 +123,10 @@ export class LoroWebSocketAdapter {
     }
 
     try {
-      this.ws = new WebSocket(this.websocketUrl);
+      const wsInstance = new WebSocketCtor(this.websocketUrl);
+      this.ws = wsInstance;
 
-      this.ws.on("open", () => {
+      const onOpen = () => {
         this.reconnectDelay = 100; // Reset backoff
         this.sendToWebview({
           type: "status",
@@ -86,37 +136,9 @@ export class LoroWebSocketAdapter {
 
         // Flush queued messages
         this.flushMessageQueue();
-      });
+      };
 
-      this.ws.on("message", (data: ws.RawData) => {
-        try {
-          // Parse the message to determine type
-          const buffer =
-            data instanceof Buffer ? data : Buffer.from(data as ArrayBuffer);
-
-          // Try to parse as JSON first
-          try {
-            const json = JSON.parse(buffer.toString());
-            this.sendToWebview({
-              type: "message",
-              adapterId: this.adapterId,
-              data: json,
-            });
-          } catch {
-            // Not JSON, treat as binary (Loro update bytes)
-            const bytes = Array.from(buffer);
-            this.sendToWebview({
-              type: "message",
-              adapterId: this.adapterId,
-              data: { type: "update", bytes },
-            });
-          }
-        } catch (error) {
-          console.error(`[LoroAdapter] Error processing message:`, error);
-        }
-      });
-
-      this.ws.on("close", () => {
+      const onClose = () => {
         this.ws = null;
 
         this.sendToWebview({
@@ -129,16 +151,68 @@ export class LoroWebSocketAdapter {
         if (!this.isDisposed) {
           this.scheduleReconnect();
         }
-      });
+      };
 
-      this.ws.on("error", (error: Error) => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const onError = (error: any) => {
         console.error(`[LoroAdapter] WebSocket error:`, error);
         this.sendToWebview({
           type: "error",
           adapterId: this.adapterId,
-          data: { message: error.message },
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          data: { message: (error as any)?.message || "WebSocket error" },
         });
-      });
+      };
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const onMessage = (dataOrEvent: any) => {
+        try {
+          // Normalize data
+          let data = dataOrEvent;
+          
+          // Native WebSocket MessageEvent?
+          if (dataOrEvent && typeof dataOrEvent === 'object' && 'data' in dataOrEvent) {
+             data = dataOrEvent.data;
+          }
+
+          // Handle Blob (Browser/Native)
+          if (typeof Blob !== 'undefined' && data instanceof Blob) {
+             data.arrayBuffer().then((buf) => {
+                 this.processMessageData(Buffer.from(buf));
+             });
+             return; 
+          }
+          
+          // Handle ArrayBuffer (Native)
+          if (data instanceof ArrayBuffer) {
+             this.processMessageData(Buffer.from(data));
+             return;
+          }
+
+          // Handle Node.js Buffer or string
+          const buffer = data instanceof Buffer ? data : Buffer.from(data);
+          this.processMessageData(buffer);
+        } catch (error) {
+          console.error(`[LoroAdapter] Error processing message:`, error);
+        }
+      };
+
+      if (typeof wsInstance.on === 'function') {
+         // Node.js ws
+         wsInstance.on("open", onOpen);
+         wsInstance.on("message", onMessage);
+         wsInstance.on("close", onClose);
+         wsInstance.on("error", onError);
+      } else if (typeof wsInstance.addEventListener === 'function') {
+         // Native WebSocket
+         wsInstance.addEventListener("open", onOpen);
+         wsInstance.addEventListener("message", onMessage);
+         wsInstance.addEventListener("close", onClose);
+         wsInstance.addEventListener("error", onError);
+      } else {
+         console.error("[LoroAdapter] WebSocket instance has neither .on() nor .addEventListener()");
+      }
+
     } catch (error) {
       console.error(`[LoroAdapter] Failed to create WebSocket:`, error);
       this.sendToWebview({
@@ -149,6 +223,26 @@ export class LoroWebSocketAdapter {
         },
       });
     }
+  }
+
+  private processMessageData(buffer: Buffer): void {
+      // Try to parse as JSON first
+      try {
+        const json = JSON.parse(buffer.toString());
+        this.sendToWebview({
+          type: "message",
+          adapterId: this.adapterId,
+          data: json,
+        });
+      } catch {
+        // Not JSON, treat as binary (Loro update bytes)
+        const bytes = Array.from(buffer);
+        this.sendToWebview({
+          type: "message",
+          adapterId: this.adapterId,
+          data: { type: "update", bytes },
+        });
+      }
   }
 
   /**
