@@ -31,7 +31,7 @@ fi
 # Create patches
 echo -e "${BLUE}📦 Generating patches with patch-package...${NC}"
 # npx patch-package @datalayer/core @datalayer/jupyter-lexical @datalayer/jupyter-react
-npx patch-package @datalayer/jupyter-lexical @datalayer/jupyter-react
+# npx patch-package @datalayer/jupyter-lexical @datalayer/jupyter-react
 
 echo -e "${GREEN}✅ Patches created successfully${NC}"
 echo -e "${YELLOW}⚠️  Remember: Commit the patches/ directory to git for CI/users${NC}"
