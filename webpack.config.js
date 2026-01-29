@@ -14,8 +14,8 @@ const miniSVGDataURI = require("mini-svg-data-uri");
 const CopyPlugin = require("copy-webpack-plugin");
 
 // Helper to resolve package paths in monorepo (hoisted node_modules)
-/** 
- * @param {string} packageName 
+/**
+ * @param {string} packageName
  * @returns {string}
  */
 const resolvePackage = (packageName) => {
@@ -28,16 +28,16 @@ const resolvePackage = (packageName) => {
     try {
       const resolved = require.resolve(packageName);
       const parts = resolved.split(path.sep);
-      const nmIndex = parts.lastIndexOf('node_modules');
+      const nmIndex = parts.lastIndexOf("node_modules");
       if (nmIndex === -1) return path.dirname(resolved);
       // Handle scoped packages (@scope/pkg)
-      if (packageName.startsWith('@')) {
+      if (packageName.startsWith("@")) {
         return parts.slice(0, nmIndex + 3).join(path.sep);
       }
       return parts.slice(0, nmIndex + 2).join(path.sep);
     } catch {
       // Last resort: construct the path manually in root node_modules
-      const rootNodeModules = path.resolve(__dirname, '../../../node_modules');
+      const rootNodeModules = path.resolve(__dirname, "../../../node_modules");
       return path.join(rootNodeModules, packageName);
     }
   }
@@ -302,11 +302,17 @@ const webviewConfig = {
     new CopyPlugin({
       patterns: [
         {
-          from: path.join(resolvePackage("@vscode/codicons"), "dist/codicon.css"),
+          from: path.join(
+            resolvePackage("@vscode/codicons"),
+            "dist/codicon.css",
+          ),
           to: "codicon.css",
         },
         {
-          from: path.join(resolvePackage("@vscode/codicons"), "dist/codicon.ttf"),
+          from: path.join(
+            resolvePackage("@vscode/codicons"),
+            "dist/codicon.ttf",
+          ),
           to: "codicon.ttf",
         },
         {

@@ -10,6 +10,7 @@ const path = require('path');
 // External dependencies that need to be copied
 // These match the externals in webpack.config.js
 const externalDeps = [
+  'ws', // WebSocket library for Node.js - used by LoroAdapter for collaboration
   'lexical',
   '@lexical/react',
   '@lexical/link',
@@ -42,10 +43,27 @@ console.log('📦 Copying external dependencies to dist/node_modules/...');
 
 const distNodeModules = path.join(__dirname, '..', 'dist', 'node_modules');
 const sourceNodeModules = path.join(__dirname, '..', 'node_modules');
+// Fallback to monorepo root node_modules for hoisted packages
+const rootNodeModules = path.join(__dirname, '..', '..', '..', '..', 'node_modules');
 
 // Ensure dist/node_modules exists
 if (!fs.existsSync(distNodeModules)) {
   fs.mkdirSync(distNodeModules, { recursive: true });
+}
+
+/**
+ * Find a package in either local or root node_modules
+ */
+function findPackage(packageName) {
+  const localPath = path.join(sourceNodeModules, packageName);
+  if (fs.existsSync(localPath)) {
+    return localPath;
+  }
+  const rootPath = path.join(rootNodeModules, packageName);
+  if (fs.existsSync(rootPath)) {
+    return rootPath;
+  }
+  return null;
 }
 
 function copyRecursive(src, dest) {
@@ -158,10 +176,10 @@ let copiedCount = 0;
 let totalSize = 0;
 
 for (const dep of externalDeps) {
-  const sourcePath = path.join(sourceNodeModules, dep);
+  const sourcePath = findPackage(dep);
   const targetPath = path.join(distNodeModules, dep);
 
-  if (fs.existsSync(sourcePath)) {
+  if (sourcePath) {
     console.log(`   Copying ${dep}...`);
     copyRecursive(sourcePath, targetPath);
     copiedCount++;
