@@ -22,7 +22,7 @@ export const getActiveDocumentTool: ToolDefinition = {
   displayName: "Get Active Document",
   toolReferenceName: "getActiveDocument",
   description:
-    "**CRITICAL: Always call this tool FIRST before running ANY operation on Jupyter Notebooks (.ipynb) or Lexical documents (.lexical).** Returns the URI and filename of the currently active document in VS Code. This tool identifies which document is active so subsequent operations know which document to act on. Returns: document URI (required for all operations), filename, and type (notebook/lexical/other). Use this whenever the user asks to perform an action on 'this notebook', 'this file', 'current document', or before executing any document operations like readAllCells, readAllBlocks, executeCode, etc.",
+    "**CRITICAL: Always call this tool FIRST before running ANY operation on Jupyter Notebooks (.ipynb) or Lexical documents (.lexical).** Returns the URI and filename of the currently active document in VS Code. This tool identifies which document is active so subsequent operations know which document to act on. Returns: document URI (required for all operations), filename, and type (notebook/lexical/other). WORKFLOW for Lexical documents: 1) Call getActiveDocument to identify the document, 2) Call listAvailableBlocks to see what block types and metadata formats are supported, 3) Then call insertBlock/readAllBlocks/etc with proper metadata. Use this whenever the user asks to perform an action on 'this notebook', 'this file', 'current document', or before executing any document operations like readAllCells, readAllBlocks, executeCode, etc.",
 
   parameters: {
     type: "object",
