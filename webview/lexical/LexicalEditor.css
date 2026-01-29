@@ -1248,22 +1248,22 @@ iframe[title="YouTube video"] {
 .typeahead-popover li .icon.code {
   mask-image: var(
     --icon-code,
-    url("../../node_modules/@datalayer/jupyter-lexical/style/lexical/icons/code.svg")
+    url("~@datalayer/jupyter-lexical/style/lexical/icons/code.svg")
   ) !important;
   -webkit-mask-image: var(
     --icon-code,
-    url("../../node_modules/@datalayer/jupyter-lexical/style/lexical/icons/code.svg")
+    url("~@datalayer/jupyter-lexical/style/lexical/icons/code.svg")
   ) !important;
 }
 
 .typeahead-popover .icon.paragraph {
   mask-image: var(
     --icon-paragraph,
-    url("../../node_modules/@datalayer/jupyter-lexical/style/lexical/icons/text-paragraph.svg")
+    url("~@datalayer/jupyter-lexical/style/lexical/icons/text-paragraph.svg")
   ) !important;
   -webkit-mask-image: var(
     --icon-paragraph,
-    url("../../node_modules/@datalayer/jupyter-lexical/style/lexical/icons/text-paragraph.svg")
+    url("~@datalayer/jupyter-lexical/style/lexical/icons/text-paragraph.svg")
   ) !important;
 }
 
@@ -1272,143 +1272,143 @@ iframe[title="YouTube video"] {
 .typeahead-popover .icon.h3 {
   mask-image: var(
     --icon-heading,
-    url("../../node_modules/@datalayer/jupyter-lexical/style/lexical/icons/type-h1.svg")
+    url("~@datalayer/jupyter-lexical/style/lexical/icons/type-h1.svg")
   ) !important;
   -webkit-mask-image: var(
     --icon-heading,
-    url("../../node_modules/@datalayer/jupyter-lexical/style/lexical/icons/type-h1.svg")
+    url("~@datalayer/jupyter-lexical/style/lexical/icons/type-h1.svg")
   ) !important;
 }
 
 .typeahead-popover .icon.number {
   mask-image: var(
     --icon-number,
-    url("../../node_modules/@datalayer/jupyter-lexical/style/lexical/icons/list-ol.svg")
+    url("~@datalayer/jupyter-lexical/style/lexical/icons/list-ol.svg")
   ) !important;
   -webkit-mask-image: var(
     --icon-number,
-    url("../../node_modules/@datalayer/jupyter-lexical/style/lexical/icons/list-ol.svg")
+    url("~@datalayer/jupyter-lexical/style/lexical/icons/list-ol.svg")
   ) !important;
 }
 
 .typeahead-popover .icon.bullet {
   mask-image: var(
     --icon-bullet,
-    url("../../node_modules/@datalayer/jupyter-lexical/style/lexical/icons/list-ul.svg")
+    url("~@datalayer/jupyter-lexical/style/lexical/icons/list-ul.svg")
   ) !important;
   -webkit-mask-image: var(
     --icon-bullet,
-    url("../../node_modules/@datalayer/jupyter-lexical/style/lexical/icons/list-ul.svg")
+    url("~@datalayer/jupyter-lexical/style/lexical/icons/list-ul.svg")
   ) !important;
 }
 
 .typeahead-popover .icon.check {
   mask-image: var(
     --icon-check,
-    url("../../node_modules/@datalayer/jupyter-lexical/style/lexical/icons/card-checklist.svg")
+    url("~@datalayer/jupyter-lexical/style/lexical/icons/card-checklist.svg")
   ) !important;
   -webkit-mask-image: var(
     --icon-check,
-    url("../../node_modules/@datalayer/jupyter-lexical/style/lexical/icons/card-checklist.svg")
+    url("~@datalayer/jupyter-lexical/style/lexical/icons/card-checklist.svg")
   ) !important;
 }
 
 .typeahead-popover .icon.table {
   mask-image: var(
     --icon-table,
-    url("../../node_modules/@datalayer/jupyter-lexical/style/lexical/icons/table.svg")
+    url("~@datalayer/jupyter-lexical/style/lexical/icons/table.svg")
   ) !important;
   -webkit-mask-image: var(
     --icon-table,
-    url("../../node_modules/@datalayer/jupyter-lexical/style/lexical/icons/table.svg")
+    url("~@datalayer/jupyter-lexical/style/lexical/icons/table.svg")
   ) !important;
 }
 
 .typeahead-popover .icon.chevron-down {
   mask-image: var(
     --icon-chevron-down,
-    url("../../node_modules/@datalayer/jupyter-lexical/style/lexical/icons/chevron-down.svg")
+    url("~@datalayer/jupyter-lexical/style/lexical/icons/chevron-down.svg")
   ) !important;
   -webkit-mask-image: var(
     --icon-chevron-down,
-    url("../../node_modules/@datalayer/jupyter-lexical/style/lexical/icons/chevron-down.svg")
+    url("~@datalayer/jupyter-lexical/style/lexical/icons/chevron-down.svg")
   ) !important;
 }
 
 .typeahead-popover .icon.diagram-2 {
   mask-image: var(
     --icon-diagram,
-    url("../../node_modules/@datalayer/jupyter-lexical/style/lexical/icons/diagram-2.svg")
+    url("~@datalayer/jupyter-lexical/style/lexical/icons/diagram-2.svg")
   ) !important;
   -webkit-mask-image: var(
     --icon-diagram,
-    url("../../node_modules/@datalayer/jupyter-lexical/style/lexical/icons/diagram-2.svg")
+    url("~@datalayer/jupyter-lexical/style/lexical/icons/diagram-2.svg")
   ) !important;
 }
 
 .typeahead-popover .icon.quote {
   mask-image: var(
     --icon-quote,
-    url("../../node_modules/@datalayer/jupyter-lexical/style/lexical/icons/chat-square-quote.svg")
+    url("~@datalayer/jupyter-lexical/style/lexical/icons/chat-square-quote.svg")
   ) !important;
   -webkit-mask-image: var(
     --icon-quote,
-    url("../../node_modules/@datalayer/jupyter-lexical/style/lexical/icons/chat-square-quote.svg")
+    url("~@datalayer/jupyter-lexical/style/lexical/icons/chat-square-quote.svg")
   ) !important;
 }
 
 .typeahead-popover .icon.horizontal-rule {
   mask-image: var(
     --icon-hr,
-    url("../../node_modules/@datalayer/jupyter-lexical/style/lexical/icons/horizontal-rule.svg")
+    url("~@datalayer/jupyter-lexical/style/lexical/icons/horizontal-rule.svg")
   ) !important;
   -webkit-mask-image: var(
     --icon-hr,
-    url("../../node_modules/@datalayer/jupyter-lexical/style/lexical/icons/horizontal-rule.svg")
+    url("~@datalayer/jupyter-lexical/style/lexical/icons/horizontal-rule.svg")
   ) !important;
 }
 
 .typeahead-popover .icon.youtube {
   mask-image: var(
     --icon-youtube,
-    url("../../node_modules/@datalayer/jupyter-lexical/style/lexical/icons/youtube.svg")
+    url("~@datalayer/jupyter-lexical/style/lexical/icons/youtube.svg")
   ) !important;
   -webkit-mask-image: var(
     --icon-youtube,
-    url("../../node_modules/@datalayer/jupyter-lexical/style/lexical/icons/youtube.svg")
+    url("~@datalayer/jupyter-lexical/style/lexical/icons/youtube.svg")
   ) !important;
 }
 
 .typeahead-popover .icon.equation {
   mask-image: var(
     --icon-equation,
-    url("../../node_modules/@datalayer/jupyter-lexical/style/lexical/icons/plus-slash-minus.svg")
+    url("~@datalayer/jupyter-lexical/style/lexical/icons/plus-slash-minus.svg")
   ) !important;
   -webkit-mask-image: var(
     --icon-equation,
-    url("../../node_modules/@datalayer/jupyter-lexical/style/lexical/icons/plus-slash-minus.svg")
+    url("~@datalayer/jupyter-lexical/style/lexical/icons/plus-slash-minus.svg")
   ) !important;
 }
 
 .typeahead-popover .icon.gif {
   mask-image: var(
     --icon-gif,
-    url("../../node_modules/@datalayer/jupyter-lexical/style/lexical/icons/filetype-gif.svg")
+    url("~@datalayer/jupyter-lexical/style/lexical/icons/filetype-gif.svg")
   ) !important;
   -webkit-mask-image: var(
     --icon-gif,
-    url("../../node_modules/@datalayer/jupyter-lexical/style/lexical/icons/filetype-gif.svg")
+    url("~@datalayer/jupyter-lexical/style/lexical/icons/filetype-gif.svg")
   ) !important;
 }
 
 .typeahead-popover .icon.image {
   mask-image: var(
     --icon-image,
-    url("../../node_modules/@datalayer/jupyter-lexical/style/lexical/icons/file-image.svg")
+    url("~@datalayer/jupyter-lexical/style/lexical/icons/file-image.svg")
   ) !important;
   -webkit-mask-image: var(
     --icon-image,
-    url("../../node_modules/@datalayer/jupyter-lexical/style/lexical/icons/file-image.svg")
+    url("~@datalayer/jupyter-lexical/style/lexical/icons/file-image.svg")
   ) !important;
 }
 
@@ -1418,11 +1418,11 @@ iframe[title="YouTube video"] {
 .typeahead-popover .icon.justify-align {
   mask-image: var(
     --icon-align,
-    url("../../node_modules/@datalayer/jupyter-lexical/style/lexical/icons/text-left.svg")
+    url("~@datalayer/jupyter-lexical/style/lexical/icons/text-left.svg")
   ) !important;
   -webkit-mask-image: var(
     --icon-align,
-    url("../../node_modules/@datalayer/jupyter-lexical/style/lexical/icons/text-left.svg")
+    url("~@datalayer/jupyter-lexical/style/lexical/icons/text-left.svg")
   ) !important;
 }
 
