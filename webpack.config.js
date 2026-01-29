@@ -4,7 +4,7 @@
  * MIT License
  */
 
-//@ts-check
+// @ts-nocheck - webpack config uses Node.js require.resolve which TS doesn't recognize
 
 "use strict";
 
@@ -13,7 +13,36 @@ const webpack = require("webpack");
 const miniSVGDataURI = require("mini-svg-data-uri");
 const CopyPlugin = require("copy-webpack-plugin");
 
-//@ts-check
+// Helper to resolve package paths in monorepo (hoisted node_modules)
+/** 
+ * @param {string} packageName 
+ * @returns {string}
+ */
+const resolvePackage = (packageName) => {
+  try {
+    // First try to resolve package.json directly (works for most packages)
+    return path.dirname(require.resolve(`${packageName}/package.json`));
+  } catch {
+    // Fallback: resolve any subpath and extract package directory
+    // For packages with exports but no main/package.json export
+    try {
+      const resolved = require.resolve(packageName);
+      const parts = resolved.split(path.sep);
+      const nmIndex = parts.lastIndexOf('node_modules');
+      if (nmIndex === -1) return path.dirname(resolved);
+      // Handle scoped packages (@scope/pkg)
+      if (packageName.startsWith('@')) {
+        return parts.slice(0, nmIndex + 3).join(path.sep);
+      }
+      return parts.slice(0, nmIndex + 2).join(path.sep);
+    } catch {
+      // Last resort: construct the path manually in root node_modules
+      const rootNodeModules = path.resolve(__dirname, '../../../node_modules');
+      return path.join(rootNodeModules, packageName);
+    }
+  }
+};
+
 /** @typedef {import('webpack').Configuration} WebpackConfig **/
 
 /** @type WebpackConfig */
@@ -147,6 +176,8 @@ const webviewConfig = {
   resolve: {
     extensions: [".ts", ".tsx", ".js", ".jsx", ".json", ".svg"],
     symlinks: true,
+    // Include root node_modules for hoisted packages in monorepo
+    modules: ["node_modules", path.resolve(__dirname, "../../../node_modules")],
     fallback: {
       process: require.resolve("process/browser"),
       stream: false,
@@ -155,41 +186,21 @@ const webviewConfig = {
     },
     // Deduplicate CodeMirror modules to prevent multiple instances
     alias: {
-      // Force all React imports to use the same instance
-      react: path.resolve(__dirname, "./node_modules/react"),
-      "react-dom": path.resolve(__dirname, "./node_modules/react-dom"),
-      "@codemirror/state": path.resolve(
-        __dirname,
-        "./node_modules/@codemirror/state",
-      ),
-      "@codemirror/view": path.resolve(
-        __dirname,
-        "./node_modules/@codemirror/view",
-      ),
-      "@codemirror/language": path.resolve(
-        __dirname,
-        "./node_modules/@codemirror/language",
-      ),
-      "@codemirror/commands": path.resolve(
-        __dirname,
-        "./node_modules/@codemirror/commands",
-      ),
-      "@codemirror/search": path.resolve(
-        __dirname,
-        "./node_modules/@codemirror/search",
-      ),
-      "@codemirror/autocomplete": path.resolve(
-        __dirname,
-        "./node_modules/@codemirror/autocomplete",
-      ),
-      "@codemirror/lint": path.resolve(
-        __dirname,
-        "./node_modules/@codemirror/lint",
-      ),
+      // Force all imports to use the same instance
+      // Use resolvePackage helper to find packages in hoisted node_modules (monorepo)
+      react: resolvePackage("react"),
+      "react-dom": resolvePackage("react-dom"),
+      "@codemirror/state": resolvePackage("@codemirror/state"),
+      "@codemirror/view": resolvePackage("@codemirror/view"),
+      "@codemirror/language": resolvePackage("@codemirror/language"),
+      "@codemirror/commands": resolvePackage("@codemirror/commands"),
+      "@codemirror/search": resolvePackage("@codemirror/search"),
+      "@codemirror/autocomplete": resolvePackage("@codemirror/autocomplete"),
+      "@codemirror/lint": resolvePackage("@codemirror/lint"),
       // Also deduplicate yjs to prevent synchronization issues
-      yjs: path.resolve(__dirname, "./node_modules/yjs"),
-      "y-protocols": path.resolve(__dirname, "./node_modules/y-protocols"),
-      "y-websocket": path.resolve(__dirname, "./node_modules/y-websocket"),
+      yjs: resolvePackage("yjs"),
+      "y-protocols": resolvePackage("y-protocols"),
+      "y-websocket": resolvePackage("y-websocket"),
     },
   },
   module: {
@@ -291,11 +302,11 @@ const webviewConfig = {
     new CopyPlugin({
       patterns: [
         {
-          from: "node_modules/@vscode/codicons/dist/codicon.css",
+          from: path.join(resolvePackage("@vscode/codicons"), "dist/codicon.css"),
           to: "codicon.css",
         },
         {
-          from: "node_modules/@vscode/codicons/dist/codicon.ttf",
+          from: path.join(resolvePackage("@vscode/codicons"), "dist/codicon.ttf"),
           to: "codicon.ttf",
         },
         {
@@ -436,41 +447,21 @@ const lexicalWebviewConfig = {
     },
     // Deduplicate CodeMirror modules to prevent multiple instances
     alias: {
-      // Force all React imports to use the same instance
-      react: path.resolve(__dirname, "./node_modules/react"),
-      "react-dom": path.resolve(__dirname, "./node_modules/react-dom"),
-      "@codemirror/state": path.resolve(
-        __dirname,
-        "./node_modules/@codemirror/state",
-      ),
-      "@codemirror/view": path.resolve(
-        __dirname,
-        "./node_modules/@codemirror/view",
-      ),
-      "@codemirror/language": path.resolve(
-        __dirname,
-        "./node_modules/@codemirror/language",
-      ),
-      "@codemirror/commands": path.resolve(
-        __dirname,
-        "./node_modules/@codemirror/commands",
-      ),
-      "@codemirror/search": path.resolve(
-        __dirname,
-        "./node_modules/@codemirror/search",
-      ),
-      "@codemirror/autocomplete": path.resolve(
-        __dirname,
-        "./node_modules/@codemirror/autocomplete",
-      ),
-      "@codemirror/lint": path.resolve(
-        __dirname,
-        "./node_modules/@codemirror/lint",
-      ),
+      // Force all imports to use the same instance
+      // Use resolvePackage helper to find packages in hoisted node_modules (monorepo)
+      react: resolvePackage("react"),
+      "react-dom": resolvePackage("react-dom"),
+      "@codemirror/state": resolvePackage("@codemirror/state"),
+      "@codemirror/view": resolvePackage("@codemirror/view"),
+      "@codemirror/language": resolvePackage("@codemirror/language"),
+      "@codemirror/commands": resolvePackage("@codemirror/commands"),
+      "@codemirror/search": resolvePackage("@codemirror/search"),
+      "@codemirror/autocomplete": resolvePackage("@codemirror/autocomplete"),
+      "@codemirror/lint": resolvePackage("@codemirror/lint"),
       // Also deduplicate yjs to prevent synchronization issues
-      yjs: path.resolve(__dirname, "./node_modules/yjs"),
-      "y-protocols": path.resolve(__dirname, "./node_modules/y-protocols"),
-      "y-websocket": path.resolve(__dirname, "./node_modules/y-websocket"),
+      yjs: resolvePackage("yjs"),
+      "y-protocols": resolvePackage("y-protocols"),
+      "y-websocket": resolvePackage("y-websocket"),
     },
   },
   plugins: [...webviewConfig.plugins],
@@ -494,8 +485,9 @@ const showcaseWebviewConfig = {
       buffer: require.resolve("buffer/"),
     },
     alias: {
-      react: path.resolve(__dirname, "./node_modules/react"),
-      "react-dom": path.resolve(__dirname, "./node_modules/react-dom"),
+      // Use resolvePackage helper to find packages in hoisted node_modules (monorepo)
+      react: resolvePackage("react"),
+      "react-dom": resolvePackage("react-dom"),
     },
   },
   module: {
@@ -550,8 +542,9 @@ const aguiExampleConfig = {
       stream: false,
     },
     alias: {
-      react: path.resolve(__dirname, "./node_modules/react"),
-      "react-dom": path.resolve(__dirname, "./node_modules/react-dom"),
+      // Use resolvePackage helper to find packages in hoisted node_modules (monorepo)
+      react: resolvePackage("react"),
+      "react-dom": resolvePackage("react-dom"),
     },
   },
   ignoreWarnings: [
@@ -654,8 +647,9 @@ const datasourceDialogConfig = {
       crypto: false,
     },
     alias: {
-      react: path.resolve(__dirname, "./node_modules/react"),
-      "react-dom": path.resolve(__dirname, "./node_modules/react-dom"),
+      // Use resolvePackage helper to find packages in hoisted node_modules (monorepo)
+      react: resolvePackage("react"),
+      "react-dom": resolvePackage("react-dom"),
       // Stub out react-router-dom since we don't use navigation in webview
       "react-router-dom": false,
     },
@@ -722,8 +716,9 @@ const datasourceEditDialogConfig = {
       crypto: false,
     },
     alias: {
-      react: path.resolve(__dirname, "./node_modules/react"),
-      "react-dom": path.resolve(__dirname, "./node_modules/react-dom"),
+      // Use resolvePackage helper to find packages in hoisted node_modules (monorepo)
+      react: resolvePackage("react"),
+      "react-dom": resolvePackage("react-dom"),
       // Stub out react-router-dom since we don't use navigation in webview
       "react-router-dom": false,
     },

@@ -2,7 +2,7 @@
   "name": "datalayer-jupyter-vscode",
   "publisher": "Datalayer",
   "displayName": "Datalayer",
-  "description": "✨ AI ⚡ GPU 👥 Collaboration for 🪐 Jupyter Notebooks - 📄 Notion-like editor included.",
+  "description": "✨ 🤖 AI Agents for Data Analysis.",
   "version": "0.0.10",
   "cache_version": "2",
   "icon": "images/datalayer-logo.png",
@@ -76,12 +76,13 @@
     "@codemirror/view": "^6.38.3",
     "@copilotkit/react-core": "^1.10.6",
     "@copilotkit/react-ui": "^1.10.6",
-    "@datalayer/core": "^0.0.23",
+    "@datalayer/core": "^0.0.24",
+    "@datalayer/agent-runtimes": "^0.0.8",
     "@datalayer/jupyter-lexical": "^1.0.8",
     "@datalayer/jupyter-react": "^2.0.2",
     "@datalayer/lexical-loro": "^0.1.0",
     "@datalayer/primer-addons": "^1.0.4",
-    "@jupyter/ydoc": "^2.0.0",
+    "@jupyter/ydoc": "^3.0.3",
     "@jupyterlab/services": "^7.0.0",
     "@lexical/code": "^0.35.0",
     "@lexical/html": "^0.35.0",
@@ -1417,7 +1418,7 @@
         "datalayer.pyodide.version": {
           "type": "string",
           "default": "0.27.3",
-          "markdownDescription": "Pyodide version for **Datalayer webview notebooks only**. Native VS Code notebooks use a fixed version (v0.29.1 from npm package). Changes require closing and reopening notebooks."
+          "markdownDescription": "Pyodide version for **Datalayer webview notebooks only**. Native VS Code notebooks use a fixed version (v0.29.3 from npm package). Changes require closing and reopening notebooks."
         },
         "datalayer.pyodide.preloadPackages": {
           "type": "array",
