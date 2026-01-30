@@ -162,12 +162,6 @@ npm install  # Auto-downloads zeromq binaries via @vscode/zeromq
 # Watch for changes
 npm run watch
 
-# Sync jupyter packages from monorepo
-npm run sync:jupyter
-
-# Create patches for modified packages
-npm run create:patches
-
 # Debug
 Press F5 in VS Code to launch Extension Development Host
 
@@ -189,50 +183,7 @@ npm run build:icons
 
 ## Development Scripts
 
-### Jupyter Package Workflow
-
-The extension depends on local `@datalayer/jupyter-lexical` and `@datalayer/jupyter-react` packages. Use these scripts to sync changes:
-
-```bash
-# Sync latest changes from jupyter-ui monorepo (one-time)
-npm run sync:jupyter
-# - Builds jupyter-lexical and jupyter-react (tsc)
-# - Copies lib/ outputs to vscode-datalayer/node_modules
-
-# Watch mode - auto-sync on changes
-npm run sync:jupyter:watch
-# - Monitors src/ folders in jupyter-ui packages
-# - Automatically rebuilds and syncs on file changes
-# - Requires fswatch (auto-installed via Homebrew on macOS)
-
-# Create patches for your modifications
-npm run create:patches
-# - Automatically syncs first
-# - Generates patch files in patches/
-# - Patches applied automatically via postinstall hook
-
-# Apply patches manually (if needed)
-npm run apply:patches
-# - Usually runs automatically during npm install
-```
-
-### Workflow
-
-1. **Make changes** in `../jupyter-ui/packages/lexical` or `../jupyter-ui/packages/react`
-2. **Option A - Manual**: Run `npm run sync:jupyter` after each change
-3. **Option B - Watch mode**: Run `npm run sync:jupyter:watch` once, changes auto-sync
-4. **Test changes**: Compile and run extension (`npm run compile` then F5)
-5. **Create patches**: `npm run create:patches` (when ready to commit)
-
-The patches in `patches/` directory ensure all contributors automatically get your modifications when they run `npm install`.
-
-### Script Implementation
-
-Scripts are in `scripts/` directory to keep package.json clean:
-
-- `scripts/sync-jupyter.sh` - Build and sync jupyter packages
-- `scripts/create-patches.sh` - Generate patch-package patches
-- `scripts/apply-patches.sh` - Apply existing patches
+The extension uses npm workspaces in the monorepo for dependency management. Changes to `@datalayer/jupyter-lexical` and `@datalayer/jupyter-react` packages are automatically available during development.
 
 ## Architecture Overview
 

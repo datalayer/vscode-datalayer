@@ -140,7 +140,8 @@ export async function createCloudNotebook(
     const spaceDisplayName = space?.name || "Unknown Space";
 
     // URI format: datalayer://{spaceName}/{documentId}/{filename}
-    const uri = `datalayer://${spaceDisplayName}/${notebook.uid}/${finalName}`;
+    // Encode path components to handle spaces and special characters
+    const uri = `datalayer://${encodeURIComponent(spaceDisplayName)}/${encodeURIComponent(notebook.uid)}/${encodeURIComponent(finalName)}`;
 
     // Call the callback to download and open the notebook
     // Pass the actual SDK model instance (same as space tree command)

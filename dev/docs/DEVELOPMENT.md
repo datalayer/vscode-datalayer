@@ -36,8 +36,6 @@ npm run package
 npm run vsix
 ```
 
-**Note on Installation**: If you encounter errors about missing `scripts/apply-patches.sh` during `npm install`, use `npm install --ignore-scripts` instead. This bypasses postinstall scripts in dependencies that aren't needed for VS Code extension development.
-
 ## Debugging Webviews
 
 By default, webview builds use `hidden-source-map` to keep bundle size small (~15-20 MB savings). This generates `.map` files but doesn't embed them in the bundle.
@@ -87,44 +85,7 @@ The extension depends on local packages from the monorepo:
 - `@datalayer/jupyter-react` - React components for Jupyter notebooks
 - `@datalayer/lexical-loro` - Loro CRDT collaboration provider for Lexical
 
-During development, you may need to sync changes from these repositories.
-
-### Development Scripts
-
-```bash
-# Sync latest changes from all Datalayer packages
-npm run sync:jupyter
-# 1. Runs gulp resources-to-lib for core and jupyter-lexical (copies images/examples to lib/)
-# 2. Builds TypeScript (core, jupyter-lexical, jupyter-react, lexical-loro)
-# 3. Copies lib/, style/, and package.json to node_modules
-
-# Watch mode - auto-sync on file changes
-npm run sync:jupyter:watch
-# Monitors src/ folders and automatically rebuilds/syncs when files change
-# Watches: core, jupyter-lexical, jupyter-react, lexical-loro
-
-# Create patches for modified packages
-npm run create:patches
-# Auto-syncs first, then generates patch files in patches/
-
-# Apply patches manually (if needed)
-npm run apply:patches
-# Normally runs automatically via postinstall hook
-```
-
-### Workflow
-
-1. **Make changes** in any of the dependent packages:
-   - `../core/src` - Core library
-   - `../jupyter-ui/packages/lexical/src` - Lexical editor
-   - `../jupyter-ui/packages/react/src` - React components
-   - `../lexical-loro/src` - Loro collaboration provider
-2. **Option A - Manual sync**: `npm run sync:jupyter` when ready to test
-3. **Option B - Auto sync**: `npm run sync:jupyter:watch` in a separate terminal for live updates
-4. **Test changes**: Compile and run extension (`npm run compile` then F5)
-5. **Create patches**: `npm run create:patches` (when ready to commit)
-
-The patches in `patches/` directory are automatically applied when anyone runs `npm install`, ensuring all contributors get your modifications.
+The extension uses npm workspaces in the monorepo for dependency management. Changes to dependent packages are automatically available during development.
 
 ### Package Dependencies
 
@@ -138,26 +99,11 @@ vscode-datalayer
 └── @datalayer/jupyter-react (React notebook components)
 ```
 
-#### Key Dependency: lexical-loro
+### Development Workflow
 
-The `@datalayer/jupyter-lexical` package depends on `@datalayer/lexical-loro` for real-time collaboration:
-
-- **Purpose**: Provides Loro CRDT-based collaboration context for Lexical editor
-- **Used by**: CommentPlugin, collaboration features
-- **Why it matters**: Changes to lexical-loro require rebuilding jupyter-lexical to see effects
-- **Sync requirement**: Both packages must be synced together during development
-
-**Example**: If you modify the collaboration context in lexical-loro, you must:
-
-1. Build lexical-loro: `cd ../lexical-loro && npm run build`
-2. Build jupyter-lexical: `cd ../jupyter-ui/packages/lexical && npm run build:lib`
-3. Sync to extension: `cd vscode-datalayer && npm run sync:jupyter`
-
-Or simply use watch mode which handles all of this automatically: `npm run sync:jupyter:watch`
-
-### ⚠️ Important Notes
-
-**After `npm install`, you MUST re-run `npm run sync:jupyter`**. The sync script copies packages to `node_modules/`, and `npm install` will remove these synced packages. Always sync again after installing new dependencies.
+1. **Make changes** in any of the dependent packages in the monorepo
+2. **Build packages**: Each package has its own build script (e.g., `npm run build`)
+3. **Test changes**: Compile and run extension (`npm run compile` then F5)
 
 **New Dependencies** (added January 2025):
 
@@ -410,7 +356,6 @@ Keytar is automatically rebuilt for Electron during `npm install` via the `posti
 ```bash
 # Postinstall workflow (runs automatically)
 npm run rebuild:keytar           # Rebuild keytar for Electron 33.2.0
-bash scripts/apply-patches.sh    # Apply package patches
 node scripts/downloadZmqBinaries.js  # Download ZMQ binaries
 ```
 
