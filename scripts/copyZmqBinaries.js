@@ -8,6 +8,25 @@
 const fs = require('fs');
 const path = require('path');
 
+/**
+ * Find a package in either local or monorepo root node_modules
+ */
+function findPackage(packageName) {
+  // Try local node_modules first (standalone installation)
+  const localPath = path.join(__dirname, '..', 'node_modules', packageName);
+  if (fs.existsSync(localPath)) {
+    return localPath;
+  }
+
+  // Try monorepo root node_modules (hoisted packages)
+  const rootPath = path.join(__dirname, '..', '..', 'node_modules', packageName);
+  if (fs.existsSync(rootPath)) {
+    return rootPath;
+  }
+
+  return null;
+}
+
 function copyDir(src, dest) {
   if (!fs.existsSync(dest)) {
     fs.mkdirSync(dest, { recursive: true });
@@ -69,11 +88,11 @@ async function main() {
   ];
 
   for (const config of moduleConfigs) {
-    const srcRoot = path.join(__dirname, '../node_modules', config.name);
+    const srcRoot = findPackage(config.name);
     const destRoot = path.join(__dirname, '../dist/node_modules', config.name);
 
-    if (!fs.existsSync(srcRoot)) {
-      console.warn(`⚠️  ${config.name} module not found at ${srcRoot}`);
+    if (!srcRoot) {
+      console.warn(`⚠️  ${config.name} module not found at ${path.join(__dirname, '../node_modules', config.name)}`);
       continue;
     }
 

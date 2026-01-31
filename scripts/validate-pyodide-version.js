@@ -8,7 +8,29 @@ const fs = require('fs');
 const path = require('path');
 
 // Read installed Pyodide version from node_modules
-const pyodidePackageJson = require('../node_modules/pyodide/package.json');
+// Handle both local node_modules and workspace-hoisted node_modules
+let pyodidePackageJson;
+try {
+  // Try local node_modules first (standalone mode)
+  pyodidePackageJson = require('../node_modules/pyodide/package.json');
+} catch (err) {
+  // Try root node_modules (workspace mode)
+  try {
+    pyodidePackageJson = require('../../node_modules/pyodide/package.json');
+  } catch (err2) {
+    // Fallback to require.resolve which uses Node's resolution algorithm
+    try {
+      const pyodidePath = require.resolve('pyodide/package.json');
+      pyodidePackageJson = require(pyodidePath);
+    } catch (err3) {
+      console.error('❌ ERROR: Could not find pyodide package.json');
+      console.error('   Tried: ../node_modules/pyodide/package.json');
+      console.error('   Tried: ../../node_modules/pyodide/package.json');
+      console.error('   Tried: require.resolve(\'pyodide/package.json\')');
+      process.exit(1);
+    }
+  }
+}
 const installedVersion = pyodidePackageJson.version;
 
 console.log(`[Pyodide Version Sync] Installed version: ${installedVersion}`);

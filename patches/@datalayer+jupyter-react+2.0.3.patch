@@ -1,0 +1,1313 @@
+diff --git a/node_modules/@datalayer/jupyter-react/LICENSE b/node_modules/@datalayer/jupyter-react/LICENSE
+deleted file mode 100644
+index f66f200..0000000
+--- a/node_modules/@datalayer/jupyter-react/LICENSE
++++ /dev/null
+@@ -1,21 +0,0 @@
+-Copyright (c) 2021-2023 Datalayer, Inc.
+-
+-MIT License
+-
+-Permission is hereby granted, free of charge, to any person obtaining a copy
+-of this software and associated documentation files (the "Software"), to deal
+-in the Software without restriction, including without limitation the rights
+-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+-copies of the Software, and to permit persons to whom the Software is
+-furnished to do so, subject to the following conditions:
+-
+-The above copyright notice and this permission notice shall be included in all
+-copies or substantial portions of the Software.
+-
+-THE SOFTWARE IS PROVIDED *AS IS*, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+-SOFTWARE.
+diff --git a/node_modules/@datalayer/jupyter-react/README.md b/node_modules/@datalayer/jupyter-react/README.md
+deleted file mode 100644
+index de8e099..0000000
+--- a/node_modules/@datalayer/jupyter-react/README.md
++++ /dev/null
+@@ -1,163 +0,0 @@
+-[![Datalayer](https://assets.datalayer.tech/datalayer-25.svg)](https://datalayer.io)
+-
+-[![Become a Sponsor](https://img.shields.io/static/v1?label=Become%20a%20Sponsor&message=%E2%9D%A4&logo=GitHub&style=flat&color=1ABC9C)](https://github.com/sponsors/datalayer)
+-
+-# 🪐 ⚛️ Jupyter React
+-
+-> [!IMPORTANT]
+-> **Jupyter React 2.0 Released!** 🎉
+->
+-> This major release includes **breaking changes** for the `Jupyter` and `Notebook` components:
+->
+-> - The `Notebook2` component is now the default `Notebook`
+-> - Instead of using `startDefaultKernel` prop on components, use the `useJupyter({ startDefaultKernel: true })` hook to get `serviceManager` and `defaultKernel`, then pass them explicitly to `Notebook2`
+-> - Notebook component now require `kernel` and `serviceManager` props with conditional rendering
+-> - See the [examples](./src/examples) for migration patterns (e.g., [PyGWalker.tsx](./src/examples/PyGWalker.tsx))
+-
+-> Jupyter React is a set of [React.js](https://reactjs.org) components that allow a frontend developer to build data products compatible with the [Jupyter](https://jupyter.org) ecosystem. The user interface delivers executable notebooks and cells.
+-
+-The below image shows a gallery of the available React.js components ready to be used in you custom application. These open source components are used to build the online [Datalayer service](https://datalayer.ai), a collaborative platform for data analysis.
+-
+-<div align="center" style="text-align: center">
+-  <img alt="Jupyter React Gallery" src="https://datalayer-jupyter-examples.s3.amazonaws.com/jupyter-react-gallery.gif" />
+-</div>
+-
+-We host a Storybook on ✨ https://jupyter-ui-storybook.datalayer.tech that showcases various low-level as high-level React.js components useful to build a Data Product.
+-
+-The Jupyter(Lab) notebook is a tool that allows data scientist to analyse dataset. However, it is not easy to create a custom user interface integrated in an existing application. [Jupyter React](https://jupyter-react.datalayer.tech), an open-source library, fills that gap and provides components that a developer can easily integrate in any React.js application.
+-
+-In terms of technical stack, the Jupyter(Lab) user interface is built on top of Lumino, which is an imperative way to build user interface and **can not** be consumed by industry standard declarative frameworks like React.js. As a user interface developer, if you want to create a custom data product on top of Jupyter, you have to stick to Lumino and carry-on the full notebook interface not tailored to your specific needs. This is not what you want. You just want to expose what you need, you want to develop with your favorite toolkit (like React.js) and you also want to integrate on a per-component basis the Jupyter functionality in your application.
+-
+-Although a developer can embed a React.js component into JupyterLab, the reverse is not possible: you can not embed JupyterLab into a React.js application. To solve that issue, Jupyter-React ships components to easily create a React.js data product compatible with the Jupyter ecosystem. Those components can be used in any React.js application, and also in static websites like Docusaurus, Next.js or Remix. They wrap underneath the JupyterLab code and allow developing React.js applications with code execution capability. State management is based on Zustand.
+-
+-```mermaid
+-flowchart LR
+-    subgraph Host["Host React Application"]
+-        HA[Components]
+-    end
+-
+-    subgraph Zustand["Zustand Store"]
+-        ZA[Actions]
+-        ZS[State]
+-    end
+-
+-    subgraph JupyterUI["Jupyter UI"]
+-        JR[React Components]
+-    end
+-
+-    subgraph JupyterLab["JupyterLab/Lumino"]
+-        LC[Commands]
+-        LS[Signals]
+-        LW[Widgets]
+-    end
+-
+-    subgraph Kernel["Jupyter Server"]
+-        K[Kernel]
+-    end
+-
+-    HA -->|"dispatch"| ZA
+-    ZA -->|"proxy"| LC
+-    LC -->|"execute"| LW
+-    LW -->|"request"| K
+-
+-    K -->|"response"| LS
+-    LS -->|"emit"| ZS
+-    ZS -->|"subscribe"| HA
+-
+-    JR -.->|"wraps"| LW
+-```
+-
+-IPyWidgets are supported (the Comm feature needs to be fixed). JupyterLite and PyScript support is on the roadmap. Autocompletion is also available.
+-
+-You can find more context reading this [abstract](https://fosdem.org/2022/schedule/event/lt_jupyter) of the talk given at [FOSDEM 2022](https://fosdem.org/2022) ([video recording](http://bofh.nikhef.nl/events/FOSDEM/2022/L.lightningtalks/lt_jupyter.webm)).
+-
+-As a React.js developer, you just write a few lines of code get a live notebook or live cell in your application.
+-
+-<div align="center" style="text-align: center">
+-  <img alt="Jupyter React Slate" src="https://datalayer-jupyter-examples.s3.amazonaws.com/jupyter-react-snippet.png" />
+-</div>
+-
+-The typedoc documentation is [available online](https://typedoc.datalayer.tech/datalayer/jupyter-react/0.9.0/index.html).
+-
+-Jupyter React can be used in any React.js application. Install the latest `@datalayer/jupyter-react` npm package and get inspired by the [examples](https://github.com/datalayer/jupyter-ui/tree/main/examples) in this repository.
+-
+-<div align="center" style="text-align: center">
+-  <img alt="Jupyter React Slate" src="https://datalayer-jupyter-examples.s3.amazonaws.com/jupyter-react-notebook.png" />
+-</div>
+-
+-## Releases
+-
+-Jupyter React is released in [Npm.js](https://www.npmjs.com/package/@datalayer/jupyter-react) and [PyPI](https://pypi.org/project/jupyter-react).
+-
+-## Development
+-
+-### Running Examples
+-
+-This package includes multiple example applications demonstrating various Jupyter React components. You can run these examples using either **Vite** (recommended) or **Webpack**.
+-
+-#### Using Vite (Recommended)
+-
+-Vite provides faster development server startup and hot module replacement (HMR).
+-
+-```bash
+-# Install dependencies
+-npm install
+-
+-# Start development server (default example: Notebook2Actions)
+-npm run dev:vite
+-
+-# Or use these alternative commands
+-npm run start:vite              # Same as dev:vite
+-npm run start-local:vite        # Use local Jupyter server (http://localhost:8686)
+-npm run start-noconfig:vite     # Run without config
+-npm run build:vite              # Production build
+-npm run preview:vite            # Preview production build
+-```
+-
+-The dev server runs on http://localhost:3208.
+-
+-To run a different example, edit the entry point in `index.html`:
+-
+-```html
+-<script type="module" src="/src/examples/YourExample.tsx"></script>
+-```
+-
+-#### Using Webpack
+-
+-Webpack is still available for backward compatibility.
+-
+-```bash
+-# Start development server
+-npm run start:webpack
+-
+-# Or use these alternative commands
+-npm run start-local:webpack     # Use local Jupyter server
+-npm run start-noconfig          # Run without config (webpack)
+-npm run build:webpack           # Production build with webpack
+-```
+-
+-### Available Examples
+-
+-The following examples are available in `src/examples/`:
+-
+-- **Notebook2Actions** - Notebook with action bar controls
+-- **Cell** / **CellLite** - Single cell examples
+-- **Notebook** / **NotebookLite** - Full notebook examples
+-- **Console** / **ConsoleLite** - Console examples
+-- **IPyWidgets** - IPyWidgets integration
+-- **JupyterLabApp** - Full JupyterLab application
+-- **Terminal** - Terminal component
+-- And many more...
+-
+-### Building the Library
+-
+-```bash
+-# Build TypeScript library
+-npm run build:lib
+-
+-# Full build (resources + TypeScript + webpack)
+-npm run build
+-
+-# Production build
+-npm run build:prod
+-```
+diff --git a/node_modules/@datalayer/jupyter-react/lib/jupyter/lite/pyodide-kernel/pypi/all-local.json b/node_modules/@datalayer/jupyter-react/lib/jupyter/lite/pyodide-kernel/pypi/all-local.json
+index 7680f4c..82364b1 100644
+--- a/node_modules/@datalayer/jupyter-react/lib/jupyter/lite/pyodide-kernel/pypi/all-local.json
++++ b/node_modules/@datalayer/jupyter-react/lib/jupyter/lite/pyodide-kernel/pypi/all-local.json
+@@ -1,128 +1,128 @@
+ {
+-    "ipykernel": {
+-        "releases": {
+-            "6.9.2": [
+-                {
+-                    "comment_text": "",
+-                    "digests": {
+-                        "md5": "6417c37d13c80d514da1a003e9aab5f9",
+-                        "sha256": "d53285dbf2d9e7730a911ed3a1fe245b4747710930636c2fd000354c5614fbc9"
+-                    },
+-                    "downloads": -1,
+-                    "filename": "ipykernel-6.9.2-py3-none-any.whl",
+-                    "has_sig": false,
+-                    "md5_digest": "6417c37d13c80d514da1a003e9aab5f9",
+-                    "packagetype": "bdist_wheel",
+-                    "python_version": "py3",
+-                    "requires_python": ">=3.10",
+-                    "size": 2731,
+-                    "upload_time": "2025-01-15T14:41:51.279101Z",
+-                    "upload_time_iso_8601": "2025-01-15T14:41:51.279101Z",
+-                    "url": "./ipykernel-6.9.2-py3-none-any.whl",
+-                    "yanked": false,
+-                    "yanked_reason": null
+-                }
+-            ]
++  "ipykernel": {
++    "releases": {
++      "6.9.2": [
++        {
++          "comment_text": "",
++          "digests": {
++            "md5": "6417c37d13c80d514da1a003e9aab5f9",
++            "sha256": "d53285dbf2d9e7730a911ed3a1fe245b4747710930636c2fd000354c5614fbc9"
++          },
++          "downloads": -1,
++          "filename": "ipykernel-6.9.2-py3-none-any.whl",
++          "has_sig": false,
++          "md5_digest": "6417c37d13c80d514da1a003e9aab5f9",
++          "packagetype": "bdist_wheel",
++          "python_version": "py3",
++          "requires_python": ">=3.10",
++          "size": 2731,
++          "upload_time": "2025-01-15T14:41:51.279101Z",
++          "upload_time_iso_8601": "2025-01-15T14:41:51.279101Z",
++          "url": "./ipykernel-6.9.2-py3-none-any.whl",
++          "yanked": false,
++          "yanked_reason": null
+         }
+-    },
+-    "piplite": {
+-        "releases": {
+-            "0.5.1": [
+-                {
+-                    "comment_text": "",
+-                    "digests": {
+-                        "md5": "7175e3ccb0c891baf4e923cf80015e63",
+-                        "sha256": "c7c8c7ded720dc3a9f3346607d95f70cd490cb0b27c6a67918e0cfadb5c50315"
+-                    },
+-                    "downloads": -1,
+-                    "filename": "piplite-0.5.1-py3-none-any.whl",
+-                    "has_sig": false,
+-                    "md5_digest": "7175e3ccb0c891baf4e923cf80015e63",
+-                    "packagetype": "bdist_wheel",
+-                    "python_version": "py3",
+-                    "requires_python": "<3.12,>=3.11",
+-                    "size": 7233,
+-                    "upload_time": "2025-01-15T14:41:51.279101Z",
+-                    "upload_time_iso_8601": "2025-01-15T14:41:51.279101Z",
+-                    "url": "./piplite-0.5.1-py3-none-any.whl",
+-                    "yanked": false,
+-                    "yanked_reason": null
+-                }
+-            ]
++      ]
++    }
++  },
++  "piplite": {
++    "releases": {
++      "0.5.1": [
++        {
++          "comment_text": "",
++          "digests": {
++            "md5": "7175e3ccb0c891baf4e923cf80015e63",
++            "sha256": "c7c8c7ded720dc3a9f3346607d95f70cd490cb0b27c6a67918e0cfadb5c50315"
++          },
++          "downloads": -1,
++          "filename": "piplite-0.5.1-py3-none-any.whl",
++          "has_sig": false,
++          "md5_digest": "7175e3ccb0c891baf4e923cf80015e63",
++          "packagetype": "bdist_wheel",
++          "python_version": "py3",
++          "requires_python": "<3.12,>=3.11",
++          "size": 7233,
++          "upload_time": "2025-01-15T14:41:51.279101Z",
++          "upload_time_iso_8601": "2025-01-15T14:41:51.279101Z",
++          "url": "./piplite-0.5.1-py3-none-any.whl",
++          "yanked": false,
++          "yanked_reason": null
++        }
++      ]
++    }
++  },
++  "pyodide-kernel": {
++    "releases": {
++      "0.5.1": [
++        {
++          "comment_text": "",
++          "digests": {
++            "md5": "0924a59fd3622b8307d05f7212c998e1",
++            "sha256": "0d556c201e155c19ddb3da7cc6b6cf2b18daeeb399f2978cf3c206ba42ccfacc"
++          },
++          "downloads": -1,
++          "filename": "pyodide_kernel-0.5.1-py3-none-any.whl",
++          "has_sig": false,
++          "md5_digest": "0924a59fd3622b8307d05f7212c998e1",
++          "packagetype": "bdist_wheel",
++          "python_version": "py3",
++          "requires_python": "<3.12,>=3.11",
++          "size": 11009,
++          "upload_time": "2025-01-15T14:41:51.279101Z",
++          "upload_time_iso_8601": "2025-01-15T14:41:51.279101Z",
++          "url": "./pyodide_kernel-0.5.1-py3-none-any.whl",
++          "yanked": false,
++          "yanked_reason": null
+         }
+-    },
+-    "pyodide-kernel": {
+-        "releases": {
+-            "0.5.1": [
+-                {
+-                    "comment_text": "",
+-                    "digests": {
+-                        "md5": "0924a59fd3622b8307d05f7212c998e1",
+-                        "sha256": "0d556c201e155c19ddb3da7cc6b6cf2b18daeeb399f2978cf3c206ba42ccfacc"
+-                    },
+-                    "downloads": -1,
+-                    "filename": "pyodide_kernel-0.5.1-py3-none-any.whl",
+-                    "has_sig": false,
+-                    "md5_digest": "0924a59fd3622b8307d05f7212c998e1",
+-                    "packagetype": "bdist_wheel",
+-                    "python_version": "py3",
+-                    "requires_python": "<3.12,>=3.11",
+-                    "size": 11009,
+-                    "upload_time": "2025-01-15T14:41:51.279101Z",
+-                    "upload_time_iso_8601": "2025-01-15T14:41:51.279101Z",
+-                    "url": "./pyodide_kernel-0.5.1-py3-none-any.whl",
+-                    "yanked": false,
+-                    "yanked_reason": null
+-                }
+-            ]
++      ]
++    }
++  },
++  "widgetsnbextension": {
++    "releases": {
++      "3.6.999": [
++        {
++          "comment_text": "",
++          "digests": {
++            "md5": "efee63dd8d36b7e56253c27614a55ec1",
++            "sha256": "9fbb27700eb35a49469b9c8c51e9ba434348372d07d7c6063839dd4462b27e97"
++          },
++          "downloads": -1,
++          "filename": "widgetsnbextension-3.6.999-py3-none-any.whl",
++          "has_sig": false,
++          "md5_digest": "efee63dd8d36b7e56253c27614a55ec1",
++          "packagetype": "bdist_wheel",
++          "python_version": "py3",
++          "requires_python": "<3.12,>=3.11",
++          "size": 2369,
++          "upload_time": "2025-01-15T14:41:51.280101Z",
++          "upload_time_iso_8601": "2025-01-15T14:41:51.280101Z",
++          "url": "./widgetsnbextension-3.6.999-py3-none-any.whl",
++          "yanked": false,
++          "yanked_reason": null
+         }
+-    },
+-    "widgetsnbextension": {
+-        "releases": {
+-            "3.6.999": [
+-                {
+-                    "comment_text": "",
+-                    "digests": {
+-                        "md5": "efee63dd8d36b7e56253c27614a55ec1",
+-                        "sha256": "9fbb27700eb35a49469b9c8c51e9ba434348372d07d7c6063839dd4462b27e97"
+-                    },
+-                    "downloads": -1,
+-                    "filename": "widgetsnbextension-3.6.999-py3-none-any.whl",
+-                    "has_sig": false,
+-                    "md5_digest": "efee63dd8d36b7e56253c27614a55ec1",
+-                    "packagetype": "bdist_wheel",
+-                    "python_version": "py3",
+-                    "requires_python": "<3.12,>=3.11",
+-                    "size": 2369,
+-                    "upload_time": "2025-01-15T14:41:51.280101Z",
+-                    "upload_time_iso_8601": "2025-01-15T14:41:51.280101Z",
+-                    "url": "./widgetsnbextension-3.6.999-py3-none-any.whl",
+-                    "yanked": false,
+-                    "yanked_reason": null
+-                }
+-            ],
+-            "4.0.999": [
+-                {
+-                    "comment_text": "",
+-                    "digests": {
+-                        "md5": "d8db7256127c579c6f6f93973fa134fc",
+-                        "sha256": "d603779885ca57bfaeca1099bf9f69d82cd58f616a9a40c8756bc457874d0fa5"
+-                    },
+-                    "downloads": -1,
+-                    "filename": "widgetsnbextension-4.0.999-py3-none-any.whl",
+-                    "has_sig": false,
+-                    "md5_digest": "d8db7256127c579c6f6f93973fa134fc",
+-                    "packagetype": "bdist_wheel",
+-                    "python_version": "py3",
+-                    "requires_python": "<3.12,>=3.11",
+-                    "size": 2370,
+-                    "upload_time": "2025-01-15T14:41:51.280101Z",
+-                    "upload_time_iso_8601": "2025-01-15T14:41:51.280101Z",
+-                    "url": "./widgetsnbextension-4.0.999-py3-none-any.whl",
+-                    "yanked": false,
+-                    "yanked_reason": null
+-                }
+-            ]
++      ],
++      "4.0.999": [
++        {
++          "comment_text": "",
++          "digests": {
++            "md5": "d8db7256127c579c6f6f93973fa134fc",
++            "sha256": "d603779885ca57bfaeca1099bf9f69d82cd58f616a9a40c8756bc457874d0fa5"
++          },
++          "downloads": -1,
++          "filename": "widgetsnbextension-4.0.999-py3-none-any.whl",
++          "has_sig": false,
++          "md5_digest": "d8db7256127c579c6f6f93973fa134fc",
++          "packagetype": "bdist_wheel",
++          "python_version": "py3",
++          "requires_python": "<3.12,>=3.11",
++          "size": 2370,
++          "upload_time": "2025-01-15T14:41:51.280101Z",
++          "upload_time_iso_8601": "2025-01-15T14:41:51.280101Z",
++          "url": "./widgetsnbextension-4.0.999-py3-none-any.whl",
++          "yanked": false,
++          "yanked_reason": null
+         }
++      ]
+     }
++  }
+ }
+diff --git a/node_modules/@datalayer/jupyter-react/lib/jupyter/lite/pyodide-kernel/pypi/all.json b/node_modules/@datalayer/jupyter-react/lib/jupyter/lite/pyodide-kernel/pypi/all.json
+index 9e5fd4f..169e5e7 100644
+--- a/node_modules/@datalayer/jupyter-react/lib/jupyter/lite/pyodide-kernel/pypi/all.json
++++ b/node_modules/@datalayer/jupyter-react/lib/jupyter/lite/pyodide-kernel/pypi/all.json
+@@ -1,128 +1,128 @@
+ {
+-    "ipykernel": {
+-        "releases": {
+-            "6.9.2": [
+-                {
+-                    "comment_text": "",
+-                    "digests": {
+-                        "md5": "6417c37d13c80d514da1a003e9aab5f9",
+-                        "sha256": "d53285dbf2d9e7730a911ed3a1fe245b4747710930636c2fd000354c5614fbc9"
+-                    },
+-                    "downloads": -1,
+-                    "filename": "ipykernel-6.9.2-py3-none-any.whl",
+-                    "has_sig": false,
+-                    "md5_digest": "6417c37d13c80d514da1a003e9aab5f9",
+-                    "packagetype": "bdist_wheel",
+-                    "python_version": "py3",
+-                    "requires_python": ">=3.10",
+-                    "size": 2731,
+-                    "upload_time": "2025-01-15T14:41:51.279101Z",
+-                    "upload_time_iso_8601": "2025-01-15T14:41:51.279101Z",
+-                    "url": "https://assets.datalayer.tech/pypi/ipykernel-6.9.2-py3-none-any.whl",
+-                    "yanked": false,
+-                    "yanked_reason": null
+-                }
+-            ]
++  "ipykernel": {
++    "releases": {
++      "6.9.2": [
++        {
++          "comment_text": "",
++          "digests": {
++            "md5": "6417c37d13c80d514da1a003e9aab5f9",
++            "sha256": "d53285dbf2d9e7730a911ed3a1fe245b4747710930636c2fd000354c5614fbc9"
++          },
++          "downloads": -1,
++          "filename": "ipykernel-6.9.2-py3-none-any.whl",
++          "has_sig": false,
++          "md5_digest": "6417c37d13c80d514da1a003e9aab5f9",
++          "packagetype": "bdist_wheel",
++          "python_version": "py3",
++          "requires_python": ">=3.10",
++          "size": 2731,
++          "upload_time": "2025-01-15T14:41:51.279101Z",
++          "upload_time_iso_8601": "2025-01-15T14:41:51.279101Z",
++          "url": "https://assets.datalayer.tech/pypi/ipykernel-6.9.2-py3-none-any.whl",
++          "yanked": false,
++          "yanked_reason": null
+         }
+-    },
+-    "piplite": {
+-        "releases": {
+-            "0.5.1": [
+-                {
+-                    "comment_text": "",
+-                    "digests": {
+-                        "md5": "7175e3ccb0c891baf4e923cf80015e63",
+-                        "sha256": "c7c8c7ded720dc3a9f3346607d95f70cd490cb0b27c6a67918e0cfadb5c50315"
+-                    },
+-                    "downloads": -1,
+-                    "filename": "piplite-0.5.1-py3-none-any.whl",
+-                    "has_sig": false,
+-                    "md5_digest": "7175e3ccb0c891baf4e923cf80015e63",
+-                    "packagetype": "bdist_wheel",
+-                    "python_version": "py3",
+-                    "requires_python": "<3.12,>=3.11",
+-                    "size": 7233,
+-                    "upload_time": "2025-01-15T14:41:51.279101Z",
+-                    "upload_time_iso_8601": "2025-01-15T14:41:51.279101Z",
+-                    "url": "https://assets.datalayer.tech/pypi/piplite-0.5.1-py3-none-any.whl",
+-                    "yanked": false,
+-                    "yanked_reason": null
+-                }
+-            ]
++      ]
++    }
++  },
++  "piplite": {
++    "releases": {
++      "0.5.1": [
++        {
++          "comment_text": "",
++          "digests": {
++            "md5": "7175e3ccb0c891baf4e923cf80015e63",
++            "sha256": "c7c8c7ded720dc3a9f3346607d95f70cd490cb0b27c6a67918e0cfadb5c50315"
++          },
++          "downloads": -1,
++          "filename": "piplite-0.5.1-py3-none-any.whl",
++          "has_sig": false,
++          "md5_digest": "7175e3ccb0c891baf4e923cf80015e63",
++          "packagetype": "bdist_wheel",
++          "python_version": "py3",
++          "requires_python": "<3.12,>=3.11",
++          "size": 7233,
++          "upload_time": "2025-01-15T14:41:51.279101Z",
++          "upload_time_iso_8601": "2025-01-15T14:41:51.279101Z",
++          "url": "https://assets.datalayer.tech/pypi/piplite-0.5.1-py3-none-any.whl",
++          "yanked": false,
++          "yanked_reason": null
++        }
++      ]
++    }
++  },
++  "pyodide-kernel": {
++    "releases": {
++      "0.5.1": [
++        {
++          "comment_text": "",
++          "digests": {
++            "md5": "0924a59fd3622b8307d05f7212c998e1",
++            "sha256": "0d556c201e155c19ddb3da7cc6b6cf2b18daeeb399f2978cf3c206ba42ccfacc"
++          },
++          "downloads": -1,
++          "filename": "pyodide_kernel-0.5.1-py3-none-any.whl",
++          "has_sig": false,
++          "md5_digest": "0924a59fd3622b8307d05f7212c998e1",
++          "packagetype": "bdist_wheel",
++          "python_version": "py3",
++          "requires_python": "<3.12,>=3.11",
++          "size": 11009,
++          "upload_time": "2025-01-15T14:41:51.279101Z",
++          "upload_time_iso_8601": "2025-01-15T14:41:51.279101Z",
++          "url": "https://assets.datalayer.tech/pypi/pyodide_kernel-0.5.1-py3-none-any.whl",
++          "yanked": false,
++          "yanked_reason": null
+         }
+-    },
+-    "pyodide-kernel": {
+-        "releases": {
+-            "0.5.1": [
+-                {
+-                    "comment_text": "",
+-                    "digests": {
+-                        "md5": "0924a59fd3622b8307d05f7212c998e1",
+-                        "sha256": "0d556c201e155c19ddb3da7cc6b6cf2b18daeeb399f2978cf3c206ba42ccfacc"
+-                    },
+-                    "downloads": -1,
+-                    "filename": "pyodide_kernel-0.5.1-py3-none-any.whl",
+-                    "has_sig": false,
+-                    "md5_digest": "0924a59fd3622b8307d05f7212c998e1",
+-                    "packagetype": "bdist_wheel",
+-                    "python_version": "py3",
+-                    "requires_python": "<3.12,>=3.11",
+-                    "size": 11009,
+-                    "upload_time": "2025-01-15T14:41:51.279101Z",
+-                    "upload_time_iso_8601": "2025-01-15T14:41:51.279101Z",
+-                    "url": "https://assets.datalayer.tech/pypi/pyodide_kernel-0.5.1-py3-none-any.whl",
+-                    "yanked": false,
+-                    "yanked_reason": null
+-                }
+-            ]
++      ]
++    }
++  },
++  "widgetsnbextension": {
++    "releases": {
++      "3.6.999": [
++        {
++          "comment_text": "",
++          "digests": {
++            "md5": "efee63dd8d36b7e56253c27614a55ec1",
++            "sha256": "9fbb27700eb35a49469b9c8c51e9ba434348372d07d7c6063839dd4462b27e97"
++          },
++          "downloads": -1,
++          "filename": "widgetsnbextension-3.6.999-py3-none-any.whl",
++          "has_sig": false,
++          "md5_digest": "efee63dd8d36b7e56253c27614a55ec1",
++          "packagetype": "bdist_wheel",
++          "python_version": "py3",
++          "requires_python": "<3.12,>=3.11",
++          "size": 2369,
++          "upload_time": "2025-01-15T14:41:51.280101Z",
++          "upload_time_iso_8601": "2025-01-15T14:41:51.280101Z",
++          "url": "https://assets.datalayer.tech/pypi/widgetsnbextension-3.6.999-py3-none-any.whl",
++          "yanked": false,
++          "yanked_reason": null
+         }
+-    },
+-    "widgetsnbextension": {
+-        "releases": {
+-            "3.6.999": [
+-                {
+-                    "comment_text": "",
+-                    "digests": {
+-                        "md5": "efee63dd8d36b7e56253c27614a55ec1",
+-                        "sha256": "9fbb27700eb35a49469b9c8c51e9ba434348372d07d7c6063839dd4462b27e97"
+-                    },
+-                    "downloads": -1,
+-                    "filename": "widgetsnbextension-3.6.999-py3-none-any.whl",
+-                    "has_sig": false,
+-                    "md5_digest": "efee63dd8d36b7e56253c27614a55ec1",
+-                    "packagetype": "bdist_wheel",
+-                    "python_version": "py3",
+-                    "requires_python": "<3.12,>=3.11",
+-                    "size": 2369,
+-                    "upload_time": "2025-01-15T14:41:51.280101Z",
+-                    "upload_time_iso_8601": "2025-01-15T14:41:51.280101Z",
+-                    "url": "https://assets.datalayer.tech/pypi/widgetsnbextension-3.6.999-py3-none-any.whl",
+-                    "yanked": false,
+-                    "yanked_reason": null
+-                }
+-            ],
+-            "4.0.999": [
+-                {
+-                    "comment_text": "",
+-                    "digests": {
+-                        "md5": "d8db7256127c579c6f6f93973fa134fc",
+-                        "sha256": "d603779885ca57bfaeca1099bf9f69d82cd58f616a9a40c8756bc457874d0fa5"
+-                    },
+-                    "downloads": -1,
+-                    "filename": "widgetsnbextension-4.0.999-py3-none-any.whl",
+-                    "has_sig": false,
+-                    "md5_digest": "d8db7256127c579c6f6f93973fa134fc",
+-                    "packagetype": "bdist_wheel",
+-                    "python_version": "py3",
+-                    "requires_python": "<3.12,>=3.11",
+-                    "size": 2370,
+-                    "upload_time": "2025-01-15T14:41:51.280101Z",
+-                    "upload_time_iso_8601": "2025-01-15T14:41:51.280101Z",
+-                    "url": "https://assets.datalayer.tech/pypi/widgetsnbextension-4.0.999-py3-none-any.whl",
+-                    "yanked": false,
+-                    "yanked_reason": null
+-                }
+-            ]
++      ],
++      "4.0.999": [
++        {
++          "comment_text": "",
++          "digests": {
++            "md5": "d8db7256127c579c6f6f93973fa134fc",
++            "sha256": "d603779885ca57bfaeca1099bf9f69d82cd58f616a9a40c8756bc457874d0fa5"
++          },
++          "downloads": -1,
++          "filename": "widgetsnbextension-4.0.999-py3-none-any.whl",
++          "has_sig": false,
++          "md5_digest": "d8db7256127c579c6f6f93973fa134fc",
++          "packagetype": "bdist_wheel",
++          "python_version": "py3",
++          "requires_python": "<3.12,>=3.11",
++          "size": 2370,
++          "upload_time": "2025-01-15T14:41:51.280101Z",
++          "upload_time_iso_8601": "2025-01-15T14:41:51.280101Z",
++          "url": "https://assets.datalayer.tech/pypi/widgetsnbextension-4.0.999-py3-none-any.whl",
++          "yanked": false,
++          "yanked_reason": null
+         }
++      ]
+     }
++  }
+ }
+diff --git a/node_modules/@datalayer/jupyter-react/lib/jupyter/lite/pyodide-kernel/schema/piplite.v0.schema.json b/node_modules/@datalayer/jupyter-react/lib/jupyter/lite/pyodide-kernel/schema/piplite.v0.schema.json
+index 7b85f9b..757ae8f 100644
+--- a/node_modules/@datalayer/jupyter-react/lib/jupyter/lite/pyodide-kernel/schema/piplite.v0.schema.json
++++ b/node_modules/@datalayer/jupyter-react/lib/jupyter/lite/pyodide-kernel/schema/piplite.v0.schema.json
+@@ -1,113 +1,113 @@
+ {
+-    "$schema": "http://json-schema.org/draft-07/schema",
+-    "$id": "https://jupyterlite-pyodide-kernel.readthedocs.org/en/latest/reference/schema/piplite-v0.html#",
+-    "title": "PipLite Schema v0",
+-    "description": "a schema for the warehouse-like API index",
+-    "$ref": "#/definitions/top",
+-    "definitions": {
+-        "top": {
+-            "type": "object",
+-            "patternProperties": {
+-                ".*": {
+-                    "$ref": "#/definitions/a-piplite-project"
+-                }
++  "$schema": "http://json-schema.org/draft-07/schema",
++  "$id": "https://jupyterlite-pyodide-kernel.readthedocs.org/en/latest/reference/schema/piplite-v0.html#",
++  "title": "PipLite Schema v0",
++  "description": "a schema for the warehouse-like API index",
++  "$ref": "#/definitions/top",
++  "definitions": {
++    "top": {
++      "type": "object",
++      "patternProperties": {
++        ".*": {
++          "$ref": "#/definitions/a-piplite-project"
++        }
++      }
++    },
++    "a-piplite-project": {
++      "type": "object",
++      "description": "a piplite-installable project, with one or more historical releases",
++      "properties": {
++        "releases": {
++          "patternProperties": {
++            ".*": {
++              "type": "array",
++              "items": {
++                "$ref": "#/definitions/a-piplite-distribution"
++              }
+             }
++          }
++        }
++      }
++    },
++    "a-piplite-distribution": {
++      "type": "object",
++      "properties": {
++        "comment_text": {
++          "type": "string"
+         },
+-        "a-piplite-project": {
+-            "type": "object",
+-            "description": "a piplite-installable project, with one or more historical releases",
+-            "properties": {
+-                "releases": {
+-                    "patternProperties": {
+-                        ".*": {
+-                            "type": "array",
+-                            "items": {
+-                                "$ref": "#/definitions/a-piplite-distribution"
+-                            }
+-                        }
+-                    }
+-                }
++        "digests": {
++          "type": "object",
++          "properties": {
++            "md5": {
++              "$ref": "#/definitions/an-md5-digest"
++            },
++            "sha256": {
++              "$ref": "#/definitions/a-sha256-digest"
+             }
++          }
+         },
+-        "a-piplite-distribution": {
+-            "type": "object",
+-            "properties": {
+-                "comment_text": {
+-                    "type": "string"
+-                },
+-                "digests": {
+-                    "type": "object",
+-                    "properties": {
+-                        "md5": {
+-                            "$ref": "#/definitions/an-md5-digest"
+-                        },
+-                        "sha256": {
+-                            "$ref": "#/definitions/a-sha256-digest"
+-                        }
+-                    }
+-                },
+-                "downloads": {
+-                    "type": "number"
+-                },
+-                "filename": {
+-                    "type": "string"
+-                },
+-                "has_sig": {
+-                    "type": "boolean"
+-                },
+-                "md5_digest": {
+-                    "$ref": "#/definitions/an-md5-digest"
+-                },
+-                "packagetype": {
+-                    "type": "string",
+-                    "enum": ["bdist_wheel"]
+-                },
+-                "python_version": {
+-                    "type": "string"
+-                },
+-                "requires_python": {
+-                    "$ref": "#/definitions/string-or-null"
+-                },
+-                "size": {
+-                    "type": "number"
+-                },
+-                "upload_time": {
+-                    "type": "string",
+-                    "format": "date-time"
+-                },
+-                "upload_time_iso_8601": {
+-                    "type": "string",
+-                    "format": "date-time"
+-                },
+-                "url": {
+-                    "type": "string",
+-                    "format": "uri"
+-                },
+-                "yanked": {
+-                    "type": "boolean"
+-                },
+-                "yanked_reason": {
+-                    "$ref": "#/definitions/string-or-null"
+-                }
+-            }
++        "downloads": {
++          "type": "number"
++        },
++        "filename": {
++          "type": "string"
++        },
++        "has_sig": {
++          "type": "boolean"
++        },
++        "md5_digest": {
++          "$ref": "#/definitions/an-md5-digest"
++        },
++        "packagetype": {
++          "type": "string",
++          "enum": ["bdist_wheel"]
+         },
+-        "string-or-null": {
+-            "anyOf": [
+-                {
+-                    "type": "string"
+-                },
+-                {
+-                    "type": "null"
+-                }
+-            ]
++        "python_version": {
++          "type": "string"
+         },
+-        "an-md5-digest": {
+-            "type": "string",
+-            "pattern": "[a-f0-9]{32}"
++        "requires_python": {
++          "$ref": "#/definitions/string-or-null"
++        },
++        "size": {
++          "type": "number"
++        },
++        "upload_time": {
++          "type": "string",
++          "format": "date-time"
++        },
++        "upload_time_iso_8601": {
++          "type": "string",
++          "format": "date-time"
++        },
++        "url": {
++          "type": "string",
++          "format": "uri"
++        },
++        "yanked": {
++          "type": "boolean"
++        },
++        "yanked_reason": {
++          "$ref": "#/definitions/string-or-null"
++        }
++      }
++    },
++    "string-or-null": {
++      "anyOf": [
++        {
++          "type": "string"
+         },
+-        "a-sha256-digest": {
+-            "type": "string",
+-            "pattern": "[a-f0-9]{64}"
++        {
++          "type": "null"
+         }
++      ]
++    },
++    "an-md5-digest": {
++      "type": "string",
++      "pattern": "[a-f0-9]{32}"
++    },
++    "a-sha256-digest": {
++      "type": "string",
++      "pattern": "[a-f0-9]{64}"
+     }
++  }
+ }
+diff --git a/node_modules/@datalayer/jupyter-react/lib/tools/USAGE.md b/node_modules/@datalayer/jupyter-react/lib/tools/USAGE.md
+new file mode 100644
+index 0000000..c77b730
+--- /dev/null
++++ b/node_modules/@datalayer/jupyter-react/lib/tools/USAGE.md
+@@ -0,0 +1,383 @@
++# Tool Operations with OperationRunner - Usage Guide
++
++## Architecture Overview
++
++The tool system now follows a clean separation of concerns:
++
++```
++┌─────────────────────────────────────────────────────────┐
++│                    LLM / User Code                       │
++└────────────────────┬────────────────────────────────────┘
++                     │
++                     ▼
++┌─────────────────────────────────────────────────────────┐
++│              OperationRunner.execute()                   │
++│  - Coordinates execution                                 │
++│  - Applies formatting based on context.format            │
++└────────────────────┬────────────────────────────────────┘
++                     │
++                     ▼
++┌─────────────────────────────────────────────────────────┐
++│            Operation.execute() [pure logic]              │
++│  - insertCellOperation                                   │
++│  - deleteCellOperation                                   │
++│  - updateCellOperation                                   │
++│  - readCellOperation                                     │
++│  - readAllCellsOperation                                 │
++│  - runCellOperation                                      │
++│  - runAllCellsOperation                                  │
++│  - executeCodeOperation                                  │
++│  - insertCellsOperation                                  │
++│  Returns: Pure typed data (ReadAllCellsResult, etc.)     │
++└────────────────────┬────────────────────────────────────┘
++                     │
++                     ▼
++┌─────────────────────────────────────────────────────────┐
++│                Executor.execute()                        │
++│  - DefaultExecutor (React/JupyterLab)                    │
++│  - BridgeExecutor (VSCode)                               │
++│  - Platform-specific implementations                     │
++└─────────────────────────────────────────────────────────┘
++```
++
++## Key Principles
++
++1. **Operations return pure typed data** - No formatting logic
++2. **Runner handles formatting** - Based on `context.format`
++3. **Type-safe results** - `Promise<TResult | string>`
++4. **Format options**:
++   - `format: 'json'` → Returns structured `TResult` (token-efficient for LLMs)
++   - `format: 'toon'` → Returns TOON-encoded string (default, human-readable)
++
++## Usage Examples
++
++### Basic Usage
++
++```typescript
++import { OperationRunner } from '@datalayer/jupyter-ui-react/tools';
++import { readAllCellsOperation } from '@datalayer/jupyter-ui-react/tools';
++import type { ToolExecutionContext } from '@datalayer/jupyter-ui-react/tools';
++
++// Create runner instance
++const runner = new OperationRunner();
++
++// Setup execution context
++const context: ToolExecutionContext = {
++  executor: myExecutor, // DefaultExecutor or BridgeExecutor
++  notebookId: 'notebook-123',
++  format: 'json', // or 'toon' (default)
++};
++
++// Execute operation
++const result = await runner.execute(
++  readAllCellsOperation,
++  {}, // params
++  context
++);
++
++// With format='json', result is ReadAllCellsResult:
++// { success: true, cells: [...], cellCount: 2 }
++
++// With format='toon', result is string:
++// "success: true\ncells: [\n  { type: \"code\", ... }\n]\ncellCount: 2"
++```
++
++### For LLMs (JSON format - token efficient)
++
++```typescript
++const runner = new OperationRunner();
++
++// LLMs benefit from structured data
++const result = await runner.execute(
++  readAllCellsOperation,
++  {},
++  {
++    executor: myExecutor,
++    notebookId: 'notebook-123',
++    format: 'json', // Returns structured object
++  }
++);
++
++// Type-safe access to result properties
++if (typeof result === 'object') {
++  console.log(`Found ${result.cellCount} cells`);
++  result.cells.forEach(cell => {
++    console.log(`Cell ${cell.index}: ${cell.type}`);
++  });
++}
++```
++
++### For Humans (TOON format - readable)
++
++```typescript
++const runner = new OperationRunner();
++
++// Default format is TOON (human/LLM readable string)
++const result = await runner.execute(
++  executeCodeOperation,
++  { code: 'import numpy as np\nprint(np.__version__)' },
++  {
++    executor: myExecutor,
++    notebookId: 'notebook-123',
++    // format defaults to 'toon'
++  }
++);
++
++// Result is a TOON-encoded string:
++// success: true
++// outputs:
++//   - type: stream
++//     content:
++//       name: stdout
++//       text: "1.24.3"
++// executionCount: 1
++```
++
++### All Operations Examples
++
++#### 1. Insert Cell
++
++```typescript
++await runner.execute(
++  insertCellOperation,
++  {
++    type: 'code',
++    source: 'print("Hello, World!")',
++    index: 0, // optional, defaults to end
++  },
++  context
++);
++// Returns: { success: true, index: 0, message: "Cell inserted at index 0" }
++```
++
++#### 2. Insert Multiple Cells
++
++```typescript
++await runner.execute(
++  insertCellsOperation,
++  {
++    cells: [
++      { type: 'markdown', source: '# Title' },
++      { type: 'code', source: 'x = 42' },
++    ],
++    index: 1,
++  },
++  context
++);
++// Returns: { success: true, insertedCount: 2, startIndex: 1, message: "..." }
++```
++
++#### 3. Delete Cell
++
++```typescript
++await runner.execute(deleteCellOperation, { index: 2 }, context);
++// Returns: { success: true, index: 2, message: "Cell at index 2 has been deleted..." }
++```
++
++#### 4. Update Cell
++
++```typescript
++await runner.execute(
++  updateCellOperation,
++  {
++    index: 1,
++    source: 'y = x * 2\nprint(y)',
++  },
++  context
++);
++// Returns: { success: true, index: 1, message: "✅ Cell at index 1 updated..." }
++```
++
++#### 5. Read Cell
++
++```typescript
++await runner.execute(readCellOperation, { index: 0 }, context);
++// Returns: { success: true, type: 'code', source: '...', index: 0, ... }
++```
++
++#### 6. Read All Cells
++
++```typescript
++await runner.execute(readAllCellsOperation, {}, context);
++// Returns: { success: true, cells: [...], cellCount: 5 }
++```
++
++#### 7. Run Cell
++
++```typescript
++await runner.execute(runCellOperation, { index: 1 }, context);
++// Returns: { success: true, index: 1, message: "Cell executed successfully" }
++```
++
++#### 8. Run All Cells
++
++```typescript
++await runner.execute(runAllCellsOperation, {}, context);
++// Returns: { success: true, message: "All cells executed" }
++```
++
++#### 9. Execute Code (Direct Kernel Execution)
++
++```typescript
++await runner.execute(
++  executeCodeOperation,
++  {
++    code: 'import sys\nsys.version',
++    storeHistory: false, // optional
++    silent: false, // optional
++    stopOnError: true, // optional
++  },
++  context
++);
++// Returns: { success: true, outputs: [...], executionCount: 1 }
++```
++
++## Type Safety
++
++### Before (❌ Type Safety Issue)
++
++```typescript
++// Operations claimed to return typed objects but actually returned string | object
++const result = await readAllCellsOperation.execute({}, context);
++// TypeScript type: ReadAllCellsResult
++// Runtime value: string (if format='toon') 💥 Type mismatch!
++```
++
++### Now (✅ Type Safe)
++
++```typescript
++// Runner has correct return type: TResult | string
++const result = await runner.execute(readAllCellsOperation, {}, context);
++// TypeScript type: ReadAllCellsResult | string ✅
++// Runtime value matches TypeScript type ✅
++```
++
++## Integration with Existing Code
++
++### In React Components
++
++```typescript
++import { OperationRunner, insertCellOperation } from '@datalayer/jupyter-ui-react/tools';
++import { useExecutor } from './hooks/useExecutor';
++
++function NotebookToolbar() {
++  const executor = useExecutor();
++  const runner = new OperationRunner();
++
++  const handleAddCell = async () => {
++    const result = await runner.execute(
++      insertCellOperation,
++      { type: 'code', source: '' },
++      {
++        executor,
++        notebookId: currentNotebookId,
++        format: 'json',
++      }
++    );
++
++    if (typeof result === 'object' && result.success) {
++      console.log(`Inserted cell at index ${result.index}`);
++    }
++  };
++
++  return <button onClick={handleAddCell}>Add Cell</button>;
++}
++```
++
++### In VSCode Extension
++
++```typescript
++import {
++  OperationRunner,
++  readAllCellsOperation,
++} from '@datalayer/jupyter-ui-react/tools';
++import { BridgeExecutor } from './executors/BridgeExecutor';
++
++async function getAllCells(notebookUri: string) {
++  const runner = new OperationRunner();
++  const executor = new BridgeExecutor(notebookUri);
++
++  const result = await runner.execute(
++    readAllCellsOperation,
++    {},
++    {
++      executor,
++      notebookId: notebookUri,
++      format: 'json', // Get structured data
++    }
++  );
++
++  if (typeof result === 'object') {
++    return result.cells;
++  }
++  throw new Error('Expected JSON format');
++}
++```
++
++## Error Handling
++
++```typescript
++try {
++  const result = await runner.execute(
++    insertCellOperation,
++    { type: 'code', source: 'print("test")' },
++    context
++  );
++
++  if (typeof result === 'object' && result.success) {
++    console.log('Success!');
++  }
++} catch (error) {
++  // Errors are thrown for:
++  // - Invalid parameters
++  // - Missing notebookId
++  // - Missing executor
++  // - Execution failures
++  console.error('Operation failed:', error.message);
++}
++```
++
++## Migration Guide
++
++### Old Pattern (Don't Use)
++
++```typescript
++// ❌ Don't call operations directly anymore
++const result = await readAllCellsOperation.execute({}, context);
++// Type mismatch between declared type and runtime value
++```
++
++### New Pattern (Use This)
++
++```typescript
++// ✅ Use OperationRunner
++const runner = new OperationRunner();
++const result = await runner.execute(readAllCellsOperation, {}, context);
++// Correct types: TResult | string
++```
++
++## Benefits
++
++1. **Type Safety** - No more hidden type mismatches
++2. **Separation of Concerns** - Operations focus on logic, runner handles formatting
++3. **Token Efficiency** - LLMs get structured `format='json'` data
++4. **Flexibility** - Easy to add pre/post execution hooks later
++5. **Testability** - Operations return predictable typed data
++6. **DRY** - Formatting logic in one place (OperationRunner)
++
++## Future Extensibility
++
++The runner pattern allows easy addition of:
++
++- Pre-execution validation hooks
++- Post-execution logging/analytics
++- Result caching
++- Permission checks
++- Rate limiting
++- Retry logic
++
++All without modifying individual operations!
++
++## Testing
++
++See [operationRunner.test.ts](../../__tests__/operationRunner.test.ts) for comprehensive test examples covering all 9 operations.

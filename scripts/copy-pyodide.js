@@ -14,7 +14,18 @@
 const fs = require('fs');
 const path = require('path');
 
-const sourceDir = path.join(__dirname, '..', 'node_modules', 'pyodide');
+// Handle both local node_modules (standalone) and workspace-hoisted node_modules
+let sourceDir = path.join(__dirname, '..', 'node_modules', 'pyodide');
+if (!fs.existsSync(sourceDir)) {
+  // Try workspace root node_modules
+  sourceDir = path.join(__dirname, '..', '..', 'node_modules', 'pyodide');
+  if (!fs.existsSync(sourceDir)) {
+    console.error('❌ ERROR: Could not find pyodide in node_modules');
+    console.error('   Tried: ../node_modules/pyodide');
+    console.error('   Tried: ../../node_modules/pyodide');
+    process.exit(1);
+  }
+}
 const targetDir = path.join(__dirname, '..', 'dist', 'node_modules', 'pyodide');
 
 // Essential files from pyodide package.json "files" field

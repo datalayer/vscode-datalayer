@@ -25,13 +25,12 @@ bash "$SCRIPT_DIR/sync-jupyter.sh"
 # Ensure package-lock.json exists (required by patch-package)
 if [ ! -f "package-lock.json" ]; then
   echo -e "${YELLOW}⚠  No package-lock.json found. Creating one...${NC}"
-  npm i --package-lock-only
+  npm i --package-lock-only --ignore-scripts
 fi
 
 # Create patches
 echo -e "${BLUE}📦 Generating patches with patch-package...${NC}"
-# npx patch-package @datalayer/core @datalayer/jupyter-lexical @datalayer/jupyter-react
-# npx patch-package @datalayer/jupyter-lexical @datalayer/jupyter-react
+npx patch-package @datalayer/core @datalayer/jupyter-lexical @datalayer/jupyter-react
 
 echo -e "${GREEN}✅ Patches created successfully${NC}"
 echo -e "${YELLOW}⚠️  Remember: Commit the patches/ directory to git for CI/users${NC}"

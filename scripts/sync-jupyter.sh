@@ -22,7 +22,12 @@ SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 VSCODE_ROOT="$( cd "$SCRIPT_DIR/.." && pwd )"
 CORE_ROOT="$( cd "$VSCODE_ROOT/../core" && pwd )"
 JUPYTER_UI_ROOT="$( cd "$VSCODE_ROOT/../jupyter-ui" && pwd )"
-LEXICAL_LORO_ROOT="$( cd "$VSCODE_ROOT/../lexical-loro" && pwd )"
+
+# Check if lexical-loro exists (optional)
+LEXICAL_LORO_ROOT=""
+if [ -d "$VSCODE_ROOT/../lexical-loro" ]; then
+  LEXICAL_LORO_ROOT="$( cd "$VSCODE_ROOT/../lexical-loro" && pwd )"
+fi
 
 # Function to perform the sync
 sync_packages() {
@@ -47,7 +52,11 @@ sync_packages() {
 
   # Skip building lexical-loro (has TypeScript compilation issues with Yjs server files)
   # The lib directory already exists with the Loro collaboration files we need
-  echo -e "${BLUE}📦 Skipping @datalayer/lexical-loro build (using existing lib/)...${NC}"
+  if [ -n "$LEXICAL_LORO_ROOT" ]; then
+    echo -e "${BLUE}📦 Skipping @datalayer/lexical-loro build (using existing lib/)...${NC}"
+  else
+    echo -e "${YELLOW}⏭️  Skipping @datalayer/lexical-loro (directory not found, using npm version)${NC}"
+  fi
 
   # Copy all necessary files to vscode-datalayer node_modules
   echo -e "${BLUE}📋 Copying files to node_modules...${NC}"
@@ -57,7 +66,6 @@ sync_packages() {
   mkdir -p node_modules/@datalayer/core
   mkdir -p node_modules/@datalayer/jupyter-lexical
   mkdir -p node_modules/@datalayer/jupyter-react
-  mkdir -p node_modules/@datalayer/lexical-loro
 
   # Copy core: lib/, style/, package.json (and schema/ if it exists)
   cp -r "$CORE_ROOT/lib" node_modules/@datalayer/core/
@@ -72,13 +80,20 @@ sync_packages() {
   cp -r "$JUPYTER_UI_ROOT/packages/lexical/style" node_modules/@datalayer/jupyter-lexical/
   cp "$JUPYTER_UI_ROOT/packages/lexical/package.json" node_modules/@datalayer/jupyter-lexical/
 
-  # Copy jupyter-react: lib/, package.json
+  # Copy jupyter-react: lib/, style/, schema/, package.json
   cp -r "$JUPYTER_UI_ROOT/packages/react/lib" node_modules/@datalayer/jupyter-react/
+  cp -r "$JUPYTER_UI_ROOT/packages/react/style" node_modules/@datalayer/jupyter-react/
+  if [ -d "$JUPYTER_UI_ROOT/packages/react/schema" ]; then
+    cp -r "$JUPYTER_UI_ROOT/packages/react/schema" node_modules/@datalayer/jupyter-react/
+  fi
   cp "$JUPYTER_UI_ROOT/packages/react/package.json" node_modules/@datalayer/jupyter-react/
 
-  # Copy lexical-loro: lib/, package.json
-  cp -r "$LEXICAL_LORO_ROOT/lib" node_modules/@datalayer/lexical-loro/
-  cp "$LEXICAL_LORO_ROOT/package.json" node_modules/@datalayer/lexical-loro/
+  # Copy lexical-loro: lib/, package.json (if directory exists)
+  if [ -n "$LEXICAL_LORO_ROOT" ]; then
+    mkdir -p node_modules/@datalayer/lexical-loro
+    cp -r "$LEXICAL_LORO_ROOT/lib" node_modules/@datalayer/lexical-loro/
+    cp "$LEXICAL_LORO_ROOT/package.json" node_modules/@datalayer/lexical-loro/
+  fi
 
   echo -e "${GREEN}✅ Successfully synced at $(date +"%H:%M:%S")${NC}"
 }
@@ -103,12 +118,24 @@ if [[ "$1" == "--watch" ]]; then
   echo -e "${YELLOW}   - $CORE_ROOT/src${NC}"
   echo -e "${YELLOW}   - $JUPYTER_UI_ROOT/packages/lexical/src${NC}"
   echo -e "${YELLOW}   - $JUPYTER_UI_ROOT/packages/react/src${NC}"
-  echo -e "${YELLOW}   - $LEXICAL_LORO_ROOT/src${NC}"
+  if [ -n "$LEXICAL_LORO_ROOT" ]; then
+    echo -e "${YELLOW}   - $LEXICAL_LORO_ROOT/src${NC}"
+  fi
   echo -e "${YELLOW}Press Ctrl+C to stop${NC}"
   echo ""
 
   # Initial sync
   sync_packages
+
+  # Build watch paths array
+  WATCH_PATHS=(
+    "$CORE_ROOT/src"
+    "$JUPYTER_UI_ROOT/packages/lexical/src"
+    "$JUPYTER_UI_ROOT/packages/react/src"
+  )
+  if [ -n "$LEXICAL_LORO_ROOT" ]; then
+    WATCH_PATHS+=("$LEXICAL_LORO_ROOT/src")
+  fi
 
   # Watch for changes in src directories and trigger sync
   # Using fswatch with:
@@ -117,10 +144,7 @@ if [[ "$1" == "--watch" ]]; then
   # -l 1: latency 1 second (debounce rapid changes)
   fswatch -r -l 1 \
     -e ".*" -i "\\.tsx?$" -i "\\.jsx?$" -i "\\.css$" \
-    "$CORE_ROOT/src" \
-    "$JUPYTER_UI_ROOT/packages/lexical/src" \
-    "$JUPYTER_UI_ROOT/packages/react/src" \
-    "$LEXICAL_LORO_ROOT/src" | while read -r file; do
+    "${WATCH_PATHS[@]}" | while read -r file; do
     echo -e "\n${YELLOW}📝 Change detected in: $(basename "$file")${NC}"
     sync_packages
   done

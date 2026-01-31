@@ -44,7 +44,8 @@ console.log('📦 Copying external dependencies to dist/node_modules/...');
 const distNodeModules = path.join(__dirname, '..', 'dist', 'node_modules');
 const sourceNodeModules = path.join(__dirname, '..', 'node_modules');
 // Fallback to monorepo root node_modules for hoisted packages
-const rootNodeModules = path.join(__dirname, '..', '..', '..', '..', 'node_modules');
+// (2 levels up from vscode-datalayer: vscode-datalayer/scripts -> vscode-datalayer -> datalayer -> node_modules)
+const rootNodeModules = path.join(__dirname, '..', '..', 'node_modules');
 
 // Ensure dist/node_modules exists
 if (!fs.existsSync(distNodeModules)) {
