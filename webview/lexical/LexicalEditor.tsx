@@ -43,6 +43,7 @@ import {
   JupyterOutputNode,
   JupyterCellNode,
   InlineCompletionNode,
+  CounterNode,
   ComponentPickerMenuPlugin,
   JupyterCellPlugin,
   JupyterInputOutputPlugin,
@@ -238,9 +239,17 @@ function LoadContentPlugin({
         // First try to parse as JSON to validate format
         const parsed = JSON.parse(content);
 
+        console.log("[LoadContentPlugin] Parsed content:", parsed);
+        console.log(
+          "[LoadContentPlugin] Root children:",
+          parsed?.root?.children,
+        );
+
         // Check if it's a valid Lexical editor state
         if (parsed && typeof parsed === "object" && parsed.root) {
+          console.log("[LoadContentPlugin] Calling parseEditorState...");
           const editorState = editor.parseEditorState(content);
+          console.log("[LoadContentPlugin] Successfully parsed editor state");
           // Use setEditorState with skipHistoryPush option to avoid adding to undo stack
           editor.setEditorState(editorState, {
             tag: "history-merge",
@@ -249,6 +258,15 @@ function LoadContentPlugin({
           throw new Error("Invalid Lexical editor state format");
         }
       } catch (error) {
+        console.error("[LoadContentPlugin] Error loading content:", error);
+        console.error(
+          "[LoadContentPlugin] Error stack:",
+          error instanceof Error ? error.stack : "",
+        );
+        console.error(
+          "[LoadContentPlugin] Content that failed:",
+          content?.substring(0, 500),
+        );
         // Create a default empty state if parsing fails
         editor.update(
           () => {
@@ -397,45 +415,82 @@ export function LexicalEditor({
     return () => clearTimeout(timer);
   }, []);
 
+  // DEBUG: Log all node types to find which one is undefined or wrong
+  const allNodes = [
+    HeadingNode,
+    QuoteNode,
+    ListNode,
+    ListItemNode,
+    CodeNode,
+    CodeHighlightNode,
+    LinkNode,
+    AutoLinkNode,
+    TableNode,
+    TableCellNode,
+    TableRowNode,
+    HashtagNode,
+    MarkNode,
+    OverflowNode,
+    HorizontalRuleNode,
+    CommentThreadNode,
+    CollapsibleContainerNode,
+    CollapsibleContentNode,
+    CollapsibleTitleNode,
+    EquationNode,
+    ExcalidrawNode,
+    ImageNode,
+    YouTubeNode,
+    CounterNode,
+    JupyterCellNode,
+    JupyterInputNode,
+    JupyterInputHighlightNode,
+    JupyterOutputNode,
+    InlineCompletionNode,
+  ];
+
+  console.log("[LexicalEditor] Checking all node classes:");
+  allNodes.forEach((node, index) => {
+    if (!node) {
+      console.error(`[LexicalEditor] Node at index ${index} is UNDEFINED`);
+    } else if (typeof node.getType !== "function") {
+      console.error(
+        `[LexicalEditor] Node at index ${index} does not have getType method:`,
+        node,
+      );
+    } else {
+      try {
+        const type = node.getType();
+        console.log(
+          `[LexicalEditor] Node ${index}: ${node.name} -> type: "${type}"`,
+        );
+      } catch (error) {
+        console.error(
+          `[LexicalEditor] Node at index ${index} (${node.name}) failed getType():`,
+          error,
+        );
+      }
+    }
+  });
+
+  // Create a proxy to detect array modifications
+  const nodesProxy = new Proxy(allNodes, {
+    set(target, prop, value) {
+      console.error(
+        `[LexicalEditor] ARRAY MODIFICATION DETECTED! Setting index ${String(prop)} to:`,
+        value,
+      );
+      console.trace("[LexicalEditor] Stack trace of modification:");
+      return Reflect.set(target, prop, value);
+    },
+  });
+
+  console.log("[LexicalEditor] Created proxy, nodes count:", nodesProxy.length);
+  console.log("[LexicalEditor] About to create editorConfig with proxy");
+
   const editorConfig = {
     namespace: "VSCodeLexicalEditor",
     editable,
-    nodes: [
-      // Basic rich text nodes
-      HeadingNode,
-      QuoteNode,
-      ListNode,
-      ListItemNode,
-      CodeNode,
-      CodeHighlightNode,
-      LinkNode,
-      AutoLinkNode,
-      // Table nodes
-      TableNode,
-      TableCellNode,
-      TableRowNode,
-      // Additional nodes from @lexical packages (for collaboration compatibility)
-      HashtagNode,
-      MarkNode,
-      OverflowNode,
-      HorizontalRuleNode,
-      // Comment nodes (for commenting plugin)
-      CommentThreadNode,
-      // Collapsible nodes
-      CollapsibleContainerNode,
-      CollapsibleContentNode,
-      CollapsibleTitleNode,
-      // Jupyter lexical nodes (must match SaaS editor for collaboration)
-      EquationNode,
-      ExcalidrawNode,
-      ImageNode,
-      YouTubeNode,
-      JupyterCellNode,
-      JupyterInputNode,
-      JupyterInputHighlightNode,
-      JupyterOutputNode,
-      InlineCompletionNode,
-    ],
+    nodes: nodesProxy,
     theme: {
       root: "lexical-editor-root",
       link: "lexical-editor-link",
@@ -523,8 +578,15 @@ export function LexicalEditor({
       tableSelected: "PlaygroundEditorTheme__tableSelected",
       tableSelection: "PlaygroundEditorTheme__tableSelection",
     },
-    onError(_error: Error) {
-      // Silently handle Lexical errors
+    onError(error: Error) {
+      console.error("[LexicalEditor] Error caught by onError handler:", error);
+      console.error("[LexicalEditor] Error stack:", error.stack);
+      console.error("[LexicalEditor] Error message:", error.message);
+      // Also log registered nodes for debugging
+      console.log(
+        "[LexicalEditor] Registered nodes:",
+        editorConfig.nodes.map((n) => (n.getType ? n.getType() : n.name)),
+      );
     },
   };
 
