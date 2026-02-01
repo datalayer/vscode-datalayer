@@ -27,6 +27,44 @@ function hasDispose(
 }
 
 /**
+ * Disable auto-reconnect for all kernel connections in a service manager.
+ * This prevents CORS errors when the server-side runtime has been terminated
+ * and the kernel URLs are no longer accessible.
+ *
+ * Sets _reconnectLimit = -1 on all kernel connections to disable reconnection attempts.
+ *
+ * @param serviceManager - Service manager to disable reconnection for
+ * @returns Number of kernels that had reconnection disabled
+ */
+function disableKernelReconnect(
+  serviceManager: ServiceManager.IManager,
+): number {
+  let count = 0;
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const kernelManager = serviceManager.kernels as any;
+    if (!kernelManager) return count;
+
+    // Access private _kernelConnections (Set of kernel connections)
+    const kernelsMap = kernelManager._kernelConnections;
+    if (kernelsMap instanceof Set) {
+      for (const kernelConnection of kernelsMap) {
+        if (kernelConnection?._reconnectLimit !== undefined) {
+          kernelConnection._reconnectLimit = -1;
+          count++;
+        }
+      }
+    }
+  } catch (error) {
+    console.warn(
+      "[MutableServiceManager] Error disabling auto-reconnect:",
+      error,
+    );
+  }
+  return count;
+}
+
+/**
  * Mutable service manager wrapper that maintains a stable reference
  * while allowing the underlying service manager to be swapped.
  */
@@ -34,6 +72,7 @@ export class MutableServiceManager {
   private _serviceManager: ServiceManager.IManager;
   private _listeners: Array<() => void> = [];
   private _subProxies = new Map<string, unknown>();
+  private _forceClose = false; // Skip dispose() to avoid API calls to dead servers
 
   constructor(initialServiceManager?: ServiceManager.IManager) {
     this._serviceManager =
@@ -51,9 +90,13 @@ export class MutableServiceManager {
   /**
    * Update to a mock service manager (no execution).
    * Convenience method using ServiceManagerFactory.
+   *
+   * @param forceClose - If true, skip dispose() to avoid API calls (for terminated remote runtimes)
    */
-  updateToMock(): void {
+  updateToMock(forceClose = false): void {
+    this._forceClose = forceClose;
     this._disposeCurrentManager();
+    this._forceClose = false; // Reset flag
     // DO NOT clear _subProxies! Keeps existing proxy references working
     // this._subProxies.clear(); // ❌ REMOVED
     this._serviceManager = ServiceManagerFactory.create({ type: "mock" });
@@ -178,8 +221,54 @@ export class MutableServiceManager {
           }
         }
 
-        // Dispose the service manager
-        oldSm.dispose();
+        // CRITICAL: For remote/Datalayer runtimes that were terminated on the server,
+        // we need to force-close without making API calls. The URLs are already dead.
+        if (this._forceClose) {
+          console.log(
+            `[MutableServiceManager] Force-closing service manager (type: ${oldType}) without dispose() to avoid CORS errors`,
+          );
+
+          try {
+            // Disable kernel reconnection to prevent auto-reconnect attempts
+            const disabledCount = disableKernelReconnect(oldSm);
+            console.log(
+              `[MutableServiceManager] Disabled ${disabledCount} kernel reconnections`,
+            );
+
+            // Forcefully stop all polling and subscriptions
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const sm = oldSm as any;
+
+            // Stop kernel manager polling
+            if (sm.kernels?._pollModels) {
+              sm.kernels._pollModels.stop();
+            }
+
+            // Stop session manager polling
+            if (sm.sessions?._pollModels) {
+              sm.sessions._pollModels.stop();
+            }
+
+            // Dispose events service (stops WebSocket subscriptions)
+            if (sm.events?.dispose) {
+              sm.events.dispose();
+            }
+
+            console.log('[MutableServiceManager] Stopped all polling and subscriptions');
+          } catch (error) {
+            console.warn('[MutableServiceManager] Error during force-close cleanup:', error);
+          }
+
+          // Skip dispose() - it would try to refresh kernel lists from dead server
+          // Polling is stopped, so no more API calls will be made
+        } else {
+          // Normal disposal with API calls (for Pyodide, local kernels, etc.)
+          const disabledCount = disableKernelReconnect(oldSm);
+          console.log(
+            `[MutableServiceManager] Disposing service manager (type: ${oldType}), disabled ${disabledCount} kernel reconnections`,
+          );
+          oldSm.dispose();
+        }
       } catch (error) {
         console.error(
           `[MutableServiceManager] ❌ Error in _disposeCurrentManager for ${oldType}:`,

@@ -31,6 +31,9 @@ export class LocalKernelClient {
   /** Indicates whether this client has been disposed */
   private _disposed = false;
 
+  /** Indicates whether a restart is in progress */
+  private _restarting = false;
+
   /** The spawned kernel process */
   private _kernelProcess: ChildProcess | undefined;
 
@@ -88,9 +91,6 @@ export class LocalKernelClient {
    */
   private getKernelWorkingDirectory(): string | undefined {
     if (!this._documentUri) {
-      console.log(
-        "[LocalKernelClient] No document URI provided, using default working directory",
-      );
       return undefined;
     }
 
@@ -99,17 +99,9 @@ export class LocalKernelClient {
       const filePath = this._documentUri.fsPath;
       const directory = path.dirname(filePath);
 
-      console.log(
-        `[LocalKernelClient] Using kernel working directory from file URI: ${directory}`,
-      );
-
       // Validate directory exists
       if (fs.existsSync(directory)) {
         return directory;
-      } else {
-        console.warn(
-          `[LocalKernelClient] Directory does not exist: ${directory}, using workspace root`,
-        );
       }
     }
 
@@ -117,16 +109,9 @@ export class LocalKernelClient {
     // This matches VS Code's behavior for untitled files
     const workspaceFolders = vscode.workspace.workspaceFolders;
     if (workspaceFolders && workspaceFolders.length > 0) {
-      const workspaceRoot = workspaceFolders[0].uri.fsPath;
-      console.log(
-        `[LocalKernelClient] Using workspace root as working directory: ${workspaceRoot}`,
-      );
-      return workspaceRoot;
+      return workspaceFolders[0].uri.fsPath;
     }
 
-    console.log(
-      "[LocalKernelClient] No workspace folder found, using default working directory",
-    );
     return undefined;
   }
 
@@ -140,19 +125,11 @@ export class LocalKernelClient {
     const connection = await this.createConnectionFile();
     this._connectionFile = connection.file;
 
-    console.log("[LocalKernelClient] Connection file:", this._connectionFile);
-    console.log("[LocalKernelClient] Connection config:", connection.config);
-
     // Get working directory for kernel (notebook file's directory or workspace root)
     const cwd = this.getKernelWorkingDirectory();
 
     // Spawn ipykernel with connection file
     const args = ["-m", "ipykernel_launcher", "-f", this._connectionFile];
-
-    console.log("[LocalKernelClient] Spawning:", pythonPath, args.join(" "));
-    if (cwd) {
-      console.log("[LocalKernelClient] Working directory:", cwd);
-    }
 
     this._kernelProcess = spawn(pythonPath, args, {
       stdio: ["ignore", "pipe", "pipe"],
@@ -173,7 +150,10 @@ export class LocalKernelClient {
       console.log(
         `[LocalKernelClient] Kernel process exited: code=${code}, signal=${signal}`,
       );
-      this.dispose();
+      // Don't dispose if we're in the middle of a restart
+      if (!this._restarting) {
+        this.dispose();
+      }
     });
 
     this._kernelProcess.on("error", (err) => {
@@ -187,37 +167,12 @@ export class LocalKernelClient {
     const clientId = crypto.randomBytes(16).toString("hex");
     const username = "datalayer";
 
-    console.log("[LocalKernelClient] Creating raw kernel connection...");
-
     const { realKernel } = createRawKernel(
       connection.config,
       clientId,
       username,
     );
     this._realKernel = realKernel;
-
-    // Monitor kernel status (check if signals exist)
-    if (
-      this._realKernel &&
-      "statusChanged" in this._realKernel &&
-      this._realKernel.statusChanged
-    ) {
-      this._realKernel.statusChanged.connect((_, status) => {
-        console.log(`[LocalKernelClient] Kernel status: ${status}`);
-      });
-    }
-
-    if (
-      this._realKernel &&
-      "iopubMessage" in this._realKernel &&
-      this._realKernel.iopubMessage
-    ) {
-      this._realKernel.iopubMessage.connect((_, msg) => {
-        console.log(`[LocalKernelClient] IOPub message:`, msg.header.msg_type);
-      });
-    }
-
-    console.log("[LocalKernelClient] Kernel connection established!");
   }
 
   /**
@@ -285,22 +240,7 @@ export class LocalKernelClient {
       throw new Error("Kernel not started");
     }
 
-    console.log("[LocalKernelClient] Executing code:", code);
-
     const future = this._realKernel.requestExecute({ code });
-
-    future.onIOPub = (msg) => {
-      console.log(
-        "[LocalKernelClient] Execute IOPub:",
-        msg.header.msg_type,
-        msg.content,
-      );
-    };
-
-    future.onReply = (msg) => {
-      console.log("[LocalKernelClient] Execute reply:", msg.content);
-    };
-
     await future.done;
   }
 
@@ -328,7 +268,15 @@ export class LocalKernelClient {
   }
 
   /**
-   * Get kernel information.
+   * Get native kernel information (Python path, kernel spec, etc.).
+   * @returns Native kernel information
+   */
+  public getNativeKernelInfo(): NativeKernelInfo {
+    return this._kernelInfo;
+  }
+
+  /**
+   * Get kernel information from the running kernel.
    * @returns Kernel information object
    * @throws Error if kernel not started
    */
@@ -339,19 +287,6 @@ export class LocalKernelClient {
 
     const info = await this._realKernel.info;
     return info;
-  }
-
-  /**
-   * Restart the kernel.
-   * @throws Error if kernel not started
-   */
-  public async restart(): Promise<void> {
-    if (!this._realKernel) {
-      throw new Error("Kernel not started");
-    }
-
-    console.log("[LocalKernelClient] Restarting kernel...");
-    await this._realKernel.restart();
   }
 
   /**
@@ -370,7 +305,80 @@ export class LocalKernelClient {
   }
 
   /**
+   * Restart the kernel by killing the current process and starting a new one.
+   * If the client has been disposed, it will be re-initialized.
+   *
+   * Note: For local kernels, we skip the shutdown() API call because:
+   * - Local kernels don't have a Jupyter server running
+   * - We use direct ZMQ connections, so shutdown() would fail with "Failed to parse URL"
+   * - We kill the kernel process directly with SIGTERM instead
+   */
+  public async restart(): Promise<void> {
+    console.log("[LocalKernelClient] Restarting kernel...");
+
+    // Set restarting flag to prevent exit handler from calling dispose()
+    this._restarting = true;
+
+    // If already disposed, we need to un-dispose it for restart
+    if (this._disposed) {
+      console.log(
+        "[LocalKernelClient] Client was disposed, re-initializing for restart",
+      );
+      this._disposed = false;
+    }
+
+    // For local kernels, skip shutdown() API call and just kill the process
+    // The shutdown() method tries to make HTTP requests which don't work for local kernels
+
+    // Kill kernel process
+    if (this._kernelProcess && !this._kernelProcess.killed) {
+      this._kernelProcess.kill("SIGTERM");
+
+      // Wait for process to exit
+      await new Promise<void>((resolve) => {
+        if (!this._kernelProcess) {
+          resolve();
+          return;
+        }
+        this._kernelProcess.on("exit", () => resolve());
+        // Timeout after 5 seconds
+        setTimeout(() => resolve(), 5000);
+      });
+    }
+
+    // Clean up old connection file if it exists
+    if (this._connectionFile && fs.existsSync(this._connectionFile)) {
+      try {
+        fs.unlinkSync(this._connectionFile);
+      } catch (err) {
+        console.error(
+          "[LocalKernelClient] Error cleaning up connection file:",
+          err,
+        );
+      }
+    }
+
+    // Reset connection references
+    this._realKernel = undefined;
+    this._kernelProcess = undefined;
+    this._connectionFile = undefined;
+
+    // Start a new kernel
+    await this.start();
+
+    // Reset restarting flag
+    this._restarting = false;
+
+    console.log("[LocalKernelClient] Kernel restarted successfully");
+  }
+
+  /**
    * Dispose of the kernel client and clean up resources.
+   *
+   * Note: For local kernels, we skip the shutdown() API call because:
+   * - Local kernels don't have a Jupyter server running
+   * - We use direct ZMQ connections, so shutdown() would fail with "Failed to parse URL"
+   * - We kill the kernel process directly with SIGTERM instead
    */
   public dispose(): void {
     if (this._disposed) {
@@ -381,14 +389,8 @@ export class LocalKernelClient {
 
     this._disposed = true;
 
-    // Shutdown kernel connection
-    if (this._realKernel && !this._realKernel.isDisposed) {
-      this._realKernel
-        .shutdown()
-        .catch((err) =>
-          console.error("[LocalKernelClient] Error shutting down kernel:", err),
-        );
-    }
+    // For local kernels, skip shutdown() API call and just kill the process
+    // The shutdown() method tries to make HTTP requests which don't work for local kernels
 
     // Kill kernel process
     if (this._kernelProcess && !this._kernelProcess.killed) {

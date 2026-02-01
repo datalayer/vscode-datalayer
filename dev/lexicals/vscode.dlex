@@ -2166,6 +2166,10 @@
                     "version": 1
                   },
                   {
+                    "type": "linebreak",
+                    "version": 1
+                  },
+                  {
                     "detail": 0,
                     "format": 0,
                     "mode": "normal",
@@ -2268,6 +2272,11 @@
                     "highlightType": "punctuation"
                   },
                   {
+                    "completionText": "",
+                    "type": "inline-completion",
+                    "version": 1
+                  },
+                  {
                     "type": "linebreak",
                     "version": 1
                   },
@@ -2326,7 +2335,7 @@
               },
               {
                 "type": "jupyter-output",
-                "source": "import time\nimport os\n\nprint('Hello')\ntime.sleep(5)\nprint('World!')\n",
+                "source": "import time\nimport os\n\n\nprint('Hello')\ntime.sleep(5)\nprint('World!')\n",
                 "outputs": [
                   {
                     "name": "stdout",
@@ -2477,6 +2486,171 @@
             "text": " time",
             "type": "jupyter-input-highlight",
             "version": 1
+          },
+          {
+            "type": "linebreak",
+            "version": 1
+          },
+          {
+            "detail": 0,
+            "format": 0,
+            "mode": "normal",
+            "style": "",
+            "text": "try",
+            "type": "jupyter-input-highlight",
+            "version": 1,
+            "highlightType": "keyword"
+          },
+          {
+            "detail": 0,
+            "format": 0,
+            "mode": "normal",
+            "style": "",
+            "text": ":",
+            "type": "jupyter-input-highlight",
+            "version": 1,
+            "highlightType": "punctuation"
+          },
+          {
+            "type": "linebreak",
+            "version": 1
+          },
+          {
+            "detail": 0,
+            "format": 0,
+            "mode": "normal",
+            "style": "",
+            "text": "    ",
+            "type": "jupyter-input-highlight",
+            "version": 1
+          },
+          {
+            "detail": 0,
+            "format": 0,
+            "mode": "normal",
+            "style": "",
+            "text": "print",
+            "type": "jupyter-input-highlight",
+            "version": 1,
+            "highlightType": "keyword"
+          },
+          {
+            "detail": 0,
+            "format": 0,
+            "mode": "normal",
+            "style": "",
+            "text": "(",
+            "type": "jupyter-input-highlight",
+            "version": 1,
+            "highlightType": "punctuation"
+          },
+          {
+            "detail": 0,
+            "format": 0,
+            "mode": "normal",
+            "style": "",
+            "text": "a",
+            "type": "jupyter-input-highlight",
+            "version": 1
+          },
+          {
+            "detail": 0,
+            "format": 0,
+            "mode": "normal",
+            "style": "",
+            "text": ")",
+            "type": "jupyter-input-highlight",
+            "version": 1,
+            "highlightType": "punctuation"
+          },
+          {
+            "type": "linebreak",
+            "version": 1
+          },
+          {
+            "detail": 0,
+            "format": 0,
+            "mode": "normal",
+            "style": "",
+            "text": "except",
+            "type": "jupyter-input-highlight",
+            "version": 1,
+            "highlightType": "keyword"
+          },
+          {
+            "detail": 0,
+            "format": 0,
+            "mode": "normal",
+            "style": "",
+            "text": ":",
+            "type": "jupyter-input-highlight",
+            "version": 1,
+            "highlightType": "punctuation"
+          },
+          {
+            "type": "linebreak",
+            "version": 1
+          },
+          {
+            "detail": 0,
+            "format": 0,
+            "mode": "normal",
+            "style": "",
+            "text": "    ",
+            "type": "jupyter-input-highlight",
+            "version": 1
+          },
+          {
+            "detail": 0,
+            "format": 0,
+            "mode": "normal",
+            "style": "",
+            "text": "pass",
+            "type": "jupyter-input-highlight",
+            "version": 1,
+            "highlightType": "keyword"
+          },
+          {
+            "type": "linebreak",
+            "version": 1
+          },
+          {
+            "detail": 0,
+            "format": 0,
+            "mode": "normal",
+            "style": "",
+            "text": "a ",
+            "type": "jupyter-input-highlight",
+            "version": 1
+          },
+          {
+            "detail": 0,
+            "format": 0,
+            "mode": "normal",
+            "style": "",
+            "text": "=",
+            "type": "jupyter-input-highlight",
+            "version": 1,
+            "highlightType": "operator"
+          },
+          {
+            "detail": 0,
+            "format": 0,
+            "mode": "normal",
+            "style": "",
+            "text": " ",
+            "type": "jupyter-input-highlight",
+            "version": 1
+          },
+          {
+            "detail": 0,
+            "format": 0,
+            "mode": "normal",
+            "style": "",
+            "text": "1",
+            "type": "jupyter-input-highlight",
+            "version": 1,
+            "highlightType": "number"
           },
           {
             "type": "linebreak",
@@ -2639,11 +2813,11 @@
       },
       {
         "type": "jupyter-output",
-        "source": "import time\nprint(\"1, 2\")\ntime.sleep(5)\nprint(\"3, 4\")",
+        "source": "import time\ntry:\n    print(a)\nexcept:\n    pass\na = 1\nprint(\"1, 2\")\ntime.sleep(5)\nprint(\"3, 4\")",
         "outputs": [
           {
             "name": "stdout",
-            "text": "1, 2\n3, 4\n",
+            "text": "1, 2\n",
             "output_type": "stream"
           }
         ],
@@ -3132,6 +3306,7 @@
     "indent": 0,
     "type": "root",
     "version": 1,
+    "textFormat": 1,
     "textStyle": "font-size: 18pt; font-family: Verdana;"
   }
 }

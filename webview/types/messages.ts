@@ -575,6 +575,22 @@ export interface OpenExternalUrlMessage {
   useSimpleBrowser?: boolean;
 }
 
+/** Interrupt kernel requested from webview */
+export interface InterruptKernelRequestMessage {
+  /** Message type discriminator */
+  type: "interrupt-kernel";
+  /** Empty payload */
+  body: Record<string, never>;
+}
+
+/** Restart kernel requested from webview */
+export interface RestartKernelRequestMessage {
+  /** Message type discriminator */
+  type: "restart-kernel";
+  /** Empty payload */
+  body: Record<string, never>;
+}
+
 /**
  * Union of all Webview → Extension messages
  */
@@ -593,7 +609,9 @@ export type WebviewToExtensionMessage =
   | WebviewErrorMessage
   | LLMCompletionRequestMessage
   | OutlineUpdateMessage
-  | OpenExternalUrlMessage;
+  | OpenExternalUrlMessage
+  | InterruptKernelRequestMessage
+  | RestartKernelRequestMessage;
 
 /**
  * Bidirectional message type (for backward compatibility)

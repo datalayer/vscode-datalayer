@@ -43,6 +43,9 @@ export function useRuntimeManager(initialRuntime?: RuntimeJSON) {
   // Create MutableServiceManager once - stable reference throughout component lifecycle
   const mutableManagerRef = useRef<MutableServiceManager | null>(null);
 
+  // Track if current runtime is remote (for force-close on termination)
+  const isRemoteRuntimeRef = useRef(false);
+
   if (!mutableManagerRef.current) {
     mutableManagerRef.current = new MutableServiceManager();
 
@@ -103,9 +106,11 @@ export function useRuntimeManager(initialRuntime?: RuntimeJSON) {
       const isLocalKernel = isLocalKernelUrl(runtime.ingress);
 
       if (isPyodide) {
+        isRemoteRuntimeRef.current = false;
         mutableManagerRef.current?.updateToPyodide();
         // No need to start kernel here - Pyodide starts on first execution
       } else if (isLocalKernel) {
+        isRemoteRuntimeRef.current = false;
         // Extract kernel ID from URL (format: http://local-kernel-<kernelId>.localhost)
         const kernelId = runtime.ingress.match(/local-kernel-([^.]+)/)?.[1];
         if (!kernelId) {
@@ -139,6 +144,7 @@ export function useRuntimeManager(initialRuntime?: RuntimeJSON) {
         }
       } else {
         // Regular remote runtime - use standard connection
+        isRemoteRuntimeRef.current = true; // Track that this is a remote runtime
         mutableManagerRef.current?.updateToRemote(
           runtime.ingress,
           runtime.token || "",
@@ -155,7 +161,11 @@ export function useRuntimeManager(initialRuntime?: RuntimeJSON) {
       }
     } else {
       // Reset to mock service manager (reference stays stable)
-      mutableManagerRef.current?.updateToMock();
+      // For remote/Datalayer runtimes that were terminated on the server,
+      // use force-close to avoid CORS errors from API calls to dead servers
+      const shouldForceClose = isRemoteRuntimeRef.current;
+      isRemoteRuntimeRef.current = false; // Reset tracking
+      mutableManagerRef.current?.updateToMock(shouldForceClose);
     }
   }, []);
 

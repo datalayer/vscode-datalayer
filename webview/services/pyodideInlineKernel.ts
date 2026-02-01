@@ -1109,10 +1109,136 @@ export class PyodideInlineKernel implements Kernel.IKernelConnection {
   subshellId: string | null = null;
 
   async interrupt(): Promise<void> {
-    // No-op for Pyodide
+    // Pyodide in web worker cannot be interrupted mid-execution (browser limitation)
+    // Web workers run to completion and cannot be stopped without terminating the entire worker
+    console.warn(
+      "[PyodideInlineKernel] Interrupt not supported for Pyodide kernel. " +
+        "Pyodide runs in a web worker which cannot be interrupted mid-execution. " +
+        "To stop execution, restart the kernel instead.",
+    );
+    // Do nothing - let the execution complete naturally
   }
 
   async restart(): Promise<void> {
-    // No-op for Pyodide
+    console.log("[PyodideInlineKernel] Restart requested - terminating worker");
+
+    // Terminate the current worker
+    if (this._worker) {
+      this._worker.terminate();
+    }
+
+    // Reset state
+    this._status = "restarting";
+    this._statusChanged.emit("restarting");
+    this._executionCount = 0;
+    this._isExecuting = false;
+    this._executionHeaders.clear();
+    this._executionCounts.clear();
+    this._currentExecuteHeader = undefined;
+    this._currentExecuteCode = undefined;
+
+    // Create new worker from Blob URL (same as constructor)
+    const blob = new Blob([pyodideWorkerCode], {
+      type: "application/javascript",
+    });
+    const blobUrl = URL.createObjectURL(blob);
+    this._worker = new Worker(blobUrl);
+
+    // Get Pyodide base URL
+    const pyodideBaseUrl = (window as any).__PYODIDE_BASE_URI__;
+    if (!pyodideBaseUrl) {
+      console.error("[PyodideInlineKernel] __PYODIDE_BASE_URI__ not found!");
+      throw new Error("Pyodide base URI not provided by extension");
+    }
+
+    // Set up worker message listeners (same as constructor)
+    this._worker.addEventListener("message", (event) => {
+      const msg = event.data;
+
+      // Handle fetch requests from worker
+      if (msg.type === "fetch-request") {
+        import("../utils/httpProxy")
+          .then(({ proxyFetch }) => proxyFetch(msg.url))
+          .then(async (response) => {
+            if (!response.ok) {
+              throw new Error(
+                `HTTP ${response.status}: ${response.statusText}`,
+              );
+            }
+            if (
+              msg.url.endsWith(".wasm") ||
+              msg.url.endsWith(".zip") ||
+              msg.url.endsWith(".whl")
+            ) {
+              return await response.arrayBuffer();
+            } else {
+              return await response.text();
+            }
+          })
+          .then((data) => {
+            this._worker.postMessage({
+              id: msg.id,
+              type: "fetch-response",
+              url: msg.url,
+              success: true,
+              data: data,
+            });
+          })
+          .catch((error) => {
+            console.error(
+              "[PyodideInlineKernel] Fetch failed:",
+              msg.url,
+              error,
+            );
+            this._worker.postMessage({
+              id: msg.id,
+              type: "fetch-response",
+              url: msg.url,
+              success: false,
+              error: error.message,
+            });
+          });
+        return;
+      }
+
+      // Handle other worker messages
+      this._handleWorkerMessage(msg);
+    });
+
+    this._worker.addEventListener("error", (error) => {
+      console.error("[PyodideInlineKernel] Worker error:", error);
+    });
+
+    // Initialize Pyodide worker
+    await Promise.all([
+      fetch(`${pyodideBaseUrl}/pyodide.js`).then((r) => r.text()),
+      fetch(`${pyodideBaseUrl}/pyodide.asm.js`).then((r) => r.text()),
+    ])
+      .then(([pyodideScript, asmScript]) => {
+        if (pyodideScript.length === 0 || asmScript.length === 0) {
+          throw new Error("Scripts are empty!");
+        }
+
+        if (!this._worker) {
+          return;
+        }
+
+        this._worker.postMessage({
+          id: this._messageId++,
+          type: "init",
+          baseUrl: pyodideBaseUrl,
+          pyodideScript: pyodideScript,
+          asmScript: asmScript,
+          pyodideKernelCode: pyodideKernelCode,
+        });
+      })
+      .catch((error) => {
+        console.error(
+          "[PyodideInlineKernel] Failed to fetch Pyodide script:",
+          error,
+        );
+      });
+
+    console.log("[PyodideInlineKernel] Worker restarted successfully");
   }
 }

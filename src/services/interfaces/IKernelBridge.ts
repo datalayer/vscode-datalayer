@@ -31,6 +31,15 @@ export interface IKernelBridge {
   getLocalKernel(kernelId: string): LocalKernelClient | undefined;
 
   /**
+   * Gets the local kernel client for a document.
+   * Used by runtime bridge to interrupt/restart kernels for specific documents.
+   *
+   * @param uri - Document URI
+   * @returns Local kernel client or undefined
+   */
+  getKernelForDocument(uri: vscode.Uri): LocalKernelClient | undefined;
+
+  /**
    * Registers a webview panel for kernel communication.
    *
    * @param uri - Notebook URI
