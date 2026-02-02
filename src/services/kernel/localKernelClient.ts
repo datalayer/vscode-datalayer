@@ -13,7 +13,9 @@
 import { spawn, ChildProcess } from "child_process";
 import * as fs from "fs";
 import * as path from "path";
-import * as os from "os";
+// CRITICAL: Use require() for os to ensure it uses the cached version from preload.ts
+// ES6 imports may execute before preload, causing "Cannot read properties of undefined (reading 'platform')"
+const os = require("os");
 import * as crypto from "crypto";
 import * as vscode from "vscode";
 import type { Kernel } from "@jupyterlab/services";

@@ -43,7 +43,9 @@ function disableKernelReconnect(
   try {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const kernelManager = serviceManager.kernels as any;
-    if (!kernelManager) return count;
+    if (!kernelManager) {
+      return count;
+    }
 
     // Access private _kernelConnections (Set of kernel connections)
     const kernelsMap = kernelManager._kernelConnections;
@@ -254,9 +256,14 @@ export class MutableServiceManager {
               sm.events.dispose();
             }
 
-            console.log('[MutableServiceManager] Stopped all polling and subscriptions');
+            console.log(
+              "[MutableServiceManager] Stopped all polling and subscriptions",
+            );
           } catch (error) {
-            console.warn('[MutableServiceManager] Error during force-close cleanup:', error);
+            console.warn(
+              "[MutableServiceManager] Error during force-close cleanup:",
+              error,
+            );
           }
 
           // Skip dispose() - it would try to refresh kernel lists from dead server

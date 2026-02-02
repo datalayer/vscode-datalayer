@@ -75,6 +75,10 @@ const extensionConfig = {
     // @datalayer packages are BUNDLED (not external) so webpack can handle their React dependencies
     // When webpack encounters React imports in these packages, it externalizes them (because React is external above)
     // This prevents Node.js from trying to load packages with CSS imports at runtime
+    // EXCEPTION: /tools exports must be external to avoid bundling dependencies with os.platform() calls
+    "@datalayer/jupyter-react/tools": "commonjs @datalayer/jupyter-react/tools",
+    "@datalayer/jupyter-lexical/lib/tools":
+      "commonjs @datalayer/jupyter-lexical/lib/tools",
     "@jupyterlab/application": "commonjs @jupyterlab/application",
     "@jupyterlab/notebook": "commonjs @jupyterlab/notebook",
     "@jupyterlab/cells": "commonjs @jupyterlab/cells",

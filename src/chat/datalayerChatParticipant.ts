@@ -1,7 +1,12 @@
 import * as vscode from "vscode";
+import { DatalayerAgent } from "./datalayerAgent";
 
 /**
  * Chat participant that provides context from Datalayer notebooks and lexical documents
+ *
+ * Supports two modes:
+ * 1. **Chat Mode** (default): Interactive assistance with tool invocation
+ * 2. **Agent Mode**: Autonomous multi-step workflow execution (use "agent:" prefix)
  *
  * Uses Datalayer tools to interact with notebooks and lexical documents.
  * Always calls getActiveDocument first, then listAvailableBlocks for lexical documents.
@@ -11,12 +16,16 @@ import * as vscode from "vscode";
  * @datalayer connect to pyodide, insert a fibonacci cell, and run all cells
  * @datalayer explain this notebook
  * @datalayer what cells are in this document?
+ * @datalayer agent: create a complete data analysis notebook with pandas
  * ```
  */
 export class DatalayerChatParticipant {
   private participant: vscode.ChatParticipant | undefined;
+  private agent: DatalayerAgent;
 
-  constructor(private context: vscode.ExtensionContext) {}
+  constructor(private context: vscode.ExtensionContext) {
+    this.agent = new DatalayerAgent(context);
+  }
 
   public register(): vscode.Disposable {
     // Create the chat participant
@@ -44,6 +53,25 @@ export class DatalayerChatParticipant {
     stream: vscode.ChatResponseStream,
     token: vscode.CancellationToken,
   ): Promise<void> {
+    // Check for agent mode activation
+    const agentModePrefix = "agent:";
+    const isAgentMode = request.prompt.toLowerCase().startsWith(agentModePrefix);
+
+    if (isAgentMode) {
+      // Route to autonomous agent
+      const task = request.prompt.substring(agentModePrefix.length).trim();
+      return await this.agent.executeWorkflow(task, stream, token);
+    }
+
+    // Check for proactive analysis command
+    if (
+      request.prompt.toLowerCase().includes("analyze") &&
+      request.prompt.toLowerCase().includes("suggest")
+    ) {
+      return await this.agent.analyzeAndSuggest(stream, token);
+    }
+
+    // Standard chat mode (existing logic)
     // Select the Copilot model
     const [model] = await vscode.lm.selectChatModels({
       vendor: "copilot",
@@ -61,11 +89,19 @@ export class DatalayerChatParticipant {
       tool.name.startsWith("datalayer_"),
     );
 
-    // Build system prompt
-    const systemPrompt = this.buildSimpleSystemPrompt();
-    const messages: vscode.LanguageModelChatMessage[] = [
-      vscode.LanguageModelChatMessage.User(systemPrompt),
-    ];
+    // Convert conversation history to messages
+    const historyMessages = this.convertHistoryToMessages(_context.history);
+
+    // Build messages array with history
+    const messages: vscode.LanguageModelChatMessage[] = [];
+    if (historyMessages.length === 0) {
+      // First turn - add system prompt
+      const systemPrompt = this.buildSimpleSystemPrompt();
+      messages.push(vscode.LanguageModelChatMessage.User(systemPrompt));
+    } else {
+      // Subsequent turns - include history
+      messages.push(...historyMessages);
+    }
 
     try {
       // STEP 1: Always call getActiveDocument first
@@ -239,6 +275,39 @@ export class DatalayerChatParticipant {
         token,
       );
     }
+  }
+
+  /**
+   * Convert VS Code chat history to language model messages.
+   * Extracts user prompts and assistant responses from previous turns.
+   */
+  private convertHistoryToMessages(
+    history: ReadonlyArray<vscode.ChatRequestTurn | vscode.ChatResponseTurn>,
+  ): vscode.LanguageModelChatMessage[] {
+    const messages: vscode.LanguageModelChatMessage[] = [];
+
+    for (const turn of history) {
+      if (turn instanceof vscode.ChatRequestTurn) {
+        // User message
+        messages.push(vscode.LanguageModelChatMessage.User(turn.prompt));
+      } else if (turn instanceof vscode.ChatResponseTurn) {
+        // Assistant message - extract text from response parts
+        const responseText = turn.response
+          .filter((part) => part instanceof vscode.ChatResponseMarkdownPart)
+          .map((part) => (part as vscode.ChatResponseMarkdownPart).value.value)
+          .join("\n");
+
+        if (responseText) {
+          messages.push(
+            vscode.LanguageModelChatMessage.Assistant([
+              new vscode.LanguageModelTextPart(responseText),
+            ]),
+          );
+        }
+      }
+    }
+
+    return messages;
   }
 
   /**
