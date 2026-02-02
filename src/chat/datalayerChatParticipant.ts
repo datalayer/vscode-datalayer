@@ -1,12 +1,10 @@
 import * as vscode from "vscode";
-import { DatalayerAgent } from "./datalayerAgent";
 
 /**
  * Chat participant that provides context from Datalayer notebooks and lexical documents
  *
- * Supports two modes:
- * 1. **Chat Mode** (default): Interactive assistance with tool invocation
- * 2. **Agent Mode**: Autonomous multi-step workflow execution (use "agent:" prefix)
+ * Provides interactive assistance with tool invocation for working with
+ * Jupyter notebooks and Lexical documents.
  *
  * Uses Datalayer tools to interact with notebooks and lexical documents.
  * Always calls getActiveDocument first, then listAvailableBlocks for lexical documents.
@@ -16,16 +14,12 @@ import { DatalayerAgent } from "./datalayerAgent";
  * @datalayer connect to pyodide, insert a fibonacci cell, and run all cells
  * @datalayer explain this notebook
  * @datalayer what cells are in this document?
- * @datalayer agent: create a complete data analysis notebook with pandas
  * ```
  */
 export class DatalayerChatParticipant {
   private participant: vscode.ChatParticipant | undefined;
-  private agent: DatalayerAgent;
 
-  constructor(private context: vscode.ExtensionContext) {
-    this.agent = new DatalayerAgent(context);
-  }
+  constructor(private context: vscode.ExtensionContext) {}
 
   public register(): vscode.Disposable {
     // Create the chat participant
@@ -53,25 +47,6 @@ export class DatalayerChatParticipant {
     stream: vscode.ChatResponseStream,
     token: vscode.CancellationToken,
   ): Promise<void> {
-    // Check for agent mode activation
-    const agentModePrefix = "agent:";
-    const isAgentMode = request.prompt.toLowerCase().startsWith(agentModePrefix);
-
-    if (isAgentMode) {
-      // Route to autonomous agent
-      const task = request.prompt.substring(agentModePrefix.length).trim();
-      return await this.agent.executeWorkflow(task, stream, token);
-    }
-
-    // Check for proactive analysis command
-    if (
-      request.prompt.toLowerCase().includes("analyze") &&
-      request.prompt.toLowerCase().includes("suggest")
-    ) {
-      return await this.agent.analyzeAndSuggest(stream, token);
-    }
-
-    // Standard chat mode (existing logic)
     // Select the Copilot model
     const [model] = await vscode.lm.selectChatModels({
       vendor: "copilot",

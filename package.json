@@ -224,6 +224,11 @@
         "category": "Datalayer"
       },
       {
+        "command": "datalayer.internal.testCompletion",
+        "title": "Test Prose Completion (Debug)",
+        "category": "Datalayer"
+      },
+      {
         "command": "datalayer.selectRuntime",
         "title": "Select/Switch Runtime",
         "category": "Datalayer"
@@ -1437,6 +1442,71 @@
             "ipython"
           ],
           "markdownDescription": "Python packages to preload when extension starts. Applies to **both** Datalayer webview notebooks (configurable version) and native VS Code notebooks (v0.29.0). Start with a small list, add more as needed."
+        },
+        "datalayer.completion.inlinellm.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable LLM-powered inline completions for code in Jupyter cells"
+        },
+        "datalayer.completion.inlinellm.triggerMode": {
+          "type": "string",
+          "enum": [
+            "auto",
+            "manual"
+          ],
+          "enumDescriptions": [
+            "Automatically trigger completions while typing",
+            "Only trigger completions with keyboard shortcut (Ctrl+Space)"
+          ],
+          "default": "auto",
+          "description": "How code completions are triggered"
+        },
+        "datalayer.completion.inlinellm.debounceMs": {
+          "type": "number",
+          "default": 200,
+          "minimum": 0,
+          "maximum": 2000,
+          "description": "Delay in milliseconds before triggering code completion"
+        },
+        "datalayer.completion.inlinellm.contextBlocks": {
+          "type": "number",
+          "default": -1,
+          "markdownDescription": "Number of blocks to include as context when generating code completions. Use `-1` for entire document (recommended), or specify a positive number to limit context scope."
+        },
+        "datalayer.completion.prosellm.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable LLM-powered inline completions for prose/markdown content"
+        },
+        "datalayer.completion.prosellm.triggerMode": {
+          "type": "string",
+          "enum": [
+            "auto",
+            "manual"
+          ],
+          "enumDescriptions": [
+            "Automatically trigger completions while typing (may be intrusive)",
+            "Only trigger completions with keyboard shortcut (recommended)"
+          ],
+          "default": "manual",
+          "markdownDescription": "How prose completions are triggered. **Manual mode is recommended** to avoid intrusive suggestions while writing."
+        },
+        "datalayer.completion.prosellm.triggerKey": {
+          "type": "string",
+          "default": "Cmd+Shift+,",
+          "markdownDescription": "Keyboard shortcut for manual prose completion trigger. Format: `Modifier+Key` (e.g., `Cmd+Shift+,`, `Cmd+I`). Default uses Command+Shift+Comma which is unlikely to conflict with VS Code built-in commands."
+        },
+        "datalayer.completion.prosellm.debounceMs": {
+          "type": "number",
+          "default": 500,
+          "minimum": 0,
+          "maximum": 2000,
+          "description": "Delay in milliseconds before triggering prose completion (higher values reduce interruptions)"
+        },
+        "datalayer.completion.prosellm.contextBlocks": {
+          "type": "number",
+          "default": -1,
+          "markdownDescription": "Number of blocks to include as context when generating prose completions. Use `-1` for entire document (recommended for better context awareness), or specify a positive number to limit context scope."
         }
       }
     },

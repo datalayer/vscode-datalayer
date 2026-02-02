@@ -148,6 +148,7 @@ export interface LexicalEditorProps {
   serviceManager: ServiceManager.IManager;
   lexicalId?: string | null;
   kernelInitializing?: boolean;
+  completionConfig?: any; // Inline completion configuration from extension
 }
 
 /**
@@ -335,7 +336,14 @@ export function LexicalEditor({
   serviceManager,
   lexicalId,
   kernelInitializing = false,
+  completionConfig,
 }: LexicalEditorProps) {
+  // Log completion config for debugging
+  console.log(
+    "[LexicalEditor] 🎯 Rendering with completion config:",
+    completionConfig,
+  );
+
   const [floatingAnchorElem, setFloatingAnchorElem] =
     useState<HTMLDivElement | null>(null);
 
@@ -616,6 +624,7 @@ export function LexicalEditor({
                 setIsLinkEditMode={setIsLinkEditMode}
                 lexicalLLMProvider={lexicalLLMProvider}
                 lexicalLSPProvider={lexicalLSPProvider}
+                completionConfig={completionConfig}
               />
             </CommentsProvider>
           </LexicalComposer>
@@ -651,6 +660,7 @@ function LexicalEditorInner({
   setIsLinkEditMode,
   lexicalLLMProvider,
   lexicalLSPProvider,
+  completionConfig,
 }: any) {
   const { showComments, toggleComments } = useComments();
 
@@ -741,6 +751,7 @@ function LexicalEditorInner({
           providers={[lexicalLLMProvider]}
           debounceMs={200}
           enabled={editable}
+          config={completionConfig}
         />
         {/* LSP Tab completion plugin for dropdown completions */}
         <LSPTabCompletionPlugin

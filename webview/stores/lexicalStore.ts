@@ -11,6 +11,7 @@
  */
 
 import { create } from "zustand";
+import type { InlineCompletionConfig } from "@datalayer/jupyter-lexical";
 
 /**
  * Collaboration configuration from extension
@@ -62,6 +63,10 @@ export interface LexicalState {
   collaborationConfig: CollaborationConfig;
   /** User information for comments (independent of collaboration sync) */
   userInfo: { username: string; userColor: string } | null;
+
+  // Completion configuration
+  /** Configuration for inline completions (code and prose) */
+  completionConfig: InlineCompletionConfig | null;
 
   // Actions
   /**
@@ -115,6 +120,11 @@ export interface LexicalState {
    */
   setUserInfo: (info: { username: string; userColor: string } | null) => void;
   /**
+   * Updates the completion configuration
+   * @param config Completion configuration for inline completions
+   */
+  setCompletionConfig: (config: InlineCompletionConfig | null) => void;
+  /**
    * Resets the entire store to initial state
    */
   reset: () => void;
@@ -149,6 +159,8 @@ const initialState = {
   },
   /** Default to no user info (not logged in) */
   userInfo: null as { username: string; userColor: string } | null,
+  /** Default to no completion config */
+  completionConfig: null as InlineCompletionConfig | null,
 };
 
 /**
@@ -173,5 +185,6 @@ export const createLexicalStore = () =>
     setLexicalId: (lexicalId) => set({ lexicalId }),
     setCollaborationConfig: (config) => set({ collaborationConfig: config }),
     setUserInfo: (info) => set({ userInfo: info }),
+    setCompletionConfig: (config) => set({ completionConfig: config }),
     reset: () => set(initialState),
   }));

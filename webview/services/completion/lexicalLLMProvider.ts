@@ -59,6 +59,10 @@ interface CompletionContext {
   before: string;
   /** Text after cursor */
   after: string;
+  /** Whether the cursor is in a code cell (jupyter-cell) */
+  inCodeCell?: boolean;
+  /** Trigger kind (auto or manual) */
+  triggerKind?: "auto" | "manual";
 }
 
 /**
@@ -98,6 +102,7 @@ export class LexicalVSCodeLLMProvider implements IInlineCompletionProvider {
 
   constructor() {
     // Provider is ready immediately - no initialization needed
+    console.log("[LexicalVSCodeLLMProvider] ✅ Provider initialized");
   }
 
   /**
@@ -116,6 +121,16 @@ export class LexicalVSCodeLLMProvider implements IInlineCompletionProvider {
     request: CompletionRequest,
     context: CompletionContext,
   ): Promise<CompletionList> {
+    console.log("[LexicalVSCodeLLMProvider] 🚀 fetch() called", {
+      requestTextLength: request.text?.length,
+      offset: request.offset,
+      language: request.language,
+      hasContextBefore: !!context.before,
+      hasContextAfter: !!context.after,
+      inCodeCell: context.inCodeCell,
+      triggerKind: context.triggerKind,
+    });
+
     try {
       // Use the context before/after or extract from request
       const prefix =
@@ -123,12 +138,43 @@ export class LexicalVSCodeLLMProvider implements IInlineCompletionProvider {
       const suffix = context.after || request.text.substring(request.offset);
       const language = request.language || "python";
 
+      // Detect content type based on context
+      // If we're in a code cell (jupyter-cell node), it's code
+      // Otherwise, it's prose (markdown, text)
+      const contentType: "code" | "prose" = context.inCodeCell
+        ? "code"
+        : "prose";
+
+      // Get trigger kind (auto or manual)
+      const trigger = context.triggerKind || "auto";
+
+      console.log("[LexicalVSCodeLLMProvider] 📊 Context analysis:", {
+        prefixLength: prefix.length,
+        suffixLength: suffix.length,
+        contentType,
+        trigger,
+        prefixPreview: prefix.substring(Math.max(0, prefix.length - 50)),
+        suffixPreview: suffix.substring(0, 50),
+      });
+
       // Call VS Code Language Model API via message passing
-      const completion = await this.getLLMCompletion(prefix, suffix, language);
+      const completion = await this.getLLMCompletion(
+        prefix,
+        suffix,
+        language,
+        contentType,
+        trigger,
+      );
 
       if (!completion) {
+        console.log("[LexicalVSCodeLLMProvider] ❌ No completion received");
         return { items: [] };
       }
+
+      console.log("[LexicalVSCodeLLMProvider] ✅ Completion received:", {
+        completionLength: completion.length,
+        completionPreview: completion.substring(0, 100),
+      });
 
       // Extract only the NEW text (remove the prefix that's already typed)
       // The LLM returns the full completion, but we only want the part after the cursor
@@ -175,6 +221,8 @@ export class LexicalVSCodeLLMProvider implements IInlineCompletionProvider {
    * @param prefix - Code before cursor
    * @param suffix - Code after cursor
    * @param language - Programming language identifier
+   * @param contentType - Content type (code or prose) for prompt selection
+   * @param trigger - Trigger type (auto or manual)
    * @returns Completion text or null if timeout/error
    *
    * @remarks
@@ -185,10 +233,23 @@ export class LexicalVSCodeLLMProvider implements IInlineCompletionProvider {
     prefix: string,
     suffix: string,
     language: string,
+    contentType: "code" | "prose",
+    trigger: "auto" | "manual",
   ): Promise<string | null> {
     return new Promise((resolve) => {
       // Generate request ID for matching response
       const requestId = Math.random().toString(36).substring(7);
+
+      console.log(
+        "[LexicalVSCodeLLMProvider] 📤 Sending llm-completion-request to extension:",
+        {
+          requestId,
+          contentType,
+          trigger,
+          prefixLength: prefix.length,
+          suffixLength: suffix.length,
+        },
+      );
 
       // Listen for response
       const handler = (event: MessageEvent) => {
@@ -197,6 +258,14 @@ export class LexicalVSCodeLLMProvider implements IInlineCompletionProvider {
           message.type === "llm-completion-response" &&
           message.requestId === requestId
         ) {
+          console.log(
+            "[LexicalVSCodeLLMProvider] 📥 Received llm-completion-response:",
+            {
+              requestId,
+              hasCompletion: !!message.completion,
+              completionLength: message.completion?.length || 0,
+            },
+          );
           window.removeEventListener("message", handler);
           resolve(message.completion || null);
         }
@@ -211,10 +280,15 @@ export class LexicalVSCodeLLMProvider implements IInlineCompletionProvider {
         prefix,
         suffix,
         language,
+        contentType, // NEW: Pass content type for prompt selection
+        trigger, // NEW: Pass trigger type for context
       });
 
       // Timeout after 15 seconds
       setTimeout(() => {
+        console.log("[LexicalVSCodeLLMProvider] ⏱️ Request timed out:", {
+          requestId,
+        });
         window.removeEventListener("message", handler);
         resolve(null);
       }, 15000);

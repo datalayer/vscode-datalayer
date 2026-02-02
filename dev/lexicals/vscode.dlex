@@ -303,7 +303,7 @@
             "format": 0,
             "mode": "normal",
             "style": "",
-            "text": "Headings from H1 to H6 are supported.",
+            "text": "Headings from H1 to H6 are supported",
             "type": "text",
             "version": 1
           }
@@ -3306,7 +3306,6 @@
     "indent": 0,
     "type": "root",
     "version": 1,
-    "textFormat": 1,
     "textStyle": "font-size: 18pt; font-family: Verdana;"
   }
 }

@@ -126,7 +126,6 @@ export function handleRuntimeSelected(
 export function handleRuntimeTerminated(
   selectRuntime: RuntimeSelectCallback,
   updateStore?: RuntimeSelectCallback,
-  delay: number = 100,
 ): void {
   // Immediately clear runtime to trigger cleanup in Output components
   // This stops cells from showing execution state

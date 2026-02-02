@@ -15,15 +15,17 @@ import { useEffect, useRef } from "react";
 import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext";
 import {
   INSERT_JUPYTER_INPUT_OUTPUT_COMMAND,
-  editorStateToBlocks,
-  getBlockCount,
-  getRegisteredNodes,
   type LexicalBlock,
   lexicalToolOperations,
   type ToolOperation,
   DefaultExecutor as LexicalDefaultExecutor,
   useLexicalStore,
 } from "@datalayer/jupyter-lexical";
+import {
+  editorStateToBlocks,
+  getBlockCount,
+  getRegisteredNodes,
+} from "@datalayer/jupyter-lexical/lib/tools/utils/blocks";
 // NOTE: LexicalDocumentController removed - legacy message handlers below are deprecated
 // All tool operations should now use the Runner pattern (tool-execution messages)
 import {

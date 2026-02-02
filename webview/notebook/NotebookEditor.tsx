@@ -1064,7 +1064,7 @@ function NotebookEditorCore({
     }
 
     // Create DefaultExecutor for direct state manipulation
-    const executor = new DefaultExecutor(notebookId, notebookStoreState);
+    const executor = new DefaultExecutor(notebookId, notebookStoreState as any);
 
     // Create runner with notebook operations and executor
     const runner = createNotebookRunner(
