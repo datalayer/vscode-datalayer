@@ -104,7 +104,7 @@ export function handleRuntimeSelected(
 
 /**
  * Handler for kernel-terminated and runtime-terminated messages.
- * Clears the current runtime with a small delay to ensure cleanup.
+ * Clears the current runtime immediately to ensure cleanup.
  *
  * IMPORTANT: For Datalayer runtimes, this terminates the runtime on the server,
  * which causes the kernel URLs to become inaccessible. The jupyter-react Output
@@ -113,7 +113,6 @@ export function handleRuntimeSelected(
  *
  * @param selectRuntime - Callback to update runtime state (from useRuntimeManager)
  * @param updateStore - Optional callback to update editor-specific store
- * @param delay - Delay in ms before clearing runtime (default: 100ms)
  *
  * @example
  * ```typescript

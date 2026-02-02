@@ -51,5 +51,7 @@ export const selectKernelTool: ToolDefinition = {
     "python",
     "pyodide",
     "browser",
+    "notebook",
+    "lexical",
   ],
 };

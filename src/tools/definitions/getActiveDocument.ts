@@ -38,5 +38,5 @@ export const getActiveDocumentTool: ToolDefinition = {
     priority: "high", // Must be called first
   },
 
-  tags: ["document", "active", "uri", "prerequisite"],
+  tags: ["document", "active", "uri", "prerequisite", "notebook", "lexical"],
 };

@@ -32,6 +32,7 @@ node_modules/@datalayer/**/*.test.*
 !node_modules/utf-8-validate/**
 !node_modules/keytar/**
 src/**
+!resources/agents/**
 resources/icons/**
 .gitignore
 .yarnrc

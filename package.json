@@ -186,6 +186,13 @@
         }
       }
     },
+    "chatAgents": [
+      {
+        "name": "Datalayer",
+        "path": "./resources/agents/datalayer.agent.md",
+        "description": "Data science assistant for Jupyter notebooks and Lexical documents"
+      }
+    ],
     "commands": [
       {
         "command": "datalayer.login",
@@ -804,6 +811,14 @@
       {
         "name": "datalayer_getActiveDocument",
         "displayName": "Get Active Document",
+        "tags": [
+          "document",
+          "active",
+          "uri",
+          "prerequisite",
+          "notebook",
+          "lexical"
+        ],
         "toolReferenceName": "getActiveDocument",
         "modelDescription": "**CRITICAL: Always call this tool FIRST before running ANY operation on Jupyter Notebooks (.ipynb) or Lexical documents (.lexical).** Returns the URI and filename of the currently active document in VS Code. This tool identifies which document is active so subsequent operations know which document to act on. Returns: document URI (required for all operations), filename, and type (notebook/lexical/other). WORKFLOW for Lexical documents: 1) Call getActiveDocument to identify the document, 2) Call listAvailableBlocks to see what block types and metadata formats are supported, 3) Then call insertBlock/readAllBlocks/etc with proper metadata. Use this whenever the user asks to perform an action on 'this notebook', 'this file', 'current document', or before executing any document operations like readAllCells, readAllBlocks, executeCode, etc.",
         "canBeReferencedInPrompt": true,
@@ -816,6 +831,12 @@
       {
         "name": "datalayer_createNotebook",
         "displayName": "Create Notebook",
+        "tags": [
+          "notebook",
+          "create",
+          "smart",
+          "unified"
+        ],
         "toolReferenceName": "createNotebook",
         "modelDescription": "Creates a new Jupyter notebook with smart location detection. Automatically determines whether to create locally or in cloud based on context (keywords, open notebooks, space mentions, auth state). Use keywords like 'cloud', 'remote', 'space' for cloud notebooks, or 'local', 'workspace' for local notebooks.",
         "canBeReferencedInPrompt": true,
@@ -851,6 +872,12 @@
       {
         "name": "datalayer_createLexical",
         "displayName": "Create Lexical Document",
+        "tags": [
+          "lexical",
+          "create",
+          "smart",
+          "unified"
+        ],
         "toolReferenceName": "createLexical",
         "modelDescription": "Creates a new Lexical document with smart location detection. Automatically determines whether to create locally or in cloud based on context (keywords, open documents, space mentions, auth state). Use keywords like 'cloud', 'remote', 'space' for cloud documents, or 'local', 'workspace' for local documents.",
         "canBeReferencedInPrompt": true,
@@ -886,6 +913,15 @@
       {
         "name": "datalayer_listKernels",
         "displayName": "List Kernels",
+        "tags": [
+          "kernel",
+          "runtime",
+          "list",
+          "discover",
+          "pyodide",
+          "notebook",
+          "lexical"
+        ],
         "toolReferenceName": "listKernels",
         "modelDescription": "Lists all available kernels for executing notebook code. Returns local Jupyter kernels (Python environments), cloud Datalayer runtimes, and Pyodide (browser-based Python, always available). Use this to discover available compute environments before selecting one with selectKernel.",
         "canBeReferencedInPrompt": true,
@@ -911,6 +947,20 @@
       {
         "name": "datalayer_selectKernel",
         "displayName": "Select Kernel",
+        "tags": [
+          "kernel",
+          "runtime",
+          "select",
+          "connect",
+          "switch",
+          "attach",
+          "ipykernel",
+          "python",
+          "pyodide",
+          "browser",
+          "notebook",
+          "lexical"
+        ],
         "toolReferenceName": "selectKernel",
         "modelDescription": "Selects and connects a kernel to the active document (notebook or lexical), enabling code execution. Always connects to the currently active document. IMPORTANT: Call listKernels first to see all available kernels if unsure which kernel to use. EXAMPLES OF NATURAL LANGUAGE TO PARAMETER MAPPING: User says 'connect to pyodide' → use kernelId: 'pyodide'. User says 'connect to new runtime' → use kernelId: 'new'. User says 'connect to active runtime' → use kernelId: 'active'. User says 'connect to local ipykernel' → use kernelId: 'local'. User says 'connect to gpu runtime for 10 minutes' → use kernelId: 'new', environmentType: 'GPU', durationMinutes: 10. The kernelId parameter is REQUIRED and must be specified for every invocation. **IMPORTANT: Always ensure you call getActiveDocument before running this operation.**",
         "canBeReferencedInPrompt": true,
@@ -946,6 +996,15 @@
       {
         "name": "datalayer_executeCode",
         "displayName": "Execute Code",
+        "tags": [
+          "execute",
+          "code",
+          "python",
+          "kernel",
+          "runtime",
+          "notebook",
+          "lexical"
+        ],
         "toolReferenceName": "executeCode",
         "modelDescription": "Execute Python code. If a notebook or lexical document is open, uses that document's kernel. If no document is open but a Datalayer runtime is active, executes on that runtime. Returns execution result including output, errors, and display data.",
         "canBeReferencedInPrompt": true,
@@ -965,6 +1024,12 @@
       {
         "name": "datalayer_insertCell",
         "displayName": "Insert Notebook Cell",
+        "tags": [
+          "cell",
+          "notebook",
+          "manipulation",
+          "insert"
+        ],
         "toolReferenceName": "insertCell",
         "modelDescription": "Insert cells into Jupyter notebooks (.ipynb files ONLY). For Lexical documents (.dlex), use insertBlock with type=\"jupyter-cell\" instead. IMPORTANT: Call readAllCells first to see the current notebook structure and determine the correct insertion point. Then, insert a code or markdown cell into a Jupyter notebook at a specified position or at the end **IMPORTANT: Always ensure you call getActiveDocument before running this operation.**",
         "canBeReferencedInPrompt": true,
@@ -998,6 +1063,12 @@
       {
         "name": "datalayer_deleteCells",
         "displayName": "Delete Notebook Cell(s)",
+        "tags": [
+          "cell",
+          "notebook",
+          "manipulation",
+          "delete"
+        ],
         "toolReferenceName": "deleteCells",
         "modelDescription": "Deletes one or more cells from a Jupyter notebook at the specified indices. Cells are deleted in reverse order to prevent index shifting. **IMPORTANT: Always ensure you call getActiveDocument before running this operation.**",
         "canBeReferencedInPrompt": true,
@@ -1020,6 +1091,12 @@
       {
         "name": "datalayer_updateCell",
         "displayName": "Update Notebook Cell",
+        "tags": [
+          "cell",
+          "notebook",
+          "manipulation",
+          "update"
+        ],
         "toolReferenceName": "updateCell",
         "modelDescription": "Updates (overwrites) a cell's source code at the specified index. Does NOT execute the cell. **IMPORTANT: Always ensure you call getActiveDocument before running this operation.**",
         "canBeReferencedInPrompt": true,
@@ -1043,6 +1120,12 @@
       {
         "name": "datalayer_readCell",
         "displayName": "Read Notebook Cell",
+        "tags": [
+          "cell",
+          "notebook",
+          "read",
+          "inspect"
+        ],
         "toolReferenceName": "readCell",
         "modelDescription": "Reads a specific cell from a Jupyter notebook by index, including source code and outputs **IMPORTANT: Always ensure you call getActiveDocument before running this operation.**",
         "canBeReferencedInPrompt": true,
@@ -1065,6 +1148,13 @@
       {
         "name": "datalayer_readAllCells",
         "displayName": "Read All Notebook Cells",
+        "tags": [
+          "cell",
+          "notebook",
+          "read",
+          "inspect",
+          "all"
+        ],
         "toolReferenceName": "readAllCells",
         "modelDescription": "Read all cells from the Jupyter notebook. Supports two response formats: 'brief' (default) returns index, type, and 40-char content preview for structure queries and counting cells; 'detailed' returns full content with source, execution_count, and outputs. Use brief when you need to see notebook structure, count cells, or quickly scan content. Use detailed when you need to read full cell content or outputs. Brief format preview shows first 40 characters of cell source. Returns array of cells with: index (cell position), type (code, markdown, raw), preview (brief only), and optionally source/execution_count/outputs (detailed only). Works on active notebook. **IMPORTANT: Always ensure you call getActiveDocument before running this operation.**",
         "canBeReferencedInPrompt": true,
@@ -1085,6 +1175,13 @@
       {
         "name": "datalayer_runCell",
         "displayName": "Run Notebook Cell",
+        "tags": [
+          "cell",
+          "notebook",
+          "execute",
+          "run",
+          "outputs"
+        ],
         "toolReferenceName": "runCell",
         "modelDescription": "Runs a code cell in a Jupyter notebook and returns its outputs with execution metadata. Supports timeout and streaming progress updates. Returns execution_count, outputs, and elapsed_time. If no index is provided, runs the currently active cell. **IMPORTANT: Always ensure you call getActiveDocument before running this operation.**",
         "canBeReferencedInPrompt": true,
@@ -1114,6 +1211,12 @@
       {
         "name": "datalayer_insertBlock",
         "displayName": "Insert Lexical Block",
+        "tags": [
+          "lexical",
+          "insert",
+          "block",
+          "edit"
+        ],
         "toolReferenceName": "insertBlock",
         "modelDescription": "Insert blocks into Lexical documents (.dlex files). IMPORTANT: Lexical documents support EXECUTABLE JUPYTER CELLS - use type='jupyter-cell' to insert Python/R/Julia code cells that can be executed via kernel (just like .ipynb notebooks). Other block types: paragraph, heading, code (non-executable syntax highlighting), quote, list, table, collapsible, equation, image, youtube, horizontalrule. CRITICAL: DO NOT use markdown syntax in source field. Heading blocks use PLAIN TEXT (no # symbols) - specify tag metadata (h1-h6) instead. Inline formatting like **bold** or *italic* is automatically converted. ALWAYS call listAvailableBlocks FIRST to see block types and required metadata format. When inserting MULTIPLE blocks sequentially (e.g., creating a document outline with heading + paragraph + code), ALWAYS use afterId: 'BOTTOM' for each insertion to append blocks in order. For single insertions, call readAllBlocks first to see document structure. Position blocks using afterId: 'TOP' (beginning), 'BOTTOM' (end - REQUIRED for sequential inserts), or a specific block_id value from readAllBlocks. To insert blocks INSIDE a collapsible: 1) First insert collapsible (type='collapsible'), which returns a blockId, 2) Then insert nested blocks with metadata.collapsible set to that RETURNED BLOCK ID (NOT 'TOP' or 'BOTTOM'). Example: result = insertBlock({type: 'collapsible', source: 'Section', afterId: 'BOTTOM'}); insertBlock({type: 'paragraph', source: 'text', metadata: {collapsible: result.blockId}, afterId: 'BOTTOM'}). DO NOT use position markers (TOP/BOTTOM) as collapsible IDs - they are only for afterId positioning. Works on active .lexical/.dlex file. **IMPORTANT: Always ensure you call getActiveDocument before running this operation.**",
         "canBeReferencedInPrompt": true,
@@ -1146,6 +1249,13 @@
       {
         "name": "datalayer_updateBlock",
         "displayName": "Update Lexical Block",
+        "tags": [
+          "lexical",
+          "update",
+          "edit",
+          "block",
+          "modify"
+        ],
         "toolReferenceName": "updateBlock",
         "modelDescription": "Update an existing block in the currently open Lexical document. CRITICAL: DO NOT use markdown syntax (like # for headings) in source field - use plain text and specify block type/metadata instead. Inline formatting like **bold** or *italic* is automatically converted. Use listAvailableBlocks to get available block types. Can modify block type, source content, and/or metadata. Requires id from readAllBlocks. At least one of type, source, or metadata must be provided. Metadata is merged with existing metadata. Works on active .lexical file. **IMPORTANT: Always ensure you call getActiveDocument before running this operation.**",
         "canBeReferencedInPrompt": true,
@@ -1176,6 +1286,12 @@
       {
         "name": "datalayer_deleteBlocks",
         "displayName": "Delete Lexical Block(s)",
+        "tags": [
+          "lexical",
+          "delete",
+          "block",
+          "edit"
+        ],
         "toolReferenceName": "deleteBlocks",
         "modelDescription": "Delete one or more blocks from the currently open Lexical document by block_id. Pass array of block IDs to delete. WORKFLOW: 1) Call readAllBlocks to get block_id values, 2) Pass block_id array to delete. Validates all IDs exist before deletion. This permanently removes blocks and changes appear immediately. Works on active .lexical file. **IMPORTANT: Always ensure you call getActiveDocument before running this operation.**",
         "canBeReferencedInPrompt": true,
@@ -1198,6 +1314,12 @@
       {
         "name": "datalayer_readBlock",
         "displayName": "Read Lexical Block",
+        "tags": [
+          "lexical",
+          "read",
+          "block",
+          "single"
+        ],
         "toolReferenceName": "readBlock",
         "modelDescription": "Read a single block from the currently open Lexical document by its block_id. Use listAvailableBlocks to get available block types. Returns the block with: block_id, block_type (e.g. 'heading', 'paragraph', 'jupyter-cell'), source (content as string), metadata (properties like level, language). Use block_id values from readAllBlocks. Works on active .lexical file. **IMPORTANT: Always ensure you call getActiveDocument before running this operation.**",
         "canBeReferencedInPrompt": true,
@@ -1217,6 +1339,12 @@
       {
         "name": "datalayer_readAllBlocks",
         "displayName": "Read All Lexical Blocks",
+        "tags": [
+          "lexical",
+          "read",
+          "blocks",
+          "all"
+        ],
         "toolReferenceName": "readAllBlocks",
         "modelDescription": "Read all blocks from the currently open Lexical document. Use listAvailableBlocks to get available block types. Supports two response formats: 'brief' (default, ~1,100 tokens) returns block_id, block_type, and 40-char content preview for structure queries; 'detailed' (~20,000 tokens) returns full content with source, metadata, and properties. Use brief when you need to see document structure, count blocks, or quickly scan content. Use detailed when you need to read full content. Brief format preview shows: lists as comma-separated items, code/jupyter-cell as first line, horizontalrule as empty string. Returns array of blocks with: block_id (stable identifier for insertion), block_type (e.g. 'heading', 'paragraph', 'jupyter-cell'), preview (brief only), and optionally source/metadata (detailed only). CRITICAL: Use the block_id values from this result for insertBlock's afterId parameter. Works on active .lexical file. **IMPORTANT: Always ensure you call getActiveDocument before running this operation.**",
         "canBeReferencedInPrompt": true,
@@ -1237,6 +1365,13 @@
       {
         "name": "datalayer_runBlock",
         "displayName": "Run Lexical Block",
+        "tags": [
+          "lexical",
+          "run",
+          "execute",
+          "block",
+          "jupyter"
+        ],
         "toolReferenceName": "runBlock",
         "modelDescription": "Execute a single block in the currently open Lexical document by block_id. WORKFLOW: 1) Call readAllBlocks to get block_id values, 2) Pass block_id to execute. Validates block exists before execution. Only works on executable blocks (jupyter-cell or code blocks with executable: true). Optional timeout (timeoutSeconds) and streaming (stream, progressInterval) parameters available. Triggers execution and returns immediately. Use readBlock after execution to check results. Works on active .lexical file. **IMPORTANT: Always ensure you call getActiveDocument before running this operation.**",
         "canBeReferencedInPrompt": true,
@@ -1268,6 +1403,14 @@
       {
         "name": "datalayer_runAllBlocks",
         "displayName": "Run All Lexical Blocks",
+        "tags": [
+          "lexical",
+          "run",
+          "execute",
+          "blocks",
+          "all",
+          "jupyter"
+        ],
         "toolReferenceName": "runAllBlocks",
         "modelDescription": "Execute all executable blocks in the currently open Lexical document in sequence. Only runs executable blocks (jupyter-cell or code blocks with executable: true). Non-executable blocks are skipped. Triggers execution and returns immediately with count of blocks executed. Use readAllBlocks after execution to check results. Works on active .lexical file. **IMPORTANT: Always ensure you call getActiveDocument before running this operation.**",
         "canBeReferencedInPrompt": true,
@@ -1280,6 +1423,12 @@
       {
         "name": "datalayer_listAvailableBlocks",
         "displayName": "List Available Lexical Blocks",
+        "tags": [
+          "lexical",
+          "schema",
+          "discovery",
+          "blocks"
+        ],
         "toolReferenceName": "listAvailableBlocks",
         "modelDescription": "Discover available block types for the currently open Lexical document. Available blocks: paragraph, heading, quote, code, list, horizontalrule, jupyter-cell (executable), equation, image, youtube (video embed), table (data table), collapsible (expandable section). Returns detailed schema including required/optional metadata for each block type. Set type parameter to specific block type (e.g., 'youtube', 'table') or 'all' (default) for all blocks. Use this BEFORE calling insertBlock to see exact type names and required metadata format. **IMPORTANT: Always ensure you call getActiveDocument before running this operation.**",
         "canBeReferencedInPrompt": true,

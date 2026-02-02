@@ -67,6 +67,7 @@ const allToolDefinitions = [
 interface VSCodeToolContribution {
   name: string;
   displayName: string;
+  tags: string[];
   toolReferenceName: string;
   modelDescription: string;
   canBeReferencedInPrompt: boolean;
@@ -105,6 +106,7 @@ function toVSCodeContribution(tool: ToolDefinition): VSCodeToolContribution {
   return {
     name: tool.name,
     displayName: tool.displayName,
+    tags: tool.tags || ['datalayer', 'notebook', 'lexical'],
     toolReferenceName: tool.toolReferenceName,
     modelDescription,
     canBeReferencedInPrompt: tool.config?.canBeReferencedInPrompt ?? true,
