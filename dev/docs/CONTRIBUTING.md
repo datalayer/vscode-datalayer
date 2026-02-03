@@ -136,7 +136,7 @@ The editor is encapsulated within an iframe. All communications between the edit
 
 - **Development Guide**: [DEVELOPMENT.md](./DEVELOPMENT.md)
 - **Release Process**: [RELEASE.md](./RELEASE.md)
-- **API Documentation**: [https://vscode-datalayer.netlify.app](https://vscode-datalayer.netlify.app)
+- **API Documentation**: [https://datalayer-desktop.netlify.app](https://datalayer-desktop.netlify.app)
 
 ### Communication
 

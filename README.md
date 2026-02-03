@@ -71,15 +71,14 @@
 - Browse and manage your cloud documents and notebooks
 - Create, rename, delete files directly in the cloud
 - Virtual file paths: `datalayer://Space Name/document.ipynb`
-- Collaborative workspace sharing
+- Access to shared workspaces
 
 **Datalayer Runtimes** (Explorer Sidebar)
 
 - Real-time monitoring of all active cloud environments
 - One-click runtime creation and termination
-- Resource usage and cost tracking
-- Environment type indicators (CPU/GPU, memory, duration, etc.)
-- Health status monitoring and automatic recovery
+- Environment type indicators (CPU/GPU, memory, duration)
+- Health status monitoring
 
 **Datalayer Settings** (Explorer Sidebar)
 
@@ -93,7 +92,7 @@
 ### ⚙️ **Smart Runtime Management**
 
 - **Auto-connect** - Documents automatically connect to available runtimes (configurable)
-- **Automatic provisioning** - Runtimes created on-demand when you run cells
+- **On-demand creation** - Create runtimes through the kernel picker when needed
 - **Intelligent reuse** - Existing healthy runtimes are reused to conserve credits
 - **Health verification** - Automatic checks ensure runtime reliability
 - **Flexible duration** - Configure runtime lifetime (1-1440 minutes)

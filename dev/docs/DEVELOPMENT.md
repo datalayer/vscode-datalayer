@@ -1791,7 +1791,7 @@ export const insertBlocksTool: ToolDefinition = {
 - `datalayer_deleteBlock` - Delete blocks
 - `datalayer_listAvailableBlocks` - List supported block types
 
-### insertBlocks Feature (November 2025)
+### insertBlocks Feature (January 2025)
 
 **Purpose**: Allows Copilot to create complex documents with a single API call instead of many sequential `insertBlock` calls.
 
