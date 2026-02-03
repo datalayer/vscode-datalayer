@@ -75,6 +75,10 @@ const extensionConfig = {
     // @datalayer packages are BUNDLED (not external) so webpack can handle their React dependencies
     // When webpack encounters React imports in these packages, it externalizes them (because React is external above)
     // This prevents Node.js from trying to load packages with CSS imports at runtime
+    // EXCEPTION: /tools exports must be external to avoid bundling dependencies with os.platform() calls
+    "@datalayer/jupyter-react/tools": "commonjs @datalayer/jupyter-react/tools",
+    "@datalayer/jupyter-lexical/lib/tools":
+      "commonjs @datalayer/jupyter-lexical/lib/tools",
     "@jupyterlab/application": "commonjs @jupyterlab/application",
     "@jupyterlab/notebook": "commonjs @jupyterlab/notebook",
     "@jupyterlab/cells": "commonjs @jupyterlab/cells",
@@ -147,7 +151,8 @@ const extensionConfig = {
 
 const webviewConfig = {
   target: "web",
-  mode: "production", // Enable webpack production optimizations
+  // Use development mode when WEBVIEW_DEBUG=1 to preserve console.log and avoid minification
+  mode: process.env.WEBVIEW_DEBUG ? "development" : "production",
   // Source map strategy:
   // - Development (WEBVIEW_DEBUG=1): inline-source-map for easy debugging
   // - Production (default): hidden-source-map generates .map files without bundle bloat

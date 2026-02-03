@@ -24,7 +24,7 @@ All notable changes to the Datalayer VS Code extension are documented here.
   - All code handles null controller safely with optional chaining
   - File: `src/services/ui/uiSetup.ts:85`
 
-## [0.0.3] - 2025-01-XX
+## [0.0.10] - 2025-01-XX
 
 ### Major Features
 
@@ -102,5 +102,3 @@ All notable changes to the Datalayer VS Code extension are documented here.
 - Used targeted `eslint-disable-next-line` only for intentional singleton/private member access
 - Improved type narrowing with proper guards and assertions
 - Enhanced test infrastructure maintainability with strong typing
-
-- Initial release

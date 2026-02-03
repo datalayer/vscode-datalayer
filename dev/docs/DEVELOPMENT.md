@@ -36,8 +36,6 @@ npm run package
 npm run vsix
 ```
 
-**Note on Installation**: If you encounter errors about missing `scripts/apply-patches.sh` during `npm install`, use `npm install --ignore-scripts` instead. This bypasses postinstall scripts in dependencies that aren't needed for VS Code extension development.
-
 ## Debugging Webviews
 
 By default, webview builds use `hidden-source-map` to keep bundle size small (~15-20 MB savings). This generates `.map` files but doesn't embed them in the bundle.
@@ -80,51 +78,12 @@ If you have a production build with hidden source maps and need to debug:
 
 ## Working with Jupyter Packages
 
-The extension depends on local packages from the monorepo:
+The extension depends on local packages from sibling directories:
 
-- `@datalayer/core` - Core Datalayer library
-- `@datalayer/jupyter-lexical` - Lexical editor with Jupyter integration
-- `@datalayer/jupyter-react` - React components for Jupyter notebooks
-- `@datalayer/lexical-loro` - Loro CRDT collaboration provider for Lexical
-
-During development, you may need to sync changes from these repositories.
-
-### Development Scripts
-
-```bash
-# Sync latest changes from all Datalayer packages
-npm run sync:jupyter
-# 1. Runs gulp resources-to-lib for core and jupyter-lexical (copies images/examples to lib/)
-# 2. Builds TypeScript (core, jupyter-lexical, jupyter-react, lexical-loro)
-# 3. Copies lib/, style/, and package.json to node_modules
-
-# Watch mode - auto-sync on file changes
-npm run sync:jupyter:watch
-# Monitors src/ folders and automatically rebuilds/syncs when files change
-# Watches: core, jupyter-lexical, jupyter-react, lexical-loro
-
-# Create patches for modified packages
-npm run create:patches
-# Auto-syncs first, then generates patch files in patches/
-
-# Apply patches manually (if needed)
-npm run apply:patches
-# Normally runs automatically via postinstall hook
-```
-
-### Workflow
-
-1. **Make changes** in any of the dependent packages:
-   - `../core/src` - Core library
-   - `../jupyter-ui/packages/lexical/src` - Lexical editor
-   - `../jupyter-ui/packages/react/src` - React components
-   - `../lexical-loro/src` - Loro collaboration provider
-2. **Option A - Manual sync**: `npm run sync:jupyter` when ready to test
-3. **Option B - Auto sync**: `npm run sync:jupyter:watch` in a separate terminal for live updates
-4. **Test changes**: Compile and run extension (`npm run compile` then F5)
-5. **Create patches**: `npm run create:patches` (when ready to commit)
-
-The patches in `patches/` directory are automatically applied when anyone runs `npm install`, ensuring all contributors get your modifications.
+- `@datalayer/core` - Core Datalayer library (../core)
+- `@datalayer/jupyter-lexical` - Lexical editor with Jupyter integration (../jupyter-ui/packages/lexical)
+- `@datalayer/jupyter-react` - React components for Jupyter notebooks (../jupyter-ui/packages/react)
+- `@datalayer/lexical-loro` - Loro CRDT collaboration provider for Lexical (../lexical-loro)
 
 ### Package Dependencies
 
@@ -138,26 +97,90 @@ vscode-datalayer
 └── @datalayer/jupyter-react (React notebook components)
 ```
 
-#### Key Dependency: lexical-loro
+### Development Workflow with Local Packages
 
-The `@datalayer/jupyter-lexical` package depends on `@datalayer/lexical-loro` for real-time collaboration:
+When developing features that span multiple packages, you need to sync local changes to the extension's `node_modules`. We use a combination of build scripts and patch-package for this workflow.
 
-- **Purpose**: Provides Loro CRDT-based collaboration context for Lexical editor
-- **Used by**: CommentPlugin, collaboration features
-- **Why it matters**: Changes to lexical-loro require rebuilding jupyter-lexical to see effects
-- **Sync requirement**: Both packages must be synced together during development
+#### Quick Reference
 
-**Example**: If you modify the collaboration context in lexical-loro, you must:
+```bash
+# Sync local packages (one-time)
+npm run sync:jupyter
 
-1. Build lexical-loro: `cd ../lexical-loro && npm run build`
-2. Build jupyter-lexical: `cd ../jupyter-ui/packages/lexical && npm run build:lib`
-3. Sync to extension: `cd vscode-datalayer && npm run sync:jupyter`
+# Sync with auto-watch mode
+npm run sync:jupyter:watch
 
-Or simply use watch mode which handles all of this automatically: `npm run sync:jupyter:watch`
+# Create patches for distribution
+npm run create:patches
 
-### ⚠️ Important Notes
+# Apply patches manually
+npm run apply:patches
+```
 
-**After `npm install`, you MUST re-run `npm run sync:jupyter`**. The sync script copies packages to `node_modules/`, and `npm install` will remove these synced packages. Always sync again after installing new dependencies.
+#### 1. Make Changes in Local Packages
+
+Edit code in any of these locations:
+- `../core/src/`
+- `../jupyter-ui/packages/lexical/src/`
+- `../jupyter-ui/packages/react/src/`
+- `../lexical-loro/src/`
+
+#### 2. Sync Changes to Extension
+
+**Option A: Manual Sync**
+```bash
+npm run sync:jupyter
+```
+
+This script will:
+1. Run `npx gulp resources-to-lib` for core and jupyter-lexical (copies images, examples)
+2. Build TypeScript (`npm run build:lib`) for core, jupyter-lexical, and jupyter-react
+3. Copy `lib/`, `style/`, and `package.json` files to `node_modules/@datalayer/`
+4. Skip lexical-loro build (uses existing lib/ due to TypeScript issues with Yjs)
+
+**Option B: Watch Mode (Recommended for Active Development)**
+```bash
+npm run sync:jupyter:watch
+```
+
+This monitors all package `src/` directories and auto-syncs on changes. Requires `fswatch` (installed automatically on macOS via Homebrew).
+
+#### 3. Test Changes
+
+```bash
+# Compile extension
+npm run compile
+
+# Press F5 in VS Code to launch Extension Development Host
+```
+
+#### 4. Create Patches for Distribution
+
+When you're ready to commit your changes:
+
+```bash
+npm run create:patches
+```
+
+This will:
+1. Run a final sync to ensure latest changes
+2. Generate patches in the `patches/` directory using `patch-package`
+3. Patches are for: `@datalayer/core`, `@datalayer/jupyter-lexical`, `@datalayer/jupyter-react`, `cmake-ts`
+
+**Important**: Commit the `patches/` directory to git. These patches are automatically applied during `npm install` via the postinstall hook.
+
+#### 5. Working in CI / Clean Installs
+
+On CI or after a fresh `npm install`:
+1. The `postinstall` script runs automatically
+2. `bash scripts/apply-patches.sh` applies all patches from `patches/`
+3. No manual sync needed - patches are applied to installed packages
+
+**Key Note**: After any `npm install`, you MUST re-run `npm run sync:jupyter` if you're doing local development, because install will overwrite synced packages with published versions.
+
+### Package Rebuild Workflow
+
+If you make changes to local packages and want to test them:
 
 **New Dependencies** (added January 2025):
 
@@ -410,7 +433,6 @@ Keytar is automatically rebuilt for Electron during `npm install` via the `posti
 ```bash
 # Postinstall workflow (runs automatically)
 npm run rebuild:keytar           # Rebuild keytar for Electron 33.2.0
-bash scripts/apply-patches.sh    # Apply package patches
 node scripts/downloadZmqBinaries.js  # Download ZMQ binaries
 ```
 
@@ -1769,7 +1791,7 @@ export const insertBlocksTool: ToolDefinition = {
 - `datalayer_deleteBlock` - Delete blocks
 - `datalayer_listAvailableBlocks` - List supported block types
 
-### insertBlocks Feature (November 2025)
+### insertBlocks Feature (January 2025)
 
 **Purpose**: Allows Copilot to create complex documents with a single API call instead of many sequential `insertBlock` calls.
 

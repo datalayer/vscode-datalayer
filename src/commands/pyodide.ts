@@ -11,7 +11,9 @@
 import * as vscode from "vscode";
 import * as fs from "fs/promises";
 import * as path from "path";
-import * as os from "os";
+// CRITICAL: Use require() for os to ensure it uses the cached version from preload.ts
+// ES6 imports may execute before preload, causing "Cannot read properties of undefined (reading 'platform')"
+const os = require("os");
 
 /**
  * Keys for storing preload state (must match pyodidePreloader.ts and nativeNotebookPreloader.ts)

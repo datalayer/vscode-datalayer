@@ -3,6 +3,9 @@ import * as vscode from "vscode";
 /**
  * Chat participant that provides context from Datalayer notebooks and lexical documents
  *
+ * Provides interactive assistance with tool invocation for working with
+ * Jupyter notebooks and Lexical documents.
+ *
  * Uses Datalayer tools to interact with notebooks and lexical documents.
  * Always calls getActiveDocument first, then listAvailableBlocks for lexical documents.
  *
@@ -61,11 +64,19 @@ export class DatalayerChatParticipant {
       tool.name.startsWith("datalayer_"),
     );
 
-    // Build system prompt
-    const systemPrompt = this.buildSimpleSystemPrompt();
-    const messages: vscode.LanguageModelChatMessage[] = [
-      vscode.LanguageModelChatMessage.User(systemPrompt),
-    ];
+    // Convert conversation history to messages
+    const historyMessages = this.convertHistoryToMessages(_context.history);
+
+    // Build messages array with history
+    const messages: vscode.LanguageModelChatMessage[] = [];
+    if (historyMessages.length === 0) {
+      // First turn - add system prompt
+      const systemPrompt = this.buildSimpleSystemPrompt();
+      messages.push(vscode.LanguageModelChatMessage.User(systemPrompt));
+    } else {
+      // Subsequent turns - include history
+      messages.push(...historyMessages);
+    }
 
     try {
       // STEP 1: Always call getActiveDocument first
@@ -239,6 +250,39 @@ export class DatalayerChatParticipant {
         token,
       );
     }
+  }
+
+  /**
+   * Convert VS Code chat history to language model messages.
+   * Extracts user prompts and assistant responses from previous turns.
+   */
+  private convertHistoryToMessages(
+    history: ReadonlyArray<vscode.ChatRequestTurn | vscode.ChatResponseTurn>,
+  ): vscode.LanguageModelChatMessage[] {
+    const messages: vscode.LanguageModelChatMessage[] = [];
+
+    for (const turn of history) {
+      if (turn instanceof vscode.ChatRequestTurn) {
+        // User message
+        messages.push(vscode.LanguageModelChatMessage.User(turn.prompt));
+      } else if (turn instanceof vscode.ChatResponseTurn) {
+        // Assistant message - extract text from response parts
+        const responseText = turn.response
+          .filter((part) => part instanceof vscode.ChatResponseMarkdownPart)
+          .map((part) => (part as vscode.ChatResponseMarkdownPart).value.value)
+          .join("\n");
+
+        if (responseText) {
+          messages.push(
+            vscode.LanguageModelChatMessage.Assistant([
+              new vscode.LanguageModelTextPart(responseText),
+            ]),
+          );
+        }
+      }
+    }
+
+    return messages;
   }
 
   /**

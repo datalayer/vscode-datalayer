@@ -4,6 +4,19 @@ out/**
 native/**
 node_modules/**
 !node_modules/@vscode/codicons/dist/**
+# @datalayer packages - be selective to reduce size
+!node_modules/@datalayer/*/lib/**
+!node_modules/@datalayer/*/style/**
+!node_modules/@datalayer/*/schema/**
+# Exclude unnecessary @datalayer subdirectories
+node_modules/@datalayer/*/lib/examples/**
+node_modules/@datalayer/*/node_modules/**
+node_modules/@datalayer/**/*.map
+node_modules/@datalayer/**/test/**
+node_modules/@datalayer/**/tests/**
+node_modules/@datalayer/**/__tests__/**
+node_modules/@datalayer/**/*.spec.*
+node_modules/@datalayer/**/*.test.*
 !node_modules/pyodide/**
 !node_modules/lexical/**
 !node_modules/@lexical/**
@@ -19,6 +32,7 @@ node_modules/**
 !node_modules/utf-8-validate/**
 !node_modules/keytar/**
 src/**
+!resources/agents/**
 resources/icons/**
 .gitignore
 .yarnrc

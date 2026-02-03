@@ -1,0 +1,1466 @@
+diff --git a/node_modules/@datalayer/jupyter-react/LICENSE b/node_modules/@datalayer/jupyter-react/LICENSE
+deleted file mode 100644
+index f66f200..0000000
+--- a/node_modules/@datalayer/jupyter-react/LICENSE
++++ /dev/null
+@@ -1,21 +0,0 @@
+-Copyright (c) 2021-2023 Datalayer, Inc.
+-
+-MIT License
+-
+-Permission is hereby granted, free of charge, to any person obtaining a copy
+-of this software and associated documentation files (the "Software"), to deal
+-in the Software without restriction, including without limitation the rights
+-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+-copies of the Software, and to permit persons to whom the Software is
+-furnished to do so, subject to the following conditions:
+-
+-The above copyright notice and this permission notice shall be included in all
+-copies or substantial portions of the Software.
+-
+-THE SOFTWARE IS PROVIDED *AS IS*, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+-SOFTWARE.
+diff --git a/node_modules/@datalayer/jupyter-react/README.md b/node_modules/@datalayer/jupyter-react/README.md
+deleted file mode 100644
+index de8e099..0000000
+--- a/node_modules/@datalayer/jupyter-react/README.md
++++ /dev/null
+@@ -1,163 +0,0 @@
+-[![Datalayer](https://assets.datalayer.tech/datalayer-25.svg)](https://datalayer.io)
+-
+-[![Become a Sponsor](https://img.shields.io/static/v1?label=Become%20a%20Sponsor&message=%E2%9D%A4&logo=GitHub&style=flat&color=1ABC9C)](https://github.com/sponsors/datalayer)
+-
+-# 🪐 ⚛️ Jupyter React
+-
+-> [!IMPORTANT]
+-> **Jupyter React 2.0 Released!** 🎉
+->
+-> This major release includes **breaking changes** for the `Jupyter` and `Notebook` components:
+->
+-> - The `Notebook2` component is now the default `Notebook`
+-> - Instead of using `startDefaultKernel` prop on components, use the `useJupyter({ startDefaultKernel: true })` hook to get `serviceManager` and `defaultKernel`, then pass them explicitly to `Notebook2`
+-> - Notebook component now require `kernel` and `serviceManager` props with conditional rendering
+-> - See the [examples](./src/examples) for migration patterns (e.g., [PyGWalker.tsx](./src/examples/PyGWalker.tsx))
+-
+-> Jupyter React is a set of [React.js](https://reactjs.org) components that allow a frontend developer to build data products compatible with the [Jupyter](https://jupyter.org) ecosystem. The user interface delivers executable notebooks and cells.
+-
+-The below image shows a gallery of the available React.js components ready to be used in you custom application. These open source components are used to build the online [Datalayer service](https://datalayer.ai), a collaborative platform for data analysis.
+-
+-<div align="center" style="text-align: center">
+-  <img alt="Jupyter React Gallery" src="https://datalayer-jupyter-examples.s3.amazonaws.com/jupyter-react-gallery.gif" />
+-</div>
+-
+-We host a Storybook on ✨ https://jupyter-ui-storybook.datalayer.tech that showcases various low-level as high-level React.js components useful to build a Data Product.
+-
+-The Jupyter(Lab) notebook is a tool that allows data scientist to analyse dataset. However, it is not easy to create a custom user interface integrated in an existing application. [Jupyter React](https://jupyter-react.datalayer.tech), an open-source library, fills that gap and provides components that a developer can easily integrate in any React.js application.
+-
+-In terms of technical stack, the Jupyter(Lab) user interface is built on top of Lumino, which is an imperative way to build user interface and **can not** be consumed by industry standard declarative frameworks like React.js. As a user interface developer, if you want to create a custom data product on top of Jupyter, you have to stick to Lumino and carry-on the full notebook interface not tailored to your specific needs. This is not what you want. You just want to expose what you need, you want to develop with your favorite toolkit (like React.js) and you also want to integrate on a per-component basis the Jupyter functionality in your application.
+-
+-Although a developer can embed a React.js component into JupyterLab, the reverse is not possible: you can not embed JupyterLab into a React.js application. To solve that issue, Jupyter-React ships components to easily create a React.js data product compatible with the Jupyter ecosystem. Those components can be used in any React.js application, and also in static websites like Docusaurus, Next.js or Remix. They wrap underneath the JupyterLab code and allow developing React.js applications with code execution capability. State management is based on Zustand.
+-
+-```mermaid
+-flowchart LR
+-    subgraph Host["Host React Application"]
+-        HA[Components]
+-    end
+-
+-    subgraph Zustand["Zustand Store"]
+-        ZA[Actions]
+-        ZS[State]
+-    end
+-
+-    subgraph JupyterUI["Jupyter UI"]
+-        JR[React Components]
+-    end
+-
+-    subgraph JupyterLab["JupyterLab/Lumino"]
+-        LC[Commands]
+-        LS[Signals]
+-        LW[Widgets]
+-    end
+-
+-    subgraph Kernel["Jupyter Server"]
+-        K[Kernel]
+-    end
+-
+-    HA -->|"dispatch"| ZA
+-    ZA -->|"proxy"| LC
+-    LC -->|"execute"| LW
+-    LW -->|"request"| K
+-
+-    K -->|"response"| LS
+-    LS -->|"emit"| ZS
+-    ZS -->|"subscribe"| HA
+-
+-    JR -.->|"wraps"| LW
+-```
+-
+-IPyWidgets are supported (the Comm feature needs to be fixed). JupyterLite and PyScript support is on the roadmap. Autocompletion is also available.
+-
+-You can find more context reading this [abstract](https://fosdem.org/2022/schedule/event/lt_jupyter) of the talk given at [FOSDEM 2022](https://fosdem.org/2022) ([video recording](http://bofh.nikhef.nl/events/FOSDEM/2022/L.lightningtalks/lt_jupyter.webm)).
+-
+-As a React.js developer, you just write a few lines of code get a live notebook or live cell in your application.
+-
+-<div align="center" style="text-align: center">
+-  <img alt="Jupyter React Slate" src="https://datalayer-jupyter-examples.s3.amazonaws.com/jupyter-react-snippet.png" />
+-</div>
+-
+-The typedoc documentation is [available online](https://typedoc.datalayer.tech/datalayer/jupyter-react/0.9.0/index.html).
+-
+-Jupyter React can be used in any React.js application. Install the latest `@datalayer/jupyter-react` npm package and get inspired by the [examples](https://github.com/datalayer/jupyter-ui/tree/main/examples) in this repository.
+-
+-<div align="center" style="text-align: center">
+-  <img alt="Jupyter React Slate" src="https://datalayer-jupyter-examples.s3.amazonaws.com/jupyter-react-notebook.png" />
+-</div>
+-
+-## Releases
+-
+-Jupyter React is released in [Npm.js](https://www.npmjs.com/package/@datalayer/jupyter-react) and [PyPI](https://pypi.org/project/jupyter-react).
+-
+-## Development
+-
+-### Running Examples
+-
+-This package includes multiple example applications demonstrating various Jupyter React components. You can run these examples using either **Vite** (recommended) or **Webpack**.
+-
+-#### Using Vite (Recommended)
+-
+-Vite provides faster development server startup and hot module replacement (HMR).
+-
+-```bash
+-# Install dependencies
+-npm install
+-
+-# Start development server (default example: Notebook2Actions)
+-npm run dev:vite
+-
+-# Or use these alternative commands
+-npm run start:vite              # Same as dev:vite
+-npm run start-local:vite        # Use local Jupyter server (http://localhost:8686)
+-npm run start-noconfig:vite     # Run without config
+-npm run build:vite              # Production build
+-npm run preview:vite            # Preview production build
+-```
+-
+-The dev server runs on http://localhost:3208.
+-
+-To run a different example, edit the entry point in `index.html`:
+-
+-```html
+-<script type="module" src="/src/examples/YourExample.tsx"></script>
+-```
+-
+-#### Using Webpack
+-
+-Webpack is still available for backward compatibility.
+-
+-```bash
+-# Start development server
+-npm run start:webpack
+-
+-# Or use these alternative commands
+-npm run start-local:webpack     # Use local Jupyter server
+-npm run start-noconfig          # Run without config (webpack)
+-npm run build:webpack           # Production build with webpack
+-```
+-
+-### Available Examples
+-
+-The following examples are available in `src/examples/`:
+-
+-- **Notebook2Actions** - Notebook with action bar controls
+-- **Cell** / **CellLite** - Single cell examples
+-- **Notebook** / **NotebookLite** - Full notebook examples
+-- **Console** / **ConsoleLite** - Console examples
+-- **IPyWidgets** - IPyWidgets integration
+-- **JupyterLabApp** - Full JupyterLab application
+-- **Terminal** - Terminal component
+-- And many more...
+-
+-### Building the Library
+-
+-```bash
+-# Build TypeScript library
+-npm run build:lib
+-
+-# Full build (resources + TypeScript + webpack)
+-npm run build
+-
+-# Production build
+-npm run build:prod
+-```
+diff --git a/node_modules/@datalayer/jupyter-react/lib/components/kernel/KernelActionMenu.js b/node_modules/@datalayer/jupyter-react/lib/components/kernel/KernelActionMenu.js
+index f701c91..49a8d94 100644
+--- a/node_modules/@datalayer/jupyter-react/lib/components/kernel/KernelActionMenu.js
++++ b/node_modules/@datalayer/jupyter-react/lib/components/kernel/KernelActionMenu.js
+@@ -11,23 +11,23 @@ export const KernelActionMenu = (props) => {
+     const { kernel, outputAdapter, onClearOutputs } = props;
+     return (_jsxs(ActionMenu, { children: [_jsx(ActionMenu.Anchor, { children: _jsx(IconButton, { "aria-labelledby": "", icon: KebabHorizontalIcon, variant: "invisible" }) }), _jsx(ActionMenu.Overlay, { children: _jsxs(ActionList, { children: [_jsxs(ActionList.Item, { disabled: !kernel, onSelect: e => {
+                                 if (kernel) {
+-                                    kernel.interrupt();
++                                    kernel.interrupt().catch(err => {
++                                        console.error('[KernelActionMenu] Interrupt failed:', err);
++                                    });
+                                 }
+                             }, children: [_jsx(ActionList.LeadingVisual, { children: _jsx(StopIcon, {}) }), "Interrupt kernel"] }), _jsxs(ActionList.Item, { disabled: !kernel, onSelect: e => {
+                                 if (kernel) {
+-                                    kernel.restart();
++                                    kernel.restart().catch(err => {
++                                        console.error('[KernelActionMenu] Restart failed:', err);
++                                    });
+                                 }
+                             }, children: [_jsx(ActionList.LeadingVisual, { children: _jsx(RestartIcon, {}) }), "Restart kernel"] }), _jsxs(ActionList.Item, { variant: "danger", disabled: false, onSelect: e => {
+-                                console.log('[KernelActionMenu] Clear outputs clicked - onClearOutputs:', !!onClearOutputs, 'outputAdapter:', !!outputAdapter);
+                                 if (onClearOutputs) {
+                                     onClearOutputs();
+                                 }
+                                 else if (outputAdapter) {
+                                     outputAdapter.clear();
+                                 }
+-                                else {
+-                                    console.warn('[KernelActionMenu] No clear method available!');
+-                                }
+                             }, children: [_jsx(ActionList.LeadingVisual, { children: _jsx(PaintbrushIcon, {}) }), "Clear outputs"] })] }) })] }));
+ };
+ export default KernelActionMenu;
+diff --git a/node_modules/@datalayer/jupyter-react/lib/components/kernel/KernelActionMenu.js.map b/node_modules/@datalayer/jupyter-react/lib/components/kernel/KernelActionMenu.js.map
+index 7a85e95..3697029 100644
+--- a/node_modules/@datalayer/jupyter-react/lib/components/kernel/KernelActionMenu.js.map
++++ b/node_modules/@datalayer/jupyter-react/lib/components/kernel/KernelActionMenu.js.map
+@@ -1 +1 @@
+-{"version":3,"file":"KernelActionMenu.js","sourceRoot":"","sources":["../../../src/components/kernel/KernelActionMenu.tsx"],"names":[],"mappings":";AAAA;;;;GAIG;AAEH,OAAO,EAAE,UAAU,EAAE,UAAU,EAAE,UAAU,EAAE,MAAM,eAAe,CAAC;AACnE,OAAO,EACL,mBAAmB,EACnB,QAAQ,EACR,cAAc,GACf,MAAM,wBAAwB,CAAC;AAChC,OAAO,EAAE,WAAW,EAAE,MAAM,wBAAwB,CAAC;AAUrD,MAAM,CAAC,MAAM,gBAAgB,GAAG,CAAC,KAA4B,EAAE,EAAE;IAC/D,MAAM,EAAE,MAAM,EAAE,aAAa,EAAE,cAAc,EAAE,GAAG,KAAK,CAAC;IACxD,OAAO,CACL,MAAC,UAAU,eACT,KAAC,UAAU,CAAC,MAAM,cAChB,KAAC,UAAU,uBACO,EAAE,EAClB,IAAI,EAAE,mBAAmB,EACzB,OAAO,EAAC,WAAW,GACnB,GACgB,EACpB,KAAC,UAAU,CAAC,OAAO,cACjB,MAAC,UAAU,eACT,MAAC,UAAU,CAAC,IAAI,IACd,QAAQ,EAAE,CAAC,MAAM,EACjB,QAAQ,EAAE,CAAC,CAAC,EAAE;gCACZ,IAAI,MAAM,EAAE,CAAC;oCACX,MAAM,CAAC,SAAS,EAAE,CAAC;gCACrB,CAAC;4BACH,CAAC,aAED,KAAC,UAAU,CAAC,aAAa,cACvB,KAAC,QAAQ,KAAG,GACa,wBAEX,EAClB,MAAC,UAAU,CAAC,IAAI,IACd,QAAQ,EAAE,CAAC,MAAM,EACjB,QAAQ,EAAE,CAAC,CAAC,EAAE;gCACZ,IAAI,MAAM,EAAE,CAAC;oCACX,MAAM,CAAC,OAAO,EAAE,CAAC;gCACnB,CAAC;4BACH,CAAC,aAED,KAAC,UAAU,CAAC,aAAa,cACvB,KAAC,WAAW,KAAG,GACU,sBAEX,EAClB,MAAC,UAAU,CAAC,IAAI,IACd,OAAO,EAAC,QAAQ,EAChB,QAAQ,EAAE,KAAK,EACf,QAAQ,EAAE,CAAC,CAAC,EAAE;gCACZ,OAAO,CAAC,GAAG,CACT,4DAA4D,EAC5D,CAAC,CAAC,cAAc,EAChB,gBAAgB,EAChB,CAAC,CAAC,aAAa,CAChB,CAAC;gCACF,IAAI,cAAc,EAAE,CAAC;oCACnB,cAAc,EAAE,CAAC;gCACnB,CAAC;qCAAM,IAAI,aAAa,EAAE,CAAC;oCACzB,aAAa,CAAC,KAAK,EAAE,CAAC;gCACxB,CAAC;qCAAM,CAAC;oCACN,OAAO,CAAC,IAAI,CAAC,+CAA+C,CAAC,CAAC;gCAChE,CAAC;4BACH,CAAC,aAED,KAAC,UAAU,CAAC,aAAa,cACvB,KAAC,cAAc,KAAG,GACO,qBAEX,IACP,GACM,IACV,CACd,CAAC;AACJ,CAAC,CAAC;AAEF,eAAe,gBAAgB,CAAC"}
+\ No newline at end of file
++{"version":3,"file":"KernelActionMenu.js","sourceRoot":"","sources":["../../../src/components/kernel/KernelActionMenu.tsx"],"names":[],"mappings":";AAAA;;;;GAIG;AAEH,OAAO,EAAE,UAAU,EAAE,UAAU,EAAE,UAAU,EAAE,MAAM,eAAe,CAAC;AACnE,OAAO,EACL,mBAAmB,EACnB,QAAQ,EACR,cAAc,GACf,MAAM,wBAAwB,CAAC;AAChC,OAAO,EAAE,WAAW,EAAE,MAAM,wBAAwB,CAAC;AAUrD,MAAM,CAAC,MAAM,gBAAgB,GAAG,CAAC,KAA4B,EAAE,EAAE;IAC/D,MAAM,EAAE,MAAM,EAAE,aAAa,EAAE,cAAc,EAAE,GAAG,KAAK,CAAC;IACxD,OAAO,CACL,MAAC,UAAU,eACT,KAAC,UAAU,CAAC,MAAM,cAChB,KAAC,UAAU,uBACO,EAAE,EAClB,IAAI,EAAE,mBAAmB,EACzB,OAAO,EAAC,WAAW,GACnB,GACgB,EACpB,KAAC,UAAU,CAAC,OAAO,cACjB,MAAC,UAAU,eACT,MAAC,UAAU,CAAC,IAAI,IACd,QAAQ,EAAE,CAAC,MAAM,EACjB,QAAQ,EAAE,CAAC,CAAC,EAAE;gCACZ,IAAI,MAAM,EAAE,CAAC;oCACX,MAAM,CAAC,SAAS,EAAE,CAAC,KAAK,CAAC,GAAG,CAAC,EAAE;wCAC7B,OAAO,CAAC,KAAK,CAAC,sCAAsC,EAAE,GAAG,CAAC,CAAC;oCAC7D,CAAC,CAAC,CAAC;gCACL,CAAC;4BACH,CAAC,aAED,KAAC,UAAU,CAAC,aAAa,cACvB,KAAC,QAAQ,KAAG,GACa,wBAEX,EAClB,MAAC,UAAU,CAAC,IAAI,IACd,QAAQ,EAAE,CAAC,MAAM,EACjB,QAAQ,EAAE,CAAC,CAAC,EAAE;gCACZ,IAAI,MAAM,EAAE,CAAC;oCACX,MAAM,CAAC,OAAO,EAAE,CAAC,KAAK,CAAC,GAAG,CAAC,EAAE;wCAC3B,OAAO,CAAC,KAAK,CAAC,oCAAoC,EAAE,GAAG,CAAC,CAAC;oCAC3D,CAAC,CAAC,CAAC;gCACL,CAAC;4BACH,CAAC,aAED,KAAC,UAAU,CAAC,aAAa,cACvB,KAAC,WAAW,KAAG,GACU,sBAEX,EAClB,MAAC,UAAU,CAAC,IAAI,IACd,OAAO,EAAC,QAAQ,EAChB,QAAQ,EAAE,KAAK,EACf,QAAQ,EAAE,CAAC,CAAC,EAAE;gCACZ,IAAI,cAAc,EAAE,CAAC;oCACnB,cAAc,EAAE,CAAC;gCACnB,CAAC;qCAAM,IAAI,aAAa,EAAE,CAAC;oCACzB,aAAa,CAAC,KAAK,EAAE,CAAC;gCACxB,CAAC;4BACH,CAAC,aAED,KAAC,UAAU,CAAC,aAAa,cACvB,KAAC,cAAc,KAAG,GACO,qBAEX,IACP,GACM,IACV,CACd,CAAC;AACJ,CAAC,CAAC;AAEF,eAAe,gBAAgB,CAAC"}
+\ No newline at end of file
+diff --git a/node_modules/@datalayer/jupyter-react/lib/components/output/Output.js b/node_modules/@datalayer/jupyter-react/lib/components/output/Output.js
+index a7f7c74..23c1d91 100644
+--- a/node_modules/@datalayer/jupyter-react/lib/components/output/Output.js
++++ b/node_modules/@datalayer/jupyter-react/lib/components/output/Output.js
+@@ -37,7 +37,6 @@ export const Output = ({ adapter: propsAdapter, autoRun = false, clearTrigger =
+     // Force Lumino widget update when executeTrigger changes
+     useEffect(() => {
+         if (lumino && adapter?.outputArea) {
+-            console.warn('🔄 Forcing Lumino widget update due to executeTrigger change:', executeTrigger);
+             adapter.outputArea.update();
+         }
+     }, [executeTrigger, lumino, adapter]);
+@@ -111,12 +110,7 @@ export const Output = ({ adapter: propsAdapter, autoRun = false, clearTrigger =
+                 // kernel.connection.then(k => k.shutdown().then(() => console.log(`Kernel ${k.id} is terminated.`)));
+             };
+         }
+-        else {
+-            // Reset kernel status when kernel becomes undefined (e.g., runtime terminated)
+-            // This prevents zombie progress bars from showing
+-            setKernelStatus('idle');
+-        }
+-    }, [kernel]);
++    }, [kernel, adapter, onExecutionPhaseChanged, resolvedSourceId]);
+     const executeRequest = outputStore.getExecuteRequest(resolvedSourceId);
+     useEffect(() => {
+         if (adapter && executeRequest && executeRequest === id) {
+diff --git a/node_modules/@datalayer/jupyter-react/lib/components/output/Output.js.map b/node_modules/@datalayer/jupyter-react/lib/components/output/Output.js.map
+index bcb1ab0..60832c8 100644
+--- a/node_modules/@datalayer/jupyter-react/lib/components/output/Output.js.map
++++ b/node_modules/@datalayer/jupyter-react/lib/components/output/Output.js.map
+@@ -1 +1 @@
+-{"version":3,"file":"Output.js","sourceRoot":"","sources":["../../../src/components/output/Output.tsx"],"names":[],"mappings":";AASA,OAAO,EAAE,GAAG,EAAE,MAAM,0BAA0B,CAAC;AAC/C,OAAO,EAAE,SAAS,EAAE,QAAQ,EAAE,MAAM,OAAO,CAAC;AAC5C,OAAO,EAAE,MAAM,EAAE,MAAM,kBAAkB,CAAC;AAC1C,OAAO,EAAE,UAAU,EAAE,MAAM,0BAA0B,CAAC;AAEtD,OAAO,EAAE,OAAO,EAAE,MAAM,aAAa,CAAC;AACtC,OAAO,EAAE,gBAAgB,EAAE,iBAAiB,EAAE,MAAM,WAAW,CAAC;AAChE,OAAO,EAAE,gBAAgB,EAAE,MAAM,eAAe,CAAC;AACjD,OAAO,EAAE,aAAa,EAAE,MAAM,iBAAiB,CAAC;AAChD,OAAO,EAAE,cAAc,EAAE,MAAM,kBAAkB,CAAC;AAClD,OAAO,EAAE,eAAe,EAAE,MAAM,eAAe,CAAC;AAEhD,OAAO,cAAc,CAAC;AAEtB,MAAM,eAAe,GAAc;IACjC;QACE,WAAW,EAAE,gBAAgB;QAC7B,IAAI,EAAE;YACJ,WAAW,EAAE,CAAC,0DAA0D,CAAC;SAC1E;QACD,eAAe,EAAE,CAAC;QAClB,QAAQ,EAAE,EAAE;KACb;CACF,CAAC;AA0BF,MAAM,CAAC,MAAM,MAAM,GAAG,CAAC,EACrB,OAAO,EAAE,YAAY,EACrB,OAAO,GAAG,KAAK,EACf,YAAY,GAAG,CAAC,EAChB,IAAI,GAAG,EAAE,EACT,OAAO,EACP,UAAU,GAAG,KAAK,EAClB,cAAc,GAAG,CAAC,EAClB,EAAE,EAAE,QAAQ,EACZ,UAAU,EACV,MAAM,EAAE,WAAW,EACnB,MAAM,GAAG,IAAI,EACb,KAAK,EACL,uBAAuB,EACvB,OAAO,EAAE,YAAY,GAAG,eAAe,EACvC,OAAO,EACP,WAAW,GAAG,IAAI,EAClB,UAAU,GAAG,KAAK,EAClB,qBAAqB,GAAG,IAAI,EAC5B,2BAA2B,GAAG,KAAK,EACnC,eAAe,GAAG,IAAI,EACtB,gBAAgB,GAAG,KAAK,GACX,EAAE,EAAE;IACjB,KAAK,gBAAgB,CAAC;IACtB,MAAM,EAAE,aAAa,EAAE,GAAG,UAAU,EAAE,CAAC;IACvC,MAAM,WAAW,GAAG,eAAe,EAAE,CAAC;IACtC,MAAM,MAAM,GAAG,WAAW,IAAI,YAAY,EAAE,MAAM,IAAI,aAAa,CAAC;IACpE,MAAM,CAAC,EAAE,EAAE,KAAK,CAAC,GAAG,QAAQ,CAAS,GAAG,EAAE,CAAC,QAAQ,IAAI,OAAO,EAAE,CAAC,CAAC;IAClE,MAAM,gBAAgB,GAAG,QAAQ,IAAI,EAAE,CAAC;IACxC,MAAM,CAAC,YAAY,EAAE,eAAe,CAAC,GACnC,QAAQ,CAAuB,SAAS,CAAC,CAAC;IAC5C,MAAM,CAAC,OAAO,EAAE,UAAU,CAAC,GAAG,QAAQ,CAAwB,YAAY,CAAC,CAAC;IAC5E,MAAM,CAAC,OAAO,EAAE,UAAU,CAAC,GAAG,QAAQ,EAAiB,CAAC;IAExD,yCAAyC;IACzC,SAAS,CAAC,GAAG,EAAE;QACb,UAAU,CAAC,YAAY,CAAC,CAAC;IAC3B,CAAC,EAAE,CAAC,YAAY,CAAC,CAAC,CAAC;IAEnB,yDAAyD;IACzD,SAAS,CAAC,GAAG,EAAE;QACb,IAAI,MAAM,IAAI,OAAO,EAAE,UAAU,EAAE,CAAC;YAClC,OAAO,CAAC,IAAI,CACV,+DAA+D,EAC/D,cAAc,CACf,CAAC;YACF,OAAO,CAAC,UAAU,CAAC,MAAM,EAAE,CAAC;QAC9B,CAAC;IACH,CAAC,EAAE,CAAC,cAAc,EAAE,MAAM,EAAE,OAAO,CAAC,CAAC,CAAC;IAEtC,SAAS,CAAC,GAAG,EAAE;QACb,IAAI,QAAQ,IAAI,QAAQ,KAAK,EAAE,EAAE,CAAC;YAChC,KAAK,CAAC,QAAQ,CAAC,CAAC;QAClB,CAAC;IACH,CAAC,EAAE,CAAC,QAAQ,EAAE,EAAE,CAAC,CAAC,CAAC;IACnB,SAAS,CAAC,GAAG,EAAE;QACb,MAAM,eAAe,GAAG,CACtB,KAAuB,EACvB,CAA+B,EAC/B,EAAE;YACF,UAAU,CAAC,KAAK,CAAC,MAAM,EAAE,CAAC,CAAC;YAC3B,IAAI,EAAE,EAAE,CAAC;gBACP,WAAW,CAAC,QAAQ,CAAC,EAAE,EAAE,KAAK,CAAC,CAAC;YAClC,CAAC;QACH,CAAC,CAAC;QACF,MAAM,eAAe,GAAG,CACtB,KAAuB,EACvB,MAAoC,EACpC,EAAE;YACF,IAAI,OAAO,IAAI,MAAM,CAAC,IAAI,KAAK,KAAK,EAAE,CAAC;gBACrC,MAAM,CAAC,SAAS,CAAC,GAAG,CAAC,GAAG,CAAC,EAAE;oBACzB,IAAI,GAAG,IAAI,GAAG,CAAC,IAAI,EAAE,CAAC;wBACpB,MAAM,GAAG,GAAG,GAAG,CAAC,IAAI,CAAC,WAAW,CAAC,CAAC,CAAC,8CAA8C;wBACjF,IAAI,GAAG,EAAE,CAAC;4BACR,IAAK,GAAc,CAAC,OAAO,CAAC,OAAO,CAAC,GAAG,CAAC,CAAC,EAAE,CAAC;gCAC1C,WAAW,CAAC,eAAe,CAAC,gBAAgB,EAAE,IAAI,CAAC,CAAC;4BACtD,CAAC;wBACH,CAAC;oBACH,CAAC;gBACH,CAAC,CAAC,CAAC;YACL,CAAC;QACH,CAAC,CAAC;QACF,IAAI,EAAE,IAAI,MAAM,EAAE,CAAC;YACjB,MAAM,OAAO,GACX,YAAY;gBACZ,IAAI,aAAa,CACf,EAAE,EACF,MAAM,EACN,OAAO,IAAI,EAAE,EACb,KAAK,EACL,2BAA2B,CAC5B,CAAC;YACJ,UAAU,CAAC,OAAO,CAAC,CAAC;YACpB,WAAW,CAAC,UAAU,CAAC,EAAE,EAAE,OAAO,CAAC,CAAC;YACpC,IAAI,KAAK,EAAE,CAAC;gBACV,WAAW,CAAC,QAAQ,CAAC,EAAE,EAAE,KAAK,CAAC,CAAC;YAClC,CAAC;YACD,IAAI,IAAI,EAAE,CAAC;gBACT,WAAW,CAAC,QAAQ,CAAC,EAAE,EAAE,IAAI,CAAC,CAAC;YACjC,CAAC;YACD,OAAO,CAAC,UAAU,CAAC,KAAK,CAAC,OAAO,CAAC,OAAO,CAAC,eAAe,CAAC,CAAC;YAC1D,IAAI,OAAO,EAAE,CAAC;gBACZ,OAAO,CAAC,UAAU,CAAC,KAAK,CAAC,OAAO,CAAC,OAAO,CAAC,eAAe,CAAC,CAAC;YAC5D,CAAC;QACH,CAAC;QACD,OAAO,GAAG,EAAE;YACV,IAAI,OAAO,EAAE,CAAC;gBACZ,OAAO,CAAC,UAAU,CAAC,KAAK,CAAC,OAAO,CAAC,UAAU,CAAC,eAAe,CAAC,CAAC;gBAC7D,OAAO,CAAC,UAAU,CAAC,KAAK,CAAC,OAAO,CAAC,UAAU,CAAC,eAAe,CAAC,CAAC;YAC/D,CAAC;QACH,CAAC,CAAC;IACJ,CAAC,EAAE,CAAC,EAAE,EAAE,MAAM,CAAC,CAAC,CAAC;IACjB,SAAS,CAAC,GAAG,EAAE;QACb,IAAI,OAAO,EAAE,CAAC;YACZ,IAAI,OAAO,EAAE,CAAC;gBACZ,OAAO,CAAC,MAAM,EAAE,KAAK,CAAC,IAAI,CAAC,GAAG,EAAE;oBAC9B,OAAO,CAAC,OAAO,CAAC,IAAI,EAAE,uBAAuB,CAAC,CAAC;gBACjD,CAAC,CAAC,CAAC;YACL,CAAC;QACH,CAAC;IACH,CAAC,EAAE,CAAC,OAAO,CAAC,CAAC,CAAC;IACd,SAAS,CAAC,GAAG,EAAE;QACb,IAAI,MAAM,EAAE,CAAC;YACX,MAAM,CAAC,KAAK,CAAC,IAAI,CAAC,GAAG,EAAE;gBACrB,eAAe,CAAC,MAAM,CAAC,UAAW,CAAC,MAAM,CAAC,CAAC;gBAC3C,MAAM,CAAC,UAAW,CAAC,aAAa,CAAC,OAAO,CAAC,CAAC,gBAAgB,EAAE,MAAM,EAAE,EAAE;oBACpE,eAAe,CAAC,MAAM,CAAC,CAAC;gBAC1B,CAAC,CAAC,CAAC;YACL,CAAC,CAAC,CAAC;YACH,OAAO,GAAG,EAAE;gBACV,sGAAsG;YACxG,CAAC,CAAC;QACJ,CAAC;aAAM,CAAC;YACN,+EAA+E;YAC/E,kDAAkD;YAClD,eAAe,CAAC,MAAM,CAAC,CAAC;QAC1B,CAAC;IACH,CAAC,EAAE,CAAC,MAAM,CAAC,CAAC,CAAC;IACb,MAAM,cAAc,GAAG,WAAW,CAAC,iBAAiB,CAAC,gBAAgB,CAAC,CAAC;IACvE,SAAS,CAAC,GAAG,EAAE;QACb,IAAI,OAAO,IAAI,cAAc,IAAI,cAAc,KAAK,EAAE,EAAE,CAAC;YACvD,OAAO,CAAC,OAAO,CAAC,IAAI,EAAE,uBAAuB,CAAC,CAAC;QACjD,CAAC;IACH,CAAC,EAAE,CAAC,cAAc,EAAE,OAAO,CAAC,CAAC,CAAC;IAC9B,SAAS,CAAC,GAAG,EAAE;QACb,IAAI,OAAO,IAAI,cAAc,GAAG,CAAC,EAAE,CAAC;YAClC,OAAO,CAAC,OAAO,CAAC,IAAI,EAAE,uBAAuB,CAAC,CAAC;QACjD,CAAC;IACH,CAAC,EAAE,CAAC,cAAc,CAAC,CAAC,CAAC;IACrB,SAAS,CAAC,GAAG,EAAE;QACb,IAAI,OAAO,IAAI,YAAY,GAAG,CAAC,EAAE,CAAC;YAChC,OAAO,CAAC,KAAK,EAAE,CAAC;QAClB,CAAC;IACH,CAAC,EAAE,CAAC,YAAY,EAAE,OAAO,CAAC,CAAC,CAAC;IAE5B,MAAM,kBAAkB,GAAG,GAAG,EAAE;QAC9B,mEAAmE;QACnE,MAAM,cAAc,GAAG,OAAO,IAAI,YAAY,CAAC;QAE/C,IAAI,cAAc,EAAE,CAAC;YACnB,cAAc,CAAC,KAAK,EAAE,CAAC;QACzB,CAAC;aAAM,CAAC;YACN,8CAA8C;YAC9C,UAAU,CAAC,EAAE,CAAC,CAAC;QACjB,CAAC;IACH,CAAC,CAAC;IAEF,OAAO,CACL,8BACG,UAAU,IAAI,OAAO,IAAI,EAAE,IAAI,CAC9B,KAAC,GAAG,IACF,EAAE,EAAE;oBACF,cAAc,EAAE;wBACd,YAAY,EAAE,KAAK;qBACpB;iBACF,YAED,KAAC,gBAAgB,IACf,OAAO,EAAE,OAAO,EAChB,IAAI,EAAE,IAAI,EACV,OAAO,EAAE,OAAO,EAChB,UAAU,EAAE,UAAU,EACtB,UAAU,EAAE,UAAU,EACtB,MAAM,EAAE,MAAM,EACd,aAAa,EAAE,OAAO,EACtB,QAAQ,EAAE,EAAE,EACZ,eAAe,EAAE,eAAe,GAChC,GACE,CACP,EACD,MAAC,GAAG,IACF,EAAE,EAAE;oBACF,QAAQ,EAAE,UAAU;oBACpB,MAAM,EAAE,CAAC;oBACT,OAAO,EAAE,CAAC;oBACV,UAAU,EAAE,KAAK;oBACjB,SAAS,EAAE,MAAM;iBAClB,aAGD,MAAC,GAAG,IACF,EAAE,EAAE;4BACF,QAAQ,EAAE,UAAU;4BACpB,GAAG,EAAE,MAAM;4BACX,IAAI,EAAE,CAAC;4BACP,KAAK,EAAE,CAAC;4BACR,MAAM,EAAE,EAAE;4BACV,OAAO,EAAE,MAAM;4BACf,UAAU,EAAE,QAAQ;4BACpB,cAAc,EAAE,eAAe;4BAC/B,MAAM,EAAE,CAAC;4BACT,OAAO,EAAE,CAAC;4BACV,eAAe,EAAE,aAAa;4BAC9B,UAAU,EAAE,0BAA0B;4BACtC,OAAO,EAAE,CAAC;4BACV,aAAa,EAAE,MAAM;4BACrB,MAAM,EAAE,KAAK;4BACb,sCAAsC,EAAE;gCACtC,MAAM,EAAE,gBAAgB;gCACxB,eAAe,EAAE,wBAAwB;6BAC1C;4BACD,aAAa,EAAE;gCACb,MAAM,EAAE,gBAAgB;gCACxB,eAAe,EAAE,wBAAwB;6BAC1C;4BACD,kBAAkB,EAAE;gCAClB,MAAM,EAAE,gBAAgB;6BACzB;4BACD,wBAAwB,EAAE;gCACxB,MAAM,EAAE,gBAAgB;6BACzB;yBACF,aAED,KAAC,GAAG,IACF,QAAQ,EAAE,CAAC,EACX,EAAE,EAAE;oCACF,MAAM,EAAE,KAAK;oCACb,eAAe,EACb,MAAM,IAAI,YAAY,KAAK,MAAM;wCAC/B,CAAC,CAAC,0BAA0B;wCAC5B,CAAC,CAAC,aAAa;oCACnB,QAAQ,EAAE,UAAU;iCACrB,YAEA,MAAM,IAAI,YAAY,KAAK,MAAM,IAAI,qBAAqB,IAAI,CAC7D,KAAC,GAAG,IACF,EAAE,EAAE;wCACF,QAAQ,EAAE,UAAU;wCACpB,GAAG,EAAE,CAAC;wCACN,IAAI,EAAE,CAAC;wCACP,KAAK,EAAE,CAAC;wCACR,MAAM,EAAE,KAAK;wCACb,eAAe,EAAE,aAAa;wCAC9B,OAAO,EAAE;4CACP,eAAe,EAAE,wBAAwB;yCAC1C;qCACF,YAED,KAAC,iBAAiB,KAAG,GACjB,CACP,GACG,EACN,KAAC,GAAG,IACF,EAAE,EAAE;oCACF,UAAU,EAAE,KAAK;oCACjB,MAAM,EAAE,KAAK;oCACb,OAAO,EAAE,MAAM;oCACf,UAAU,EAAE,QAAQ;oCACpB,UAAU,EAAE;wCACV,MAAM,EAAE,iBAAiB;wCACzB,KAAK,EAAE,iBAAiB;wCACxB,QAAQ,EAAE,iBAAiB;wCAC3B,OAAO,EAAE,cAAc;wCACvB,YAAY,EAAE,gBAAgB;qCAC/B;oCACD,cAAc,EAAE;wCACd,KAAK,EAAE,iBAAiB;wCACxB,MAAM,EAAE,iBAAiB;qCAC1B;iCACF,YAED,KAAC,gBAAgB,IACf,MAAM,EAAE,MAAM,EACd,aAAa,EAAE,OAAO,EACtB,cAAc,EAAE,kBAAkB,GAClC,GACE,IACF,EAGL,OAAO,IAAI,CACV,KAAC,GAAG,IACF,EAAE,EAAE;4BACF,MAAM,EAAE,CAAC;4BACT,OAAO,EAAE,CAAC;4BACV,kBAAkB,EAAE;gCAClB,QAAQ,EAAE,MAAM;6BACjB;4BACD,oBAAoB,EAAE;4BACpB,gCAAgC;6BACjC;4BACD,yBAAyB,EAAE;gCACzB,OAAO,EAAE,MAAM;gCACf,6BAA6B;6BAC9B;4BACD,OAAO,EAAE;gCACP,QAAQ,EAAE,MAAM;gCAChB,SAAS,EAAE,WAAW;gCACtB,QAAQ,EAAE,YAAY;gCACtB,UAAU,EAAE,UAAU;6BACvB;yBACF,YAEA,CAAC,GAAG,EAAE;4BACL,MAAM,cAAc,GAAG,OAAO,IAAI,YAAY,CAAC;4BAC/C,OAAO,MAAM,CAAC,CAAC,CAAC,CACd,cAAc,CAAC,CAAC,CAAC,CACf,KAAC,MAAM,cAAE,cAAc,CAAC,UAAU,GAAU,CAC7C,CAAC,CAAC,CAAC,IAAI,CACT,CAAC,CAAC,CAAC,CACF,OAAO,IAAI,CACT,4BACG,OAAO,CAAC,GAAG,CAAC,CAAC,MAAe,EAAE,KAAa,EAAE,EAAE;oCAC9C,OAAO,KAAC,cAAc,IAAa,MAAM,EAAE,MAAM,IAArB,KAAK,CAAoB,CAAC;gCACxD,CAAC,CAAC,GACD,CACJ,CACF,CAAC;wBACJ,CAAC,CAAC,EAAE,GACA,CACP,IACG,IACL,CACJ,CAAC;AACJ,CAAC,CAAC;AAEF,eAAe,MAAM,CAAC"}
+\ No newline at end of file
++{"version":3,"file":"Output.js","sourceRoot":"","sources":["../../../src/components/output/Output.tsx"],"names":[],"mappings":"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"}
+\ No newline at end of file
+diff --git a/node_modules/@datalayer/jupyter-react/lib/jupyter/kernel/Kernel.js b/node_modules/@datalayer/jupyter-react/lib/jupyter/kernel/Kernel.js
+index cf04ba2..8e37793 100644
+--- a/node_modules/@datalayer/jupyter-react/lib/jupyter/kernel/Kernel.js
++++ b/node_modules/@datalayer/jupyter-react/lib/jupyter/kernel/Kernel.js
+@@ -179,13 +179,25 @@ export class Kernel {
+      * Interrupt the kernel
+      */
+     interrupt() {
+-        return this._kernelConnection?.interrupt() ?? Promise.resolve();
++        if (!this._kernelConnection) {
++            return Promise.resolve();
++        }
++        return this._kernelConnection.interrupt().catch(err => {
++            console.error('[Kernel] Kernel interrupt failed:', err);
++            throw err;
++        });
+     }
+     /**
+      * Restart the kernel
+      */
+     restart() {
+-        return this._kernelConnection?.restart() ?? Promise.resolve();
++        if (!this._kernelConnection) {
++            return Promise.resolve();
++        }
++        return this._kernelConnection.restart().catch(err => {
++            console.error('[Kernel] Kernel restart failed:', err);
++            throw err;
++        });
+     }
+     /**
+      * Shutdown the kernel
+diff --git a/node_modules/@datalayer/jupyter-react/lib/jupyter/kernel/Kernel.js.map b/node_modules/@datalayer/jupyter-react/lib/jupyter/kernel/Kernel.js.map
+index aeaca68..82201f1 100644
+--- a/node_modules/@datalayer/jupyter-react/lib/jupyter/kernel/Kernel.js.map
++++ b/node_modules/@datalayer/jupyter-react/lib/jupyter/kernel/Kernel.js.map
+@@ -1 +1 @@
+-{"version":3,"file":"Kernel.js","sourceRoot":"","sources":["../../../src/jupyter/kernel/Kernel.ts"],"names":[],"mappings":"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"}
+\ No newline at end of file
++{"version":3,"file":"Kernel.js","sourceRoot":"","sources":["../../../src/jupyter/kernel/Kernel.ts"],"names":[],"mappings":"AAAA;;;;GAIG;AAWH,OAAO,EAAE,IAAI,EAAE,MAAM,mBAAmB,CAAC;AACzC,OAAO,EAAE,eAAe,EAAE,MAAM,mBAAmB,CAAC;AACpD,OAAO,EAAE,SAAS,EAAE,OAAO,EAAE,MAAM,mBAAmB,CAAC;AACvD,OAAO,cAIN,MAAM,kBAAkB,CAAC;AAE1B,MAAM,8BAA8B,GAAG,2BAA2B,CAAC;AAEnE;;GAEG;AACH,MAAM,OAAO,MAAM;IACT,SAAS,CAAS;IAClB,iBAAiB,CAAmB;IACpC,GAAG,CAAS;IACZ,KAAK,CAA4B;IACjC,iBAAiB,CAAyC;IAC1D,cAAc,CAAyB;IACvC,WAAW,CAAS;IACpB,kBAAkB,CAAsB;IACxC,eAAe,CAAS;IACxB,WAAW,CAAS;IACpB,KAAK,CAAS;IACd,MAAM,CAAwB;IAC9B,QAAQ,CAAqB;IAC7B,UAAU,CAAS;IACnB,eAAe,CAAmB;IAE1C,YAAmB,KAA0B;QAC3C,MAAM,EACJ,aAAa,EACb,UAAU,EACV,UAAU,EACV,kBAAkB,EAClB,cAAc,EACd,WAAW,EACX,IAAI,EACJ,cAAc,GACf,GAAG,KAAK,CAAC;QACV,IAAI,CAAC,kBAAkB,GAAG,kBAAkB,CAAC;QAC7C,IAAI,CAAC,cAAc,GAAG,aAAa,CAAC;QACpC,IAAI,CAAC,WAAW,GAAG,UAAU,CAAC;QAC9B,IAAI,CAAC,WAAW,GAAG,UAAU,IAAI,UAAU,CAAC;QAC5C,IAAI,CAAC,eAAe,GAAG,cAAc,CAAC;QACtC,IAAI,CAAC,eAAe,GAAG,cAAc,CAAC;QACtC,IAAI,CAAC,MAAM,GAAG,IAAI,eAAe,EAAE,CAAC;QACpC,IAAI,CAAC,aAAa,CAAC,WAAW,EAAE,IAAI,CAAC,CAAC;IACxC,CAAC;IAEO,KAAK,CAAC,aAAa,CACzB,WAAkC,EAClC,SAAkB;QAElB,MAAM,IAAI,CAAC,cAAc,CAAC,KAAK,CAAC;QAChC,MAAM,IAAI,CAAC,eAAe,CAAC,KAAK,CAAC;QACjC,IAAI,WAAW,EAAE,CAAC;YAChB,MAAM,IAAI,CAAC,cAAc,CAAC,cAAc,EAAE,CAAC;YAC3C,MAAM,cAAc,GAAG,KAAK,CAAC,IAAI,CAAC,IAAI,CAAC,aAAa,CAAC,OAAO,EAAE,CAAC,CAAC;YAChE,MAAM,mBAAmB,GAAG,IAAI,CAAC,cAAc,EAAE,KAAK,CAAC,EAAE;gBACvD,OAAO,WAAW,CAAC,EAAE,KAAK,KAAK,CAAC,EAAE,CAAC;YACrC,CAAC,CAAC,CAAC;YACH,IAAI,mBAAmB,EAAE,CAAC;gBACxB,MAAM,IAAI,GAAG,SAAS,GAAG,WAAW,CAAC,EAAE,CAAC;gBACxC,IAAI,CAAC,KAAK,GAAG,IAAI,CAAC;gBAClB,IAAI,CAAC,QAAQ,GAAG,MAAM,IAAI,CAAC,eAAe,CAAC,QAAQ,CACjD;oBACE,IAAI,EAAE,mBAAmB,CAAC,IAAI;oBAC9B,IAAI,EAAE,IAAI;oBACV,IAAI,EAAE,UAAU;oBAChB,MAAM,EAAE,mBAGP;iBACF,EACD;oBACE,uBAAuB,EAAE;wBACvB,WAAW,EAAE,IAAI;qBAClB;iBACF,CACF,CAAC;YACJ,CAAC;iBAAM,CAAC;gBACN,OAAO;YACT,CAAC;QACH,CAAC;aAAM,CAAC;YACN,IAAI,IAAI,GAAG,SAAS,IAAI,SAAS,CAAC,IAAI,CAAC,UAAU,CAAC,CAAC;YACnD,IAAI,CAAC,IAAI,EAAE,CAAC;gBACV,IAAI,GAAG,OAAO,GAAG,OAAO,EAAE,CAAC;gBAC3B,QAAQ,CAAC,MAAM,GAAG,IAAI,CAAC,UAAU,GAAG,GAAG,GAAG,IAAI,CAAC;YACjD,CAAC;YACD,IAAI,CAAC,KAAK,GAAG,IAAI,CAAC;YAClB,IAAI,CAAC;gBACH,IAAI,CAAC,QAAQ,GAAG,MAAM,IAAI,CAAC,eAAe,CAAC,QAAQ,CACjD;oBACE,IAAI,EAAE,IAAI,CAAC,WAAW;oBACtB,IAAI,EAAE,IAAI,CAAC,KAAK;oBAChB,IAAI,EAAE,IAAI,CAAC,WAAW;oBACtB,MAAM,EAAE;wBACN,IAAI,EAAE,IAAI,CAAC,eAAe;qBAC3B;iBACF,EACD;oBACE,uBAAuB,EAAE;wBACvB,WAAW,EAAE,IAAI;qBAClB;iBACF,CACF,CAAC;YACJ,CAAC;YAAC,OAAO,KAAK,EAAE,CAAC;gBACf,OAAO,CAAC,KAAK,CAAC,qCAAqC,EAAE,KAAK,CAAC,CAAC;gBAC5D,OAAO;YACT,CAAC;QACH,CAAC;QACD,IAAI,CAAC,iBAAiB,GAAG,IAAI,CAAC,QAAQ,CAAC,MAAM,CAAC;QAC9C,MAAM,sBAAsB,GAAG,GAAG,EAAE;YAClC,IAAI,IAAI,CAAC,iBAAiB,KAAK,WAAW,EAAE,CAAC;gBAC3C,IAAI,CAAC,SAAS,GAAG,IAAI,CAAC,QAAQ,CAAC,MAAO,CAAC,QAAQ,CAAC;gBAChD,IAAI,CAAC,GAAG,GAAG,IAAI,CAAC,QAAQ,CAAC,MAAO,CAAC,EAAE,CAAC;gBACpC,IAAI,CAAC,MAAM,CAAC,OAAO,EAAE,CAAC;YACxB,CAAC;QACH,CAAC,CAAC;QACF,IAAI,IAAI,CAAC,iBAAiB,EAAE,CAAC;YAC3B,IAAI,CAAC,UAAU,GAAG,IAAI,CAAC,QAAQ,CAAC,EAAE,CAAC;YACnC,IAAI,CAAC,iBAAiB,GAAG,IAAI,CAAC,iBAAiB,CAAC,gBAAgB,CAAC;YACjE,sBAAsB,EAAE,CAAC;YACzB,IAAI,CAAC,iBAAiB,CAAC,uBAAuB,CAAC,OAAO,CACpD,CAAC,CAAC,EAAE,gBAAgB,EAAE,EAAE;gBACtB,IAAI,CAAC,iBAAiB,GAAG,gBAAgB,CAAC;gBAC1C,sBAAsB,EAAE,CAAC;YAC3B,CAAC,CACF,CAAC;YACF,IAAI,CAAC,iBAAiB,CAAC,IAAI,CAAC,IAAI,CAAC,IAAI,CAAC,EAAE;gBACtC,IAAI,CAAC,KAAK,GAAG,IAAI,CAAC;YACpB,CAAC,CAAC,CAAC;QACL,CAAC;IACH,CAAC;IAED,IAAI,QAAQ;QACV,OAAO,IAAI,CAAC,SAAS,CAAC;IACxB,CAAC;IAED,IAAI,UAAU;QACZ,OAAO,IAAI,CAAC,iBAAiB,CAAC;IAChC,CAAC;IAED,IAAI,UAAU;QACZ,OAAO,8BAA8B,GAAG,GAAG,GAAG,IAAI,CAAC,eAAe,CAAC;IACrE,CAAC;IAED,IAAI,EAAE;QACJ,OAAO,IAAI,CAAC,GAAG,CAAC;IAClB,CAAC;IAED,IAAI,IAAI;QACN,OAAO,IAAI,CAAC,KAAK,CAAC;IACpB,CAAC;IAED,IAAI,aAAa;QACf,OAAO,IAAI,CAAC,cAAc,CAAC;IAC7B,CAAC;IAED,IAAI,iBAAiB;QACnB,OAAO,IAAI,CAAC,kBAAkB,CAAC;IACjC,CAAC;IAED,IAAI,IAAI;QACN,OAAO,IAAI,CAAC,KAAK,CAAC;IACpB,CAAC;IAED,IAAI,KAAK;QACP,OAAO,IAAI,CAAC,MAAM,CAAC,OAAO,CAAC;IAC7B,CAAC;IAED,IAAI,SAAS;QACX,OAAO,IAAI,CAAC,UAAU,CAAC;IACzB,CAAC;IAED,IAAI,OAAO;QACT,OAAO,IAAI,CAAC,QAAQ,CAAC;IACvB,CAAC;IAED,IAAI,cAAc;QAChB,OAAO,IAAI,CAAC,eAAe,CAAC;IAC9B,CAAC;IAED;;;;;;;OAOG;IACH,OAAO,CACL,IAAY,EACZ,EACE,KAAK,EACL,iBAAiB,GAAG,EAAE,EACtB,iBAAiB,GAAG,EAAE,EACtB,MAAM,EACN,WAAW,EACX,YAAY,EACZ,UAAU,EACV,2BAA2B,GAAG,KAAK,EACnC,uBAAuB,MAWrB,EAAE;QAEN,IAAI,IAAI,CAAC,iBAAiB,EAAE,CAAC;YAC3B,MAAM,cAAc,GAAG,IAAI,cAAc,CAAC;gBACxC,UAAU,EAAE,IAAI,CAAC,iBAAiB;gBAClC,KAAK;gBACL,uBAAuB;aACxB,CAAC,CAAC;YACH,cAAc,CAAC,OAAO,CAAC,IAAI,EAAE;gBAC3B,iBAAiB;gBACjB,iBAAiB;gBACjB,MAAM;gBACN,WAAW;gBACX,YAAY;gBACZ,UAAU;gBACV,2BAA2B;aAC5B,CAAC,CAAC;YACH,OAAO,cAAc,CAAC;QACxB,CAAC;IACH,CAAC;IAED;;OAEG;IACH,SAAS;QACP,IAAI,CAAC,IAAI,CAAC,iBAAiB,EAAE,CAAC;YAC5B,OAAO,OAAO,CAAC,OAAO,EAAE,CAAC;QAC3B,CAAC;QACD,OAAO,IAAI,CAAC,iBAAiB,CAAC,SAAS,EAAE,CAAC,KAAK,CAAC,GAAG,CAAC,EAAE;YACpD,OAAO,CAAC,KAAK,CAAC,mCAAmC,EAAE,GAAG,CAAC,CAAC;YACxD,MAAM,GAAG,CAAC;QACZ,CAAC,CAAC,CAAC;IACL,CAAC;IAED;;OAEG;IACH,OAAO;QACL,IAAI,CAAC,IAAI,CAAC,iBAAiB,EAAE,CAAC;YAC5B,OAAO,OAAO,CAAC,OAAO,EAAE,CAAC;QAC3B,CAAC;QACD,OAAO,IAAI,CAAC,iBAAiB,CAAC,OAAO,EAAE,CAAC,KAAK,CAAC,GAAG,CAAC,EAAE;YAClD,OAAO,CAAC,KAAK,CAAC,iCAAiC,EAAE,GAAG,CAAC,CAAC;YACtD,MAAM,GAAG,CAAC;QACZ,CAAC,CAAC,CAAC;IACL,CAAC;IAED;;OAEG;IACH,KAAK,CAAC,QAAQ;QACZ,MAAM,IAAI,CAAC,QAAQ,CAAC,MAAM,EAAE,QAAQ,EAAE,CAAC;QACvC,IAAI,CAAC,UAAU,EAAE,OAAO,EAAE,CAAC;IAC7B,CAAC;IAED;;OAEG;IACH,MAAM;QACJ,OAAO;YACL,IAAI,EAAE,IAAI,CAAC,KAAK;YAChB,EAAE,EAAE,IAAI,CAAC,EAAE;YACX,QAAQ,EAAE,IAAI,CAAC,QAAQ;YACvB,SAAS,EAAE,IAAI,CAAC,SAAS;YACzB,UAAU,EAAE,IAAI,CAAC,IAAI;SACtB,CAAC;IACJ,CAAC;IAED;;OAEG;IACH,QAAQ;QACN,OAAO,MAAM,IAAI,CAAC,EAAE,gBAAgB,IAAI,CAAC,QAAQ,iBAAiB,IAAI,CAAC,SAAS,WAAW,IAAI,CAAC,KAAK,EAAE,CAAC;IAC1G,CAAC;CACF;AA0CD,eAAe,MAAM,CAAC"}
+\ No newline at end of file
+diff --git a/node_modules/@datalayer/jupyter-react/lib/jupyter/lite/pyodide-kernel/pypi/all-local.json b/node_modules/@datalayer/jupyter-react/lib/jupyter/lite/pyodide-kernel/pypi/all-local.json
+index 7680f4c..82364b1 100644
+--- a/node_modules/@datalayer/jupyter-react/lib/jupyter/lite/pyodide-kernel/pypi/all-local.json
++++ b/node_modules/@datalayer/jupyter-react/lib/jupyter/lite/pyodide-kernel/pypi/all-local.json
+@@ -1,128 +1,128 @@
+ {
+-    "ipykernel": {
+-        "releases": {
+-            "6.9.2": [
+-                {
+-                    "comment_text": "",
+-                    "digests": {
+-                        "md5": "6417c37d13c80d514da1a003e9aab5f9",
+-                        "sha256": "d53285dbf2d9e7730a911ed3a1fe245b4747710930636c2fd000354c5614fbc9"
+-                    },
+-                    "downloads": -1,
+-                    "filename": "ipykernel-6.9.2-py3-none-any.whl",
+-                    "has_sig": false,
+-                    "md5_digest": "6417c37d13c80d514da1a003e9aab5f9",
+-                    "packagetype": "bdist_wheel",
+-                    "python_version": "py3",
+-                    "requires_python": ">=3.10",
+-                    "size": 2731,
+-                    "upload_time": "2025-01-15T14:41:51.279101Z",
+-                    "upload_time_iso_8601": "2025-01-15T14:41:51.279101Z",
+-                    "url": "./ipykernel-6.9.2-py3-none-any.whl",
+-                    "yanked": false,
+-                    "yanked_reason": null
+-                }
+-            ]
++  "ipykernel": {
++    "releases": {
++      "6.9.2": [
++        {
++          "comment_text": "",
++          "digests": {
++            "md5": "6417c37d13c80d514da1a003e9aab5f9",
++            "sha256": "d53285dbf2d9e7730a911ed3a1fe245b4747710930636c2fd000354c5614fbc9"
++          },
++          "downloads": -1,
++          "filename": "ipykernel-6.9.2-py3-none-any.whl",
++          "has_sig": false,
++          "md5_digest": "6417c37d13c80d514da1a003e9aab5f9",
++          "packagetype": "bdist_wheel",
++          "python_version": "py3",
++          "requires_python": ">=3.10",
++          "size": 2731,
++          "upload_time": "2025-01-15T14:41:51.279101Z",
++          "upload_time_iso_8601": "2025-01-15T14:41:51.279101Z",
++          "url": "./ipykernel-6.9.2-py3-none-any.whl",
++          "yanked": false,
++          "yanked_reason": null
+         }
+-    },
+-    "piplite": {
+-        "releases": {
+-            "0.5.1": [
+-                {
+-                    "comment_text": "",
+-                    "digests": {
+-                        "md5": "7175e3ccb0c891baf4e923cf80015e63",
+-                        "sha256": "c7c8c7ded720dc3a9f3346607d95f70cd490cb0b27c6a67918e0cfadb5c50315"
+-                    },
+-                    "downloads": -1,
+-                    "filename": "piplite-0.5.1-py3-none-any.whl",
+-                    "has_sig": false,
+-                    "md5_digest": "7175e3ccb0c891baf4e923cf80015e63",
+-                    "packagetype": "bdist_wheel",
+-                    "python_version": "py3",
+-                    "requires_python": "<3.12,>=3.11",
+-                    "size": 7233,
+-                    "upload_time": "2025-01-15T14:41:51.279101Z",
+-                    "upload_time_iso_8601": "2025-01-15T14:41:51.279101Z",
+-                    "url": "./piplite-0.5.1-py3-none-any.whl",
+-                    "yanked": false,
+-                    "yanked_reason": null
+-                }
+-            ]
++      ]
++    }
++  },
++  "piplite": {
++    "releases": {
++      "0.5.1": [
++        {
++          "comment_text": "",
++          "digests": {
++            "md5": "7175e3ccb0c891baf4e923cf80015e63",
++            "sha256": "c7c8c7ded720dc3a9f3346607d95f70cd490cb0b27c6a67918e0cfadb5c50315"
++          },
++          "downloads": -1,
++          "filename": "piplite-0.5.1-py3-none-any.whl",
++          "has_sig": false,
++          "md5_digest": "7175e3ccb0c891baf4e923cf80015e63",
++          "packagetype": "bdist_wheel",
++          "python_version": "py3",
++          "requires_python": "<3.12,>=3.11",
++          "size": 7233,
++          "upload_time": "2025-01-15T14:41:51.279101Z",
++          "upload_time_iso_8601": "2025-01-15T14:41:51.279101Z",
++          "url": "./piplite-0.5.1-py3-none-any.whl",
++          "yanked": false,
++          "yanked_reason": null
++        }
++      ]
++    }
++  },
++  "pyodide-kernel": {
++    "releases": {
++      "0.5.1": [
++        {
++          "comment_text": "",
++          "digests": {
++            "md5": "0924a59fd3622b8307d05f7212c998e1",
++            "sha256": "0d556c201e155c19ddb3da7cc6b6cf2b18daeeb399f2978cf3c206ba42ccfacc"
++          },
++          "downloads": -1,
++          "filename": "pyodide_kernel-0.5.1-py3-none-any.whl",
++          "has_sig": false,
++          "md5_digest": "0924a59fd3622b8307d05f7212c998e1",
++          "packagetype": "bdist_wheel",
++          "python_version": "py3",
++          "requires_python": "<3.12,>=3.11",
++          "size": 11009,
++          "upload_time": "2025-01-15T14:41:51.279101Z",
++          "upload_time_iso_8601": "2025-01-15T14:41:51.279101Z",
++          "url": "./pyodide_kernel-0.5.1-py3-none-any.whl",
++          "yanked": false,
++          "yanked_reason": null
+         }
+-    },
+-    "pyodide-kernel": {
+-        "releases": {
+-            "0.5.1": [
+-                {
+-                    "comment_text": "",
+-                    "digests": {
+-                        "md5": "0924a59fd3622b8307d05f7212c998e1",
+-                        "sha256": "0d556c201e155c19ddb3da7cc6b6cf2b18daeeb399f2978cf3c206ba42ccfacc"
+-                    },
+-                    "downloads": -1,
+-                    "filename": "pyodide_kernel-0.5.1-py3-none-any.whl",
+-                    "has_sig": false,
+-                    "md5_digest": "0924a59fd3622b8307d05f7212c998e1",
+-                    "packagetype": "bdist_wheel",
+-                    "python_version": "py3",
+-                    "requires_python": "<3.12,>=3.11",
+-                    "size": 11009,
+-                    "upload_time": "2025-01-15T14:41:51.279101Z",
+-                    "upload_time_iso_8601": "2025-01-15T14:41:51.279101Z",
+-                    "url": "./pyodide_kernel-0.5.1-py3-none-any.whl",
+-                    "yanked": false,
+-                    "yanked_reason": null
+-                }
+-            ]
++      ]
++    }
++  },
++  "widgetsnbextension": {
++    "releases": {
++      "3.6.999": [
++        {
++          "comment_text": "",
++          "digests": {
++            "md5": "efee63dd8d36b7e56253c27614a55ec1",
++            "sha256": "9fbb27700eb35a49469b9c8c51e9ba434348372d07d7c6063839dd4462b27e97"
++          },
++          "downloads": -1,
++          "filename": "widgetsnbextension-3.6.999-py3-none-any.whl",
++          "has_sig": false,
++          "md5_digest": "efee63dd8d36b7e56253c27614a55ec1",
++          "packagetype": "bdist_wheel",
++          "python_version": "py3",
++          "requires_python": "<3.12,>=3.11",
++          "size": 2369,
++          "upload_time": "2025-01-15T14:41:51.280101Z",
++          "upload_time_iso_8601": "2025-01-15T14:41:51.280101Z",
++          "url": "./widgetsnbextension-3.6.999-py3-none-any.whl",
++          "yanked": false,
++          "yanked_reason": null
+         }
+-    },
+-    "widgetsnbextension": {
+-        "releases": {
+-            "3.6.999": [
+-                {
+-                    "comment_text": "",
+-                    "digests": {
+-                        "md5": "efee63dd8d36b7e56253c27614a55ec1",
+-                        "sha256": "9fbb27700eb35a49469b9c8c51e9ba434348372d07d7c6063839dd4462b27e97"
+-                    },
+-                    "downloads": -1,
+-                    "filename": "widgetsnbextension-3.6.999-py3-none-any.whl",
+-                    "has_sig": false,
+-                    "md5_digest": "efee63dd8d36b7e56253c27614a55ec1",
+-                    "packagetype": "bdist_wheel",
+-                    "python_version": "py3",
+-                    "requires_python": "<3.12,>=3.11",
+-                    "size": 2369,
+-                    "upload_time": "2025-01-15T14:41:51.280101Z",
+-                    "upload_time_iso_8601": "2025-01-15T14:41:51.280101Z",
+-                    "url": "./widgetsnbextension-3.6.999-py3-none-any.whl",
+-                    "yanked": false,
+-                    "yanked_reason": null
+-                }
+-            ],
+-            "4.0.999": [
+-                {
+-                    "comment_text": "",
+-                    "digests": {
+-                        "md5": "d8db7256127c579c6f6f93973fa134fc",
+-                        "sha256": "d603779885ca57bfaeca1099bf9f69d82cd58f616a9a40c8756bc457874d0fa5"
+-                    },
+-                    "downloads": -1,
+-                    "filename": "widgetsnbextension-4.0.999-py3-none-any.whl",
+-                    "has_sig": false,
+-                    "md5_digest": "d8db7256127c579c6f6f93973fa134fc",
+-                    "packagetype": "bdist_wheel",
+-                    "python_version": "py3",
+-                    "requires_python": "<3.12,>=3.11",
+-                    "size": 2370,
+-                    "upload_time": "2025-01-15T14:41:51.280101Z",
+-                    "upload_time_iso_8601": "2025-01-15T14:41:51.280101Z",
+-                    "url": "./widgetsnbextension-4.0.999-py3-none-any.whl",
+-                    "yanked": false,
+-                    "yanked_reason": null
+-                }
+-            ]
++      ],
++      "4.0.999": [
++        {
++          "comment_text": "",
++          "digests": {
++            "md5": "d8db7256127c579c6f6f93973fa134fc",
++            "sha256": "d603779885ca57bfaeca1099bf9f69d82cd58f616a9a40c8756bc457874d0fa5"
++          },
++          "downloads": -1,
++          "filename": "widgetsnbextension-4.0.999-py3-none-any.whl",
++          "has_sig": false,
++          "md5_digest": "d8db7256127c579c6f6f93973fa134fc",
++          "packagetype": "bdist_wheel",
++          "python_version": "py3",
++          "requires_python": "<3.12,>=3.11",
++          "size": 2370,
++          "upload_time": "2025-01-15T14:41:51.280101Z",
++          "upload_time_iso_8601": "2025-01-15T14:41:51.280101Z",
++          "url": "./widgetsnbextension-4.0.999-py3-none-any.whl",
++          "yanked": false,
++          "yanked_reason": null
+         }
++      ]
+     }
++  }
+ }
+diff --git a/node_modules/@datalayer/jupyter-react/lib/jupyter/lite/pyodide-kernel/pypi/all.json b/node_modules/@datalayer/jupyter-react/lib/jupyter/lite/pyodide-kernel/pypi/all.json
+index 9e5fd4f..169e5e7 100644
+--- a/node_modules/@datalayer/jupyter-react/lib/jupyter/lite/pyodide-kernel/pypi/all.json
++++ b/node_modules/@datalayer/jupyter-react/lib/jupyter/lite/pyodide-kernel/pypi/all.json
+@@ -1,128 +1,128 @@
+ {
+-    "ipykernel": {
+-        "releases": {
+-            "6.9.2": [
+-                {
+-                    "comment_text": "",
+-                    "digests": {
+-                        "md5": "6417c37d13c80d514da1a003e9aab5f9",
+-                        "sha256": "d53285dbf2d9e7730a911ed3a1fe245b4747710930636c2fd000354c5614fbc9"
+-                    },
+-                    "downloads": -1,
+-                    "filename": "ipykernel-6.9.2-py3-none-any.whl",
+-                    "has_sig": false,
+-                    "md5_digest": "6417c37d13c80d514da1a003e9aab5f9",
+-                    "packagetype": "bdist_wheel",
+-                    "python_version": "py3",
+-                    "requires_python": ">=3.10",
+-                    "size": 2731,
+-                    "upload_time": "2025-01-15T14:41:51.279101Z",
+-                    "upload_time_iso_8601": "2025-01-15T14:41:51.279101Z",
+-                    "url": "https://assets.datalayer.tech/pypi/ipykernel-6.9.2-py3-none-any.whl",
+-                    "yanked": false,
+-                    "yanked_reason": null
+-                }
+-            ]
++  "ipykernel": {
++    "releases": {
++      "6.9.2": [
++        {
++          "comment_text": "",
++          "digests": {
++            "md5": "6417c37d13c80d514da1a003e9aab5f9",
++            "sha256": "d53285dbf2d9e7730a911ed3a1fe245b4747710930636c2fd000354c5614fbc9"
++          },
++          "downloads": -1,
++          "filename": "ipykernel-6.9.2-py3-none-any.whl",
++          "has_sig": false,
++          "md5_digest": "6417c37d13c80d514da1a003e9aab5f9",
++          "packagetype": "bdist_wheel",
++          "python_version": "py3",
++          "requires_python": ">=3.10",
++          "size": 2731,
++          "upload_time": "2025-01-15T14:41:51.279101Z",
++          "upload_time_iso_8601": "2025-01-15T14:41:51.279101Z",
++          "url": "https://assets.datalayer.tech/pypi/ipykernel-6.9.2-py3-none-any.whl",
++          "yanked": false,
++          "yanked_reason": null
+         }
+-    },
+-    "piplite": {
+-        "releases": {
+-            "0.5.1": [
+-                {
+-                    "comment_text": "",
+-                    "digests": {
+-                        "md5": "7175e3ccb0c891baf4e923cf80015e63",
+-                        "sha256": "c7c8c7ded720dc3a9f3346607d95f70cd490cb0b27c6a67918e0cfadb5c50315"
+-                    },
+-                    "downloads": -1,
+-                    "filename": "piplite-0.5.1-py3-none-any.whl",
+-                    "has_sig": false,
+-                    "md5_digest": "7175e3ccb0c891baf4e923cf80015e63",
+-                    "packagetype": "bdist_wheel",
+-                    "python_version": "py3",
+-                    "requires_python": "<3.12,>=3.11",
+-                    "size": 7233,
+-                    "upload_time": "2025-01-15T14:41:51.279101Z",
+-                    "upload_time_iso_8601": "2025-01-15T14:41:51.279101Z",
+-                    "url": "https://assets.datalayer.tech/pypi/piplite-0.5.1-py3-none-any.whl",
+-                    "yanked": false,
+-                    "yanked_reason": null
+-                }
+-            ]
++      ]
++    }
++  },
++  "piplite": {
++    "releases": {
++      "0.5.1": [
++        {
++          "comment_text": "",
++          "digests": {
++            "md5": "7175e3ccb0c891baf4e923cf80015e63",
++            "sha256": "c7c8c7ded720dc3a9f3346607d95f70cd490cb0b27c6a67918e0cfadb5c50315"
++          },
++          "downloads": -1,
++          "filename": "piplite-0.5.1-py3-none-any.whl",
++          "has_sig": false,
++          "md5_digest": "7175e3ccb0c891baf4e923cf80015e63",
++          "packagetype": "bdist_wheel",
++          "python_version": "py3",
++          "requires_python": "<3.12,>=3.11",
++          "size": 7233,
++          "upload_time": "2025-01-15T14:41:51.279101Z",
++          "upload_time_iso_8601": "2025-01-15T14:41:51.279101Z",
++          "url": "https://assets.datalayer.tech/pypi/piplite-0.5.1-py3-none-any.whl",
++          "yanked": false,
++          "yanked_reason": null
++        }
++      ]
++    }
++  },
++  "pyodide-kernel": {
++    "releases": {
++      "0.5.1": [
++        {
++          "comment_text": "",
++          "digests": {
++            "md5": "0924a59fd3622b8307d05f7212c998e1",
++            "sha256": "0d556c201e155c19ddb3da7cc6b6cf2b18daeeb399f2978cf3c206ba42ccfacc"
++          },
++          "downloads": -1,
++          "filename": "pyodide_kernel-0.5.1-py3-none-any.whl",
++          "has_sig": false,
++          "md5_digest": "0924a59fd3622b8307d05f7212c998e1",
++          "packagetype": "bdist_wheel",
++          "python_version": "py3",
++          "requires_python": "<3.12,>=3.11",
++          "size": 11009,
++          "upload_time": "2025-01-15T14:41:51.279101Z",
++          "upload_time_iso_8601": "2025-01-15T14:41:51.279101Z",
++          "url": "https://assets.datalayer.tech/pypi/pyodide_kernel-0.5.1-py3-none-any.whl",
++          "yanked": false,
++          "yanked_reason": null
+         }
+-    },
+-    "pyodide-kernel": {
+-        "releases": {
+-            "0.5.1": [
+-                {
+-                    "comment_text": "",
+-                    "digests": {
+-                        "md5": "0924a59fd3622b8307d05f7212c998e1",
+-                        "sha256": "0d556c201e155c19ddb3da7cc6b6cf2b18daeeb399f2978cf3c206ba42ccfacc"
+-                    },
+-                    "downloads": -1,
+-                    "filename": "pyodide_kernel-0.5.1-py3-none-any.whl",
+-                    "has_sig": false,
+-                    "md5_digest": "0924a59fd3622b8307d05f7212c998e1",
+-                    "packagetype": "bdist_wheel",
+-                    "python_version": "py3",
+-                    "requires_python": "<3.12,>=3.11",
+-                    "size": 11009,
+-                    "upload_time": "2025-01-15T14:41:51.279101Z",
+-                    "upload_time_iso_8601": "2025-01-15T14:41:51.279101Z",
+-                    "url": "https://assets.datalayer.tech/pypi/pyodide_kernel-0.5.1-py3-none-any.whl",
+-                    "yanked": false,
+-                    "yanked_reason": null
+-                }
+-            ]
++      ]
++    }
++  },
++  "widgetsnbextension": {
++    "releases": {
++      "3.6.999": [
++        {
++          "comment_text": "",
++          "digests": {
++            "md5": "efee63dd8d36b7e56253c27614a55ec1",
++            "sha256": "9fbb27700eb35a49469b9c8c51e9ba434348372d07d7c6063839dd4462b27e97"
++          },
++          "downloads": -1,
++          "filename": "widgetsnbextension-3.6.999-py3-none-any.whl",
++          "has_sig": false,
++          "md5_digest": "efee63dd8d36b7e56253c27614a55ec1",
++          "packagetype": "bdist_wheel",
++          "python_version": "py3",
++          "requires_python": "<3.12,>=3.11",
++          "size": 2369,
++          "upload_time": "2025-01-15T14:41:51.280101Z",
++          "upload_time_iso_8601": "2025-01-15T14:41:51.280101Z",
++          "url": "https://assets.datalayer.tech/pypi/widgetsnbextension-3.6.999-py3-none-any.whl",
++          "yanked": false,
++          "yanked_reason": null
+         }
+-    },
+-    "widgetsnbextension": {
+-        "releases": {
+-            "3.6.999": [
+-                {
+-                    "comment_text": "",
+-                    "digests": {
+-                        "md5": "efee63dd8d36b7e56253c27614a55ec1",
+-                        "sha256": "9fbb27700eb35a49469b9c8c51e9ba434348372d07d7c6063839dd4462b27e97"
+-                    },
+-                    "downloads": -1,
+-                    "filename": "widgetsnbextension-3.6.999-py3-none-any.whl",
+-                    "has_sig": false,
+-                    "md5_digest": "efee63dd8d36b7e56253c27614a55ec1",
+-                    "packagetype": "bdist_wheel",
+-                    "python_version": "py3",
+-                    "requires_python": "<3.12,>=3.11",
+-                    "size": 2369,
+-                    "upload_time": "2025-01-15T14:41:51.280101Z",
+-                    "upload_time_iso_8601": "2025-01-15T14:41:51.280101Z",
+-                    "url": "https://assets.datalayer.tech/pypi/widgetsnbextension-3.6.999-py3-none-any.whl",
+-                    "yanked": false,
+-                    "yanked_reason": null
+-                }
+-            ],
+-            "4.0.999": [
+-                {
+-                    "comment_text": "",
+-                    "digests": {
+-                        "md5": "d8db7256127c579c6f6f93973fa134fc",
+-                        "sha256": "d603779885ca57bfaeca1099bf9f69d82cd58f616a9a40c8756bc457874d0fa5"
+-                    },
+-                    "downloads": -1,
+-                    "filename": "widgetsnbextension-4.0.999-py3-none-any.whl",
+-                    "has_sig": false,
+-                    "md5_digest": "d8db7256127c579c6f6f93973fa134fc",
+-                    "packagetype": "bdist_wheel",
+-                    "python_version": "py3",
+-                    "requires_python": "<3.12,>=3.11",
+-                    "size": 2370,
+-                    "upload_time": "2025-01-15T14:41:51.280101Z",
+-                    "upload_time_iso_8601": "2025-01-15T14:41:51.280101Z",
+-                    "url": "https://assets.datalayer.tech/pypi/widgetsnbextension-4.0.999-py3-none-any.whl",
+-                    "yanked": false,
+-                    "yanked_reason": null
+-                }
+-            ]
++      ],
++      "4.0.999": [
++        {
++          "comment_text": "",
++          "digests": {
++            "md5": "d8db7256127c579c6f6f93973fa134fc",
++            "sha256": "d603779885ca57bfaeca1099bf9f69d82cd58f616a9a40c8756bc457874d0fa5"
++          },
++          "downloads": -1,
++          "filename": "widgetsnbextension-4.0.999-py3-none-any.whl",
++          "has_sig": false,
++          "md5_digest": "d8db7256127c579c6f6f93973fa134fc",
++          "packagetype": "bdist_wheel",
++          "python_version": "py3",
++          "requires_python": "<3.12,>=3.11",
++          "size": 2370,
++          "upload_time": "2025-01-15T14:41:51.280101Z",
++          "upload_time_iso_8601": "2025-01-15T14:41:51.280101Z",
++          "url": "https://assets.datalayer.tech/pypi/widgetsnbextension-4.0.999-py3-none-any.whl",
++          "yanked": false,
++          "yanked_reason": null
+         }
++      ]
+     }
++  }
+ }
+diff --git a/node_modules/@datalayer/jupyter-react/lib/jupyter/lite/pyodide-kernel/schema/piplite.v0.schema.json b/node_modules/@datalayer/jupyter-react/lib/jupyter/lite/pyodide-kernel/schema/piplite.v0.schema.json
+index 7b85f9b..757ae8f 100644
+--- a/node_modules/@datalayer/jupyter-react/lib/jupyter/lite/pyodide-kernel/schema/piplite.v0.schema.json
++++ b/node_modules/@datalayer/jupyter-react/lib/jupyter/lite/pyodide-kernel/schema/piplite.v0.schema.json
+@@ -1,113 +1,113 @@
+ {
+-    "$schema": "http://json-schema.org/draft-07/schema",
+-    "$id": "https://jupyterlite-pyodide-kernel.readthedocs.org/en/latest/reference/schema/piplite-v0.html#",
+-    "title": "PipLite Schema v0",
+-    "description": "a schema for the warehouse-like API index",
+-    "$ref": "#/definitions/top",
+-    "definitions": {
+-        "top": {
+-            "type": "object",
+-            "patternProperties": {
+-                ".*": {
+-                    "$ref": "#/definitions/a-piplite-project"
+-                }
++  "$schema": "http://json-schema.org/draft-07/schema",
++  "$id": "https://jupyterlite-pyodide-kernel.readthedocs.org/en/latest/reference/schema/piplite-v0.html#",
++  "title": "PipLite Schema v0",
++  "description": "a schema for the warehouse-like API index",
++  "$ref": "#/definitions/top",
++  "definitions": {
++    "top": {
++      "type": "object",
++      "patternProperties": {
++        ".*": {
++          "$ref": "#/definitions/a-piplite-project"
++        }
++      }
++    },
++    "a-piplite-project": {
++      "type": "object",
++      "description": "a piplite-installable project, with one or more historical releases",
++      "properties": {
++        "releases": {
++          "patternProperties": {
++            ".*": {
++              "type": "array",
++              "items": {
++                "$ref": "#/definitions/a-piplite-distribution"
++              }
+             }
++          }
++        }
++      }
++    },
++    "a-piplite-distribution": {
++      "type": "object",
++      "properties": {
++        "comment_text": {
++          "type": "string"
+         },
+-        "a-piplite-project": {
+-            "type": "object",
+-            "description": "a piplite-installable project, with one or more historical releases",
+-            "properties": {
+-                "releases": {
+-                    "patternProperties": {
+-                        ".*": {
+-                            "type": "array",
+-                            "items": {
+-                                "$ref": "#/definitions/a-piplite-distribution"
+-                            }
+-                        }
+-                    }
+-                }
++        "digests": {
++          "type": "object",
++          "properties": {
++            "md5": {
++              "$ref": "#/definitions/an-md5-digest"
++            },
++            "sha256": {
++              "$ref": "#/definitions/a-sha256-digest"
+             }
++          }
+         },
+-        "a-piplite-distribution": {
+-            "type": "object",
+-            "properties": {
+-                "comment_text": {
+-                    "type": "string"
+-                },
+-                "digests": {
+-                    "type": "object",
+-                    "properties": {
+-                        "md5": {
+-                            "$ref": "#/definitions/an-md5-digest"
+-                        },
+-                        "sha256": {
+-                            "$ref": "#/definitions/a-sha256-digest"
+-                        }
+-                    }
+-                },
+-                "downloads": {
+-                    "type": "number"
+-                },
+-                "filename": {
+-                    "type": "string"
+-                },
+-                "has_sig": {
+-                    "type": "boolean"
+-                },
+-                "md5_digest": {
+-                    "$ref": "#/definitions/an-md5-digest"
+-                },
+-                "packagetype": {
+-                    "type": "string",
+-                    "enum": ["bdist_wheel"]
+-                },
+-                "python_version": {
+-                    "type": "string"
+-                },
+-                "requires_python": {
+-                    "$ref": "#/definitions/string-or-null"
+-                },
+-                "size": {
+-                    "type": "number"
+-                },
+-                "upload_time": {
+-                    "type": "string",
+-                    "format": "date-time"
+-                },
+-                "upload_time_iso_8601": {
+-                    "type": "string",
+-                    "format": "date-time"
+-                },
+-                "url": {
+-                    "type": "string",
+-                    "format": "uri"
+-                },
+-                "yanked": {
+-                    "type": "boolean"
+-                },
+-                "yanked_reason": {
+-                    "$ref": "#/definitions/string-or-null"
+-                }
+-            }
++        "downloads": {
++          "type": "number"
++        },
++        "filename": {
++          "type": "string"
++        },
++        "has_sig": {
++          "type": "boolean"
++        },
++        "md5_digest": {
++          "$ref": "#/definitions/an-md5-digest"
++        },
++        "packagetype": {
++          "type": "string",
++          "enum": ["bdist_wheel"]
+         },
+-        "string-or-null": {
+-            "anyOf": [
+-                {
+-                    "type": "string"
+-                },
+-                {
+-                    "type": "null"
+-                }
+-            ]
++        "python_version": {
++          "type": "string"
+         },
+-        "an-md5-digest": {
+-            "type": "string",
+-            "pattern": "[a-f0-9]{32}"
++        "requires_python": {
++          "$ref": "#/definitions/string-or-null"
++        },
++        "size": {
++          "type": "number"
++        },
++        "upload_time": {
++          "type": "string",
++          "format": "date-time"
++        },
++        "upload_time_iso_8601": {
++          "type": "string",
++          "format": "date-time"
++        },
++        "url": {
++          "type": "string",
++          "format": "uri"
++        },
++        "yanked": {
++          "type": "boolean"
++        },
++        "yanked_reason": {
++          "$ref": "#/definitions/string-or-null"
++        }
++      }
++    },
++    "string-or-null": {
++      "anyOf": [
++        {
++          "type": "string"
+         },
+-        "a-sha256-digest": {
+-            "type": "string",
+-            "pattern": "[a-f0-9]{64}"
++        {
++          "type": "null"
+         }
++      ]
++    },
++    "an-md5-digest": {
++      "type": "string",
++      "pattern": "[a-f0-9]{32}"
++    },
++    "a-sha256-digest": {
++      "type": "string",
++      "pattern": "[a-f0-9]{64}"
+     }
++  }
+ }
+diff --git a/node_modules/@datalayer/jupyter-react/lib/tools/USAGE.md b/node_modules/@datalayer/jupyter-react/lib/tools/USAGE.md
+new file mode 100644
+index 0000000..c77b730
+--- /dev/null
++++ b/node_modules/@datalayer/jupyter-react/lib/tools/USAGE.md
+@@ -0,0 +1,383 @@
++# Tool Operations with OperationRunner - Usage Guide
++
++## Architecture Overview
++
++The tool system now follows a clean separation of concerns:
++
++```
++┌─────────────────────────────────────────────────────────┐
++│                    LLM / User Code                       │
++└────────────────────┬────────────────────────────────────┘
++                     │
++                     ▼
++┌─────────────────────────────────────────────────────────┐
++│              OperationRunner.execute()                   │
++│  - Coordinates execution                                 │
++│  - Applies formatting based on context.format            │
++└────────────────────┬────────────────────────────────────┘
++                     │
++                     ▼
++┌─────────────────────────────────────────────────────────┐
++│            Operation.execute() [pure logic]              │
++│  - insertCellOperation                                   │
++│  - deleteCellOperation                                   │
++│  - updateCellOperation                                   │
++│  - readCellOperation                                     │
++│  - readAllCellsOperation                                 │
++│  - runCellOperation                                      │
++│  - runAllCellsOperation                                  │
++│  - executeCodeOperation                                  │
++│  - insertCellsOperation                                  │
++│  Returns: Pure typed data (ReadAllCellsResult, etc.)     │
++└────────────────────┬────────────────────────────────────┘
++                     │
++                     ▼
++┌─────────────────────────────────────────────────────────┐
++│                Executor.execute()                        │
++│  - DefaultExecutor (React/JupyterLab)                    │
++│  - BridgeExecutor (VSCode)                               │
++│  - Platform-specific implementations                     │
++└─────────────────────────────────────────────────────────┘
++```
++
++## Key Principles
++
++1. **Operations return pure typed data** - No formatting logic
++2. **Runner handles formatting** - Based on `context.format`
++3. **Type-safe results** - `Promise<TResult | string>`
++4. **Format options**:
++   - `format: 'json'` → Returns structured `TResult` (token-efficient for LLMs)
++   - `format: 'toon'` → Returns TOON-encoded string (default, human-readable)
++
++## Usage Examples
++
++### Basic Usage
++
++```typescript
++import { OperationRunner } from '@datalayer/jupyter-ui-react/tools';
++import { readAllCellsOperation } from '@datalayer/jupyter-ui-react/tools';
++import type { ToolExecutionContext } from '@datalayer/jupyter-ui-react/tools';
++
++// Create runner instance
++const runner = new OperationRunner();
++
++// Setup execution context
++const context: ToolExecutionContext = {
++  executor: myExecutor, // DefaultExecutor or BridgeExecutor
++  notebookId: 'notebook-123',
++  format: 'json', // or 'toon' (default)
++};
++
++// Execute operation
++const result = await runner.execute(
++  readAllCellsOperation,
++  {}, // params
++  context
++);
++
++// With format='json', result is ReadAllCellsResult:
++// { success: true, cells: [...], cellCount: 2 }
++
++// With format='toon', result is string:
++// "success: true\ncells: [\n  { type: \"code\", ... }\n]\ncellCount: 2"
++```
++
++### For LLMs (JSON format - token efficient)
++
++```typescript
++const runner = new OperationRunner();
++
++// LLMs benefit from structured data
++const result = await runner.execute(
++  readAllCellsOperation,
++  {},
++  {
++    executor: myExecutor,
++    notebookId: 'notebook-123',
++    format: 'json', // Returns structured object
++  }
++);
++
++// Type-safe access to result properties
++if (typeof result === 'object') {
++  console.log(`Found ${result.cellCount} cells`);
++  result.cells.forEach(cell => {
++    console.log(`Cell ${cell.index}: ${cell.type}`);
++  });
++}
++```
++
++### For Humans (TOON format - readable)
++
++```typescript
++const runner = new OperationRunner();
++
++// Default format is TOON (human/LLM readable string)
++const result = await runner.execute(
++  executeCodeOperation,
++  { code: 'import numpy as np\nprint(np.__version__)' },
++  {
++    executor: myExecutor,
++    notebookId: 'notebook-123',
++    // format defaults to 'toon'
++  }
++);
++
++// Result is a TOON-encoded string:
++// success: true
++// outputs:
++//   - type: stream
++//     content:
++//       name: stdout
++//       text: "1.24.3"
++// executionCount: 1
++```
++
++### All Operations Examples
++
++#### 1. Insert Cell
++
++```typescript
++await runner.execute(
++  insertCellOperation,
++  {
++    type: 'code',
++    source: 'print("Hello, World!")',
++    index: 0, // optional, defaults to end
++  },
++  context
++);
++// Returns: { success: true, index: 0, message: "Cell inserted at index 0" }
++```
++
++#### 2. Insert Multiple Cells
++
++```typescript
++await runner.execute(
++  insertCellsOperation,
++  {
++    cells: [
++      { type: 'markdown', source: '# Title' },
++      { type: 'code', source: 'x = 42' },
++    ],
++    index: 1,
++  },
++  context
++);
++// Returns: { success: true, insertedCount: 2, startIndex: 1, message: "..." }
++```
++
++#### 3. Delete Cell
++
++```typescript
++await runner.execute(deleteCellOperation, { index: 2 }, context);
++// Returns: { success: true, index: 2, message: "Cell at index 2 has been deleted..." }
++```
++
++#### 4. Update Cell
++
++```typescript
++await runner.execute(
++  updateCellOperation,
++  {
++    index: 1,
++    source: 'y = x * 2\nprint(y)',
++  },
++  context
++);
++// Returns: { success: true, index: 1, message: "✅ Cell at index 1 updated..." }
++```
++
++#### 5. Read Cell
++
++```typescript
++await runner.execute(readCellOperation, { index: 0 }, context);
++// Returns: { success: true, type: 'code', source: '...', index: 0, ... }
++```
++
++#### 6. Read All Cells
++
++```typescript
++await runner.execute(readAllCellsOperation, {}, context);
++// Returns: { success: true, cells: [...], cellCount: 5 }
++```
++
++#### 7. Run Cell
++
++```typescript
++await runner.execute(runCellOperation, { index: 1 }, context);
++// Returns: { success: true, index: 1, message: "Cell executed successfully" }
++```
++
++#### 8. Run All Cells
++
++```typescript
++await runner.execute(runAllCellsOperation, {}, context);
++// Returns: { success: true, message: "All cells executed" }
++```
++
++#### 9. Execute Code (Direct Kernel Execution)
++
++```typescript
++await runner.execute(
++  executeCodeOperation,
++  {
++    code: 'import sys\nsys.version',
++    storeHistory: false, // optional
++    silent: false, // optional
++    stopOnError: true, // optional
++  },
++  context
++);
++// Returns: { success: true, outputs: [...], executionCount: 1 }
++```
++
++## Type Safety
++
++### Before (❌ Type Safety Issue)
++
++```typescript
++// Operations claimed to return typed objects but actually returned string | object
++const result = await readAllCellsOperation.execute({}, context);
++// TypeScript type: ReadAllCellsResult
++// Runtime value: string (if format='toon') 💥 Type mismatch!
++```
++
++### Now (✅ Type Safe)
++
++```typescript
++// Runner has correct return type: TResult | string
++const result = await runner.execute(readAllCellsOperation, {}, context);
++// TypeScript type: ReadAllCellsResult | string ✅
++// Runtime value matches TypeScript type ✅
++```
++
++## Integration with Existing Code
++
++### In React Components
++
++```typescript
++import { OperationRunner, insertCellOperation } from '@datalayer/jupyter-ui-react/tools';
++import { useExecutor } from './hooks/useExecutor';
++
++function NotebookToolbar() {
++  const executor = useExecutor();
++  const runner = new OperationRunner();
++
++  const handleAddCell = async () => {
++    const result = await runner.execute(
++      insertCellOperation,
++      { type: 'code', source: '' },
++      {
++        executor,
++        notebookId: currentNotebookId,
++        format: 'json',
++      }
++    );
++
++    if (typeof result === 'object' && result.success) {
++      console.log(`Inserted cell at index ${result.index}`);
++    }
++  };
++
++  return <button onClick={handleAddCell}>Add Cell</button>;
++}
++```
++
++### In VSCode Extension
++
++```typescript
++import {
++  OperationRunner,
++  readAllCellsOperation,
++} from '@datalayer/jupyter-ui-react/tools';
++import { BridgeExecutor } from './executors/BridgeExecutor';
++
++async function getAllCells(notebookUri: string) {
++  const runner = new OperationRunner();
++  const executor = new BridgeExecutor(notebookUri);
++
++  const result = await runner.execute(
++    readAllCellsOperation,
++    {},
++    {
++      executor,
++      notebookId: notebookUri,
++      format: 'json', // Get structured data
++    }
++  );
++
++  if (typeof result === 'object') {
++    return result.cells;
++  }
++  throw new Error('Expected JSON format');
++}
++```
++
++## Error Handling
++
++```typescript
++try {
++  const result = await runner.execute(
++    insertCellOperation,
++    { type: 'code', source: 'print("test")' },
++    context
++  );
++
++  if (typeof result === 'object' && result.success) {
++    console.log('Success!');
++  }
++} catch (error) {
++  // Errors are thrown for:
++  // - Invalid parameters
++  // - Missing notebookId
++  // - Missing executor
++  // - Execution failures
++  console.error('Operation failed:', error.message);
++}
++```
++
++## Migration Guide
++
++### Old Pattern (Don't Use)
++
++```typescript
++// ❌ Don't call operations directly anymore
++const result = await readAllCellsOperation.execute({}, context);
++// Type mismatch between declared type and runtime value
++```
++
++### New Pattern (Use This)
++
++```typescript
++// ✅ Use OperationRunner
++const runner = new OperationRunner();
++const result = await runner.execute(readAllCellsOperation, {}, context);
++// Correct types: TResult | string
++```
++
++## Benefits
++
++1. **Type Safety** - No more hidden type mismatches
++2. **Separation of Concerns** - Operations focus on logic, runner handles formatting
++3. **Token Efficiency** - LLMs get structured `format='json'` data
++4. **Flexibility** - Easy to add pre/post execution hooks later
++5. **Testability** - Operations return predictable typed data
++6. **DRY** - Formatting logic in one place (OperationRunner)
++
++## Future Extensibility
++
++The runner pattern allows easy addition of:
++
++- Pre-execution validation hooks
++- Post-execution logging/analytics
++- Result caching
++- Permission checks
++- Rate limiting
++- Retry logic
++
++All without modifying individual operations!
++
++## Testing
++
++See [operationRunner.test.ts](../../__tests__/operationRunner.test.ts) for comprehensive test examples covering all 9 operations.
+diff --git a/node_modules/@datalayer/jupyter-react/lib/tools/core/executor.d.ts b/node_modules/@datalayer/jupyter-react/lib/tools/core/executor.d.ts
+index e1edf3b..476206e 100644
+--- a/node_modules/@datalayer/jupyter-react/lib/tools/core/executor.d.ts
++++ b/node_modules/@datalayer/jupyter-react/lib/tools/core/executor.d.ts
+@@ -4,7 +4,14 @@
+  *
+  * @module tools/core/executor
+  */
+-import type { NotebookState } from '../../components/notebook/NotebookState';
++/**
++ * Minimal NotebookState interface for tool executor.
++ * This avoids importing from UI components which would load React/Primer at runtime.
++ * Only used internally by DefaultExecutor.
++ */
++interface NotebookState {
++    [key: string]: unknown;
++}
+ /**
+  * Tool executor interface - abstracts how operations are executed.
+  * Platforms can implement this interface to provide custom execution logic.
+@@ -44,3 +51,4 @@ export declare class DefaultExecutor implements ToolExecutor {
+      */
+     execute(operationName: string, args: unknown): Promise<unknown>;
+ }
++export {};
+diff --git a/node_modules/@datalayer/jupyter-react/lib/tools/core/executor.js.map b/node_modules/@datalayer/jupyter-react/lib/tools/core/executor.js.map
+index b72fe58..79cf084 100644
+--- a/node_modules/@datalayer/jupyter-react/lib/tools/core/executor.js.map
++++ b/node_modules/@datalayer/jupyter-react/lib/tools/core/executor.js.map
+@@ -1 +1 @@
+-{"version":3,"file":"executor.js","sourceRoot":"","sources":["../../../src/tools/core/executor.ts"],"names":[],"mappings":"AAAA;;;;GAIG;AA0BH;;;;;;;;;;GAUG;AACH,MAAM,OAAO,eAAe;IAEhB;IACA;IAFV,YACU,UAAkB,EAClB,KAAoB;QADpB,eAAU,GAAV,UAAU,CAAQ;QAClB,UAAK,GAAL,KAAK,CAAe;IAC3B,CAAC;IAEJ;;;;;;;OAOG;IACH,KAAK,CAAC,OAAO,CAAC,aAAqB,EAAE,IAAa;QAChD,iEAAiE;QACjE,MAAM,MAAM,GAAI,IAAI,CAAC,KAA4C,CAC/D,aAAa,CACd,CAAC;QAEF,IAAI,OAAO,MAAM,KAAK,UAAU,EAAE,CAAC;YACjC,MAAM,IAAI,KAAK,CACb,iBAAiB,aAAa,+BAA+B,CAC9D,CAAC;QACJ,CAAC;QAED,mEAAmE;QACnE,MAAM,OAAO,GACX,OAAO,IAAI,KAAK,QAAQ,IAAI,IAAI,KAAK,IAAI;YACvC,CAAC,CAAC,EAAE,EAAE,EAAE,IAAI,CAAC,UAAU,EAAE,GAAG,IAAI,EAAE;YAClC,CAAC,CAAC,EAAE,EAAE,EAAE,IAAI,CAAC,UAAU,EAAE,CAAC;QAE9B,qDAAqD;QACrD,0EAA0E;QAC1E,MAAM,QAAQ,GAAG,MAAuC,CAAC;QACzD,MAAM,MAAM,GAAG,MAAM,QAAQ,CAAC,IAAI,CAAC,IAAI,CAAC,KAAK,EAAE,OAAO,CAAC,CAAC;QAExD,OAAO,MAAM,CAAC;IAChB,CAAC;CACF"}
+\ No newline at end of file
++{"version":3,"file":"executor.js","sourceRoot":"","sources":["../../../src/tools/core/executor.ts"],"names":[],"mappings":"AAAA;;;;GAIG;AAiCH;;;;;;;;;;GAUG;AACH,MAAM,OAAO,eAAe;IAEhB;IACA;IAFV,YACU,UAAkB,EAClB,KAAoB;QADpB,eAAU,GAAV,UAAU,CAAQ;QAClB,UAAK,GAAL,KAAK,CAAe;IAC3B,CAAC;IAEJ;;;;;;;OAOG;IACH,KAAK,CAAC,OAAO,CAAC,aAAqB,EAAE,IAAa;QAChD,iEAAiE;QACjE,MAAM,MAAM,GAAI,IAAI,CAAC,KAA4C,CAC/D,aAAa,CACd,CAAC;QAEF,IAAI,OAAO,MAAM,KAAK,UAAU,EAAE,CAAC;YACjC,MAAM,IAAI,KAAK,CACb,iBAAiB,aAAa,+BAA+B,CAC9D,CAAC;QACJ,CAAC;QAED,mEAAmE;QACnE,MAAM,OAAO,GACX,OAAO,IAAI,KAAK,QAAQ,IAAI,IAAI,KAAK,IAAI;YACvC,CAAC,CAAC,EAAE,EAAE,EAAE,IAAI,CAAC,UAAU,EAAE,GAAG,IAAI,EAAE;YAClC,CAAC,CAAC,EAAE,EAAE,EAAE,IAAI,CAAC,UAAU,EAAE,CAAC;QAE9B,qDAAqD;QACrD,0EAA0E;QAC1E,MAAM,QAAQ,GAAG,MAAuC,CAAC;QACzD,MAAM,MAAM,GAAG,MAAM,QAAQ,CAAC,IAAI,CAAC,IAAI,CAAC,KAAK,EAAE,OAAO,CAAC,CAAC;QAExD,OAAO,MAAM,CAAC;IAChB,CAAC;CACF"}
+\ No newline at end of file

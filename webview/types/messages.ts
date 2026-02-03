@@ -12,6 +12,8 @@
  */
 
 import type { RuntimeJSON } from "@datalayer/core/lib/client";
+import type { InlineCompletionConfig } from "@datalayer/jupyter-lexical";
+import type { CollaborationConfig } from "../stores/lexicalStore";
 
 /**
  * Extension → Webview Messages
@@ -135,6 +137,8 @@ export interface LLMCompletionResponseMessage {
   requestId: string;
   /** Completion text or null if failed */
   completion: string | null;
+  /** Content type that was used for the completion */
+  contentType?: "code" | "prose";
 }
 
 /** Request file data from webview */
@@ -179,6 +183,38 @@ export interface OutlineNavigateMessage {
   type: "outline-navigate";
   /** ID of the outline item to navigate to */
   itemId: string;
+}
+
+/** Update lexical document content and configuration */
+export interface LexicalUpdateMessage {
+  /** Message type discriminator */
+  type: "update";
+  /** Serialized lexical document content */
+  content?: number[];
+  /** Whether the document is editable */
+  editable?: boolean;
+  /** Collaboration configuration */
+  collaboration?: CollaborationConfig;
+  /** User information for comments */
+  userInfo?: { username: string; userColor: string } | null;
+  /** VS Code theme */
+  theme?: "light" | "dark";
+  /** Document URI */
+  documentUri?: string;
+  /** Unique document ID */
+  documentId?: string;
+  /** Lexical document ID for tool execution context */
+  lexicalId?: string;
+  /** Inline completion configuration */
+  completionConfig?: InlineCompletionConfig;
+}
+
+/** User info update (for login/logout events) */
+export interface UserInfoUpdateMessage {
+  /** Message type discriminator */
+  type: "user-info-update";
+  /** User information or null if logged out */
+  userInfo: { username: string; userColor: string } | null;
 }
 
 /** Insert cell into notebook (MCP tool support) */
@@ -357,7 +393,9 @@ export type ExtensionToWebviewMessage =
   | HttpResponseMessage
   | RuntimeExpiredMessage
   | LLMCompletionResponseMessage
-  | OutlineNavigateMessage;
+  | OutlineNavigateMessage
+  | LexicalUpdateMessage
+  | UserInfoUpdateMessage;
 
 /**
  * Webview → Extension Messages
@@ -523,6 +561,10 @@ export interface LLMCompletionRequestMessage {
   suffix: string;
   /** Programming language */
   language: string;
+  /** Content type (code or prose) for appropriate prompt selection */
+  contentType?: "code" | "prose";
+  /** Trigger type (auto or manual) */
+  trigger?: "auto" | "manual";
 }
 
 /** Outline item structure */
@@ -575,6 +617,22 @@ export interface OpenExternalUrlMessage {
   useSimpleBrowser?: boolean;
 }
 
+/** Interrupt kernel requested from webview */
+export interface InterruptKernelRequestMessage {
+  /** Message type discriminator */
+  type: "interrupt-kernel";
+  /** Empty payload */
+  body: Record<string, never>;
+}
+
+/** Restart kernel requested from webview */
+export interface RestartKernelRequestMessage {
+  /** Message type discriminator */
+  type: "restart-kernel";
+  /** Empty payload */
+  body: Record<string, never>;
+}
+
 /**
  * Union of all Webview → Extension messages
  */
@@ -593,7 +651,9 @@ export type WebviewToExtensionMessage =
   | WebviewErrorMessage
   | LLMCompletionRequestMessage
   | OutlineUpdateMessage
-  | OpenExternalUrlMessage;
+  | OpenExternalUrlMessage
+  | InterruptKernelRequestMessage
+  | RestartKernelRequestMessage;
 
 /**
  * Bidirectional message type (for backward compatibility)

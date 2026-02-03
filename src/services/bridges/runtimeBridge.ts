@@ -106,6 +106,16 @@ export class RuntimeBridgeService extends BaseService {
     router.registerHandler("runtime-expired", async (message, context) => {
       await this.handleRuntimeExpiration(message, context);
     });
+
+    // Handler for kernel interrupt
+    router.registerHandler("interrupt-kernel", async (_message, context) => {
+      await this.handleKernelInterrupt(context);
+    });
+
+    // Handler for kernel restart
+    router.registerHandler("restart-kernel", async (_message, context) => {
+      await this.handleKernelRestart(context);
+    });
   }
 
   /**
@@ -252,5 +262,61 @@ export class RuntimeBridgeService extends BaseService {
 
     // Wait for both operations
     await Promise.all([notificationPromise, postMessagePromise]);
+  }
+
+  /**
+   * Handles kernel interrupt requests.
+   * Sends SIGINT to the local kernel process.
+   *
+   * @param context - Document context
+   */
+  private async handleKernelInterrupt(context: DocumentContext): Promise<void> {
+    const kernelBridge = getServiceContainer().kernelBridge;
+    const documentUri = vscode.Uri.parse(context.documentUri);
+
+    try {
+      // Get the kernel client for this document
+      const kernelClient = kernelBridge.getKernelForDocument(documentUri);
+
+      if (!kernelClient) {
+        this.logger.warn("No kernel client found for interrupt request");
+        return;
+      }
+
+      this.logger.info("Interrupting kernel for document", {
+        documentUri: documentUri.toString(),
+      });
+
+      // Call the kernel client's interrupt method (sends SIGINT to process)
+      await kernelClient.interrupt();
+
+      this.logger.info("Kernel interrupt request sent successfully");
+    } catch (error: unknown) {
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+      this.logger.error(
+        "Failed to interrupt kernel",
+        error instanceof Error ? error : new Error(errorMessage),
+      );
+      vscode.window.showErrorMessage(
+        `Failed to interrupt kernel: ${errorMessage}`,
+      );
+    }
+  }
+
+  /**
+   * Handles kernel restart requests.
+   * Currently not implemented for local kernels and runtimes.
+   *
+   * @param _context - Document context (unused)
+   */
+  private async handleKernelRestart(_context: DocumentContext): Promise<void> {
+    this.logger.warn(
+      "Kernel restart not implemented for local kernels and runtimes",
+    );
+
+    vscode.window.showWarningMessage(
+      "Kernel restart is not yet implemented. Please terminate and manually select a kernel to restart.",
+    );
   }
 }

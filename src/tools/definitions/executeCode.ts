@@ -40,4 +40,14 @@ export const executeCodeTool: ToolDefinition = {
     requiresConfirmation: false, // Code execution requires user approval via VS Code UI
     canBeReferencedInPrompt: true,
   },
+
+  tags: [
+    "execute",
+    "code",
+    "python",
+    "kernel",
+    "runtime",
+    "notebook",
+    "lexical",
+  ],
 };

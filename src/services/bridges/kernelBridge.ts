@@ -22,14 +22,16 @@ import type { NativeKernelInfo } from "../kernel/nativeKernelIntegration";
 /**
  * Extended runtime interface for webview communication.
  * Includes additional time fields needed for progress calculations.
+ * For local kernels, these fields are omitted since they run indefinitely.
  */
 interface ExtendedRuntimeJSON extends Omit<
   RuntimeJSON,
   "startedAt" | "expiredAt"
 > {
   // Time fields for progress calculations (Unix timestamps or ISO strings)
-  startedAt: number | string;
-  expiredAt: number | string;
+  // Optional for local kernels that run indefinitely
+  startedAt?: number | string;
+  expiredAt?: number | string;
 }
 
 /**
@@ -332,6 +334,8 @@ export class KernelBridge implements vscode.Disposable {
     // We use http:// (not local://) so @jupyterlab/services accepts it as a valid base URL
     const isJupyterServer =
       kernelInfo.type === "jupyter-server" && kernelInfo.serverUrl;
+
+    // Build runtime object - local kernels don't have expiration
     const mockRuntime: ExtendedRuntimeJSON = {
       uid: kernelInfo.id,
       podName: `local-kernel-${kernelInfo.id}`,
@@ -346,8 +350,11 @@ export class KernelBridge implements vscode.Disposable {
         ? kernelInfo.serverUrl!
         : `http://local-kernel-${kernelInfo.id}.localhost`,
       token: kernelInfo.token || "", // Use token from kernel info if available
-      startedAt: new Date().toISOString(),
-      expiredAt: new Date(Date.now() + 86400000).toISOString(), // 24 hours from now
+      // Local kernels run indefinitely, only Jupyter servers have expiration
+      ...(isJupyterServer && {
+        startedAt: new Date().toISOString(),
+        expiredAt: new Date(Date.now() + 86400000).toISOString(),
+      }),
     };
 
     // Fire event so providers can track the local kernel
@@ -618,6 +625,22 @@ export class KernelBridge implements vscode.Disposable {
    * @returns Local kernel client or undefined
    */
   public getLocalKernel(kernelId: string): LocalKernelClient | undefined {
+    return this._localKernels.get(kernelId);
+  }
+
+  /**
+   * Gets the local kernel client for a document.
+   * Used by runtime bridge to interrupt/restart kernels for specific documents.
+   *
+   * @param uri - Document URI
+   * @returns Local kernel client or undefined
+   */
+  public getKernelForDocument(uri: vscode.Uri): LocalKernelClient | undefined {
+    const key = uri.toString();
+    const kernelId = this._documentKernels.get(key);
+    if (!kernelId) {
+      return undefined;
+    }
     return this._localKernels.get(kernelId);
   }
 

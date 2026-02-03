@@ -11,6 +11,13 @@ const path = require('path');
 // These match the externals in webpack.config.js
 const externalDeps = [
   'ws', // WebSocket library for Node.js - used by LoroAdapter for collaboration
+  '@datalayer/core',
+  '@datalayer/jupyter-react',
+  '@datalayer/jupyter-lexical',
+  '@datalayer/lexical-loro',
+  'zod', // Schema validation library - used by @datalayer/jupyter-react/tools
+  'zod-to-json-schema', // Zod to JSON Schema converter - used by @datalayer/jupyter-react/tools
+  '@toon-format/toon', // TOON format encoder - used by @datalayer/jupyter-react/tools
   'lexical',
   '@lexical/react',
   '@lexical/link',
@@ -44,7 +51,8 @@ console.log('📦 Copying external dependencies to dist/node_modules/...');
 const distNodeModules = path.join(__dirname, '..', 'dist', 'node_modules');
 const sourceNodeModules = path.join(__dirname, '..', 'node_modules');
 // Fallback to monorepo root node_modules for hoisted packages
-const rootNodeModules = path.join(__dirname, '..', '..', '..', '..', 'node_modules');
+// (2 levels up from vscode-datalayer: vscode-datalayer/scripts -> vscode-datalayer -> datalayer -> node_modules)
+const rootNodeModules = path.join(__dirname, '..', '..', 'node_modules');
 
 // Ensure dist/node_modules exists
 if (!fs.existsSync(distNodeModules)) {
@@ -75,6 +83,27 @@ function copyRecursive(src, dest) {
   const stats = fs.statSync(src);
 
   if (stats.isDirectory()) {
+    const dirname = path.basename(src);
+
+    // Skip nested node_modules directories entirely (huge space saver!)
+    // Count how many times 'node_modules' appears in the path
+    // Top-level: /path/to/node_modules/@datalayer/core = 1 occurrence
+    // Nested: /path/to/node_modules/@datalayer/core/node_modules/prettier = 2 occurrences
+    const nodeModulesCount = src.split(path.sep).filter(part => part === 'node_modules').length;
+    if (dirname === 'node_modules' && nodeModulesCount >= 2) {
+      return; // Skip nested node_modules directory (2+ occurrences means nested)
+    }
+
+    // Skip examples directories entirely
+    if (dirname === 'examples' || dirname === 'example') {
+      return;
+    }
+
+    // Skip test directories
+    if (dirname === 'test' || dirname === 'tests' || dirname === '__tests__') {
+      return;
+    }
+
     if (!fs.existsSync(dest)) {
       fs.mkdirSync(dest, { recursive: true });
     }
@@ -87,6 +116,47 @@ function copyRecursive(src, dest) {
     const filename = path.basename(src);
     const isLexicalPackage = src.includes('/lexical/') || src.includes('/@lexical/');
     const isReactPackage = src.includes('/react/') || src.includes('/react-dom/');
+
+    // NEW: Skip nested node_modules directories (massive space saver)
+    // Only copy from top-level node_modules, not nested dependencies
+    const relativePath = path.relative(sourceNodeModules, src);
+    if (relativePath.split(path.sep).filter(part => part === 'node_modules').length > 1) {
+      return; // Skip nested node_modules
+    }
+
+    // NEW: Skip examples directories (5+ MB savings)
+    if (src.includes('/examples/') || src.includes('/example/')) {
+      return;
+    }
+
+    // NEW: Skip test directories and files
+    if (src.includes('/test/') ||
+        src.includes('/tests/') ||
+        src.includes('/__tests__/') ||
+        filename.includes('.test.') ||
+        filename.includes('.spec.')) {
+      return;
+    }
+
+    // NEW: Skip source maps (2-3 MB savings)
+    if (filename.endsWith('.map') || filename.endsWith('.d.ts.map')) {
+      return;
+    }
+
+    // NEW: Skip development tools in nested dependencies
+    // prettier, eslint, webpack are typically build-time only
+    if (src.includes('/prettier/') ||
+        src.includes('/eslint/') ||
+        src.includes('/webpack/')) {
+      return;
+    }
+
+    // NEW: Skip lucide-react CJS format (only need ESM)
+    // lucide-react has both ESM (7.7 MB) and CJS (860 KB) formats
+    // We only need one format - keeping ESM for better tree-shaking
+    if (src.includes('lucide-react') && src.includes('/dist/cjs/')) {
+      return;
+    }
 
     // Skip Primer React build-time metadata (not needed at runtime)
     if (src.includes('@primer/react/generated/')) {
@@ -174,14 +244,22 @@ function copyRecursive(src, dest) {
 
 let copiedCount = 0;
 let totalSize = 0;
+const copiedPackages = new Set(); // Track copied packages to avoid duplicates
 
 for (const dep of externalDeps) {
+  // Check for duplicates (especially pyodide which appears in nested node_modules)
+  if (copiedPackages.has(dep)) {
+    console.log(`   ⏭️  Skipping duplicate ${dep}`);
+    continue;
+  }
+
   const sourcePath = findPackage(dep);
   const targetPath = path.join(distNodeModules, dep);
 
   if (sourcePath) {
     console.log(`   Copying ${dep}...`);
     copyRecursive(sourcePath, targetPath);
+    copiedPackages.add(dep);
     copiedCount++;
 
     // Calculate size

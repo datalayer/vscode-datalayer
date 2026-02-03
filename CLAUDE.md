@@ -66,7 +66,7 @@
 
 **Documentation**: See `PYODIDE_KERNEL_SWITCHING_DEBUG.md` for complete debugging history.
 
-### Auto-Connect Feature (November 2025)
+### Auto-Connect Feature (January 2025)
 
 **Status**: Fully implemented and working
 **Location**: `src/services/autoConnect/`
@@ -162,12 +162,6 @@ npm install  # Auto-downloads zeromq binaries via @vscode/zeromq
 # Watch for changes
 npm run watch
 
-# Sync jupyter packages from monorepo
-npm run sync:jupyter
-
-# Create patches for modified packages
-npm run create:patches
-
 # Debug
 Press F5 in VS Code to launch Extension Development Host
 
@@ -189,54 +183,11 @@ npm run build:icons
 
 ## Development Scripts
 
-### Jupyter Package Workflow
-
-The extension depends on local `@datalayer/jupyter-lexical` and `@datalayer/jupyter-react` packages. Use these scripts to sync changes:
-
-```bash
-# Sync latest changes from jupyter-ui monorepo (one-time)
-npm run sync:jupyter
-# - Builds jupyter-lexical and jupyter-react (tsc)
-# - Copies lib/ outputs to vscode-datalayer/node_modules
-
-# Watch mode - auto-sync on changes
-npm run sync:jupyter:watch
-# - Monitors src/ folders in jupyter-ui packages
-# - Automatically rebuilds and syncs on file changes
-# - Requires fswatch (auto-installed via Homebrew on macOS)
-
-# Create patches for your modifications
-npm run create:patches
-# - Automatically syncs first
-# - Generates patch files in patches/
-# - Patches applied automatically via postinstall hook
-
-# Apply patches manually (if needed)
-npm run apply:patches
-# - Usually runs automatically during npm install
-```
-
-### Workflow
-
-1. **Make changes** in `../jupyter-ui/packages/lexical` or `../jupyter-ui/packages/react`
-2. **Option A - Manual**: Run `npm run sync:jupyter` after each change
-3. **Option B - Watch mode**: Run `npm run sync:jupyter:watch` once, changes auto-sync
-4. **Test changes**: Compile and run extension (`npm run compile` then F5)
-5. **Create patches**: `npm run create:patches` (when ready to commit)
-
-The patches in `patches/` directory ensure all contributors automatically get your modifications when they run `npm install`.
-
-### Script Implementation
-
-Scripts are in `scripts/` directory to keep package.json clean:
-
-- `scripts/sync-jupyter.sh` - Build and sync jupyter packages
-- `scripts/create-patches.sh` - Generate patch-package patches
-- `scripts/apply-patches.sh` - Apply existing patches
+The extension uses npm workspaces in the monorepo for dependency management. Changes to `@datalayer/jupyter-lexical` and `@datalayer/jupyter-react` packages are automatically available during development.
 
 ## Architecture Overview
 
-- **Extension Context** (`src/`): Node.js 20 environment, handles auth & server communication
+- **Extension Context** (`src/`): Node.js 22 environment, handles auth & server communication
 - **Webview** (`webview/`): React 18-based editors (Jupyter notebooks & Lexical documents)
 - **Message Passing**: Structured messages with JWT tokens between extension and webview
 - **SDK Integration**: Direct use of `@datalayer/core` SDK (file: dependency)
@@ -768,10 +719,10 @@ const serviceManager = mutableServiceManager.createProxy();
 - ✅ **Runtime Hot-Swapping** - Change kernels without notebook re-render
 - ✅ **Kernel Bridge Architecture** - Unified routing for webview and native notebooks
 - ✅ **LLM Inline Completions** (January 2025) - Copilot-like ghost text suggestions in Lexical editor
-- ✅ **Batch Block Insertion** (November 2025) - insertBlocks tool for efficient multi-block creation
-- ✅ **Automatic Schema Generator** (November 2025) - TypeScript-to-JSON tool schema sync
+- ✅ **Batch Block Insertion** (January 2025) - insertBlocks tool for efficient multi-block creation
+- ✅ **Automatic Schema Generator** (January 2025) - TypeScript-to-JSON tool schema sync
 
-### Batch Block Insertion (November 2025)
+### Batch Block Insertion (January 2025)
 
 **Feature**: `insertBlocks` tool allows Copilot to create complex documents with one API call instead of sequential `insertBlock` calls.
 
@@ -810,7 +761,7 @@ insertBlocks({
 - `webview/lexical/plugins/InternalCommandsPlugin.tsx` - Message handler
 - `webview/utils/LexicalDocumentController.ts` - Controller method
 
-### Tool Schema Generator (November 2025)
+### Tool Schema Generator (January 2025)
 
 **Feature**: Automatic synchronization of TypeScript tool definitions to `package.json` for GitHub Copilot.
 
@@ -901,9 +852,9 @@ node scripts/validate-tool-schemas.js
 - ✅ **Local Kernel Execution** (January 2025) - Native Python kernels with ZMQ integration
 - ✅ **Python Extension Integration** - Seamless environment selection from Python extension
 - ✅ **LocalKernelServiceManager** - Full ServiceManager implementation for local kernels
-- ✅ **Unified Kernel Architecture** (November 2025) - Template Method pattern eliminates ~174 lines of duplicate code
+- ✅ **Unified Kernel Architecture** (January 2025) - Template Method pattern eliminates ~174 lines of duplicate code
 
-### Unified Kernel Architecture (November 2025)
+### Unified Kernel Architecture (January 2025)
 
 **Goal**: Homogenize kernel and session management across different execution environments (mock, local, remote, future Pyodide).
 
@@ -1013,9 +964,9 @@ interface ITypedKernelManager extends Kernel.IManager {
 
 ### Version Information
 
-- **Extension Version**: 0.0.3
-- **VS Code**: ^1.98.0 (required)
-- **Node.js**: >= 20.0.0 and < 21.0.0 (strict requirement)
+- **Extension Version**: 0.0.10
+- **VS Code**: ^1.107.0 (required)
+- **Node.js**: >= 22.0.0 and < 23.0.0 (strict requirement)
 - **TypeScript**: 5.8.3
 - **React**: 18.3.1
 

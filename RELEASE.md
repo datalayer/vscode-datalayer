@@ -440,15 +440,15 @@ Keep these updated:
 
 | Extension Version | VS Code Version | Node.js Version | Status     |
 | ----------------- | --------------- | --------------- | ---------- |
-| 0.0.2             | ^1.98.0         | >= 20.0.0       | Current    |
-| 0.0.1             | ^1.95.0         | >= 18.0.0       | Deprecated |
+| 0.0.10            | ^1.107.0        | >= 22.0.0       | Current    |
+| 0.0.2             | ^1.98.0         | >= 20.0.0       | Deprecated |
 
 ## Breaking Changes
 
-### v0.0.2
+### v0.0.10
 
-- Minimum VS Code version increased to 1.98.0
-- Node.js 20+ required for development
+- Minimum VS Code version increased to 1.107.0
+- Node.js 22+ required for development
 - Configuration property names changed (see migration guide)
 
 ## Support Policy

@@ -46,6 +46,11 @@ import { executeCodeTool } from "./executeCode";
  * @internal
  */
 async function getAllToolDefinitionsAsync() {
+  // CRITICAL: Preload os module before loading package dependencies
+  // Some dependencies (or their transitive dependencies) call os.platform() during module initialization
+  // This ensures os is in the require cache before any code tries to use it
+  require("os");
+
   // Import package tool definitions from /tools export (Node.js compatible, excludes React components)
   const { notebookToolDefinitions } = require("@datalayer/jupyter-react/tools");
   const {

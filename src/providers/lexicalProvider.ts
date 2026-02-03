@@ -37,6 +37,11 @@ import {
   selectBestLanguageModel,
   isLanguageModelAPIAvailable,
 } from "../config/llmModels";
+import type {
+  InlineCompletionConfig,
+  TriggerMode,
+} from "@datalayer/jupyter-lexical";
+import { getPromptForContentType } from "./completionPrompts";
 
 /**
  * Custom editor provider for Lexical documents.
@@ -113,6 +118,45 @@ export class LexicalProvider extends BaseDocumentProvider<LexicalDocument> {
         }
       });
     });
+
+    // Register test completion command for debugging
+    context.subscriptions.push(
+      vscode.commands.registerCommand(
+        "datalayer.internal.testCompletion",
+        async () => {
+          // Lexical documents are custom editors (webviews), not text editors
+          // Send test message to all active lexical webviews
+          if (provider.webviews.size === 0) {
+            vscode.window.showErrorMessage("No lexical documents open");
+            return;
+          }
+
+          console.log(
+            "[LexicalProvider] 🧪 Available lexical webviews:",
+            Array.from(provider.webviews.keys()),
+          );
+          console.log(
+            "[LexicalProvider] 🧪 Sending test message to all lexical webviews",
+          );
+
+          let sentCount = 0;
+          for (const [uri, entry] of provider.webviews.entries()) {
+            console.log("[LexicalProvider] 🧪 Sending to:", uri);
+            await entry.webviewPanel.webview.postMessage({
+              type: "test-completion-trigger",
+              body: {
+                message: "Test completion from command palette",
+              },
+            });
+            sentCount++;
+          }
+
+          vscode.window.showInformationMessage(
+            `Test message sent to ${sentCount} lexical document(s)! Check Developer Console (Help > Toggle Developer Tools) for webview logs.`,
+          );
+        },
+      ),
+    );
 
     return vscode.window.registerCustomEditorProvider(
       LexicalProvider.viewType,
@@ -507,29 +551,37 @@ export class LexicalProvider extends BaseDocumentProvider<LexicalDocument> {
         }
       } else if (e.type === "llm-completion-request") {
         // Handle LLM completion request with detailed logging
+        const contentType = e.contentType || "code";
+        const trigger = e.trigger || "auto";
+
         console.log("[LexicalProvider] 🚀 Received llm-completion-request:", {
           requestId: e.requestId,
           prefix: e.prefix?.substring(0, 50) + "...",
           suffix: e.suffix?.substring(0, 50) + "...",
           language: e.language,
+          contentType,
+          trigger,
         });
 
         const completion = await this.getLLMCompletion(
           e.prefix,
           e.suffix,
           e.language,
+          contentType,
         );
 
         console.log("[LexicalProvider] 📤 Sending llm-completion-response:", {
           requestId: e.requestId,
           hasCompletion: !!completion,
           completionLength: completion?.length || 0,
+          contentType,
         });
 
         webviewPanel.webview.postMessage({
           type: "llm-completion-response",
           requestId: e.requestId,
           completion: completion,
+          contentType,
         });
       } else if (
         e.type === "lsp-completion-request" ||
@@ -672,6 +724,9 @@ export class LexicalProvider extends BaseDocumentProvider<LexicalDocument> {
           ? "dark"
           : "light";
 
+      // Get completion configuration from VS Code settings
+      const completionConfig = this.getCompletionConfig();
+
       webviewPanel.webview.postMessage({
         type: "update",
         content: contentArray,
@@ -682,6 +737,7 @@ export class LexicalProvider extends BaseDocumentProvider<LexicalDocument> {
         documentUri: document.uri.toString(), // Still include for logging
         documentId: uniqueDocId, // Unique ID for validation
         lexicalId: lexicalId, // Pass lexicalId for tool execution context
+        completionConfig: completionConfig, // Pass completion configuration
       });
 
       // 🚀 PROACTIVE LSP: Create virtual documents IMMEDIATELY for fast completions
@@ -986,6 +1042,43 @@ export class LexicalProvider extends BaseDocumentProvider<LexicalDocument> {
   }
 
   /**
+   * Get completion configuration from VS Code settings.
+   * Reads user preferences for inline completions (code and prose).
+   *
+   * @returns InlineCompletionConfig with user settings or defaults
+   */
+  private getCompletionConfig(): InlineCompletionConfig {
+    const config = vscode.workspace.getConfiguration("datalayer.completion");
+
+    const completionConfig: InlineCompletionConfig = {
+      code: {
+        triggerMode: (config.get("inlinellm.enabled", true)
+          ? config.get("inlinellm.triggerMode", "auto")
+          : "disabled") as TriggerMode,
+        contextBefore: config.get("inlinellm.contextBlocks", -1),
+        contextAfter: config.get("inlinellm.contextBlocks", -1),
+        language: "python",
+      },
+      prose: {
+        triggerMode: (config.get("prosellm.enabled", true)
+          ? config.get("prosellm.triggerMode", "manual")
+          : "disabled") as TriggerMode,
+        contextBefore: config.get("prosellm.contextBlocks", -1),
+        contextAfter: config.get("prosellm.contextBlocks", -1),
+      },
+      debounceMs: config.get("prosellm.debounceMs", 500),
+      manualTriggerKey: config.get("prosellm.triggerKey", "Cmd+Shift+,"),
+    };
+
+    console.log(
+      "[LexicalProvider] 🔧 Completion config created:",
+      JSON.stringify(completionConfig, null, 2),
+    );
+
+    return completionConfig;
+  }
+
+  /**
    * Registers lexical-specific message handlers.
    * Overrides base class to add lexical-specific handlers.
    */
@@ -1175,12 +1268,14 @@ export class LexicalProvider extends BaseDocumentProvider<LexicalDocument> {
    * @returns Completion string or null if no models available
    */
   /**
-   * Requests code completion from VS Code's Language Model API.
+   * Requests completion from VS Code's Language Model API.
    * Uses GitHub Copilot if available, falls back to other models.
+   * Supports both code and prose completions with appropriate prompts.
    *
-   * @param prefix - Code before cursor position
-   * @param suffix - Code after cursor position
+   * @param prefix - Text before cursor position
+   * @param suffix - Text after cursor position
    * @param language - Programming language (e.g., 'python')
+   * @param contentType - Content type ('code' or 'prose') for prompt selection
    * @returns Completion text or null if unavailable
    *
    * @remarks
@@ -1191,6 +1286,7 @@ export class LexicalProvider extends BaseDocumentProvider<LexicalDocument> {
     prefix: string,
     suffix: string,
     language: string,
+    contentType: "code" | "prose" = "code",
   ): Promise<string | null> {
     try {
       // Check if Language Model API is available (VS Code 1.90+)
@@ -1207,23 +1303,26 @@ export class LexicalProvider extends BaseDocumentProvider<LexicalDocument> {
         return null;
       }
 
-      // Build prompt for code completion
-      const prompt = `Complete the following ${language} code. Only return the completion, no explanations or markdown.
-
-\`\`\`${language}
-${prefix}<CURSOR>${suffix}
-\`\`\`
-
-Complete the code at <CURSOR>:`;
+      // Build prompt using content-type-aware prompts
+      const prompt = getPromptForContentType(contentType, {
+        language,
+        prefix,
+        suffix,
+      });
 
       console.log(
-        `[LexicalProvider] 📤 Sending completion request to model "${model.id}"...`,
+        `[LexicalProvider] 📤 Sending ${contentType} completion request to model "${model.id}"...`,
       );
 
       // Send request to LLM
       const messages = [vscode.LanguageModelChatMessage.User(prompt)];
+      const justification =
+        contentType === "code"
+          ? "Code completion for Lexical Jupyter cell"
+          : "Prose completion for Lexical document";
+
       const response = await model.sendRequest(messages, {
-        justification: "Code completion for Lexical Jupyter cell",
+        justification,
       });
 
       console.log("[LexicalProvider] 📥 Receiving response...");

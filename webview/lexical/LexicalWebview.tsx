@@ -25,7 +25,10 @@ import {
   createLexicalStore,
   type CollaborationConfig,
 } from "../stores/lexicalStore";
-import { lexicalStore } from "@datalayer/jupyter-lexical";
+import {
+  lexicalStore,
+  type InlineCompletionConfig,
+} from "@datalayer/jupyter-lexical";
 import { createRuntimeMessageHandlers } from "../utils/runtimeMessageHandlers";
 import type {
   KernelSelectedMessage,
@@ -66,6 +69,7 @@ interface WebviewMessage {
   documentId?: string; // Unique ID for document validation
   itemId?: string; // For outline navigation
   lexicalId?: string; // Lexical ID for tool execution context
+  completionConfig?: InlineCompletionConfig; // Inline completion configuration
 }
 
 /**
@@ -164,6 +168,13 @@ function LexicalWebviewInner({
           }
           if (message.theme) {
             store.getState().setTheme(message.theme);
+          }
+          if (message.completionConfig) {
+            console.log(
+              "[LexicalWebview] 📥 Received completion config:",
+              message.completionConfig,
+            );
+            store.getState().setCompletionConfig(message.completionConfig);
           }
           break;
         }
@@ -416,6 +427,7 @@ function LexicalWebviewInner({
   const documentUri = store((state) => state.documentUri);
   const navigationTarget = store((state) => state.navigationTarget);
   const lexicalId = store((state) => state.lexicalId);
+  const completionConfig = store((state) => state.completionConfig);
 
   // Callback to clear navigation target after navigating
   const handleNavigated = useCallback(() => {
@@ -458,6 +470,7 @@ function LexicalWebviewInner({
                     navigationTarget={navigationTarget}
                     onNavigated={handleNavigated}
                     serviceManager={serviceManager}
+                    completionConfig={completionConfig}
                     lexicalId={lexicalId}
                     kernelInitializing={kernelInitializing}
                   />

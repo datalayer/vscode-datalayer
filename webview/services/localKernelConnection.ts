@@ -23,6 +23,7 @@ import {
 import { ISignal, Signal } from "@lumino/signaling";
 import { JSONObject } from "@lumino/coreutils";
 import { ProxiedWebSocket } from "./serviceManager";
+import { vsCodeAPI } from "./messageHandler";
 
 /**
  * A custom KernelConnection that wraps a local kernel WebSocket.
@@ -398,23 +399,90 @@ export class LocalKernelConnection implements Kernel.IKernelConnection {
 
   /**
    * Interrupt the kernel execution.
-   * @returns A resolved promise.
+   * Sends both an extension message (for local kernels via SIGINT) and an interrupt_request
+   * message to the kernel via the control channel (for remote kernels).
+   * @returns A promise that resolves when the interrupt request is sent.
    */
   interrupt(): Promise<void> {
     console.log(`[LocalKernelConnection] Interrupt called`);
-    // For local kernels, this would send an interrupt signal to the process
-    // For now, we'll just log it
+
+    // Send message to extension host to interrupt the kernel process (SIGINT)
+    // This is necessary for local kernels that run as separate processes
+    try {
+      vsCodeAPI.postMessage({
+        type: "interrupt-kernel",
+        body: {},
+      });
+      console.log(
+        `[LocalKernelConnection] Sent interrupt-kernel message to extension`,
+      );
+    } catch (error) {
+      console.error(
+        `[LocalKernelConnection] Failed to send interrupt message:`,
+        error,
+      );
+    }
+
+    // Also send interrupt_request via WebSocket for kernels that support it
+    // (e.g., remote kernels or kernels that don't have a process to signal)
+    try {
+      const header: KernelMessage.IHeader<"interrupt_request"> = {
+        msg_id: `interrupt_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        username: this._username,
+        session: this._clientId,
+        date: new Date().toISOString(),
+        msg_type: "interrupt_request",
+        version: "5.3",
+      };
+
+      const msg: KernelMessage.IMessage<"interrupt_request"> = {
+        header,
+        parent_header: {},
+        metadata: {},
+        content: {},
+        buffers: [],
+        channel: "control",
+      };
+
+      this._ws.send(JSON.stringify(msg));
+      console.log(
+        `[LocalKernelConnection] Interrupt request sent via WebSocket:`,
+        msg.header.msg_id,
+      );
+    } catch (error) {
+      console.error(
+        `[LocalKernelConnection] Failed to send interrupt_request:`,
+        error,
+      );
+    }
+
     return Promise.resolve();
   }
 
   /**
    * Restart the kernel.
+   * Sends a message to the extension host to restart the kernel process.
    * @returns A resolved promise.
    */
   restart(): Promise<void> {
     console.log(`[LocalKernelConnection] Restart called`);
-    // For local kernels, this would restart the kernel process
-    // For now, we'll just log it
+
+    // Send message to extension host to restart the kernel process
+    try {
+      vsCodeAPI.postMessage({
+        type: "restart-kernel",
+        body: {},
+      });
+      console.log(
+        `[LocalKernelConnection] Sent restart-kernel message to extension`,
+      );
+    } catch (error) {
+      console.error(
+        `[LocalKernelConnection] Failed to send restart message:`,
+        error,
+      );
+    }
+
     return Promise.resolve();
   }
 

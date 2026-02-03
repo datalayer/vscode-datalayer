@@ -43,6 +43,7 @@ import {
   JupyterOutputNode,
   JupyterCellNode,
   InlineCompletionNode,
+  CounterNode,
   ComponentPickerMenuPlugin,
   JupyterCellPlugin,
   JupyterInputOutputPlugin,
@@ -147,6 +148,7 @@ export interface LexicalEditorProps {
   serviceManager: ServiceManager.IManager;
   lexicalId?: string | null;
   kernelInitializing?: boolean;
+  completionConfig?: any; // Inline completion configuration from extension
 }
 
 /**
@@ -249,6 +251,7 @@ function LoadContentPlugin({
           throw new Error("Invalid Lexical editor state format");
         }
       } catch (error) {
+        console.error("[LoadContentPlugin] Error loading content:", error);
         // Create a default empty state if parsing fails
         editor.update(
           () => {
@@ -333,7 +336,14 @@ export function LexicalEditor({
   serviceManager,
   lexicalId,
   kernelInitializing = false,
+  completionConfig,
 }: LexicalEditorProps) {
+  // Log completion config for debugging
+  console.log(
+    "[LexicalEditor] 🎯 Rendering with completion config:",
+    completionConfig,
+  );
+
   const [floatingAnchorElem, setFloatingAnchorElem] =
     useState<HTMLDivElement | null>(null);
 
@@ -397,45 +407,50 @@ export function LexicalEditor({
     return () => clearTimeout(timer);
   }, []);
 
+  // DEBUG: Log all node types to find which one is undefined or wrong
+  const allNodes = [
+    HeadingNode,
+    QuoteNode,
+    ListNode,
+    ListItemNode,
+    CodeNode,
+    CodeHighlightNode,
+    LinkNode,
+    AutoLinkNode,
+    TableNode,
+    TableCellNode,
+    TableRowNode,
+    HashtagNode,
+    MarkNode,
+    OverflowNode,
+    HorizontalRuleNode,
+    CommentThreadNode,
+    CollapsibleContainerNode,
+    CollapsibleContentNode,
+    CollapsibleTitleNode,
+    EquationNode,
+    ExcalidrawNode,
+    ImageNode,
+    YouTubeNode,
+    CounterNode,
+    JupyterCellNode,
+    JupyterInputNode,
+    JupyterInputHighlightNode,
+    JupyterOutputNode,
+    InlineCompletionNode,
+  ];
+
+  // Validate nodes array
+  allNodes.forEach((node, index) => {
+    if (!node || typeof node.getType !== "function") {
+      console.error(`[LexicalEditor] Invalid node at index ${index}:`, node);
+    }
+  });
+
   const editorConfig = {
     namespace: "VSCodeLexicalEditor",
     editable,
-    nodes: [
-      // Basic rich text nodes
-      HeadingNode,
-      QuoteNode,
-      ListNode,
-      ListItemNode,
-      CodeNode,
-      CodeHighlightNode,
-      LinkNode,
-      AutoLinkNode,
-      // Table nodes
-      TableNode,
-      TableCellNode,
-      TableRowNode,
-      // Additional nodes from @lexical packages (for collaboration compatibility)
-      HashtagNode,
-      MarkNode,
-      OverflowNode,
-      HorizontalRuleNode,
-      // Comment nodes (for commenting plugin)
-      CommentThreadNode,
-      // Collapsible nodes
-      CollapsibleContainerNode,
-      CollapsibleContentNode,
-      CollapsibleTitleNode,
-      // Jupyter lexical nodes (must match SaaS editor for collaboration)
-      EquationNode,
-      ExcalidrawNode,
-      ImageNode,
-      YouTubeNode,
-      JupyterCellNode,
-      JupyterInputNode,
-      JupyterInputHighlightNode,
-      JupyterOutputNode,
-      InlineCompletionNode,
-    ],
+    nodes: allNodes,
     theme: {
       root: "lexical-editor-root",
       link: "lexical-editor-link",
@@ -523,8 +538,15 @@ export function LexicalEditor({
       tableSelected: "PlaygroundEditorTheme__tableSelected",
       tableSelection: "PlaygroundEditorTheme__tableSelection",
     },
-    onError(_error: Error) {
-      // Silently handle Lexical errors
+    onError(error: Error) {
+      console.error("[LexicalEditor] Error caught by onError handler:", error);
+      console.error("[LexicalEditor] Error stack:", error.stack);
+      console.error("[LexicalEditor] Error message:", error.message);
+      // Also log registered nodes for debugging
+      console.log(
+        "[LexicalEditor] Registered nodes:",
+        editorConfig.nodes.map((n) => (n.getType ? n.getType() : n.name)),
+      );
     },
   };
 
@@ -602,6 +624,7 @@ export function LexicalEditor({
                 setIsLinkEditMode={setIsLinkEditMode}
                 lexicalLLMProvider={lexicalLLMProvider}
                 lexicalLSPProvider={lexicalLSPProvider}
+                completionConfig={completionConfig}
               />
             </CommentsProvider>
           </LexicalComposer>
@@ -637,6 +660,7 @@ function LexicalEditorInner({
   setIsLinkEditMode,
   lexicalLLMProvider,
   lexicalLSPProvider,
+  completionConfig,
 }: any) {
   const { showComments, toggleComments } = useComments();
 
@@ -727,6 +751,7 @@ function LexicalEditorInner({
           providers={[lexicalLLMProvider]}
           debounceMs={200}
           enabled={editable}
+          config={completionConfig}
         />
         {/* LSP Tab completion plugin for dropdown completions */}
         <LSPTabCompletionPlugin

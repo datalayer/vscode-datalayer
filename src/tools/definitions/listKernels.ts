@@ -48,5 +48,13 @@ export const listKernelsTool: ToolDefinition = {
     priority: "high",
   },
 
-  tags: ["kernel", "runtime", "list", "discover", "pyodide"],
+  tags: [
+    "kernel",
+    "runtime",
+    "list",
+    "discover",
+    "pyodide",
+    "notebook",
+    "lexical",
+  ],
 };

@@ -35,10 +35,10 @@ let WebSocketCtor: any = null;
 try {
   // Try loading 'ws' module first (preferred for Node.js environment)
   const wsModule = require("ws");
-  
+
   if (wsModule.WebSocket) {
     WebSocketCtor = wsModule.WebSocket;
-  } else if (typeof wsModule === 'function') {
+  } else if (typeof wsModule === "function") {
     WebSocketCtor = wsModule;
   } else if (wsModule.default) {
     WebSocketCtor = wsModule.default;
@@ -48,21 +48,23 @@ try {
 }
 
 // Fallback to global WebSocket (Node.js 20+, Electron, etc.)
-if (!WebSocketCtor && typeof global.WebSocket === 'function') {
-  console.log('[LoroAdapter] Using global.WebSocket.');
+if (!WebSocketCtor && typeof global.WebSocket === "function") {
+  console.log("[LoroAdapter] Using global.WebSocket.");
   WebSocketCtor = global.WebSocket as unknown as WebSocketConstructor;
 }
 
 // Final fallback to dummy to prevent crash
 if (!WebSocketCtor) {
-  console.error('[LoroAdapter] FATAL: Could not find any WebSocket constructor.');
+  console.error(
+    "[LoroAdapter] FATAL: Could not find any WebSocket constructor.",
+  );
   WebSocketCtor = class DummyWebSocket {
     on() {}
     send() {}
     close() {}
     addEventListener() {}
     removeEventListener() {}
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } as any;
 }
 
@@ -169,24 +171,28 @@ export class LoroWebSocketAdapter {
         try {
           // Normalize data
           let data = dataOrEvent;
-          
+
           // Native WebSocket MessageEvent?
-          if (dataOrEvent && typeof dataOrEvent === 'object' && 'data' in dataOrEvent) {
-             data = dataOrEvent.data;
+          if (
+            dataOrEvent &&
+            typeof dataOrEvent === "object" &&
+            "data" in dataOrEvent
+          ) {
+            data = dataOrEvent.data;
           }
 
           // Handle Blob (Browser/Native)
-          if (typeof Blob !== 'undefined' && data instanceof Blob) {
-             data.arrayBuffer().then((buf) => {
-                 this.processMessageData(Buffer.from(buf));
-             });
-             return; 
+          if (typeof Blob !== "undefined" && data instanceof Blob) {
+            data.arrayBuffer().then((buf) => {
+              this.processMessageData(Buffer.from(buf));
+            });
+            return;
           }
-          
+
           // Handle ArrayBuffer (Native)
           if (data instanceof ArrayBuffer) {
-             this.processMessageData(Buffer.from(data));
-             return;
+            this.processMessageData(Buffer.from(data));
+            return;
           }
 
           // Handle Node.js Buffer or string
@@ -197,22 +203,23 @@ export class LoroWebSocketAdapter {
         }
       };
 
-      if (typeof wsInstance.on === 'function') {
-         // Node.js ws
-         wsInstance.on("open", onOpen);
-         wsInstance.on("message", onMessage);
-         wsInstance.on("close", onClose);
-         wsInstance.on("error", onError);
-      } else if (typeof wsInstance.addEventListener === 'function') {
-         // Native WebSocket
-         wsInstance.addEventListener("open", onOpen);
-         wsInstance.addEventListener("message", onMessage);
-         wsInstance.addEventListener("close", onClose);
-         wsInstance.addEventListener("error", onError);
+      if (typeof wsInstance.on === "function") {
+        // Node.js ws
+        wsInstance.on("open", onOpen);
+        wsInstance.on("message", onMessage);
+        wsInstance.on("close", onClose);
+        wsInstance.on("error", onError);
+      } else if (typeof wsInstance.addEventListener === "function") {
+        // Native WebSocket
+        wsInstance.addEventListener("open", onOpen);
+        wsInstance.addEventListener("message", onMessage);
+        wsInstance.addEventListener("close", onClose);
+        wsInstance.addEventListener("error", onError);
       } else {
-         console.error("[LoroAdapter] WebSocket instance has neither .on() nor .addEventListener()");
+        console.error(
+          "[LoroAdapter] WebSocket instance has neither .on() nor .addEventListener()",
+        );
       }
-
     } catch (error) {
       console.error(`[LoroAdapter] Failed to create WebSocket:`, error);
       this.sendToWebview({
@@ -226,23 +233,23 @@ export class LoroWebSocketAdapter {
   }
 
   private processMessageData(buffer: Buffer): void {
-      // Try to parse as JSON first
-      try {
-        const json = JSON.parse(buffer.toString());
-        this.sendToWebview({
-          type: "message",
-          adapterId: this.adapterId,
-          data: json,
-        });
-      } catch {
-        // Not JSON, treat as binary (Loro update bytes)
-        const bytes = Array.from(buffer);
-        this.sendToWebview({
-          type: "message",
-          adapterId: this.adapterId,
-          data: { type: "update", bytes },
-        });
-      }
+    // Try to parse as JSON first
+    try {
+      const json = JSON.parse(buffer.toString());
+      this.sendToWebview({
+        type: "message",
+        adapterId: this.adapterId,
+        data: json,
+      });
+    } catch {
+      // Not JSON, treat as binary (Loro update bytes)
+      const bytes = Array.from(buffer);
+      this.sendToWebview({
+        type: "message",
+        adapterId: this.adapterId,
+        data: { type: "update", bytes },
+      });
+    }
   }
 
   /**
