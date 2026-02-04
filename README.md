@@ -147,7 +147,7 @@
 - Create New Jupyter Notebook (local or cloud)
 - Create New Datalayer Document (local or cloud)
 - Context menu in Spaces tree: New Notebook/Datalayer Document in cloud workspace
-- Context menu: Open, Rename, Delete, Share for collaboration
+- Context menu: Open, Rename, Delete
 
 **Runtimes:**
 

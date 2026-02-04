@@ -136,13 +136,13 @@ The editor is encapsulated within an iframe. All communications between the edit
 
 - **Development Guide**: [DEVELOPMENT.md](./DEVELOPMENT.md)
 - **Release Process**: [RELEASE.md](./RELEASE.md)
-- **API Documentation**: [https://datalayer-desktop.netlify.app](https://datalayer-desktop.netlify.app)
+- **API Documentation**: [https://vscode-datalayer.netlify.app](https://vscode-datalayer.netlify.app)
 
 ### Communication
 
 - **Issues**: Use GitHub issues for bug reports and feature requests
 - **Discussions**: Use GitHub discussions for questions and ideas
-- **Support**: For general support, visit our [GitHub repository](https://github.com/datalayer/jupyter-ui)
+- **Support**: For general support, visit our [GitHub repository](https://github.com/datalayer/vscode-datalayer)
 
 ## Code of Conduct
 

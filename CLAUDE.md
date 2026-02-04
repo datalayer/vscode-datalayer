@@ -122,13 +122,9 @@
 
 **See**: [DEVELOPMENT.md - Pyodide Package Caching](dev/docs/DEVELOPMENT.md#pyodide-package-caching-december-2024) for complete technical details.
 
-### Smart Controller Registration - DISABLED (January 2025)
-
-**Last Updated**: October 2025
-
 ## Critical Recent Changes
 
-### Smart Controller Registration - DISABLED (October 2025)
+### Smart Controller Registration - DISABLED (January 2025)
 
 **Status**: The `SmartDynamicControllerManager` is **intentionally disabled**
 **Location**: `src/services/ui/uiSetup.ts:85`
@@ -998,7 +994,7 @@ interface ITypedKernelManager extends Kernel.IManager {
 
 ### Documentation Resources
 
-- **API Docs**: https://datalayer-desktop.netlify.app (auto-deployed)
+- **API Docs**: https://vscode-datalayer.netlify.app (auto-deployed)
 - **Marketplace**: https://marketplace.visualstudio.com/items?itemName=Datalayer.datalayer-jupyter-vscode
 - **GitHub**: https://github.com/datalayer/vscode-datalayer
 
@@ -1013,4 +1009,4 @@ All workflows run on every push to main and on PRs:
 
 ---
 
-_Last Updated: October 2025_
+_Last Updated: February 2026_

@@ -10,7 +10,13 @@
  * Uses shared toolbar components to maintain consistency with LexicalToolbar.
  */
 
-import React, { useState, useEffect, useContext } from "react";
+import React, {
+  useState,
+  useEffect,
+  useContext,
+  useCallback,
+  useMemo,
+} from "react";
 import { notebookStore } from "@datalayer/jupyter-react";
 import { MessageHandlerContext } from "../services/messageHandler";
 import type { RuntimeJSON } from "@datalayer/core/lib/client";
@@ -262,37 +268,50 @@ export const NotebookToolbar: React.FC<NotebookToolbarProps> = ({
     };
   }, [notebook]);
 
-  const handleRunAll = () => {
+  const handleRunAll = useCallback(() => {
+    console.log("[NotebookToolbar] handleRunAll CALLED", { notebookId });
     if (notebookId) {
       notebookStore.getState().runAll(notebookId);
     }
-  };
+  }, [notebookId]);
 
-  const handleRunCell = () => {
+  const handleRunCell = useCallback(() => {
+    console.log("[NotebookToolbar] handleRunCell CALLED", { notebookId });
     if (notebookId) {
       notebookStore.getState().run(notebookId);
     }
-  };
+  }, [notebookId]);
 
-  const handleClearAllOutputs = () => {
+  const handleClearAllOutputs = useCallback(() => {
+    console.log("[NotebookToolbar] handleClearAllOutputs CALLED", {
+      notebookId,
+    });
     if (notebookId) {
       notebookStore.getState().clearAllOutputs(notebookId);
     }
-  };
+  }, [notebookId]);
 
-  const handleAddCodeCell = () => {
+  const handleAddCodeCell = useCallback(() => {
+    console.log("[NotebookToolbar] handleAddCodeCell CALLED", { notebookId });
     if (notebookId) {
       notebookStore.getState().insertBelow(notebookId, "code");
     }
-  };
+  }, [notebookId]);
 
-  const handleAddMarkdownCell = () => {
+  const handleAddMarkdownCell = useCallback(() => {
+    console.log("[NotebookToolbar] handleAddMarkdownCell CALLED", {
+      notebookId,
+    });
     if (notebookId) {
       notebookStore.getState().insertBelow(notebookId, "markdown");
     }
-  };
+  }, [notebookId]);
 
-  const handleSelectRuntime = () => {
+  const handleSelectRuntime = useCallback(() => {
+    console.log("[NotebookToolbar] handleSelectRuntime CALLED", {
+      messageHandler: !!messageHandler,
+      isDatalayerNotebook,
+    });
     if (messageHandler) {
       messageHandler.send({
         type: "select-runtime",
@@ -301,56 +320,75 @@ export const NotebookToolbar: React.FC<NotebookToolbarProps> = ({
         },
       });
     }
-  };
+  }, [messageHandler, isDatalayerNotebook]);
 
   // Define all toolbar actions with priorities
-  const actions: ToolbarAction[] = [
-    {
-      id: "code",
-      icon: "codicon codicon-add",
-      label: "Code",
-      title: "Add Code Cell",
-      onClick: handleAddCodeCell,
-      priority: 1,
-    },
-    {
-      id: "markdown",
-      icon: "codicon codicon-add",
-      label: "Markdown",
-      title: "Add Markdown Cell",
-      onClick: handleAddMarkdownCell,
-      priority: 2,
-    },
-    {
-      id: "runAll",
-      icon: "codicon codicon-run-all",
-      label: "Run All",
-      title: "Run All Cells",
-      onClick: handleRunAll,
-      priority: 3,
-    },
-    {
-      id: "runCell",
-      icon: "codicon codicon-play",
-      label: "Run Cell",
-      title: "Run Active Cell",
-      onClick: handleRunCell,
-      priority: 4,
-    },
-    {
-      id: "clearOutputs",
-      icon: "codicon codicon-clear-all",
-      label: "Clear",
-      title: "Clear All Outputs",
-      onClick: handleClearAllOutputs,
-      priority: 5,
-    },
-  ];
+  // Memoize to prevent recreation on every render (critical for production builds)
+  const actions: ToolbarAction[] = useMemo(() => {
+    console.log("[NotebookToolbar] actions array RECREATED - handlers changed");
+    return [
+      {
+        id: "code",
+        icon: "codicon codicon-add",
+        label: "Code",
+        title: "Add Code Cell",
+        onClick: handleAddCodeCell,
+        priority: 1,
+      },
+      {
+        id: "markdown",
+        icon: "codicon codicon-add",
+        label: "Markdown",
+        title: "Add Markdown Cell",
+        onClick: handleAddMarkdownCell,
+        priority: 2,
+      },
+      {
+        id: "runAll",
+        icon: "codicon codicon-run-all",
+        label: "Run All",
+        title: "Run All Cells",
+        onClick: handleRunAll,
+        priority: 3,
+      },
+      {
+        id: "runCell",
+        icon: "codicon codicon-play",
+        label: "Run Cell",
+        title: "Run Active Cell",
+        onClick: handleRunCell,
+        priority: 4,
+      },
+      {
+        id: "clearOutputs",
+        icon: "codicon codicon-clear-all",
+        label: "Clear",
+        title: "Clear All Outputs",
+        onClick: handleClearAllOutputs,
+        priority: 5,
+      },
+    ];
+  }, [
+    handleAddCodeCell,
+    handleAddMarkdownCell,
+    handleRunAll,
+    handleRunCell,
+    handleClearAllOutputs,
+  ]);
 
   // Calculate reserved right width for overflow calculation
   const reservedForCollaborative = isDatalayerNotebook ? 180 : 0;
   const reservedForKernel = 200;
   const reservedRightWidth = reservedForKernel + reservedForCollaborative;
+
+  // Debug: Log every render
+  console.log("[NotebookToolbar] RENDER", {
+    notebookId,
+    kernelStatus,
+    isSessionReady,
+    actionsLength: actions.length,
+    hasNotebook: !!notebook,
+  });
 
   return (
     <div
