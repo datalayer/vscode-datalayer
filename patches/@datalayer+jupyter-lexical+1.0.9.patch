@@ -5021,6 +5021,40 @@ index 41e9c60..7f9ef21 100644
 \ No newline at end of file
 +{"version":3,"file":"index.js","sourceRoot":"","sources":["../../src/tools/index.ts"],"names":[],"mappings":"AAAA;;;;GAIG;AAEH;;;;;;GAMG;AAEH,8BAA8B;AAC9B,OAAO,EAAE,eAAe,EAAE,MAAM,2BAA2B,CAAC;AAC5D,OAAO,EAAE,eAAe,EAAE,MAAM,2BAA2B,CAAC;AAC5D,OAAO,EAAE,gBAAgB,EAAE,MAAM,4BAA4B,CAAC;AAC9D,OAAO,EAAE,aAAa,EAAE,MAAM,yBAAyB,CAAC;AACxD,OAAO,EAAE,iBAAiB,EAAE,MAAM,6BAA6B,CAAC;AAChE,OAAO,EAAE,YAAY,EAAE,MAAM,wBAAwB,CAAC;AACtD,OAAO,EAAE,gBAAgB,EAAE,MAAM,4BAA4B,CAAC;AAC9D,OAAO,EAAE,uBAAuB,EAAE,MAAM,mCAAmC,CAAC;AAC5E,OAAO,EAAE,eAAe,EAAE,MAAM,2BAA2B,CAAC;AAE5D,wBAAwB;AACxB,OAAO,EAAE,oBAAoB,EAAE,MAAM,0BAA0B,CAAC;AAChE,OAAO,EAAE,oBAAoB,EAAE,MAAM,0BAA0B,CAAC;AAChE,OAAO,EAAE,qBAAqB,EAAE,MAAM,2BAA2B,CAAC;AAClE,OAAO,EAAE,kBAAkB,EAAE,MAAM,wBAAwB,CAAC;AAC5D,OAAO,EAAE,sBAAsB,EAAE,MAAM,4BAA4B,CAAC;AACpE,OAAO,EAAE,iBAAiB,EAAE,MAAM,uBAAuB,CAAC;AAC1D,OAAO,EAAE,qBAAqB,EAAE,MAAM,2BAA2B,CAAC;AAClE,OAAO,EAAE,4BAA4B,EAAE,MAAM,kCAAkC,CAAC;AAChF,OAAO,EAAE,oBAAoB,EAAE,MAAM,0BAA0B,CAAC;AAMhE;;GAEG;AACH,MAAM,CAAC,MAAM,sBAAsB,GAAqB;IACtD,eAAe;IACf,eAAe;IACf,gBAAgB;IAChB,aAAa;IACb,iBAAiB;IACjB,YAAY;IACZ,gBAAgB;IAChB,uBAAuB;IACvB,eAAe;CAChB,CAAC;AAEF;;;GAGG;AACH,MAAM,CAAC,MAAM,qBAAqB,GAG9B;IACF,WAAW,EAAE,oBAAoB;IACjC,WAAW,EAAE,oBAAoB;IACjC,YAAY,EAAE,qBAAqB;IACnC,SAAS,EAAE,kBAAkB;IAC7B,aAAa,EAAE,sBAAsB;IACrC,QAAQ,EAAE,iBAAiB;IAC3B,YAAY,EAAE,qBAAqB;IACnC,mBAAmB,EAAE,4BAA4B;IACjD,WAAW,EAAE,oBAAoB;CAClC,CAAC;AAEF;;GAEG;AACH,MAAM,CAAC,MAAM,YAAY,GAAG;IAC1B,WAAW,EAAE,sBAAsB;IACnC,UAAU,EAAE,qBAAqB;CAClC,CAAC;AAEF,uCAAuC;AACvC,4FAA4F;AAC5F,qEAAqE;AACrE,cAAc,QAAQ,CAAC;AACvB,cAAc,eAAe,CAAC;AAC9B,cAAc,0BAA0B,CAAC;AACzC,cAAc,0BAA0B,CAAC;AACzC,cAAc,2BAA2B,CAAC;AAC1C,cAAc,wBAAwB,CAAC;AACvC,cAAc,4BAA4B,CAAC;AAC3C,cAAc,uBAAuB,CAAC;AACtC,cAAc,2BAA2B,CAAC;AAC1C,cAAc,kCAAkC,CAAC;AACjD,cAAc,0BAA0B,CAAC"}
 \ No newline at end of file
+diff --git a/node_modules/@datalayer/jupyter-lexical/lib/tools/operations/insertBlock.js b/node_modules/@datalayer/jupyter-lexical/lib/tools/operations/insertBlock.js
+index 6ca1008..7c188fd 100644
+--- a/node_modules/@datalayer/jupyter-lexical/lib/tools/operations/insertBlock.js
++++ b/node_modules/@datalayer/jupyter-lexical/lib/tools/operations/insertBlock.js
+@@ -27,6 +27,11 @@ export const insertBlockOperation = {
+             throw new Error('Document ID is required for insertBlock operation. ' +
+                 'Ensure the tool execution context includes a valid documentId.');
+         }
++        // Default metadata for jupyter-cell blocks when metadata is missing
++        // This handles cases where agents forget to include metadata
++        const finalMetadata = type === 'jupyter-cell' && (!metadata || Object.keys(metadata).length === 0)
++            ? { language: 'python' }
++            : metadata;
+         // Ensure executor is available
+         if (!context.executor) {
+             throw new Error('Executor is required for insertBlock operation. ' +
+@@ -38,7 +43,7 @@ export const insertBlockOperation = {
+             const result = await context.executor.execute(this.name, {
+                 type,
+                 source,
+-                metadata,
++                metadata: finalMetadata,
+                 afterId,
+             });
+             const message = afterId === 'TOP'
+diff --git a/node_modules/@datalayer/jupyter-lexical/lib/tools/operations/insertBlock.js.map b/node_modules/@datalayer/jupyter-lexical/lib/tools/operations/insertBlock.js.map
+index 9b94e10..a26aeae 100644
+--- a/node_modules/@datalayer/jupyter-lexical/lib/tools/operations/insertBlock.js.map
++++ b/node_modules/@datalayer/jupyter-lexical/lib/tools/operations/insertBlock.js.map
+@@ -1 +1 @@
+-{"version":3,"file":"insertBlock.js","sourceRoot":"","sources":["../../../src/tools/operations/insertBlock.ts"],"names":[],"mappings":"AAAA;;;;GAIG;AASH,OAAO,EAAE,eAAe,EAAE,MAAM,gCAAgC,CAAC;AACjE,OAAO,EACL,uBAAuB,GAExB,MAAM,wBAAwB,CAAC;AAmBhC;;;;;;;;;GASG;AACH,MAAM,CAAC,MAAM,oBAAoB,GAG7B;IACF,IAAI,EAAE,aAAa;IAEnB,KAAK,CAAC,OAAO,CACX,MAAe,EACf,OAA6B;QAE7B,4BAA4B;QAC5B,MAAM,eAAe,GAAG,eAAe,CACrC,uBAA8B,EAC9B,MAAM,EACN,aAAa,CACO,CAAC;QAEvB,MAAM,EAAE,OAAO,EAAE,IAAI,EAAE,MAAM,EAAE,QAAQ,EAAE,GAAG,eAAe,CAAC;QAC5D,MAAM,EAAE,UAAU,EAAE,GAAG,OAAO,CAAC;QAE/B,mBAAmB;QACnB,IAAI,CAAC,UAAU,EAAE,CAAC;YAChB,MAAM,IAAI,KAAK,CACb,qDAAqD;gBACnD,gEAAgE,CACnE,CAAC;QACJ,CAAC;QAED,+BAA+B;QAC/B,IAAI,CAAC,OAAO,CAAC,QAAQ,EAAE,CAAC;YACtB,MAAM,IAAI,KAAK,CACb,kDAAkD;gBAChD,iFAAiF,CACpF,CAAC;QACJ,CAAC;QAED,IAAI,CAAC;YACH,sEAAsE;YACtE,gEAAgE;YAChE,MAAM,MAAM,GAAQ,MAAM,OAAO,CAAC,QAAQ,CAAC,OAAO,CAAC,IAAI,CAAC,IAAI,EAAE;gBAC5D,IAAI;gBACJ,MAAM;gBACN,QAAQ;gBACR,OAAO;aACR,CAAC,CAAC;YAEH,MAAM,OAAO,GACX,OAAO,KAAK,KAAK;gBACf,CAAC,CAAC,kBAAkB,IAAI,6CAA6C;gBACrE,CAAC,CAAC,OAAO,KAAK,QAAQ;oBACpB,CAAC,CAAC,kBAAkB,IAAI,uCAAuC;oBAC/D,CAAC,CAAC,kBAAkB,IAAI,2BAA2B,OAAO,GAAG,CAAC;YAEpE,OAAO;gBACL,OAAO,EAAE,IAAI;gBACb,OAAO,EAAE,MAAM,EAAE,OAAO;gBACxB,OAAO;aACR,CAAC;QACJ,CAAC;QAAC,OAAO,KAAK,EAAE,CAAC;YACf,MAAM,YAAY,GAChB,KAAK,YAAY,KAAK,CAAC,CAAC,CAAC,KAAK,CAAC,OAAO,CAAC,CAAC,CAAC,MAAM,CAAC,KAAK,CAAC,CAAC;YACzD,MAAM,IAAI,KAAK,CAAC,2BAA2B,YAAY,EAAE,CAAC,CAAC;QAC7D,CAAC;IACH,CAAC;CACF,CAAC"}
+\ No newline at end of file
++{"version":3,"file":"insertBlock.js","sourceRoot":"","sources":["../../../src/tools/operations/insertBlock.ts"],"names":[],"mappings":"AAAA;;;;GAIG;AASH,OAAO,EAAE,eAAe,EAAE,MAAM,gCAAgC,CAAC;AACjE,OAAO,EACL,uBAAuB,GAExB,MAAM,wBAAwB,CAAC;AAmBhC;;;;;;;;;GASG;AACH,MAAM,CAAC,MAAM,oBAAoB,GAG7B;IACF,IAAI,EAAE,aAAa;IAEnB,KAAK,CAAC,OAAO,CACX,MAAe,EACf,OAA6B;QAE7B,4BAA4B;QAC5B,MAAM,eAAe,GAAG,eAAe,CACrC,uBAA8B,EAC9B,MAAM,EACN,aAAa,CACO,CAAC;QAEvB,MAAM,EAAE,OAAO,EAAE,IAAI,EAAE,MAAM,EAAE,QAAQ,EAAE,GAAG,eAAe,CAAC;QAC5D,MAAM,EAAE,UAAU,EAAE,GAAG,OAAO,CAAC;QAE/B,mBAAmB;QACnB,IAAI,CAAC,UAAU,EAAE,CAAC;YAChB,MAAM,IAAI,KAAK,CACb,qDAAqD;gBACnD,gEAAgE,CACnE,CAAC;QACJ,CAAC;QAED,oEAAoE;QACpE,6DAA6D;QAC7D,MAAM,aAAa,GACjB,IAAI,KAAK,cAAc,IAAI,CAAC,CAAC,QAAQ,IAAI,MAAM,CAAC,IAAI,CAAC,QAAQ,CAAC,CAAC,MAAM,KAAK,CAAC,CAAC;YAC1E,CAAC,CAAC,EAAE,QAAQ,EAAE,QAAQ,EAAE;YACxB,CAAC,CAAC,QAAQ,CAAC;QAEf,+BAA+B;QAC/B,IAAI,CAAC,OAAO,CAAC,QAAQ,EAAE,CAAC;YACtB,MAAM,IAAI,KAAK,CACb,kDAAkD;gBAChD,iFAAiF,CACpF,CAAC;QACJ,CAAC;QAED,IAAI,CAAC;YACH,sEAAsE;YACtE,gEAAgE;YAChE,MAAM,MAAM,GAAQ,MAAM,OAAO,CAAC,QAAQ,CAAC,OAAO,CAAC,IAAI,CAAC,IAAI,EAAE;gBAC5D,IAAI;gBACJ,MAAM;gBACN,QAAQ,EAAE,aAAa;gBACvB,OAAO;aACR,CAAC,CAAC;YAEH,MAAM,OAAO,GACX,OAAO,KAAK,KAAK;gBACf,CAAC,CAAC,kBAAkB,IAAI,6CAA6C;gBACrE,CAAC,CAAC,OAAO,KAAK,QAAQ;oBACpB,CAAC,CAAC,kBAAkB,IAAI,uCAAuC;oBAC/D,CAAC,CAAC,kBAAkB,IAAI,2BAA2B,OAAO,GAAG,CAAC;YAEpE,OAAO;gBACL,OAAO,EAAE,IAAI;gBACb,OAAO,EAAE,MAAM,EAAE,OAAO;gBACxB,OAAO;aACR,CAAC;QACJ,CAAC;QAAC,OAAO,KAAK,EAAE,CAAC;YACf,MAAM,YAAY,GAChB,KAAK,YAAY,KAAK,CAAC,CAAC,CAAC,KAAK,CAAC,OAAO,CAAC,CAAC,CAAC,MAAM,CAAC,KAAK,CAAC,CAAC;YACzD,MAAM,IAAI,KAAK,CAAC,2BAA2B,YAAY,EAAE,CAAC,CAAC;QAC7D,CAAC;IACH,CAAC;CACF,CAAC"}
+\ No newline at end of file
 diff --git a/node_modules/@datalayer/jupyter-lexical/style/lexical/icons/LICENSE.md b/node_modules/@datalayer/jupyter-lexical/style/lexical/icons/LICENSE.md
 new file mode 100644
 index 0000000..ce74f6a
