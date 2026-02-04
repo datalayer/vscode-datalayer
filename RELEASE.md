@@ -469,7 +469,7 @@ Keep these updated:
 
 - **GitHub Issues**: https://github.com/datalayer/vscode-datalayer/issues
 - **Marketplace**: https://marketplace.visualstudio.com/items?itemName=Datalayer.datalayer-jupyter-vscode
-- **Documentation**: https://datalayer-desktop.netlify.app
+- **Documentation**: https://vscode-datalayer.netlify.app
 
 ---
 

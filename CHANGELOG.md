@@ -24,7 +24,7 @@ All notable changes to the Datalayer VS Code extension are documented here.
   - All code handles null controller safely with optional chaining
   - File: `src/services/ui/uiSetup.ts:85`
 
-## [0.0.10] - 2025-01-XX
+## [0.0.10] - Unreleased
 
 ### Major Features
 

@@ -58,9 +58,22 @@ export const ToolbarButton: React.FC<ToolbarButtonProps> = ({
     ? "codicon codicon-loading codicon-modifier-spin"
     : icon;
 
+  const handleClick = React.useCallback(() => {
+    console.log("[ToolbarButton] CLICKED", {
+      label,
+      title,
+      hasOnClick: !!onClick,
+      disabled,
+      loading,
+    });
+    if (onClick && !disabled && !loading) {
+      onClick();
+    }
+  }, [onClick, label, title, disabled, loading]);
+
   return (
     <button
-      onClick={onClick}
+      onClick={handleClick}
       disabled={disabled || loading}
       title={title}
       className={buttonClasses}
