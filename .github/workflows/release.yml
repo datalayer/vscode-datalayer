@@ -162,7 +162,7 @@ jobs:
           VSIX_FILE=$(find ./vsix-artifacts -name "*.vsix" -type f | head -1)
           if [ -n "$VSIX_FILE" ]; then
             echo "Publishing: $VSIX_FILE"
-            npx vsce publish --packagePath "$VSIX_FILE"
+            npx @vscode/vsce publish --packagePath "$VSIX_FILE"
           else
             echo "❌ Error: No VSIX file found"
             exit 1
