@@ -14,6 +14,7 @@ git push origin main --follow-tags
 ```
 
 **That's it!** GitHub Actions automatically:
+
 - Builds extension
 - Creates GitHub release
 - Publishes to VS Code Marketplace
@@ -98,6 +99,7 @@ Pre-releases (with `-` in version) only go to GitHub, not marketplace.
 ---
 
 **Resources:**
+
 - [Marketplace](https://marketplace.visualstudio.com/items?itemName=Datalayer.datalayer-jupyter-vscode)
 - [Releases](https://github.com/datalayer/vscode-datalayer/releases)
 - [Actions](https://github.com/datalayer/vscode-datalayer/actions)
