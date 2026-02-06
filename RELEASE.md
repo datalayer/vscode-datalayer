@@ -6,11 +6,19 @@
 # 1. Test locally
 npm run compile && npm run lint && npx tsc --noEmit
 
-# 2. Create version tag
-npm version patch   # 0.0.10 → 0.0.11 (bug fixes)
+# 2. Bump version and create version tag on your local git clone
+# major (X.y.z) | minor (x.Y.z) | patch (x.y.Z)
+npm version patch
 
-# 3. Push to trigger release
+# 3a. Push main branch and tags to trigger release workflow
 git push origin main --follow-tags
+
+# 3b. (Optional) Push all the tags
+git push origin --tags
+
+# 3c. (Optional) Push the specific tag
+# where x, y, x represent the actual numeric values of the version
+git push origin vx.y.z
 ```
 
 **That's it!** GitHub Actions automatically:
