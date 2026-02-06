@@ -127,9 +127,6 @@ jobs:
     if: ${{ !contains(github.ref_name, '-') }} # Only publish stable versions
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v6
-
       - name: Setup Node.js
         uses: actions/setup-node@v6
         with:
@@ -145,26 +142,23 @@ jobs:
             echo "⚠️ VSCE_KEY secret not found - skipping VS Code Marketplace publishing"
           fi
 
-      - name: Install system dependencies for keytar
+      - name: Install keytar system dependencies
         if: steps.check_VSCE_KEY.outputs.has_secret == 'true'
         run: |
           sudo apt-get update
           sudo apt-get install -y libsecret-1-dev
 
-      - name: Download universal VSIX artifact
+      - name: Download VSIX artifact
         if: steps.check_VSCE_KEY.outputs.has_secret == 'true'
         uses: actions/download-artifact@v7
         with:
           path: ./vsix-artifacts
 
-      - name: Install dependencies
+      - name: Publish to Marketplace
         if: steps.check_VSCE_KEY.outputs.has_secret == 'true'
-        run: npm install --ignore-engines
-
-      - name: Publish universal VSIX to Marketplace
-        if: steps.check_VSCE_KEY.outputs.has_secret == 'true'
+        env:
+          VSCE_PAT: ${{ secrets.VSCE_KEY }}
         run: |
-          echo "Publishing universal VSIX file..."
           VSIX_FILE=$(find ./vsix-artifacts -name "*.vsix" -type f | head -1)
           if [ -n "$VSIX_FILE" ]; then
             echo "Publishing: $VSIX_FILE"
@@ -173,5 +167,3 @@ jobs:
             echo "❌ Error: No VSIX file found"
             exit 1
           fi
-        env:
-          VSCE_KEY: ${{ secrets.VSCE_KEY }}
