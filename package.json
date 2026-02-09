@@ -152,7 +152,7 @@
     "eslint": "^9.39.2",
     "mini-svg-data-uri": "^1.4.4",
     "null-loader": "^4.0.1",
-    "ovsx": "^0.10.7",
+    "ovsx": "^0.10.9",
     "patch-package": "^8.0.1",
     "postcss": "^8.5.6",
     "prettier": "^3.6.2",
