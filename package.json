@@ -87,7 +87,7 @@
     "@jupyter/ydoc": "^3.0.3",
     "@jupyterlab/services": "^7.0.0",
     "@lexical/code": "^0.35.0",
-    "@lexical/html": "^0.35.0",
+    "@lexical/html": "^0.40.0",
     "@lexical/link": "^0.35.0",
     "@lexical/list": "^0.35.0",
     "@lexical/mark": "^0.35.0",
