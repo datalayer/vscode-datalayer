@@ -136,7 +136,7 @@
     "@types/react": "18.3.20",
     "@types/react-dom": "18.3.6",
     "@types/uuid": "^8.3.4",
-    "@types/vscode": "^1.107.0",
+    "@types/vscode": "^1.109.0",
     "@types/ws": "^8.18.1",
     "@typescript-eslint/eslint-plugin": "^8.49.0",
     "@typescript-eslint/parser": "^8.29.1",
