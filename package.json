@@ -74,7 +74,7 @@
     "@codemirror/lint": "^6.8.5",
     "@codemirror/search": "^6.5.11",
     "@codemirror/state": "^6.5.2",
-    "@codemirror/view": "^6.38.3",
+    "@codemirror/view": "^6.39.13",
     "@copilotkit/react-core": "^1.10.6",
     "@copilotkit/react-ui": "^1.10.6",
     "@datalayer/agent-runtimes": "^0.0.9",
