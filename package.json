@@ -85,7 +85,7 @@
     "@datalayer/primer-addons": "^1.0.4",
     "@excalidraw/excalidraw": "^0.18.0",
     "@jupyter/ydoc": "^3.0.3",
-    "@jupyterlab/services": "^7.0.0",
+    "@jupyterlab/services": "^7.5.4",
     "@lexical/code": "^0.35.0",
     "@lexical/html": "^0.35.0",
     "@lexical/link": "^0.35.0",
@@ -128,7 +128,7 @@
   },
   "devDependencies": {
     "@electron/rebuild": "^4.0.2",
-    "@jupyterlab/theme-light-extension": "^4.4.10",
+    "@jupyterlab/theme-light-extension": "^4.5.4",
     "@tailwindcss/postcss": "^4.1.17",
     "@types/jest": "^30.0.0",
     "@types/mocha": "^10.0.10",
