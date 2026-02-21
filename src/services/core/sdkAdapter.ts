@@ -82,7 +82,7 @@ export function createVSCodeSDK(config: VSCodeSDKConfig): DatalayerClient {
     // No custom storage needed - core package uses keytar by default
 
     // Enhanced handlers with comprehensive logging
-    handlers: DatalayerClientOperationTracker.createEnhancedSDKHandlers(),
+    handlers: DatalayerClientOperationTracker.createEnhancedClientHandlers(),
 
     // User-provided overrides
     ...sdkConfig,

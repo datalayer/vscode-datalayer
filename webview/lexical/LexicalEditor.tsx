@@ -12,7 +12,7 @@
  */
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { $getRoot, $createParagraphNode, EditorState } from "lexical";
+import { $getRoot, $createParagraphNode, $getSelection, $isRangeSelection, EditorState } from "lexical";
 import { LexicalComposer } from "@lexical/react/LexicalComposer";
 import { RichTextPlugin } from "@lexical/react/LexicalRichTextPlugin";
 import { ContentEditable } from "@lexical/react/LexicalContentEditable";
@@ -83,6 +83,7 @@ import {
   LSPTabCompletionPlugin,
   LexicalLSPCompletionProvider,
   LSPDocumentSyncPlugin,
+  commentTheme,
 } from "@datalayer/jupyter-lexical";
 import { LexicalToolbar } from "./LexicalToolbar";
 import { RuntimeProgressBar } from "../components/RuntimeProgressBar";
@@ -100,6 +101,131 @@ import { InternalCommandsPlugin } from "./plugins/InternalCommandsPlugin";
 import { ContextMenuPlugin } from "./plugins/ContextMenuPlugin";
 import type { OutlineUpdateMessage } from "../types/messages";
 import { vsCodeAPI } from "../services/messageHandler";
+
+/**
+ * Debug plugin to trace slash command (ComponentPickerMenuPlugin) behavior.
+ * Tests the trigger mechanism and checks for module duplication issues.
+ *
+ * @hidden
+ */
+function SlashCommandDebugPlugin() {
+  const [editor] = useLexicalComposerContext();
+
+  useEffect(() => {
+    // Store editor reference for comparison with ComponentPickerMenuPlugin
+    (window as any).__slashDebugEditor = editor;
+    console.log("[SlashCmdDebug] MOUNTED - editor key:", (editor as any)._key);
+
+    const removeUpdateListener = editor.registerUpdateListener(
+      ({ editorState }) => {
+        editorState.read(() => {
+          const selection = $getSelection();
+          if (!$isRangeSelection(selection) || !selection.isCollapsed()) return;
+          const anchor = selection.anchor;
+          if (anchor.type !== "text") return;
+          const anchorNode = anchor.getNode();
+          const text = anchorNode.getTextContent().slice(0, anchor.offset);
+
+          if (text.includes("/")) {
+            console.log("[SlashCmdDebug] SLASH detected:", JSON.stringify(text));
+
+            // Immediate DOM check
+            const typeaheadDiv = document.getElementById("typeahead-menu");
+            const ariaLabels = document.querySelectorAll('[aria-label="Typeahead menu"]');
+            console.log("[SlashCmdDebug]   #typeahead-menu (immediate):", !!typeaheadDiv);
+            console.log("[SlashCmdDebug]   aria-label Typeahead count:", ariaLabels.length);
+            if (ariaLabels.length > 0) {
+              const anchor = ariaLabels[0] as HTMLElement;
+              console.log("[SlashCmdDebug]   anchor children:", anchor.childNodes.length);
+              console.log("[SlashCmdDebug]   anchor innerHTML length:", anchor.innerHTML.length);
+            }
+
+            // DELAYED check - after React processes startTransition state update
+            setTimeout(() => {
+              const delayedAnchor = document.querySelector('[aria-label="Typeahead menu"]') as HTMLElement;
+              const delayedId = document.getElementById("typeahead-menu");
+              console.log("[SlashCmdDebug] DELAYED (500ms):");
+              console.log("[SlashCmdDebug]   #typeahead-menu:", !!delayedId);
+              if (delayedAnchor) {
+                console.log("[SlashCmdDebug]   anchor.id:", delayedAnchor.id);
+                console.log("[SlashCmdDebug]   anchor.className:", delayedAnchor.className);
+                console.log("[SlashCmdDebug]   anchor childNodes:", delayedAnchor.childNodes.length);
+                console.log("[SlashCmdDebug]   anchor innerHTML (first 200):", delayedAnchor.innerHTML.substring(0, 200));
+                const rect = delayedAnchor.getBoundingClientRect();
+                console.log("[SlashCmdDebug]   anchor rect:", { top: rect.top, left: rect.left, width: rect.width, height: rect.height });
+                const styles = window.getComputedStyle(delayedAnchor);
+                console.log("[SlashCmdDebug]   anchor computed:", {
+                  position: styles.position,
+                  display: styles.display,
+                  visibility: styles.visibility,
+                  opacity: styles.opacity,
+                  overflow: styles.overflow,
+                  zIndex: styles.zIndex,
+                  top: styles.top,
+                  left: styles.left,
+                  width: styles.width,
+                  height: styles.height,
+                });
+                // Check first child (the Primer content)
+                const firstChild = delayedAnchor.firstElementChild as HTMLElement;
+                if (firstChild) {
+                  const childRect = firstChild.getBoundingClientRect();
+                  const childStyles = window.getComputedStyle(firstChild);
+                  console.log("[SlashCmdDebug]   firstChild tag:", firstChild.tagName);
+                  console.log("[SlashCmdDebug]   firstChild rect:", { top: childRect.top, left: childRect.left, width: childRect.width, height: childRect.height });
+                  console.log("[SlashCmdDebug]   firstChild computed:", {
+                    display: childStyles.display,
+                    visibility: childStyles.visibility,
+                    opacity: childStyles.opacity,
+                    zIndex: childStyles.zIndex,
+                    background: childStyles.backgroundColor,
+                  });
+                } else {
+                  console.log("[SlashCmdDebug]   NO firstChild - menu did NOT render!");
+                }
+              } else {
+                console.log("[SlashCmdDebug]   NO anchor found at all!");
+              }
+              // Also check body overflow
+              const bodyStyles = window.getComputedStyle(document.body);
+              console.log("[SlashCmdDebug]   body overflow:", bodyStyles.overflow, bodyStyles.overflowX, bodyStyles.overflowY);
+            }, 500);
+          }
+        });
+      },
+    );
+
+    return () => removeUpdateListener();
+  }, [editor]);
+
+  return null;
+}
+
+/**
+ * Wrapper around ComponentPickerMenuPlugin to debug its lifecycle.
+ * Stores the editor reference so we can check if it's the same one.
+ *
+ * @hidden
+ */
+function DebugComponentPickerWrapper() {
+  const [editor] = useLexicalComposerContext();
+
+  useEffect(() => {
+    (window as any).__componentPickerEditor = editor;
+    console.log("[SlashCmdDebug] ComponentPickerWrapper MOUNTED");
+    console.log("[SlashCmdDebug]   wrapper editor key:", (editor as any)._key);
+    console.log("[SlashCmdDebug]   wrapper editor === debug editor:", editor === (window as any).__slashDebugEditor);
+    console.log("[SlashCmdDebug]   wrapper editor editable:", editor.isEditable());
+    console.log("[SlashCmdDebug]   wrapper editor root:", !!editor.getRootElement());
+
+    return () => {
+      console.log("[SlashCmdDebug] ComponentPickerWrapper UNMOUNTED");
+    };
+  }, [editor]);
+
+  console.log("[SlashCmdDebug] ComponentPickerWrapper RENDERED");
+  return <ComponentPickerMenuPlugin />;
+}
 
 /**
  * Collaboration configuration for Lexical documents
@@ -292,8 +418,6 @@ function JupyterKernelPlugins({
   return (
     <>
       {/* @ts-ignore - Type mismatch between duplicate Kernel types from different module instances */}
-      <ComponentPickerMenuPlugin kernel={defaultKernel} />
-      {/* @ts-ignore - Type mismatch between duplicate Kernel types from different module instances */}
       <JupyterInputOutputPlugin kernel={defaultKernel} />
     </>
   );
@@ -452,91 +576,10 @@ export function LexicalEditor({
     editable,
     nodes: allNodes,
     theme: {
-      root: "lexical-editor-root",
-      link: "lexical-editor-link",
-      text: {
-        bold: "lexical-editor-bold",
-        underline: "lexical-editor-underline",
-        italic: "lexical-editor-italic",
-        strikethrough: "lexical-editor-strikethrough",
-        code: "lexical-editor-code",
-      },
-      code: "lexical-editor-code-block",
-      paragraph: "lexical-editor-paragraph",
-      heading: {
-        h1: "lexical-editor-h1",
-        h2: "lexical-editor-h2",
-        h3: "lexical-editor-h3",
-        h4: "lexical-editor-h4",
-        h5: "lexical-editor-h5",
-        h6: "lexical-editor-h6",
-      },
-      list: {
-        listitem: "lexical-editor-listitem",
-        listitemChecked: "lexical-editor-listitem-checked",
-        listitemUnchecked: "lexical-editor-listitem-unchecked",
-        nested: {
-          listitem: "lexical-editor-nested-listitem",
-        },
-        ol: "lexical-editor-ol",
-        ul: "lexical-editor-ul",
-      },
-      quote: "lexical-editor-quote",
-      codeHighlight: {
-        atrule: "token-atrule",
-        attr: "token-attr",
-        boolean: "token-boolean",
-        builtin: "token-builtin",
-        cdata: "token-cdata",
-        char: "token-char",
-        class: "token-class",
-        "class-name": "token-class-name",
-        comment: "token-comment",
-        constant: "token-constant",
-        deleted: "token-deleted",
-        doctype: "token-doctype",
-        entity: "token-entity",
-        function: "token-function",
-        important: "token-important",
-        inserted: "token-inserted",
-        keyword: "token-keyword",
-        namespace: "token-namespace",
-        number: "token-number",
-        operator: "token-operator",
-        prolog: "token-prolog",
-        property: "token-property",
-        punctuation: "token-punctuation",
-        regex: "token-regex",
-        selector: "token-selector",
-        string: "token-string",
-        "triple-quoted-string": "token-string", // Python docstrings
-        symbol: "token-symbol",
-        tag: "token-tag",
-        url: "token-url",
-        variable: "token-variable",
-      },
+      ...commentTheme,
+      // VS Code-specific overrides
       draggableBlockMenu: "vscode-draggable-block-menu",
       draggableBlockTargetLine: "vscode-draggable-block-target-line",
-      table: "PlaygroundEditorTheme__table",
-      tableAddColumns: "PlaygroundEditorTheme__tableAddColumns",
-      tableAddRows: "PlaygroundEditorTheme__tableAddRows",
-      tableAlignment: {
-        center: "PlaygroundEditorTheme__tableAlignmentCenter",
-        right: "PlaygroundEditorTheme__tableAlignmentRight",
-      },
-      tableCell: "PlaygroundEditorTheme__tableCell",
-      tableCellActionButton: "PlaygroundEditorTheme__tableCellActionButton",
-      tableCellActionButtonContainer:
-        "PlaygroundEditorTheme__tableCellActionButtonContainer",
-      tableCellHeader: "PlaygroundEditorTheme__tableCellHeader",
-      tableCellResizer: "PlaygroundEditorTheme__tableCellResizer",
-      tableCellSelected: "PlaygroundEditorTheme__tableCellSelected",
-      tableFrozenColumn: "PlaygroundEditorTheme__tableFrozenColumn",
-      tableFrozenRow: "PlaygroundEditorTheme__tableFrozenRow",
-      tableRowStriping: "PlaygroundEditorTheme__tableRowStriping",
-      tableScrollableWrapper: "PlaygroundEditorTheme__tableScrollableWrapper",
-      tableSelected: "PlaygroundEditorTheme__tableSelected",
-      tableSelection: "PlaygroundEditorTheme__tableSelection",
     },
     onError(error: Error) {
       console.error("[LexicalEditor] Error caught by onError handler:", error);
@@ -741,6 +784,10 @@ function LexicalEditorInner({
         <AutoEmbedPlugin />
         <JupyterCellPlugin />
         <AutoIndentPlugin defaultLanguage="python" debug={false} />
+        {/* Debug plugin to trace slash command behavior */}
+        <SlashCommandDebugPlugin />
+        {/* Slash command menu - wrapped with debug logging */}
+        <DebugComponentPickerWrapper />
         {/* Kernel plugins - remount when runtime changes */}
         <JupyterKernelPlugins
           key={selectedRuntime?.ingress || "no-runtime"}

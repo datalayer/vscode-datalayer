@@ -36,9 +36,20 @@ const resolvePackage = (packageName) => {
       }
       return parts.slice(0, nmIndex + 2).join(path.sep);
     } catch {
-      // Last resort: construct the path manually in root node_modules
-      const rootNodeModules = path.resolve(__dirname, "../../../node_modules");
-      return path.join(rootNodeModules, packageName);
+      // Last resort: walk up the directory tree to find the nearest
+      // ancestor node_modules (supports both simple repos and monorepos)
+      let dir = __dirname;
+      while (true) {
+        const candidate = path.join(dir, "node_modules", packageName);
+        if (require("fs").existsSync(candidate)) {
+          return candidate;
+        }
+        const parent = path.dirname(dir);
+        if (parent === dir) break; // reached filesystem root
+        dir = parent;
+      }
+      // Final fallback: assume local node_modules
+      return path.join(__dirname, "node_modules", packageName);
     }
   }
 };
