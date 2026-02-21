@@ -4,7 +4,8 @@
  * MIT License
  */
 
-import { type ReactNode } from "react";
+// Keep unsued React import for JSX.
+import React, { type ReactNode } from "react";
 import { ThemeProvider } from "@primer/react";
 
 export interface PrimerVSCodeThemeProps {

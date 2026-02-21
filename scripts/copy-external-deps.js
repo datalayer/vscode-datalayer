@@ -50,9 +50,31 @@ console.log('📦 Copying external dependencies to dist/node_modules/...');
 
 const distNodeModules = path.join(__dirname, '..', 'dist', 'node_modules');
 const sourceNodeModules = path.join(__dirname, '..', 'node_modules');
-// Fallback to monorepo root node_modules for hoisted packages
-// (2 levels up from vscode-datalayer: vscode-datalayer/scripts -> vscode-datalayer -> datalayer -> node_modules)
-const rootNodeModules = path.join(__dirname, '..', '..', 'node_modules');
+
+/**
+ * Walk up the directory tree from the project root to find the nearest
+ * ancestor that contains a node_modules directory. This supports both
+ * simple repos (node_modules in project root) and monorepos where
+ * dependencies are hoisted to an arbitrary ancestor.
+ */
+function findRootNodeModules() {
+  let dir = path.resolve(__dirname, '..');
+  while (true) {
+    const candidate = path.join(dir, 'node_modules');
+    if (candidate !== sourceNodeModules && fs.existsSync(candidate)) {
+      return candidate;
+    }
+    const parent = path.dirname(dir);
+    if (parent === dir) break; // reached filesystem root
+    dir = parent;
+  }
+  // Fallback: return local node_modules (simple repo case)
+  return sourceNodeModules;
+}
+
+const rootNodeModules = findRootNodeModules();
+console.log(`   Local node_modules: ${sourceNodeModules}`);
+console.log(`   Root  node_modules: ${rootNodeModules}`);
 
 // Ensure dist/node_modules exists
 if (!fs.existsSync(distNodeModules)) {
