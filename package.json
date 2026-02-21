@@ -1096,7 +1096,7 @@
           "update"
         ],
         "toolReferenceName": "updateCell",
-        "modelDescription": "Updates (overwrites) a cell's source code at the specified index. Does NOT execute the cell. **IMPORTANT: Always ensure you call getActiveDocument before running this operation.**",
+        "modelDescription": "Updates (overwrites) a cell's source code at the specified index and executes it. For code cells this runs the code; for markdown cells this renders them. **IMPORTANT: Always ensure you call getActiveDocument before running this operation.**",
         "canBeReferencedInPrompt": true,
         "inputSchema": {
           "type": "object",
@@ -1574,7 +1574,7 @@
         "datalayer.pyodide.version": {
           "type": "string",
           "default": "0.27.3",
-          "markdownDescription": "Pyodide version for **Datalayer webview notebooks only**. Native VS Code notebooks use a fixed version (v0.29.3 from npm package). Changes require closing and reopening notebooks."
+          "markdownDescription": "Pyodide version for **Datalayer webview notebooks only**. Native VS Code notebooks use a fixed version (v0.28.0 from npm package). Changes require closing and reopening notebooks."
         },
         "datalayer.pyodide.preloadPackages": {
           "type": "array",
