@@ -1146,17 +1146,91 @@ iframe[title="YouTube video"] {
   opacity: 0.9;
 }
 
-/* Jupyter ComponentPicker Menu Styles - VS Code themed */
-/* Main container for the slash menu */
+/* ========================================
+   Jupyter ComponentPicker Menu (slash command) - VS Code themed
+   
+   The LexicalTypeaheadMenuPlugin creates an anchor div (#typeahead-menu)
+   appended to document.body, sized to the trigger character ("/").
+   ComponentPickerMenuPlugin portals Primer React content into that anchor.
+   
+   We must:
+   1. Let content overflow the tiny anchor div
+   2. Override Primer theme tokens (canvas.overlay etc.) with VS Code colors
+   3. Ensure proper z-index above everything
+   ======================================== */
+
+/* 1. The anchor div created by LexicalTypeaheadMenuPlugin */
+#typeahead-menu,
+[aria-label="Typeahead menu"] {
+  overflow: visible !important;
+  z-index: 10000 !important;
+}
+
+/* 2. The Primer BaseStyles wrapper inside the anchor */
+#typeahead-menu > [data-portal-root] {
+  position: absolute !important;
+  top: 4px !important;
+  left: 0 !important;
+  z-index: 10000 !important;
+}
+
+/* 3. The Primer Box menu container - override Primer theme tokens with VS Code colors */
+#typeahead-menu > [data-portal-root] > div {
+  background-color: var(--vscode-quickInput-background, #252526) !important;
+  border: 1px solid var(--vscode-widget-border, var(--vscode-panel-border, rgba(128, 128, 128, 0.35))) !important;
+  border-radius: 4px !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4) !important;
+  max-height: 400px !important;
+  min-width: 250px !important;
+  overflow-y: auto !important;
+  padding: 4px !important;
+  font-family: var(--vscode-font-family) !important;
+}
+
+/* 4. The menu list */
+#typeahead-menu ul {
+  list-style: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+/* 5. Menu items */
+#typeahead-menu li {
+  padding: 8px 12px !important;
+  cursor: pointer !important;
+  border-radius: 3px !important;
+  margin: 2px 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  color: var(--vscode-quickInput-foreground) !important;
+  background-color: transparent !important;
+  font-family: var(--vscode-font-family) !important;
+  font-size: 13px !important;
+  transition: background-color 0.1s ease !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+/* 6. Hover and selected states */
+#typeahead-menu li:hover,
+#typeahead-menu li.selected {
+  background-color: var(--vscode-list-hoverBackground) !important;
+  color: var(--vscode-list-hoverForeground, var(--vscode-quickInput-foreground)) !important;
+}
+
+#typeahead-menu li.selected {
+  background-color: var(--vscode-list-activeSelectionBackground) !important;
+  color: var(--vscode-list-activeSelectionForeground) !important;
+}
+
+/* Legacy class-based selectors (fallback for non-Primer implementations) */
 .typeahead-popover,
 .component-picker-menu {
   position: fixed !important;
   background-color: var(--vscode-quickInput-background) !important;
-  border: 1px solid
-    var(
-      --vscode-quickInput-border,
-      var(--vscode-widget-border, var(--vscode-panel-border))
-    ) !important;
+  border: 1px solid var(--vscode-widget-border, var(--vscode-panel-border)) !important;
   border-radius: 4px !important;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4) !important;
   max-height: 400px !important;
@@ -1167,7 +1241,6 @@ iframe[title="YouTube video"] {
   font-family: var(--vscode-font-family) !important;
 }
 
-/* Menu items */
 .typeahead-popover ul,
 .component-picker-menu ul {
   list-style: none !important;
@@ -1195,7 +1268,6 @@ iframe[title="YouTube video"] {
   text-overflow: ellipsis !important;
 }
 
-/* Hover and selected states */
 .typeahead-popover li:hover,
 .component-picker-menu li:hover,
 .component-picker-menu-item:hover,
@@ -1203,10 +1275,7 @@ iframe[title="YouTube video"] {
 .component-picker-menu li.selected,
 .component-picker-menu-item.selected {
   background-color: var(--vscode-list-hoverBackground) !important;
-  color: var(
-    --vscode-list-hoverForeground,
-    var(--vscode-quickInput-foreground)
-  ) !important;
+  color: var(--vscode-list-hoverForeground, var(--vscode-quickInput-foreground)) !important;
 }
 
 .typeahead-popover li.selected,
