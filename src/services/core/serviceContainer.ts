@@ -21,7 +21,7 @@ import type { ILoggerManager } from "../interfaces/ILoggerManager";
 import type { IErrorHandler } from "../interfaces/IErrorHandler";
 import { LoggerManager } from "../logging/loggerManager";
 import { ServiceLoggers } from "../logging/loggers";
-import { createVSCodeDatalayer } from ".//datalayerAdapter";
+import { createVSCodeDatalayer } from "./datalayerAdapter";
 import { DatalayerAuthProvider } from "./authProvider";
 import { DocumentBridge } from "../bridges/documentBridge";
 import { KernelBridge } from "../bridges/kernelBridge";
@@ -130,7 +130,7 @@ export class ServiceContainer implements IServiceContainer {
   constructor(public readonly context: vscode.ExtensionContext) {}
 
   /**
-   * Gets or lazily initializes the Datalayer Datalayer client.
+   * Gets or lazily initializes the Datalayer client.
    * Creates a new Datalayer instance with VS Code context on first access.
    *
    * @returns The initialized DatalayerClient instance

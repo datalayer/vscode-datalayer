@@ -53,7 +53,7 @@ export interface RuntimeSelectorOptions {
 /**
  * Shows a QuickPick dialog for selecting or creating a Datalayer runtime.
  *
- * @param datalayer - Datalayer Datalayer instance
+ * @param datalayer - Datalayer instance
  * @param authProvider - Authentication provider
  * @param options - Optional configuration for the dialog
  * @returns Selected or created runtime, or undefined if cancelled
@@ -390,7 +390,7 @@ async function selectSnapshot(
 /**
  * Creates a new runtime with the specified environment.
  *
- * @param datalayer - Datalayer Datalayer instance
+ * @param datalayer - Datalayer instance
  * @param environment - Environment to use
  * @param preSelectedSnapshotId - Optional snapshot ID to restore from (skips snapshot selection)
  * @param onRuntimeCreating - Optional callback triggered when runtime creation starts (after all dialogs)

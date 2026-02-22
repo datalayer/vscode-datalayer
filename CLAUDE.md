@@ -525,7 +525,7 @@ The extension uses a custom WOFF icon font for branded UI elements:
 
 ### Datalayer Usage Pattern (October 2025)
 
-**IMPORTANT**: The extension now uses the Datalayer Datalayer directly with handlers for VS Code-specific behavior.
+**IMPORTANT**: The extension now uses the Datalayer directly with handlers for VS Code-specific behavior.
 
 ```typescript
 // In datalayerAdapter.ts - Datalayer configured with VS Code handlers

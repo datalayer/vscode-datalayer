@@ -436,7 +436,7 @@ export function registerDocumentCommands(
               cancellable: false,
             },
             async () => {
-              // The document is already an Datalayer model instance with an update method
+              // The document is already a Datalayer model instance with an update method
               try {
                 // Call the update method directly on the model instance
                 // Both Notebook and Lexical models have an update method
@@ -509,7 +509,7 @@ export function registerDocumentCommands(
               cancellable: false,
             },
             async () => {
-              // The document is already an Datalayer model instance with a delete method
+              // The document is already a Datalayer model instance with a delete method
               try {
                 // Call the delete method directly on the model instance
                 await document.delete();

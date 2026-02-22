@@ -30,7 +30,7 @@ interface KernelOption {
  * Shows a kernel selection menu with available options.
  * This provides a clean interface for selecting between different kernel types.
  *
- * @param datalayer - Datalayer Datalayer instance
+ * @param datalayer - Datalayer instance
  * @param authProvider - Authentication provider
  * @param kernelBridge - Kernel bridge for connecting notebooks
  * @param documentUri - Optional document URI for context

@@ -79,7 +79,7 @@
     "@datalayer/core": "^1.0.1",
     "@datalayer/jupyter-lexical": "^1.0.9",
     "@datalayer/jupyter-react": "^2.0.3",
-    "@datalayer/lexical-loro": "^1.0.0",
+    "@datalayer/lexical-loro": "^1.0.3",
     "@datalayer/primer-addons": "^1.0.4",
     "@excalidraw/excalidraw": "^0.18.0",
     "@jupyter/ydoc": "^3.0.3",

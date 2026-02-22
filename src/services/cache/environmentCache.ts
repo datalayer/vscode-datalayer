@@ -55,7 +55,7 @@ export class EnvironmentCache {
   /**
    * Gets cached environments or fetches them if cache is stale.
    *
-   * @param datalayer - Datalayer Datalayer instance
+   * @param datalayer - Datalayer instance
    * @param authProvider - Authentication provider to check if user is logged in
    * @param forceRefresh - Force refresh even if cache is valid
    * @returns Array of available environments
@@ -95,7 +95,7 @@ export class EnvironmentCache {
   /**
    * Fetches environments from the API.
    *
-   * @param datalayer - Datalayer Datalayer instance
+   * @param datalayer - Datalayer instance
    */
   private async fetchEnvironments(datalayer: DatalayerClient): Promise<void> {
     this._fetching = true;
@@ -148,7 +148,7 @@ export class EnvironmentCache {
    * Refreshes environment cache when user logs in.
    * Should be called when authentication state changes to authenticated.
    *
-   * @param datalayer - Datalayer Datalayer instance
+   * @param datalayer - Datalayer instance
    */
   public async onUserLogin(datalayer: DatalayerClient): Promise<void> {
     // Clear stale cache and fetch fresh environments

@@ -36,7 +36,7 @@ export interface AutoConnectContext {
   documentUri: vscode.Uri;
   /** Currently selected runtime, if any */
   currentRuntime?: RuntimeDTO;
-  /** Datalayer Datalayer client */
+  /** Datalayer client */
   datalayer: DatalayerClient;
   /** Authentication provider */
   authProvider: IAuthProvider;
@@ -87,7 +87,7 @@ export class AutoConnectService {
    *
    * @param documentUri - Document being opened
    * @param currentRuntime - Currently selected runtime, if any
-   * @param datalayer - Datalayer Datalayer client
+   * @param datalayer - Datalayer client
    * @param authProvider - Authentication provider
    * @param runtimesTreeProvider - Optional tree provider for accessing cached runtimes
    * @returns Result with runtime and strategy name, or null if all strategies fail

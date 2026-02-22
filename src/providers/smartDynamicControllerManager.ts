@@ -28,7 +28,7 @@ export class SmartDynamicControllerManager implements vscode.Disposable {
   /** VS Code extension context for accessing API and managing subscriptions */
   private readonly _context: vscode.ExtensionContext;
 
-  /** Datalayer Datalayer client for API communication */
+  /** Datalayer client for API communication */
   private readonly _datalayer: DatalayerClient;
 
   /** Authentication provider for managing auth state */
@@ -67,7 +67,7 @@ export class SmartDynamicControllerManager implements vscode.Disposable {
   /**
    * Creates a new SmartDynamicControllerManager instance.
    * @param context VS Code extension context for managing subscriptions
-   * @param datalayer Datalayer Datalayer client for API communication
+   * @param datalayer Datalayer client for API communication
    * @param authProvider Authentication provider for managing user login state
    */
   constructor(
