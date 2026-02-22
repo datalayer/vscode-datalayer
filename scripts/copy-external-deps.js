@@ -9,12 +9,18 @@ const path = require('path');
 
 // External dependencies that need to be copied
 // These match the externals in webpack.config.js
+//
+// NOTE: @datalayer/core and @datalayer/lexical-loro are NOT listed here because:
+// - @datalayer/core is BUNDLED by webpack (not an external) - all imports are resolved at build time
+// - @datalayer/lexical-loro is BUNDLED into the lexical webview by webpack
+//
+// @datalayer/jupyter-react and @datalayer/jupyter-lexical are also NOT listed as
+// full package copies. Only their /tools subpaths are webpack externals, so we
+// handle them specially below (see datalayerToolsPackages) to copy only:
+// - package.json (for Node.js module resolution via "exports" field)
+// - lib/tools/ (the actual runtime code)
 const externalDeps = [
   'ws', // WebSocket library for Node.js - used by LoroAdapter for collaboration
-  '@datalayer/core',
-  '@datalayer/jupyter-react',
-  '@datalayer/jupyter-lexical',
-  '@datalayer/lexical-loro',
   'zod', // Schema validation library - used by @datalayer/jupyter-react/tools
   'zod-to-json-schema', // Zod to JSON Schema converter - used by @datalayer/jupyter-react/tools
   '@toon-format/toon', // TOON format encoder - used by @datalayer/jupyter-react/tools
@@ -44,6 +50,14 @@ const externalDeps = [
   '@jupyterlab/notebook',
   '@jupyterlab/cells',
   '@jupyterlab/completer',
+];
+
+// @datalayer packages where only the /tools subpath is a webpack external.
+// We copy only package.json + lib/tools/ to avoid copying huge dist/ bundles
+// (plotly.js, excalidraw, etc.) that add 300+ MB of unnecessary files.
+const datalayerToolsPackages = [
+  '@datalayer/jupyter-react',   // webpack external: @datalayer/jupyter-react/tools -> lib/tools/
+  '@datalayer/jupyter-lexical',  // webpack external: @datalayer/jupyter-lexical/lib/tools -> lib/tools/
 ];
 
 console.log('📦 Copying external dependencies to dist/node_modules/...');
@@ -123,6 +137,24 @@ function copyRecursive(src, dest) {
 
     // Skip test directories
     if (dirname === 'test' || dirname === 'tests' || dirname === '__tests__') {
+      return;
+    }
+
+    // Skip .git directories (monorepo symlinked packages may include these)
+    if (dirname === '.git') {
+      return;
+    }
+
+    // Skip Python-related directories (monorepo packages contain Python code)
+    if (dirname === '__pycache__' || dirname === '.mypy_cache') {
+      return;
+    }
+
+    // Skip development/build directories not needed at runtime
+    if (dirname === 'docs' || dirname === 'dev' ||
+        dirname === 'public' || dirname === 'templates' ||
+        dirname === 'jupyter-config' || dirname === 'conda-recipe' ||
+        dirname === 'documents' || dirname === 'patches') {
       return;
     }
 
@@ -284,9 +316,57 @@ for (const dep of externalDeps) {
     copiedPackages.add(dep);
     copiedCount++;
 
-    // Calculate size
-    const size = getDirectorySize(sourcePath);
+    // Calculate size of what was actually copied (not source which may be much larger)
+    const size = getDirectorySize(targetPath);
     totalSize += size;
+  } else {
+    console.warn(`⚠️  Skipping ${dep} (not found in node_modules)`);
+  }
+}
+
+// Handle @datalayer packages that only need /tools subpath
+// These are webpack externals only for the /tools export, so we copy:
+// - package.json (required for Node.js "exports" resolution)
+// - lib/tools/ (the actual runtime code for MCP tools)
+// This saves ~370MB by NOT copying dist/ (plotly.js, excalidraw, etc.)
+for (const dep of datalayerToolsPackages) {
+  if (copiedPackages.has(dep)) {
+    console.log(`   ⏭️  Skipping duplicate ${dep}`);
+    continue;
+  }
+
+  const sourcePath = findPackage(dep);
+  const targetPath = path.join(distNodeModules, dep);
+
+  if (sourcePath) {
+    console.log(`   Copying ${dep} (tools only)...`);
+
+    // Create target directory
+    if (!fs.existsSync(targetPath)) {
+      fs.mkdirSync(targetPath, { recursive: true });
+    }
+
+    // Copy package.json (needed for "exports" field resolution)
+    const pkgJsonSrc = path.join(sourcePath, 'package.json');
+    if (fs.existsSync(pkgJsonSrc)) {
+      fs.copyFileSync(pkgJsonSrc, path.join(targetPath, 'package.json'));
+    }
+
+    // Copy lib/tools/ directory (the actual runtime code)
+    const toolsSrc = path.join(sourcePath, 'lib', 'tools');
+    const toolsDest = path.join(targetPath, 'lib', 'tools');
+    if (fs.existsSync(toolsSrc)) {
+      copyRecursive(toolsSrc, toolsDest);
+      const toolsSize = getDirectorySize(toolsSrc);
+      const toolsSizeMB = (toolsSize / (1024 * 1024)).toFixed(2);
+      console.log(`      lib/tools/: ${toolsSizeMB}MB`);
+      totalSize += toolsSize;
+    } else {
+      console.warn(`  ⚠️  lib/tools/ not found in ${dep}`);
+    }
+
+    copiedPackages.add(dep);
+    copiedCount++;
   } else {
     console.warn(`⚠️  Skipping ${dep} (not found in node_modules)`);
   }
@@ -313,3 +393,11 @@ function getDirectorySize(dir) {
 
 const sizeMB = (totalSize / (1024 * 1024)).toFixed(2);
 console.log(`\n✅ Copied ${copiedCount} dependencies (~${sizeMB}MB)`);
+
+// Final size report for dist/node_modules/
+const finalSize = getDirectorySize(distNodeModules);
+const finalSizeMB = (finalSize / (1024 * 1024)).toFixed(2);
+console.log(`📊 Total dist/node_modules/ size: ${finalSizeMB}MB`);
+if (finalSize > 50 * 1024 * 1024) {
+  console.warn(`⚠️  dist/node_modules/ exceeds 50MB - consider further optimization`);
+}
