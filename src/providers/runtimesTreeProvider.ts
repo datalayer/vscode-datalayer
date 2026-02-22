@@ -18,7 +18,7 @@ import { RuntimeTreeItem } from "../models/runtimeTreeItem";
 import { SnapshotTreeItem } from "../models/snapshotTreeItem";
 import { TreeSectionItem } from "../models/treeSectionItem";
 import type { RuntimesTreeItem } from "../models/runtimesTreeItem";
-import { SDKAuthProvider } from "../services/core/authProvider";
+import { DatalayerAuthProvider } from "../services/core/authProvider";
 import { getServiceContainer } from "../extension";
 import type { RuntimeDTO } from "@datalayer/core/lib/models/RuntimeDTO";
 import type { RuntimeSnapshotDTO } from "@datalayer/core/lib/models/RuntimeSnapshotDTO";
@@ -43,7 +43,7 @@ export class RuntimesTreeProvider implements vscode.TreeDataProvider<RuntimesTre
     RuntimesTreeItem | undefined | void
   > = this._onDidChangeTreeData.event;
 
-  private authService: SDKAuthProvider;
+  private authService: DatalayerAuthProvider;
   private runtimesCache: RuntimeDTO[] = [];
   private snapshotsCache: RuntimeSnapshotDTO[] = [];
   private refreshTimer?: NodeJS.Timeout;
@@ -53,7 +53,7 @@ export class RuntimesTreeProvider implements vscode.TreeDataProvider<RuntimesTre
    *
    * @param authProvider - Authentication provider for user state management
    */
-  constructor(authProvider: SDKAuthProvider) {
+  constructor(authProvider: DatalayerAuthProvider) {
     this.authService = authProvider;
 
     // Listen to auth changes to refresh when user logs in/out
@@ -124,7 +124,7 @@ export class RuntimesTreeProvider implements vscode.TreeDataProvider<RuntimesTre
   }
 
   /**
-   * Loads runtimes from the SDK.
+   * Loads runtimes from the Datalayer.
    * Updates the cache with fresh runtime data.
    */
   private async loadRuntimes(): Promise<void> {
@@ -134,8 +134,8 @@ export class RuntimesTreeProvider implements vscode.TreeDataProvider<RuntimesTre
     }
 
     try {
-      const sdk = getServiceContainer().sdk;
-      this.runtimesCache = (await sdk.listRuntimes()) ?? [];
+      const datalayer = getServiceContainer().datalayer;
+      this.runtimesCache = (await datalayer.listRuntimes()) ?? [];
     } catch (error) {
       // Silently fail - tree will be empty
       this.runtimesCache = [];
@@ -143,7 +143,7 @@ export class RuntimesTreeProvider implements vscode.TreeDataProvider<RuntimesTre
   }
 
   /**
-   * Loads snapshots from the SDK.
+   * Loads snapshots from the Datalayer.
    * Updates the cache with fresh snapshot data, filtering out deleted snapshots.
    */
   private async loadSnapshots(): Promise<void> {
@@ -153,8 +153,8 @@ export class RuntimesTreeProvider implements vscode.TreeDataProvider<RuntimesTre
     }
 
     try {
-      const sdk = getServiceContainer().sdk;
-      const allSnapshots = (await sdk.listSnapshots()) ?? [];
+      const datalayer = getServiceContainer().datalayer;
+      const allSnapshots = (await datalayer.listSnapshots()) ?? [];
 
       // Filter out deleted snapshots by checking raw data status
       this.snapshotsCache = allSnapshots.filter((snapshot) => {

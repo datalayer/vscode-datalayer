@@ -5,7 +5,7 @@
  */
 
 /**
- * Mock factory for creating test doubles of VS Code APIs and SDK components.
+ * Mock factory for creating test doubles of VS Code APIs and Datalayer components.
  * Provides pre-configured mocks with sensible defaults for testing.
  *
  * @module test/utils/mockFactory
@@ -208,10 +208,10 @@ export interface MockSpyFunction {
 }
 
 /**
- * Type for the mock SDK returned by createMockSDK.
+ * Type for the mock Datalayer returned by createMockDatalayer.
  */
-export interface MockSDK {
-  // Authentication manager (new SDK structure)
+export interface MockDatalayer {
+  // Authentication manager (new Datalayer structure)
   auth: {
     isAuthenticated: MockSpyFunction;
     getCurrentUser: MockSpyFunction;
@@ -246,7 +246,7 @@ export interface MockSDK {
       getUserSpaces: MockSpyFunction;
     };
   };
-  // Flat SDK methods (actual DatalayerClient interface)
+  // Flat Datalayer methods (actual DatalayerClient interface)
   whoami: MockSpyFunction;
   login: MockSpyFunction;
   logout: MockSpyFunction;
@@ -271,9 +271,9 @@ export interface MockSDK {
 }
 
 /**
- * Creates a mock DatalayerClient SDK instance with spy functions.
+ * Creates a mock DatalayerClient Datalayer instance with spy functions.
  */
-export function createMockSDK(): MockSDK {
+export function createMockDatalayer(): MockDatalayer {
   const createSpy = (): MockSpyFunction => {
     const spy = new SpyFunction();
     const fn = ((...args: unknown[]) => spy.call(...args)) as MockSpyFunction;
@@ -300,7 +300,7 @@ export function createMockSDK(): MockSDK {
   };
 
   return {
-    // Authentication manager (new SDK structure)
+    // Authentication manager (new Datalayer structure)
     auth: {
       isAuthenticated: createSpy().mockReturnValue(false),
       getCurrentUser: createSpy().mockReturnValue(null),
@@ -335,7 +335,7 @@ export function createMockSDK(): MockSDK {
         getUserSpaces: createSpy(),
       },
     },
-    // Flat SDK methods (actual DatalayerClient interface)
+    // Flat Datalayer methods (actual DatalayerClient interface)
     whoami: createSpy(),
     login: createSpy(),
     logout: createSpy(),

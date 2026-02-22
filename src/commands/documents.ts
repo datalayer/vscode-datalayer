@@ -55,7 +55,7 @@ export function registerDocumentCommands(
   documentBridge: DocumentBridge,
   spacesTreeProvider: SpacesTreeProvider,
 ): void {
-  const sdk = getServiceContainer().sdk;
+  const datalayer = getServiceContainer().datalayer;
   /**
    * Command: datalayer.openDocument
    * Opens Datalayer documents with type detection and appropriate editor.
@@ -204,7 +204,7 @@ export function registerDocumentCommands(
             space = itemWithData.parent.data.space;
           } else {
             // Called from command palette, title bar, or root - prompt for space
-            const spaces = await sdk.getMySpaces();
+            const spaces = await datalayer.getMySpaces();
             if (!spaces || spaces.length === 0) {
               vscode.window.showErrorMessage("No spaces available");
               return;
@@ -256,7 +256,7 @@ export function registerDocumentCommands(
               cancellable: false,
             },
             async () => {
-              const notebook = await sdk.createNotebook(
+              const notebook = await datalayer.createNotebook(
                 space.uid,
                 name,
                 description || "",
@@ -310,7 +310,7 @@ export function registerDocumentCommands(
             space = itemWithData.parent.data.space;
           } else {
             // Called from command palette, title bar, or root - prompt for space
-            const spaces = await sdk.getMySpaces();
+            const spaces = await datalayer.getMySpaces();
             if (!spaces || spaces.length === 0) {
               vscode.window.showErrorMessage("No spaces available");
               return;
@@ -362,7 +362,7 @@ export function registerDocumentCommands(
               cancellable: false,
             },
             async () => {
-              const document = await sdk.createLexical(
+              const document = await datalayer.createLexical(
                 space.uid,
                 name,
                 description || "",
@@ -411,7 +411,7 @@ export function registerDocumentCommands(
           }
 
           const document = itemWithData.data.document;
-          // SDK models have a 'name' property
+          // Datalayer models have a 'name' property
           const currentName = document.name;
 
           const newName = await vscode.window.showInputBox({
@@ -436,7 +436,7 @@ export function registerDocumentCommands(
               cancellable: false,
             },
             async () => {
-              // The document is already an SDK model instance with an update method
+              // The document is already an Datalayer model instance with an update method
               try {
                 // Call the update method directly on the model instance
                 // Both Notebook and Lexical models have an update method
@@ -491,7 +491,7 @@ export function registerDocumentCommands(
           }
 
           const document = itemWithData.data.document;
-          // SDK models have a 'name' property
+          // Datalayer models have a 'name' property
           const itemName = document.name;
 
           const confirmed = await showTwoStepConfirmation(
@@ -509,7 +509,7 @@ export function registerDocumentCommands(
               cancellable: false,
             },
             async () => {
-              // The document is already an SDK model instance with a delete method
+              // The document is already an Datalayer model instance with a delete method
               try {
                 // Call the delete method directly on the model instance
                 await document.delete();
@@ -765,7 +765,7 @@ export function registerDocumentCommands(
                 message: "Finding default space...",
               });
 
-              const spaces = await sdk.getMySpaces();
+              const spaces = await datalayer.getMySpaces();
               if (!spaces || spaces.length === 0) {
                 throw new Error(
                   "No spaces available. Please create a space first.",
@@ -827,14 +827,14 @@ export function registerDocumentCommands(
                   // Upload to Datalayer
                   let newDocument;
                   if (isNotebook) {
-                    newDocument = await sdk.createNotebook(
+                    newDocument = await datalayer.createNotebook(
                       defaultSpace.uid,
                       docName,
                       "",
                       blob,
                     );
                   } else if (isLexical) {
-                    newDocument = await sdk.createLexical(
+                    newDocument = await datalayer.createLexical(
                       defaultSpace.uid,
                       docName,
                       "",

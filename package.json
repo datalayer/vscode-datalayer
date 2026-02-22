@@ -1526,10 +1526,10 @@
           "default": true,
           "description": "Include additional context information (operation IDs, request details) in logs"
         },
-        "datalayer.logging.enableSDKLogging": {
+        "datalayer.logging.enableDatalayerLogging": {
           "type": "boolean",
           "default": true,
-          "description": "Enable comprehensive logging for DatalayerClient SDK operations and API calls"
+          "description": "Enable comprehensive logging for DatalayerClient Datalayer operations and API calls"
         },
         "datalayer.logging.enablePerformanceMonitoring": {
           "type": "boolean",

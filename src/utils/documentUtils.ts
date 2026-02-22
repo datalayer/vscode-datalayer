@@ -25,13 +25,13 @@ export interface DocumentTypeInfo {
 
 /**
  * Detects document type using consistent logic across the extension.
- * Works with SDK model instances that have a 'type' property.
+ * Works with Datalayer model instances that have a 'type' property.
  *
- * @param document - The document to analyze (SDK model instance)
+ * @param document - The document to analyze (Datalayer model instance)
  * @returns Document type information with boolean flags and type string
  */
 export function detectDocumentType(document: Document): DocumentTypeInfo {
-  // SDK models have a 'type' property that returns the ItemTypes constant
+  // Datalayer models have a 'type' property that returns the ItemTypes constant
   const docType = document.type;
 
   const isNotebook = docType === ItemTypes.NOTEBOOK;
@@ -59,7 +59,7 @@ export function detectDocumentType(document: Document): DocumentTypeInfo {
  * Gets display name for a document using consistent logic.
  * Automatically adds appropriate file extensions if missing.
  *
- * @param document - The document to get display name for (SDK model instance)
+ * @param document - The document to get display name for (Datalayer model instance)
  * @param typeInfo - Document type info (detected if not provided)
  * @returns Display name with appropriate extension
  */
@@ -71,7 +71,7 @@ export function getDocumentDisplayName(
     typeInfo = detectDocumentType(document);
   }
 
-  // SDK models have a 'name' property
+  // Datalayer models have a 'name' property
   const baseName = document.name;
 
   if (typeInfo.isNotebook) {

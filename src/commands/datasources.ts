@@ -79,8 +79,8 @@ export function registerDatasourcesCommands(
         }
 
         try {
-          const sdk = getServiceContainer().sdk;
-          await sdk.deleteDatasource(datasource.uid);
+          const datalayer = getServiceContainer().datalayer;
+          await datalayer.deleteDatasource(datasource.uid);
 
           vscode.window.showInformationMessage(
             `Datasource "${datasource.name}" deleted successfully`,

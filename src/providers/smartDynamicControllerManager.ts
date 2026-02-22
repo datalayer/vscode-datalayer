@@ -14,7 +14,7 @@
 import * as vscode from "vscode";
 import type { DatalayerClient } from "@datalayer/core/lib/client";
 import type { RuntimeDTO } from "@datalayer/core/lib/models/RuntimeDTO";
-import { SDKAuthProvider } from "../services/core/authProvider";
+import { DatalayerAuthProvider } from "../services/core/authProvider";
 import { selectDatalayerRuntime } from "../ui/dialogs/runtimeSelector";
 import { WebSocketKernelClient } from "../kernel/clients/websocketKernelClient";
 import { PyodideKernelClient } from "../kernel/clients/pyodideKernelClient";
@@ -28,11 +28,11 @@ export class SmartDynamicControllerManager implements vscode.Disposable {
   /** VS Code extension context for accessing API and managing subscriptions */
   private readonly _context: vscode.ExtensionContext;
 
-  /** Datalayer SDK client for API communication */
-  private readonly _sdk: DatalayerClient;
+  /** Datalayer Datalayer client for API communication */
+  private readonly _datalayer: DatalayerClient;
 
   /** Authentication provider for managing auth state */
-  private readonly _authProvider: SDKAuthProvider;
+  private readonly _authProvider: DatalayerAuthProvider;
 
   /** Bridge for managing kernel connections and webview communication */
   private readonly _kernelBridge: KernelBridge;
@@ -67,18 +67,18 @@ export class SmartDynamicControllerManager implements vscode.Disposable {
   /**
    * Creates a new SmartDynamicControllerManager instance.
    * @param context VS Code extension context for managing subscriptions
-   * @param sdk Datalayer SDK client for API communication
+   * @param datalayer Datalayer Datalayer client for API communication
    * @param authProvider Authentication provider for managing user login state
    */
   constructor(
     context: vscode.ExtensionContext,
-    sdk: DatalayerClient,
-    authProvider: SDKAuthProvider,
+    datalayer: DatalayerClient,
+    authProvider: DatalayerAuthProvider,
   ) {
     this._context = context;
-    this._sdk = sdk;
+    this._datalayer = datalayer;
     this._authProvider = authProvider;
-    this._kernelBridge = new KernelBridge(sdk, authProvider);
+    this._kernelBridge = new KernelBridge(datalayer, authProvider);
 
     // Create Pyodide controller for offline Python execution
     this.createPyodideController();
@@ -251,7 +251,7 @@ export class SmartDynamicControllerManager implements vscode.Disposable {
       // Native notebook - use WebSocket
       let kernelClient = this._activeKernels.get(notebookUri);
       if (!kernelClient) {
-        kernelClient = new WebSocketKernelClient(runtime, this._sdk);
+        kernelClient = new WebSocketKernelClient(runtime, this._datalayer);
         await kernelClient.connect();
         this._activeKernels.set(notebookUri, kernelClient);
       }
@@ -421,7 +421,7 @@ export class SmartDynamicControllerManager implements vscode.Disposable {
     }
 
     // Show runtime selector
-    const runtime = await selectDatalayerRuntime(this._sdk, this._authProvider);
+    const runtime = await selectDatalayerRuntime(this._datalayer, this._authProvider);
 
     if (runtime) {
       // Create or get the runtime-specific controller
@@ -504,7 +504,7 @@ export class SmartDynamicControllerManager implements vscode.Disposable {
 
     try {
       // Get available runtimes
-      const runtimes = await this._sdk.listRuntimes();
+      const runtimes = await this._datalayer.listRuntimes();
       const activeRuntimeUids = new Set(runtimes.map((r) => r.uid));
 
       // Remove controllers for runtimes that no longer exist

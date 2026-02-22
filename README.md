@@ -180,7 +180,7 @@ Open settings (`Ctrl+,` / `Cmd+,`) and search "Datalayer":
 
 - `datalayer.logging.level` - trace/debug/info/warn/error (default: info)
 - `datalayer.logging.includeTimestamps` - Add timestamps (default: true)
-- `datalayer.logging.enableSDKLogging` - Log API calls (default: true)
+- `datalayer.logging.enableDatalayerLogging` - Log API calls (default: true)
 - `datalayer.logging.enablePerformanceMonitoring` - Track performance (default: false)
 
 ## Recent Updates

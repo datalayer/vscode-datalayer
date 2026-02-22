@@ -59,10 +59,10 @@ export function registerSnapshotCommands(
 
         try {
           const container = getServiceContainer();
-          const sdk = container.sdk;
+          const datalayer = container.datalayer;
 
           // Get available environments
-          const environments = await sdk.listEnvironments();
+          const environments = await datalayer.listEnvironments();
           if (!environments || environments.length === 0) {
             vscode.window.showErrorMessage("No environments available");
             return;
@@ -98,7 +98,7 @@ export function registerSnapshotCommands(
 
           // Create runtime with the snapshot pre-selected (skips snapshot selection step)
           const runtime = await createRuntime(
-            sdk,
+            datalayer,
             selectedEnv.environment,
             snapshot.uid,
           );

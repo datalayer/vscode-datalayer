@@ -49,12 +49,12 @@ export class ServiceLoggers {
   }
 
   // ========================================================================
-  // DatalayerClient SDK Loggers
+  // DatalayerClient Datalayer Loggers
   // ========================================================================
 
   /**
-   * Main DatalayerClient SDK operations logger.
-   * Use for general SDK lifecycle and configuration.
+   * Main DatalayerClient Datalayer operations logger.
+   * Use for general Datalayer lifecycle and configuration.
    */
   static get datalayerClient() {
     ServiceLoggers.ensureInitialized();
@@ -63,7 +63,7 @@ export class ServiceLoggers {
 
   /**
    * DatalayerClient authentication operations logger.
-   * Use for login, logout, whoami, and token management via SDK.
+   * Use for login, logout, whoami, and token management via Datalayer.
    */
   static get datalayerClientAuth() {
     ServiceLoggers.ensureInitialized();
@@ -72,7 +72,7 @@ export class ServiceLoggers {
 
   /**
    * DatalayerClient runtime management operations logger.
-   * Use for runtime creation, management, environments, and snapshots via SDK.
+   * Use for runtime creation, management, environments, and snapshots via Datalayer.
    */
   static get datalayerClientRuntime() {
     ServiceLoggers.ensureInitialized();
@@ -81,7 +81,7 @@ export class ServiceLoggers {
 
   /**
    * DatalayerClient spacer/document operations logger.
-   * Use for spaces, notebooks, lexical documents, and items via SDK.
+   * Use for spaces, notebooks, lexical documents, and items via Datalayer.
    */
   static get datalayerClientSpacer() {
     ServiceLoggers.ensureInitialized();
@@ -90,7 +90,7 @@ export class ServiceLoggers {
 
   /**
    * DatalayerClient network operations logger.
-   * Use for API calls, network requests, and connectivity via SDK.
+   * Use for API calls, network requests, and connectivity via Datalayer.
    */
   static get datalayerClientNetwork() {
     ServiceLoggers.ensureInitialized();

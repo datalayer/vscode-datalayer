@@ -12,7 +12,7 @@
  */
 
 import * as vscode from "vscode";
-import { SDKAuthProvider } from "./authProvider";
+import { DatalayerAuthProvider } from "./authProvider";
 import { SpacesTreeProvider } from "../../providers/spacesTreeProvider";
 import { RuntimesTreeProvider } from "../../providers/runtimesTreeProvider";
 import { SettingsTreeProvider } from "../../providers/settingsTreeProvider";
@@ -38,7 +38,7 @@ import { getServiceContainer } from "../../extension";
  * ```
  */
 export function setupAuthStateManagement(
-  authProvider: SDKAuthProvider,
+  authProvider: DatalayerAuthProvider,
   spacesTreeProvider: SpacesTreeProvider,
   controllerManager: SmartDynamicControllerManager,
   runtimesTreeProvider?: RuntimesTreeProvider,
@@ -74,8 +74,8 @@ export function setupAuthStateManagement(
     const envCache = EnvironmentCache.getInstance();
     if (authState.isAuthenticated) {
       // User logged in - refresh environment cache
-      const sdk = getServiceContainer().sdk;
-      envCache.onUserLogin(sdk).catch(() => {
+      const datalayer = getServiceContainer().datalayer;
+      envCache.onUserLogin(datalayer).catch(() => {
         // Silently handle cache refresh errors
       });
     } else {

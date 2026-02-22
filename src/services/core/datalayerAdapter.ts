@@ -5,10 +5,10 @@
  */
 
 /**
- * VS Code SDK adapter for Datalayer platform integration.
- * Provides SDK factory with VS Code configuration.
+ * VS Code Datalayer adapter for Datalayer platform integration.
+ * Provides Datalayer factory with VS Code configuration.
  *
- * @module services/sdkAdapter
+ * @module services/datalayerAdapter
  */
 
 import * as vscode from "vscode";
@@ -18,9 +18,9 @@ import { ServiceLoggers } from "../logging/loggers";
 import { DatalayerClientOperationTracker } from "../logging/datalayerClientLogger";
 
 /**
- * Configuration options for the VS Code SDK.
+ * Configuration options for the VS Code Datalayer.
  */
-export interface VSCodeSDKConfig extends Partial<DatalayerClientConfig> {
+export interface VSCodeDatalayerConfig extends Partial<DatalayerClientConfig> {
   /** VS Code extension context */
   context: vscode.ExtensionContext;
 }
@@ -34,21 +34,21 @@ export interface VSCodeSDKConfig extends Partial<DatalayerClientConfig> {
  * @example
  * ```typescript
  * export function activate(context: vscode.ExtensionContext) {
- *   const sdk = createVSCodeSDK({ context });
+ *   const datalayer = createVSCodeDatalayer({ context });
  *
- *   // Use SDK for authentication
- *   const user = await sdk.whoami();
+ *   // Use Datalayer for authentication
+ *   const user = await datalayer.whoami();
  *
- *   // Use SDK for runtime management
- *   const runtime = await sdk.ensureRuntime({
+ *   // Use Datalayer for runtime management
+ *   const runtime = await datalayer.ensureRuntime({
  *     environmentName: 'python-cpu-env',
  *     waitForReady: true
  *   });
  * }
  * ```
  */
-export function createVSCodeSDK(config: VSCodeSDKConfig): DatalayerClient {
-  const { context, ...sdkConfig } = config;
+export function createVSCodeDatalayer(config: VSCodeDatalayerConfig): DatalayerClient {
+  const { context, ...datalayerConfig } = config;
 
   // Get configuration from VS Code settings
   const vsCodeConfig = vscode.workspace.getConfiguration("datalayer.services");
@@ -62,7 +62,7 @@ export function createVSCodeSDK(config: VSCodeSDKConfig): DatalayerClient {
   // Only log if ServiceLoggers is initialized (avoid initialization order issues)
   if (ServiceLoggers.isInitialized()) {
     const logger = ServiceLoggers.datalayerClient;
-    logger.info("Initializing DatalayerClient SDK", {
+    logger.info("Initializing DatalayerClient Datalayer", {
       iamRunUrl,
       runtimesRunUrl,
       spacerRunUrl,
@@ -71,7 +71,7 @@ export function createVSCodeSDK(config: VSCodeSDKConfig): DatalayerClient {
     });
   }
 
-  const sdk = new DatalayerClient({
+  const datalayer = new DatalayerClient({
     // Service URLs - now using the configured URLs
     iamRunUrl,
     runtimesRunUrl,
@@ -85,15 +85,15 @@ export function createVSCodeSDK(config: VSCodeSDKConfig): DatalayerClient {
     handlers: DatalayerClientOperationTracker.createEnhancedClientHandlers(),
 
     // User-provided overrides
-    ...sdkConfig,
+    ...datalayerConfig,
   } as DatalayerClientConfig);
 
   if (ServiceLoggers.isInitialized()) {
     ServiceLoggers.datalayerClient.info(
-      "DatalayerClient SDK initialized successfully",
+      "DatalayerClient Datalayer initialized successfully",
     );
   }
-  return sdk;
+  return datalayer;
 }
 
 /**
@@ -107,30 +107,30 @@ export function getWebSocketUrl(): string {
 }
 
 /**
- * Global SDK instance for the extension.
+ * Global Datalayer instance for the extension.
  * This is initialized in the extension activation and used throughout.
  */
-let globalSDKInstance: DatalayerClient | undefined;
+let globalDatalayerInstance: DatalayerClient | undefined;
 
 /**
- * Sets the global SDK instance.
+ * Sets the global Datalayer instance.
  * Should only be called during extension activation.
  *
- * @param sdk - The SDK instance to set globally
+ * @param datalayer - The Datalayer instance to set globally
  */
-export function setSDKInstance(sdk: DatalayerClient): void {
-  globalSDKInstance = sdk;
+export function setDatalayerInstance(datalayer: DatalayerClient): void {
+  globalDatalayerInstance = datalayer;
 }
 
 /**
- * Gets the global SDK instance.
+ * Gets the global Datalayer instance.
  *
- * @returns The global SDK instance
- * @throws Error if SDK is not initialized
+ * @returns The global Datalayer instance
+ * @throws Error if Datalayer is not initialized
  */
-export function getSDKInstance(): DatalayerClient {
-  if (!globalSDKInstance) {
-    throw new Error("SDK not initialized. Call setSDKInstance first.");
+export function getDatalayerInstance(): DatalayerClient {
+  if (!globalDatalayerInstance) {
+    throw new Error("Datalayer not initialized. Call setDatalayerInstance first.");
   }
-  return globalSDKInstance;
+  return globalDatalayerInstance;
 }

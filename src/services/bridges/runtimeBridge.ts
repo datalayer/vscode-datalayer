@@ -17,7 +17,7 @@ import type { DocumentContext } from "../messaging/types";
 import { BaseService } from "../core/baseService";
 import { ServiceLoggers } from "../logging/loggers";
 import { getServiceContainer } from "../../extension";
-import { SDKAuthProvider } from "../core/authProvider";
+import { DatalayerAuthProvider } from "../core/authProvider";
 import { showKernelSelector } from "../../ui/dialogs/kernelSelector";
 import { getConnectedRuntime } from "../../commands";
 import {
@@ -126,8 +126,8 @@ export class RuntimeBridgeService extends BaseService {
   private async handleRuntimeSelection(
     context: DocumentContext,
   ): Promise<void> {
-    const sdk = getServiceContainer().sdk;
-    const authProvider = getServiceContainer().authProvider as SDKAuthProvider;
+    const datalayer = getServiceContainer().datalayer;
+    const authProvider = getServiceContainer().authProvider as DatalayerAuthProvider;
     const kernelBridge = getServiceContainer().kernelBridge;
 
     // Get current runtime for this document
@@ -136,7 +136,7 @@ export class RuntimeBridgeService extends BaseService {
 
     try {
       await showKernelSelector(
-        sdk,
+        datalayer,
         authProvider,
         kernelBridge,
         documentUri,
@@ -193,12 +193,12 @@ export class RuntimeBridgeService extends BaseService {
     }
 
     try {
-      const sdk = getServiceContainer().sdk;
+      const datalayer = getServiceContainer().datalayer;
 
-      // Delete the runtime via SDK - MUST use pod_name, not uid!
+      // Delete the runtime via Datalayer - MUST use pod_name, not uid!
       // If podName is missing, construct it from uid (format: runtime-{uid})
       const podName = runtimeObj.podName ?? `runtime-${runtimeObj.uid}`;
-      await sdk.deleteRuntime(podName);
+      await datalayer.deleteRuntime(podName);
 
       // Notify user of success
       vscode.window.showInformationMessage(

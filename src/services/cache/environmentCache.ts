@@ -55,13 +55,13 @@ export class EnvironmentCache {
   /**
    * Gets cached environments or fetches them if cache is stale.
    *
-   * @param sdk - Datalayer SDK instance
+   * @param datalayer - Datalayer Datalayer instance
    * @param authProvider - Authentication provider to check if user is logged in
    * @param forceRefresh - Force refresh even if cache is valid
    * @returns Array of available environments
    */
   public async getEnvironments(
-    sdk: DatalayerClient,
+    datalayer: DatalayerClient,
     authProvider: IAuthProvider,
     forceRefresh = false,
   ): Promise<EnvironmentDTO[]> {
@@ -88,23 +88,23 @@ export class EnvironmentCache {
     }
 
     // Fetch new environments (only when authenticated)
-    await this.fetchEnvironments(sdk);
+    await this.fetchEnvironments(datalayer);
     return this._environments;
   }
 
   /**
    * Fetches environments from the API.
    *
-   * @param sdk - Datalayer SDK instance
+   * @param datalayer - Datalayer Datalayer instance
    */
-  private async fetchEnvironments(sdk: DatalayerClient): Promise<void> {
+  private async fetchEnvironments(datalayer: DatalayerClient): Promise<void> {
     this._fetching = true;
 
     try {
-      // Call SDK to list environments - returns Environment model instances
-      const environments = await sdk.listEnvironments();
+      // Call Datalayer to list environments - returns Environment model instances
+      const environments = await datalayer.listEnvironments();
 
-      // SDK returns Environment model instances, store them directly
+      // Datalayer returns Environment model instances, store them directly
       this._environments = environments;
       this._lastFetch = Date.now();
     } catch (error) {
@@ -148,13 +148,13 @@ export class EnvironmentCache {
    * Refreshes environment cache when user logs in.
    * Should be called when authentication state changes to authenticated.
    *
-   * @param sdk - Datalayer SDK instance
+   * @param datalayer - Datalayer Datalayer instance
    */
-  public async onUserLogin(sdk: DatalayerClient): Promise<void> {
+  public async onUserLogin(datalayer: DatalayerClient): Promise<void> {
     // Clear stale cache and fetch fresh environments
     this.clear();
     try {
-      await this.fetchEnvironments(sdk);
+      await this.fetchEnvironments(datalayer);
     } catch (error) {
       // Silently handle errors - environments will be fetched on next request
     }

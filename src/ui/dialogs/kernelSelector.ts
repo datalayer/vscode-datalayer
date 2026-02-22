@@ -15,7 +15,7 @@ import * as vscode from "vscode";
 import { selectDatalayerRuntime } from "./runtimeSelector";
 import type { DatalayerClient } from "@datalayer/core/lib/client";
 import type { RuntimeDTO } from "@datalayer/core/lib/models/RuntimeDTO";
-import { SDKAuthProvider } from "../../services/core/authProvider";
+import { DatalayerAuthProvider } from "../../services/core/authProvider";
 import type { IKernelBridge } from "../../services/interfaces/IKernelBridge";
 
 interface KernelOption {
@@ -30,7 +30,7 @@ interface KernelOption {
  * Shows a kernel selection menu with available options.
  * This provides a clean interface for selecting between different kernel types.
  *
- * @param sdk - Datalayer SDK instance
+ * @param datalayer - Datalayer Datalayer instance
  * @param authProvider - Authentication provider
  * @param kernelBridge - Kernel bridge for connecting notebooks
  * @param documentUri - Optional document URI for context
@@ -38,8 +38,8 @@ interface KernelOption {
  * @returns Promise that resolves when selection is complete
  */
 export async function showKernelSelector(
-  sdk: DatalayerClient,
-  authProvider: SDKAuthProvider,
+  datalayer: DatalayerClient,
+  authProvider: DatalayerAuthProvider,
   kernelBridge: IKernelBridge,
   documentUri?: vscode.Uri,
   currentRuntime?: unknown,
@@ -83,7 +83,7 @@ export async function showKernelSelector(
           }
 
           // Now select runtime with instant spinner callback
-          const runtime = await selectDatalayerRuntime(sdk, authProvider, {
+          const runtime = await selectDatalayerRuntime(datalayer, authProvider, {
             // CRITICAL: Send "kernel-starting" IMMEDIATELY when runtime is selected
             // This callback is called BEFORE QuickPick closes for instant feedback
             onRuntimeSelected: documentUri

@@ -27,7 +27,7 @@ export async function createCloudNotebook(
     initialCells?: unknown[];
   },
   context: {
-    sdk?: unknown;
+    datalayer?: unknown;
     auth?: unknown;
     extras?: {
       openCloudDocument?: (
@@ -40,14 +40,14 @@ export async function createCloudNotebook(
   chatMessage?: string,
 ): Promise<CreateDocumentResult> {
   const { name, description, spaceName, spaceId } = params;
-  const { sdk, auth, extras } = context;
+  const { datalayer, auth, extras } = context;
 
-  if (!sdk) {
+  if (!datalayer) {
     return {
       success: false,
       uri: "",
       error:
-        "SDK is required for cloud notebook creation. Ensure you're authenticated.",
+        "Datalayer is required for cloud notebook creation. Ensure you're authenticated.",
       chatMessage,
     };
   }
@@ -67,7 +67,7 @@ export async function createCloudNotebook(
 
   try {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const client = sdk as any;
+    const client = datalayer as any;
     const finalName = name.endsWith(".ipynb") ? name : `${name}.ipynb`;
 
     let targetSpaceId = spaceId;
@@ -128,7 +128,7 @@ export async function createCloudNotebook(
       return {
         success: false,
         uri: "",
-        error: "Failed to create notebook (SDK returned null)",
+        error: "Failed to create notebook (Datalayer returned null)",
         chatMessage,
       };
     }
@@ -144,7 +144,7 @@ export async function createCloudNotebook(
     const uri = `datalayer://${encodeURIComponent(spaceDisplayName)}/${encodeURIComponent(notebook.uid)}/${encodeURIComponent(finalName)}`;
 
     // Call the callback to download and open the notebook
-    // Pass the actual SDK model instance (same as space tree command)
+    // Pass the actual Datalayer model instance (same as space tree command)
     if (extras?.openCloudDocument) {
       try {
         await extras.openCloudDocument(notebook, spaceDisplayName, "notebook");

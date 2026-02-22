@@ -6,7 +6,7 @@
 
 /**
  * Enhanced DatalayerClient operation tracking and logging.
- * Provides comprehensive SDK operation monitoring with correlation IDs and smart error handling.
+ * Provides comprehensive Datalayer operation monitoring with correlation IDs and smart error handling.
  *
  * @module services/datalayerClientLogger
  */
@@ -17,21 +17,21 @@ import { ServiceLoggers } from "./loggers";
 import { promptAndLogin } from "../../ui/dialogs/authDialog";
 
 /**
- * Context information for a single SDK operation.
+ * Context information for a single Datalayer operation.
  */
 export interface OperationContext {
   /** Unique identifier for this operation */
   operationId: string;
-  /** Name of the SDK method being called */
+  /** Name of the Datalayer method being called */
   method: string;
   /** ISO 8601 timestamp when the operation started */
   timestamp: string;
-  /** Sanitized arguments passed to the SDK method */
+  /** Sanitized arguments passed to the Datalayer method */
   args: unknown[];
 }
 
 /**
- * Tracking data for an in-flight SDK operation.
+ * Tracking data for an in-flight Datalayer operation.
  */
 export interface OperationData {
   /** High-resolution timestamp when operation started (performance.now()) */
@@ -41,7 +41,7 @@ export interface OperationData {
 }
 
 /**
- * Enhanced tracking and logging for DatalayerClient SDK operations.
+ * Enhanced tracking and logging for DatalayerClient Datalayer operations.
  * Provides operation correlation, timing, error categorization, and user-friendly handling.
  */
 export class DatalayerClientOperationTracker {
@@ -49,15 +49,15 @@ export class DatalayerClientOperationTracker {
   private static operations = new Map<string, OperationData>();
 
   /**
-   * Create enhanced SDK handlers with comprehensive logging and error handling.
+   * Create enhanced Datalayer handlers with comprehensive logging and error handling.
    *
    * @returns ClientHandlers with beforeCall, afterCall, and onError implementations
    */
   static createEnhancedClientHandlers(): ClientHandlers {
     return {
       /**
-       * Hook called before SDK method execution.
-       * @param methodName - Name of the SDK method being called
+       * Hook called before Datalayer method execution.
+       * @param methodName - Name of the Datalayer method being called
        * @param args - Arguments passed to the method
        */
       beforeCall: (methodName: string, args: unknown[]) => {
@@ -87,8 +87,8 @@ export class DatalayerClientOperationTracker {
       },
 
       /**
-       * Hook called after successful SDK method execution.
-       * @param methodName - Name of the SDK method that completed
+       * Hook called after successful Datalayer method execution.
+       * @param methodName - Name of the Datalayer method that completed
        * @param result - Result returned by the method
        */
       afterCall: (methodName: string, result: unknown) => {
@@ -118,8 +118,8 @@ export class DatalayerClientOperationTracker {
       },
 
       /**
-       * Hook called when SDK method throws an error.
-       * @param methodName - Name of the SDK method that failed
+       * Hook called when Datalayer method throws an error.
+       * @param methodName - Name of the Datalayer method that failed
        * @param error - Error thrown by the method
        */
       onError: async (methodName: string, error: unknown) => {
@@ -162,7 +162,7 @@ export class DatalayerClientOperationTracker {
         }
 
         // Handle specific error types with user-friendly actions
-        await DatalayerClientOperationTracker.handleSDKError(
+        await DatalayerClientOperationTracker.handleDatalayerError(
           methodName,
           error,
           logger,
@@ -172,9 +172,9 @@ export class DatalayerClientOperationTracker {
   }
 
   /**
-   * Route SDK method to appropriate logger based on method name.
+   * Route Datalayer method to appropriate logger based on method name.
    * Returns a no-op logger if ServiceLoggers is not yet initialized.
-   * @param methodName - Name of the SDK method
+   * @param methodName - Name of the Datalayer method
    * @returns Logger instance for the method category
    */
   private static getLoggerForMethod(methodName: string) {
@@ -239,7 +239,7 @@ export class DatalayerClientOperationTracker {
 
   /**
    * Find the most recent operation for a given method name.
-   * @param methodName - Name of the SDK method to find
+   * @param methodName - Name of the Datalayer method to find
    * @returns Operation data if found, undefined otherwise
    */
   private static findOperation(methodName: string): OperationData | undefined {
@@ -251,7 +251,7 @@ export class DatalayerClientOperationTracker {
 
   /**
    * Sanitize arguments to remove sensitive data before logging.
-   * @param args - Raw arguments passed to SDK method
+   * @param args - Raw arguments passed to Datalayer method
    * @returns Sanitized arguments safe for logging
    */
   private static sanitizeArgs(args: unknown[]): unknown[] {
@@ -284,7 +284,7 @@ export class DatalayerClientOperationTracker {
 
   /**
    * Create a summary of the result for logging without exposing sensitive data.
-   * @param result - Result returned from SDK method
+   * @param result - Result returned from Datalayer method
    * @returns Human-readable summary of the result
    */
   private static summarizeResult(result: unknown): string {
@@ -326,12 +326,12 @@ export class DatalayerClientOperationTracker {
   }
 
   /**
-   * Handle SDK errors with smart categorization and user-friendly responses.
-   * @param methodName - Name of the SDK method that failed
+   * Handle Datalayer errors with smart categorization and user-friendly responses.
+   * @param methodName - Name of the Datalayer method that failed
    * @param error - Error object thrown by the method
    * @param logger - Logger instance for error reporting
    */
-  private static async handleSDKError(
+  private static async handleDatalayerError(
     methodName: string,
     error: unknown,
     logger: {
@@ -411,7 +411,7 @@ export class DatalayerClientOperationTracker {
     }
 
     // Generic error - only log, don't show to user unless it's critical
-    logger.debug("Generic SDK error handled", {
+    logger.debug("Generic Datalayer error handled", {
       method: methodName,
       error: errorMessage,
     });

@@ -60,7 +60,7 @@ export const selectKernelOperation: ToolOperation<
 
     const { kernelId, autoStart, environmentType, durationMinutes } = validated;
     const { extras } = context;
-    const sdk = (extras as Record<string, unknown>)?.sdk as DatalayerClient;
+    const datalayer = (extras as Record<string, unknown>)?.datalayer as DatalayerClient;
     const auth = (extras as Record<string, unknown>)?.auth as IAuthProvider;
     const kernelBridge = (extras as Record<string, unknown>)
       ?.kernelBridge as IKernelBridge;
@@ -122,7 +122,7 @@ export const selectKernelOperation: ToolOperation<
       // Handler: Active Runtime (Connect to Currently Running Runtime)
       if (isActiveRuntime) {
         // Get list of running runtimes
-        if (!sdk || !auth?.isAuthenticated?.()) {
+        if (!datalayer || !auth?.isAuthenticated?.()) {
           return {
             success: false,
             error: "Not authenticated",
@@ -133,7 +133,7 @@ export const selectKernelOperation: ToolOperation<
           };
         }
 
-        const runtimes = await sdk.listRuntimes();
+        const runtimes = await datalayer.listRuntimes();
         const runningRuntimes = runtimes.filter((r) => r.ingress);
 
         if (runningRuntimes.length === 0) {
@@ -279,7 +279,7 @@ export const selectKernelOperation: ToolOperation<
       // Handler: Create New Runtime (Fully Automated)
       if (isCreateNew) {
         // Check authentication
-        if (!sdk || !auth?.isAuthenticated?.()) {
+        if (!datalayer || !auth?.isAuthenticated?.()) {
           return {
             success: false,
             error: "Not authenticated",
@@ -316,7 +316,7 @@ export const selectKernelOperation: ToolOperation<
         }
 
         // 4. List available environments and find the target
-        const environments = await sdk.listEnvironments();
+        const environments = await datalayer.listEnvironments();
         if (!environments || environments.length === 0) {
           return {
             success: false,
@@ -347,7 +347,7 @@ export const selectKernelOperation: ToolOperation<
         const creditsLimit = (runtimeMinutes * environment.burningRate) / 60;
 
         // 7. Create runtime (no snapshot)
-        let runtime = await sdk.createRuntime(
+        let runtime = await datalayer.createRuntime(
           environment.name,
           "notebook",
           generatedName,
@@ -358,7 +358,7 @@ export const selectKernelOperation: ToolOperation<
         // 8. Wait for runtime to be ready
         const maxAttempts = 20;
         for (let i = 0; i < maxAttempts; i++) {
-          const refreshed = await sdk.getRuntime(runtime.podName);
+          const refreshed = await datalayer.getRuntime(runtime.podName);
           if (refreshed?.ingress) {
             runtime = refreshed;
             break;
@@ -390,7 +390,7 @@ export const selectKernelOperation: ToolOperation<
       // Handler: Existing Cloud Runtime
       if (isCloudRuntime) {
         // Check authentication
-        if (!sdk || !auth?.isAuthenticated?.()) {
+        if (!datalayer || !auth?.isAuthenticated?.()) {
           return {
             success: false,
             error: "Not authenticated",
@@ -407,7 +407,7 @@ export const selectKernelOperation: ToolOperation<
           : normalizedKernelId;
 
         // 2. Fetch runtime from API
-        const runtime = await sdk.getRuntime(runtimeUid);
+        const runtime = await datalayer.getRuntime(runtimeUid);
         if (!runtime) {
           return {
             success: false,

@@ -184,7 +184,7 @@ export class LexicalDocument
         return LexicalDocument.getDefaultContent();
       }
     } catch (error) {
-      // If extension isn't ready or SDK not available, show user-friendly message
+      // If extension isn't ready or Datalayer not available, show user-friendly message
       const message =
         error instanceof Error
           ? error.message

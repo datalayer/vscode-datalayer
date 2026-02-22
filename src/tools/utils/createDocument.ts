@@ -111,7 +111,7 @@ export const createDocumentOperation: ToolOperation<
   /**
    * Execute document creation
    * @param params - Document creation parameters
-   * @param context - Tool execution context with SDK and auth
+   * @param context - Tool execution context with Datalayer and auth
    * @returns Result of document creation
    */
   async execute(params, context): Promise<CreateDocumentResult> {
@@ -131,7 +131,7 @@ export const createDocumentOperation: ToolOperation<
       initialCells,
     } = validated;
     const { extras } = context;
-    const sdk = (extras as Record<string, unknown>)?.sdk;
+    const datalayer = (extras as Record<string, unknown>)?.datalayer;
     const auth = (extras as Record<string, unknown>)?.auth;
 
     // Detect intent
@@ -177,7 +177,7 @@ export const createDocumentOperation: ToolOperation<
             spaceId,
             initialCells,
           },
-          { sdk, auth, extras: extras as Record<string, unknown> },
+          { datalayer, auth, extras: extras as Record<string, unknown> },
           chatFeedback,
         );
       } else {
@@ -197,7 +197,7 @@ export const createDocumentOperation: ToolOperation<
             spaceName: spaceName || "Library space",
             spaceId,
           },
-          { sdk, auth, extras: extras as Record<string, unknown> },
+          { datalayer, auth, extras: extras as Record<string, unknown> },
           chatFeedback,
         );
       } else {

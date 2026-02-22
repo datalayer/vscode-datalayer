@@ -17,7 +17,7 @@ import { SecretTreeItem } from "../models/secretTreeItem";
 import { DatasourceTreeItem } from "../models/datasourceTreeItem";
 import { TreeSectionItem } from "../models/treeSectionItem";
 import type { SettingsTreeItem } from "../models/settingsTreeItem";
-import { SDKAuthProvider } from "../services/core/authProvider";
+import { DatalayerAuthProvider } from "../services/core/authProvider";
 import { getServiceContainer } from "../extension";
 import type { SecretDTO } from "@datalayer/core/lib/models/Secret";
 import type { DatasourceDTO } from "@datalayer/core/lib/models/Datasource";
@@ -41,7 +41,7 @@ export class SettingsTreeProvider implements vscode.TreeDataProvider<SettingsTre
     SettingsTreeItem | undefined | void
   > = this._onDidChangeTreeData.event;
 
-  private authService: SDKAuthProvider;
+  private authService: DatalayerAuthProvider;
   private secretsCache: SecretDTO[] = [];
   private datasourcesCache: DatasourceDTO[] = [];
 
@@ -50,7 +50,7 @@ export class SettingsTreeProvider implements vscode.TreeDataProvider<SettingsTre
    *
    * @param authProvider - Authentication provider for user state management
    */
-  constructor(authProvider: SDKAuthProvider) {
+  constructor(authProvider: DatalayerAuthProvider) {
     this.authService = authProvider;
 
     // Listen to auth changes to refresh when user logs in/out
@@ -116,7 +116,7 @@ export class SettingsTreeProvider implements vscode.TreeDataProvider<SettingsTre
   }
 
   /**
-   * Loads secrets from the SDK.
+   * Loads secrets from the Datalayer.
    * Updates the cache with fresh secret data.
    */
   private async loadSecrets(): Promise<void> {
@@ -126,8 +126,8 @@ export class SettingsTreeProvider implements vscode.TreeDataProvider<SettingsTre
     }
 
     try {
-      const sdk = getServiceContainer().sdk;
-      this.secretsCache = (await sdk.listSecrets()) ?? [];
+      const datalayer = getServiceContainer().datalayer;
+      this.secretsCache = (await datalayer.listSecrets()) ?? [];
     } catch (error) {
       // Silently fail - tree will be empty
       this.secretsCache = [];
@@ -135,7 +135,7 @@ export class SettingsTreeProvider implements vscode.TreeDataProvider<SettingsTre
   }
 
   /**
-   * Loads datasources from the SDK.
+   * Loads datasources from the Datalayer.
    * Updates the cache with fresh datasource data.
    */
   private async loadDatasources(): Promise<void> {
@@ -145,9 +145,9 @@ export class SettingsTreeProvider implements vscode.TreeDataProvider<SettingsTre
     }
 
     try {
-      const sdk = getServiceContainer().sdk;
-      // SDK returns DatasourceDTO[] directly
-      this.datasourcesCache = (await sdk.listDatasources()) ?? [];
+      const datalayer = getServiceContainer().datalayer;
+      // Datalayer returns DatasourceDTO[] directly
+      this.datasourcesCache = (await datalayer.listDatasources()) ?? [];
 
       // Debug: Log datasources to see what we're receiving
       console.log(

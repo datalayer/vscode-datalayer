@@ -32,7 +32,7 @@ import type { Document } from "../../models/spaceItem";
  * This adapter bridges VS Code's LanguageModelTool interface to our
  * platform-agnostic core operations. It handles:
  * - Document resolution from parameters or active editor
- * - Context building (document handle, SDK, auth)
+ * - Context building (document handle, Datalayer, auth)
  * - Confirmation dialog generation
  * - Result formatting for VS Code
  */
@@ -173,7 +173,7 @@ export class VSCodeToolAdapter<
 
       // Put platform-specific services in extras
       extras: {
-        sdk: services.sdk,
+        datalayer: services.datalayer,
         auth: services.authProvider,
         // ALWAYS provide complete document context to ALL tools
         documentsContext,
@@ -181,7 +181,7 @@ export class VSCodeToolAdapter<
     };
 
     // Special handling for create operations (createNotebook, createLexical)
-    // Use the same extras with SDK, auth, and document creation callbacks
+    // Use the same extras with Datalayer, auth, and document creation callbacks
     if (isCreateOperation) {
       context.extras = this.buildCreateDocumentExtras();
     } else {
@@ -206,8 +206,8 @@ export class VSCodeToolAdapter<
     const documentAnalysis = analyzeOpenDocuments();
 
     return {
-      // SDK and auth for cloud notebook creation
-      sdk: services.sdk,
+      // Datalayer and auth for cloud notebook creation
+      datalayer: services.datalayer,
       auth: services.authProvider,
 
       // Environment signals
@@ -287,8 +287,8 @@ export class VSCodeToolAdapter<
     const services = getServiceContainer();
 
     return {
-      // SDK and auth for listKernels, selectKernel, etc.
-      sdk: services.sdk,
+      // Datalayer and auth for listKernels, selectKernel, etc.
+      datalayer: services.datalayer,
       auth: services.authProvider,
 
       // Kernel bridge for selectKernel operation
