@@ -221,7 +221,10 @@ export class ServiceContainer implements IServiceContainer {
   get documentBridge(): IDocumentBridge {
     if (!this._documentBridge) {
       this.logger.debug("Lazily initializing DocumentBridge service");
-      this._documentBridge = DocumentBridge.getInstance(this.context, this.datalayer);
+      this._documentBridge = DocumentBridge.getInstance(
+        this.context,
+        this.datalayer,
+      );
     }
     return this._documentBridge;
   }
@@ -286,7 +289,12 @@ export class ServiceContainer implements IServiceContainer {
       // This reduces extension activation time significantly
 
       this.logger.info("Service container initialized successfully", {
-        initializedServices: ["LoggerManager", "Logger", "Datalayer", "AuthProvider"],
+        initializedServices: [
+          "LoggerManager",
+          "Logger",
+          "Datalayer",
+          "AuthProvider",
+        ],
         deferredServices: [
           "DocumentBridge",
           "KernelBridge",

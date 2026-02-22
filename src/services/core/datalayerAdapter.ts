@@ -47,7 +47,9 @@ export interface VSCodeDatalayerConfig extends Partial<DatalayerClientConfig> {
  * }
  * ```
  */
-export function createVSCodeDatalayer(config: VSCodeDatalayerConfig): DatalayerClient {
+export function createVSCodeDatalayer(
+  config: VSCodeDatalayerConfig,
+): DatalayerClient {
   const { context, ...datalayerConfig } = config;
 
   // Get configuration from VS Code settings
@@ -130,7 +132,9 @@ export function setDatalayerInstance(datalayer: DatalayerClient): void {
  */
 export function getDatalayerInstance(): DatalayerClient {
   if (!globalDatalayerInstance) {
-    throw new Error("Datalayer not initialized. Call setDatalayerInstance first.");
+    throw new Error(
+      "Datalayer not initialized. Call setDatalayerInstance first.",
+    );
   }
   return globalDatalayerInstance;
 }

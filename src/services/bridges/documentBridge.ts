@@ -562,7 +562,9 @@ export class DocumentBridge {
       try {
         // Verify the runtime still exists and is running
         const datalayer = getServiceContainer().datalayer;
-        const currentRuntime = await datalayer.getRuntime(metadata.runtime.podName);
+        const currentRuntime = await datalayer.getRuntime(
+          metadata.runtime.podName,
+        );
 
         if (currentRuntime && currentRuntime.ingress && currentRuntime.token) {
           // Update the cached runtime with fresh data

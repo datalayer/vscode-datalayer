@@ -104,7 +104,9 @@ suite("EnvironmentCache Tests", () => {
         { name: "ai-env", displayName: "AI" },
       ];
 
-      mockDatalayer.listEnvironments.mockResolvedValue(mockEnvironments as unknown);
+      mockDatalayer.listEnvironments.mockResolvedValue(
+        mockEnvironments as unknown,
+      );
 
       const environments = await cache.getEnvironments(
         mockDatalayer as unknown as DatalayerClient,
@@ -126,7 +128,9 @@ suite("EnvironmentCache Tests", () => {
 
       const mockEnvironments = [{ name: "python-env", displayName: "Python" }];
 
-      mockDatalayer.listEnvironments.mockResolvedValue(mockEnvironments as unknown);
+      mockDatalayer.listEnvironments.mockResolvedValue(
+        mockEnvironments as unknown,
+      );
 
       // First call - fetches
       await cache.getEnvironments(
@@ -158,7 +162,9 @@ suite("EnvironmentCache Tests", () => {
 
       const mockEnvironments = [{ name: "python-env", displayName: "Python" }];
 
-      mockDatalayer.listEnvironments.mockResolvedValue(mockEnvironments as unknown);
+      mockDatalayer.listEnvironments.mockResolvedValue(
+        mockEnvironments as unknown,
+      );
 
       // First call
       await cache.getEnvironments(
@@ -197,7 +203,9 @@ suite("EnvironmentCache Tests", () => {
       };
       mockDatalayer.auth.isAuthenticated.mockReturnValue(true);
 
-      mockDatalayer.listEnvironments.mockRejectedValue(new Error("Network error"));
+      mockDatalayer.listEnvironments.mockRejectedValue(
+        new Error("Network error"),
+      );
 
       const environments = await cache.getEnvironments(
         mockDatalayer as unknown as DatalayerClient,

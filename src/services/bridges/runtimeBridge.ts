@@ -127,7 +127,8 @@ export class RuntimeBridgeService extends BaseService {
     context: DocumentContext,
   ): Promise<void> {
     const datalayer = getServiceContainer().datalayer;
-    const authProvider = getServiceContainer().authProvider as DatalayerAuthProvider;
+    const authProvider = getServiceContainer()
+      .authProvider as DatalayerAuthProvider;
     const kernelBridge = getServiceContainer().kernelBridge;
 
     // Get current runtime for this document

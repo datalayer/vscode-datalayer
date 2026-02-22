@@ -920,7 +920,8 @@ Complete the code at <CURSOR>:`;
    */
   private showDatalayerRuntimeSelector(document: NotebookDocument): void {
     const datalayer = getServiceContainer().datalayer;
-    const authProvider = getServiceContainer().authProvider as DatalayerAuthProvider;
+    const authProvider = getServiceContainer()
+      .authProvider as DatalayerAuthProvider;
 
     selectDatalayerRuntime(datalayer, authProvider, {
       // Show spinner immediately when runtime is selected

@@ -83,22 +83,26 @@ export async function showKernelSelector(
           }
 
           // Now select runtime with instant spinner callback
-          const runtime = await selectDatalayerRuntime(datalayer, authProvider, {
-            // CRITICAL: Send "kernel-starting" IMMEDIATELY when runtime is selected
-            // This callback is called BEFORE QuickPick closes for instant feedback
-            onRuntimeSelected: documentUri
-              ? async (selectedRuntime) => {
-                  console.log(
-                    "[KernelSelector] Runtime selected (instant callback):",
-                    selectedRuntime.uid,
-                  );
-                  await kernelBridge.sendKernelStartingMessage(
-                    documentUri,
-                    selectedRuntime,
-                  );
-                }
-              : undefined,
-          });
+          const runtime = await selectDatalayerRuntime(
+            datalayer,
+            authProvider,
+            {
+              // CRITICAL: Send "kernel-starting" IMMEDIATELY when runtime is selected
+              // This callback is called BEFORE QuickPick closes for instant feedback
+              onRuntimeSelected: documentUri
+                ? async (selectedRuntime) => {
+                    console.log(
+                      "[KernelSelector] Runtime selected (instant callback):",
+                      selectedRuntime.uid,
+                    );
+                    await kernelBridge.sendKernelStartingMessage(
+                      documentUri,
+                      selectedRuntime,
+                    );
+                  }
+                : undefined,
+            },
+          );
           console.log("[KernelSelector] Runtime selected:", runtime?.uid);
 
           if (runtime) {

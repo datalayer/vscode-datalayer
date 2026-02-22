@@ -604,28 +604,32 @@ export function registerRuntimeCommands(
         await import("../ui/dialogs/runtimeSelector");
 
       // Hide existing runtimes - user explicitly wants to CREATE a new one
-      const selectedRuntime = await selectDatalayerRuntime(datalayer, authProvider, {
-        hideExistingRuntimes: true,
-        // Show spinner in status bar when runtime selection starts
-        onRuntimeSelected: async (runtime) => {
-          vscode.window.withProgress(
-            {
-              location: vscode.ProgressLocation.Notification,
-              title: `Creating runtime: ${runtime.givenName}`,
-              cancellable: false,
-            },
-            async () => {
-              // Progress indicator will stay visible until the Promise resolves
-              // The actual runtime creation happens after this callback
-              // We just need to show the UI feedback immediately
-              return new Promise<void>((resolve) => {
-                // Resolve after a short delay to keep spinner visible
-                setTimeout(resolve, 500);
-              });
-            },
-          );
+      const selectedRuntime = await selectDatalayerRuntime(
+        datalayer,
+        authProvider,
+        {
+          hideExistingRuntimes: true,
+          // Show spinner in status bar when runtime selection starts
+          onRuntimeSelected: async (runtime) => {
+            vscode.window.withProgress(
+              {
+                location: vscode.ProgressLocation.Notification,
+                title: `Creating runtime: ${runtime.givenName}`,
+                cancellable: false,
+              },
+              async () => {
+                // Progress indicator will stay visible until the Promise resolves
+                // The actual runtime creation happens after this callback
+                // We just need to show the UI feedback immediately
+                return new Promise<void>((resolve) => {
+                  // Resolve after a short delay to keep spinner visible
+                  setTimeout(resolve, 500);
+                });
+              },
+            );
+          },
         },
-      });
+      );
 
       if (selectedRuntime) {
         vscode.window.showInformationMessage(

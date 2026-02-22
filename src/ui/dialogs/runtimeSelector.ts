@@ -90,7 +90,9 @@ export async function selectDatalayerRuntime(
       }
       try {
         // Fetch existing runtimes only if we need to show them
-        const runtimes = hideExistingRuntimes ? [] : await datalayer.listRuntimes();
+        const runtimes = hideExistingRuntimes
+          ? []
+          : await datalayer.listRuntimes();
 
         // Get cached environments
         const environments =

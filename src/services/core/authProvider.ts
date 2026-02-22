@@ -38,7 +38,10 @@ import { promptForCredentials } from "../../ui/dialogs/credentialsInput";
  * });
  * ```
  */
-export class DatalayerAuthProvider extends BaseService implements IAuthProvider {
+export class DatalayerAuthProvider
+  extends BaseService
+  implements IAuthProvider
+{
   private _authState: VSCodeAuthState = {
     isAuthenticated: false,
     user: null,
@@ -82,7 +85,9 @@ export class DatalayerAuthProvider extends BaseService implements IAuthProvider 
 
     // Try Datalayer session restoration first
     try {
-      this.logger.debug("Attempting Datalayer session restoration from keyring");
+      this.logger.debug(
+        "Attempting Datalayer session restoration from keyring",
+      );
       const result = await this.logger.timeAsync(
         "datalayer_session_restore",
         () => this.datalayer.auth.login({}), // Empty options = use StorageAuthStrategy
@@ -117,7 +122,9 @@ export class DatalayerAuthProvider extends BaseService implements IAuthProvider 
     // No Datalayer session - check for old VS Code secret (migration)
     const oldToken = await this.context.secrets.get("datalayer.token");
     if (oldToken) {
-      this.logger.info("Found old VS Code secret - migrating to Datalayer storage");
+      this.logger.info(
+        "Found old VS Code secret - migrating to Datalayer storage",
+      );
       try {
         const result = await this.logger.timeAsync(
           "datalayer_token_migration",
@@ -391,9 +398,13 @@ export class DatalayerAuthProvider extends BaseService implements IAuthProvider 
 
     try {
       // First call Datalayer IAM logout (requires base token to be set)
-      await this.logger.timeAsync("datalayer_logout", () => this.datalayer.logout(), {
-        operation: "clear_server_session",
-      });
+      await this.logger.timeAsync(
+        "datalayer_logout",
+        () => this.datalayer.logout(),
+        {
+          operation: "clear_server_session",
+        },
+      );
 
       // Then explicitly clear auth manager and keyring
       await this.logger.timeAsync(

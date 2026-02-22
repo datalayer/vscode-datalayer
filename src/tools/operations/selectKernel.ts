@@ -60,7 +60,8 @@ export const selectKernelOperation: ToolOperation<
 
     const { kernelId, autoStart, environmentType, durationMinutes } = validated;
     const { extras } = context;
-    const datalayer = (extras as Record<string, unknown>)?.datalayer as DatalayerClient;
+    const datalayer = (extras as Record<string, unknown>)
+      ?.datalayer as DatalayerClient;
     const auth = (extras as Record<string, unknown>)?.auth as IAuthProvider;
     const kernelBridge = (extras as Record<string, unknown>)
       ?.kernelBridge as IKernelBridge;

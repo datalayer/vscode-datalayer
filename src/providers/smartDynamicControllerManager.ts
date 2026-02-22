@@ -421,7 +421,10 @@ export class SmartDynamicControllerManager implements vscode.Disposable {
     }
 
     // Show runtime selector
-    const runtime = await selectDatalayerRuntime(this._datalayer, this._authProvider);
+    const runtime = await selectDatalayerRuntime(
+      this._datalayer,
+      this._authProvider,
+    );
 
     if (runtime) {
       // Create or get the runtime-specific controller
