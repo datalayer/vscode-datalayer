@@ -56,7 +56,7 @@
     "test": "vscode-test",
     "test:coverage": "vscode-test --coverage",
     "test:coverage:html": "npm run test:coverage && open coverage/index.html",
-    "test:vsix": "npm run vsix && node scripts/test-vsix-dataactivation.js",
+    "test:vsix": "npm run vsix && node scripts/test-vsix-activation.js",
     "test:vsix-manual": "npm run vsix && bash scripts/test-vsix-installation.sh",
     "type-check": "tsc --noEmit && tsc --noEmit -p tsconfig.webview.json",
     "vscode:prepublish": "npm run build:icons && npm run sync:tools",
