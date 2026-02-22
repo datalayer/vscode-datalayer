@@ -337,7 +337,7 @@ for (const dep of datalayerToolsPackages) {
     const toolsDest = path.join(targetPath, 'lib', 'tools');
     if (fs.existsSync(toolsSrc)) {
       copyRecursive(toolsSrc, toolsDest);
-      const toolsSize = getDirectorySize(toolsSrc);
+      const toolsSize = getDirectorySize(toolsDest);
       const toolsSizeMB = (toolsSize / (1024 * 1024)).toFixed(2);
       console.log(`      lib/tools/: ${toolsSizeMB}MB`);
       totalSize += toolsSize;
