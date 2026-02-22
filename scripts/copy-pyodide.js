@@ -14,24 +14,14 @@
 const fs = require('fs');
 const path = require('path');
 
-// Handle both local node_modules (standalone) and workspace-hoisted node_modules
-// Search up to 5 levels above the package root to find pyodide in hoisted node_modules
-const pkgRoot = path.resolve(__dirname, '..');
+// Find pyodide using Node's require.resolve(), which automatically walks up
+// the directory tree. Works for both standalone repos and monorepos.
 let sourceDir;
-const triedPaths = [];
-for (let i = 0; i <= 5; i++) {
-  const candidate = path.join(pkgRoot, ...Array(i).fill('..'), 'node_modules', 'pyodide');
-  triedPaths.push(candidate);
-  if (fs.existsSync(candidate)) {
-    sourceDir = candidate;
-    break;
-  }
-}
-if (!sourceDir) {
+try {
+  sourceDir = path.dirname(require.resolve('pyodide/package.json'));
+} catch {
   console.error('❌ ERROR: Could not find pyodide in node_modules');
-  for (const p of triedPaths) {
-    console.error(`   Tried: ${p}`);
-  }
+  console.error('   Install it with: npm install pyodide');
   process.exit(1);
 }
 const targetDir = path.join(__dirname, '..', 'dist', 'node_modules', 'pyodide');

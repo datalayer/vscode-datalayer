@@ -63,32 +63,6 @@ const datalayerToolsPackages = [
 console.log('📦 Copying external dependencies to dist/node_modules/...');
 
 const distNodeModules = path.join(__dirname, '..', 'dist', 'node_modules');
-const sourceNodeModules = path.join(__dirname, '..', 'node_modules');
-
-/**
- * Walk up the directory tree from the project root to find the nearest
- * ancestor that contains a node_modules directory. This supports both
- * simple repos (node_modules in project root) and monorepos where
- * dependencies are hoisted to an arbitrary ancestor.
- */
-function findRootNodeModules() {
-  let dir = path.resolve(__dirname, '..');
-  while (true) {
-    const candidate = path.join(dir, 'node_modules');
-    if (candidate !== sourceNodeModules && fs.existsSync(candidate)) {
-      return candidate;
-    }
-    const parent = path.dirname(dir);
-    if (parent === dir) break; // reached filesystem root
-    dir = parent;
-  }
-  // Fallback: return local node_modules (simple repo case)
-  return sourceNodeModules;
-}
-
-const rootNodeModules = findRootNodeModules();
-console.log(`   Local node_modules: ${sourceNodeModules}`);
-console.log(`   Root  node_modules: ${rootNodeModules}`);
 
 // Ensure dist/node_modules exists
 if (!fs.existsSync(distNodeModules)) {
@@ -96,16 +70,20 @@ if (!fs.existsSync(distNodeModules)) {
 }
 
 /**
- * Find a package in either local or root node_modules
+ * Find a package by walking up the directory tree from the project root.
+ * Works for both standalone repos (local node_modules) and monorepos
+ * where dependencies are hoisted to an arbitrary ancestor.
  */
 function findPackage(packageName) {
-  const localPath = path.join(sourceNodeModules, packageName);
-  if (fs.existsSync(localPath)) {
-    return localPath;
-  }
-  const rootPath = path.join(rootNodeModules, packageName);
-  if (fs.existsSync(rootPath)) {
-    return rootPath;
+  let dir = path.resolve(__dirname, '..');
+  while (true) {
+    const candidate = path.join(dir, 'node_modules', packageName);
+    if (fs.existsSync(candidate)) {
+      return candidate;
+    }
+    const parent = path.dirname(dir);
+    if (parent === dir) break; // reached filesystem root
+    dir = parent;
   }
   return null;
 }
@@ -173,8 +151,10 @@ function copyRecursive(src, dest) {
 
     // NEW: Skip nested node_modules directories (massive space saver)
     // Only copy from top-level node_modules, not nested dependencies
-    const relativePath = path.relative(sourceNodeModules, src);
-    if (relativePath.split(path.sep).filter(part => part === 'node_modules').length > 1) {
+    // Use the src path itself to detect nested node_modules
+    const srcParts = src.split(path.sep);
+    const nmCount = srcParts.filter(part => part === 'node_modules').length;
+    if (nmCount > 1) {
       return; // Skip nested node_modules
     }
 

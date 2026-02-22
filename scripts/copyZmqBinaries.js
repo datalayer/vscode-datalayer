@@ -9,21 +9,21 @@ const fs = require('fs');
 const path = require('path');
 
 /**
- * Find a package in either local or monorepo root node_modules
+ * Find a package by walking up the directory tree from the project root.
+ * Works for both standalone repos (local node_modules) and monorepos
+ * where dependencies are hoisted to an arbitrary ancestor.
  */
 function findPackage(packageName) {
-  // Try local node_modules first (standalone installation)
-  const localPath = path.join(__dirname, '..', 'node_modules', packageName);
-  if (fs.existsSync(localPath)) {
-    return localPath;
+  let dir = path.resolve(__dirname, '..');
+  while (true) {
+    const candidate = path.join(dir, 'node_modules', packageName);
+    if (fs.existsSync(candidate)) {
+      return candidate;
+    }
+    const parent = path.dirname(dir);
+    if (parent === dir) break; // reached filesystem root
+    dir = parent;
   }
-
-  // Try monorepo root node_modules (hoisted packages)
-  const rootPath = path.join(__dirname, '..', '..', 'node_modules', packageName);
-  if (fs.existsSync(rootPath)) {
-    return rootPath;
-  }
-
   return null;
 }
 

@@ -193,7 +193,23 @@ const webviewConfig = {
     extensions: [".ts", ".tsx", ".js", ".jsx", ".json", ".svg"],
     symlinks: true,
     // Include root node_modules for hoisted packages in monorepo
-    modules: ["node_modules", path.resolve(__dirname, "../../../node_modules")],
+    // Walk up from project dir to find the nearest ancestor node_modules
+    // (works for both standalone repos and monorepos with arbitrary nesting)
+    modules: (() => {
+      const dirs = ["node_modules"];
+      let dir = __dirname;
+      while (true) {
+        const parent = path.dirname(dir);
+        if (parent === dir) break;
+        dir = parent;
+        const candidate = path.join(dir, "node_modules");
+        if (require("fs").existsSync(candidate)) {
+          dirs.push(candidate);
+          break;
+        }
+      }
+      return dirs;
+    })(),
     fallback: {
       process: require.resolve("process/browser"),
       stream: false,
