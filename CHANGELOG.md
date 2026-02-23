@@ -67,13 +67,13 @@ All notable changes to the Datalayer VS Code extension are documented here.
 - Three-tier logging system (LoggerManager → ServiceLoggers → Individual Loggers)
 - Configurable log levels: trace, debug, info, warn, error
 - Optional timestamps and context information
-- SDK logging integration via adapter
+- Datalayer logging integration via adapter
 - Performance monitoring (optional)
 
 ### Added - Test Infrastructure & Type Safety
 
 - Complete type safety for test infrastructure with strongly-typed interfaces
-- `MockSDK` interface with 24+ typed spy methods for SDK mocking
+- `MockDatalayer` interface with 24+ typed spy methods for Datalayer mocking
 - `MockSpyFunction` interface for type-safe spy functions with call tracking
 - `MockLogger` interface extending `ILogger` for type-safe logger mocks
 - `createMockLogger()` factory function returning properly typed ILogger instances
@@ -84,7 +84,7 @@ All notable changes to the Datalayer VS Code extension are documented here.
 
 - 77 ESLint `@typescript-eslint/no-explicit-any` warnings by replacing `any` with `unknown` types
 - 67 TypeScript type-check errors in test files through proper type assertions
-- All test mock types now properly extend VS Code and SDK interfaces
+- All test mock types now properly extend VS Code and Datalayer interfaces
 - Type safety in test helpers with proper error handling (`instanceof Error` checks)
 - Mock spy function return type binding for proper type inference
 

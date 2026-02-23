@@ -26,7 +26,7 @@ export async function createCloudLexical(
     spaceId?: string;
   },
   context: {
-    sdk?: unknown;
+    datalayer?: unknown;
     auth?: unknown;
     extras?: {
       openCloudDocument?: (
@@ -39,14 +39,14 @@ export async function createCloudLexical(
   chatMessage?: string,
 ): Promise<CreateDocumentResult> {
   const { name, description, spaceName, spaceId } = params;
-  const { sdk, auth, extras } = context;
+  const { datalayer, auth, extras } = context;
 
-  if (!sdk) {
+  if (!datalayer) {
     return {
       success: false,
       uri: "",
       error:
-        "SDK is required for cloud lexical creation. Ensure you're authenticated.",
+        "Datalayer is required for cloud lexical creation. Ensure you're authenticated.",
       chatMessage,
     };
   }
@@ -66,7 +66,7 @@ export async function createCloudLexical(
 
   try {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const client = sdk as any;
+    const client = datalayer as any;
     // Support both .dlex (new) and .lexical (legacy) but always create new files as .dlex
     const finalName =
       name.endsWith(".dlex") || name.endsWith(".lexical")
@@ -131,7 +131,7 @@ export async function createCloudLexical(
       return {
         success: false,
         uri: "",
-        error: "Failed to create lexical document (SDK returned null)",
+        error: "Failed to create lexical document (Datalayer returned null)",
         chatMessage,
       };
     }
@@ -147,7 +147,7 @@ export async function createCloudLexical(
     const uri = `datalayer://${encodeURIComponent(spaceDisplayName)}/${encodeURIComponent(lexical.uid)}/${encodeURIComponent(finalName)}`;
 
     // Call the callback to download and open the lexical document
-    // Pass the actual SDK model instance (same as space tree command)
+    // Pass the actual Datalayer model instance (same as space tree command)
     if (extras?.openCloudDocument) {
       try {
         await extras.openCloudDocument(lexical, spaceDisplayName, "lexical");

@@ -69,7 +69,7 @@ export const listKernelsOperation: ToolOperation<
    * Execute the list kernels operation
    *
    * @param params - Parameters controlling which kernels to list and how to filter them
-   * @param context - Execution context containing SDK client and auth provider
+   * @param context - Execution context containing Datalayer client and auth provider
    * @returns Promise resolving to list of available kernels with optional chat message
    */
   async execute(params, context): Promise<ListKernelsResult> {
@@ -82,7 +82,7 @@ export const listKernelsOperation: ToolOperation<
 
     const { includeLocal, includeCloud, filter } = validated;
     const { extras } = context;
-    const sdk = (extras as Record<string, unknown>)?.sdk;
+    const datalayer = (extras as Record<string, unknown>)?.datalayer;
     const auth = (extras as Record<string, unknown>)?.auth;
 
     const kernels: KernelInfo[] = [];
@@ -159,11 +159,11 @@ export const listKernelsOperation: ToolOperation<
     // Discover active cloud runtimes
     if (includeCloud) {
       try {
-        const sdkClient = sdk as DatalayerClient;
+        const datalayerClient = datalayer as DatalayerClient;
         const authProvider = auth as IAuthProvider;
 
-        if (sdkClient && authProvider?.isAuthenticated?.()) {
-          const runtimes = await sdkClient.listRuntimes();
+        if (datalayerClient && authProvider?.isAuthenticated?.()) {
+          const runtimes = await datalayerClient.listRuntimes();
 
           // Include ALL running runtimes (not just "ready" status)
           runtimes.forEach((runtime) => {

@@ -32,7 +32,7 @@ import type { RuntimeDTO } from "@datalayer/core/lib/models/RuntimeDTO";
 import { BaseDocumentProvider } from "./baseDocumentProvider";
 import { LoroWebSocketAdapter } from "../services/collaboration/loroWebSocketAdapter";
 import { AutoConnectService } from "../services/autoConnect/autoConnectService";
-import { SDKAuthProvider } from "../services/core/authProvider";
+import { DatalayerAuthProvider } from "../services/core/authProvider";
 import {
   selectBestLanguageModel,
   isLanguageModelAPIAvailable,
@@ -335,7 +335,7 @@ export class LexicalProvider extends BaseDocumentProvider<LexicalDocument> {
    * Called after extension activation, passing authProvider directly to avoid circular dependency.
    */
   initializeAuthListener(
-    authProvider: import("../services/core/authProvider").SDKAuthProvider,
+    authProvider: import("../services/core/authProvider").DatalayerAuthProvider,
   ): void {
     authProvider.onAuthStateChanged(() => {
       this.updateUserInfoInAllWebviews(authProvider);
@@ -346,7 +346,7 @@ export class LexicalProvider extends BaseDocumentProvider<LexicalDocument> {
    * Updates userInfo in all open lexical webviews when auth state changes (login/logout)
    */
   private updateUserInfoInAllWebviews(
-    authProvider: import("../services/core/authProvider").SDKAuthProvider,
+    authProvider: import("../services/core/authProvider").DatalayerAuthProvider,
   ): void {
     const authState = authProvider.getAuthState();
 
@@ -1379,9 +1379,9 @@ export class LexicalProvider extends BaseDocumentProvider<LexicalDocument> {
    */
   private async tryAutoConnect(documentUri: vscode.Uri): Promise<void> {
     try {
-      const sdk = getServiceContainer().sdk;
+      const datalayer = getServiceContainer().datalayer;
       const authProvider = getServiceContainer()
-        .authProvider as SDKAuthProvider;
+        .authProvider as DatalayerAuthProvider;
       const runtimesTreeProvider = getRuntimesTreeProvider();
 
       // Get current runtime if any (no API for this yet, so pass undefined)
@@ -1391,7 +1391,7 @@ export class LexicalProvider extends BaseDocumentProvider<LexicalDocument> {
       const result = await this.autoConnectService.connect(
         documentUri,
         currentRuntime,
-        sdk,
+        datalayer,
         authProvider,
         runtimesTreeProvider,
       );

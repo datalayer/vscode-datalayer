@@ -62,13 +62,13 @@ export interface RuntimeConnectionResult {
  * Start Runtime Operation
  *
  * Starts a new Datalayer runtime (compute instance) with specified
- * or default parameters. Requires SDK and authentication.
+ * or default parameters. Requires Datalayer and authentication.
  *
  * @example
  * ```typescript
  * const result = await startRuntimeOperation.execute(
  *   { environment: 'python-3.11', durationMinutes: 60 },
- *   { sdk, auth }
+ *   { datalayer, auth }
  * );
  * if (result.success) {
  *   console.log(`Runtime started: ${result.runtime.name}`);
@@ -89,7 +89,7 @@ export const startRuntimeOperation: ToolOperation<
   /**
    * Executes the start runtime operation
    * @param params - Validated startup parameters including optional environment and duration
-   * @param context - Execution context containing SDK and authentication providers
+   * @param context - Execution context containing Datalayer and authentication providers
    * @returns Promise resolving to the runtime creation result with status and error details
    */
   async execute(params, context): Promise<RuntimeCreationResult> {
@@ -102,13 +102,13 @@ export const startRuntimeOperation: ToolOperation<
 
     const { environment, durationMinutes } = validated;
     const { extras } = context;
-    const sdk = (extras as Record<string, unknown>)?.sdk;
+    const datalayer = (extras as Record<string, unknown>)?.datalayer;
     const auth = (extras as Record<string, unknown>)?.auth;
 
     // Validate context
-    if (!sdk) {
+    if (!datalayer) {
       throw new Error(
-        "SDK is required for startRuntime operation. " +
+        "Datalayer is required for startRuntime operation. " +
           "Ensure the tool execution context includes a valid DatalayerClient.",
       );
     }
@@ -124,9 +124,9 @@ export const startRuntimeOperation: ToolOperation<
     }
 
     try {
-      // Type assertion to access SDK methods
+      // Type assertion to access Datalayer methods
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const client = sdk as any;
+      const client = datalayer as any;
 
       // Get environment from parameter or use first available
       let environmentName = environment;
@@ -146,17 +146,17 @@ export const startRuntimeOperation: ToolOperation<
       const duration =
         durationMinutes || extrasWithDuration?.defaultRuntimeDuration || 10;
 
-      // Start runtime using SDK's ensureRuntime method
+      // Start runtime using Datalayer's ensureRuntime method
       const runtimeData = await client.ensureRuntime(environmentName, duration);
 
       if (!runtimeData) {
         return {
           success: false,
-          error: "Failed to create runtime (SDK returned null)",
+          error: "Failed to create runtime (Datalayer returned null)",
         };
       }
 
-      // Map SDK runtime data to RuntimeInfo type
+      // Map Datalayer runtime data to RuntimeInfo type
       const runtime = {
         id: runtimeData.uid || runtimeData.podName,
         name: runtimeData.podName,
@@ -190,7 +190,7 @@ export const startRuntimeOperation: ToolOperation<
  * ```typescript
  * const result = await connectRuntimeOperation.execute(
  *   { runtimeName: 'my-runtime', notebookUri: 'datalayer:/...' },
- *   { sdk, auth, extras }
+ *   { datalayer, auth, extras }
  * );
  * if (result.success) {
  *   console.log(`Connected runtime: ${result.runtime.name}`);
@@ -211,7 +211,7 @@ export const connectRuntimeOperation: ToolOperation<
   /**
    * Executes the connect runtime operation
    * @param params - Validated connection parameters including runtime name and optional notebook URI
-   * @param context - Execution context containing SDK, auth providers, and platform-specific connection callback
+   * @param context - Execution context containing Datalayer, auth providers, and platform-specific connection callback
    * @returns Promise resolving to the runtime connection result with status and error details
    */
   async execute(params, context): Promise<RuntimeConnectionResult> {
@@ -224,13 +224,13 @@ export const connectRuntimeOperation: ToolOperation<
 
     const { runtimeName, notebookUri } = validated;
     const { extras } = context;
-    const sdk = (extras as Record<string, unknown>)?.sdk;
+    const datalayer = (extras as Record<string, unknown>)?.datalayer;
     const auth = (extras as Record<string, unknown>)?.auth;
 
     // Validate context
-    if (!sdk) {
+    if (!datalayer) {
       throw new Error(
-        "SDK is required for connectRuntime operation. " +
+        "Datalayer is required for connectRuntime operation. " +
           "Ensure the tool execution context includes a valid DatalayerClient.",
       );
     }

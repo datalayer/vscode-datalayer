@@ -34,7 +34,7 @@ export function registerSecretsCommands(
   context.subscriptions.push(
     vscode.commands.registerCommand("datalayer.createSecret", async () => {
       try {
-        const sdk = getServiceContainer().sdk;
+        const datalayer = getServiceContainer().datalayer;
 
         // Step 1: Select variant
         const variant = await vscode.window.showQuickPick(
@@ -140,7 +140,7 @@ export function registerSecretsCommands(
             cancellable: false,
           },
           async () => {
-            await sdk.createSecret({
+            await datalayer.createSecret({
               name: name.trim(),
               variant: variant.value,
               value: value,
@@ -193,8 +193,8 @@ export function registerSecretsCommands(
 
         try {
           // Fetch full secret with value
-          const sdk = getServiceContainer().sdk;
-          const fullSecret = await sdk.getSecret(secret.uid);
+          const datalayer = getServiceContainer().datalayer;
+          const fullSecret = await datalayer.getSecret(secret.uid);
 
           if (!fullSecret || !fullSecret.value) {
             vscode.window.showErrorMessage("Failed to retrieve secret value");
@@ -244,8 +244,8 @@ export function registerSecretsCommands(
 
         try {
           // Fetch full secret with value
-          const sdk = getServiceContainer().sdk;
-          const fullSecret = await sdk.getSecret(secret.uid);
+          const datalayer = getServiceContainer().datalayer;
+          const fullSecret = await datalayer.getSecret(secret.uid);
 
           if (!fullSecret || !fullSecret.value) {
             vscode.window.showErrorMessage("Failed to retrieve secret value");
@@ -320,13 +320,13 @@ export function registerSecretsCommands(
               cancellable: false,
             },
             async () => {
-              const sdk = getServiceContainer().sdk;
+              const datalayer = getServiceContainer().datalayer;
 
               // Fetch the full secret with value first
-              const fullSecret = await sdk.getSecret(secret.uid);
+              const fullSecret = await datalayer.getSecret(secret.uid);
 
               // Send update with all fields including current value
-              await sdk.updateSecret(secret.uid, {
+              await datalayer.updateSecret(secret.uid, {
                 variant: secret.variant,
                 name: newName.trim(),
                 description: secret.description || "",
@@ -391,8 +391,8 @@ export function registerSecretsCommands(
               cancellable: false,
             },
             async () => {
-              const sdk = getServiceContainer().sdk;
-              await sdk.deleteSecret(secret.uid);
+              const datalayer = getServiceContainer().datalayer;
+              await datalayer.deleteSecret(secret.uid);
 
               vscode.window.showInformationMessage(
                 `Secret "${secretName}" deleted successfully`,

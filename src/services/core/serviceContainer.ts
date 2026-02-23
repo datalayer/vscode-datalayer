@@ -21,8 +21,8 @@ import type { ILoggerManager } from "../interfaces/ILoggerManager";
 import type { IErrorHandler } from "../interfaces/IErrorHandler";
 import { LoggerManager } from "../logging/loggerManager";
 import { ServiceLoggers } from "../logging/loggers";
-import { createVSCodeSDK } from "./sdkAdapter";
-import { SDKAuthProvider } from "./authProvider";
+import { createVSCodeDatalayer } from "./datalayerAdapter";
+import { DatalayerAuthProvider } from "./authProvider";
 import { DocumentBridge } from "../bridges/documentBridge";
 import { KernelBridge } from "../bridges/kernelBridge";
 import { NotebookNetworkService } from "../network/networkProxy";
@@ -36,7 +36,7 @@ import { DocumentRegistry } from "../documents/documentRegistry";
 export interface IServiceContainer extends ILifecycle {
   // Core services
   readonly context: vscode.ExtensionContext;
-  readonly sdk: DatalayerClient;
+  readonly datalayer: DatalayerClient;
   readonly authProvider: IAuthProvider;
   readonly errorHandler: IErrorHandler;
 
@@ -69,16 +69,16 @@ export interface IServiceContainer extends ILifecycle {
  */
 export class ServiceContainer implements IServiceContainer {
   /**
-   * Lazily initialized SDK client for Datalayer platform.
+   * Lazily initialized Datalayer client for Datalayer platform.
    * @private
    */
-  private _sdk?: DatalayerClient;
+  private _datalayer?: DatalayerClient;
 
   /**
    * Lazily initialized authentication provider for managing user auth state.
    * @private
    */
-  private _authProvider?: SDKAuthProvider;
+  private _authProvider?: DatalayerAuthProvider;
 
   /**
    * Lazily initialized bridge service for document operations.
@@ -130,28 +130,28 @@ export class ServiceContainer implements IServiceContainer {
   constructor(public readonly context: vscode.ExtensionContext) {}
 
   /**
-   * Gets or lazily initializes the Datalayer SDK client.
-   * Creates a new SDK instance with VS Code context on first access.
+   * Gets or lazily initializes the Datalayer client.
+   * Creates a new Datalayer instance with VS Code context on first access.
    *
    * @returns The initialized DatalayerClient instance
    */
-  get sdk(): DatalayerClient {
-    if (!this._sdk) {
-      this._sdk = createVSCodeSDK({ context: this.context });
+  get datalayer(): DatalayerClient {
+    if (!this._datalayer) {
+      this._datalayer = createVSCodeDatalayer({ context: this.context });
     }
-    return this._sdk;
+    return this._datalayer;
   }
 
   /**
    * Gets or lazily initializes the authentication provider.
-   * Creates a new SDKAuthProvider instance on first access.
+   * Creates a new DatalayerAuthProvider instance on first access.
    *
    * @returns The initialized IAuthProvider instance
    */
   get authProvider(): IAuthProvider {
     if (!this._authProvider) {
-      this._authProvider = new SDKAuthProvider(
-        this.sdk,
+      this._authProvider = new DatalayerAuthProvider(
+        this.datalayer,
         this.context,
         this.loggerManager.createLogger("Auth"),
       );
@@ -221,7 +221,10 @@ export class ServiceContainer implements IServiceContainer {
   get documentBridge(): IDocumentBridge {
     if (!this._documentBridge) {
       this.logger.debug("Lazily initializing DocumentBridge service");
-      this._documentBridge = DocumentBridge.getInstance(this.context, this.sdk);
+      this._documentBridge = DocumentBridge.getInstance(
+        this.context,
+        this.datalayer,
+      );
     }
     return this._documentBridge;
   }
@@ -237,8 +240,8 @@ export class ServiceContainer implements IServiceContainer {
     if (!this._kernelBridge) {
       this.logger.debug("Lazily initializing KernelBridge service");
       this._kernelBridge = new KernelBridge(
-        this.sdk,
-        this.authProvider as SDKAuthProvider,
+        this.datalayer,
+        this.authProvider as DatalayerAuthProvider,
       );
     }
     return this._kernelBridge;
@@ -262,7 +265,7 @@ export class ServiceContainer implements IServiceContainer {
 
   /**
    * Initializes core services needed during extension activation.
-   * Only initializes SDK, auth, and logging - other services are lazy.
+   * Only initializes Datalayer, auth, and logging - other services are lazy.
    *
    * Performance: This method is optimized to initialize only what's needed
    * during extension activation. Document/kernel services are deferred until
@@ -275,8 +278,8 @@ export class ServiceContainer implements IServiceContainer {
 
       this.logger.info("Initializing service container...");
 
-      // Eagerly initialize SDK (needed for UI initialization)
-      void this.sdk; // Triggers SDK creation with logging available
+      // Eagerly initialize Datalayer (needed for UI initialization)
+      void this.datalayer; // Triggers Datalayer creation with logging available
 
       // Initialize authentication (needed for UI state)
       await this.authProvider.initialize();
@@ -286,7 +289,12 @@ export class ServiceContainer implements IServiceContainer {
       // This reduces extension activation time significantly
 
       this.logger.info("Service container initialized successfully", {
-        initializedServices: ["LoggerManager", "Logger", "SDK", "AuthProvider"],
+        initializedServices: [
+          "LoggerManager",
+          "Logger",
+          "Datalayer",
+          "AuthProvider",
+        ],
         deferredServices: [
           "DocumentBridge",
           "KernelBridge",

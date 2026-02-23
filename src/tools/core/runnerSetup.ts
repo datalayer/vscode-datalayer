@@ -98,7 +98,7 @@ interface BridgeExecutor {
 
 /**
  * VS Code-specific operations that must execute in extension context
- * (These need access to VS Code APIs, auth provider, SDK client, etc.)
+ * (These need access to VS Code APIs, auth provider, Datalayer client, etc.)
  */
 const VS_CODE_OPERATIONS = new Set([
   "createNotebook",

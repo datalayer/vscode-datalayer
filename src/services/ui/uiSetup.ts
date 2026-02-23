@@ -20,7 +20,7 @@ import { LexicalProvider } from "../../providers/lexicalProvider";
 import { OutlineTreeProvider } from "../../providers/outlineTreeProvider";
 import { RuntimesTreeProvider } from "../../providers/runtimesTreeProvider";
 import { SettingsTreeProvider } from "../../providers/settingsTreeProvider";
-import { SDKAuthProvider } from "../core/authProvider";
+import { DatalayerAuthProvider } from "../core/authProvider";
 import { EnvironmentCache } from "../cache/environmentCache";
 import type { DatalayerClient } from "@datalayer/core/lib/client";
 
@@ -49,19 +49,19 @@ export interface ExtensionUI {
  *
  * @param context - VS Code extension context
  * @param authProvider - Authentication provider instance
- * @param sdk - SDK instance
+ * @param datalayer - Datalayer instance
  * @returns Container with all initialized UI components
  *
  * @example
  * ```typescript
- * const ui = await initializeUI(context, authProvider, sdk);
+ * const ui = await initializeUI(context, authProvider, datalayer);
  * // UI components are registered and ready
  * ```
  */
 export async function initializeUI(
   context: vscode.ExtensionContext,
-  authProvider: SDKAuthProvider,
-  sdk: DatalayerClient,
+  authProvider: DatalayerAuthProvider,
+  datalayer: DatalayerClient,
 ): Promise<ExtensionUI> {
   const statusBar = DatalayerStatusBar.getInstance(authProvider);
   context.subscriptions.push(statusBar);
@@ -79,7 +79,7 @@ export async function initializeUI(
   try {
     if (authProvider.isAuthenticated()) {
       void (await EnvironmentCache.getInstance().getEnvironments(
-        sdk,
+        datalayer,
         authProvider,
       ));
     }
@@ -90,7 +90,7 @@ export async function initializeUI(
   // Create the smart dynamic controller manager
   const controllerManager = new SmartDynamicControllerManager(
     context,
-    sdk,
+    datalayer,
     authProvider,
   );
   context.subscriptions.push(controllerManager);

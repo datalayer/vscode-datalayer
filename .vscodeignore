@@ -17,6 +17,17 @@ node_modules/@datalayer/**/tests/**
 node_modules/@datalayer/**/__tests__/**
 node_modules/@datalayer/**/*.spec.*
 node_modules/@datalayer/**/*.test.*
+# Safety net: exclude @datalayer dist/build/src that should never be in VSIX
+# These are webpack bundles (plotly.js, excalidraw etc.) not needed at runtime
+dist/node_modules/@datalayer/*/dist/**
+dist/node_modules/@datalayer/*/build/**
+dist/node_modules/@datalayer/*/src/**
+dist/node_modules/@datalayer/**/jupyter_*/**
+dist/node_modules/@datalayer/**/datalayer_*/**
+dist/node_modules/@datalayer/**/lexical_*/**
+dist/node_modules/@datalayer/**/__pycache__/**
+dist/node_modules/@datalayer/**/.git/**
+dist/node_modules/@datalayer/**/.mypy_cache/**
 !node_modules/pyodide/**
 !node_modules/lexical/**
 !node_modules/@lexical/**
@@ -48,3 +59,4 @@ vsc-extension-quickstart.md
 patches/**
 dist/showcase.js
 dist/showcase.js.LICENSE.txt
+dist/*.LICENSE.txt

@@ -96,9 +96,9 @@ export async function _createRemoteNotebook(
   description?: string,
   spaceName?: string,
 ): Promise<vscode.Uri> {
-  // Get service container for SDK access
+  // Get service container for Datalayer access
   const services = getServiceContainer();
-  const sdk = services.sdk;
+  const datalayer = services.datalayer;
   const authProvider = services.authProvider;
 
   // Check authentication
@@ -107,7 +107,7 @@ export async function _createRemoteNotebook(
   }
 
   // Find the target space
-  const spaces = await sdk.getMySpaces();
+  const spaces = await datalayer.getMySpaces();
   if (!spaces || spaces.length === 0) {
     throw new Error("No spaces available. Please create a space first.");
   }
@@ -132,8 +132,8 @@ export async function _createRemoteNotebook(
     ? notebookName
     : `${notebookName}.ipynb`;
 
-  // Call SDK to create notebook
-  const notebook = await sdk.createNotebook(
+  // Call Datalayer to create notebook
+  const notebook = await datalayer.createNotebook(
     targetSpace.uid,
     finalNotebookName,
     description || "",

@@ -19,7 +19,7 @@ import type { NotebookDTO } from "@datalayer/core/lib/models/NotebookDTO";
 import type { LexicalDTO } from "@datalayer/core/lib/models/LexicalDTO";
 
 /**
- * Type alias for any SDK document model (Notebook or Lexical).
+ * Type alias for any Datalayer document model (Notebook or Lexical).
  */
 export type Document = NotebookDTO | LexicalDTO;
 
@@ -47,14 +47,14 @@ export enum ItemType {
 
 /**
  * Data associated with a space tree item.
- * Uses SDK model instances directly without custom interfaces.
+ * Uses Datalayer model instances directly without custom interfaces.
  */
 export interface SpaceItemData {
   /** Type of the tree item */
   type: ItemType;
-  /** SDK Space model instance (for SPACE type) */
+  /** Datalayer Space model instance (for SPACE type) */
   space?: SpaceDTO;
-  /** SDK Notebook or Lexical model instance (for NOTEBOOK/DOCUMENT types) */
+  /** Datalayer Notebook or Lexical model instance (for NOTEBOOK/DOCUMENT types) */
   document?: Document;
   /** Error message (for ERROR type) */
   error?: string;

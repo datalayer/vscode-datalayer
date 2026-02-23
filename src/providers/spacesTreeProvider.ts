@@ -14,7 +14,7 @@
 
 import * as vscode from "vscode";
 import { SpaceItem, ItemType } from "../models/spaceItem";
-import { SDKAuthProvider } from "../services/core/authProvider";
+import { DatalayerAuthProvider } from "../services/core/authProvider";
 import { getServiceContainer } from "../extension";
 import { ItemTypes } from "@datalayer/core/lib/client/constants";
 import type { SpaceDTO } from "@datalayer/core/lib/models/SpaceDTO";
@@ -41,7 +41,7 @@ export class SpacesTreeProvider implements vscode.TreeDataProvider<SpaceItem> {
     SpaceItem | undefined | null | void
   > = this._onDidChangeTreeData.event;
 
-  private authService: SDKAuthProvider;
+  private authService: DatalayerAuthProvider;
   private spacesCache: Map<string, SpaceDTO[]> = new Map();
   private itemsCache: Map<string, (NotebookDTO | LexicalDTO)[]> = new Map();
 
@@ -50,7 +50,7 @@ export class SpacesTreeProvider implements vscode.TreeDataProvider<SpaceItem> {
    *
    * @param authProvider - Authentication provider for user state management
    */
-  constructor(authProvider: SDKAuthProvider) {
+  constructor(authProvider: DatalayerAuthProvider) {
     this.authService = authProvider;
   }
 
@@ -168,9 +168,9 @@ export class SpacesTreeProvider implements vscode.TreeDataProvider<SpaceItem> {
       if (this.spacesCache.has("user")) {
         spaces = this.spacesCache.get("user")!;
       } else {
-        // Fetch spaces from SDK
-        const sdk = getServiceContainer().sdk;
-        spaces = (await sdk.getMySpaces()) ?? [];
+        // Fetch spaces from Datalayer
+        const datalayer = getServiceContainer().datalayer;
+        spaces = (await datalayer.getMySpaces()) ?? [];
         this.spacesCache.set("user", spaces);
 
         // Pre-fetch items for all spaces so they appear immediately
@@ -268,10 +268,10 @@ export class SpacesTreeProvider implements vscode.TreeDataProvider<SpaceItem> {
       if (this.itemsCache.has(spaceId)) {
         items = this.itemsCache.get(spaceId)!;
       } else {
-        const sdk = getServiceContainer().sdk;
+        const datalayer = getServiceContainer().datalayer;
 
         // Get the space to access its items
-        const spaces = await sdk.getMySpaces();
+        const spaces = await datalayer.getMySpaces();
         const targetSpace = spaces.find((s: SpaceDTO) => s.uid === spaceId);
 
         if (targetSpace) {

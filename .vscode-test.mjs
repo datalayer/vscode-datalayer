@@ -13,7 +13,7 @@ const __dirname = dirname(__filename);
 
 export default defineConfig({
   // Skip activation tests - blocked by @datalayer/core dependency issue
-  // Run only tests that don't import the SDK
+  // Run only tests that don't import the Datalayer
   files: [
     'out/src/test/extension.preload.test.js',
     'out/src/test/services/**/*.test.js',

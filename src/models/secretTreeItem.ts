@@ -27,7 +27,7 @@ export class SecretTreeItem extends vscode.TreeItem {
   /**
    * Creates a new SecretTreeItem.
    *
-   * @param secret - Secret model from SDK
+   * @param secret - Secret model from Datalayer
    */
   constructor(public readonly secret: SecretDTO) {
     super(secret.name, vscode.TreeItemCollapsibleState.None);

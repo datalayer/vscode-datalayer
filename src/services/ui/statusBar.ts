@@ -15,7 +15,7 @@
  */
 
 import * as vscode from "vscode";
-import { SDKAuthProvider } from "../core/authProvider";
+import { DatalayerAuthProvider } from "../core/authProvider";
 
 /**
  * Manages the Datalayer status bar item.
@@ -27,14 +27,14 @@ import { SDKAuthProvider } from "../core/authProvider";
  * @example
  * ```typescript
  * // In extension activation
- * const authProvider = SDKAuthProvider.getInstance(sdk, context);
+ * const authProvider = DatalayerAuthProvider.getInstance(datalayer, context);
  * const statusBar = DatalayerStatusBar.getInstance(authProvider);
  *
  * // Status bar automatically updates when auth state changes
  * // No manual updates needed - handled via event listeners
  * ```
  *
- * @see {@link SDKAuthProvider} - for authentication management
+ * @see {@link DatalayerAuthProvider} - for authentication management
  */
 export class DatalayerStatusBar implements vscode.Disposable {
   /**
@@ -55,7 +55,7 @@ export class DatalayerStatusBar implements vscode.Disposable {
    * Authentication provider for managing login state.
    * @internal
    */
-  private authProvider: SDKAuthProvider;
+  private authProvider: DatalayerAuthProvider;
 
   /**
    * Private constructor for singleton pattern.
@@ -67,7 +67,7 @@ export class DatalayerStatusBar implements vscode.Disposable {
    * @param authProvider - The authentication provider to monitor
    * @internal
    */
-  private constructor(authProvider: SDKAuthProvider) {
+  private constructor(authProvider: DatalayerAuthProvider) {
     this.authProvider = authProvider;
 
     // Create status bar item with right alignment and high priority
@@ -105,7 +105,7 @@ export class DatalayerStatusBar implements vscode.Disposable {
    * const sameStatusBar = DatalayerStatusBar.getInstance();
    * ```
    */
-  static getInstance(authProvider?: SDKAuthProvider): DatalayerStatusBar {
+  static getInstance(authProvider?: DatalayerAuthProvider): DatalayerStatusBar {
     if (!DatalayerStatusBar.instance) {
       if (!authProvider) {
         throw new Error(

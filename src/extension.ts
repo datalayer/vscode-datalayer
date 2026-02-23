@@ -21,7 +21,7 @@ import { registerAllCommands } from "./commands";
 import { setupAuthStateManagement } from "./services/core/authManager";
 import { ServiceLoggers } from "./services/logging/loggers";
 import { PerformanceLogger } from "./services/logging/performanceLogger";
-import type { SDKAuthProvider } from "./services/core/authProvider";
+import type { DatalayerAuthProvider } from "./services/core/authProvider";
 import {
   DocumentBridge,
   notifyExtensionReady,
@@ -175,8 +175,8 @@ export async function activate(
         () =>
           initializeUI(
             context,
-            services!.authProvider as SDKAuthProvider,
-            services!.sdk,
+            services!.authProvider as DatalayerAuthProvider,
+            services!.datalayer,
           ),
         { stage: "extension_activation" },
       );
@@ -252,7 +252,7 @@ export async function activate(
       );
 
       const updateAuthState = setupAuthStateManagement(
-        services.authProvider as SDKAuthProvider,
+        services.authProvider as DatalayerAuthProvider,
         ui.spacesTreeProvider,
         ui.controllerManager,
         ui.runtimesTreeProvider,
@@ -271,7 +271,7 @@ export async function activate(
       registerAllCommands(
         context,
         {
-          authProvider: services.authProvider as SDKAuthProvider,
+          authProvider: services.authProvider as DatalayerAuthProvider,
           documentBridge: services.documentBridge as DocumentBridge,
           spacesTreeProvider: ui.spacesTreeProvider,
           controllerManager: ui.controllerManager,
@@ -305,8 +305,8 @@ export async function activate(
         "[ACTIVATION] Step 18b: Import successful, creating instance...",
       );
       const jupyterServerProvider = new DatalayerJupyterServerProvider(
-        services!.sdk,
-        services!.authProvider as SDKAuthProvider,
+        services!.datalayer,
+        services!.authProvider as DatalayerAuthProvider,
         ui!.controllerManager,
       );
       console.log(

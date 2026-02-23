@@ -118,7 +118,7 @@ async function waitForExtensionReady(timeout = 30000): Promise<void> {
  */
 export class DocumentBridge {
   private static instance: DocumentBridge;
-  private static sdk: DatalayerClient;
+  private static datalayer: DatalayerClient;
   private static readonly METADATA_STORAGE_KEY = "datalayer.documentMetadata";
   private static context?: vscode.ExtensionContext;
 
@@ -128,13 +128,13 @@ export class DocumentBridge {
 
   private constructor(
     context?: vscode.ExtensionContext,
-    sdk?: DatalayerClient,
+    datalayer?: DatalayerClient,
   ) {
-    if (!sdk) {
-      throw new Error("SDK is required for DocumentBridge");
+    if (!datalayer) {
+      throw new Error("Datalayer is required for DocumentBridge");
     }
-    // Store SDK and context for later use
-    DocumentBridge.sdk = sdk;
+    // Store Datalayer and context for later use
+    DocumentBridge.datalayer = datalayer;
     if (context) {
       DocumentBridge.context = context;
       this.loadMetadata();
@@ -193,21 +193,21 @@ export class DocumentBridge {
    * Waits for extension initialization if necessary.
    *
    * @param context - Extension context (required on first call)
-   * @param sdk - SDK instance (required on first call)
+   * @param datalayer - Datalayer instance (required on first call)
    * @returns The singleton instance
    */
   static async getInstanceAsync(
     context?: vscode.ExtensionContext,
-    sdk?: DatalayerClient,
+    datalayer?: DatalayerClient,
   ): Promise<DocumentBridge> {
     // If called during VS Code startup before extension is ready, wait for it
-    if (!DocumentBridge.instance && !sdk && !DocumentBridge.sdk) {
+    if (!DocumentBridge.instance && !datalayer && !DocumentBridge.datalayer) {
       try {
         await waitForExtensionReady();
-        // After extension is ready, try to get SDK from service container
+        // After extension is ready, try to get Datalayer from service container
         try {
           const container = getServiceContainer();
-          sdk = container.sdk;
+          datalayer = container.datalayer;
         } catch {
           // Service container not ready yet, will retry
         }
@@ -219,14 +219,14 @@ export class DocumentBridge {
     }
 
     if (!DocumentBridge.instance) {
-      // Use provided SDK or fall back to stored SDK
-      const sdkToUse = sdk || DocumentBridge.sdk;
-      if (!sdkToUse) {
+      // Use provided Datalayer or fall back to stored Datalayer
+      const datalayerToUse = datalayer || DocumentBridge.datalayer;
+      if (!datalayerToUse) {
         throw new Error(
-          "SDK not available. Please ensure you are logged in to Datalayer.",
+          "Datalayer not available. Please ensure you are logged in to Datalayer.",
         );
       }
-      DocumentBridge.instance = new DocumentBridge(context, sdkToUse);
+      DocumentBridge.instance = new DocumentBridge(context, datalayerToUse);
     }
     return DocumentBridge.instance;
   }
@@ -236,18 +236,18 @@ export class DocumentBridge {
    * Use getInstanceAsync() for better reliability during startup.
    *
    * @param context - Extension context (required on first call)
-   * @param sdk - SDK instance (required on first call)
+   * @param datalayer - Datalayer instance (required on first call)
    * @returns The singleton instance
    * @deprecated Use getInstanceAsync() for documents opened during VS Code startup
    */
   static getInstance(
     context?: vscode.ExtensionContext,
-    sdk?: DatalayerClient,
+    datalayer?: DatalayerClient,
   ): DocumentBridge {
     if (!DocumentBridge.instance) {
-      // Use provided SDK or fall back to stored SDK
-      const sdkToUse = sdk || DocumentBridge.sdk;
-      DocumentBridge.instance = new DocumentBridge(context, sdkToUse);
+      // Use provided Datalayer or fall back to stored Datalayer
+      const datalayerToUse = datalayer || DocumentBridge.datalayer;
+      DocumentBridge.instance = new DocumentBridge(context, datalayerToUse);
     }
     return DocumentBridge.instance;
   }
@@ -266,7 +266,7 @@ export class DocumentBridge {
     spaceId?: string,
     spaceName?: string,
   ): Promise<vscode.Uri> {
-    // Use SDK model properties directly
+    // Use Datalayer model properties directly
     const docName = document.name;
     const typeInfo = detectDocumentType(document);
     const { isNotebook, isLexical } = typeInfo;
@@ -561,8 +561,10 @@ export class DocumentBridge {
     if (metadata?.runtime?.podName) {
       try {
         // Verify the runtime still exists and is running
-        const sdk = getServiceContainer().sdk;
-        const currentRuntime = await sdk.getRuntime(metadata.runtime.podName);
+        const datalayer = getServiceContainer().datalayer;
+        const currentRuntime = await datalayer.getRuntime(
+          metadata.runtime.podName,
+        );
 
         if (currentRuntime && currentRuntime.ingress && currentRuntime.token) {
           // Update the cached runtime with fresh data
@@ -585,8 +587,8 @@ export class DocumentBridge {
     }
 
     // Create or get a runtime
-    const sdk = getServiceContainer().sdk;
-    const runtime = await sdk.ensureRuntime();
+    const datalayer = getServiceContainer().datalayer;
+    const runtime = await datalayer.ensureRuntime();
 
     // Store the runtime with the document metadata
     if (runtime && metadata) {

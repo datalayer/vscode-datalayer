@@ -186,7 +186,7 @@ The extension uses npm workspaces in the monorepo for dependency management. Cha
 - **Extension Context** (`src/`): Node.js 22 environment, handles auth & server communication
 - **Webview** (`webview/`): React 18-based editors (Jupyter notebooks & Lexical documents)
 - **Message Passing**: Structured messages with JWT tokens between extension and webview
-- **SDK Integration**: Direct use of `@datalayer/core` SDK (file: dependency)
+- **Datalayer Integration**: Direct use of `@datalayer/core` Datalayer (file: dependency)
 - **Two Custom Editors**: `.ipynb` (Jupyter notebooks) and `.lexical` (rich text documents)
 - **Two Tree Views**: Datalayer Spaces and Datalayer Runtimes in Explorer sidebar
 
@@ -281,7 +281,7 @@ The extension provides multiple configuration options in VS Code settings:
   "datalayer.logging.level": "info", // trace|debug|info|warn|error
   "datalayer.logging.includeTimestamps": true,
   "datalayer.logging.includeContext": true,
-  "datalayer.logging.enableSDKLogging": true,
+  "datalayer.logging.enableDatalayerLogging": true,
   "datalayer.logging.enablePerformanceMonitoring": false
 }
 ```
@@ -384,7 +384,7 @@ src/
 │   ├── core/              # Core infrastructure services
 │   │   ├── authProvider.ts        # Authentication state (token, user)
 │   │   ├── authManager.ts         # Auth operations & state sync
-│   │   ├── sdkAdapter.ts          # SDK initialization with handlers
+│   │   ├── datalayerAdapter.ts          # Datalayer initialization with handlers
 │   │   ├── serviceContainer.ts    # Dependency injection container
 │   │   ├── baseService.ts         # Base service class
 │   │   └── errorHandler.ts        # Centralized error handling
@@ -399,7 +399,7 @@ src/
 │   │   ├── loggerManager.ts            # Logger factory (singleton)
 │   │   ├── loggers.ts                  # Static logger access (ServiceLoggers)
 │   │   ├── performanceLogger.ts        # Performance monitoring
-│   │   └── datalayerClientLogger.ts    # SDK logging adapter
+│   │   └── datalayerClientLogger.ts    # Datalayer logging adapter
 │   ├── cache/             # Caching layer
 │   │   └── environmentCache.ts    # Runtime environments cache (singleton)
 │   ├── messaging/         # Message routing
@@ -523,17 +523,17 @@ The extension uses a custom WOFF icon font for branded UI elements:
 
 **Toolchain**: SVG → svgicons2svgfont → svg2ttf → ttf2woff → WOFF
 
-### SDK Usage Pattern (October 2025)
+### Datalayer Usage Pattern (October 2025)
 
-**IMPORTANT**: The extension now uses the Datalayer SDK directly with handlers for VS Code-specific behavior.
+**IMPORTANT**: The extension now uses the Datalayer directly with handlers for VS Code-specific behavior.
 
 ```typescript
-// In sdkAdapter.ts - SDK configured with VS Code handlers
-const sdk = new DatalayerClient({
+// In datalayerAdapter.ts - Datalayer configured with VS Code handlers
+const datalayer = new DatalayerClient({
   token: authProvider.getToken(),
   handlers: {
     beforeCall: (methodName, args) => {
-      console.log(`[SDK] Calling ${methodName}`, args);
+      console.log(`[Datalayer] Calling ${methodName}`, args);
     },
     onError: async (methodName, error) => {
       if (error.message.includes("Not authenticated")) {
@@ -550,18 +550,18 @@ const sdk = new DatalayerClient({
 });
 
 // Usage throughout extension - no casts needed anymore
-const notebooks = await sdk.listNotebooks();
-const runtime = await sdk.ensureRuntime();
+const notebooks = await datalayer.listNotebooks();
+const runtime = await datalayer.ensureRuntime();
 ```
 
 ### Service Layer Removal
 
 **Removed Services** (October 2025):
 
-- ❌ `spacerService.ts` - Deleted, use SDK directly
-- ❌ `runtimeService.ts` - Deleted, use SDK directly
+- ❌ `spacerService.ts` - Deleted, use Datalayer directly
+- ❌ `runtimeService.ts` - Deleted, use Datalayer directly
 
-These services were wrapping every SDK method 1:1 just for logging. Now handled by SDK handlers pattern.
+These services were wrapping every Datalayer method 1:1 just for logging. Now handled by Datalayer handlers pattern.
 
 ### Important Notes
 
@@ -570,8 +570,8 @@ These services were wrapping every SDK method 1:1 just for logging. Now handled 
 - Use actual API field names (e.g., `ingress` not `jupyter_base_url`)
 - Maintain JSDoc comments for all exported functions
 - Use FormData for notebook/lexical creation, JSON for other endpoints
-- All cross-cutting concerns (logging, error handling) go in SDK handlers, not wrapper services
-- SDK interface is now complete - no type casts needed
+- All cross-cutting concerns (logging, error handling) go in Datalayer handlers, not wrapper services
+- Datalayer interface is now complete - no type casts needed
 
 ### Notebook Cell Management
 
@@ -708,8 +708,8 @@ const serviceManager = mutableServiceManager.createProxy();
 - ✅ Virtual file system for Datalayer documents
 - ✅ Production build CSS import fix for @primer/react-brand
 - ✅ Post-build script to remove problematic module specifiers
-- ✅ **SDK Integration with Handlers Pattern** (October 2025) - Eliminated service wrappers
-- ✅ **Clean Architecture** - Direct SDK usage with platform-specific handlers
+- ✅ **Datalayer Integration with Handlers Pattern** (October 2025) - Eliminated service wrappers
+- ✅ **Clean Architecture** - Direct Datalayer usage with platform-specific handlers
 - ✅ **Zero Code Duplication** - No more 1:1 method wrapping
 - ✅ **Unified Kernel Selection** (October 2025) - Single picker for all kernel sources
 - ✅ **Runtime Hot-Swapping** - Change kernels without notebook re-render

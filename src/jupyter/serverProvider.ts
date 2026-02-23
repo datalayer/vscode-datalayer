@@ -22,7 +22,7 @@ import type {
 } from "@vscode/jupyter-extension";
 import type { DatalayerClient } from "@datalayer/core/lib/client";
 import type { RuntimeDTO } from "@datalayer/core/lib/models/RuntimeDTO";
-import type { SDKAuthProvider } from "../services/core/authProvider";
+import type { DatalayerAuthProvider } from "../services/core/authProvider";
 import type { SmartDynamicControllerManager } from "../providers/smartDynamicControllerManager";
 
 /**
@@ -59,8 +59,8 @@ export class DatalayerJupyterServerProvider
   private authStateListener: vscode.Disposable;
 
   constructor(
-    private readonly sdk: DatalayerClient,
-    private readonly authProvider: SDKAuthProvider,
+    private readonly datalayer: DatalayerClient,
+    private readonly authProvider: DatalayerAuthProvider,
     private readonly controllerManager: SmartDynamicControllerManager,
   ) {
     this.serverChangeEmitter = new vscode.EventEmitter<void>();
@@ -111,7 +111,7 @@ export class DatalayerJupyterServerProvider
     // Add runtime servers only if authenticated
     if (this.isAuthenticated) {
       try {
-        const runtimes = await this.sdk.listRuntimes();
+        const runtimes = await this.datalayer.listRuntimes();
         servers.push(
           ...runtimes.map((runtime) => this.runtimeToJupyterServer(runtime)),
         );
@@ -237,7 +237,7 @@ export class DatalayerJupyterServerProvider
         "[DatalayerJupyterServerProvider] Fetching GPU environment...",
       );
       const environments = await EnvironmentCache.getInstance().getEnvironments(
-        this.sdk,
+        this.datalayer,
         this.authProvider,
       );
       console.log(
@@ -257,7 +257,7 @@ export class DatalayerJupyterServerProvider
 
       // Show creation flow (snapshot, name, duration)
       console.log("[DatalayerJupyterServerProvider] Showing creation flow...");
-      const runtime = await createRuntime(this.sdk, gpuEnv);
+      const runtime = await createRuntime(this.datalayer, gpuEnv);
       if (!runtime) {
         console.log(
           "[DatalayerJupyterServerProvider] User cancelled runtime creation",
@@ -306,7 +306,7 @@ export class DatalayerJupyterServerProvider
         "[DatalayerJupyterServerProvider] Fetching CPU environment...",
       );
       const environments = await EnvironmentCache.getInstance().getEnvironments(
-        this.sdk,
+        this.datalayer,
         this.authProvider,
       );
       console.log(
@@ -326,7 +326,7 @@ export class DatalayerJupyterServerProvider
 
       // Show creation flow
       console.log("[DatalayerJupyterServerProvider] Showing creation flow...");
-      const runtime = await createRuntime(this.sdk, cpuEnv);
+      const runtime = await createRuntime(this.datalayer, cpuEnv);
       if (!runtime) {
         console.log(
           "[DatalayerJupyterServerProvider] User cancelled runtime creation",

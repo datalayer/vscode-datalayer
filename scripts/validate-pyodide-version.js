@@ -8,28 +8,15 @@ const fs = require('fs');
 const path = require('path');
 
 // Read installed Pyodide version from node_modules
-// Handle both local node_modules and workspace-hoisted node_modules
+// Uses require.resolve() which automatically walks up the directory tree,
+// working for both standalone repos and monorepos with hoisted dependencies.
 let pyodidePackageJson;
 try {
-  // Try local node_modules first (standalone mode)
-  pyodidePackageJson = require('../node_modules/pyodide/package.json');
+  pyodidePackageJson = require(require.resolve('pyodide/package.json'));
 } catch (err) {
-  // Try root node_modules (workspace mode)
-  try {
-    pyodidePackageJson = require('../../node_modules/pyodide/package.json');
-  } catch (err2) {
-    // Fallback to require.resolve which uses Node's resolution algorithm
-    try {
-      const pyodidePath = require.resolve('pyodide/package.json');
-      pyodidePackageJson = require(pyodidePath);
-    } catch (err3) {
-      console.error('❌ ERROR: Could not find pyodide package.json');
-      console.error('   Tried: ../node_modules/pyodide/package.json');
-      console.error('   Tried: ../../node_modules/pyodide/package.json');
-      console.error('   Tried: require.resolve(\'pyodide/package.json\')');
-      process.exit(1);
-    }
-  }
+  console.error('❌ ERROR: Could not find pyodide package.json');
+  console.error('   Install it with: npm install pyodide');
+  process.exit(1);
 }
 const installedVersion = pyodidePackageJson.version;
 

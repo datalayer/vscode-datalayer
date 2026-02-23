@@ -191,7 +191,7 @@ Want to add more tests? Here are some ideas:
 - `04-verify-webview-bundle.sh` - Check webview assets are included
 - `05-test-lexical-bundle.sh` - Verify lexical webview assets
 - `06-verify-package-json.js` - Validate package.json in .vsix
-- `07-test-sdk-integration.js` - Test SDK client initialization
+- `07-test-datalayer-integration.js` - Test Datalayer client initialization
 - `08-verify-icons.sh` - Check all icons are included
 - `09-test-commands.js` - Verify command registration data
 

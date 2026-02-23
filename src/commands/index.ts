@@ -25,7 +25,7 @@ import { registerThemeCommands } from "./theme";
 import { registerOutlineCommands } from "./outline";
 import { registerAgUICommands } from "./agui";
 import { registerPyodideCommands } from "./pyodide";
-import { SDKAuthProvider } from "../services/core/authProvider";
+import { DatalayerAuthProvider } from "../services/core/authProvider";
 import { DocumentBridge } from "../services/bridges/documentBridge";
 import { SpacesTreeProvider } from "../providers/spacesTreeProvider";
 import { RuntimesTreeProvider } from "../providers/runtimesTreeProvider";
@@ -41,7 +41,7 @@ export { getConnectedRuntime };
  * @interface CommandServices
  */
 export interface CommandServices {
-  authProvider: SDKAuthProvider;
+  authProvider: DatalayerAuthProvider;
   documentBridge: DocumentBridge;
   spacesTreeProvider: SpacesTreeProvider;
   /** Controller manager for native notebook controller integration */

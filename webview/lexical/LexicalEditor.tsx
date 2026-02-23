@@ -12,7 +12,13 @@
  */
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { $getRoot, $createParagraphNode, $getSelection, $isRangeSelection, EditorState } from "lexical";
+import {
+  $getRoot,
+  $createParagraphNode,
+  $getSelection,
+  $isRangeSelection,
+  EditorState,
+} from "lexical";
 import { LexicalComposer } from "@lexical/react/LexicalComposer";
 import { RichTextPlugin } from "@lexical/react/LexicalRichTextPlugin";
 import { ContentEditable } from "@lexical/react/LexicalContentEditable";
@@ -127,32 +133,65 @@ function SlashCommandDebugPlugin() {
           const text = anchorNode.getTextContent().slice(0, anchor.offset);
 
           if (text.includes("/")) {
-            console.log("[SlashCmdDebug] SLASH detected:", JSON.stringify(text));
+            console.log(
+              "[SlashCmdDebug] SLASH detected:",
+              JSON.stringify(text),
+            );
 
             // Immediate DOM check
             const typeaheadDiv = document.getElementById("typeahead-menu");
-            const ariaLabels = document.querySelectorAll('[aria-label="Typeahead menu"]');
-            console.log("[SlashCmdDebug]   #typeahead-menu (immediate):", !!typeaheadDiv);
-            console.log("[SlashCmdDebug]   aria-label Typeahead count:", ariaLabels.length);
+            const ariaLabels = document.querySelectorAll(
+              '[aria-label="Typeahead menu"]',
+            );
+            console.log(
+              "[SlashCmdDebug]   #typeahead-menu (immediate):",
+              !!typeaheadDiv,
+            );
+            console.log(
+              "[SlashCmdDebug]   aria-label Typeahead count:",
+              ariaLabels.length,
+            );
             if (ariaLabels.length > 0) {
               const anchor = ariaLabels[0] as HTMLElement;
-              console.log("[SlashCmdDebug]   anchor children:", anchor.childNodes.length);
-              console.log("[SlashCmdDebug]   anchor innerHTML length:", anchor.innerHTML.length);
+              console.log(
+                "[SlashCmdDebug]   anchor children:",
+                anchor.childNodes.length,
+              );
+              console.log(
+                "[SlashCmdDebug]   anchor innerHTML length:",
+                anchor.innerHTML.length,
+              );
             }
 
             // DELAYED check - after React processes startTransition state update
             setTimeout(() => {
-              const delayedAnchor = document.querySelector('[aria-label="Typeahead menu"]') as HTMLElement;
+              const delayedAnchor = document.querySelector(
+                '[aria-label="Typeahead menu"]',
+              ) as HTMLElement;
               const delayedId = document.getElementById("typeahead-menu");
               console.log("[SlashCmdDebug] DELAYED (500ms):");
               console.log("[SlashCmdDebug]   #typeahead-menu:", !!delayedId);
               if (delayedAnchor) {
                 console.log("[SlashCmdDebug]   anchor.id:", delayedAnchor.id);
-                console.log("[SlashCmdDebug]   anchor.className:", delayedAnchor.className);
-                console.log("[SlashCmdDebug]   anchor childNodes:", delayedAnchor.childNodes.length);
-                console.log("[SlashCmdDebug]   anchor innerHTML (first 200):", delayedAnchor.innerHTML.substring(0, 200));
+                console.log(
+                  "[SlashCmdDebug]   anchor.className:",
+                  delayedAnchor.className,
+                );
+                console.log(
+                  "[SlashCmdDebug]   anchor childNodes:",
+                  delayedAnchor.childNodes.length,
+                );
+                console.log(
+                  "[SlashCmdDebug]   anchor innerHTML (first 200):",
+                  delayedAnchor.innerHTML.substring(0, 200),
+                );
                 const rect = delayedAnchor.getBoundingClientRect();
-                console.log("[SlashCmdDebug]   anchor rect:", { top: rect.top, left: rect.left, width: rect.width, height: rect.height });
+                console.log("[SlashCmdDebug]   anchor rect:", {
+                  top: rect.top,
+                  left: rect.left,
+                  width: rect.width,
+                  height: rect.height,
+                });
                 const styles = window.getComputedStyle(delayedAnchor);
                 console.log("[SlashCmdDebug]   anchor computed:", {
                   position: styles.position,
@@ -167,12 +206,21 @@ function SlashCommandDebugPlugin() {
                   height: styles.height,
                 });
                 // Check first child (the Primer content)
-                const firstChild = delayedAnchor.firstElementChild as HTMLElement;
+                const firstChild =
+                  delayedAnchor.firstElementChild as HTMLElement;
                 if (firstChild) {
                   const childRect = firstChild.getBoundingClientRect();
                   const childStyles = window.getComputedStyle(firstChild);
-                  console.log("[SlashCmdDebug]   firstChild tag:", firstChild.tagName);
-                  console.log("[SlashCmdDebug]   firstChild rect:", { top: childRect.top, left: childRect.left, width: childRect.width, height: childRect.height });
+                  console.log(
+                    "[SlashCmdDebug]   firstChild tag:",
+                    firstChild.tagName,
+                  );
+                  console.log("[SlashCmdDebug]   firstChild rect:", {
+                    top: childRect.top,
+                    left: childRect.left,
+                    width: childRect.width,
+                    height: childRect.height,
+                  });
                   console.log("[SlashCmdDebug]   firstChild computed:", {
                     display: childStyles.display,
                     visibility: childStyles.visibility,
@@ -181,14 +229,21 @@ function SlashCommandDebugPlugin() {
                     background: childStyles.backgroundColor,
                   });
                 } else {
-                  console.log("[SlashCmdDebug]   NO firstChild - menu did NOT render!");
+                  console.log(
+                    "[SlashCmdDebug]   NO firstChild - menu did NOT render!",
+                  );
                 }
               } else {
                 console.log("[SlashCmdDebug]   NO anchor found at all!");
               }
               // Also check body overflow
               const bodyStyles = window.getComputedStyle(document.body);
-              console.log("[SlashCmdDebug]   body overflow:", bodyStyles.overflow, bodyStyles.overflowX, bodyStyles.overflowY);
+              console.log(
+                "[SlashCmdDebug]   body overflow:",
+                bodyStyles.overflow,
+                bodyStyles.overflowX,
+                bodyStyles.overflowY,
+              );
             }, 500);
           }
         });
@@ -214,9 +269,18 @@ function DebugComponentPickerWrapper() {
     (window as any).__componentPickerEditor = editor;
     console.log("[SlashCmdDebug] ComponentPickerWrapper MOUNTED");
     console.log("[SlashCmdDebug]   wrapper editor key:", (editor as any)._key);
-    console.log("[SlashCmdDebug]   wrapper editor === debug editor:", editor === (window as any).__slashDebugEditor);
-    console.log("[SlashCmdDebug]   wrapper editor editable:", editor.isEditable());
-    console.log("[SlashCmdDebug]   wrapper editor root:", !!editor.getRootElement());
+    console.log(
+      "[SlashCmdDebug]   wrapper editor === debug editor:",
+      editor === (window as any).__slashDebugEditor,
+    );
+    console.log(
+      "[SlashCmdDebug]   wrapper editor editable:",
+      editor.isEditable(),
+    );
+    console.log(
+      "[SlashCmdDebug]   wrapper editor root:",
+      !!editor.getRootElement(),
+    );
 
     return () => {
       console.log("[SlashCmdDebug] ComponentPickerWrapper UNMOUNTED");

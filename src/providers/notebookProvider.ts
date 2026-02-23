@@ -18,7 +18,7 @@ import { disposeAll } from "../utils/dispose";
 import { getNotebookHtml } from "../ui/templates/notebookTemplate";
 import { WebviewCollection } from "../utils/webviewCollection";
 import { NotebookDocument, NotebookEdit } from "../models/notebookDocument";
-import { SDKAuthProvider } from "../services/core/authProvider";
+import { DatalayerAuthProvider } from "../services/core/authProvider";
 import {
   getServiceContainer,
   getOutlineTreeProvider,
@@ -919,10 +919,11 @@ Complete the code at <CURSOR>:`;
    * @param document - The notebook document
    */
   private showDatalayerRuntimeSelector(document: NotebookDocument): void {
-    const sdk = getServiceContainer().sdk;
-    const authProvider = getServiceContainer().authProvider as SDKAuthProvider;
+    const datalayer = getServiceContainer().datalayer;
+    const authProvider = getServiceContainer()
+      .authProvider as DatalayerAuthProvider;
 
-    selectDatalayerRuntime(sdk, authProvider, {
+    selectDatalayerRuntime(datalayer, authProvider, {
       // Show spinner immediately when runtime is selected
       onRuntimeSelected: async (selectedRuntime) => {
         // Send "kernel-starting" message to show spinner in notebook
@@ -965,9 +966,9 @@ Complete the code at <CURSOR>:`;
    */
   private async tryAutoConnect(documentUri: vscode.Uri): Promise<void> {
     try {
-      const sdk = getServiceContainer().sdk;
+      const datalayer = getServiceContainer().datalayer;
       const authProvider = getServiceContainer()
-        .authProvider as SDKAuthProvider;
+        .authProvider as DatalayerAuthProvider;
       const runtimesTreeProvider = getRuntimesTreeProvider();
 
       // Get current runtime if any (no API for this yet, so pass undefined)
@@ -977,7 +978,7 @@ Complete the code at <CURSOR>:`;
       const result = await this.autoConnectService.connect(
         documentUri,
         currentRuntime,
-        sdk,
+        datalayer,
         authProvider,
         runtimesTreeProvider,
       );

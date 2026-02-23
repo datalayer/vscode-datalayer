@@ -2,7 +2,7 @@
   "name": "datalayer-jupyter-vscode",
   "publisher": "Datalayer",
   "displayName": "Datalayer",
-  "description": "✨ 🤖 AI Agents for Data Analysis.",
+  "description": "✨ 🤖 Autonomous Agents for Data Analysis. LLM are bad at data — we fix that.",
   "version": "0.0.14",
   "cache_version": "2",
   "icon": "images/datalayer-logo.png",
@@ -79,7 +79,7 @@
     "@datalayer/core": "^1.0.1",
     "@datalayer/jupyter-lexical": "^1.0.9",
     "@datalayer/jupyter-react": "^2.0.3",
-    "@datalayer/lexical-loro": "^1.0.0",
+    "@datalayer/lexical-loro": "^1.0.3",
     "@datalayer/primer-addons": "^1.0.4",
     "@excalidraw/excalidraw": "^0.18.0",
     "@jupyter/ydoc": "^3.0.3",
@@ -1526,10 +1526,10 @@
           "default": true,
           "description": "Include additional context information (operation IDs, request details) in logs"
         },
-        "datalayer.logging.enableSDKLogging": {
+        "datalayer.logging.enableDatalayerLogging": {
           "type": "boolean",
           "default": true,
-          "description": "Enable comprehensive logging for DatalayerClient SDK operations and API calls"
+          "description": "Enable comprehensive logging for DatalayerClient Datalayer operations and API calls"
         },
         "datalayer.logging.enablePerformanceMonitoring": {
           "type": "boolean",

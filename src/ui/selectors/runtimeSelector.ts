@@ -14,7 +14,7 @@
 import * as vscode from "vscode";
 import type { DatalayerClient } from "@datalayer/core/lib/client";
 import type { RuntimeDTO } from "@datalayer/core/lib/models/RuntimeDTO";
-import type { SDKAuthProvider } from "../../services/core/authProvider";
+import type { DatalayerAuthProvider } from "../../services/core/authProvider";
 import type { SmartDynamicControllerManager } from "../../providers/smartDynamicControllerManager";
 
 /**
@@ -41,16 +41,16 @@ interface RuntimeQuickPickItem extends vscode.QuickPickItem {
  * - Controller items activate existing controllers
  */
 export class DatalayerRuntimeSelector {
-  private readonly sdk: DatalayerClient;
-  private readonly authProvider: SDKAuthProvider;
+  private readonly datalayer: DatalayerClient;
+  private readonly authProvider: DatalayerAuthProvider;
   private readonly controllerManager: SmartDynamicControllerManager;
 
   constructor(
-    sdk: DatalayerClient,
-    authProvider: SDKAuthProvider,
+    datalayer: DatalayerClient,
+    authProvider: DatalayerAuthProvider,
     controllerManager: SmartDynamicControllerManager,
   ) {
-    this.sdk = sdk;
+    this.datalayer = datalayer;
     this.authProvider = authProvider;
     this.controllerManager = controllerManager;
   }
@@ -200,7 +200,7 @@ export class DatalayerRuntimeSelector {
    */
   private async getRuntimes(): Promise<RuntimeDTO[]> {
     try {
-      return await this.sdk.listRuntimes();
+      return await this.datalayer.listRuntimes();
     } catch (error) {
       console.error(
         "[DatalayerRuntimeSelector] Failed to list runtimes:",
@@ -221,7 +221,7 @@ export class DatalayerRuntimeSelector {
 
     // Get GPU environment
     const environments = await EnvironmentCache.getInstance().getEnvironments(
-      this.sdk,
+      this.datalayer,
       this.authProvider,
     );
     const gpuEnv = environments.find((e) => e.name === "ai-env");
@@ -232,7 +232,7 @@ export class DatalayerRuntimeSelector {
     }
 
     // Show creation flow (snapshot, name, duration)
-    const runtime = await createRuntime(this.sdk, gpuEnv);
+    const runtime = await createRuntime(this.datalayer, gpuEnv);
     if (!runtime) {
       return; // User cancelled
     }
@@ -256,7 +256,7 @@ export class DatalayerRuntimeSelector {
 
     // Get CPU environment
     const environments = await EnvironmentCache.getInstance().getEnvironments(
-      this.sdk,
+      this.datalayer,
       this.authProvider,
     );
     const cpuEnv = environments.find((e) => e.name === "python-cpu-env");
@@ -267,7 +267,7 @@ export class DatalayerRuntimeSelector {
     }
 
     // Show creation flow
-    const runtime = await createRuntime(this.sdk, cpuEnv);
+    const runtime = await createRuntime(this.datalayer, cpuEnv);
     if (!runtime) {
       return;
     }

@@ -50,7 +50,7 @@ export function registerRuntimeCommands(
   runtimesTreeProvider?: RuntimesTreeProvider,
 ): void {
   const container = getServiceContainer();
-  const sdk = container.sdk;
+  const datalayer = container.datalayer;
   const authProvider = container.authProvider;
   /**
    * Command: datalayer.selectRuntime
@@ -84,7 +84,7 @@ export function registerRuntimeCommands(
             const { selectDatalayerRuntime } =
               await import("../ui/dialogs/runtimeSelector");
             const selectedRuntime = await selectDatalayerRuntime(
-              sdk,
+              datalayer,
               authProvider,
               {
                 // Show spinner immediately when runtime is selected
@@ -209,7 +209,7 @@ export function registerRuntimeCommands(
         }
 
         // Fetch all runtimes
-        const runtimes = await sdk.listRuntimes();
+        const runtimes = await datalayer.listRuntimes();
 
         if (!runtimes || runtimes.length === 0) {
           vscode.window.showInformationMessage("No running runtimes found");
@@ -278,7 +278,7 @@ export function registerRuntimeCommands(
           // Terminate all runtimes in parallel
           const results = await Promise.allSettled(
             runtimes.map((runtime) =>
-              sdk
+              datalayer
                 .deleteRuntime(runtime.podName)
                 .then(() => ({ success: true, runtime }))
                 .catch((error) => ({ success: false, runtime, error })),
@@ -325,7 +325,7 @@ export function registerRuntimeCommands(
         }
 
         // Terminate the runtime
-        await sdk.deleteRuntime(selectedRuntime.podName);
+        await datalayer.deleteRuntime(selectedRuntime.podName);
 
         vscode.window.showInformationMessage(
           `Runtime "${runtimeName}" terminated successfully`,
@@ -362,7 +362,7 @@ export function registerRuntimeCommands(
             return;
           }
 
-          const runtimes = await sdk.listRuntimes();
+          const runtimes = await datalayer.listRuntimes();
 
           if (!runtimes || runtimes.length === 0) {
             vscode.window.showInformationMessage(
@@ -375,14 +375,14 @@ export function registerRuntimeCommands(
           const runtime = runtimes[0];
           const podName = runtime.podName;
           if (!podName) {
-            throw new Error("Runtime missing podName from SDK");
+            throw new Error("Runtime missing podName from Datalayer");
           }
 
           vscode.window.showInformationMessage(
             `Debug: Terminating runtime "${runtime.givenName}". Check console for details.`,
           );
 
-          const _result = await sdk.deleteRuntime(podName);
+          const _result = await datalayer.deleteRuntime(podName);
           vscode.window.showInformationMessage(
             `Debug: Runtime terminated successfully. Result: ${JSON.stringify(
               _result,
@@ -457,7 +457,7 @@ export function registerRuntimeCommands(
               return;
             }
 
-            await sdk.deleteRuntime(runtimeObj.podName!);
+            await datalayer.deleteRuntime(runtimeObj.podName!);
             const runtimeName =
               runtimeObj.givenName ||
               runtimeObj.given_name ||
@@ -521,7 +521,7 @@ export function registerRuntimeCommands(
         }
 
         // Get list of active runtimes
-        const runtimes = await sdk.listRuntimes();
+        const runtimes = await datalayer.listRuntimes();
 
         if (!runtimes || runtimes.length === 0) {
           vscode.window.showInformationMessage("No active runtimes found.");
@@ -538,7 +538,7 @@ export function registerRuntimeCommands(
           );
 
           if (confirmed) {
-            await terminateRuntime(sdk, runtime);
+            await terminateRuntime(datalayer, runtime);
           }
           return;
         }
@@ -569,7 +569,7 @@ export function registerRuntimeCommands(
           );
 
           if (confirmed) {
-            await terminateRuntime(sdk, selected.runtime);
+            await terminateRuntime(datalayer, selected.runtime);
           }
         }
       } catch (error: unknown) {
@@ -604,28 +604,32 @@ export function registerRuntimeCommands(
         await import("../ui/dialogs/runtimeSelector");
 
       // Hide existing runtimes - user explicitly wants to CREATE a new one
-      const selectedRuntime = await selectDatalayerRuntime(sdk, authProvider, {
-        hideExistingRuntimes: true,
-        // Show spinner in status bar when runtime selection starts
-        onRuntimeSelected: async (runtime) => {
-          vscode.window.withProgress(
-            {
-              location: vscode.ProgressLocation.Notification,
-              title: `Creating runtime: ${runtime.givenName}`,
-              cancellable: false,
-            },
-            async () => {
-              // Progress indicator will stay visible until the Promise resolves
-              // The actual runtime creation happens after this callback
-              // We just need to show the UI feedback immediately
-              return new Promise<void>((resolve) => {
-                // Resolve after a short delay to keep spinner visible
-                setTimeout(resolve, 500);
-              });
-            },
-          );
+      const selectedRuntime = await selectDatalayerRuntime(
+        datalayer,
+        authProvider,
+        {
+          hideExistingRuntimes: true,
+          // Show spinner in status bar when runtime selection starts
+          onRuntimeSelected: async (runtime) => {
+            vscode.window.withProgress(
+              {
+                location: vscode.ProgressLocation.Notification,
+                title: `Creating runtime: ${runtime.givenName}`,
+                cancellable: false,
+              },
+              async () => {
+                // Progress indicator will stay visible until the Promise resolves
+                // The actual runtime creation happens after this callback
+                // We just need to show the UI feedback immediately
+                return new Promise<void>((resolve) => {
+                  // Resolve after a short delay to keep spinner visible
+                  setTimeout(resolve, 500);
+                });
+              },
+            );
+          },
         },
-      });
+      );
 
       if (selectedRuntime) {
         vscode.window.showInformationMessage(
@@ -676,7 +680,7 @@ export function registerRuntimeCommands(
         console.log("[DEBUG] User confirmed, proceeding with termination...");
 
         try {
-          await sdk.deleteRuntime(item.runtime.podName);
+          await datalayer.deleteRuntime(item.runtime.podName);
           vscode.window.showInformationMessage(
             `Runtime "${runtimeName}" terminated successfully`,
           );
@@ -718,7 +722,7 @@ export function registerRuntimeCommands(
           }
 
           // Fetch all runtimes
-          const runtimes = await sdk.listRuntimes();
+          const runtimes = await datalayer.listRuntimes();
           console.log("[DEBUG] Found runtimes:", runtimes?.length);
 
           if (!runtimes || runtimes.length === 0) {
@@ -748,7 +752,7 @@ export function registerRuntimeCommands(
                   progress.report({
                     message: `Terminating ${runtime.givenName || runtime.podName} (${index + 1}/${runtimes.length})`,
                   });
-                  return sdk.deleteRuntime(runtime.podName);
+                  return datalayer.deleteRuntime(runtime.podName);
                 }),
               );
 
@@ -883,7 +887,7 @@ export function registerRuntimeCommands(
               cancellable: false,
             },
             async () => {
-              const snapshot = await sdk.createSnapshot(
+              const snapshot = await datalayer.createSnapshot(
                 runtime.podName,
                 snapshotName,
                 description || "",
@@ -962,11 +966,11 @@ async function notifyAllDocuments(): Promise<void> {
 /**
  * Terminates a runtime and shows appropriate feedback.
  *
- * @param sdk - The SDK instance
+ * @param datalayer - The Datalayer instance
  * @param runtime - The runtime to terminate
  */
 async function terminateRuntime(
-  sdk: DatalayerClient,
+  datalayer: DatalayerClient,
   runtime: RuntimeDTO,
 ): Promise<void> {
   const name = runtime.givenName;
@@ -983,10 +987,10 @@ async function terminateRuntime(
         // MUST use pod_name for deleteRuntime API
         const podName = runtime.podName;
         if (!podName) {
-          throw new Error("Runtime missing podName from SDK");
+          throw new Error("Runtime missing podName from Datalayer");
         }
 
-        await sdk.deleteRuntime(podName);
+        await datalayer.deleteRuntime(podName);
       },
     );
 

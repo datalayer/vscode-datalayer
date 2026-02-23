@@ -25,7 +25,7 @@ export class DatasourceTreeItem extends vscode.TreeItem {
   /**
    * Creates a new DatasourceTreeItem.
    *
-   * @param datasource - Datasource DTO from SDK
+   * @param datasource - Datasource DTO from Datalayer
    */
   constructor(public readonly datasource: DatasourceDTO) {
     super(datasource.name, vscode.TreeItemCollapsibleState.None);

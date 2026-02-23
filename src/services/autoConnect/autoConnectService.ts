@@ -36,8 +36,8 @@ export interface AutoConnectContext {
   documentUri: vscode.Uri;
   /** Currently selected runtime, if any */
   currentRuntime?: RuntimeDTO;
-  /** Datalayer SDK client */
-  sdk: DatalayerClient;
+  /** Datalayer client */
+  datalayer: DatalayerClient;
   /** Authentication provider */
   authProvider: IAuthProvider;
   /** Runtimes tree provider for accessing cached runtimes */
@@ -87,7 +87,7 @@ export class AutoConnectService {
    *
    * @param documentUri - Document being opened
    * @param currentRuntime - Currently selected runtime, if any
-   * @param sdk - Datalayer SDK client
+   * @param datalayer - Datalayer client
    * @param authProvider - Authentication provider
    * @param runtimesTreeProvider - Optional tree provider for accessing cached runtimes
    * @returns Result with runtime and strategy name, or null if all strategies fail
@@ -95,7 +95,7 @@ export class AutoConnectService {
   async connect(
     documentUri: vscode.Uri,
     currentRuntime: RuntimeDTO | undefined,
-    sdk: DatalayerClient,
+    datalayer: DatalayerClient,
     authProvider: IAuthProvider,
     runtimesTreeProvider?: RuntimesTreeProvider,
   ): Promise<AutoConnectResult | null> {
@@ -115,7 +115,7 @@ export class AutoConnectService {
     const context: AutoConnectContext = {
       documentUri,
       currentRuntime,
-      sdk,
+      datalayer,
       authProvider,
       runtimesTreeProvider,
     };

@@ -5,7 +5,7 @@
  */
 
 /**
- * SDK-based authentication provider for VS Code.
+ * Datalayer-based authentication provider for VS Code.
  * Provides authentication state management and event notifications using the DatalayerClient.
  *
  * @module services/authProvider
@@ -26,19 +26,22 @@ import { showAuthMethodPicker } from "../../ui/dialogs/authMethodSelector";
 import { promptForCredentials } from "../../ui/dialogs/credentialsInput";
 
 /**
- * SDK-based authentication provider for VS Code.
+ * Datalayer-based authentication provider for VS Code.
  * Manages authentication state and provides event notifications for state changes.
  *
  * @example
  * ```typescript
- * const authProvider = new SDKAuthProvider(sdk, context, logger);
+ * const authProvider = new DatalayerAuthProvider(datalayer, context, logger);
  * await authProvider.initialize();
  * authProvider.onAuthStateChanged((state) => {
  *   // Auth state changed
  * });
  * ```
  */
-export class SDKAuthProvider extends BaseService implements IAuthProvider {
+export class DatalayerAuthProvider
+  extends BaseService
+  implements IAuthProvider
+{
   private _authState: VSCodeAuthState = {
     isAuthenticated: false,
     user: null,
@@ -50,15 +53,15 @@ export class SDKAuthProvider extends BaseService implements IAuthProvider {
   private oauthFlowManager: OAuthFlowManager;
 
   constructor(
-    private sdk: DatalayerClient,
+    private datalayer: DatalayerClient,
     private context: vscode.ExtensionContext,
     logger: ILogger,
   ) {
-    super("SDKAuthProvider", logger);
+    super("DatalayerAuthProvider", logger);
     this.oauthFlowManager = new OAuthFlowManager(context, logger);
-    this.logger.debug("SDKAuthProvider instance created", {
+    this.logger.debug("DatalayerAuthProvider instance created", {
       contextId: context.extension.id,
-      hasSDK: !!sdk,
+      hasDatalayer: !!datalayer,
     });
   }
 
@@ -73,26 +76,28 @@ export class SDKAuthProvider extends BaseService implements IAuthProvider {
 
   /**
    * Implementation of BaseService lifecycle initialization.
-   * Tries to restore session from SDK storage (OS keyring).
+   * Tries to restore session from Datalayer storage (OS keyring).
    * Falls back to migrating from old VS Code secrets if found.
    */
   protected async onInitialize(): Promise<void> {
     // Initialize OAuth flow manager
     await this.oauthFlowManager.initialize();
 
-    // Try SDK session restoration first
+    // Try Datalayer session restoration first
     try {
-      this.logger.debug("Attempting SDK session restoration from keyring");
+      this.logger.debug(
+        "Attempting Datalayer session restoration from keyring",
+      );
       const result = await this.logger.timeAsync(
-        "sdk_session_restore",
-        () => this.sdk.auth.login({}), // Empty options = use StorageAuthStrategy
+        "datalayer_session_restore",
+        () => this.datalayer.auth.login({}), // Empty options = use StorageAuthStrategy
         { operation: "restore_session" },
       );
 
       if (result && result.user) {
-        // CRITICAL: Also set token in base SDK class for API calls
-        // sdk.auth.login() stores in auth.currentToken but not in this.token
-        await this.sdk.setToken(result.token);
+        // CRITICAL: Also set token in base Datalayer class for API calls
+        // datalayer.auth.login() stores in auth.currentToken but not in this.token
+        await this.datalayer.setToken(result.token);
 
         this._authState = {
           isAuthenticated: true,
@@ -100,7 +105,7 @@ export class SDKAuthProvider extends BaseService implements IAuthProvider {
           error: null,
         };
 
-        this.logger.info("Session restored from SDK storage", {
+        this.logger.info("Session restored from Datalayer storage", {
           userId: result.user.uid,
           displayName: result.user.displayName,
         });
@@ -109,24 +114,26 @@ export class SDKAuthProvider extends BaseService implements IAuthProvider {
         return;
       }
     } catch (error) {
-      this.logger.debug("No valid session in SDK storage", {
+      this.logger.debug("No valid session in Datalayer storage", {
         error: error instanceof Error ? error.message : "Unknown error",
       });
     }
 
-    // No SDK session - check for old VS Code secret (migration)
+    // No Datalayer session - check for old VS Code secret (migration)
     const oldToken = await this.context.secrets.get("datalayer.token");
     if (oldToken) {
-      this.logger.info("Found old VS Code secret - migrating to SDK storage");
+      this.logger.info(
+        "Found old VS Code secret - migrating to Datalayer storage",
+      );
       try {
         const result = await this.logger.timeAsync(
-          "sdk_token_migration",
-          () => this.sdk.auth.login({ token: oldToken }),
+          "datalayer_token_migration",
+          () => this.datalayer.auth.login({ token: oldToken }),
           { operation: "migrate_token" },
         );
 
-        // CRITICAL: Also set token in base SDK class for API calls
-        await this.sdk.setToken(result.token);
+        // CRITICAL: Also set token in base Datalayer class for API calls
+        await this.datalayer.setToken(result.token);
 
         // Migration successful - delete old secret
         await this.context.secrets.delete("datalayer.token");
@@ -229,20 +236,20 @@ export class SDKAuthProvider extends BaseService implements IAuthProvider {
     });
 
     try {
-      // SDK handles storage automatically
+      // Datalayer handles storage automatically
       const result = await this.logger.timeAsync(
-        "sdk_credentials_login",
+        "datalayer_credentials_login",
         () =>
-          this.sdk.auth.login({
+          this.datalayer.auth.login({
             handle: creds.handle,
             password: creds.password,
           }),
         { operation: "credentials_login" },
       );
 
-      // CRITICAL: Also set token in base SDK class for API calls
-      // sdk.auth.login() stores in auth.currentToken but not in this.token
-      await this.sdk.setToken(result.token);
+      // CRITICAL: Also set token in base Datalayer class for API calls
+      // datalayer.auth.login() stores in auth.currentToken but not in this.token
+      await this.datalayer.setToken(result.token);
 
       this._authState = {
         isAuthenticated: true,
@@ -304,26 +311,26 @@ export class SDKAuthProvider extends BaseService implements IAuthProvider {
         tokenLength: oauthResult.token.length,
       });
 
-      this.logger.debug("OAuth flow completed, authenticating with SDK", {
+      this.logger.debug("OAuth flow completed, authenticating with Datalayer", {
         provider,
         tokenLength: oauthResult.token.length,
       });
 
-      // SDK handles token storage automatically via keytar (OS keyring)
+      // Datalayer handles token storage automatically via keytar (OS keyring)
       // TokenAuthStrategy validates token AND persists it to storage
       this.logger.debug("Authenticating with OAuth token", {
         tokenLength: oauthResult.token.length,
       });
 
       const result = await this.logger.timeAsync(
-        "sdk_oauth_login",
-        () => this.sdk.auth.login({ token: oauthResult.token }),
+        "datalayer_oauth_login",
+        () => this.datalayer.auth.login({ token: oauthResult.token }),
         { operation: "oauth_login", provider },
       );
 
-      // CRITICAL: Also set token in base SDK class for API calls
-      // sdk.auth.login() stores in auth.currentToken but not in this.token
-      await this.sdk.setToken(result.token);
+      // CRITICAL: Also set token in base Datalayer class for API calls
+      // datalayer.auth.login() stores in auth.currentToken but not in this.token
+      await this.datalayer.setToken(result.token);
 
       this._authState = {
         isAuthenticated: true,
@@ -338,13 +345,13 @@ export class SDKAuthProvider extends BaseService implements IAuthProvider {
       });
 
       // Verify token is stored and retrievable
-      const storedToken = this.sdk.getToken();
-      const isAuthenticated = this.sdk.auth.isAuthenticated();
+      const storedToken = this.datalayer.getToken();
+      const isAuthenticated = this.datalayer.auth.isAuthenticated();
       this.logger.info("Verifying authentication state after login", {
         hasStoredToken: !!storedToken,
         storedTokenLength: storedToken ? storedToken.length : 0,
         isAuthenticated,
-        sdkAuthState: this.sdk.auth.isAuthenticated(),
+        datalayerAuthState: this.datalayer.auth.isAuthenticated(),
       });
 
       this._onAuthStateChanged.fire(this._authState);
@@ -381,7 +388,7 @@ export class SDKAuthProvider extends BaseService implements IAuthProvider {
 
   /**
    * Logout and clear authentication state.
-   * SDK clears keyring storage automatically.
+   * Datalayer clears keyring storage automatically.
    */
   async logout(): Promise<void> {
     this.logger.info("Starting logout process", {
@@ -390,22 +397,26 @@ export class SDKAuthProvider extends BaseService implements IAuthProvider {
     });
 
     try {
-      // First call SDK IAM logout (requires base token to be set)
-      await this.logger.timeAsync("sdk_logout", () => this.sdk.logout(), {
-        operation: "clear_server_session",
-      });
+      // First call Datalayer IAM logout (requires base token to be set)
+      await this.logger.timeAsync(
+        "datalayer_logout",
+        () => this.datalayer.logout(),
+        {
+          operation: "clear_server_session",
+        },
+      );
 
       // Then explicitly clear auth manager and keyring
       await this.logger.timeAsync(
-        "sdk_auth_logout",
-        () => this.sdk.auth.logout(),
+        "datalayer_auth_logout",
+        () => this.datalayer.auth.logout(),
         {
           operation: "clear_keyring",
         },
       );
 
-      // Finally clear base SDK token
-      await this.sdk.setToken("");
+      // Finally clear base Datalayer token
+      await this.datalayer.setToken("");
 
       this._authState = {
         isAuthenticated: false,
@@ -413,17 +424,17 @@ export class SDKAuthProvider extends BaseService implements IAuthProvider {
         error: null,
       };
 
-      this.logger.info("Logout successful - SDK cleared keyring");
+      this.logger.info("Logout successful - Datalayer cleared keyring");
       this._onAuthStateChanged.fire(this._authState);
       await vscode.window.showInformationMessage("Successfully logged out");
     } catch (error) {
-      // Even if API fails, SDK clears local storage
+      // Even if API fails, Datalayer clears local storage
       this.logger.error("Logout error (local state cleared)", error as Error);
 
       // Force clear auth manager and keyring
       try {
-        await this.sdk.auth.logout();
-        await this.sdk.setToken("");
+        await this.datalayer.auth.logout();
+        await this.datalayer.setToken("");
       } catch (clearError) {
         this.logger.error("Error clearing local storage", clearError as Error);
       }
@@ -522,24 +533,24 @@ export class SDKAuthProvider extends BaseService implements IAuthProvider {
 
   /**
    * Check if currently authenticated.
-   * Delegates to SDK's authentication manager.
+   * Delegates to Datalayer's authentication manager.
    */
   isAuthenticated(): boolean {
-    return this.sdk.auth.isAuthenticated();
+    return this.datalayer.auth.isAuthenticated();
   }
 
   /**
    * Get current user (null if not authenticated).
-   * Delegates to SDK's authentication manager.
+   * Delegates to Datalayer's authentication manager.
    */
   getCurrentUser(): UserDTO | null {
-    return this.sdk.auth.getCurrentUser() || null;
+    return this.datalayer.auth.getCurrentUser() || null;
   }
 
   /**
-   * Get authentication token from SDK.
+   * Get authentication token from Datalayer.
    */
   getToken(): string {
-    return this.sdk.getToken() || "";
+    return this.datalayer.getToken() || "";
   }
 }

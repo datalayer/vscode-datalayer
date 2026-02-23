@@ -101,8 +101,8 @@ async function showDatasourceDialog(
   await readyPromise;
 
   // Send initialization data
-  const sdk = getServiceContainer().sdk;
-  const token = sdk.getToken();
+  const datalayer = getServiceContainer().datalayer;
+  const token = datalayer.getToken();
 
   panel.webview.postMessage({
     type: "init",
@@ -121,7 +121,7 @@ async function showDatasourceDialog(
             "[Datasource] Creating datasource with data:",
             message.body,
           );
-          const datasource = await sdk.createDatasource(message.body);
+          const datasource = await datalayer.createDatasource(message.body);
           console.log("[Datasource] Created successfully:", datasource);
           vscode.window.showInformationMessage(
             `Datasource "${datasource.name}" created successfully`,
@@ -236,9 +236,9 @@ export async function showDatasourceEditDialog(
 
   // Fetch datasource data and send initialization data
   try {
-    const sdk = getServiceContainer().sdk;
-    const datasource = await sdk.getDatasource(datasourceUid);
-    const token = sdk.getToken();
+    const datalayer = getServiceContainer().datalayer;
+    const datasource = await datalayer.getDatasource(datasourceUid);
+    const token = datalayer.getToken();
 
     // Update panel title with datasource name
     panel.title = `Datasource: ${datasource.name}`;
@@ -270,7 +270,7 @@ export async function showDatasourceEditDialog(
 
   // Handle messages from webview (reuse the same handler as create)
   panel.webview.onDidReceiveMessage(async (message) => {
-    const sdk = getServiceContainer().sdk;
+    const datalayer = getServiceContainer().datalayer;
 
     switch (message.type) {
       case "update-datasource":
@@ -279,7 +279,7 @@ export async function showDatasourceEditDialog(
             "[Datasource] Updating datasource with data:",
             message.body,
           );
-          const datasource = await sdk.updateDatasource(
+          const datasource = await datalayer.updateDatasource(
             message.body.uid,
             message.body,
           );

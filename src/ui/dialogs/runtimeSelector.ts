@@ -53,13 +53,13 @@ export interface RuntimeSelectorOptions {
 /**
  * Shows a QuickPick dialog for selecting or creating a Datalayer runtime.
  *
- * @param sdk - Datalayer SDK instance
+ * @param datalayer - Datalayer instance
  * @param authProvider - Authentication provider
  * @param options - Optional configuration for the dialog
  * @returns Selected or created runtime, or undefined if cancelled
  */
 export async function selectDatalayerRuntime(
-  sdk: DatalayerClient,
+  datalayer: DatalayerClient,
   authProvider: IAuthProvider,
   options?: RuntimeSelectorOptions,
 ): Promise<RuntimeDTO | undefined> {
@@ -90,12 +90,14 @@ export async function selectDatalayerRuntime(
       }
       try {
         // Fetch existing runtimes only if we need to show them
-        const runtimes = hideExistingRuntimes ? [] : await sdk.listRuntimes();
+        const runtimes = hideExistingRuntimes
+          ? []
+          : await datalayer.listRuntimes();
 
         // Get cached environments
         const environments =
           await EnvironmentCache.getInstance().getEnvironments(
-            sdk,
+            datalayer,
             authProvider,
           );
 
@@ -119,8 +121,8 @@ export async function selectDatalayerRuntime(
   const items: RuntimeQuickPickItem[] = [];
 
   // Add existing runtimes (include all runtimes, not just "running" or "ready")
-  // The SDK returns Runtime models now, not plain objects
-  // Sort runtimes by most recent first using SDK getter
+  // The Datalayer returns Runtime models now, not plain objects
+  // Sort runtimes by most recent first using Datalayer getter
   const validRuntimes = runtimes.sort((a: RuntimeDTO, b: RuntimeDTO) => {
     const getStartTime = (runtime: RuntimeDTO) => {
       try {
@@ -135,10 +137,10 @@ export async function selectDatalayerRuntime(
 
   if (validRuntimes.length > 0) {
     for (const runtime of validRuntimes) {
-      // Use the stable SDK interface instead of manual field extraction
+      // Use the stable Datalayer interface instead of manual field extraction
       const runtimeData = runtime.toJSON();
 
-      // Use SDK interface fields directly
+      // Use Datalayer interface fields directly
       const displayName =
         runtimeData.givenName ??
         runtimeData.podName ??
@@ -278,7 +280,7 @@ export async function selectDatalayerRuntime(
   } else if (selected.action === "create" && selected.environment) {
     // Create new runtime - spinner callback will be triggered AFTER all dialogs are accepted
     const result = await createRuntime(
-      sdk,
+      datalayer,
       selected.environment,
       undefined,
       onRuntimeSelected,
@@ -390,14 +392,14 @@ async function selectSnapshot(
 /**
  * Creates a new runtime with the specified environment.
  *
- * @param sdk - Datalayer SDK instance
+ * @param datalayer - Datalayer instance
  * @param environment - Environment to use
  * @param preSelectedSnapshotId - Optional snapshot ID to restore from (skips snapshot selection)
  * @param onRuntimeCreating - Optional callback triggered when runtime creation starts (after all dialogs)
  * @returns Created runtime or undefined if failed
  */
 export async function createRuntime(
-  sdk: DatalayerClient,
+  datalayer: DatalayerClient,
   environment: EnvironmentDTO,
   preSelectedSnapshotId?: string,
   onRuntimeCreating?: (runtime: RuntimeDTO) => void | Promise<void>,
@@ -409,7 +411,7 @@ export async function createRuntime(
   if (!preSelectedSnapshotId) {
     try {
       // Fetch available snapshots (deleted snapshots are not returned by API)
-      const availableSnapshots = await sdk.listSnapshots();
+      const availableSnapshots = await datalayer.listSnapshots();
 
       // Only show snapshot selection dialog if there are snapshots
       if (availableSnapshots && availableSnapshots.length > 0) {
@@ -454,13 +456,13 @@ export async function createRuntime(
   let hasActiveRuntimes = false;
 
   try {
-    const credits = await sdk.getCredits();
+    const credits = await datalayer.getCredits();
 
     // Use net available credits (accounts for existing reservations)
     netAvailableCredits = credits.netAvailable;
     hasActiveRuntimes = credits.hasActiveRuntimes;
 
-    // Check if environment has burning rate (use camelCase from SDK model)
+    // Check if environment has burning rate (use camelCase from Datalayer model)
     if (!environment.burningRate) {
       throw new Error(
         `Environment "${environment.name}" is missing the burningRate property from the API. ` +
@@ -468,8 +470,8 @@ export async function createRuntime(
       );
     }
 
-    // Calculate max minutes based on net available credits using SDK utility
-    maxMinutes = sdk.calculateMaxRuntimeMinutes(
+    // Calculate max minutes based on net available credits using Datalayer utility
+    maxMinutes = datalayer.calculateMaxRuntimeMinutes(
       credits.netAvailable,
       environment.burningRate,
     );
@@ -551,7 +553,7 @@ export async function createRuntime(
     minutes = minutesInput ? Number(minutesInput) : suggestedMinutes;
   }
 
-  // Check if environment has burning rate (use camelCase from SDK model)
+  // Check if environment has burning rate (use camelCase from Datalayer model)
   if (!environment.burningRate) {
     throw new Error(
       `Environment "${environment.name}" is missing the burningRate property from the API. ` +
@@ -559,8 +561,8 @@ export async function createRuntime(
     );
   }
 
-  // Calculate credits needed based on burning rate using SDK utility
-  const creditsLimit = sdk.calculateCreditsRequired(
+  // Calculate credits needed based on burning rate using Datalayer utility
+  const creditsLimit = datalayer.calculateCreditsRequired(
     minutes,
     environment.burningRate,
   );
@@ -599,12 +601,12 @@ export async function createRuntime(
 
         // Create the runtime
 
-        // Check if SDK has createRuntime method
-        if (typeof sdk.createRuntime !== "function") {
-          throw new Error("SDK does not have createRuntime method");
+        // Check if Datalayer has createRuntime method
+        if (typeof datalayer.createRuntime !== "function") {
+          throw new Error("Datalayer does not have createRuntime method");
         }
 
-        const runtime = await sdk.createRuntime(
+        const runtime = await datalayer.createRuntime(
           environment.name,
           "notebook",
           name,
@@ -631,7 +633,7 @@ export async function createRuntime(
           await new Promise((resolve) => setTimeout(resolve, 1000));
 
           // Fetch the updated runtime list
-          const runtimes = await sdk.listRuntimes();
+          const runtimes = await datalayer.listRuntimes();
           readyRuntime = runtimes.find(
             (r: RuntimeDTO) => r.uid === runtime.uid,
           );

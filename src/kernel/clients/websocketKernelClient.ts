@@ -119,7 +119,7 @@ export class WebSocketKernelClient {
     runtime: RuntimeDTO | RuntimeJSON,
     /** @internal - Used in runtime connection methods */
     // @ts-ignore - TS6138
-    private readonly _sdk: DatalayerClient,
+    private readonly _datalayer: DatalayerClient,
   ) {
     this._sessionId = uuidv4();
 
@@ -152,16 +152,16 @@ export class WebSocketKernelClient {
     this._connecting = true;
 
     try {
-      // Check for connection info from SDK
+      // Check for connection info from Datalayer
       const ingressUrl = this._runtime.ingress;
       const token = this._runtime.token;
 
       if (!ingressUrl) {
-        throw new Error("Runtime missing ingress URL from SDK");
+        throw new Error("Runtime missing ingress URL from Datalayer");
       }
 
       if (!token) {
-        throw new Error("Runtime missing token from SDK");
+        throw new Error("Runtime missing token from Datalayer");
       }
 
       // First, get or create a kernel

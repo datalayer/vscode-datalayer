@@ -19,7 +19,7 @@
  */
 
 import * as vscode from "vscode";
-import { SDKAuthProvider } from "../services/core/authProvider";
+import { DatalayerAuthProvider } from "../services/core/authProvider";
 
 /**
  * Registers all authentication-related commands.
@@ -31,7 +31,7 @@ import { SDKAuthProvider } from "../services/core/authProvider";
  */
 export function registerAuthCommands(
   context: vscode.ExtensionContext,
-  authProvider: SDKAuthProvider,
+  authProvider: DatalayerAuthProvider,
   updateAuthState: () => void,
 ): void {
   /**

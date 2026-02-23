@@ -33,7 +33,7 @@ export class AskUserStrategy implements AutoConnectStrategy {
 
     // Use the existing runtime selector dialog
     const runtime = await selectDatalayerRuntime(
-      context.sdk,
+      context.datalayer,
       context.authProvider,
     );
 

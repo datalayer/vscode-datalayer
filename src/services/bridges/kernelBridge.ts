@@ -15,7 +15,7 @@ import * as vscode from "vscode";
 import type { DatalayerClient } from "@datalayer/core/lib/client";
 import type { RuntimeDTO } from "@datalayer/core/lib/models/RuntimeDTO";
 import type { RuntimeJSON } from "@datalayer/core/lib/models/RuntimeDTO";
-import { SDKAuthProvider } from "../core/authProvider";
+import { DatalayerAuthProvider } from "../core/authProvider";
 import { LocalKernelClient } from "../kernel/localKernelClient";
 import type { NativeKernelInfo } from "../kernel/nativeKernelIntegration";
 
@@ -65,10 +65,10 @@ export class KernelBridge implements vscode.Disposable {
   constructor(
     /** @internal - Used for runtime operations */
     // @ts-ignore - TS6138
-    private readonly _sdk: DatalayerClient,
+    private readonly _datalayer: DatalayerClient,
     /** @internal - Used for authentication in runtime operations */
     // @ts-ignore - TS6138
-    private readonly _authProvider: SDKAuthProvider,
+    private readonly _authProvider: DatalayerAuthProvider,
   ) {}
 
   /**

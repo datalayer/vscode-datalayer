@@ -89,7 +89,7 @@ export class LoggerManager implements ILoggerManager {
   }
 
   /**
-   * Get configuration for external integrations (SDK handlers, etc.)
+   * Get configuration for external integrations (Datalayer handlers, etc.)
    *
    * @returns Copy of the current logger configuration
    */
