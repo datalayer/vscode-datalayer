@@ -20,6 +20,10 @@ package: ## package
 vsix: ## vsix
 	npm run vsix
 
+vsix-reinstall: vsix ## vsix
+	code --uninstall-extension datalayer.datalayer-jupyter-vscode || true
+	code --install-extension *.vsix
+
 jupyter-server: ## start the jupyter server
 	./../../dev/sh/kill.sh || true
 	cd ./../../dev/sh && ./start-jupyter-server.sh
