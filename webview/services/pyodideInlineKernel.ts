@@ -243,7 +243,7 @@ export class PyodideInlineKernel implements Kernel.IKernelConnection {
       console.error("[PyodideInlineKernel] Worker error:", error);
     });
 
-    // ATTEMPT 10: Pre-fetch BOTH pyodide.js AND pyodide.asm.js in main thread
+    // Pre-fetch BOTH pyodide.js AND pyodide.asm.js in main thread
     // asm.js defines _createPyodideModule which is required
     Promise.all([
       fetch(`${pyodideBaseUrl}/pyodide.js`).then((r) => r.text()),
@@ -1109,14 +1109,13 @@ export class PyodideInlineKernel implements Kernel.IKernelConnection {
   subshellId: string | null = null;
 
   async interrupt(): Promise<void> {
-    // Pyodide in web worker cannot be interrupted mid-execution (browser limitation)
-    // Web workers run to completion and cannot be stopped without terminating the entire worker
+    // Interrupt is not supported for Pyodide inline kernels.
+    // SharedArrayBuffer requires crossOriginIsolated (not available in VS Code webviews),
+    // and postMessage-based interrupt is unreliable since the Worker event loop is blocked
+    // during WASM execution. Use "Restart kernel" instead.
     console.warn(
-      "[PyodideInlineKernel] Interrupt not supported for Pyodide kernel. " +
-        "Pyodide runs in a web worker which cannot be interrupted mid-execution. " +
-        "To stop execution, restart the kernel instead.",
+      "[PyodideInlineKernel] Interrupt is not supported for Pyodide kernels. Use 'Restart kernel' instead.",
     );
-    // Do nothing - let the execution complete naturally
   }
 
   async restart(): Promise<void> {

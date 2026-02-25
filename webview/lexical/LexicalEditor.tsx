@@ -478,9 +478,11 @@ function LoadContentPlugin({
 function JupyterKernelPlugins({
   serviceManager,
   startDefaultKernel,
+  disableInterrupt,
 }: {
   serviceManager: ServiceManager.IManager;
   startDefaultKernel: boolean;
+  disableInterrupt?: boolean;
 }) {
   const { defaultKernel } = useJupyter({
     serviceManager,
@@ -491,7 +493,10 @@ function JupyterKernelPlugins({
   return (
     <>
       {/* @ts-ignore - Type mismatch between duplicate Kernel types from different module instances */}
-      <JupyterInputOutputPlugin kernel={defaultKernel} />
+      <JupyterInputOutputPlugin
+        kernel={defaultKernel}
+        disableInterrupt={disableInterrupt}
+      />
     </>
   );
 }
@@ -869,6 +874,7 @@ function LexicalEditorInner({
           key={selectedRuntime?.ingress || "no-runtime"}
           serviceManager={serviceManager}
           startDefaultKernel={!!selectedRuntime}
+          disableInterrupt={selectedRuntime?.ingress === "http://pyodide-local"}
         />
         <LexicalInlineCompletionPlugin
           providers={[lexicalLLMProvider]}

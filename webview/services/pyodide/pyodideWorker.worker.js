@@ -293,6 +293,8 @@ self.addEventListener("message", async (event) => {
   }
 
   if (type === "init") {
+    console.log("[PyodideWorker] Init received");
+
     try {
       await initPyodide(baseUrl, pyodideScript, asmScript, pyodideKernelCode);
       self.postMessage({ id, type: "ready" });
@@ -351,15 +353,35 @@ shell.run_cell(__code__, store_history=True, silent=False)
 
       self.postMessage({ id, type: "status", status: "idle" });
     } catch (error) {
-      self.postMessage({
-        id,
-        type: "error",
-        error: {
-          ename: error.constructor.name,
-          evalue: error.message,
-          traceback: [error.stack || error.message],
-        },
-      });
+      // Detect KeyboardInterrupt from Pyodide's interrupt buffer mechanism
+      const errorStr = error.message || String(error);
+      const isKeyboardInterrupt =
+        errorStr.includes("KeyboardInterrupt") ||
+        errorStr.includes("InterruptedError");
+
+      if (isKeyboardInterrupt) {
+        console.log(
+          "[PyodideWorker] KeyboardInterrupt detected - execution interrupted gracefully",
+        );
+        self.postMessage({
+          id,
+          type: "error",
+          ename: "KeyboardInterrupt",
+          evalue: "",
+          traceback: ["KeyboardInterrupt"],
+        });
+      } else {
+        self.postMessage({
+          id,
+          type: "error",
+          error: {
+            ename: error.constructor.name,
+            evalue: error.message,
+            traceback: [error.stack || error.message],
+          },
+        });
+      }
+
       self.postMessage({ id, type: "status", status: "idle" });
     }
   }

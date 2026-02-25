@@ -23,7 +23,7 @@ declare module "pyodide" {
     loadPackagesFromImports(code: string): Promise<void>;
     registerJsModule(name: string, module: any): void;
     unregisterJsModule(name: string): void;
-    setInterruptBuffer(buffer: Uint8Array): void;
+    setInterruptBuffer(buffer: Int32Array | SharedArrayBuffer): void;
     checkInterrupt(): void;
     toPy(obj: any): any;
     globals: any;

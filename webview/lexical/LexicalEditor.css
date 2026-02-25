@@ -4,7 +4,8 @@
  * MIT License
  */
 
-/* Global overflow prevention - CRITICAL */
+/* Global overflow prevention and VS Code theme integration - CRITICAL */
+/* Override jupyter-lexical base.css that sets body { background: white } */
 html,
 body {
   width: 100%;
@@ -13,6 +14,8 @@ body {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
+  background: var(--vscode-editor-background) !important;
+  color: var(--vscode-editor-foreground) !important;
 }
 
 *,
@@ -112,4 +115,106 @@ body {
   top: 0;
   opacity: 0;
   will-change: transform;
+}
+
+/* Jupyter output area VS Code theme overrides */
+.jp-OutputArea,
+.jp-OutputArea-child,
+.jp-OutputArea-output,
+.jp-RenderedText,
+.jp-RenderedHTMLCommon {
+  background-color: var(--vscode-editor-background) !important;
+  color: var(--vscode-editor-foreground) !important;
+}
+
+.jp-RenderedText pre {
+  color: var(--vscode-editor-foreground) !important;
+}
+
+.jp-RenderedText[data-mime-type="application/vnd.jupyter.stderr"] {
+  background: rgba(244, 67, 54, 0.18) !important;
+}
+
+/* Lexical PlaygroundEditorTheme VS Code overrides */
+/* The theme uses Primer CSS variables (--bgColor-muted, --fgColor-default, etc.)
+   with light-colored fallbacks. These variables aren't defined in VS Code webviews,
+   so we override with VS Code theme variables. */
+
+/* Code block background */
+.PlaygroundEditorTheme__code {
+  background-color: var(
+    --vscode-textCodeBlock-background,
+    var(--vscode-editor-background)
+  ) !important;
+}
+
+/* Code block line number gutter */
+.PlaygroundEditorTheme__code:before {
+  background-color: var(
+    --vscode-editorGutter-background,
+    var(--vscode-editor-background)
+  ) !important;
+  border-right-color: var(
+    --vscode-editorIndentGuide-background,
+    rgba(128, 128, 128, 0.3)
+  ) !important;
+  color: var(
+    --vscode-editorLineNumber-foreground,
+    rgba(128, 128, 128, 0.6)
+  ) !important;
+}
+
+/* Inline code */
+.PlaygroundEditorTheme__textCode {
+  background-color: var(
+    --vscode-textCodeBlock-background,
+    rgba(128, 128, 128, 0.15)
+  ) !important;
+  color: var(--vscode-editor-foreground) !important;
+}
+
+/* Headings */
+.PlaygroundEditorTheme__h1 {
+  color: var(--vscode-editor-foreground) !important;
+}
+
+.PlaygroundEditorTheme__h2 {
+  color: var(
+    --vscode-descriptionForeground,
+    var(--vscode-editor-foreground)
+  ) !important;
+}
+
+/* Paragraph text */
+.PlaygroundEditorTheme__paragraph {
+  color: var(--vscode-editor-foreground);
+}
+
+/* Quote */
+.PlaygroundEditorTheme__quote {
+  color: var(
+    --vscode-descriptionForeground,
+    var(--vscode-editor-foreground)
+  ) !important;
+  border-left-color: var(
+    --vscode-textBlockQuote-border,
+    rgba(128, 128, 128, 0.5)
+  ) !important;
+}
+
+/* Link */
+.PlaygroundEditorTheme__link {
+  color: var(--vscode-textLink-foreground) !important;
+}
+
+/* Table */
+.PlaygroundEditorTheme__tableCell {
+  border-color: var(
+    --vscode-editorGroup-border,
+    rgba(128, 128, 128, 0.3)
+  ) !important;
+}
+
+.PlaygroundEditorTheme__tableCellHeader {
+  background-color: var(--vscode-editor-background) !important;
 }

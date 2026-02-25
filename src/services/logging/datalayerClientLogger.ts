@@ -12,7 +12,7 @@
  */
 
 import * as vscode from "vscode";
-import type { ClientHandlers } from "@datalayer/core/lib/client";
+import type { SDKHandlers } from "@datalayer/core/lib/client";
 import { ServiceLoggers } from "./loggers";
 import { promptAndLogin } from "../../ui/dialogs/authDialog";
 
@@ -53,7 +53,7 @@ export class DatalayerClientOperationTracker {
    *
    * @returns ClientHandlers with beforeCall, afterCall, and onError implementations
    */
-  static createEnhancedClientHandlers(): ClientHandlers {
+  static createEnhancedClientHandlers(): SDKHandlers {
     return {
       /**
        * Hook called before Datalayer method execution.
