@@ -74,12 +74,12 @@
     "@codemirror/search": "^6.5.11",
     "@codemirror/state": "^6.5.2",
     "@codemirror/view": "^6.38.3",
-    "@datalayer/agent-runtimes": "^1.0.0",
+    "@datalayer/agent-runtimes": "^1.0.1",
     "@datalayer/core": "^1.0.1",
-    "@datalayer/jupyter-lexical": "^1.0.9",
-    "@datalayer/jupyter-react": "^2.0.3",
+    "@datalayer/jupyter-lexical": "^1.0.14",
+    "@datalayer/jupyter-react": "^2.0.5",
     "@datalayer/lexical-loro": "^1.0.3",
-    "@datalayer/primer-addons": "^1.0.4",
+    "@datalayer/primer-addons": "^1.0.10",
     "@excalidraw/excalidraw": "^0.18.0",
     "@jupyter/ydoc": "^3.0.3",
     "@jupyterlab/services": "^7.0.0",
@@ -111,7 +111,7 @@
     "codemirror": "^6.0.2",
     "keytar": "^7.9.0",
     "lexical": "^0.35.0",
-    "pyodide": "^0.29.0",
+    "pyodide": "^0.29.3",
     "react": "18.3.1",
     "react-dom": "18.3.1",
     "typestyle": "^2.0.4",
@@ -1095,7 +1095,7 @@
           "update"
         ],
         "toolReferenceName": "updateCell",
-        "modelDescription": "Updates (overwrites) a cell's source code at the specified index and executes it. For code cells this runs the code; for markdown cells this renders them. **IMPORTANT: Always ensure you call getActiveDocument before running this operation.**",
+        "modelDescription": "Updates (overwrites) a cell's source code at the specified index. Does NOT execute the cell. **IMPORTANT: Always ensure you call getActiveDocument before running this operation.**",
         "canBeReferencedInPrompt": true,
         "inputSchema": {
           "type": "object",
@@ -1573,7 +1573,7 @@
         "datalayer.pyodide.version": {
           "type": "string",
           "default": "0.27.3",
-          "markdownDescription": "Pyodide version for **Datalayer webview notebooks only**. Native VS Code notebooks use a fixed version (v0.28.0 from npm package). Changes require closing and reopening notebooks."
+          "markdownDescription": "Pyodide version for **Datalayer webview notebooks only**. Native VS Code notebooks use a fixed version (v0.29.3 from npm package). Changes require closing and reopening notebooks."
         },
         "datalayer.pyodide.preloadPackages": {
           "type": "array",

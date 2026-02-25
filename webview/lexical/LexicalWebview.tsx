@@ -400,17 +400,21 @@ function LexicalWebviewInner({
   const handleContentChange = useCallback(
     (newContent: string) => {
       // Access store state directly (store is from useState, always the same instance)
-      store.getState().setContent(newContent);
+      const state = store.getState();
+      const isCollab = state.collaborationConfig.enabled;
+      const isInitial = state.isInitialLoad;
+
+      state.setContent(newContent);
       vscode.setState({ content: newContent });
 
-      if (!store.getState().collaborationConfig.enabled) {
-        if (!store.getState().isInitialLoad) {
+      if (!isCollab) {
+        if (!isInitial) {
           vscode.postMessage({
             type: "contentChanged",
             content: newContent,
           });
         } else {
-          store.getState().setIsInitialLoad(false);
+          state.setIsInitialLoad(false);
         }
       }
     },

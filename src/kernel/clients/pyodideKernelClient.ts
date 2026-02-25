@@ -90,9 +90,9 @@ export class PyodideKernelClient {
       const path = await import("path");
       const fs = await import("fs/promises");
 
-      // IMPORTANT: Native notebooks use npm package version (0.29.0)
+      // IMPORTANT: Native notebooks use npm package version (0.29.3)
       // The datalayer.pyodide.version config is ONLY for webview notebooks (CDN)
-      const pyodideVersion = "0.28.0";
+      const pyodideVersion = "0.29.3";
 
       // Create cache directory path
       const cacheDir = path.join(

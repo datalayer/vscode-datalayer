@@ -409,9 +409,11 @@ function SavePlugin({ onSave }: { onSave?: (content: string) => void }) {
 function LoadContentPlugin({
   content,
   skipLoad,
+  previousRootRef,
 }: {
   content?: string;
   skipLoad?: boolean;
+  previousRootRef?: React.MutableRefObject<string | null>;
 }) {
   const [editor] = useLexicalComposerContext();
   const isFirstRender = useRef(true);
@@ -437,6 +439,13 @@ function LoadContentPlugin({
           editor.setEditorState(editorState, {
             tag: "history-merge",
           });
+          // Sync previousRootRef with the loaded content so that subsequent
+          // OnChangePlugin callbacks don't see a stale empty-state diff and
+          // falsely mark the document as dirty.
+          if (previousRootRef) {
+            const loadedRoot = JSON.stringify(editorState.toJSON().root);
+            previousRootRef.current = loadedRoot;
+          }
         } else {
           throw new Error("Invalid Lexical editor state format");
         }
@@ -456,7 +465,7 @@ function LoadContentPlugin({
         );
       }
     });
-  }, [content, editor, skipLoad]);
+  }, [content, editor, skipLoad, previousRootRef]);
 
   return null;
 }
@@ -469,9 +478,11 @@ function LoadContentPlugin({
 function JupyterKernelPlugins({
   serviceManager,
   startDefaultKernel,
+  disableInterrupt,
 }: {
   serviceManager: ServiceManager.IManager;
   startDefaultKernel: boolean;
+  disableInterrupt?: boolean;
 }) {
   const { defaultKernel } = useJupyter({
     serviceManager,
@@ -482,7 +493,10 @@ function JupyterKernelPlugins({
   return (
     <>
       {/* @ts-ignore - Type mismatch between duplicate Kernel types from different module instances */}
-      <JupyterInputOutputPlugin kernel={defaultKernel} />
+      <JupyterInputOutputPlugin
+        kernel={defaultKernel}
+        disableInterrupt={disableInterrupt}
+      />
     </>
   );
 }
@@ -732,6 +746,7 @@ export function LexicalEditor({
                 lexicalLLMProvider={lexicalLLMProvider}
                 lexicalLSPProvider={lexicalLSPProvider}
                 completionConfig={completionConfig}
+                previousRootRef={previousRootRef}
               />
             </CommentsProvider>
           </LexicalComposer>
@@ -768,6 +783,7 @@ function LexicalEditorInner({
   lexicalLLMProvider,
   lexicalLSPProvider,
   completionConfig,
+  previousRootRef,
 }: any) {
   const { showComments, toggleComments } = useComments();
 
@@ -837,6 +853,7 @@ function LexicalEditorInner({
         <LoadContentPlugin
           content={initialContent}
           skipLoad={collaboration?.enabled}
+          previousRootRef={previousRootRef}
         />
         <CodeBlockHighlightPlugin />
         <ImagesPlugin captionsEnabled={false} />
@@ -857,6 +874,7 @@ function LexicalEditorInner({
           key={selectedRuntime?.ingress || "no-runtime"}
           serviceManager={serviceManager}
           startDefaultKernel={!!selectedRuntime}
+          disableInterrupt={selectedRuntime?.ingress === "http://pyodide-local"}
         />
         <LexicalInlineCompletionPlugin
           providers={[lexicalLLMProvider]}
