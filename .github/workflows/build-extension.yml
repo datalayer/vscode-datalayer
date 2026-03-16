@@ -111,7 +111,7 @@ jobs:
             }
 
       - name: Post PR comment with universal VSIX artifact
-        uses: marocchino/sticky-pull-request-comment@v2
+        uses: marocchino/sticky-pull-request-comment@v3
         with:
           header: extension-artifact
           message: |
