@@ -71,7 +71,7 @@ export class PyodideKernelClient {
 
   /**
    * Initializes the Pyodide kernel by loading the runtime.
-   * Uses bundled Pyodide from npm package (v0.29.0).
+   * Uses bundled Pyodide from npm package.
    * Pre-downloads packages from VS Code configuration.
    * Must be called before executing any code.
    *
@@ -90,9 +90,7 @@ export class PyodideKernelClient {
       const path = await import("path");
       const fs = await import("fs/promises");
 
-      // IMPORTANT: Native notebooks use npm package version (0.29.0)
-      // The datalayer.pyodide.version config is ONLY for webview notebooks (CDN)
-      const pyodideVersion = "0.28.0";
+      const pyodideVersion = "0.29.3";
 
       // Create cache directory path
       const cacheDir = path.join(

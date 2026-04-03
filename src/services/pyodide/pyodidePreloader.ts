@@ -39,7 +39,7 @@ export class PyodidePreloader implements vscode.Disposable {
     private readonly _logger: ILogger,
   ) {
     // Native notebooks no longer use PyodideCacheManager - they download packages
-    // directly to filesystem cache using npm Pyodide package (0.29.0)
+    // directly to filesystem cache using npm Pyodide package
   }
 
   /**
@@ -254,11 +254,11 @@ export class PyodidePreloader implements vscode.Disposable {
 
   /**
    * Preload packages for NATIVE notebooks (Node.js filesystem cache).
-   * NOTE: Native notebooks use the npm Pyodide package (0.29.0), so we ONLY download packages,
+   * NOTE: Native notebooks use the npm Pyodide package, so we ONLY download packages,
    * NOT core files. Core files come from npm package, not CDN!
    */
   private async _executeNativePreload(
-    _pyodideVersion: string, // Ignored - native notebooks use npm package version (0.29.0)
+    _pyodideVersion: string, // Ignored - native notebooks use npm package version
     packages: string[],
     progress: vscode.Progress<{ message?: string; increment?: number }>,
   ): Promise<void> {
@@ -267,8 +267,7 @@ export class PyodidePreloader implements vscode.Disposable {
     const path = await import("path");
     const fs = await import("fs/promises");
 
-    // IMPORTANT: Native notebooks use npm package version (0.29.0), NOT config version!
-    const npmPyodideVersion = "0.28.0";
+    const npmPyodideVersion = "0.29.3";
 
     // Create cache directory path (same location as runtime!)
     const cacheDir = path.join(
