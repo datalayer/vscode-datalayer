@@ -42,8 +42,7 @@ export interface OperationData {
 
 /**
  * Enhanced tracking and logging for DatalayerClient Datalayer operations.
- * Provides operation correlation, timing, error categorization, and user-friendly handling.
- */
+ * Provides operation correlation, timing, error categorization, and user-friendly handling. */
 export class DatalayerClientOperationTracker {
   /** Map of operation IDs to their tracking data */
   private static operations = new Map<string, OperationData>();
@@ -51,14 +50,14 @@ export class DatalayerClientOperationTracker {
   /**
    * Create enhanced Datalayer handlers with comprehensive logging and error handling.
    *
-   * @returns ClientHandlers with beforeCall, afterCall, and onError implementations
+   * @returns ClientHandlers with beforeCall, afterCall, and onError implementations.
    */
   static createEnhancedClientHandlers(): ClientHandlers {
     return {
       /**
        * Hook called before Datalayer method execution.
-       * @param methodName - Name of the Datalayer method being called
-       * @param args - Arguments passed to the method
+       * @param methodName - Name of the Datalayer method being called.
+       * @param args - Arguments passed to the method.
        */
       beforeCall: (methodName: string, args: unknown[]) => {
         const operationId = `${methodName}_${Date.now()}_${Math.random()
@@ -88,8 +87,8 @@ export class DatalayerClientOperationTracker {
 
       /**
        * Hook called after successful Datalayer method execution.
-       * @param methodName - Name of the Datalayer method that completed
-       * @param result - Result returned by the method
+       * @param methodName - Name of the Datalayer method that completed.
+       * @param result - Result returned by the method.
        */
       afterCall: (methodName: string, result: unknown) => {
         // Find the most recent operation for this method
@@ -119,8 +118,8 @@ export class DatalayerClientOperationTracker {
 
       /**
        * Hook called when Datalayer method throws an error.
-       * @param methodName - Name of the Datalayer method that failed
-       * @param error - Error thrown by the method
+       * @param methodName - Name of the Datalayer method that failed.
+       * @param error - Error thrown by the method.
        */
       onError: async (methodName: string, error: unknown) => {
         const operation =
@@ -174,8 +173,9 @@ export class DatalayerClientOperationTracker {
   /**
    * Route Datalayer method to appropriate logger based on method name.
    * Returns a no-op logger if ServiceLoggers is not yet initialized.
-   * @param methodName - Name of the Datalayer method
-   * @returns Logger instance for the method category
+   * @param methodName - Datalayer API function identifier used for category routing.
+   *
+   * @returns Appropriate category-specific logging handler.
    */
   private static getLoggerForMethod(methodName: string) {
     // If ServiceLoggers not initialized, return no-op logger
@@ -239,8 +239,9 @@ export class DatalayerClientOperationTracker {
 
   /**
    * Find the most recent operation for a given method name.
-   * @param methodName - Name of the Datalayer method to find
-   * @returns Operation data if found, undefined otherwise
+   * @param methodName - Name of the Datalayer method to find.
+   *
+   * @returns Operation data if found, undefined otherwise.
    */
   private static findOperation(methodName: string): OperationData | undefined {
     const operations = Array.from(
@@ -251,8 +252,9 @@ export class DatalayerClientOperationTracker {
 
   /**
    * Sanitize arguments to remove sensitive data before logging.
-   * @param args - Raw arguments passed to Datalayer method
-   * @returns Sanitized arguments safe for logging
+   * @param args - Raw arguments passed to Datalayer method.
+   *
+   * @returns Sanitized arguments safe for logging.
    */
   private static sanitizeArgs(args: unknown[]): unknown[] {
     return args.map((arg) => {
@@ -284,8 +286,9 @@ export class DatalayerClientOperationTracker {
 
   /**
    * Create a summary of the result for logging without exposing sensitive data.
-   * @param result - Result returned from Datalayer method
-   * @returns Human-readable summary of the result
+   * @param result - Result returned from Datalayer method.
+   *
+   * @returns Human-readable summary of the result.
    */
   private static summarizeResult(result: unknown): string {
     if (!result) {
@@ -305,8 +308,9 @@ export class DatalayerClientOperationTracker {
 
   /**
    * Check if an error is network-related.
-   * @param error - Error object to check
-   * @returns True if error is network-related, false otherwise
+   * @param error - Error object to check.
+   *
+   * @returns True if error is network-related, false otherwise.
    */
   private static isNetworkError(error: unknown): boolean {
     if (!error) {
@@ -327,9 +331,13 @@ export class DatalayerClientOperationTracker {
 
   /**
    * Handle Datalayer errors with smart categorization and user-friendly responses.
-   * @param methodName - Name of the Datalayer method that failed
-   * @param error - Error object thrown by the method
-   * @param logger - Logger instance for error reporting
+   * @param methodName - Name of the Datalayer method that failed.
+   * @param error - Error object thrown by the method.
+   * @param logger - Logger instance for error reporting.
+   * @param logger.info - Log informational messages.
+   * @param logger.warn - Log warning messages.
+   * @param logger.error - Log error messages.
+   * @param logger.debug - Log debug messages.
    */
   private static async handleDatalayerError(
     methodName: string,
@@ -419,6 +427,7 @@ export class DatalayerClientOperationTracker {
 
   /**
    * Get current operation statistics for debugging.
+   * @returns Active operation count and breakdown by method name.
    */
   static getOperationStats(): {
     activeOperations: number;

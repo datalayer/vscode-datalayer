@@ -14,11 +14,10 @@ import { useEffect } from "react";
 import { notebookStore } from "@datalayer/jupyter-react";
 
 /**
- * Hook to set up ResizeObserver for notebook container.
- * Calls notebook.adapter.panel.update() when container resizes.
+ * Sets up a ResizeObserver on the notebook container and calls notebook.adapter.panel.update() on resize.
+ * @param notebookId - The notebook ID to update on resize.
+ * @param containerRef - React ref to the container element being observed.
  *
- * @param notebookId - The notebook ID to update
- * @param containerRef - React ref to the container element
  */
 export function useNotebookResize(
   notebookId: string,

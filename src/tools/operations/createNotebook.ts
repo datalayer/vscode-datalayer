@@ -22,12 +22,12 @@ import {
 } from "../schemas/createNotebook";
 
 /**
- * Notebook creation parameters
+ * Parameters for creating a notebook (aliased from schema type).
  */
 export type NotebookCreationParams = CreateNotebookParams;
 
 /**
- * Notebook creation result
+ * Result of notebook creation (aliased from unified result type).
  */
 export type NotebookCreationResult = CreateDocumentResult;
 

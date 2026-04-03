@@ -19,9 +19,7 @@
  */
 
 /**
- * Initialize stub RequireJS implementation if not already available.
- * Should be called early in the webview initialization, before any
- * components that use jupyter-react are rendered.
+ * Initializes a stub RequireJS implementation if not already available, preventing widget manager initialization failures in VS Code webviews.
  */
 export function initializeRequireJSStub(): void {
   if (typeof window.define === "undefined") {

@@ -36,16 +36,18 @@ const runtimeTerminatedCallbacks: RuntimeTerminatedCallback[] = [];
 /**
  * Registers a callback to be called when a runtime is terminated.
  *
- * @param callback - Function to call when runtime is terminated
+ * @param callback - Function to call when runtime is terminated.
+ *
  */
 export function onRuntimeTerminated(callback: RuntimeTerminatedCallback): void {
   runtimeTerminatedCallbacks.push(callback);
 }
 
 /**
- * Registers internal commands used for cross-component communication.
+ * Registers internal commands used for cross-component communication between providers and webviews.
  *
- * @param context - Extension context for command subscriptions
+ * @param context - Extension context for command subscriptions.
+ *
  */
 export function registerInternalCommands(
   context: vscode.ExtensionContext,
@@ -644,19 +646,22 @@ export function registerInternalCommands(
 }
 
 /**
- * Gets the connected runtime for a document URI.
+ * Gets the connected runtime for a document URI from the shared runtime map.
  *
- * @param uri - Document URI
- * @returns Runtime object if connected, undefined otherwise
+ * @param uri - Document URI to look up.
+ *
+ * @returns Runtime object if connected, undefined otherwise.
+ *
  */
 export function getConnectedRuntime(uri: vscode.Uri): unknown {
   return connectedRuntimes.get(uri.toString());
 }
 
 /**
- * Clears the runtime connection for a document URI.
+ * Clears the runtime connection for a document URI from the shared runtime map.
  *
- * @param uri - Document URI
+ * @param uri - Document URI to clear.
+ *
  */
 export function clearConnectedRuntime(uri: vscode.Uri): void {
   connectedRuntimes.delete(uri.toString());

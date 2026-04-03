@@ -35,7 +35,7 @@ export interface ActiveDocumentInfo {
  * Gets the URI of the active custom editor (notebook or lexical).
  * Returns undefined if no Datalayer custom editor is active.
  *
- * @returns The URI of the active custom editor, or undefined
+ * @returns The URI of the active custom editor, or undefined.
  */
 export function getActiveCustomEditorUri(): vscode.Uri | undefined {
   const info = getActiveDocumentInfo();
@@ -45,10 +45,10 @@ export function getActiveCustomEditorUri(): vscode.Uri | undefined {
 /**
  * Gets complete information about the active document including which editor is being used.
  * This is critical because .ipynb files can be opened with either:
- * - Datalayer custom notebook editor (viewType: "datalayer.jupyter-notebook")
- * - VS Code native notebook editor (viewType: "notebook" or similar)
+ * - Datalayer custom notebook editor (viewType: "datalayer.jupyter-notebook").
+ * - VS Code native notebook editor (viewType: "notebook" or similar).
  *
- * @returns Active document info with URI and editor type, or undefined
+ * @returns Active document info with URI and editor type, or undefined.
  */
 export function getActiveDocumentInfo(): ActiveDocumentInfo | undefined {
   const activeTab = vscode.window.tabGroups.activeTabGroup?.activeTab;

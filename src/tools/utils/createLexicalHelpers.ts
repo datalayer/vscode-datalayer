@@ -16,7 +16,20 @@
 import type { CreateDocumentResult } from "../utils/createDocument";
 
 /**
- * Creates a cloud lexical document in Datalayer space
+ * Creates a cloud lexical document in a Datalayer space.
+ * @param params - Lexical document creation parameters (name, description, space).
+ * @param params.name - Display name for the lexical document.
+ * @param params.description - Optional description for the document.
+ * @param params.spaceName - Name of the target Datalayer space.
+ * @param params.spaceId - Optional space identifier for direct lookup.
+ * @param context - Context with Datalayer client, auth, and cloud document callbacks.
+ * @param context.datalayer - Datalayer client instance for API calls.
+ * @param context.auth - Authentication state for the current user.
+ * @param context.extras - Additional callbacks and utilities.
+ * @param context.extras.openCloudDocument - Callback to open the created document.
+ * @param chatMessage - Optional message to include in the result for chat feedback.
+ *
+ * @returns Result with document URI and metadata or error details.
  */
 export async function createCloudLexical(
   params: {
@@ -176,7 +189,14 @@ export async function createCloudLexical(
 }
 
 /**
- * Creates a local lexical document file
+ * Creates a local lexical document file on disk with empty content.
+ * @param params - Parameters containing the document name.
+ * @param params.name - File name for the local lexical document.
+ * @param context - Context with extras containing createLocalFile callback.
+ * @param context.extras - Additional callbacks including local file creation.
+ * @param chatMessage - Optional message to include in the result for chat feedback.
+ *
+ * @returns Result with file URI or error details.
  */
 export async function createLocalLexical(
   params: { name: string },

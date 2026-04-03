@@ -8,31 +8,16 @@
  * Message type definitions for extension-webview communication.
  * Defines the protocol for messages exchanged between the extension and webview.
  *
+ * @module types/vscode/messages
+ *
  * @see https://code.visualstudio.com/api/extension-guides/webview#passing-messages-from-a-webview-to-an-extension
  *
- * @module utils/messages
  */
 
 /**
  * Extension message structure for bidirectional communication between
  * the VS Code extension host and webview panels.
  *
- * @example
- * ```typescript
- * // In extension (Node.js context):
- * webviewPanel.webview.postMessage({
- *   type: 'document-content',
- *   body: notebookContent,
- *   id: documentId
- * });
- *
- * // In webview (browser context):
- * vscode.postMessage({
- *   type: 'save-document',
- *   body: updatedContent,
- *   requestId: 'save-123'
- * });
- * ```
  */
 export type ExtensionMessage = {
   /**

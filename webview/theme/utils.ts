@@ -11,11 +11,12 @@
  */
 
 /**
- * Gets a CSS variable value from the document root.
+ * Gets a CSS variable value from the document root element.
+ * @param name - CSS variable name (with or without -- prefix).
+ * @param fallback - Fallback value if the variable is not found.
  *
- * @param name - CSS variable name (with or without -- prefix)
- * @param fallback - Fallback value if variable is not found
- * @returns The CSS variable value or fallback
+ * @returns The resolved CSS variable value or the fallback string.
+ *
  */
 export function getCSSVariable(name: string, fallback: string = ""): string {
   if (typeof document === "undefined") {
@@ -33,10 +34,11 @@ export function getCSSVariable(name: string, fallback: string = ""): string {
 }
 
 /**
- * Converts an RGB/RGBA color to hex format.
+ * Converts an RGB/RGBA color string to hex format.
+ * @param color - Color string in rgb, rgba, or hex format.
  *
- * @param color - Color string (rgb, rgba, or hex)
- * @returns Hex color string with optional alpha channel
+ * @returns Hex color string with optional alpha channel.
+ *
  */
 export function rgbaToHex(color: string): string {
   // If already hex, return as-is
@@ -71,11 +73,12 @@ export function rgbaToHex(color: string): string {
 }
 
 /**
- * Adds opacity to a color value.
+ * Adds opacity to a color value by appending an alpha channel.
+ * @param color - Base color in hex or rgb format.
+ * @param opacity - Opacity value between 0 and 1.
  *
- * @param color - Base color (hex or rgb)
- * @param opacity - Opacity value (0-1)
- * @returns Color with opacity applied
+ * @returns Hex color string with the opacity alpha channel appended.
+ *
  */
 export function withOpacity(color: string, opacity: number): string {
   const hex = rgbaToHex(color);
@@ -92,11 +95,12 @@ export function withOpacity(color: string, opacity: number): string {
 }
 
 /**
- * Reads a VSCode CSS variable and converts it to hex.
+ * Reads a VS Code CSS variable and converts it to hex format.
+ * @param varName - CSS variable name to read.
+ * @param fallback - Fallback hex color if variable is not defined.
  *
- * @param varName - CSS variable name
- * @param fallback - Fallback hex color
- * @returns Hex color string
+ * @returns Hex color string from the CSS variable or the fallback.
+ *
  */
 export function getVSCodeColorAsHex(varName: string, fallback: string): string {
   const value = getCSSVariable(varName, fallback);

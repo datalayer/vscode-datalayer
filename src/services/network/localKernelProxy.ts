@@ -39,7 +39,7 @@ export class LocalKernelProxy {
   /**
    * Maps request message IDs to JupyterLab's session IDs.
    * Required because the kernel uses its own session ID, but JupyterLab
-   * expects replies to use the same session ID as the request.
+   * Expects replies to use the same session ID as the request.
    */
   private _sessionIdMap = new Map<string, string>();
 
@@ -48,10 +48,11 @@ export class LocalKernelProxy {
 
   /**
    * Creates a new LocalKernelProxy instance.
-   * @param _kernelClient - The local kernel client managing the kernel lifecycle
-   * @param _webview - The webview panel to send messages to
-   * @param initialClientId - The initial WebSocket connection ID
-   * @throws Error if kernel is not started or RawSocket is unavailable
+   * @param _kernelClient - The local kernel client managing the kernel lifecycle.
+   * @param _webview - The webview panel to send messages to.
+   * @param initialClientId - The initial WebSocket connection ID.
+   *
+   * @throws Error if kernel is not started or RawSocket is unavailable.
    */
   constructor(
     private readonly _kernelClient: LocalKernelClient,
@@ -109,8 +110,9 @@ export class LocalKernelProxy {
 
   /**
    * Registers an additional WebSocket connection to this kernel.
-   * @param clientId - The WebSocket connection ID to register
-   * @returns An empty object for the websocket-open message body
+   * @param clientId - The WebSocket connection ID to register.
+   *
+   * @returns An empty object for the websocket-open message body.
    */
   public addConnection(clientId: string): Record<string, never> {
     this._clientIds.add(clientId);
@@ -122,8 +124,9 @@ export class LocalKernelProxy {
 
   /**
    * Removes a WebSocket connection from this kernel.
-   * @param clientId - The WebSocket connection ID to remove
-   * @returns True if there are still active connections, false if this was the last one
+   * @param clientId - The WebSocket connection ID to remove.
+   *
+   * @returns True if there are still active connections, false if this was the last one.
    */
   public removeConnection(clientId: string): boolean {
     this._clientIds.delete(clientId);
@@ -157,6 +160,7 @@ export class LocalKernelProxy {
    * Forwards a kernel message to the webview as a WebSocket message.
    * Sanitizes Buffer objects in the idents field to proper format for postMessage.
    * Also translates the kernel's session ID to JupyterLab's expected session ID.
+   * @param msg - The kernel message to forward to the webview.
    */
   private _forwardKernelMessage(msg: KernelMessage.IMessage): void {
     // Sanitize the message before sending to webview
@@ -249,6 +253,9 @@ export class LocalKernelProxy {
   /**
    * Sends a message to the webview.
    * Broadcasts to all registered client connections, or to a specific client if specified.
+   * @param type - Message type identifier for the webview.
+   * @param body - Message payload to send.
+   * @param specificClientId - Optional client ID to send to instead of broadcasting.
    */
   private _sendToWebview(
     type: string,
@@ -286,6 +293,7 @@ export class LocalKernelProxy {
    *
    * CRITICAL: Intercepts kernel_info_request and responds immediately with a proper reply.
    * This allows JupyterLab's kernel.ready Promise to resolve correctly.
+   * @param data - Raw message data from the webview (string or object).
    */
   public handleMessage(data: unknown): void {
     if (!this._kernel) {

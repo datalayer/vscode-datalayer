@@ -57,15 +57,6 @@ export interface IServiceContainer extends ILifecycle {
  * Default implementation of the service container.
  * Provides lazy initialization of services with proper dependency injection.
  *
- * @example
- * ```typescript
- * const container = new ServiceContainer(context);
- * await container.initialize();
- *
- * // Use services
- * await container.authProvider.login();
- * const doc = await container.documentBridge.openDocument(document);
- * ```
  */
 export class ServiceContainer implements IServiceContainer {
   /**
@@ -125,7 +116,7 @@ export class ServiceContainer implements IServiceContainer {
   /**
    * Creates a new service container instance.
    *
-   * @param context The VS Code extension context for accessing extension state
+   * @param context - The VS Code extension context for accessing extension state.
    */
   constructor(public readonly context: vscode.ExtensionContext) {}
 
@@ -133,7 +124,7 @@ export class ServiceContainer implements IServiceContainer {
    * Gets or lazily initializes the Datalayer client.
    * Creates a new Datalayer instance with VS Code context on first access.
    *
-   * @returns The initialized DatalayerClient instance
+   * @returns The initialized DatalayerClient instance.
    */
   get datalayer(): DatalayerClient {
     if (!this._datalayer) {
@@ -146,7 +137,7 @@ export class ServiceContainer implements IServiceContainer {
    * Gets or lazily initializes the authentication provider.
    * Creates a new DatalayerAuthProvider instance on first access.
    *
-   * @returns The initialized IAuthProvider instance
+   * @returns The initialized IAuthProvider instance.
    */
   get authProvider(): IAuthProvider {
     if (!this._authProvider) {
@@ -163,7 +154,7 @@ export class ServiceContainer implements IServiceContainer {
    * Gets or lazily initializes the error handler.
    * Creates a new ErrorHandler instance on first access.
    *
-   * @returns The initialized IErrorHandler instance
+   * @returns The initialized IErrorHandler instance.
    */
   get errorHandler(): IErrorHandler {
     if (!this._errorHandler) {
@@ -176,7 +167,7 @@ export class ServiceContainer implements IServiceContainer {
    * Gets or lazily initializes the logger manager.
    * Retrieves singleton LoggerManager instance on first access.
    *
-   * @returns The initialized ILoggerManager instance
+   * @returns The initialized ILoggerManager instance.
    */
   get loggerManager(): ILoggerManager {
     if (!this._loggerManager) {
@@ -189,7 +180,7 @@ export class ServiceContainer implements IServiceContainer {
    * Gets or lazily initializes the logger for the service container.
    * Creates a logger instance from the logger manager on first access.
    *
-   * @returns The initialized ILogger instance
+   * @returns The initialized ILogger instance.
    */
   get logger(): ILogger {
     if (!this._logger) {
@@ -202,7 +193,7 @@ export class ServiceContainer implements IServiceContainer {
    * Gets or lazily initializes the document registry.
    * Creates a new DocumentRegistry instance on first access.
    *
-   * @returns The initialized DocumentRegistry instance
+   * @returns The initialized DocumentRegistry instance.
    */
   get documentRegistry(): DocumentRegistry {
     if (!this._documentRegistry) {
@@ -216,7 +207,7 @@ export class ServiceContainer implements IServiceContainer {
    * Creates a new DocumentBridge instance on first access.
    * Responsible for downloading and opening documents from the platform.
    *
-   * @returns The initialized IDocumentBridge instance
+   * @returns The initialized IDocumentBridge instance.
    */
   get documentBridge(): IDocumentBridge {
     if (!this._documentBridge) {
@@ -234,7 +225,7 @@ export class ServiceContainer implements IServiceContainer {
    * Creates a new KernelBridge instance on first access.
    * Routes kernel connections between extension and webview.
    *
-   * @returns The initialized IKernelBridge instance
+   * @returns The initialized IKernelBridge instance.
    */
   get kernelBridge(): IKernelBridge {
     if (!this._kernelBridge) {
@@ -252,7 +243,7 @@ export class ServiceContainer implements IServiceContainer {
    * Creates a new NotebookNetworkService instance on first access.
    * Provides HTTP and WebSocket proxy for notebook communication.
    *
-   * @returns The initialized NotebookNetworkService instance
+   * @returns The initialized NotebookNetworkService instance.
    */
   get notebookNetwork(): NotebookNetworkService {
     if (!this._notebookNetwork) {
@@ -268,8 +259,8 @@ export class ServiceContainer implements IServiceContainer {
    * Only initializes Datalayer, auth, and logging - other services are lazy.
    *
    * Performance: This method is optimized to initialize only what's needed
-   * during extension activation. Document/kernel services are deferred until
-   * first use (typically when a command is invoked).
+   * During extension activation. Document/kernel services are deferred until
+   * First use (typically when a command is invoked).
    */
   async initialize(): Promise<void> {
     try {

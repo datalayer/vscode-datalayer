@@ -11,6 +11,9 @@
 
 import { getActiveCustomEditorUri } from "../../utils/activeDocument";
 
+/**
+ * Result of detecting the active document in VS Code, including its type and URI.
+ */
 export interface ActiveDocumentResult {
   success: boolean;
   type: "lexical" | "notebook" | "other" | "none";
@@ -20,8 +23,9 @@ export interface ActiveDocumentResult {
 }
 
 /**
- * Get the currently active document's URI and filename
- * Works with Lexical, Notebook, and other file types
+ * Gets the currently active document's URI and filename.
+ * Works with Lexical, Notebook, and other file types.
+ * @returns Active document info with type, URI, and filename.
  */
 export async function getActiveDocument(): Promise<ActiveDocumentResult> {
   console.log("[Datalayer getActiveDocument] Tool invoked");

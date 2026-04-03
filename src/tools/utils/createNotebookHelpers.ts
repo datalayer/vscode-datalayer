@@ -16,7 +16,21 @@
 import type { CreateDocumentResult } from "../utils/createDocument";
 
 /**
- * Creates a cloud notebook in Datalayer space
+ * Creates a cloud notebook in a Datalayer space.
+ * @param params - Notebook creation parameters (name, description, space, cells).
+ * @param params.name - Display name for the notebook.
+ * @param params.description - Optional description for the notebook.
+ * @param params.spaceName - Name of the target Datalayer space.
+ * @param params.spaceId - Optional space identifier for direct lookup.
+ * @param params.initialCells - Optional array of initial notebook cells.
+ * @param context - Context with Datalayer client, auth, and cloud document callbacks.
+ * @param context.datalayer - Datalayer client instance for API calls.
+ * @param context.auth - Authentication state for the current user.
+ * @param context.extras - Additional callbacks and utilities.
+ * @param context.extras.openCloudDocument - Callback to open the created notebook.
+ * @param chatMessage - Optional message to include in the result for chat feedback.
+ *
+ * @returns Result with notebook URI and metadata or error details.
  */
 export async function createCloudNotebook(
   params: {
@@ -174,7 +188,15 @@ export async function createCloudNotebook(
 }
 
 /**
- * Creates a local notebook file
+ * Creates a local notebook file on disk with optional initial cells.
+ * @param params - Parameters containing the notebook name and optional initial cells.
+ * @param params.name - File name for the local notebook.
+ * @param params.initialCells - Optional array of initial notebook cells.
+ * @param context - Context with extras containing createLocalFile callback.
+ * @param context.extras - Additional callbacks including local file creation.
+ * @param chatMessage - Optional message to include in the result for chat feedback.
+ *
+ * @returns Result with file URI or error details.
  */
 export async function createLocalNotebook(
   params: { name: string; initialCells?: unknown[] },

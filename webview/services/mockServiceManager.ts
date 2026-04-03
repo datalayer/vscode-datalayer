@@ -30,12 +30,22 @@ import { BaseKernelManager, BaseSessionManager } from "./base";
 class MockKernelManager extends BaseKernelManager {
   readonly managerType = "mock" as const;
 
+  /**
+   * Rejects kernel creation since mock manager provides no execution capability.
+   *
+   * @throws Always throws indicating kernel selection is required.
+   */
   async startNew(): Promise<Kernel.IKernelConnection> {
     throw new Error(
       "To enable running cells, you must select a kernel. Cell execution is not yet available for Datalayer notebooks.",
     );
   }
 
+  /**
+   * Rejects kernel connection since mock manager provides no execution capability.
+   *
+   * @throws Always throws indicating kernel selection is required.
+   */
   override connectTo(): Kernel.IKernelConnection {
     throw new Error(
       "To enable running cells, you must select a kernel. Cell execution is not yet available for Datalayer notebooks.",
@@ -50,6 +60,11 @@ class MockKernelManager extends BaseKernelManager {
 class MockSessionManager extends BaseSessionManager {
   readonly managerType = "mock" as const;
 
+  /**
+   * Rejects session creation since mock manager provides no execution capability.
+   *
+   * @throws Always throws indicating kernel selection is required.
+   */
   async startNew(): Promise<Session.ISessionConnection> {
     throw new Error(
       "To enable running cells, you must select a kernel. Cell execution is not yet available for Datalayer notebooks.",
@@ -62,9 +77,9 @@ class MockSessionManager extends BaseSessionManager {
  * without actual execution capabilities. All service methods throw appropriate
  * error messages indicating that kernel execution is not available.
  *
- * @function createMockServiceManager
- * @returns {ServiceManager.IManager} A mock service manager instance
+ * @returns A mock service manager instance.
  *
+ * @function createMockServiceManager
  * @remarks
  * This mock service manager is used when:
  * - Displaying notebooks without kernel execution
@@ -78,12 +93,6 @@ class MockSessionManager extends BaseSessionManager {
  * - Disabled settings and workspace management
  * - Disabled terminal and nbconvert services
  *
- * @example
- * ```typescript
- * const serviceManager = createMockServiceManager();
- * // serviceManager.kernels.startNew() will throw an error
- * // but serviceManager.kernelspecs.specs will return mock data
- * ```
  */
 export function createMockServiceManager(): ServiceManager.IManager {
   const serverSettings = {

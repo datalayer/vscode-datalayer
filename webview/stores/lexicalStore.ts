@@ -71,57 +71,57 @@ export interface LexicalState {
   // Actions
   /**
    * Updates the document content
-   * @param content The new document content
+   * @param content - The new document content
    */
   setContent: (content: string) => void;
   /**
    * Updates the editable state of the document
-   * @param editable True for edit mode, false for read-only
+   * @param editable - True for edit mode, false for read-only
    */
   setIsEditable: (editable: boolean) => void;
   /**
    * Updates the ready state of the editor
-   * @param ready True when editor has initialized and is ready to render
+   * @param ready - True when editor has initialized and is ready to render
    */
   setIsReady: (ready: boolean) => void;
   /**
    * Updates the initial load flag
-   * @param isInitial True for the first load, false after initial rendering
+   * @param isInitial - True for the first load, false after initial rendering
    */
   setIsInitialLoad: (isInitial: boolean) => void;
   /**
    * Updates the document URI
-   * @param uri The new document URI
+   * @param uri - The new document URI
    */
   setDocumentUri: (uri: string) => void;
   /**
    * Updates the navigation target outline item
-   * @param itemId The ID of the outline item to navigate to, or null to clear
+   * @param itemId - The ID of the outline item to navigate to, or null to clear
    */
   setNavigationTarget: (itemId: string | null) => void;
   /**
    * Updates the Lexical document ID
-   * @param id The new Lexical document ID
+   * @param id - The new Lexical document ID
    */
   setLexicalId: (id: string) => void;
   /**
    * Updates the editor theme
-   * @param theme The new theme: 'light' or 'dark'
+   * @param theme - The new theme: 'light' or 'dark'
    */
   setTheme: (theme: "light" | "dark") => void;
   /**
    * Updates the collaboration configuration
-   * @param config The new collaboration configuration
+   * @param config - The new collaboration configuration
    */
   setCollaborationConfig: (config: CollaborationConfig) => void;
   /**
    * Updates the user information for comments
-   * @param info User information (username and color) or null if not logged in
+   * @param info - User information (username and color) or null if not logged in
    */
   setUserInfo: (info: { username: string; userColor: string } | null) => void;
   /**
    * Updates the completion configuration
-   * @param config Completion configuration for inline completions
+   * @param config - Completion configuration for inline completions
    */
   setCompletionConfig: (config: InlineCompletionConfig | null) => void;
   /**
@@ -164,13 +164,8 @@ const initialState = {
 };
 
 /**
- * Creates a new isolated Lexical store instance.
- * Each webview should create its own store to prevent state sharing.
- *
- * IMPORTANT: This is a factory function, NOT a global singleton.
- * Calling this multiple times creates independent store instances.
- *
- * @returns A new Zustand store instance for Lexical state management
+ * Creates a new isolated Lexical store instance; each webview should call this to prevent state sharing across editors.
+ * @returns A new Zustand store instance for Lexical state management.
  */
 export const createLexicalStore = () =>
   create<LexicalState>((set) => ({

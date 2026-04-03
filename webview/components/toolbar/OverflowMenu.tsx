@@ -14,6 +14,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { ToolbarButton } from "./ToolbarButton";
 
+/** Describes a single action item in the overflow menu. */
 export interface OverflowMenuAction {
   /** Action identifier */
   id: string;
@@ -29,6 +30,7 @@ export interface OverflowMenuAction {
   active?: boolean;
 }
 
+/** Props for the OverflowMenu component. */
 export interface OverflowMenuProps {
   /** List of actions to display in the menu */
   actions: OverflowMenuAction[];

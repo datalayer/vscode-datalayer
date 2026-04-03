@@ -34,6 +34,7 @@ export interface ExecuteCodeParams {
  *
  * @module tools/operations/executeCode
  */
+/** Operation that routes code execution to the appropriate document or runtime. */
 export const executeCodeOperation: ToolOperation<ExecuteCodeParams, unknown> = {
   name: "executeCode",
 

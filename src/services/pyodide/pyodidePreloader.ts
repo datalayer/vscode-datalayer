@@ -16,20 +16,19 @@ import type { ILogger } from "../interfaces/ILogger";
 import { getNonce } from "../../utils/webviewSecurity";
 
 /**
- * Key for storing whether user has been prompted for preload
+ * Key for storing whether user has been prompted for preload.
  */
 const PRELOAD_PROMPTED_KEY = "datalayer.pyodide.preloadPrompted";
 
 /**
- * Key for storing the hash of successfully preloaded packages
- * Format: "version:package1,package2,package3" (sorted alphabetically with version prefix)
+ * Key for storing the hash of successfully preloaded packages.
+ * Format: "version:package1,package2,package3" (sorted alphabetically with version prefix).
  */
 const PRELOADED_PACKAGES_KEY = "datalayer.pyodide.preloadedPackages";
 
 /**
  * Service to handle Pyodide package preloading.
- * Manages package downloads and caching for offline Python execution.
- */
+ * Manages package downloads and caching for offline Python execution. */
 export class PyodidePreloader implements vscode.Disposable {
   private _configWatcher: vscode.Disposable | null = null;
   private _isPreloading = false;
@@ -43,10 +42,9 @@ export class PyodidePreloader implements vscode.Disposable {
   }
 
   /**
-   * Initialize the preloader service.
-   * - Prompts user on first startup (if enabled)
-   * - Watches for config changes
-   * - Starts preload if appropriate
+   * Sets up the Pyodide preloader by prompting the user on first startup,
+   * registering configuration change watchers, and starting the download
+   * if the preload behavior setting allows it.
    */
   public async initialize(): Promise<void> {
     const config = vscode.workspace.getConfiguration("datalayer.pyodide");
@@ -100,7 +98,10 @@ export class PyodidePreloader implements vscode.Disposable {
   }
 
   /**
-   * Generate a stable key from package list AND version for caching
+   * Generate a stable key from package list AND version for caching.
+   * @param packages - List of package names to generate a key for.
+   *
+   * @returns Versioned cache key in format "version:pkg1,pkg2,pkg3".
    */
   private _getPackagesKey(packages: string[]): string {
     const config = vscode.workspace.getConfiguration("datalayer.pyodide");
@@ -110,7 +111,7 @@ export class PyodidePreloader implements vscode.Disposable {
   }
 
   /**
-   * Prompt user on first startup if they want to preload packages
+   * Prompt user on first startup if they want to preload packages.
    */
   private async _promptUserForPreload(): Promise<void> {
     const packages = vscode.workspace
@@ -144,7 +145,7 @@ export class PyodidePreloader implements vscode.Disposable {
   }
 
   /**
-   * Watch for configuration changes and trigger preload if packages or version changed
+   * Watch for configuration changes and trigger preload if packages or version changed.
    */
   private _watchConfigChanges(): void {
     this._configWatcher = vscode.workspace.onDidChangeConfiguration((e) => {
@@ -159,7 +160,7 @@ export class PyodidePreloader implements vscode.Disposable {
   }
 
   /**
-   * Handle configuration changes
+   * Handle configuration changes.
    */
   private async _onConfigChanged(): Promise<void> {
     const config = vscode.workspace.getConfiguration("datalayer.pyodide");
@@ -196,7 +197,7 @@ export class PyodidePreloader implements vscode.Disposable {
   }
 
   /**
-   * Start preloading packages in background
+   * Start preloading packages in background.
    */
   private async _startPreload(): Promise<void> {
     if (this._isPreloading) {
@@ -254,8 +255,11 @@ export class PyodidePreloader implements vscode.Disposable {
 
   /**
    * Preload packages for NATIVE notebooks (Node.js filesystem cache).
-   * NOTE: Native notebooks use the npm Pyodide package, so we ONLY download packages,
-   * NOT core files. Core files come from npm package, not CDN!
+   * NOTE: Native notebooks use the npm Pyodide package, so we ONLY download packages,.
+   * NOT core files. Core files come from npm package, not CDN!.
+   * @param _pyodideVersion - Pyodide version (ignored, npm package version used instead).
+   * @param packages - List of package names to preload.
+   * @param progress - Progress reporter for UI feedback.
    */
   private async _executeNativePreload(
     _pyodideVersion: string, // Ignored - native notebooks use npm package version
@@ -335,6 +339,8 @@ export class PyodidePreloader implements vscode.Disposable {
    * Preload packages for WEBVIEW notebooks (browser IndexedDB cache).
    * Creates a hidden webview panel that downloads packages via micropip.
    * NOTE: Currently disabled due to poor UX (see line 262).
+   * @param packages - List of package names to preload into IndexedDB.
+   * @param progress - Progress reporter for UI feedback.
    */
   // @ts-expect-error - Method kept for potential future re-enabling
   private async _executeWebviewPreload(
@@ -397,7 +403,12 @@ export class PyodidePreloader implements vscode.Disposable {
   }
 
   /**
-   * Generate minimal HTML for preloading Pyodide
+   * Generate minimal HTML for preloading Pyodide.
+   * @param _webview - Webview instance (unused, kept for future CSP needs).
+   * @param pyodideVersion - Pyodide version for CDN URL construction.
+   * @param packages - List of package names to include in the preload script.
+   *
+   * @returns HTML string for the preload webview.
    */
   private _getPreloadHtml(
     _webview: vscode.Webview,
@@ -511,7 +522,7 @@ export class PyodidePreloader implements vscode.Disposable {
   }
 
   /**
-   * Dispose the preloader service
+   * Dispose the preloader service.
    */
   public dispose(): void {
     this._configWatcher?.dispose();

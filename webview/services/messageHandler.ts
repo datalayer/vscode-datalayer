@@ -28,7 +28,7 @@ declare let acquireVsCodeApi: () => {
 };
 
 /**
- * VS Code API singleton - can only be called once
+ * VS Code API singleton - can only be called once.
  */
 const vscode = acquireVsCodeApi();
 
@@ -39,7 +39,7 @@ const vscode = acquireVsCodeApi();
 export const vsCodeAPI = vscode;
 
 /**
- * Disposable object with dispose method
+ * Disposable object with dispose method.
  */
 export interface Disposable {
   /** Dispose the resource and clean up event listeners */
@@ -47,7 +47,7 @@ export interface Disposable {
 }
 
 /**
- * Pending request with promise resolver/rejector
+ * Pending request with promise resolver/rejector.
  */
 export interface PendingRequest<T = unknown> {
   /** Resolve the promise with the response value */
@@ -79,7 +79,7 @@ export class MessageHandler {
   private _defaultTimeout = 30000;
 
   /**
-   * Creates a new MessageHandler instance
+   * Creates a new MessageHandler instance.
    */
   constructor() {
     window.addEventListener("message", this._handleMessage.bind(this));
@@ -88,7 +88,7 @@ export class MessageHandler {
   /**
    * Send a message to the extension (fire and forget).
    *
-   * @param message - Message to send
+   * @param message - Message to send.
    */
   send<T = unknown>(message: T): void {
     vscode.postMessage(message);
@@ -97,9 +97,10 @@ export class MessageHandler {
   /**
    * Send a request to the extension and wait for response.
    *
-   * @param message - Request message
-   * @param timeout - Request timeout in milliseconds (default: 30000)
-   * @returns Promise resolving to response message
+   * @param message - Data payload to send to the extension host.
+   * @param timeout - Maximum wait time in milliseconds before rejecting (default: 30000).
+   *
+   * @returns Promise resolving to response message.
    */
   async request<TRequest = unknown, TResponse = unknown>(
     message: TRequest,
@@ -134,8 +135,9 @@ export class MessageHandler {
   /**
    * Register a callback for all incoming messages.
    *
-   * @param handler - Message handler function
-   * @returns Disposable to unregister the handler
+   * @param handler - Message handler function.
+   *
+   * @returns Disposable to unregister the handler.
    */
   on(handler: (message: unknown) => void): Disposable {
     const id = this._callbackCount++;
@@ -149,7 +151,8 @@ export class MessageHandler {
   }
 
   /**
-   * Handle incoming messages from the extension
+   * Handle incoming messages from the extension.
+   * @param event - Message event from the VS Code extension host.
    */
   private _handleMessage(event: MessageEvent): void {
     const message = event.data;
@@ -183,7 +186,7 @@ export class MessageHandler {
   }
 
   /**
-   * Clear all pending requests (useful for cleanup)
+   * Clear all pending requests (useful for cleanup).
    */
   clearPendingRequests(): void {
     for (const [_id, pending] of this._pendingRequests.entries()) {
@@ -197,8 +200,9 @@ export class MessageHandler {
    * Register a callback to receive all messages from the extension.
    * Returns a disposable to unregister the callback.
    *
-   * @param callback Function to call when messages are received
-   * @returns Disposable to unregister the callback
+   * @param callback - Function to call when messages are received.
+   *
+   * @returns Disposable to unregister the callback.
    */
   onMessage(callback: (message: unknown) => void): Disposable {
     const id = this._callbackCount++;
@@ -220,13 +224,13 @@ export class MessageHandler {
   }
 
   /**
-   * Singleton instance of MessageHandler
+   * Singleton instance of MessageHandler.
    */
   static instance = new MessageHandler();
 }
 
 /**
- * React context for MessageHandler
+ * React context for MessageHandler.
  */
 export const MessageHandlerContext = createContext<MessageHandler>(
   MessageHandler.instance,

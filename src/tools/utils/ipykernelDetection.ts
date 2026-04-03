@@ -8,14 +8,15 @@ import * as fs from "fs";
 import * as path from "path";
 
 /**
- * Fast ipykernel detection by checking filesystem
- * Avoids slow subprocess calls (pip list)
+ * Fast ipykernel detection by checking filesystem.
+ * Avoids slow subprocess calls (pip list).
  *
- * Performance: ~1-2ms per environment (vs 100-500ms for subprocess)
+ * Performance: ~1-2ms per environment (vs 100-500ms for subprocess).
  *
- * @param pythonPath - Absolute path to Python executable
- * @param envType - Optional environment type (conda, venv, etc.)
- * @returns true if ipykernel is installed
+ * @param pythonPath - Absolute path to Python executable.
+ * @param envType - Optional environment type (conda, venv, etc.).
+ *
+ * @returns True if ipykernel is installed in the environment.
  */
 export function hasIpykernel(pythonPath: string, envType?: string): boolean {
   try {
@@ -71,7 +72,10 @@ export function hasIpykernel(pythonPath: string, envType?: string): boolean {
 }
 
 /**
- * Helper to expand glob patterns like python3.*
+ * Expands glob-style wildcard patterns in filesystem paths to find matching directories.
+ * @param pattern - Filesystem path with optional glob wildcard.
+ *
+ * @returns Array of matching directory paths.
  */
 function findMatchingDirs(pattern: string): string[] {
   const parentDir = path.dirname(pattern);

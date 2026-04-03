@@ -8,8 +8,9 @@
  * Tree data provider for the Datalayer spaces view.
  * Displays user's spaces and documents in a hierarchical tree structure with caching.
  *
- * @see https://code.visualstudio.com/api/extension-guides/tree-view
  * @module providers/spacesTreeProvider
+ *
+ * @see https://code.visualstudio.com/api/extension-guides/tree-view
  */
 
 import * as vscode from "vscode";
@@ -26,12 +27,6 @@ import type { LexicalDTO } from "@datalayer/core/lib/models/LexicalDTO";
  * Implements VS Code's TreeDataProvider interface to display spaces and documents
  * with caching for improved performance.
  *
- * @example
- * ```typescript
- * const provider = new SpacesTreeProvider(authProvider);
- * provider.refresh(); // Refresh entire tree
- * provider.refreshSpace(spaceId); // Refresh specific space
- * ```
  */
 export class SpacesTreeProvider implements vscode.TreeDataProvider<SpaceItem> {
   private _onDidChangeTreeData: vscode.EventEmitter<
@@ -46,9 +41,9 @@ export class SpacesTreeProvider implements vscode.TreeDataProvider<SpaceItem> {
   private itemsCache: Map<string, (NotebookDTO | LexicalDTO)[]> = new Map();
 
   /**
-   * Creates a new SpacesTreeProvider.
+   * Creates a new SpacesTreeProvider for displaying user spaces in the explorer.
    *
-   * @param authProvider - Authentication provider for user state management
+   * @param authProvider - Authentication provider for user state management.
    */
   constructor(authProvider: DatalayerAuthProvider) {
     this.authService = authProvider;
@@ -66,7 +61,7 @@ export class SpacesTreeProvider implements vscode.TreeDataProvider<SpaceItem> {
   /**
    * Refreshes a specific space in the tree.
    *
-   * @param spaceId - ID of the space to refresh
+   * @param spaceId - ID of the space to refresh.
    */
   refreshSpace(spaceId: string): void {
     // Clear both the items cache and spaces cache to ensure fresh data
@@ -78,8 +73,9 @@ export class SpacesTreeProvider implements vscode.TreeDataProvider<SpaceItem> {
   /**
    * Gets the tree item representation for display.
    *
-   * @param element - The SpaceItem to convert
-   * @returns The tree item for VS Code to display
+   * @param element - The SpaceItem to convert for display.
+   *
+   * @returns The tree item for VS Code to display.
    */
   getTreeItem(element: SpaceItem): vscode.TreeItem {
     return element;
@@ -88,8 +84,9 @@ export class SpacesTreeProvider implements vscode.TreeDataProvider<SpaceItem> {
   /**
    * Gets the children of a tree item.
    *
-   * @param element - The parent element, or undefined for root
-   * @returns Array of child SpaceItems
+   * @param element - The parent element, or undefined for root.
+   *
+   * @returns Array of child SpaceItems.
    */
   async getChildren(element?: SpaceItem): Promise<SpaceItem[]> {
     const authState = this.authService.getAuthState();
@@ -159,7 +156,7 @@ export class SpacesTreeProvider implements vscode.TreeDataProvider<SpaceItem> {
    * Fetches and returns user's spaces as tree items.
    * Pre-fetches all items for all spaces to show them expanded immediately.
    *
-   * @returns Array of SpaceItems representing user's spaces
+   * @returns Array of SpaceItems representing the user's spaces.
    */
   private async getSpaces(): Promise<SpaceItem[]> {
     try {
@@ -242,8 +239,9 @@ export class SpacesTreeProvider implements vscode.TreeDataProvider<SpaceItem> {
   /**
    * Fetches and returns items within a specific space.
    *
-   * @param space - The space object containing space metadata
-   * @returns Array of SpaceItems representing documents in the space
+   * @param space - The space object containing space metadata.
+   *
+   * @returns Array of SpaceItems representing documents in the space.
    */
   private async getSpaceItems(space: unknown): Promise<SpaceItem[]> {
     try {
@@ -370,10 +368,11 @@ export class SpacesTreeProvider implements vscode.TreeDataProvider<SpaceItem> {
   }
 
   /**
-   * Gets the parent of a tree item.
+   * Gets the parent of a tree item for tree navigation.
    *
-   * @param element - The child element
-   * @returns The parent SpaceItem or undefined
+   * @param element - The child element to find the parent of.
+   *
+   * @returns The parent SpaceItem or undefined for root items.
    */
   getParent(element: SpaceItem): vscode.ProviderResult<SpaceItem> {
     return element.parent;

@@ -18,10 +18,11 @@ import { showTwoStepConfirmation } from "../ui/dialogs/confirmationDialog";
 import { getServiceContainer } from "../extension";
 
 /**
- * Registers all secrets-related commands.
+ * Registers all secrets-related commands for CRUD operations with security-first approach.
  *
- * @param context - Extension context for command subscriptions
- * @param settingsTreeProvider - The Settings tree view provider for refresh
+ * @param context - Extension context for command subscriptions.
+ * @param settingsTreeProvider - The Settings tree view provider for refresh.
+ *
  */
 export function registerSecretsCommands(
   context: vscode.ExtensionContext,

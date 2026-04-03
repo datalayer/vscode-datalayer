@@ -24,25 +24,6 @@
  * 3. **Extensibility**: Easy to add new kernel types (e.g., Pyodide)
  * 4. **Type Safety**: TypeScript ensures correct options for each type
  *
- * @example
- * ```typescript
- * // Create mock service manager
- * const mockManager = ServiceManagerFactory.create({ type: 'mock' });
- *
- * // Create local kernel service manager
- * const localManager = ServiceManagerFactory.create({
- *   type: 'local',
- *   kernelId: 'kernel-123',
- *   kernelName: 'python3',
- *   url: 'http://localhost:8888'
- * });
- *
- * // Create remote service manager
- * const remoteManager = ServiceManagerFactory.create({
- *   type: 'remote',
- *   serverSettings: { baseUrl: 'http://localhost:8888', ... }
- * });
- * ```
  */
 
 import { ServiceManager, ServerConnection } from "@jupyterlab/services";
@@ -115,29 +96,12 @@ export class ServiceManagerFactory {
   /**
    * Create a service manager based on type and options.
    *
-   * @param options - Discriminated union of service manager options
-   * @returns Service manager instance
-   * @throws {Error} If Pyodide type is used (not yet implemented)
+   * @param options - Discriminated union of service manager options.
    *
-   * @example
-   * ```typescript
-   * // Mock service manager (no execution)
-   * const mock = ServiceManagerFactory.create({ type: 'mock' });
+   * @returns Service manager instance.
    *
-   * // Local kernel service manager (VS Code Python)
-   * const local = ServiceManagerFactory.create({
-   *   type: 'local',
-   *   kernelId: 'abc-123',
-   *   kernelName: 'python3',
-   *   url: 'http://localhost:8888'
-   * });
+   * @throws If Pyodide type is used (not yet implemented).
    *
-   * // Remote service manager (Jupyter server)
-   * const remote = ServiceManagerFactory.create({
-   *   type: 'remote',
-   *   serverSettings: mySettings
-   * });
-   * ```
    */
   static create(options: ServiceManagerOptions): ServiceManager.IManager {
     switch (options.type) {
@@ -169,8 +133,9 @@ export class ServiceManagerFactory {
   /**
    * Type guard to check if a service manager is a mock manager.
    *
-   * @param manager - Service manager to check
-   * @returns True if manager is a mock service manager
+   * @param manager - Service manager to check.
+   *
+   * @returns True if manager is a mock service manager.
    */
   static isMock(manager: ServiceManager.IManager): boolean {
     return (
@@ -183,8 +148,9 @@ export class ServiceManagerFactory {
    * Get the type of a service manager if identifiable.
    * Returns 'unknown' for managers created outside the factory.
    *
-   * @param manager - Service manager to identify
-   * @returns Service manager type or 'unknown'
+   * @param manager - Service manager to identify.
+   *
+   * @returns Service manager type or 'unknown'.
    */
   static getType(
     manager: ServiceManager.IManager,

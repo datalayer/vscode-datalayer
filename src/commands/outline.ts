@@ -17,10 +17,11 @@ import type {
 } from "../providers/outlineTreeProvider";
 
 /**
- * Registers all outline-related commands.
+ * Registers all outline-related commands for document navigation and tree management.
  *
- * @param context - Extension context
- * @param outlineTreeProvider - The outline tree provider instance
+ * @param context - Extension context for command subscriptions.
+ * @param outlineTreeProvider - The outline tree provider instance for navigation and refresh.
+ *
  */
 export function registerOutlineCommands(
   context: vscode.ExtensionContext,

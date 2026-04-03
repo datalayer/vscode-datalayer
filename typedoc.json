@@ -13,7 +13,7 @@
     "**/test/**",
     "**/testing.ts"
   ],
-  "excludePrivate": false,
+  "excludePrivate": true,
   "excludeProtected": false,
   "excludeInternal": true,
   "excludeExternals": true,
@@ -22,10 +22,19 @@
   "includeVersion": true,
   "disableSources": false,
   "skipErrorChecking": true,
-  "treatWarningsAsErrors": false,
+  "treatWarningsAsErrors": true,
   "validation": {
     "notExported": false,
-    "invalidLink": false,
-    "notDocumented": false
-  }
+    "invalidLink": true,
+    "notDocumented": true
+  },
+  "requiredToBeDocumented": [
+    "Class",
+    "Function",
+    "Enum",
+    "Interface",
+    "TypeAlias",
+    "Variable",
+    "Method"
+  ]
 }

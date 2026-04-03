@@ -20,10 +20,11 @@ import {
 import { getServiceContainer } from "../extension";
 
 /**
- * Registers all datasource-related commands.
+ * Registers all datasource-related commands including create, edit, delete, and refresh.
  *
- * @param context - Extension context for command subscriptions
- * @param settingsTreeProvider - The Settings tree view provider for refresh
+ * @param context - Extension context for command subscriptions.
+ * @param settingsTreeProvider - The Settings tree view provider for refresh.
+ *
  */
 export function registerDatasourcesCommands(
   context: vscode.ExtensionContext,

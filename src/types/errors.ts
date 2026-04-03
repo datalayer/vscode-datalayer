@@ -19,10 +19,10 @@ export class DatalayerError extends Error {
   /**
    * Creates a new DatalayerError.
    *
-   * @param message - Human-readable error message
-   * @param code - Error code for categorization
-   * @param cause - Original error that caused this error
-   * @param context - Additional context information
+   * @param message - Human-readable error message.
+   * @param code - Error code for categorization.
+   * @param cause - Original error that caused this error.
+   * @param context - Additional context information.
    */
   constructor(
     message: string,
@@ -126,21 +126,22 @@ export class DocumentError extends DatalayerError {
  * Information extracted from an error for logging and display.
  */
 export interface ErrorInfo {
-  /** Error code for categorization and identification */
+  /** Error code for categorization and identification. */
   code: string;
-  /** Human-readable error message */
+  /** Human-readable error message. */
   message: string;
-  /** Original error that caused this error (if available) */
+  /** Original error that caused this error (if available). */
   cause?: Error;
-  /** Additional context information about the error */
+  /** Additional context information about the error. */
   context?: Record<string, unknown>;
 }
 
 /**
  * Extracts structured information from any error object.
  *
- * @param error - The error to extract information from
- * @returns Structured error information
+ * @param error - The error to extract information from.
+ *
+ * @returns Structured error information with code, message, and optional context.
  */
 export function extractErrorInfo(error: Error): ErrorInfo {
   if (error instanceof DatalayerError) {

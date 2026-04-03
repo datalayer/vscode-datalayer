@@ -18,7 +18,18 @@ import {
 } from "./serviceManagerFactory";
 
 /**
- * Type guard to check if service manager has a dispose method
+ * Handle returned by onChange to unsubscribe from change notifications.
+ */
+export interface IDisposableListener {
+  /** Removes the change listener. */
+  dispose: () => void;
+}
+
+/**
+ * Type guard to check if service manager has a dispose method.
+ * @param sm - Service manager instance to check.
+ *
+ * @returns True if service manager has a dispose method.
  */
 function hasDispose(
   sm: ServiceManager.IManager,
@@ -29,12 +40,13 @@ function hasDispose(
 /**
  * Disable auto-reconnect for all kernel connections in a service manager.
  * This prevents CORS errors when the server-side runtime has been terminated
- * and the kernel URLs are no longer accessible.
+ * And the kernel URLs are no longer accessible.
  *
  * Sets _reconnectLimit = -1 on all kernel connections to disable reconnection attempts.
  *
- * @param serviceManager - Service manager to disable reconnection for
- * @returns Number of kernels that had reconnection disabled
+ * @param serviceManager - Service manager to disable reconnection for.
+ *
+ * @returns Number of kernels that had reconnection disabled.
  */
 function disableKernelReconnect(
   serviceManager: ServiceManager.IManager,
@@ -68,7 +80,7 @@ function disableKernelReconnect(
 
 /**
  * Mutable service manager wrapper that maintains a stable reference
- * while allowing the underlying service manager to be swapped.
+ * While allowing the underlying service manager to be swapped.
  */
 export class MutableServiceManager {
   private _serviceManager: ServiceManager.IManager;
@@ -93,7 +105,7 @@ export class MutableServiceManager {
    * Update to a mock service manager (no execution).
    * Convenience method using ServiceManagerFactory.
    *
-   * @param forceClose - If true, skip dispose() to avoid API calls (for terminated remote runtimes)
+   * @param forceClose - If true, skip dispose() to avoid API calls (for terminated remote runtimes).
    */
   updateToMock(forceClose = false): void {
     this._forceClose = forceClose;
@@ -109,9 +121,9 @@ export class MutableServiceManager {
    * Update to a local kernel service manager.
    * Connects directly to VS Code Python environments via ZMQ.
    *
-   * @param kernelId - Unique kernel identifier
-   * @param kernelName - Kernel spec name (e.g., 'python3')
-   * @param url - Base URL for kernel connection
+   * @param kernelId - Unique kernel identifier.
+   * @param kernelName - Kernel spec name (e.g., 'python3').
+   * @param url - Base URL for kernel connection.
    */
   updateToLocal(kernelId: string, kernelName: string, url: string): void {
     this._disposeCurrentManager();
@@ -131,8 +143,8 @@ export class MutableServiceManager {
    * Update to a remote service manager.
    * Connects to standard Jupyter server via HTTP/WebSocket.
    *
-   * @param url - Base URL for the Jupyter server
-   * @param token - Authentication token
+   * @param url - Base URL for the Jupyter server.
+   * @param token - Authentication token.
    */
   updateToRemote(url: string, token: string): void {
     this._disposeCurrentManager();
@@ -154,7 +166,7 @@ export class MutableServiceManager {
   /**
    * Update to Pyodide service manager (browser-based Python).
    *
-   * @param pyodideUrl - Optional CDN URL for Pyodide
+   * @param pyodideUrl - Optional CDN URL for Pyodide.
    */
   updateToPyodide(pyodideUrl?: string): void {
     this._disposeCurrentManager();
@@ -170,7 +182,7 @@ export class MutableServiceManager {
   /**
    * Get the current service manager type.
    *
-   * @returns Service manager type or 'unknown' if not created by factory
+   * @returns Service manager type or 'unknown' if not created by factory.
    */
   getType(): ServiceManagerType | "unknown" {
     return ServiceManagerFactory.getType(this._serviceManager);
@@ -179,10 +191,11 @@ export class MutableServiceManager {
   /**
    * Add a listener for service manager changes.
    *
-   * @param listener - Callback to invoke when service manager changes
-   * @returns Disposable to remove the listener
+   * @param listener - Callback to invoke when service manager changes.
+   *
+   * @returns Disposable to remove the listener.
    */
-  onChange(listener: () => void): { dispose: () => void } {
+  onChange(listener: () => void): IDisposableListener {
     this._listeners.push(listener);
     return {
       dispose: () => {
@@ -297,9 +310,10 @@ export class MutableServiceManager {
    * This allows the MutableServiceManager to be used as a drop-in replacement.
    *
    * IMPORTANT: For properties that are objects (like `kernels`, `sessions`, etc.),
-   * we need to return proxies as well, because SessionContext extracts these properties
-   * and holds onto them. Without proxies, SessionContext would keep references to the
-   * old mock service manager's kernels/sessions even after we swap to a real one.
+   * We need to return proxies as well, because SessionContext extracts these properties
+   * And holds onto them. Without proxies, SessionContext would keep references to the
+   * Old mock service manager's kernels/sessions even after we swap to a real one.
+   * @returns Proxy implementing ServiceManager.IManager interface.
    */
   createProxy(): ServiceManager.IManager {
     return new Proxy({} as ServiceManager.IManager, {

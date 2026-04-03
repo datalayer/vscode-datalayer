@@ -15,9 +15,10 @@ import * as path from "path";
 import { getPrimerVSCodeThemeCSS } from "../ui/styles/primerVSCodeTheme";
 
 /**
- * Registers theme-related commands.
+ * Registers theme-related commands for Primer component showcase and demos.
  *
- * @param context - Extension context for command subscriptions
+ * @param context - Extension context for command subscriptions.
+ *
  */
 export function registerThemeCommands(context: vscode.ExtensionContext): void {
   context.subscriptions.push(
@@ -28,8 +29,8 @@ export function registerThemeCommands(context: vscode.ExtensionContext): void {
 }
 
 /**
- * Opens a webview panel showcasing Primer React components
- * styled with the VSCode Primer theme.
+ * Opens a webview panel showcasing Primer React components styled with the VS Code Primer theme.
+ * @param context - Extension context for accessing extension path and resources.
  */
 function showPrimerThemeShowcase(context: vscode.ExtensionContext): void {
   const panel = vscode.window.createWebviewPanel(
@@ -83,7 +84,11 @@ function showPrimerThemeShowcase(context: vscode.ExtensionContext): void {
 }
 
 /**
- * Generates the HTML content for the webview.
+ * Generates the HTML content for the Primer theme showcase webview with CSP and theme CSS.
+ * @param webview - Webview instance for CSP source and nonce.
+ * @param scriptUri - URI of the showcase script bundle.
+ *
+ * @returns HTML string for the theme showcase webview.
  */
 function getWebviewContent(
   webview: vscode.Webview,
@@ -137,7 +142,8 @@ function getWebviewContent(
 }
 
 /**
- * Generates a nonce for CSP.
+ * Generates a random nonce string for Content Security Policy script validation.
+ * @returns Random 32-character alphanumeric nonce string.
  */
 function getNonce(): string {
   let text = "";

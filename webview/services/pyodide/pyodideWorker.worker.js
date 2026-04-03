@@ -6,14 +6,22 @@
 
 /**
  * Pyodide Worker Code
- * This code runs in a Web Worker and executes Python code via Pyodide
+ * This code runs in a Web Worker and executes Python code via Pyodide.
  */
 
 // Pyodide Worker - runs Python code via Pyodide
 let pyodide = null;
 let pyodideReadyPromise = null;
 
-// Initialize Pyodide
+/**
+ * Initializes the Pyodide runtime with the given base URL, scripts, and kernel code.
+ * @param baseUrl - CDN base URL for Pyodide resources.
+ * @param pyodideScript - Pre-fetched pyodide.js script content.
+ * @param asmScript - Pre-fetched pyodide.asm.js script content.
+ * @param pyodideKernelCode - Python kernel module source code.
+ *
+ * @returns Promise resolving to initialized Pyodide instance.
+ */
 async function initPyodide(
   baseUrl,
   pyodideScript,
@@ -75,8 +83,12 @@ async function initPyodide(
     self.fetch = originalFetch;
     self.importScripts = originalImportScripts;
 
-    // Helper function to recursively convert Maps to plain objects for postMessage compatibility
-    // Maps cannot be cloned by structured clone algorithm used by postMessage
+    /**
+     * Recursively converts Maps to plain objects for postMessage structured clone compatibility.
+     * @param obj - Object, Map, or Array to convert.
+     *
+     * @returns Plain object with all Maps converted.
+     */
     function mapToObject(obj) {
       const out = obj instanceof Array ? [] : {};
       const entries = obj instanceof Map ? obj.entries() : Object.entries(obj);

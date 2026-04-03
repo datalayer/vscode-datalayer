@@ -22,10 +22,17 @@ import { selectDatalayerRuntime } from "../../../ui/dialogs/runtimeSelector";
 
 /**
  * Strategy that asks the user to select a runtime via Quick Pick.
+ *
  */
 export class AskUserStrategy implements AutoConnectStrategy {
   readonly name = "Ask";
 
+  /**
+   * Show a Quick Pick dialog to let the user select a runtime.
+   * @param context - Auto-connect context with Datalayer client and auth.
+   *
+   * @returns The user-selected runtime, or null if cancelled.
+   */
   async tryConnect(context: AutoConnectContext): Promise<RuntimeDTO | null> {
     console.log(
       `[AskUserStrategy] Showing runtime selector for ${context.documentUri.fsPath}`,

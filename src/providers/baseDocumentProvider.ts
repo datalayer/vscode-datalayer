@@ -25,7 +25,7 @@ import { Runner, createExtensionRunner } from "../tools/core/runnerSetup";
  * Abstract base class for document providers.
  * Handles common provider patterns including webview lifecycle, message routing, and request/response.
  *
- * @template TDocument - The document type (NotebookDocument or LexicalDocument)
+ * @template TDocument - The document type (NotebookDocument or LexicalDocument).
  */
 export abstract class BaseDocumentProvider<
   TDocument extends vscode.CustomDocument,
@@ -83,9 +83,9 @@ export abstract class BaseDocumentProvider<
   readonly onDidChangeCustomDocument = this._onDidChangeCustomDocument.event;
 
   /**
-   * Creates a new base document provider.
+   * Creates a new base document provider with message routing and bridge services.
    *
-   * @param context - Extension context
+   * @param context - VS Code extension context providing access to storage and subscriptions.
    */
   constructor(context: vscode.ExtensionContext) {
     this._context = context;
@@ -107,13 +107,14 @@ export abstract class BaseDocumentProvider<
   }
 
   /**
-   * Opens a custom document.
+   * Opens a custom document from the given URI.
    * Subclasses must implement document creation logic.
    *
-   * @param uri - Document URI
-   * @param openContext - Open context with backup information
-   * @param token - Cancellation token
-   * @returns Promise resolving to the document
+   * @param uri - File URI to open as a custom document.
+   * @param openContext - Context containing optional backup ID for restoration.
+   * @param token - Cancellation token for aborting the operation.
+   *
+   * @returns Promise resolving to the created document instance.
    */
   abstract openCustomDocument(
     uri: vscode.Uri,
@@ -122,13 +123,14 @@ export abstract class BaseDocumentProvider<
   ): Promise<TDocument>;
 
   /**
-   * Resolves a custom editor for a document.
+   * Resolves a custom editor by configuring the webview for a document.
    * Subclasses must implement webview setup logic.
    *
-   * @param document - The document to display
-   * @param webviewPanel - The webview panel to use
-   * @param token - Cancellation token
-   * @returns Promise that resolves when editor is ready
+   * @param document - The document to display in the editor.
+   * @param webviewPanel - The webview panel to configure and populate.
+   * @param token - Cancellation token for aborting the operation.
+   *
+   * @returns Promise that resolves when the editor is fully initialized.
    */
   abstract resolveCustomEditor(
     document: TDocument,
@@ -137,12 +139,16 @@ export abstract class BaseDocumentProvider<
   ): Promise<void>;
 
   /**
-   * Saves the document.
-   * Default implementation throws - subclasses should override if saving is supported.
+   * Saves the document to its original location.
+   * Default implementation throws since subclasses should override if saving is supported.
    *
-   * @param _document - Document to save
-   * @param _cancellation - Cancellation token
-   * @returns Promise that resolves when save is complete
+   * @param _document - The document instance to persist.
+   * @param _cancellation - Cancellation token for aborting the save.
+   *
+   * @returns Promise that resolves when save is complete.
+   *
+   * @throws If save is not implemented by the subclass.
+   *
    */
   saveCustomDocument(
     _document: TDocument,
@@ -153,12 +159,16 @@ export abstract class BaseDocumentProvider<
 
   /**
    * Saves the document to a new location.
-   * Default implementation throws - subclasses should override if needed.
+   * Default implementation throws since subclasses should override if needed.
    *
-   * @param _document - Document to save
-   * @param _destination - Destination URI
-   * @param _cancellation - Cancellation token
-   * @returns Promise that resolves when save is complete
+   * @param _document - The document instance to save.
+   * @param _destination - Target URI for the saved copy.
+   * @param _cancellation - Cancellation token for aborting the save.
+   *
+   * @returns Promise that resolves when save is complete.
+   *
+   * @throws If save-as is not implemented by the subclass.
+   *
    */
   saveCustomDocumentAs(
     _document: TDocument,
@@ -169,12 +179,16 @@ export abstract class BaseDocumentProvider<
   }
 
   /**
-   * Reverts the document to its saved state.
-   * Default implementation throws - subclasses should override if needed.
+   * Reverts the document to its last saved state on disk.
+   * Default implementation throws since subclasses should override if needed.
    *
-   * @param _document - Document to revert
-   * @param _cancellation - Cancellation token
-   * @returns Promise that resolves when revert is complete
+   * @param _document - The document instance to revert.
+   * @param _cancellation - Cancellation token for aborting the revert.
+   *
+   * @returns Promise that resolves when revert is complete.
+   *
+   * @throws If revert is not implemented by the subclass.
+   *
    */
   revertCustomDocument(
     _document: TDocument,
@@ -184,13 +198,17 @@ export abstract class BaseDocumentProvider<
   }
 
   /**
-   * Backs up the document.
-   * Default implementation throws - subclasses should override if needed.
+   * Creates a backup of the document for crash recovery.
+   * Default implementation throws since subclasses should override if needed.
    *
-   * @param _document - Document to backup
-   * @param _context - Backup context
-   * @param _cancellation - Cancellation token
-   * @returns Promise resolving to backup information
+   * @param _document - The document instance to backup.
+   * @param _context - Backup context with destination URI.
+   * @param _cancellation - Cancellation token for aborting the backup.
+   *
+   * @returns Promise resolving to backup descriptor with cleanup function.
+   *
+   * @throws If backup is not implemented by the subclass.
+   *
    */
   backupCustomDocument(
     _document: TDocument,
@@ -208,18 +226,10 @@ export abstract class BaseDocumentProvider<
    * to the webview, where they are executed by the webview's own Runner
    * with DefaultExecutor.
    *
-   * @param webviewPanel - The webview panel to create a Runner for
-   * @returns The created Runner instance
+   * @param webviewPanel - The webview panel to create a Runner for.
    *
-   * @example
-   * ```typescript
-   * async resolveCustomEditor(document, webviewPanel, token) {
-   *   // Initialize Runner for this webview
-   *   await this.initializeRunnerForWebview(webviewPanel);
+   * @returns The created Runner instance.
    *
-   *   // ... rest of setup
-   * }
-   * ```
    */
   protected async initializeRunnerForWebview(
     webviewPanel: vscode.WebviewPanel,
@@ -241,8 +251,9 @@ export abstract class BaseDocumentProvider<
   /**
    * Gets the Runner for a specific webview panel.
    *
-   * @param webviewPanel - The webview panel
-   * @returns The Runner instance, or undefined if not initialized
+   * @param webviewPanel - The webview panel to look up the runner for.
+   *
+   * @returns The Runner instance, or undefined if not initialized.
    */
   protected getRunnerForWebview(
     webviewPanel: vscode.WebviewPanel,
@@ -254,10 +265,11 @@ export abstract class BaseDocumentProvider<
    * Posts a message to the webview and waits for a response.
    * Uses the request/response pattern with requestId tracking.
    *
-   * @param panel - Target webview panel
-   * @param type - Message type
-   * @param body - Message body
-   * @returns Promise resolving to the response
+   * @param panel - Target webview panel to send the message to.
+   * @param type - Message type identifier for routing.
+   * @param body - Message payload data.
+   *
+   * @returns Promise resolving to the webview response.
    */
   protected postMessageWithResponse<R = unknown>(
     panel: vscode.WebviewPanel,
@@ -275,10 +287,10 @@ export abstract class BaseDocumentProvider<
   /**
    * Posts a message to the webview without expecting a response.
    *
-   * @param panel - Target webview panel
-   * @param type - Message type
-   * @param body - Message body
-   * @param id - Optional message ID
+   * @param panel - Target webview panel to send the message to.
+   * @param type - Message type identifier for routing.
+   * @param body - Message payload data.
+   * @param id - Optional message identifier for tracking.
    */
   protected postMessage(
     panel: vscode.WebviewPanel,
@@ -350,9 +362,9 @@ export abstract class BaseDocumentProvider<
    * Handles messages received from the webview.
    * Delegates to the message router for all message types.
    *
-   * @param webviewPanel - The webview panel that sent the message
-   * @param document - The document associated with the webview
-   * @param message - The message from the webview
+   * @param webviewPanel - The webview panel that sent the message.
+   * @param document - The document associated with the webview.
+   * @param message - The structured message from the webview.
    */
   protected async onMessage(
     webviewPanel: vscode.WebviewPanel,
@@ -375,8 +387,9 @@ export abstract class BaseDocumentProvider<
    * Gets the URI for a document.
    * Subclasses must implement this to extract the URI from their document type.
    *
-   * @param document - The document
-   * @returns The document URI
+   * @param document - The document to extract the URI from.
+   *
+   * @returns The document URI identifying the file location.
    */
   protected abstract getDocumentUri(document: TDocument): vscode.Uri;
 }

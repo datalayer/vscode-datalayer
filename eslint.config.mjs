@@ -6,6 +6,7 @@
 
 import typescriptEslint from "@typescript-eslint/eslint-plugin";
 import tsParser from "@typescript-eslint/parser";
+import jsdoc from "eslint-plugin-jsdoc";
 
 export default [
   {
@@ -14,6 +15,7 @@ export default [
   {
     plugins: {
       "@typescript-eslint": typescriptEslint,
+      jsdoc,
     },
 
     languageOptions: {
@@ -32,12 +34,11 @@ export default [
       ],
 
       // Forbid explicit 'any' type - enforce type safety everywhere
-      // This catches both ': any' type annotations and 'as any' type assertions
       "@typescript-eslint/no-explicit-any": [
         "error",
         {
-          fixToUnknown: true, // Suggest 'unknown' instead of 'any'
-          ignoreRestArgs: false, // Apply to rest parameters too
+          fixToUnknown: true,
+          ignoreRestArgs: false,
         },
       ],
 
@@ -54,13 +55,150 @@ export default [
       eqeqeq: "warn",
       "no-throw-literal": "warn",
       semi: "warn",
+
+      // =============================================
+      // JSDoc enforcement (strict)
+      // =============================================
+
+      // --- Structure rules ---
+
+      // Require JSDoc on exported functions, classes, methods, interfaces, and type aliases
+      "jsdoc/require-jsdoc": [
+        "error",
+        {
+          require: {
+            FunctionDeclaration: true,
+            ClassDeclaration: true,
+            MethodDefinition: true,
+          },
+          contexts: [
+            "ExportNamedDeclaration > FunctionDeclaration",
+            "ExportNamedDeclaration > ClassDeclaration",
+            "ExportDefaultDeclaration > FunctionDeclaration",
+            "ExportNamedDeclaration > TSInterfaceDeclaration",
+            "ExportNamedDeclaration > TSTypeAliasDeclaration",
+          ],
+          checkConstructors: false,
+        },
+      ],
+
+      // Require a text description in every JSDoc block
+      "jsdoc/require-description": [
+        "error",
+        {
+          contexts: [
+            "ExportNamedDeclaration > FunctionDeclaration",
+            "ExportNamedDeclaration > ClassDeclaration",
+            "ExportNamedDeclaration > TSInterfaceDeclaration",
+            "ExportNamedDeclaration > TSTypeAliasDeclaration",
+          ],
+        },
+      ],
+
+      // Require @param for every function parameter (constructors exempt - TypeDoc conflicts with private/destructured params)
+      "jsdoc/require-param": [
+        "error",
+        {
+          checkConstructors: false,
+        },
+      ],
+
+      // Require description text on every @param tag
+      "jsdoc/require-param-description": "error",
+
+      // Require @returns for non-void functions
+      "jsdoc/require-returns": [
+        "error",
+        {
+          checkGetters: false,
+        },
+      ],
+
+      // Require description text on every @returns tag
+      "jsdoc/require-returns-description": "error",
+
+      // Require @throws for functions that throw
+      "jsdoc/require-throws": "error",
+
+      // --- Validation rules ---
+
+      // Ensure @param names match actual parameter names
+      "jsdoc/check-param-names": "error",
+
+      // Reject invalid/unknown JSDoc tags
+      "jsdoc/check-tag-names": "error",
+
+      // Disallow {type} annotations in JSDoc - TypeScript handles types
+      "jsdoc/no-types": "error",
+
+      // Reject empty /** */ blocks (leftover from auto-fix)
+      "jsdoc/no-blank-blocks": "error",
+
+      // Reject descriptions that just restate the name
+      // e.g., "@param name - The name" or "/** Gets value. */ getValue()"
+      "jsdoc/informative-docs": "error",
+
+      // --- Formatting rules ---
+
+      // Enforce consistent tag order: @param -> @returns -> @throws -> @example
+      "jsdoc/sort-tags": [
+        "error",
+        {
+          tagSequence: [
+            { tags: ["module", "@"] },
+            { tags: ["param"] },
+            { tags: ["returns"] },
+            { tags: ["throws"] },
+            { tags: ["example"] },
+            { tags: ["see", "link"] },
+            { tags: ["since", "deprecated"] },
+          ],
+        },
+      ],
+
+      // Enforce @param name - Description (with hyphen separator)
+      "jsdoc/require-hyphen-before-param-description": ["error", "always"],
+
+      // Enforce descriptions start with uppercase, end with period
+      "jsdoc/match-description": [
+        "error",
+        {
+          matchDescription: "^[A-Z`@][\\s\\S]*\\.\\s*$",
+          tags: {
+            param: {
+              match: "^[A-Z`@][\\s\\S]*\\.\\s*$",
+              message:
+                "Parameter description must start with uppercase and end with period.",
+            },
+            returns: {
+              match: "^[A-Z`@][\\s\\S]*\\.\\s*$",
+              message:
+                "Return description must start with uppercase and end with period.",
+            },
+            throws: {
+              match: "^[A-Z`@][\\s\\S]*\\.\\s*$",
+              message:
+                "Throws description must start with uppercase and end with period.",
+            },
+          },
+        },
+      ],
+
+      // @example tags not enforced - internal extension, not a public library API
+      "jsdoc/require-example": "off",
     },
   },
-  // Allow 'any' in test files where mocking may require flexibility
+  // Relax rules in test files
   {
     files: ["**/*.test.ts", "**/__tests__/**/*.ts", "**/test/**/*.ts"],
     rules: {
-      "@typescript-eslint/no-explicit-any": "warn", // Downgrade to warning for tests
+      "@typescript-eslint/no-explicit-any": "warn",
+      "jsdoc/require-jsdoc": "off",
+      "jsdoc/require-param": "off",
+      "jsdoc/require-returns": "off",
+      "jsdoc/require-throws": "off",
+      "jsdoc/informative-docs": "off",
+      "jsdoc/match-description": "off",
     },
   },
 ];

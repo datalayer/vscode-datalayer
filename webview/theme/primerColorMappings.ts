@@ -193,4 +193,7 @@ export const FALLBACK_COLORS = {
   },
 } as const;
 
+/**
+ * Valid top-level category keys from the Primer VS Code color mapping object.
+ */
 export type PrimerColorCategory = keyof typeof PRIMER_VSCODE_COLOR_MAP;

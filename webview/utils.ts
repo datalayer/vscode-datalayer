@@ -12,8 +12,10 @@
 
 /**
  * Loads a notebook from binary data.
- * @param {Uint8Array} raw - Raw binary data
- * @returns {unknown} Parsed notebook object
+ * @param raw - Raw binary data containing JSON-encoded notebook content.
+ *
+ * @returns Parsed notebook object with inlined HTML outputs.
+ *
  */
 export function loadFromBytes(raw: Uint8Array): unknown {
   const rawContent = new TextDecoder().decode(raw);
@@ -33,8 +35,10 @@ export function loadFromBytes(raw: Uint8Array): unknown {
 
 /**
  * Saves a notebook to binary data.
- * @param {unknown} notebook - Notebook object
- * @returns {Uint8Array} Binary representation
+ * @param notebook - Notebook object to serialize.
+ *
+ * @returns UTF-8 encoded binary representation of the JSON notebook.
+ *
  */
 export function saveToBytes(notebook: unknown): Uint8Array {
   const stringData = JSON.stringify(notebook, null, 2);
@@ -42,10 +46,9 @@ export function saveToBytes(notebook: unknown): Uint8Array {
 }
 
 /**
- * Returns the nonce used in the page, if any.
+ * Returns the CSP nonce from the page meta tag, used by the fast design system for style injection.
+ * @returns The CSP nonce string or null if no meta tag is found.
  *
- * Based on https://github.com/cssinjs/jss/blob/master/packages/jss/src/DomRenderer.js
- * Used by @microsoft/fast design system
  */
 export function getNonce() {
   const node = document.querySelector('meta[property="csp-nonce"]');

@@ -26,6 +26,7 @@ export interface IKernelBridge {
    * Used by network proxy to route messages to local ZMQ kernels.
    *
    * @param kernelId - Kernel identifier
+   *
    * @returns Local kernel client or undefined
    */
   getLocalKernel(kernelId: string): LocalKernelClient | undefined;
@@ -35,6 +36,7 @@ export interface IKernelBridge {
    * Used by runtime bridge to interrupt/restart kernels for specific documents.
    *
    * @param uri - Document URI
+   *
    * @returns Local kernel client or undefined
    */
   getKernelForDocument(uri: vscode.Uri): LocalKernelClient | undefined;
@@ -99,6 +101,7 @@ export interface IKernelBridge {
    * Detects the type of notebook (native vs webview).
    *
    * @param uri - Notebook URI
+   *
    * @returns "webview" for Datalayer notebooks, "native" for others
    */
   detectNotebookType(uri: vscode.Uri): "webview" | "native";

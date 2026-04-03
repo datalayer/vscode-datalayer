@@ -20,10 +20,6 @@ import type {
 } from "../autoConnectService";
 
 /**
- * Strategy that uses the browser-based Pyodide Python kernel.
- * Always succeeds as Pyodide is embedded in the extension.
- */
-/**
  * Marker interface for Pyodide connection.
  * Pyodide is not a cloud runtime, so we use a marker pattern.
  */
@@ -32,9 +28,16 @@ export interface PyodideMarker {
   uid: "pyodide-local";
 }
 
+/** Auto-connect strategy that returns Pyodide as the default browser-based Python kernel. */
 export class PyodideStrategy implements AutoConnectStrategy {
   readonly name = "Pyodide";
 
+  /**
+   * Return null to signal Pyodide should be handled by providers directly.
+   * @param _context - Auto-connect context (unused for Pyodide).
+   *
+   * @returns Always null since Pyodide is not a cloud runtime.
+   */
   async tryConnect(_context: AutoConnectContext): Promise<RuntimeDTO | null> {
     console.log("[PyodideStrategy] Pyodide selected as auto-connect strategy");
 
@@ -46,8 +49,9 @@ export class PyodideStrategy implements AutoConnectStrategy {
 
   /**
    * Check if Pyodide should be used based on strategy name.
-   * @param strategyName - Strategy name from config
-   * @returns True if Pyodide should be used
+   * @param strategyName - Strategy name from config.
+   *
+   * @returns True if Pyodide should be used.
    */
   static isPyodideStrategy(strategyName: string): boolean {
     return strategyName === "Pyodide";

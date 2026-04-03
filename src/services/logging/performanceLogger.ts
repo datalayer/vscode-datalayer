@@ -14,15 +14,15 @@
 import { ServiceLoggers } from "./loggers";
 
 /**
- * Performance monitoring utilities for tracking operation timing and memory usage.
- */
+ * Performance monitoring utilities for tracking operation timing and memory usage. */
 export class PerformanceLogger {
   /**
    * Get the configured logger instance.
    * Returns a no-op logger if ServiceLoggers is not yet initialized.
    *
+   * @returns Logger instance with trace, debug, info, warn, and error methods.
+   *
    * @private
-   * @returns Logger instance with trace, debug, info, warn, and error methods
    */
   private static get logger() {
     // Return no-op logger if ServiceLoggers not initialized yet
@@ -43,19 +43,12 @@ export class PerformanceLogger {
    * Track operation performance with automatic logging and memory monitoring.
    * Logs start, completion, and failure with detailed performance metrics.
    *
-   * @param operationName - Human-readable name for the operation
-   * @param operation - Async function to execute and monitor
-   * @param context - Additional context information
-   * @returns Promise that resolves with the operation result
+   * @param operationName - Human-readable name for the operation.
+   * @param operation - Async function to execute and monitor.
+   * @param context - Additional context information.
    *
-   * @example
-   * ```typescript
-   * const result = await PerformanceLogger.trackOperation(
-   *   "notebook_save",
-   *   () => saveNotebook(notebook),
-   *   { notebookId: notebook.id, cellCount: notebook.cells.length }
-   * );
-   * ```
+   * @returns Promise that resolves with the operation result.
+   *
    */
   static async trackOperation<T>(
     operationName: string,
@@ -123,10 +116,13 @@ export class PerformanceLogger {
    * Track synchronous operation performance.
    * For operations that don't return promises but still need timing.
    *
-   * @param operationName - Human-readable name for the operation
-   * @param operation - Synchronous function to execute and monitor
-   * @param context - Additional context information
-   * @returns The operation result
+   * @param operationName - Human-readable name for the operation.
+   * @param operation - Synchronous function to execute and monitor.
+   * @param context - Additional context information.
+   *
+   * @returns The operation result.
+   *
+   * @throws Re-throws any error from the tracked operation after logging performance data.
    */
   static trackSync<T>(
     operationName: string,
@@ -183,19 +179,11 @@ export class PerformanceLogger {
    * Create a performance timer that can be manually controlled.
    * Useful for tracking operations that span multiple function calls.
    *
-   * @param operationName - Human-readable name for the operation
-   * @param context - Additional context information
-   * @returns PerformanceTimer instance
+   * @param operationName - Human-readable name for the operation.
+   * @param context - Additional context information.
    *
-   * @example
-   * ```typescript
-   * const timer = PerformanceLogger.createTimer("multi_step_operation", { userId: "123" });
-   * timer.start();
-   * // ... do some work
-   * timer.checkpoint("step_1_complete");
-   * // ... do more work
-   * timer.end("success");
-   * ```
+   * @returns PerformanceTimer instance.
+   *
    */
   static createTimer(
     operationName: string,
@@ -207,8 +195,9 @@ export class PerformanceLogger {
   /**
    * Get current memory usage snapshot.
    *
+   * @returns Current process memory usage snapshot.
+   *
    * @private
-   * @returns Current process memory usage snapshot
    */
   private static getMemorySnapshot(): MemorySnapshot {
     const memUsage = process.memoryUsage();
@@ -223,10 +212,12 @@ export class PerformanceLogger {
   /**
    * Calculate memory usage delta between two snapshots.
    *
+   * @param start - Starting memory snapshot.
+   * @param end - Ending memory snapshot.
+   *
+   * @returns Memory delta with human-readable formatted values.
+   *
    * @private
-   * @param start - Starting memory snapshot
-   * @param end - Ending memory snapshot
-   * @returns Memory delta with human-readable formatted values
    */
   private static calculateMemoryDelta(
     start: MemorySnapshot,
@@ -243,9 +234,11 @@ export class PerformanceLogger {
   /**
    * Categorize performance based on duration in milliseconds.
    *
+   * @param durationMs - Duration in milliseconds.
+   *
+   * @returns Performance category: 'fast', 'normal', 'slow', or 'very_slow'.
+   *
    * @private
-   * @param durationMs - Duration in milliseconds
-   * @returns Performance category: 'fast', 'normal', 'slow', or 'very_slow'
    */
   private static categorizePerformance(durationMs: number): string {
     if (durationMs < 100) {
@@ -263,9 +256,11 @@ export class PerformanceLogger {
   /**
    * Format bytes into human-readable format with sign and unit.
    *
+   * @param bytes - Byte count to format.
+   *
+   * @returns Formatted string with sign ('+' or '-'), value, and unit (B, KB, MB, GB).
+   *
    * @private
-   * @param bytes - Byte count to format
-   * @returns Formatted string with sign ('+' or '-'), value, and unit (B, KB, MB, GB)
    */
   private static formatBytes(bytes: number): string {
     if (bytes === 0) {
@@ -280,9 +275,22 @@ export class PerformanceLogger {
   }
 }
 
+/** Logger interface for performance timing with leveled output methods. */
+export interface PerformanceTimerLogger {
+  /** Logs trace-level timing details. */
+  trace: (msg: string, ctx?: Record<string, unknown>) => void;
+  /** Logs debug-level timing details. */
+  debug: (msg: string, ctx?: Record<string, unknown>) => void;
+  /** Logs info-level timing summaries. */
+  info: (msg: string, ctx?: Record<string, unknown>) => void;
+  /** Logs warnings for slow operations. */
+  warn: (msg: string, ctx?: Record<string, unknown>) => void;
+  /** Logs errors for failed operations. */
+  error: (msg: string, err?: Error, ctx?: Record<string, unknown>) => void;
+}
+
 /**
- * Manual performance timer for complex operations.
- */
+ * Manual performance timer for complex operations. */
 export class PerformanceTimer {
   /**
    * Start time in milliseconds.
@@ -315,24 +323,13 @@ export class PerformanceTimer {
   /**
    * Create a new performance timer.
    *
-   * @param operationName - Human-readable name for the operation being timed
-   * @param logger - Logger instance for recording timing information
-   * @param context - Optional context information to include in logs
+   * @param operationName - Human-readable name for the operation being timed.
+   * @param logger - Logger instance for recording timing information at various severity levels.
+   * @param context - Optional context information to include in logs.
    */
   constructor(
     private operationName: string,
-    private logger: {
-      /** Trace level logging */
-      trace: (msg: string, ctx?: Record<string, unknown>) => void;
-      /** Debug level logging */
-      debug: (msg: string, ctx?: Record<string, unknown>) => void;
-      /** Info level logging */
-      info: (msg: string, ctx?: Record<string, unknown>) => void;
-      /** Warning level logging */
-      warn: (msg: string, ctx?: Record<string, unknown>) => void;
-      /** Error level logging */
-      error: (msg: string, err?: Error, ctx?: Record<string, unknown>) => void;
-    },
+    private logger: PerformanceTimerLogger,
     private context?: Record<string, unknown>,
   ) {}
 
@@ -340,7 +337,7 @@ export class PerformanceTimer {
    * Start the timer and initialize memory tracking.
    * Must be called before using checkpoint() or end().
    *
-   * @returns void
+   * @returns Void.
    */
   start(): void {
     this.startTime = performance.now();
@@ -358,9 +355,11 @@ export class PerformanceTimer {
    * Add a checkpoint with optional name.
    * Records current time and memory snapshot.
    *
-   * @param name - Optional name for the checkpoint
-   * @returns void
-   * @throws Error if timer has not been started
+   * @param name - Optional name for the checkpoint.
+   *
+   * @returns Void.
+   *
+   * @throws Error if timer has not been started.
    */
   checkpoint(name?: string): void {
     if (!this.startTime) {
@@ -387,9 +386,11 @@ export class PerformanceTimer {
    * Logs total duration, checkpoint summary, and memory delta.
    * Resets the timer after logging.
    *
-   * @param status - Operation status: 'success', 'failure', or 'cancelled' (default: 'success')
-   * @returns void
-   * @throws Error if timer has not been started
+   * @param status - Operation status: 'success', 'failure', or 'cancelled' (default: 'success').
+   *
+   * @returns Void.
+   *
+   * @throws Error if timer has not been started.
    */
   end(status: "success" | "failure" | "cancelled" = "success"): void {
     if (!this.startTime || !this.startMemory) {
@@ -437,8 +438,9 @@ export class PerformanceTimer {
   /**
    * Get current memory usage snapshot.
    *
+   * @returns Current process memory usage snapshot.
+   *
    * @private
-   * @returns Current process memory usage snapshot
    */
   private getMemorySnapshot(): MemorySnapshot {
     const memUsage = process.memoryUsage();
@@ -453,10 +455,12 @@ export class PerformanceTimer {
   /**
    * Calculate memory usage delta between two snapshots.
    *
+   * @param start - Starting memory snapshot.
+   * @param end - Ending memory snapshot.
+   *
+   * @returns Memory delta with human-readable formatted values.
+   *
    * @private
-   * @param start - Starting memory snapshot
-   * @param end - Ending memory snapshot
-   * @returns Memory delta with human-readable formatted values
    */
   private calculateMemoryDelta(
     start: MemorySnapshot,
@@ -473,9 +477,11 @@ export class PerformanceTimer {
   /**
    * Categorize performance based on duration in milliseconds.
    *
+   * @param durationMs - Duration in milliseconds.
+   *
+   * @returns Performance category: 'fast', 'normal', 'slow', or 'very_slow'.
+   *
    * @private
-   * @param durationMs - Duration in milliseconds
-   * @returns Performance category: 'fast', 'normal', 'slow', or 'very_slow'
    */
   private categorizePerformance(durationMs: number): string {
     if (durationMs < 100) {
@@ -493,9 +499,11 @@ export class PerformanceTimer {
   /**
    * Format bytes into human-readable format with sign and unit.
    *
+   * @param bytes - Byte count to format.
+   *
+   * @returns Formatted string with sign ('+' or '-'), value, and unit (B, KB, MB, GB).
+   *
    * @private
-   * @param bytes - Byte count to format
-   * @returns Formatted string with sign ('+' or '-'), value, and unit (B, KB, MB, GB)
    */
   private formatBytes(bytes: number): string {
     if (bytes === 0) {

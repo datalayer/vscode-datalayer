@@ -8,7 +8,7 @@
  * Returns CSS that maps VS Code CSS variables to Primer CSS variables.
  * This ensures Primer React components match the active VS Code theme.
  *
- * @returns CSS string with variable overrides
+ * @returns CSS string with variable overrides.
  */
 export function getPrimerVSCodeThemeCSS(): string {
   return `

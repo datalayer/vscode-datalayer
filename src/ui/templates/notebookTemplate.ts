@@ -18,10 +18,11 @@ import { getNonce } from "../../utils/webviewSecurity";
  * Generates HTML content for the notebook editor webview.
  * Includes VS Code theme integration, CSP nonces, and necessary styling.
  *
- * @param webview - The webview instance for URI resolution
- * @param extensionUri - Extension URI for resource loading
- * @param pyodideVersion - Pyodide version to use (default: "0.27.3")
- * @returns HTML string for the webview
+ * @param webview - The webview instance for URI resolution.
+ * @param extensionUri - Extension URI for resource loading.
+ * @param pyodideVersion - Pyodide version to use (default: "0.27.3").
+ *
+ * @returns HTML string for the webview.
  */
 export function getNotebookHtml(
   webview: vscode.Webview,

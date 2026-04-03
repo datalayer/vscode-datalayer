@@ -21,11 +21,12 @@ import type { ILogger } from "../services/interfaces/ILogger";
  * Disables the built-in newJupyterNotebook tool to prevent conflicts with Datalayer's tool.
  * This ensures Copilot always uses datalayer_createNotebook instead.
  *
- * Note: This is a placeholder - VS Code doesn't allow programmatic tool disabling.
+ * Note: This is a placeholder since VS Code does not allow programmatic tool disabling.
  * Users must manually disable built-in tools via Copilot settings if needed.
  *
- * @param _context - Extension context (unused, kept for API compatibility)
- * @param logger - Logger instance for tracking
+ * @param _context - Extension context kept for API compatibility.
+ * @param logger - Logger instance for tracking configuration state.
+ *
  */
 export async function disableBuiltInNotebookTool(
   _context: vscode.ExtensionContext,
@@ -41,8 +42,8 @@ export async function disableBuiltInNotebookTool(
  * Opens the Datalayer sidebar on first run and pins it to the Activity Bar.
  * This ensures the Datalayer icon is visible and not hidden in the overflow menu.
  *
- * @param context - Extension context for storing state
- * @param logger - Logger instance for tracking
+ * @param context - Extension context for storing first-run state.
+ * @param logger - Logger instance for tracking sidebar operations.
  */
 async function openSidebarOnFirstRun(
   context: vscode.ExtensionContext,
@@ -92,11 +93,12 @@ async function openSidebarOnFirstRun(
 }
 
 /**
- * Shows unified welcome prompt combining default editor + Jupyter tools configuration.
- * Only shows once per installation (tracked via global state).
+ * Shows unified welcome prompt combining default editor and Jupyter tools configuration.
+ * Only shows once per installation, tracked via global state.
  *
- * @param context - Extension context for state management
- * @param logger - Logger for tracking user choices
+ * @param context - Extension context for persistent state management.
+ * @param logger - Logger for tracking user choices and applied settings.
+ *
  */
 export async function showUnifiedWelcomePrompt(
   context: vscode.ExtensionContext,
@@ -240,6 +242,10 @@ export async function showUnifiedWelcomePrompt(
 
 /**
  * Applies all recommended settings automatically.
+ * @param hasJupyter - Whether the Jupyter extension is installed.
+ * @param jupyterToolsEnabled - Whether Jupyter language model tools are active.
+ * @param isDefaultEditor - Whether Datalayer is already the default .ipynb editor.
+ * @param logger - Logger instance for tracking applied settings.
  */
 async function applyRecommendedSettings(
   hasJupyter: boolean,
@@ -302,7 +308,11 @@ async function applyRecommendedSettings(
 }
 
 /**
- * Shows customization UI where user can pick which settings to apply.
+ * Shows customization UI where the user can pick which settings to apply.
+ * @param hasJupyter - Whether the Jupyter extension is installed.
+ * @param jupyterToolsEnabled - Whether Jupyter language model tools are active.
+ * @param isDefaultEditor - Whether Datalayer is already the default .ipynb editor.
+ * @param logger - Logger instance for tracking user selections.
  */
 async function showCustomizationUI(
   hasJupyter: boolean,

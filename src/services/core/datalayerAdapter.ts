@@ -28,24 +28,10 @@ export interface VSCodeDatalayerConfig extends Partial<DatalayerClientConfig> {
 /**
  * Create a DatalayerClient instance configured for VS Code.
  *
- * @param config - Configuration options including VS Code context
- * @returns Configured DatalayerClient instance
+ * @param config - Configuration options including VS Code context.
  *
- * @example
- * ```typescript
- * export function activate(context: vscode.ExtensionContext) {
- *   const datalayer = createVSCodeDatalayer({ context });
+ * @returns Configured DatalayerClient instance.
  *
- *   // Use Datalayer for authentication
- *   const user = await datalayer.whoami();
- *
- *   // Use Datalayer for runtime management
- *   const runtime = await datalayer.ensureRuntime({
- *     environmentName: 'python-cpu-env',
- *     waitForReady: true
- *   });
- * }
- * ```
  */
 export function createVSCodeDatalayer(
   config: VSCodeDatalayerConfig,
@@ -101,7 +87,7 @@ export function createVSCodeDatalayer(
 /**
  * Gets the configured WebSocket URL for collaboration.
  *
- * @returns WebSocket URL with fallback to production
+ * @returns WebSocket URL with fallback to production.
  */
 export function getWebSocketUrl(): string {
   const config = vscode.workspace.getConfiguration("datalayer.services");
@@ -118,7 +104,7 @@ let globalDatalayerInstance: DatalayerClient | undefined;
  * Sets the global Datalayer instance.
  * Should only be called during extension activation.
  *
- * @param datalayer - The Datalayer instance to set globally
+ * @param datalayer - The Datalayer instance to set globally.
  */
 export function setDatalayerInstance(datalayer: DatalayerClient): void {
   globalDatalayerInstance = datalayer;
@@ -127,8 +113,9 @@ export function setDatalayerInstance(datalayer: DatalayerClient): void {
 /**
  * Gets the global Datalayer instance.
  *
- * @returns The global Datalayer instance
- * @throws Error if Datalayer is not initialized
+ * @returns The global Datalayer instance.
+ *
+ * @throws Error if Datalayer is not initialized.
  */
 export function getDatalayerInstance(): DatalayerClient {
   if (!globalDatalayerInstance) {

@@ -8,8 +8,9 @@
  * Lexical document model for VS Code custom editor.
  * Handles document lifecycle, content state, and persistence.
  *
- * @see https://code.visualstudio.com/api/extension-guides/custom-editors
  * @module lexicalDocument
+ *
+ * @see https://code.visualstudio.com/api/extension-guides/custom-editors
  */
 
 import * as vscode from "vscode";
@@ -21,14 +22,6 @@ import { DocumentBridge } from "../services/bridges/documentBridge";
  * Delegate interface that provides document persistence capabilities.
  * Allows the document model to interact with the webview for content retrieval.
  *
- * @example
- * ```typescript
- * const delegate: LexicalDocumentDelegate = {
- *   async getFileData() {
- *     return new Uint8Array(await webview.getContent());
- *   }
- * };
- * ```
  */
 export interface LexicalDocumentDelegate {
   /**
@@ -47,11 +40,6 @@ export interface LexicalDocumentDelegate {
  * This class implements the VS Code CustomDocument interface to provide
  * document management for Datalayer's lexical editor integration.
  *
- * @example
- * ```typescript
- * const document = await LexicalDocument.create(uri, undefined, delegate);
- * document.setCollaborative(true); // Enable collaboration mode
- * ```
  */
 export class LexicalDocument
   extends Disposable
@@ -63,10 +51,11 @@ export class LexicalDocument
    * Handles both regular files and backup scenarios. For backup restoration,
    * the backupId parameter should contain the backup file URI.
    *
-   * @param uri - The document URI to open
-   * @param backupId - Optional backup ID for document restoration
-   * @param delegate - Delegate for webview content retrieval
-   * @returns Promise resolving to the created document instance
+   * @param uri - The document URI to open.
+   * @param backupId - Optional backup ID for document restoration.
+   * @param delegate - Delegate providing webview content retrieval capabilities.
+   *
+   * @returns Promise resolving to the created document instance.
    */
   static async create(
     uri: vscode.Uri,
@@ -80,15 +69,17 @@ export class LexicalDocument
   }
 
   /**
-   * Reads file content from disk or remote storage.
+   * Reads file content from disk or remote storage based on URI scheme.
    *
    * Handles three URI schemes:
-   * - "untitled": Returns default content for new documents
-   * - "datalayer": Attempts to read from Datalayer platform with fallback
-   * - other: Reads from local file system via VS Code workspace API
+   * - "untitled": Returns default content for new documents.
+   * - "datalayer": Attempts to read from Datalayer platform with fallback.
+   * - Other: Reads from local file system via VS Code workspace API.
    *
-   * @param uri - The file URI to read from
-   * @returns Promise resolving to binary file content
+   * @param uri - The file URI to read content from.
+   *
+   * @returns Promise resolving to binary file content.
+   *
    * @private
    */
   private static async readFile(uri: vscode.Uri): Promise<Uint8Array> {
@@ -117,7 +108,8 @@ export class LexicalDocument
    * Returns a valid Lexical state JSON with a heading containing welcome text.
    * Used when creating untitled documents or handling file read failures.
    *
-   * @returns Binary encoded default Lexical state JSON
+   * @returns Binary encoded default Lexical state JSON.
+   *
    * @private
    */
   private static getDefaultContent(): Uint8Array {
@@ -155,14 +147,16 @@ export class LexicalDocument
   }
 
   /**
-   * Reads document content from Datalayer platform.
+   * Reads document content from the Datalayer platform.
    *
    * Attempts to retrieve document metadata and load content from local cache
    * or virtual file system. Falls back to default content if document unavailable
    * or extension not ready.
    *
-   * @param uri - Datalayer document URI
-   * @returns Promise resolving to binary file content
+   * @param uri - Datalayer document URI to fetch content for.
+   *
+   * @returns Promise resolving to binary file content.
+   *
    * @private
    */
   private static async readDatalayerFile(uri: vscode.Uri): Promise<Uint8Array> {
@@ -283,11 +277,11 @@ export class LexicalDocument
   public readonly onDidChange = this._onDidChange.event;
 
   /**
-   * Creates a new LexicalDocument instance.
+   * Creates a new LexicalDocument instance with the given URI and content.
    *
-   * @param uri - Document URI
-   * @param initialContent - Initial document content as binary data
-   * @param delegate - Delegate for webview interactions
+   * @param uri - Document URI identifying the file location.
+   * @param initialContent - Initial document content as binary data.
+   * @param delegate - Delegate providing webview interaction capabilities.
    */
   private constructor(
     uri: vscode.Uri,
@@ -301,18 +295,18 @@ export class LexicalDocument
   }
 
   /**
-   * The document's URI.
+   * Gets the document's URI.
    *
-   * @returns The VS Code URI for this document
+   * @returns The VS Code URI identifying this document.
    */
   public get uri() {
     return this._uri;
   }
 
   /**
-   * Current document content as binary data.
+   * Gets the current document content as binary data.
    *
-   * @returns Binary representation of the document content
+   * @returns Binary representation of the document content.
    */
   public get documentData(): Uint8Array {
     return this._documentData;
@@ -324,7 +318,7 @@ export class LexicalDocument
    * In collaborative mode, this always returns false since changes
    * are automatically synchronized to the platform.
    *
-   * @returns True if document has unsaved changes, false otherwise
+   * @returns True if document has unsaved changes, false otherwise.
    */
   public get isDirty(): boolean {
     return this._isCollaborative ? false : this._isDirty;
@@ -337,7 +331,7 @@ export class LexicalDocument
    * and changes are automatically synchronized to the Datalayer platform.
    * The dirty state is cleared when entering collaborative mode.
    *
-   * @param isCollaborative - Whether to enable collaborative mode
+   * @param isCollaborative - Whether to enable collaborative mode.
    */
   public setCollaborative(isCollaborative: boolean): void {
     this._isCollaborative = isCollaborative;
@@ -353,7 +347,7 @@ export class LexicalDocument
    * change events. In collaborative mode, only fires change events
    * since the document state is managed externally.
    *
-   * @param _edit - The edit operation (currently unused)
+   * @param _edit - The edit operation data (currently unused).
    */
   makeEdit(_edit: unknown) {
     if (!this._isCollaborative) {
@@ -369,7 +363,7 @@ export class LexicalDocument
    * are automatically synchronized. Otherwise, retrieves current content
    * from the webview and writes it to the file system.
    *
-   * @param cancellation - Cancellation token for the operation
+   * @param cancellation - Cancellation token for aborting the save operation.
    */
   async save(cancellation: vscode.CancellationToken): Promise<void> {
     if (this._isCollaborative) {
@@ -391,8 +385,8 @@ export class LexicalDocument
    * Retrieves current content from the webview and writes it to the
    * specified target location. Does not change the document's original URI.
    *
-   * @param targetResource - URI where to save the document
-   * @param cancellation - Cancellation token for the operation
+   * @param targetResource - URI where to save the document.
+   * @param cancellation - Cancellation token for aborting the save operation.
    */
   async saveAs(
     targetResource: vscode.Uri,
@@ -411,7 +405,7 @@ export class LexicalDocument
    * Reloads content from disk, clears the dirty state, and notifies
    * listeners of the content change.
    *
-   * @param _cancellation - Cancellation token (currently unused)
+   * @param _cancellation - Cancellation token (currently unused).
    */
   async revert(_cancellation: vscode.CancellationToken): Promise<void> {
     const diskContent = await LexicalDocument.readFile(this.uri);
@@ -428,9 +422,10 @@ export class LexicalDocument
    * Saves the current document state to a backup location and returns
    * a backup descriptor that can be used for restoration.
    *
-   * @param destination - URI for the backup location
-   * @param cancellation - Cancellation token for the operation
-   * @returns Promise resolving to backup descriptor
+   * @param destination - URI for the backup location.
+   * @param cancellation - Cancellation token for aborting the backup operation.
+   *
+   * @returns Promise resolving to backup descriptor with delete callback.
    */
   async backup(
     destination: vscode.Uri,
@@ -450,7 +445,7 @@ export class LexicalDocument
   }
 
   /**
-   * Disposes of the document and cleans up resources.
+   * Disposes of the document and releases all associated resources.
    *
    * Fires disposal events and calls the parent disposable cleanup.
    * Should be called when the document is no longer needed.

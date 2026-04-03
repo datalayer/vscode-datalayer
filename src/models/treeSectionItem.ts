@@ -30,19 +30,14 @@ export type TreeSectionType =
  * Tree item for displaying collapsible section headers.
  * Creates visual separation between different types of items in a tree view.
  *
- * @example
- * ```typescript
- * const section = new TreeSectionItem("Runtimes", "runtimes-section", "$(vm)");
- * // Displays: "🖥️ Runtimes" (collapsible)
- * ```
  */
 export class TreeSectionItem extends vscode.TreeItem {
   /**
-   * Creates a new TreeSectionItem.
+   * Creates a new TreeSectionItem with optional icon.
    *
-   * @param label - Display label for the section
-   * @param sectionType - Type identifier for the section
-   * @param iconId - Optional ThemeIcon id (e.g., "vm", "archive")
+   * @param label - Display label for the section header.
+   * @param sectionType - Type identifier used for conditional menu items.
+   * @param iconId - Optional ThemeIcon identifier such as "vm" or "archive".
    */
   constructor(
     label: string,

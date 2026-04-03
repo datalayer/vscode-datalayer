@@ -23,7 +23,7 @@ import { generateRuntimeName } from "../../utils/runtimeNameGenerator";
 import { formatRelativeTime } from "../../utils/dateFormatter";
 
 /**
- * QuickPick item for runtime selection.
+ * QuickPick item for runtime selection with optional runtime or environment data.
  */
 interface RuntimeQuickPickItem extends vscode.QuickPickItem {
   runtime?: RuntimeDTO;
@@ -32,14 +32,14 @@ interface RuntimeQuickPickItem extends vscode.QuickPickItem {
 }
 
 /**
- * Options for runtime selection dialog.
+ * Options for configuring the runtime selection dialog behavior.
  */
 export interface RuntimeSelectorOptions {
   /**
    * If true, hides existing runtimes and only shows create options.
    * Useful when called from the Runtimes tree view where the user
    * explicitly wants to create a NEW runtime.
-   * Default: false (show existing runtimes)
+   * Default: false (show existing runtimes).
    */
   hideExistingRuntimes?: boolean;
 
@@ -53,10 +53,11 @@ export interface RuntimeSelectorOptions {
 /**
  * Shows a QuickPick dialog for selecting or creating a Datalayer runtime.
  *
- * @param datalayer - Datalayer instance
- * @param authProvider - Authentication provider
- * @param options - Optional configuration for the dialog
- * @returns Selected or created runtime, or undefined if cancelled
+ * @param datalayer - Datalayer instance for API access.
+ * @param authProvider - Authentication provider for login state.
+ * @param options - Optional configuration for the dialog.
+ *
+ * @returns Selected or created runtime, or undefined if cancelled.
  */
 export async function selectDatalayerRuntime(
   datalayer: DatalayerClient,
@@ -297,8 +298,9 @@ export async function selectDatalayerRuntime(
  * null if user cancelled,
  * or the snapshot ID if user selected a snapshot.
  *
- * @param snapshots - Array of available snapshots (already filtered for deleted)
- * @returns Snapshot ID, undefined (fresh start), or null (cancelled)
+ * @param snapshots - Array of available snapshots (already filtered for deleted).
+ *
+ * @returns Snapshot ID, undefined (fresh start), or null (cancelled).
  */
 async function selectSnapshot(
   snapshots: RuntimeSnapshotDTO[],
@@ -392,11 +394,14 @@ async function selectSnapshot(
 /**
  * Creates a new runtime with the specified environment.
  *
- * @param datalayer - Datalayer instance
- * @param environment - Environment to use
- * @param preSelectedSnapshotId - Optional snapshot ID to restore from (skips snapshot selection)
- * @param onRuntimeCreating - Optional callback triggered when runtime creation starts (after all dialogs)
- * @returns Created runtime or undefined if failed
+ * @param datalayer - Datalayer instance for API access.
+ * @param environment - Environment to use for the runtime.
+ * @param preSelectedSnapshotId - Optional snapshot ID to restore from (skips snapshot selection).
+ * @param onRuntimeCreating - Optional callback triggered when runtime creation starts (after all dialogs).
+ *
+ * @returns Created runtime or undefined if cancelled or failed.
+ *
+ * @throws Error if the environment is missing the burningRate property.
  */
 export async function createRuntime(
   datalayer: DatalayerClient,
@@ -680,8 +685,9 @@ export async function createRuntime(
  * Legacy function for backward compatibility.
  * Shows input box for manual Jupyter server URL entry.
  *
- * @deprecated Use selectDatalayerRuntime instead
- * @returns The validated server URL or undefined if cancelled
+ * @returns The validated server URL or undefined if cancelled.
+ *
+ * @deprecated Use selectDatalayerRuntime instead.
  */
 export async function setRuntime(): Promise<string | undefined> {
   return vscode.window.showInputBox({

@@ -17,9 +17,11 @@
 export const LOCAL_KERNEL_URL_PREFIX = "local-kernel-";
 
 /**
- * Checks if a URL represents a local kernel connection
- * @param url - The URL to check
- * @returns true if the URL is a local kernel URL
+ * Checks if a URL represents a local kernel connection by looking for the local kernel prefix.
+ * @param url - The URL to check.
+ *
+ * @returns True if the URL is a local kernel URL.
+ *
  */
 export function isLocalKernelUrl(url: string): boolean {
   return url.includes(LOCAL_KERNEL_URL_PREFIX) && url.includes(".localhost");

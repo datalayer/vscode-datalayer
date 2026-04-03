@@ -13,7 +13,7 @@
 
 /**
  * Fake JupyterLab service manager that proxy the requests and websockets
- * through postMessage
+ * Through postMessage.
  *
  * The fake WebSocket is largely copied from mock-server licensed under MIT License.
  */
@@ -31,9 +31,10 @@ const DEBUG_WEBSOCKET = false;
 /**
  * Forward HTTP request through postMessage to the extension.
  *
- * @param request HTTP request
- * @param init HTTP request initialization
- * @returns HTTP response
+ * @param request - HTTP request.
+ * @param init - HTTP request initialization.
+ *
+ * @returns HTTP response.
  */
 async function fetch(
   request: RequestInfo,
@@ -72,9 +73,10 @@ async function fetch(
 
 /**
  * Create a JupyterLab service manager with proxied communication.
- * @param baseUrl Base URL for the Jupyter server
- * @param token Authentication token for the server
- * @returns ServiceManager instance configured for VS Code extension communication
+ * @param baseUrl - Base URL for the Jupyter server.
+ * @param token - Authentication token for the server.
+ *
+ * @returns ServiceManager instance configured for VS Code extension communication.
  */
 export function createServiceManager(
   baseUrl: string,
@@ -118,7 +120,7 @@ const ERROR_PREFIX = {
 };
 
 /**
- * Configuration for creating Event objects
+ * Configuration for creating Event objects.
  */
 interface IEventConfiguration {
   /** Event type string */
@@ -128,7 +130,7 @@ interface IEventConfiguration {
 }
 
 /**
- * Configuration for creating CloseEvent objects
+ * Configuration for creating CloseEvent objects.
  */
 interface ICloseEventConfiguration extends IEventConfiguration {
   /** Close code (1000 for normal closure) */
@@ -139,11 +141,13 @@ interface ICloseEventConfiguration extends IEventConfiguration {
   wasClean?: boolean;
 }
 
-/*
+/**
  * Creates an Event object and extends it to allow full modification of
- * its properties.
+ * Its properties.
  *
- * @param {object} config - within config you will need to pass type and optionally target
+ * @param config - Within config you will need to pass type and optionally target.
+ *
+ * @returns A new Event with configurable target properties.
  */
 function createEvent(config: IEventConfiguration) {
   const { type, target } = config;
@@ -165,10 +169,12 @@ function createEvent(config: IEventConfiguration) {
   return eventObject;
 }
 
-/*
+/**
  * Creates a CloseEvent object for WebSocket closure.
  *
- * @param {object} config - within config: type and optionally code, reason, wasClean
+ * @param config - Within config: type and optionally code, reason, wasClean.
+ *
+ * @returns A new CloseEvent with the specified closure details.
  */
 function createCloseEvent(config: ICloseEventConfiguration) {
   const { code, reason, type } = config;
@@ -189,8 +195,9 @@ function createCloseEvent(config: ICloseEventConfiguration) {
 
 /**
  * Calculate the length of a string in UTF-8 bytes.
- * @param str The string to measure
- * @returns The length of the string in UTF-8 bytes
+ * @param str - The string to measure.
+ *
+ * @returns The length of the string in UTF-8 bytes.
  */
 function lengthInUtf8Bytes(str: string): number {
   // Matches only the 10.. bytes that are non-initial characters in a multi-byte sequence.
@@ -200,8 +207,9 @@ function lengthInUtf8Bytes(str: string): number {
 
 /**
  * Normalize WebSocket send data to a serializable format.
- * @param data The raw data to normalize
- * @returns The normalized data suitable for WebSocket transmission
+ * @param data - The raw data to normalize.
+ *
+ * @returns The normalized data suitable for WebSocket transmission.
  */
 function normalizeSendData(data: unknown) {
   // FIXME this does not work -> JupyterLab fails to serialize the data
@@ -218,9 +226,11 @@ function normalizeSendData(data: unknown) {
 /**
  * Verify and normalize WebSocket subprotocols.
  * Validates protocol format, checks for duplicates, and filters out unsupported protocols.
- * @param protocols The subprotocol or protocols to verify
- * @returns Validated array of protocols
- * @throws SyntaxError if protocols are invalid or duplicated
+ * @param protocols - The subprotocol or protocols to verify.
+ *
+ * @returns Validated array of protocols.
+ *
+ * @throws SyntaxError if protocols are invalid or duplicated.
  */
 function protocolVerification(protocols?: string | string[]): string[] {
   protocols = protocols ?? new Array<string>();
@@ -255,10 +265,12 @@ function protocolVerification(protocols?: string | string[]): string[] {
 /**
  * Verify and normalize a WebSocket URL.
  * Validates URL format, scheme, and structure according to WebSocket standards.
- * @param url The URL to verify
- * @returns The normalized URL string
- * @throws TypeError if URL is missing
- * @throws SyntaxError if URL is invalid, has wrong scheme, or contains fragment
+ * @param url - The URL to verify.
+ *
+ * @returns The normalized URL string.
+ *
+ * @throws TypeError if URL is missing.
+ * @throws SyntaxError if URL is invalid, has wrong scheme, or contains fragment.
  */
 function urlVerification(url: string | URL) {
   const urlRecord = new URL(url);
@@ -293,9 +305,9 @@ function urlVerification(url: string | URL) {
 
 /**
  * EventTarget is an interface implemented by objects that can
- * receive events and may have listeners for them.
+ * Receive events and may have listeners for them.
  *
- * https://developer.mozilla.org/en-US/docs/Web/API/EventTarget
+ * Https://developer.mozilla.org/en-US/docs/Web/API/EventTarget.
  */
 class EventTarget {
   /** Map of event type to listener functions */
@@ -306,8 +318,8 @@ class EventTarget {
    * Register a listener function for a specific event type.
    * The listener can later be invoked via the dispatchEvent method.
    *
-   * @param type The type of event (e.g., 'open', 'message', 'close', 'error')
-   * @param listener Callback function to invoke when an event of this type is dispatched
+   * @param type - The type of event (e.g., 'open', 'message', 'close', 'error').
+   * @param listener - Callback function to invoke when an event of this type is dispatched.
    */
   addEventListener(
     type: string,
@@ -326,8 +338,8 @@ class EventTarget {
    * Unregister a listener function for a specific event type.
    * The listener will no longer be invoked when events of this type are dispatched.
    *
-   * @param type The type of event (e.g., 'open', 'message', 'close', 'error')
-   * @param listener The callback function to remove
+   * @param type - The type of event (e.g., 'open', 'message', 'close', 'error').
+   * @param listener - The callback function to remove.
    */
   removeEventListener(
     type: string,
@@ -340,9 +352,10 @@ class EventTarget {
    * Dispatch an event to all registered listeners of that event type.
    * Each listener is invoked with the event as the first argument, or with custom arguments if provided.
    *
-   * @param event The event object to dispatch
-   * @param customArguments Optional custom arguments to pass to listeners instead of the event
-   * @returns True if listeners were found and invoked, false otherwise
+   * @param event - The event object to dispatch.
+   * @param customArguments - Optional custom arguments to pass to listeners instead of the event.
+   *
+   * @returns True if listeners were found and invoked, false otherwise.
    */
   dispatchEvent(event: Event, ...customArguments: unknown[]) {
     const eventName = event.type;
@@ -364,7 +377,7 @@ class EventTarget {
 /**
  * Fake WebSocket implementation that proxies through postMessage.
  * Implements the standard WebSocket API but communicates with the VS Code extension
- * instead of directly connecting to a server.
+ * Instead of directly connecting to a server.
  */
 export class ProxiedWebSocket extends EventTarget {
   /** WebSocket is connecting */
@@ -485,7 +498,7 @@ export class ProxiedWebSocket extends EventTarget {
 
   /**
    * Set the open event handler callback.
-   * @param listener The callback function to invoke when the connection opens
+   * @param listener - The callback function to invoke when the connection opens.
    */
   set onopen(listener: (...args: unknown[]) => void) {
     this.listeners.delete("open");
@@ -494,7 +507,7 @@ export class ProxiedWebSocket extends EventTarget {
 
   /**
    * Set the message event handler callback.
-   * @param listener The callback function to invoke when a message is received
+   * @param listener - The callback function to invoke when a message is received.
    */
   set onmessage(listener: (...args: unknown[]) => void) {
     this.listeners.delete("message");
@@ -503,7 +516,7 @@ export class ProxiedWebSocket extends EventTarget {
 
   /**
    * Set the close event handler callback.
-   * @param listener The callback function to invoke when the connection closes
+   * @param listener - The callback function to invoke when the connection closes.
    */
   set onclose(listener: (...args: unknown[]) => void) {
     this.listeners.delete("close");
@@ -512,7 +525,7 @@ export class ProxiedWebSocket extends EventTarget {
 
   /**
    * Set the error event handler callback.
-   * @param listener The callback function to invoke when an error occurs
+   * @param listener - The callback function to invoke when an error occurs.
    */
   set onerror(listener: (...args: unknown[]) => void) {
     this.listeners.delete("error");
@@ -521,10 +534,11 @@ export class ProxiedWebSocket extends EventTarget {
 
   /**
    * Close the WebSocket connection.
-   * @param code Optional close code (1000 or 3000-4999)
-   * @param reason Optional human-readable close reason
-   * @throws TypeError if the close code is invalid
-   * @throws SyntaxError if the close reason is too long
+   * @param code - Optional close code (1000 or 3000-4999).
+   * @param reason - Optional human-readable close reason.
+   *
+   * @throws TypeError if the close code is invalid.
+   * @throws SyntaxError if the close reason is too long.
    */
   close(code?: number, reason?: string) {
     if (code !== undefined) {
@@ -585,8 +599,9 @@ export class ProxiedWebSocket extends EventTarget {
 
   /**
    * Send data through the WebSocket connection.
-   * @param data The data to send (string, Blob, or ArrayBuffer)
-   * @throws Error if the WebSocket is in CLOSING or CLOSED state
+   * @param data - The data to send (string, Blob, or ArrayBuffer).
+   *
+   * @throws Error if the WebSocket is in CLOSING or CLOSED state.
    */
   send(data: unknown) {
     if (
@@ -610,8 +625,10 @@ export class ProxiedWebSocket extends EventTarget {
   /**
    * Handle incoming messages from the extension.
    * Routes WebSocket messages (open, message, close) to appropriate handlers.
-   * @param message The extension message containing WebSocket event data
-   * @returns True if the message was processed, false otherwise
+   * @param message - The extension message containing WebSocket event data.
+   *
+   * @returns True if the message was processed, false otherwise.
+   *
    * @private
    */
   private _onExtensionMessage(message: ExtensionMessage): boolean {

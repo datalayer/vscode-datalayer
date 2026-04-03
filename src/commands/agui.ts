@@ -16,9 +16,10 @@ import * as path from "path";
 import { ServiceLoggers } from "../services/logging/loggers";
 
 /**
- * Opens the ag-ui example webview panel
+ * Opens the ag-ui example webview panel.
  *
  * Demonstrates platform-agnostic tool usage with CopilotKit's AI copilot interface.
+ * @param context - Extension context for accessing extension path and resources.
  */
 function openAgUIExample(context: vscode.ExtensionContext): void {
   const logger = ServiceLoggers.getLogger("commands/agui");
@@ -45,7 +46,11 @@ function openAgUIExample(context: vscode.ExtensionContext): void {
 }
 
 /**
- * Generate HTML content for the webview
+ * Generates HTML content for the ag-ui webview with CSP and script loading.
+ * @param webview - Webview instance for generating secure URIs.
+ * @param extensionPath - Absolute path to the extension directory.
+ *
+ * @returns HTML string for the ag-ui webview.
  */
 function getWebviewContent(
   webview: vscode.Webview,
@@ -96,9 +101,10 @@ function getWebviewContent(
 }
 
 /**
- * Register ag-ui example commands
+ * Registers ag-ui example commands for CopilotKit integration demo.
  *
- * @param context - Extension context for managing disposables
+ * @param context - Extension context for managing disposables.
+ *
  */
 export function registerAgUICommands(context: vscode.ExtensionContext): void {
   context.subscriptions.push(

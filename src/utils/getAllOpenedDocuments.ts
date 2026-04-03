@@ -35,36 +35,36 @@ export type EditorType =
   | "unknown";
 
 /**
- * Information about a single opened document
+ * Information about a single opened document including its type, editor, and active state.
  */
 export interface OpenedDocumentInfo {
-  /** Document URI string */
+  /** Document URI string. */
   uri: string;
-  /** Document type classification */
+  /** Document type classification. */
   type: DocumentType;
-  /** Editor type - which editor is being used to open this document */
+  /** Editor type - which editor is being used to open this document. */
   editorType: EditorType;
-  /** View type from VS Code tab input (e.g., "datalayer.jupyter-notebook", "jupyter-notebook") */
+  /** View type from VS Code tab input (e.g., "datalayer.jupyter-notebook", "jupyter-notebook"). */
   viewType?: string;
-  /** File name (extracted from path) */
+  /** File name (extracted from path). */
   fileName: string;
-  /** Whether this is the currently active document */
+  /** Whether this is the currently active document. */
   isActive: boolean;
-  /** URI scheme (e.g., 'file', 'datalayer') */
+  /** URI scheme (e.g., 'file', 'datalayer'). */
   scheme: string;
 }
 
 /**
- * Complete document context with active document and all opened documents
+ * Complete document context with active document and all opened documents.
  */
 export interface AllOpenedDocumentsContext {
-  /** The currently active document, or undefined if no document is active */
+  /** The currently active document, or undefined if no document is active. */
   activeDocument: OpenedDocumentInfo | undefined;
-  /** Array of all opened documents */
+  /** Array of all opened documents. */
   allDocuments: OpenedDocumentInfo[];
-  /** Total count of opened documents */
+  /** Total count of opened documents. */
   totalCount: number;
-  /** Count by type */
+  /** Count by type. */
   counts: {
     notebook: number;
     lexical: number;
@@ -75,7 +75,11 @@ export interface AllOpenedDocumentsContext {
 }
 
 /**
- * Determines document type from URI and filename
+ * Determines document type from URI and filename.
+ * @param uri - VS Code URI of the document.
+ * @param fileName - File name extracted from the URI path.
+ *
+ * @returns Classified document type based on file extension.
  */
 function classifyDocumentType(uri: vscode.Uri, fileName: string): DocumentType {
   // Check file extension
@@ -120,9 +124,12 @@ function classifyDocumentType(uri: vscode.Uri, fileName: string): DocumentType {
 
 /**
  * Determines editor type from viewType.
- * This is CRITICAL because .ipynb files can be opened with either:
- * - Datalayer custom editor (viewType: "datalayer.jupyter-notebook")
- * - VS Code native editor (viewType: "jupyter-notebook" or "interactive")
+ * This is critical because .ipynb files can be opened with either:
+ * - Datalayer custom editor (viewType: "datalayer.jupyter-notebook").
+ * - VS Code native editor (viewType: "jupyter-notebook" or "interactive").
+ * @param viewType - VS Code tab input view type identifier.
+ *
+ * @returns Classified editor type for the document.
  */
 function classifyEditorType(viewType: string | undefined): EditorType {
   if (!viewType) {
@@ -154,7 +161,7 @@ function classifyEditorType(viewType: string | undefined): EditorType {
  * Gets ALL opened documents across all tab groups.
  * Returns complete document context including the active document and all opened documents.
  *
- * @returns Complete document context
+ * @returns Complete document context with all documents and counts.
  */
 export function getAllOpenedDocuments(): AllOpenedDocumentsContext {
   const allDocuments: OpenedDocumentInfo[] = [];

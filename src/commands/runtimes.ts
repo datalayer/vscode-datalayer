@@ -8,8 +8,9 @@
  * Runtime management commands for the Datalayer VS Code extension.
  * Handles runtime selection, status display, and kernel management.
  *
- * @see https://code.visualstudio.com/api/extension-guides/command
  * @module commands/runtimes
+ *
+ * @see https://code.visualstudio.com/api/extension-guides/command
  *
  * @remarks
  * This module registers the following commands:
@@ -38,11 +39,12 @@ interface RuntimeQuickPickItem extends vscode.QuickPickItem {
 }
 
 /**
- * Registers all runtime-related commands for the Smart Dynamic Controller Manager.
+ * Registers all runtime-related commands for creating, terminating, and managing cloud runtimes.
  *
- * @param context - Extension context for command subscriptions
- * @param controllerManager - The Smart Dynamic Controller Manager
- * @param runtimesTreeProvider - The Runtimes tree view provider
+ * @param context - Extension context for command subscriptions.
+ * @param controllerManager - The Smart Dynamic Controller Manager for notebook integration.
+ * @param runtimesTreeProvider - The Runtimes tree view provider for UI refresh.
+ *
  */
 export function registerRuntimeCommands(
   context: vscode.ExtensionContext,
@@ -931,8 +933,7 @@ export function registerRuntimeCommands(
 }
 
 /**
- * Notifies all open notebook and lexical documents that runtimes were terminated.
- * Sends kernel-terminated message to all active webviews.
+ * Notifies all open notebook and lexical documents that runtimes were terminated by sending kernel-terminated messages to all active webviews.
  */
 async function notifyAllDocuments(): Promise<void> {
   // Get all open tabs
@@ -964,10 +965,10 @@ async function notifyAllDocuments(): Promise<void> {
 }
 
 /**
- * Terminates a runtime and shows appropriate feedback.
+ * Terminates a runtime and shows appropriate feedback with progress notification.
  *
- * @param datalayer - The Datalayer instance
- * @param runtime - The runtime to terminate
+ * @param datalayer - The Datalayer client instance for API calls.
+ * @param runtime - The runtime to terminate.
  */
 async function terminateRuntime(
   datalayer: DatalayerClient,

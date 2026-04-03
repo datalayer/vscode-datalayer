@@ -52,27 +52,6 @@ export interface ILifecycle {
  * Base class for all services with lifecycle management.
  * Handles initialization, disposal, and state tracking.
  *
- * @example
- * ```typescript
- * export class MyService extends BaseService {
- *   constructor(logger: ILogger) {
- *     super('MyService', logger);
- *   }
- *
- *   protected async onInitialize(): Promise<void> {
- *     // Service initialization logic
- *   }
- *
- *   protected async onDispose(): Promise<void> {
- *     // Cleanup logic
- *   }
- *
- *   public async doWork(): Promise<void> {
- *     this.assertReady(); // Ensures service is initialized
- *     // Work logic
- *   }
- * }
- * ```
  */
 export abstract class BaseService implements ILifecycle {
   private _state: ServiceState = ServiceState.Uninitialized;
@@ -80,8 +59,8 @@ export abstract class BaseService implements ILifecycle {
   /**
    * Creates a new service instance.
    *
-   * @param name - Service name for logging
-   * @param logger - Logger instance for this service
+   * @param name - Service name for logging.
+   * @param logger - Logger instance for this service.
    */
   constructor(
     protected readonly name: string,
@@ -149,7 +128,7 @@ export abstract class BaseService implements ILifecycle {
    * Asserts that the service is ready for use.
    * Throws an error if the service is not in the Ready state.
    *
-   * @throws Error if service is not ready
+   * @throws Error if service is not ready.
    */
   protected assertReady(): void {
     if (this._state !== ServiceState.Ready) {

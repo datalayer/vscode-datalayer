@@ -12,7 +12,7 @@
  */
 
 /**
- * Function type for handling Lexical commands
+ * Function type for handling Lexical commands.
  */
 export type CommandHandler = (command: string) => void;
 
@@ -22,12 +22,15 @@ export type CommandHandler = (command: string) => void;
  */
 export class LexicalCommandEmitter {
   /**
-   * Array of registered command handler functions
+   * Array of registered command handler functions.
    */
   private handlers: CommandHandler[] = [];
 
   /**
-   * Subscribe to command events
+   * Subscribe to command events.
+   * @param handler - Callback invoked when a command is emitted.
+   *
+   * @returns Unsubscribe function to remove the handler.
    */
   subscribe(handler: CommandHandler): () => void {
     this.handlers.push(handler);
@@ -37,7 +40,8 @@ export class LexicalCommandEmitter {
   }
 
   /**
-   * Emit a command to all subscribers
+   * Emit a command to all subscribers.
+   * @param command - The command string to broadcast.
    */
   emit(command: string): void {
     this.handlers.forEach((handler) => handler(command));
@@ -46,20 +50,7 @@ export class LexicalCommandEmitter {
 
 /**
  * Singleton instance of LexicalCommandEmitter for broadcasting formatting commands
- * from the VS Code extension to the Lexical editor webview.
+ * From the VS Code extension to the Lexical editor webview.
  *
- * @example
- * Subscribe to commands in webview:
- * ```typescript
- * lexicalCommands.subscribe((command) => {
- *   console.log('Received command:', command);
- * });
- * ```
- *
- * @example
- * Emit command from extension:
- * ```typescript
- * lexicalCommands.emit('bold');
- * ```
  */
 export const lexicalCommands = new LexicalCommandEmitter();

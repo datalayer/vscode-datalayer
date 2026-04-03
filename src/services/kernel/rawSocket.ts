@@ -73,7 +73,7 @@ export interface IKernelConnection {
   transport: "tcp" | "ipc";
   /**
    * Display name of the kernel (optional).
-   * Examples: "python3", "ir", "julia-1.10"
+   * Examples: "python3", "ir", "julia-1.10".
    */
   kernel_name?: string;
 }
@@ -82,7 +82,7 @@ export interface IKernelConnection {
  * ZMQ channels for kernel communication.
  * Channels are created based on the kernel connection configuration.
  *
- * @internal Used internally for kernel communication
+ * @internal Used internally for kernel communication.
  */
 interface IChannels {
   /**
@@ -115,15 +115,12 @@ const noop = () => {};
 
 /**
  * Loads zeromq native module with prebuild support.
- * Sets up prebuilds path for native binaries before loading.
+ * Configures prebuilds path for platform-specific binaries (Windows, macOS, Linux)
+ * before importing the module.
  *
- * Modern zeromq (>=6.0.0) has comprehensive prebuilds for:
- * - Windows x64
- * - macOS x64 (Intel) and arm64 (Apple Silicon)
- * - Linux x64 and arm64
+ * @returns The zeromq module.
  *
- * @returns The zeromq module
- * @throws Error if zeromq fails to load (usually indicates missing native module support)
+ * @throws Error if zeromq fails to load (usually indicates missing native module support).
  */
 function getZeroMQ(): typeof import("zeromq") {
   // Set up path to native binaries (located in dist/node_modules/zeromq/prebuilds)
@@ -165,6 +162,15 @@ function getZeroMQ(): typeof import("zeromq") {
   }
 }
 
+/**
+ * Builds a ZMQ transport connection string for the given kernel channel.
+ * @param config - Kernel connection configuration with transport and ports.
+ * @param channel - Name of the ZMQ channel (shell, iopub, stdin, control).
+ *
+ * @returns Connection string in format "transport://ip:port".
+ *
+ * @throws Error if the specified channel port is not found in the configuration.
+ */
 function formConnectionString(config: IKernelConnection, channel: string) {
   const portDelimiter = config.transport === "tcp" ? ":" : "-";
   const port = config[`${channel}_port` as keyof IKernelConnection];
@@ -174,23 +180,25 @@ function formConnectionString(config: IKernelConnection, channel: string) {
   return `${config.transport}://${config.ip}${portDelimiter}${port}`;
 }
 
+/** Generates a unique identifier for kernel message sessions.
+ * @returns A unique string combining timestamp and random characters.
+ */
 function generateUuid(): string {
   return `${Date.now()}-${Math.random().toString(36).substring(2, 15)}`;
 }
 
 /**
  * Raw ZMQ socket that wraps kernel channels in WebSocket-like interface.
- * Used by @jupyterlab/services for kernel communication.
- */
+ * Used by @jupyterlab/services for kernel communication. */
 export class RawSocket {
   /**
    * Callback invoked when the socket connection opens.
-   * Signature: (event: { target: unknown }) => void
+   * Signature: (event: { target: unknown }) => void.
    */
   public onopen: (event: { target: unknown }) => void = noop;
   /**
    * Callback invoked when a socket error occurs.
-   * Signature: (event: { error: unknown; message: string; type: string; target: unknown }) => void
+   * Signature: (event: { error: unknown; message: string; type: string; target: unknown }) => void.
    */
   public onerror: (event: {
     error: unknown;
@@ -200,7 +208,7 @@ export class RawSocket {
   }) => void = noop;
   /**
    * Callback invoked when the socket connection closes.
-   * Signature: (event: { wasClean: boolean; code: number; reason: string; target: unknown }) => void
+   * Signature: (event: { wasClean: boolean; code: number; reason: string; target: unknown }) => void.
    */
   public onclose: (event: {
     wasClean: boolean;
@@ -210,7 +218,7 @@ export class RawSocket {
   }) => void = noop;
   /**
    * Callback invoked when a message is received from the kernel.
-   * Signature: (event: { data: WebSocketWS.Data; type: string; target: unknown }) => void
+   * Signature: (event: { data: WebSocketWS.Data; type: string; target: unknown }) => void.
    */
   public onmessage: (event: {
     data: WebSocketWS.Data;
@@ -264,8 +272,8 @@ export class RawSocket {
    * Creates a new RawSocket instance that wraps ZMQ channels in a WebSocket-like interface.
    * Initializes kernel communication channels (shell, control, stdin, iopub).
    *
-   * @param connection - Kernel connection configuration from the connection file
-   * @param serialize - Function to serialize kernel messages to string or ArrayBuffer format
+   * @param connection - Kernel connection configuration from the connection file.
+   * @param serialize - Function to serialize kernel messages to string or ArrayBuffer format.
    */
   constructor(
     private connection: IKernelConnection,
@@ -289,12 +297,18 @@ export class RawSocket {
     // - The webview should trigger the kernel_info_request flow via LocalKernelProxy
   }
 
+  /**
+   * Dispose the socket, closing all channels if not already closed.
+   */
   public dispose() {
     if (!this.closed) {
       this.close();
     }
   }
 
+  /**
+   * Close all ZMQ channels and mark the socket as closed.
+   */
   public close(): void {
     this.closed = true;
     const closer = (closable: { close(): void }) => {
@@ -310,6 +324,13 @@ export class RawSocket {
     closer(this.channels.stdin);
   }
 
+  /**
+   * Emit an event by invoking the corresponding callback handler.
+   * @param event - Event name (message, close, error, or open).
+   * @param args - Event arguments passed to the handler.
+   *
+   * @returns Always true.
+   */
   public emit(event: string | symbol, ...args: unknown[]): boolean {
     switch (event) {
       case "message":
@@ -337,20 +358,37 @@ export class RawSocket {
     return true;
   }
 
+  /**
+   * Send a kernel message through the appropriate ZMQ channel.
+   * @param data - Kernel message to send.
+   * @param _callback - Unused callback parameter for WebSocket API compatibility.
+   */
   public send(data: unknown, _callback: unknown): void {
     this.sendMessage(data as KernelMessage.IMessage, false);
   }
 
+  /**
+   * Register a hook to intercept incoming kernel messages.
+   * @param hook - Async function called with serialized message data.
+   */
   public addReceiveHook(hook: (data: WebSocketWS.Data) => Promise<void>): void {
     this.receiveHooks.push(hook);
   }
 
+  /**
+   * Remove a previously registered receive hook.
+   * @param hook - Hook function to remove from the receive chain.
+   */
   public removeReceiveHook(
     hook: (data: WebSocketWS.Data) => Promise<void>,
   ): void {
     this.receiveHooks = this.receiveHooks.filter((l) => l !== hook);
   }
 
+  /**
+   * Register a hook to intercept outgoing kernel messages.
+   * @param hook - Async function called before message is sent.
+   */
   public addSendHook(
     hook: (
       data: unknown,
@@ -360,6 +398,10 @@ export class RawSocket {
     this.sendHooks.push(hook);
   }
 
+  /**
+   * Remove a previously registered send hook.
+   * @param hook - Hook function to remove from the send chain.
+   */
   public removeSendHook(
     hook: (
       data: unknown,
@@ -369,6 +411,14 @@ export class RawSocket {
     this.sendHooks = this.sendHooks.filter((p) => p !== hook);
   }
 
+  /**
+   * Create and connect a ZMQ channel for kernel communication.
+   * @param connection - Kernel connection configuration.
+   * @param channel - Channel type (shell, iopub, stdin, control).
+   * @param ctor - Factory function to create the ZMQ socket.
+   *
+   * @returns Connected ZMQ socket instance.
+   */
   private generateChannel<T extends Subscriber | Dealer>(
     connection: IKernelConnection,
     channel: Channel,
@@ -382,6 +432,11 @@ export class RawSocket {
     return result;
   }
 
+  /**
+   * Read messages from a ZMQ socket and process them.
+   * @param channel - Channel name for message routing.
+   * @param readable - ZMQ socket to read messages from.
+   */
   private async processSocketMessages(
     channel: Channel,
     readable: Subscriber | Dealer,
@@ -395,6 +450,12 @@ export class RawSocket {
     }
   }
 
+  /**
+   * Create all ZMQ channels for kernel communication.
+   * @param connection - Kernel connection configuration with ports.
+   *
+   * @returns Object containing shell, control, stdin, and iopub channels.
+   */
   private generateChannels(connection: IKernelConnection): IChannels {
     // Use zeromq from node_modules with fallback mechanism
 
@@ -450,6 +511,11 @@ export class RawSocket {
     return result;
   }
 
+  /**
+   * Decode and process an incoming ZMQ message from the kernel.
+   * @param channel - Channel the message was received on.
+   * @param data - Raw ZMQ message frames to decode.
+   */
   private onIncomingMessage(channel: Channel, data: unknown) {
     let decoded: KernelMessage.IMessage;
     if (this.closed) {
@@ -482,6 +548,11 @@ export class RawSocket {
     }
   }
 
+  /**
+   * Fire the onmessage callback with a validated kernel message.
+   * @param message - Decoded kernel message to deliver.
+   * @param channel - Channel for field validation fallback.
+   */
   private fireOnMessage(message: KernelMessage.IMessage, channel: Channel) {
     if (!this.closed) {
       try {
@@ -500,6 +571,11 @@ export class RawSocket {
     }
   }
 
+  /**
+   * Encode and send a kernel message through the appropriate ZMQ channel.
+   * @param msg - Kernel message to encode and send.
+   * @param bypassHooking - If true, skip send hooks.
+   */
   private sendMessage(msg: KernelMessage.IMessage, bypassHooking: boolean) {
     const data = wireProtocol.encode(
       msg as Parameters<typeof wireProtocol.encode>[0],
@@ -532,6 +608,11 @@ export class RawSocket {
     this.sendChain.catch(noop);
   }
 
+  /**
+   * Send encoded data to a specific ZMQ channel socket.
+   * @param channel - Target channel name (shell, control, stdin).
+   * @param data - Encoded message data to send.
+   */
   private postToSocket(channel: string, data: unknown) {
     const socket = (this.channels as unknown as Record<string, Dealer>)[
       channel
@@ -551,6 +632,11 @@ export class RawSocket {
 /**
  * Create a new RawSocket kernel connection using @jupyterlab/services.
  * This function mimics what vscode-jupyter does in newRawKernel().
+ * @param connection - Kernel connection configuration from connection file.
+ * @param clientId - Unique client identifier for the kernel session.
+ * @param username - Username for kernel message headers.
+ *
+ * @returns Object containing the JupyterLab kernel connection and socket.
  */
 export function createRawKernel(
   connection: IKernelConnection,
@@ -560,6 +646,7 @@ export function createRawKernel(
   const jupyterLab = require("@jupyterlab/services");
 
   // Create custom WebSocket class that uses RawSocket
+  /** @ignore Internal WebSocket wrapper for raw ZMQ kernel connections. */
   class RawSocketWrapper extends RawSocket {
     constructor() {
       super(connection, jupyterLabSerialize);
@@ -614,6 +701,11 @@ const IOPUB_CONTENT_FIELDS = {
   shutdown_reply: { restart: "boolean" },
 };
 
+/**
+ * Ensures all required header, content, and metadata fields are present on a kernel message.
+ * @param message - Kernel message to validate and patch.
+ * @param channel - Channel to set if missing from message.
+ */
 function ensureFields(message: KernelMessage.IMessage, channel: Channel) {
   const header = message.header as unknown as Record<string, unknown>;
   HEADER_FIELDS.forEach((field) => {
@@ -635,6 +727,10 @@ function ensureFields(message: KernelMessage.IMessage, channel: Channel) {
   }
 }
 
+/**
+ * Ensures IOPub messages have correctly typed content fields matching their message type.
+ * @param message - IOPub message whose content fields will be validated.
+ */
 function ensureIOPubContent(message: KernelMessage.IMessage) {
   if (message.channel !== "iopub") {
     return;

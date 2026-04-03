@@ -38,11 +38,6 @@ export interface LexicalCollaborationConfig {
  * Singleton service for setting up lexical document collaboration.
  * Manages WebSocket connections and user session configuration.
  *
- * @example
- * ```typescript
- * const service = LexicalCollaborationService.getInstance();
- * const config = await service.setupCollaboration(document);
- * ```
  */
 export class LexicalCollaborationService {
   /** Singleton instance of the collaboration service */
@@ -52,7 +47,7 @@ export class LexicalCollaborationService {
    * Gets the singleton instance of the collaboration service.
    * Creates a new instance if one doesn't exist.
    *
-   * @returns The singleton instance of LexicalCollaborationService
+   * @returns The singleton instance of LexicalCollaborationService.
    */
   static getInstance(): LexicalCollaborationService {
     if (!LexicalCollaborationService.instance) {
@@ -71,8 +66,9 @@ export class LexicalCollaborationService {
    * Sets up collaboration configuration for a Datalayer document.
    * Creates WebSocket URL and user session for real-time editing.
    *
-   * @param document - Lexical document to enable collaboration for
-   * @returns Collaboration configuration or undefined if setup fails
+   * @param document - Lexical document to enable collaboration for.
+   *
+   * @returns Collaboration configuration or undefined if setup fails.
    */
   async setupCollaboration(
     document: LexicalDocument,
@@ -166,7 +162,7 @@ export class LexicalCollaborationService {
   /**
    * Generates a random hex color for user identification.
    *
-   * @returns Random hex color string
+   * @returns Random hex color string.
    */
   private generateUserColor(): string {
     return "#" + Math.floor(Math.random() * 16777215).toString(16);

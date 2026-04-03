@@ -25,11 +25,6 @@ import {
  * Manages WebSocket connections and HTTP request proxying for notebook operations.
  * For local ZMQ kernels, uses LocalKernelProxy instead of real WebSockets.
  *
- * @example
- * ```typescript
- * const networkService = new NotebookNetworkService(kernelBridge);
- * networkService.forwardRequest(message, webview);
- * ```
  */
 export class NotebookNetworkService {
   private readonly _websockets = new Map<string, WebSocket>();
@@ -50,8 +45,8 @@ export class NotebookNetworkService {
    * For local kernels, intercepts and handles REST API calls.
    * Handles method, headers, and body forwarding with response relay.
    *
-   * @param message - Extension message containing request details
-   * @param webview - Target webview panel for response
+   * @param message - Extension message containing request details.
+   * @param webview - Target webview panel for response.
    */
   forwardRequest(
     message: ExtensionMessage,
@@ -118,6 +113,8 @@ export class NotebookNetworkService {
   /**
    * Handles HTTP REST API requests for local kernels.
    * Provides mock responses for Jupyter REST API endpoints.
+   * @param message - Extension message containing the REST API request.
+   * @param webview - Target webview panel for sending the response.
    */
   private _handleLocalKernelRequest(
     message: ExtensionMessage,
@@ -306,8 +303,8 @@ export class NotebookNetworkService {
    * For local kernels, creates a LocalKernelProxy instead.
    * Sets up event handlers for open, message, close, and error events.
    *
-   * @param message - Extension message with WebSocket configuration
-   * @param webview - Target webview panel for event notifications
+   * @param message - Extension message with WebSocket configuration.
+   * @param webview - Target webview panel for event notifications.
    */
   openWebsocket(message: ExtensionMessage, webview: vscode.WebviewPanel): void {
     const { body, id } = message;
@@ -391,6 +388,8 @@ export class NotebookNetworkService {
 
   /**
    * Opens a local kernel proxy for ZMQ communication.
+   * @param message - Extension message with WebSocket connection details.
+   * @param webview - Target webview panel for kernel message routing.
    */
   private _openLocalKernel(
     message: ExtensionMessage,
@@ -488,7 +487,7 @@ export class NotebookNetworkService {
   /**
    * Sends a message to an existing WebSocket connection or local kernel proxy.
    *
-   * @param message - Extension message containing data to send
+   * @param message - Extension message containing data to send.
    */
   sendWebsocketMessage(message: ExtensionMessage): void {
     const { id, body } = message;
@@ -525,7 +524,7 @@ export class NotebookNetworkService {
   /**
    * Closes a WebSocket connection or local kernel proxy by ID.
    *
-   * @param message - Extension message containing connection ID
+   * @param message - Extension message containing connection ID.
    */
   closeWebsocket(message: ExtensionMessage): void {
     const { id } = message;
@@ -545,10 +544,10 @@ export class NotebookNetworkService {
   /**
    * Posts a message to the webview.
    *
-   * @param panel - Target webview panel
-   * @param type - Message type identifier
-   * @param body - Message payload
-   * @param requestIdOrId - Optional message ID for correlation (requestId for HTTP, id for WebSocket)
+   * @param panel - Target webview panel.
+   * @param type - Message type identifier.
+   * @param body - Message payload.
+   * @param requestIdOrId - Optional message ID for correlation (requestId for HTTP, id for WebSocket).
    */
   private postMessage(
     panel: vscode.WebviewPanel,

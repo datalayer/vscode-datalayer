@@ -14,22 +14,21 @@
 import * as vscode from "vscode";
 
 /**
- * Credentials captured from user input
+ * Credentials captured from user input for handle/password authentication.
  */
 export interface CredentialsInput {
-  /** User's handle (username, email, or identifier) */
+  /** User's handle (username, email, or identifier). */
   handle: string;
-  /** User's password */
+  /** User's password. */
   password: string;
 }
 
 /**
- * Validate handle.
+ * Validates that the handle is not empty.
  *
- * Ensures handle is not empty.
+ * @param handle - Handle to validate.
  *
- * @param handle - Handle to validate
- * @returns Error message if invalid, null if valid
+ * @returns Error message if invalid, null if valid.
  */
 function validateHandle(handle: string): string | null {
   if (!handle || handle.trim().length === 0) {
@@ -40,12 +39,11 @@ function validateHandle(handle: string): string | null {
 }
 
 /**
- * Validate password.
+ * Validates that the password is not empty.
  *
- * Ensures password is not empty.
+ * @param password - Password to validate.
  *
- * @param password - Password to validate
- * @returns Error message if invalid, null if valid
+ * @returns Error message if invalid, null if valid.
  */
 function validatePassword(password: string): string | null {
   if (!password || password.trim().length === 0) {
@@ -56,9 +54,9 @@ function validatePassword(password: string): string | null {
 }
 
 /**
- * Prompt user for handle.
+ * Prompts user for their handle via an input box.
  *
- * @returns Handle, or undefined if cancelled
+ * @returns Handle, or undefined if cancelled.
  */
 async function promptForHandle(): Promise<string | undefined> {
   const handle = await vscode.window.showInputBox({
@@ -75,9 +73,9 @@ async function promptForHandle(): Promise<string | undefined> {
 }
 
 /**
- * Prompt user for password.
+ * Prompts user for their password via a masked input box.
  *
- * @returns Password, or undefined if cancelled
+ * @returns Password, or undefined if cancelled.
  */
 async function promptForPassword(): Promise<string | undefined> {
   const password = await vscode.window.showInputBox({
@@ -103,17 +101,8 @@ async function promptForPassword(): Promise<string | undefined> {
  *
  * Either step can be cancelled, which cancels the entire flow.
  *
- * @returns Credentials object, or undefined if cancelled
+ * @returns Credentials object, or undefined if cancelled.
  *
- * @example
- * ```typescript
- * const creds = await promptForCredentials();
- * if (creds) {
- *   await login(creds.handle, creds.password);
- * } else {
- *   console.log('Login cancelled');
- * }
- * ```
  */
 export async function promptForCredentials(): Promise<
   CredentialsInput | undefined

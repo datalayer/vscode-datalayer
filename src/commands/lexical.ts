@@ -17,23 +17,27 @@ import * as vscode from "vscode";
 const activeWebviews = new Map<string, vscode.Webview>();
 
 /**
- * Register a webview for command handling
- * Called by LexicalProvider when webview is created
+ * Registers a webview for command handling, called by LexicalProvider when a webview is created.
+ * @param uri - Document URI string identifying the webview.
+ * @param webview - Webview instance to register for message passing.
+ *
  */
 export function registerLexicalWebview(uri: string, webview: vscode.Webview) {
   activeWebviews.set(uri, webview);
 }
 
 /**
- * Unregister a webview when it's disposed
- * Called by LexicalProvider when webview is disposed
+ * Unregisters a webview when it is disposed, called by LexicalProvider on cleanup.
+ * @param uri - Document URI string of the webview to remove.
+ *
  */
 export function unregisterLexicalWebview(uri: string) {
   activeWebviews.delete(uri);
 }
 
 /**
- * Sends a formatting command to the active Lexical webview
+ * Sends a formatting command to the active Lexical webview via postMessage.
+ * @param command - Formatting command name (e.g., 'bold', 'italic', 'heading1').
  */
 function sendLexicalCommand(command: string) {
   // Get the active text editor
@@ -76,7 +80,9 @@ function sendLexicalCommand(command: string) {
 }
 
 /**
- * Registers all Lexical editor commands
+ * Registers all Lexical editor formatting and action commands for toolbar integration.
+ * @param context - Extension context for command subscriptions.
+ *
  */
 export function registerLexicalCommands(
   context: vscode.ExtensionContext,

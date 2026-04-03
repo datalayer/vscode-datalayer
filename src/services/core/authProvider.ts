@@ -29,14 +29,6 @@ import { promptForCredentials } from "../../ui/dialogs/credentialsInput";
  * Datalayer-based authentication provider for VS Code.
  * Manages authentication state and provides event notifications for state changes.
  *
- * @example
- * ```typescript
- * const authProvider = new DatalayerAuthProvider(datalayer, context, logger);
- * await authProvider.initialize();
- * authProvider.onAuthStateChanged((state) => {
- *   // Auth state changed
- * });
- * ```
  */
 export class DatalayerAuthProvider
   extends BaseService
@@ -68,7 +60,7 @@ export class DatalayerAuthProvider
   /**
    * Gets current authentication state.
    *
-   * @returns Copy of the current authentication state
+   * @returns Copy of the current authentication state.
    */
   getAuthState(): VSCodeAuthState {
     return { ...this._authState };
@@ -182,7 +174,7 @@ export class DatalayerAuthProvider
 
   /**
    * Prompts user for authentication method and performs login.
-   * @deprecated Use showLoginMethodPicker() followed by specific login methods
+   * @deprecated Use showLoginMethodPicker() followed by specific login methods.
    */
   async login(): Promise<void> {
     this.logger.info("Starting login process with method picker");
@@ -212,6 +204,7 @@ export class DatalayerAuthProvider
   /**
    * Show login method selection dialog.
    * Presents user with choice of email/password or OAuth providers.
+   * @returns The selected auth method, or undefined if cancelled.
    */
   async showLoginMethodPicker(): Promise<AuthMethod | undefined> {
     this.logger.debug("Showing login method picker");
@@ -291,6 +284,7 @@ export class DatalayerAuthProvider
   /**
    * Login using OAuth provider.
    * Opens browser for OAuth flow and handles callback.
+   * @param provider - OAuth provider to authenticate with.
    */
   async loginWithOAuth(provider: "github" | "linkedin"): Promise<void> {
     this.logger.info("Starting OAuth login", {
@@ -534,6 +528,7 @@ export class DatalayerAuthProvider
   /**
    * Check if currently authenticated.
    * Delegates to Datalayer's authentication manager.
+   * @returns True if the user is currently authenticated.
    */
   isAuthenticated(): boolean {
     return this.datalayer.auth.isAuthenticated();
@@ -542,6 +537,7 @@ export class DatalayerAuthProvider
   /**
    * Get current user (null if not authenticated).
    * Delegates to Datalayer's authentication manager.
+   * @returns Current user DTO or null if not authenticated.
    */
   getCurrentUser(): UserDTO | null {
     return this.datalayer.auth.getCurrentUser() || null;
@@ -549,6 +545,7 @@ export class DatalayerAuthProvider
 
   /**
    * Get authentication token from Datalayer.
+   * @returns The current authentication token, or empty string.
    */
   getToken(): string {
     return this.datalayer.getToken() || "";

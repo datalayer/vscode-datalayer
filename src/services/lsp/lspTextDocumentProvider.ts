@@ -31,7 +31,7 @@ export class LSPTextDocumentProvider
   /**
    * Create a new LSPTextDocumentProvider.
    *
-   * @param documentManager - Document manager that tracks virtual documents
+   * @param documentManager - Document manager that tracks virtual documents.
    */
   constructor(documentManager: LSPDocumentManager) {
     this.documentManager = documentManager;
@@ -43,8 +43,9 @@ export class LSPTextDocumentProvider
   /**
    * Provide content for a virtual document URI.
    *
-   * @param uri - Virtual document URI (untitled://...)
-   * @returns Document content or empty string if not found
+   * @param uri - Virtual document URI (untitled://...).
+   *
+   * @returns Document content or empty string if not found.
    */
   public provideTextDocumentContent(uri: vscode.Uri): string {
     console.log(

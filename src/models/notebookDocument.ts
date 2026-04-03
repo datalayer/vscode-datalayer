@@ -8,8 +8,9 @@
  * Notebook document model for VS Code custom editor.
  * Handles document lifecycle, content state, and persistence for Jupyter notebooks.
  *
- * @see https://code.visualstudio.com/api/extension-guides/custom-editors
  * @module notebookDocument
+ *
+ * @see https://code.visualstudio.com/api/extension-guides/custom-editors
  */
 
 import * as vscode from "vscode";
@@ -22,14 +23,6 @@ import { DocumentBridge } from "../services/bridges/documentBridge";
  * Currently supports content updates that replace the entire notebook content.
  * Used for tracking edit history and implementing undo/redo functionality.
  *
- * @example
- * ```typescript
- * const edit: NotebookEdit = {
- *   type: "content-update",
- *   content: new TextEncoder().encode(JSON.stringify(notebookData))
- * };
- * document.makeEdit(edit);
- * ```
  */
 export interface NotebookEdit {
   /** The type of edit operation - currently only content updates are supported */
@@ -44,19 +37,6 @@ export interface NotebookEdit {
  * Implements the delegate pattern to allow the document model to interact with
  * the webview for content retrieval and panel management without tight coupling.
  *
- * @example
- * ```typescript
- * const delegate: NotebookDocumentDelegate = {
- *   async getFileData() {
- *     // Retrieve current notebook content from webview
- *     const notebook = await webview.getNotebookContent();
- *     return new TextEncoder().encode(JSON.stringify(notebook));
- *   },
- *   getWebviewPanel() {
- *     return currentWebviewPanel;
- *   }
- * };
- * ```
  */
 export interface NotebookDocumentDelegate {
   /**
@@ -85,12 +65,6 @@ export interface NotebookDocumentDelegate {
  * - `datalayer://` URIs: Collaborative notebooks with real-time sync (read-only locally)
  * - `file://` URIs: Local notebooks with full edit tracking and persistence
  *
- * @example
- * ```typescript
- * const document = await NotebookDocument.create(uri, undefined, delegate);
- * document.makeEdit({ type: "content-update", content: newContent });
- * await document.save(cancellationToken);
- * ```
  */
 export class NotebookDocument
   extends Disposable
@@ -103,10 +77,11 @@ export class NotebookDocument
    * For backup restoration, the backupId parameter should contain the backup file URI.
    * Supports both local file URIs and collaborative Datalayer URIs.
    *
-   * @param uri - The notebook URI to open
-   * @param backupId - Optional backup ID for document restoration
-   * @param delegate - Delegate for webview content retrieval and management
-   * @returns Promise resolving to the created notebook document instance
+   * @param uri - The notebook URI to open.
+   * @param backupId - Optional backup ID for document restoration.
+   * @param delegate - Delegate for webview content retrieval and management.
+   *
+   * @returns Promise resolving to the created notebook document instance.
    */
   static async create(
     uri: vscode.Uri,
@@ -120,15 +95,16 @@ export class NotebookDocument
   }
 
   /**
-   * Reads notebook content from a URI.
+   * Reads notebook content from a URI based on the URI scheme.
    *
    * Handles different URI schemes:
-   * - `untitled`: Returns empty content for new notebooks
-   * - `datalayer`: Returns empty notebook, content will sync via collaboration
-   * - Other schemes: Reads from VS Code file system
+   * - `untitled`: Returns empty content for new notebooks.
+   * - `datalayer`: Returns empty notebook since content will sync via collaboration.
+   * - Other schemes: Reads from VS Code file system.
    *
-   * @param uri - URI to read notebook content from
-   * @returns Binary representation of the notebook content
+   * @param uri - URI to read notebook content from.
+   *
+   * @returns Binary representation of the notebook content.
    */
   private static async readFile(uri: vscode.Uri): Promise<Uint8Array> {
     if (uri.scheme === "untitled") {
@@ -168,10 +144,10 @@ export class NotebookDocument
   }
 
   /**
-   * Returns a minimal valid empty Jupyter notebook.
-   * Used when opening blank/empty .ipynb files.
+   * Returns a minimal valid empty Jupyter notebook structure.
+   * Used when opening blank or empty .ipynb files.
    *
-   * @returns Binary representation of an empty notebook
+   * @returns Binary representation of an empty notebook.
    */
   private static getEmptyNotebook(): Uint8Array {
     const emptyNotebook = {
@@ -244,11 +220,11 @@ export class NotebookDocument
   public readonly onDidChange = this._onDidChange.event;
 
   /**
-   * Creates a new NotebookDocument instance.
+   * Creates a new NotebookDocument instance with the given content and delegate.
    *
-   * @param uri - Document URI that determines collaborative vs local behavior
-   * @param initialContent - Initial notebook content as binary data
-   * @param delegate - Delegate for webview interactions and content retrieval
+   * @param uri - Document URI that determines collaborative vs local behavior.
+   * @param initialContent - Initial notebook content as binary data.
+   * @param delegate - Delegate for webview interactions and content retrieval.
    */
   private constructor(
     uri: vscode.Uri,
@@ -262,26 +238,26 @@ export class NotebookDocument
   }
 
   /**
-   * The notebook's URI.
+   * Gets the notebook URI which determines collaborative vs local behavior.
    *
    * The URI scheme determines the document's behavior:
-   * - `datalayer://`: Collaborative notebook with real-time synchronization
-   * - `file://`: Local notebook with traditional file persistence
-   * - `untitled:`: New unsaved notebook
+   * - `datalayer://`: Collaborative notebook with real-time synchronization.
+   * - `file://`: Local notebook with traditional file persistence.
+   * - `untitled:`: New unsaved notebook.
    *
-   * @returns The VS Code URI for this notebook document
+   * @returns The VS Code URI for this notebook document.
    */
   public get uri() {
     return this._uri;
   }
 
   /**
-   * Current notebook content as binary data.
+   * Gets the current notebook content as binary data.
    *
    * Contains the serialized Jupyter notebook JSON structure.
    * Updated automatically when edits are applied via makeEdit().
    *
-   * @returns Binary representation of the notebook content
+   * @returns Binary representation of the notebook content.
    */
   public get documentData(): Uint8Array {
     return this._documentData;
@@ -298,27 +274,8 @@ export class NotebookDocument
    * For local notebooks, updates the document content and fires change events
    * with undo/redo handlers for VS Code's edit history.
    *
-   * @param edit - The edit operation to apply
+   * @param edit - The edit operation to apply.
    *
-   * @example
-   * ```typescript
-   * // Apply content update to local notebook
-   * const notebookJson = { cells: [...], metadata: {...} };
-   * const edit: NotebookEdit = {
-   *   type: "content-update",
-   *   content: new TextEncoder().encode(JSON.stringify(notebJson))
-   * };
-   *
-   * document.makeEdit(edit);
-   * // Document content is updated and undo/redo is available
-   * ```
-   *
-   * @example
-   * ```typescript
-   * // Edit on collaborative notebook (no-op for tracking)
-   * collaborativeDoc.makeEdit(edit);
-   * // Edit is ignored for history but still fires change events
-   * ```
    */
   makeEdit(edit: NotebookEdit) {
     // Skip dirty state tracking for collaborative Datalayer notebooks
@@ -369,11 +326,11 @@ export class NotebookDocument
    * Saves the notebook document to its original location.
    *
    * Behavior differs based on the URI scheme:
-   * - **Collaborative notebooks** (`datalayer://`): No-op since changes are
-   *   automatically synchronized to the Datalayer platform
-   * - **Local notebooks**: Persists current content to the file system
+   * - Collaborative notebooks (datalayer://): No-op since changes are
+   *   automatically synchronized to the Datalayer platform.
+   * - Local notebooks: Persists current content to the file system.
    *
-   * @param cancellation - Cancellation token for the save operation
+   * @param cancellation - Cancellation token for the save operation.
    */
   async save(cancellation: vscode.CancellationToken): Promise<void> {
     if (this.uri.scheme === "datalayer") {
@@ -388,12 +345,12 @@ export class NotebookDocument
    * Saves the notebook document to a specified location.
    *
    * Handles different scenarios based on URI schemes and target locations:
-   * - **Collaborative to same location**: No-op since changes are auto-synchronized
-   * - **Collaborative to different location**: Exports current content as local file
-   * - **Local notebook**: Retrieves fresh content from webview and saves to target
+   * - Collaborative to same location: No-op since changes are auto-synchronized.
+   * - Collaborative to different location: Exports current content as local file.
+   * - Local notebook: Retrieves fresh content from webview and saves to target.
    *
-   * @param targetResource - URI where to save the notebook
-   * @param cancellation - Cancellation token for the save operation
+   * @param targetResource - URI where to save the notebook.
+   * @param cancellation - Cancellation token for the save operation.
    */
   async saveAs(
     targetResource: vscode.Uri,
@@ -434,7 +391,7 @@ export class NotebookDocument
    * Reloads content from disk and restores the edit history to the last saved state.
    * Fires document change events to notify the UI of the content restoration.
    *
-   * @param _cancellation - Cancellation token (currently unused)
+   * @param _cancellation - Cancellation token (currently unused).
    */
   async revert(_cancellation: vscode.CancellationToken): Promise<void> {
     const diskContent = await NotebookDocument.readFile(this.uri);
@@ -452,9 +409,10 @@ export class NotebookDocument
    * Saves the current document state to a backup location and returns
    * a backup descriptor for VS Code's backup/restore system.
    *
-   * @param destination - URI for the backup location
-   * @param cancellation - Cancellation token for the backup operation
-   * @returns Promise resolving to backup descriptor with cleanup function
+   * @param destination - URI for the backup location.
+   * @param cancellation - Cancellation token for the backup operation.
+   *
+   * @returns Promise resolving to backup descriptor with cleanup function.
    */
   async backup(
     destination: vscode.Uri,
@@ -475,7 +433,7 @@ export class NotebookDocument
   }
 
   /**
-   * Disposes of the notebook document and cleans up resources.
+   * Disposes of the notebook document and releases all associated resources.
    *
    * Fires disposal events and calls the parent disposable cleanup.
    * Should be called when the document is no longer needed to prevent memory leaks.

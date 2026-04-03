@@ -11,11 +11,14 @@
 
 import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext";
 import { useLexicalOutline } from "../../hooks/useLexicalOutline";
-import type { OutlineUpdateMessage } from "../../types/messages";
+import type { OutlineMessageSender } from "../../hooks/useNotebookOutline";
 
-interface OutlinePluginProps {
+/** Props for the OutlinePlugin component that extracts and sends outline data. */
+export interface OutlinePluginProps {
+  /** URI of the document for outline identification. */
   documentUri: string;
-  vscode: { postMessage: (message: OutlineUpdateMessage) => void };
+  /** VS Code API for posting outline messages. */
+  vscode: OutlineMessageSender;
 }
 
 /**

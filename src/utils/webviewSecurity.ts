@@ -8,21 +8,17 @@
  * Security utilities for VS Code webview panels.
  * Provides functions for Content Security Policy (CSP) and webview security.
  *
- * @see https://code.visualstudio.com/api/extension-guides/webview#content-security-policy
  * @module utils/webviewSecurity
+ *
+ * @see https://code.visualstudio.com/api/extension-guides/webview#content-security-policy
  */
 
 /**
  * Generates a cryptographically random nonce string for Content Security Policy headers.
  * Used to allow specific inline scripts in webviews while maintaining security.
  *
- * @returns A 32-character random string suitable for CSP nonce attribute
+ * @returns A 32-character random string suitable for CSP nonce attribute.
  *
- * @example
- * ```typescript
- * const nonce = getNonce();
- * const csp = `default-src 'none'; script-src 'nonce-${nonce}'`;
- * ```
  */
 export function getNonce() {
   let text = "";

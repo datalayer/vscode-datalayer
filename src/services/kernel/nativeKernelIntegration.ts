@@ -17,7 +17,7 @@ import { PythonExtension, Environment } from "@vscode/python-extension";
 /**
  * Kernel connection information returned from native pickers.
  * Contains all necessary details to establish a connection to either a local Python environment
- * or a remote Jupyter server.
+ * Or a remote Jupyter server.
  */
 export interface NativeKernelInfo {
   /** The type of kernel source: local Python environment or remote Jupyter server */
@@ -53,7 +53,7 @@ export interface NativeKernelInfo {
  * Shows the Python extension's environment picker and returns selected environment info.
  * This corresponds to the "Python Environments..." option in VS Code's kernel picker.
  *
- * @returns Promise resolving to kernel info, or undefined if cancelled
+ * @returns Promise resolving to kernel info, or undefined if cancelled.
  */
 export async function showPythonEnvironmentPicker(): Promise<
   NativeKernelInfo | undefined
@@ -279,11 +279,12 @@ export async function showPythonEnvironmentPicker(): Promise<
 /**
  * Processes a selected Python environment and creates kernel connection information.
  * Resolves full environment details from the Python extension API and generates
- * a kernel specification with the appropriate Python executable path.
+ * A kernel specification with the appropriate Python executable path.
  *
- * @param env - The Python environment to process
- * @param label - The display label for the environment
- * @returns Promise resolving to kernel info or undefined if processing fails
+ * @param env - The Python environment to process.
+ * @param label - The display label for the environment.
+ *
+ * @returns Promise resolving to kernel info or undefined if processing fails.
  */
 async function processSelectedEnvironment(
   env: Environment,
@@ -343,7 +344,7 @@ async function processSelectedEnvironment(
  * Shows a dialog to connect to an existing Jupyter server.
  * This corresponds to the "Existing Jupyter Server..." option.
  *
- * @returns Promise resolving to kernel info, or undefined if cancelled
+ * @returns Promise resolving to kernel info, or undefined if cancelled.
  */
 export async function showJupyterServerPicker(): Promise<
   NativeKernelInfo | undefined
@@ -388,7 +389,7 @@ export async function showJupyterServerPicker(): Promise<
  * Shows a combined kernel picker with all native options.
  * Provides the same experience as VS Code's native "Select Kernel" dialog.
  *
- * @returns Promise resolving to kernel info, or undefined if cancelled
+ * @returns Promise resolving to kernel info, or undefined if cancelled.
  */
 export async function showNativeKernelPicker(): Promise<
   NativeKernelInfo | undefined

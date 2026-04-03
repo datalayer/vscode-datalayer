@@ -9,7 +9,7 @@
  * Bypasses the standard Jupyter server session flow and directly connects to a local ZMQ kernel.
  *
  * This is necessary because local kernels don't have a Jupyter server managing sessions,
- * so we can't use the standard @jupyterlab/services session creation flow.
+ * So we can't use the standard @jupyterlab/services session creation flow.
  *
  * @module localKernelConnection
  */
@@ -123,6 +123,7 @@ export class LocalKernelConnection implements Kernel.IKernelConnection {
 
   /**
    * Handles incoming WebSocket messages and emits appropriate signals.
+   * @param args - Raw WebSocket message event arguments.
    */
   private _onWSMessage(...args: unknown[]): void {
     const event = args[0] as MessageEvent;
@@ -176,104 +177,179 @@ export class LocalKernelConnection implements Kernel.IKernelConnection {
 
   // IKernelConnection interface implementation
 
+  /**
+   * The unique identifier of this kernel.
+   */
   get id(): string {
     return this._id;
   }
 
+  /**
+   * The display name of this kernel.
+   */
   get name(): string {
     return this._name;
   }
 
+  /**
+   * The kernel model containing ID and name.
+   */
   get model(): Kernel.IModel {
     return this._model;
   }
 
+  /**
+   * The username associated with this kernel connection.
+   */
   get username(): string {
     return this._username;
   }
 
+  /**
+   * Set the username for this kernel connection.
+   */
   set username(value: string) {
     this._username = value;
   }
 
+  /**
+   * The client session identifier.
+   */
   get clientId(): string {
     return this._clientId;
   }
 
+  /**
+   * Set the client session identifier.
+   */
   set clientId(value: string) {
     this._clientId = value;
   }
 
+  /**
+   * The current execution status of the kernel.
+   */
   get status(): Kernel.Status {
     return this._status;
   }
 
+  /**
+   * The current connection status of the kernel.
+   */
   get connectionStatus(): Kernel.ConnectionStatus {
     return this._connectionStatus;
   }
 
+  /**
+   * Promise resolving to kernel info when available.
+   */
   get info(): Promise<KernelMessage.IInfoReply> {
     return this._infoPromise;
   }
 
+  /**
+   * Whether this connection handles comm messages.
+   */
   get handleComms(): boolean {
     return this._handleComms;
   }
 
+  /**
+   * Set whether this connection handles comm messages.
+   */
   set handleComms(value: boolean) {
     this._handleComms = value;
   }
 
+  /**
+   * Server connection settings for this kernel.
+   */
   get serverSettings(): ServerConnection.ISettings {
     return this._serverSettings;
   }
 
+  /**
+   * Whether this kernel connection has been disposed.
+   */
   get isDisposed(): boolean {
     return this._isDisposed;
   }
 
   // Signals
 
+  /**
+   * Signal emitted when kernel status changes.
+   */
   get statusChanged(): ISignal<this, Kernel.Status> {
     return this._statusChanged;
   }
 
+  /**
+   * Signal emitted when connection status changes.
+   */
   get connectionStatusChanged(): ISignal<this, Kernel.ConnectionStatus> {
     return this._connectionStatusChanged;
   }
 
+  /**
+   * Signal emitted when the kernel is disposed.
+   */
   get disposed(): ISignal<this, void> {
     return this._disposed;
   }
 
+  /**
+   * Signal emitted for IOPub channel messages.
+   */
   get iopubMessage(): ISignal<this, KernelMessage.IIOPubMessage> {
     return this._iopubMessage;
   }
 
+  /**
+   * Signal emitted for unhandled kernel messages.
+   */
   get unhandledMessage(): ISignal<this, KernelMessage.IMessage> {
     return this._unhandledMessage;
   }
 
+  /**
+   * Signal emitted for any sent or received message.
+   */
   get anyMessage(): ISignal<this, Kernel.IAnyMessageArgs> {
     return this._anyMessage;
   }
 
+  /**
+   * Signal emitted when kernel properties change.
+   */
   get propertyChanged(): ISignal<this, "path" | "name" | "type"> {
     return this._propertyChanged;
   }
 
+  /**
+   * Whether the kernel has pending input requests.
+   */
   get hasPendingInput(): boolean {
     return false; // Local kernels don't need stdin handling
   }
 
+  /**
+   * Signal emitted when pending input state changes.
+   */
   get pendingInput(): ISignal<this, boolean> {
     return this._pendingMessages;
   }
 
+  /**
+   * Whether the kernel supports subshells.
+   */
   get supportsSubshells(): boolean {
     return false; // Local kernels don't support subshells
   }
 
+  /**
+   * The current subshell ID, if any.
+   */
   get subshellId(): string | null {
     return null; // Local kernels don't have subshells
   }
@@ -290,7 +366,8 @@ export class LocalKernelConnection implements Kernel.IKernelConnection {
   /**
    * Clone the kernel connection (not supported for local kernels).
    * @param _options - Optional clone options.
-   * @throws {Error} Always throws as cloning is not implemented.
+   *
+   * @throws Always throws as cloning is not implemented.
    */
   clone(
     _options?: Partial<Kernel.IKernelConnection.IOptions>,
@@ -319,6 +396,7 @@ export class LocalKernelConnection implements Kernel.IKernelConnection {
    * @param msg - The shell message to send.
    * @param _expectReply - Whether a reply is expected.
    * @param _disposeOnDone - Whether to dispose after completion.
+   *
    * @returns A shell future that will resolve with the reply.
    */
   sendShellMessage<T extends KernelMessage.ShellMessageType>(
@@ -342,6 +420,7 @@ export class LocalKernelConnection implements Kernel.IKernelConnection {
    * @param msg - The control message to send.
    * @param _expectReply - Whether a reply is expected.
    * @param _disposeOnDone - Whether to dispose after completion.
+   *
    * @returns A control future that will resolve with the reply.
    */
   sendControlMessage<T extends KernelMessage.ControlMessageType>(
@@ -372,7 +451,8 @@ export class LocalKernelConnection implements Kernel.IKernelConnection {
   }
 
   /**
-   * Shutdown the kernel connection.
+   * Terminates the kernel and disposes all associated resources.
+   *
    * @returns A resolved promise.
    */
   shutdown(): Promise<void> {
@@ -400,7 +480,7 @@ export class LocalKernelConnection implements Kernel.IKernelConnection {
   /**
    * Interrupt the kernel execution.
    * Sends both an extension message (for local kernels via SIGINT) and an interrupt_request
-   * message to the kernel via the control channel (for remote kernels).
+   * Message to the kernel via the control channel (for remote kernels).
    * @returns A promise that resolves when the interrupt request is sent.
    */
   interrupt(): Promise<void> {
@@ -490,7 +570,8 @@ export class LocalKernelConnection implements Kernel.IKernelConnection {
    * Request creation of a subshell (not supported for local kernels).
    * @param _content - The subshell creation request content.
    * @param _disposeOnDone - Whether to dispose after completion.
-   * @throws {Error} Always throws as subshells are not supported.
+   *
+   * @throws Always throws as subshells are not supported.
    */
   requestCreateSubshell(
     _content: KernelMessage.ICreateSubshellRequestMsg["content"],
@@ -506,7 +587,8 @@ export class LocalKernelConnection implements Kernel.IKernelConnection {
    * Request deletion of a subshell (not supported for local kernels).
    * @param _content - The subshell deletion request content.
    * @param _disposeOnDone - Whether to dispose after completion.
-   * @throws {Error} Always throws as subshells are not supported.
+   *
+   * @throws Always throws as subshells are not supported.
    */
   requestDeleteSubshell(
     _content: KernelMessage.IDeleteSubshellRequestMsg["content"],
@@ -522,7 +604,8 @@ export class LocalKernelConnection implements Kernel.IKernelConnection {
    * Request listing of subshells (not supported for local kernels).
    * @param _content - The subshell list request content.
    * @param _disposeOnDone - Whether to dispose after completion.
-   * @throws {Error} Always throws as subshells are not supported.
+   *
+   * @throws Always throws as subshells are not supported.
    */
   requestListSubshell(
     _content: KernelMessage.IListSubshellRequestMsg["content"],
@@ -597,7 +680,8 @@ export class LocalKernelConnection implements Kernel.IKernelConnection {
   /**
    * Request code completion (not supported for local kernels).
    * @param _content - The completion request content.
-   * @throws {Error} Always throws as completion is not implemented.
+   *
+   * @throws Always throws as completion is not implemented.
    */
   requestComplete(
     _content: KernelMessage.ICompleteRequestMsg["content"],
@@ -608,7 +692,8 @@ export class LocalKernelConnection implements Kernel.IKernelConnection {
   /**
    * Request object inspection (not supported for local kernels).
    * @param _content - The inspection request content.
-   * @throws {Error} Always throws as inspection is not implemented.
+   *
+   * @throws Always throws as inspection is not implemented.
    */
   requestInspect(
     _content: KernelMessage.IInspectRequestMsg["content"],
@@ -619,6 +704,7 @@ export class LocalKernelConnection implements Kernel.IKernelConnection {
   /**
    * Request command history (returns empty history).
    * @param _content - The history request content.
+   *
    * @returns A promise that resolves with an empty history reply.
    */
   async requestHistory(
@@ -655,6 +741,7 @@ export class LocalKernelConnection implements Kernel.IKernelConnection {
    * @param content - The code execution request content.
    * @param disposeOnDone - Whether to dispose the future after completion.
    * @param metadata - Optional metadata to include with the request.
+   *
    * @returns A shell future that will resolve with the execution reply.
    */
   requestExecute(
@@ -698,7 +785,8 @@ export class LocalKernelConnection implements Kernel.IKernelConnection {
    * Request debugging information (not supported for local kernels).
    * @param _content - The debug request content.
    * @param _disposeOnDone - Whether to dispose after completion.
-   * @throws {Error} Always throws as debugging is not implemented.
+   *
+   * @throws Always throws as debugging is not implemented.
    */
   requestDebug(
     _content: KernelMessage.IDebugRequestMsg["content"],
@@ -713,7 +801,8 @@ export class LocalKernelConnection implements Kernel.IKernelConnection {
   /**
    * Check if code is complete (not supported for local kernels).
    * @param _content - The is_complete request content.
-   * @throws {Error} Always throws as is_complete is not implemented.
+   *
+   * @throws Always throws as is_complete is not implemented.
    */
   requestIsComplete(
     _content: KernelMessage.IIsCompleteRequestMsg["content"],
@@ -724,7 +813,8 @@ export class LocalKernelConnection implements Kernel.IKernelConnection {
   /**
    * Request comm information (not supported for local kernels).
    * @param _content - The comm info request content.
-   * @throws {Error} Always throws as comm info is not implemented.
+   *
+   * @throws Always throws as comm info is not implemented.
    */
   requestCommInfo(
     _content: KernelMessage.ICommInfoRequestMsg["content"],
@@ -736,7 +826,8 @@ export class LocalKernelConnection implements Kernel.IKernelConnection {
    * Send an input reply to the kernel (not supported for local kernels).
    * @param _content - The input reply content.
    * @param _parent_header - The parent message header.
-   * @throws {Error} Always throws as input reply is not implemented.
+   *
+   * @throws Always throws as input reply is not implemented.
    */
   sendInputReply(
     _content: KernelMessage.IInputReplyMsg["content"],
@@ -771,8 +862,8 @@ export class LocalKernelConnection implements Kernel.IKernelConnection {
 
   /**
    * Register a comm target (no-op for local kernels).
-   * @param _targetName - The name of the comm target.
-   * @param _callback - The callback to invoke when a comm is opened.
+   * @param _targetName - Identifier for the comm channel to register.
+   * @param _callback - Handler invoked when a comm is opened on this target.
    */
   registerCommTarget(
     _targetName: string,
@@ -786,8 +877,8 @@ export class LocalKernelConnection implements Kernel.IKernelConnection {
 
   /**
    * Remove a comm target (no-op for local kernels).
-   * @param _targetName - The name of the comm target.
-   * @param _callback - The callback to remove.
+   * @param _targetName - Identifier for the comm channel to unregister.
+   * @param _callback - Previously registered handler to remove.
    */
   removeCommTarget(
     _targetName: string,
@@ -803,7 +894,8 @@ export class LocalKernelConnection implements Kernel.IKernelConnection {
    * Create a comm (not supported for local kernels).
    * @param _targetName - The name of the comm target.
    * @param _commId - Optional comm ID.
-   * @throws {Error} Always throws as comm creation is not implemented.
+   *
+   * @throws Always throws as comm creation is not implemented.
    */
   createComm(_targetName: string, _commId?: string): Kernel.IComm {
     throw new Error("Method not implemented.");
@@ -812,6 +904,7 @@ export class LocalKernelConnection implements Kernel.IKernelConnection {
   /**
    * Check if a comm with the given ID exists.
    * @param _commId - The comm ID to check.
+   *
    * @returns Always returns false for local kernels.
    */
   hasComm(_commId: string): boolean {
@@ -972,7 +1065,8 @@ class KernelShellFuture<
    * Send an input reply (not supported for shell futures).
    * @param _content - The input reply content.
    * @param _parent_header - The parent message header.
-   * @throws {Error} Always throws as input reply is not supported.
+   *
+   * @throws Always throws as input reply is not supported.
    */
   sendInputReply(
     _content: KernelMessage.IInputReplyMsg["content"],

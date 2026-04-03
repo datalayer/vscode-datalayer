@@ -16,6 +16,7 @@ import React, { useState, useEffect, useMemo, useContext } from "react";
 import { MessageHandlerContext } from "../services/messageHandler";
 import type { RuntimeJSON } from "@datalayer/core/lib/client";
 
+/** Props for the RuntimeProgressBar component. */
 export interface RuntimeProgressBarProps {
   runtime: RuntimeJSON | undefined;
   isDatalayerRuntime: boolean;

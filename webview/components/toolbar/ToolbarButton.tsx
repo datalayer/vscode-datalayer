@@ -13,6 +13,7 @@
 
 import React from "react";
 
+/** Props for the ToolbarButton component. */
 export interface ToolbarButtonProps {
   /** Icon class name (e.g., "codicon codicon-add") */
   icon?: string;

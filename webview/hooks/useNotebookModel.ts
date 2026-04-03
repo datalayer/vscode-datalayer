@@ -13,6 +13,9 @@ import { useCallback, useRef } from "react";
 import type { MessageHandler } from "../services/messageHandler";
 import { saveToBytes } from "../utils";
 
+/**
+ * Configuration options for the useNotebookModel hook.
+ */
 export interface UseNotebookModelOptions {
   isDatalayerNotebook: boolean;
   messageHandler: MessageHandler;
@@ -33,15 +36,13 @@ interface INotebookModel {
 }
 
 /**
- * Hook to manage notebook model state and change tracking.
+ * Manages notebook model state, content change tracking, and signal connections to notify the extension of edits.
+ * @param options - Configuration options.
+ * @param options.isDatalayerNotebook - Whether this is a Datalayer cloud notebook.
+ * @param options.messageHandler - Handler for webview-extension communication.
  *
- * Handles:
- * - Notebook model change tracking
- * - Content change notifications to extension
- * - Signal connection management
+ * @returns Notebook model state and handlers.
  *
- * @param options - Configuration options
- * @returns Notebook model state and handlers
  */
 export function useNotebookModel({
   isDatalayerNotebook,

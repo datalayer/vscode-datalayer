@@ -19,6 +19,7 @@ interface ContextMenuPosition {
   y: number;
 }
 
+/** Lexical plugin that provides a custom right-click context menu. */
 export function ContextMenuPlugin(): JSX.Element {
   const [editor] = useLexicalComposerContext();
   const [menuPosition, setMenuPosition] = useState<ContextMenuPosition | null>(

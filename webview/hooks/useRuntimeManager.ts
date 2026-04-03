@@ -17,27 +17,11 @@ import { MutableServiceManager } from "../services/mutableServiceManager";
 import { isLocalKernelUrl } from "../../src/constants/kernelConstants";
 
 /**
- * Hook to manage runtime selection and service manager lifecycle.
+ * Manages runtime selection and service manager lifecycle using MutableServiceManager for stable references that prevent Notebook2 re-renders.
+ * @param initialRuntime - Optional initial runtime to connect on mount.
  *
- * Uses MutableServiceManager to maintain a stable serviceManager reference,
- * preventing Notebook2 from re-rendering when runtimes are switched.
- * This is crucial for UX - prevents cell flickering and scroll position loss.
+ * @returns Runtime state and selection function.
  *
- * @param initialRuntime - Optional initial runtime to use
- * @returns Runtime state and selection function
- *
- * @example
- * ```typescript
- * const { selectedRuntime, serviceManager, selectRuntime } = useRuntimeManager();
- *
- * // Select a runtime
- * selectRuntime(runtime);
- *
- * // Clear runtime (switch to mock)
- * selectRuntime(undefined);
- *
- * // serviceManager reference stays stable - no Notebook2 re-render!
- * ```
  */
 export function useRuntimeManager(initialRuntime?: RuntimeJSON) {
   // Create MutableServiceManager once - stable reference throughout component lifecycle

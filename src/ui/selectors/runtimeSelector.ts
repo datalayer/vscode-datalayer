@@ -18,14 +18,14 @@ import type { DatalayerAuthProvider } from "../../services/core/authProvider";
 import type { SmartDynamicControllerManager } from "../../providers/smartDynamicControllerManager";
 
 /**
- * QuickPick item for runtime selection
+ * QuickPick item for runtime selection with type discriminator for handling.
  */
 interface RuntimeQuickPickItem extends vscode.QuickPickItem {
-  /** Item type: controller, command, or separator */
+  /** Item type: controller, command, or separator. */
   type: "controller" | "command" | "separator";
-  /** Controller ID for controller items */
+  /** Controller ID for controller items. */
   controllerId?: string;
-  /** Command function for command items */
+  /** Command function for command items. */
   commandFn?: () => Promise<void>;
 }
 
@@ -56,10 +56,9 @@ export class DatalayerRuntimeSelector {
   }
 
   /**
-   * Show runtime selector QuickPick.
-   * Entry point called from 'datalayer.selectRuntime' command.
+   * Shows runtime selector QuickPick with create and connect options.
    *
-   * @param notebook - The notebook document to select runtime for
+   * @param notebook - The notebook document to select runtime for.
    */
   public async selectRuntime(notebook: vscode.NotebookDocument): Promise<void> {
     // Check authentication first
@@ -124,16 +123,16 @@ export class DatalayerRuntimeSelector {
   }
 
   /**
-   * Build QuickPick items: commands + controllers.
+   * Builds QuickPick items with commands and controllers.
    *
    * Order:
-   * 1. Create GPU Runtime (command)
-   * 2. Create CPU Runtime (command)
-   * 3. Separator
-   * 4. Active runtime controllers (dynamic)
-   * 5. Pyodide controller (static)
+   * 1. Create GPU Runtime (command).
+   * 2. Create CPU Runtime (command).
+   * 3. Separator.
+   * 4. Active runtime controllers (dynamic).
+   * 5. Pyodide controller (static).
    *
-   * @returns Array of QuickPick items
+   * @returns Array of QuickPick items.
    */
   private async buildQuickPickItems(): Promise<RuntimeQuickPickItem[]> {
     const items: RuntimeQuickPickItem[] = [];
@@ -194,9 +193,9 @@ export class DatalayerRuntimeSelector {
   }
 
   /**
-   * Get active runtimes from platform.
+   * Gets active runtimes from the Datalayer platform.
    *
-   * @returns Array of runtime DTOs
+   * @returns Array of runtime DTOs.
    */
   private async getRuntimes(): Promise<RuntimeDTO[]> {
     try {

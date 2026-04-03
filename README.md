@@ -194,15 +194,18 @@ Open settings (`Ctrl+,` / `Cmd+,`) and search "Datalayer":
 
 ### Documentation & Quality
 
-- **TypeDoc API Documentation**: Complete API documentation now available at [vscode-datalayer.netlify.app](https://vscode-datalayer.netlify.app)
-- **Zero TypeDoc Warnings**: All exported types properly documented
+- **TypeDoc API Documentation**: Complete API docs at [vscode-datalayer.netlify.app](https://vscode-datalayer.netlify.app) with zero warnings
+- **Strict JSDoc Enforcement**: 17 ESLint rules via `eslint-plugin-jsdoc` at error level (structure, validation, formatting)
+- **README per Directory**: Every `src/`, `webview/`, and `scripts/` directory has a README.md (69 total, CI-enforced)
+- **Pre-commit Hooks**: Husky + lint-staged auto-runs ESLint and Prettier on staged files
 - **Node.js 22 Compatibility**: Fully updated to match VS Code 1.107.0 runtime requirements
+- **20 MCP Tools**: GitHub Copilot integration for programmatic notebook and document manipulation
 
 ## Developer Resources
 
 - [DEVELOPMENT.md](./dev/docs/DEVELOPMENT.md) - Setup, debugging, architecture, jupyter package workflow
 - [CONTRIBUTING.md](./dev/docs/CONTRIBUTING.md) - Contribution guidelines
-- [TESTING.md](./dev/docs/TESTING.md) - Test infrastructure (41 tests, 100% pass)
+- [TESTING.md](./dev/docs/TESTING.md) - Test infrastructure (34 tests, 100% pass)
 - [CHANGELOG.md](./CHANGELOG.md) - Version history
 - [API Documentation](https://vscode-datalayer.netlify.app) - Complete TypeScript API reference
 

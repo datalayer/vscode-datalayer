@@ -8,8 +8,9 @@
  * Authentication commands for the Datalayer VS Code extension.
  * Handles login, logout, and authentication status display.
  *
- * @see https://code.visualstudio.com/api/extension-guides/command
  * @module commands/auth
+ *
+ * @see https://code.visualstudio.com/api/extension-guides/command
  *
  * @remarks
  * This module registers the following commands:
@@ -22,11 +23,11 @@ import * as vscode from "vscode";
 import { DatalayerAuthProvider } from "../services/core/authProvider";
 
 /**
- * Registers all authentication-related commands.
+ * Registers all authentication-related commands including login, logout, and status display.
  *
- * @param context - The extension context for managing command subscriptions
- * @param authProvider - The authentication provider instance for handling auth operations
- * @param updateAuthState - Callback to update authentication state in UI components (status bar, tree view)
+ * @param context - The extension context for managing command subscriptions.
+ * @param authProvider - The authentication provider instance for handling auth operations.
+ * @param updateAuthState - Callback to update authentication state in UI components (status bar, tree view).
  *
  */
 export function registerAuthCommands(

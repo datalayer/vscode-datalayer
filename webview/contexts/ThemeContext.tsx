@@ -16,6 +16,7 @@ import { ThemeContext, type ThemeType } from "@datalayer/jupyter-lexical";
 
 export type { ThemeType };
 
+/** Props for the ThemeProvider component. */
 export interface ThemeProviderProps {
   theme: ThemeType;
   children: ReactNode;

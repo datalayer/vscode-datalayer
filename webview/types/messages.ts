@@ -159,7 +159,7 @@ export interface SavedMessage {
   body: Record<string, never>;
 }
 
-/** Local kernel connected */
+/** Notifies the webview that a local kernel has been connected and is ready. */
 export interface LocalKernelConnectedMessage {
   /** Message type discriminator */
   type: "local-kernel-connected";
@@ -470,7 +470,7 @@ export interface WebSocketProxyMessage {
   };
 }
 
-/** WebSocket open message */
+/** Requests opening a new WebSocket connection through the extension proxy. */
 export interface WebSocketOpenMessage {
   /** Message type discriminator */
   type: "websocket-open";
@@ -485,7 +485,7 @@ export interface WebSocketOpenMessage {
   };
 }
 
-/** WebSocket close message */
+/** Requests closing an existing WebSocket connection through the extension proxy. */
 export interface WebSocketCloseMessage {
   /** Message type discriminator */
   type: "websocket-close";

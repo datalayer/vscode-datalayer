@@ -6,6 +6,7 @@
 
 import type { ToolDefinition } from "@datalayer/jupyter-react";
 
+/** Tool definition for creating Lexical documents with smart location detection. */
 export const createLexicalTool: ToolDefinition = {
   name: "datalayer_createLexical",
   displayName: "Create Lexical Document",

@@ -11,8 +11,9 @@
  *
  * Supports both .dlex (new) and .lexical (legacy) file extensions for backward compatibility.
  *
- * @see https://code.visualstudio.com/api/extension-guides/custom-editors
  * @module providers/lexicalProvider
+ *
+ * @see https://code.visualstudio.com/api/extension-guides/custom-editors
  */
 
 import * as vscode from "vscode";
@@ -48,18 +49,14 @@ import { getPromptForContentType } from "./completionPrompts";
  * Handles webview lifecycle management, document state synchronization,
  * and collaboration features for rich text editing.
  *
- * @example
- * ```typescript
- * const provider = new LexicalProvider(context);
- * // Provider is registered automatically via static register method
- * ```
  */
 export class LexicalProvider extends BaseDocumentProvider<LexicalDocument> {
   /**
    * Registers the Lexical editor provider and commands with VS Code.
    *
-   * @param context - Extension context for resource management
-   * @returns Disposable for cleanup
+   * @param context - Extension context for resource management.
+   *
+   * @returns Disposable for cleanup.
    */
   public static register(context: vscode.ExtensionContext): vscode.Disposable {
     vscode.commands.registerCommand("datalayer.lexical-editor-new", () => {
@@ -174,14 +171,17 @@ export class LexicalProvider extends BaseDocumentProvider<LexicalDocument> {
   private static _instance: LexicalProvider | undefined;
 
   /**
-   * Get the singleton instance of LexicalProvider for message routing
+   * Gets the singleton instance of LexicalProvider for message routing.
+   * @returns The LexicalProvider instance or undefined if not created.
    */
   public static getInstance(): LexicalProvider | undefined {
     return LexicalProvider._instance;
   }
 
   /**
-   * Send a message to a specific Lexical webview
+   * Sends a message to a specific Lexical webview identified by document URI.
+   * @param uri - Document URI identifying the target webview.
+   * @param message - Message object to post to the webview.
    */
   public async sendToWebview(uri: vscode.Uri, message: unknown): Promise<void> {
     const entry = this.webviews.get(uri.toString());
@@ -243,7 +243,12 @@ export class LexicalProvider extends BaseDocumentProvider<LexicalDocument> {
   }
 
   /**
-   * Send a message to a specific Lexical webview and wait for response
+   * Sends a message to a specific Lexical webview and waits for a response.
+   * @param uri - Document URI identifying the target webview.
+   * @param message - Message object to post to the webview.
+   * @param requestId - Unique ID to correlate the response with this request.
+   *
+   * @returns Promise resolving to the webview's response.
    */
   public async sendToWebviewWithResponse(
     uri: vscode.Uri,
@@ -322,17 +327,18 @@ export class LexicalProvider extends BaseDocumentProvider<LexicalDocument> {
   private readonly autoConnectService = new AutoConnectService();
 
   /**
-   * Creates a new LexicalProvider.
+   * Creates a new LexicalProvider with collaboration and completion support.
    *
-   * @param context - Extension context for resource access
+   * @param context - Extension context for resource access.
    */
   constructor(context: vscode.ExtensionContext) {
     super(context);
   }
 
   /**
-   * Initialize auth listener for userInfo updates.
+   * Initializes auth listener for userInfo updates.
    * Called after extension activation, passing authProvider directly to avoid circular dependency.
+   * @param authProvider - Auth provider instance to listen for state changes.
    */
   initializeAuthListener(
     authProvider: import("../services/core/authProvider").DatalayerAuthProvider,
@@ -343,7 +349,8 @@ export class LexicalProvider extends BaseDocumentProvider<LexicalDocument> {
   }
 
   /**
-   * Updates userInfo in all open lexical webviews when auth state changes (login/logout)
+   * Updates userInfo in all open lexical webviews when auth state changes.
+   * @param authProvider - Auth provider to read current user info from.
    */
   private updateUserInfoInAllWebviews(
     authProvider: import("../services/core/authProvider").DatalayerAuthProvider,
@@ -372,7 +379,10 @@ export class LexicalProvider extends BaseDocumentProvider<LexicalDocument> {
   }
 
   /**
-   * Find document URI for a given webview panel
+   * Finds the document URI for a given webview panel.
+   * @param panel - Webview panel to find the associated document URI for.
+   *
+   * @returns Document URI string or undefined if not found.
    */
   private getDocumentUriForPanel(
     panel: vscode.WebviewPanel,
@@ -388,10 +398,12 @@ export class LexicalProvider extends BaseDocumentProvider<LexicalDocument> {
   /**
    * Opens a custom document for the lexical editor.
    *
-   * @param uri - Document URI to open
-   * @param openContext - Context including backup information
-   * @param _token - Cancellation token
-   * @returns Promise resolving to the lexical document
+   * @param uri - Document URI to open.
+   * @param openContext - Context including backup information.
+   * @param openContext.backupId - Optional backup identifier for restoration.
+   * @param _token - Cancellation token for aborting the operation.
+   *
+   * @returns Promise resolving to the lexical document.
    */
   override async openCustomDocument(
     uri: vscode.Uri,
@@ -491,10 +503,11 @@ export class LexicalProvider extends BaseDocumentProvider<LexicalDocument> {
   /**
    * Resolves a custom editor by setting up the webview and initializing collaboration.
    *
-   * @param document - The lexical document to display
-   * @param webviewPanel - The webview panel for the editor
-   * @param _token - Cancellation token
-   * @returns Promise that resolves when editor is ready
+   * @param document - The lexical document to display.
+   * @param webviewPanel - The webview panel for the editor.
+   * @param _token - Cancellation token for aborting the operation.
+   *
+   * @returns Promise that resolves when the editor is ready.
    */
   override async resolveCustomEditor(
     document: LexicalDocument,
@@ -756,8 +769,8 @@ export class LexicalProvider extends BaseDocumentProvider<LexicalDocument> {
    * This allows Pylance to start analyzing BEFORE the webview finishes loading,
    * providing instant completions when the user presses Tab.
    *
-   * @param lexicalId - Unique lexical document identifier
-   * @param documentData - Raw .dlex file bytes (Lexical editor state JSON)
+   * @param lexicalId - Unique lexical document identifier.
+   * @param documentData - Raw .dlex file bytes containing Lexical editor state JSON.
    */
   private async createProactiveLSPDocuments(
     lexicalId: string,
@@ -902,11 +915,12 @@ export class LexicalProvider extends BaseDocumentProvider<LexicalDocument> {
   }
 
   /**
-   * Saves a custom document.
+   * Saves a custom document to its original location.
    *
-   * @param document - Document to save
-   * @param cancellation - Cancellation token
-   * @returns Promise that resolves when save is complete
+   * @param document - Lexical document to persist.
+   * @param cancellation - Cancellation token for aborting the save.
+   *
+   * @returns Promise that resolves when the save is complete.
    */
   public override saveCustomDocument(
     document: LexicalDocument,
@@ -918,10 +932,11 @@ export class LexicalProvider extends BaseDocumentProvider<LexicalDocument> {
   /**
    * Saves a custom document to a new location.
    *
-   * @param document - Document to save
-   * @param destination - Target URI for saving
-   * @param cancellation - Cancellation token
-   * @returns Promise that resolves when save is complete
+   * @param document - Lexical document to save.
+   * @param destination - Target URI for the saved copy.
+   * @param cancellation - Cancellation token for aborting the save.
+   *
+   * @returns Promise that resolves when the save is complete.
    */
   public override saveCustomDocumentAs(
     document: LexicalDocument,
@@ -932,11 +947,12 @@ export class LexicalProvider extends BaseDocumentProvider<LexicalDocument> {
   }
 
   /**
-   * Reverts a custom document to its saved state.
+   * Reverts a custom document to its last saved state.
    *
-   * @param document - Document to revert
-   * @param cancellation - Cancellation token
-   * @returns Promise that resolves when revert is complete
+   * @param document - Lexical document to revert.
+   * @param cancellation - Cancellation token for aborting the revert.
+   *
+   * @returns Promise that resolves when the revert is complete.
    */
   public override revertCustomDocument(
     document: LexicalDocument,
@@ -946,12 +962,13 @@ export class LexicalProvider extends BaseDocumentProvider<LexicalDocument> {
   }
 
   /**
-   * Creates a backup of a custom document.
+   * Creates a backup of a custom document for crash recovery.
    *
-   * @param document - Document to backup
-   * @param context - Backup context with destination
-   * @param cancellation - Cancellation token
-   * @returns Promise resolving to backup descriptor
+   * @param document - Lexical document to backup.
+   * @param context - Backup context with destination URI.
+   * @param cancellation - Cancellation token for aborting the backup.
+   *
+   * @returns Promise resolving to backup descriptor with cleanup function.
    */
   public override backupCustomDocument(
     document: LexicalDocument,
@@ -964,8 +981,9 @@ export class LexicalProvider extends BaseDocumentProvider<LexicalDocument> {
   /**
    * Generates the HTML content for the Lexical editor webview.
    *
-   * @param webview - The webview instance
-   * @returns HTML content for the webview
+   * @param webview - The webview instance to generate content for.
+   *
+   * @returns HTML content string for the webview.
    */
   private getHtmlForWebview(webview: vscode.Webview): string {
     // Runtime chunk (required for WASM async loading)
@@ -1042,10 +1060,10 @@ export class LexicalProvider extends BaseDocumentProvider<LexicalDocument> {
   }
 
   /**
-   * Get completion configuration from VS Code settings.
-   * Reads user preferences for inline completions (code and prose).
+   * Gets completion configuration from VS Code settings.
+   * Reads user preferences for inline completions including code and prose.
    *
-   * @returns InlineCompletionConfig with user settings or defaults
+   * @returns Inline completion config with user settings or defaults.
    */
   private getCompletionConfig(): InlineCompletionConfig {
     const config = vscode.workspace.getConfiguration("datalayer.completion");
@@ -1140,8 +1158,9 @@ export class LexicalProvider extends BaseDocumentProvider<LexicalDocument> {
   /**
    * Gets the URI for a lexical document.
    *
-   * @param document - The lexical document
-   * @returns The document URI
+   * @param document - The lexical document to extract the URI from.
+   *
+   * @returns The document URI identifying the file location.
    */
   protected override getDocumentUri(document: LexicalDocument): vscode.Uri {
     return document.uri;
@@ -1149,10 +1168,14 @@ export class LexicalProvider extends BaseDocumentProvider<LexicalDocument> {
 
   /**
    * Handles Loro collaboration messages from the webview.
-   * Creates/manages WebSocket adapters and forwards messages.
+   * Creates and manages WebSocket adapters and forwards messages.
    *
-   * @param message - Message from webview
-   * @param webviewPanel - The webview panel
+   * @param message - Message from webview containing type, adapterId, and data.
+   * @param message.type - The Loro message type such as connect or disconnect.
+   * @param message.adapterId - Unique identifier for the collaboration adapter.
+   * @param message.data - Optional payload with connection details.
+   * @param message.data.websocketUrl - WebSocket URL for Loro CRDT sync.
+   * @param webviewPanel - The webview panel to send status messages to.
    */
   private handleLoroMessage(
     message: {
@@ -1260,23 +1283,16 @@ export class LexicalProvider extends BaseDocumentProvider<LexicalDocument> {
   }
 
   /**
-   * Get LLM completion for inline code completion in Lexical cells.
-   *
-   * @param prefix - Code before cursor
-   * @param suffix - Code after cursor
-   * @param language - Programming language
-   * @returns Completion string or null if no models available
-   */
-  /**
    * Requests completion from VS Code's Language Model API.
    * Uses GitHub Copilot if available, falls back to other models.
    * Supports both code and prose completions with appropriate prompts.
    *
-   * @param prefix - Text before cursor position
-   * @param suffix - Text after cursor position
-   * @param language - Programming language (e.g., 'python')
-   * @param contentType - Content type ('code' or 'prose') for prompt selection
-   * @returns Completion text or null if unavailable
+   * @param prefix - Text before the cursor position.
+   * @param suffix - Text after the cursor position.
+   * @param language - Programming language such as python or javascript.
+   * @param contentType - Content type for prompt selection, either code or prose.
+   *
+   * @returns Completion text or null if unavailable.
    *
    * @remarks
    * Requires VS Code 1.90+ with Language Model API enabled.
@@ -1351,10 +1367,11 @@ export class LexicalProvider extends BaseDocumentProvider<LexicalDocument> {
   }
 
   /**
-   * Clean LLM completion output by removing markdown code blocks.
+   * Cleans LLM completion output by removing markdown code blocks and trailing whitespace.
    *
-   * @param completion - Raw completion from LLM
-   * @returns Cleaned completion
+   * @param completion - Raw completion text from the language model.
+   *
+   * @returns Cleaned completion text ready for insertion.
    */
   private cleanCompletion(completion: string): string {
     // Trim leading/trailing whitespace first
@@ -1375,7 +1392,7 @@ export class LexicalProvider extends BaseDocumentProvider<LexicalDocument> {
   /**
    * Attempts to auto-connect the document to a runtime using configured strategies.
    *
-   * @param documentUri - URI of the document being opened
+   * @param documentUri - URI of the document being opened.
    */
   private async tryAutoConnect(documentUri: vscode.Uri): Promise<void> {
     try {

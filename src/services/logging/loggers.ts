@@ -15,8 +15,7 @@ import type { ILoggerManager } from "../interfaces/ILoggerManager";
 
 /**
  * Service-specific loggers for the Datalayer VS Code extension.
- * Provides organized access to different logging channels with clear separation.
- */
+ * Provides organized access to different logging channels with clear separation. */
 export class ServiceLoggers {
   private static loggerManager: ILoggerManager;
 
@@ -24,7 +23,7 @@ export class ServiceLoggers {
    * Initialize the service loggers with a LoggerManager instance.
    * Must be called during extension activation before using any loggers.
    *
-   * @param loggerManager - The LoggerManager instance to use
+   * @param loggerManager - The LoggerManager instance to use.
    */
   static initialize(loggerManager: ILoggerManager): void {
     ServiceLoggers.loggerManager = loggerManager;
@@ -32,13 +31,16 @@ export class ServiceLoggers {
 
   /**
    * Check if ServiceLoggers has been initialized.
+   * @returns True if initialize() has been called with a LoggerManager.
    */
   static isInitialized(): boolean {
     return !!ServiceLoggers.loggerManager;
   }
 
   /**
-   * Ensure loggerManager is initialized, throw error if not.
+   * Validates that the logger manager has been initialized before use.
+   *
+   * @throws Error if ServiceLoggers has not been initialized.
    */
   private static ensureInitialized(): void {
     if (!ServiceLoggers.loggerManager) {
@@ -154,8 +156,9 @@ export class ServiceLoggers {
    * Create a custom logger with a specific channel name.
    * Use this for new services or components that don't have a predefined logger.
    *
-   * @param channelName - Name of the logging channel
-   * @returns Logger instance
+   * @param channelName - Name of the logging channel.
+   *
+   * @returns Logger instance.
    */
   static getLogger(channelName: string) {
     ServiceLoggers.ensureInitialized();
@@ -166,7 +169,7 @@ export class ServiceLoggers {
    * Get all available logger channel names.
    * Useful for debugging and configuration.
    *
-   * @returns Array of channel names
+   * @returns Array of channel names.
    */
   static getChannelNames(): string[] {
     return [

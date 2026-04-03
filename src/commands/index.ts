@@ -8,8 +8,9 @@
  * Central command registration module for the Datalayer VS Code extension.
  * Aggregates and exports all command registration functions.
  *
- * @see https://code.visualstudio.com/api/extension-guides/command
  * @module commands
+ *
+ * @see https://code.visualstudio.com/api/extension-guides/command
  */
 
 import * as vscode from "vscode";
@@ -52,17 +53,14 @@ export interface CommandServices {
 }
 
 /**
- * Registers all extension commands.
+ * Registers all extension commands by delegating to domain-specific registration functions.
  *
- * @param context - The extension context for managing command subscriptions
- * @param services - All services required by commands
- * @param updateAuthState - Callback to update authentication state across UI components
- * @returns void
+ * @param context - The extension context for managing command subscriptions.
+ * @param services - All services required by commands.
+ * @param updateAuthState - Callback to update authentication state across UI components.
  *
- * @example
- * ```typescript
- * registerAllCommands(context, services, updateAuthState);
- * ```
+ * @returns Void.
+ *
  */
 export function registerAllCommands(
   context: vscode.ExtensionContext,

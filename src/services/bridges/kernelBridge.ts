@@ -74,8 +74,8 @@ export class KernelBridge implements vscode.Disposable {
   /**
    * Registers a webview panel for kernel communication.
    *
-   * @param uri - Notebook URI
-   * @param webview - Webview panel
+   * @param uri - Notebook URI.
+   * @param webview - Webview panel.
    */
   public registerWebview(uri: vscode.Uri, webview: vscode.WebviewPanel): void {
     const key = uri.toString();
@@ -85,7 +85,7 @@ export class KernelBridge implements vscode.Disposable {
   /**
    * Unregisters a webview panel.
    *
-   * @param _uri - Notebook URI
+   * @param _uri - Notebook URI.
    */
   public unregisterWebview(_uri: vscode.Uri): void {
     const key = _uri.toString();
@@ -96,8 +96,8 @@ export class KernelBridge implements vscode.Disposable {
    * Sends "kernel-starting" message to webview immediately.
    * Used to trigger spinner before any async operations.
    *
-   * @param uri - Document URI
-   * @param runtime - Selected runtime
+   * @param uri - Document URI.
+   * @param runtime - Selected runtime.
    */
   public async sendKernelStartingMessage(
     uri: vscode.Uri,
@@ -147,10 +147,10 @@ export class KernelBridge implements vscode.Disposable {
    * Sends runtime information to the webview for ServiceManager creation.
    *
    * NOTE: Caller should call sendKernelStartingMessage() BEFORE this method
-   * to minimize lag between selection and spinner appearance.
+   * To minimize lag between selection and spinner appearance.
    *
-   * @param uri - Document URI
-   * @param runtime - Selected runtime
+   * @param uri - The target document identifier to look up.
+   * @param runtime - Selected runtime.
    */
   public async connectWebviewDocument(
     uri: vscode.Uri,
@@ -218,7 +218,7 @@ export class KernelBridge implements vscode.Disposable {
    * Connects a webview document (notebook or lexical) to Pyodide kernel.
    * Sends Pyodide runtime information to the webview for in-browser Python execution.
    *
-   * @param uri - Document URI
+   * @param uri - The target document identifier to look up.
    */
   public async connectWebviewDocumentToPyodide(uri: vscode.Uri): Promise<void> {
     const key = uri.toString();
@@ -288,8 +288,8 @@ export class KernelBridge implements vscode.Disposable {
    * Connects a webview document to a local kernel (Python environment, Jupyter kernel, or Jupyter server).
    * Starts the kernel and sends kernel information to the webview.
    *
-   * @param uri - Document URI
-   * @param kernelInfo - Native kernel information
+   * @param uri - The target document identifier to look up.
+   * @param kernelInfo - Native kernel information.
    */
   public async connectWebviewDocumentToLocalKernel(
     uri: vscode.Uri,
@@ -396,8 +396,9 @@ export class KernelBridge implements vscode.Disposable {
   /**
    * Detects the type of notebook (native vs webview).
    *
-   * @param uri - Notebook URI
-   * @returns "webview" for Datalayer notebooks, "native" for others
+   * @param uri - The target document identifier to look up.
+   *
+   * @returns Either "webview" for Datalayer notebooks or "native" for others.
    */
   public detectNotebookType(uri: vscode.Uri): "webview" | "native" {
     // Datalayer notebooks use custom URI scheme
@@ -436,8 +437,9 @@ export class KernelBridge implements vscode.Disposable {
    * Finds webview panels for a given URI.
    * Searches through active tab groups.
    *
-   * @param _uri - Notebook URI
-   * @returns Array of matching webview panels
+   * @param _uri - Notebook URI.
+   *
+   * @returns Array of matching webview panels.
    */
   private findWebviewsForUri(_uri: vscode.Uri): vscode.WebviewPanel[] {
     const panels: vscode.WebviewPanel[] = [];
@@ -455,8 +457,8 @@ export class KernelBridge implements vscode.Disposable {
   /**
    * Sends a kernel status update to a notebook.
    *
-   * @param uri - Notebook URI
-   * @param status - Kernel status
+   * @param uri - Notebook URI.
+   * @param status - The current execution state to report.
    */
   public async sendKernelStatus(
     uri: vscode.Uri,
@@ -481,8 +483,8 @@ export class KernelBridge implements vscode.Disposable {
   /**
    * Handles kernel lifecycle commands.
    *
-   * @param uri - Notebook URI
-   * @param command - Command to execute
+   * @param uri - Notebook URI.
+   * @param command - Command to execute.
    */
   public async handleKernelCommand(
     uri: vscode.Uri,
@@ -508,8 +510,9 @@ export class KernelBridge implements vscode.Disposable {
   /**
    * Gets the current kernel info for a notebook.
    *
-   * @param uri - Notebook URI
-   * @returns Kernel information or undefined
+   * @param uri - Notebook URI.
+   *
+   * @returns Kernel information or undefined.
    */
   public async getKernelInfo(uri: vscode.Uri): Promise<unknown> {
     const notebookType = this.detectNotebookType(uri);
@@ -537,7 +540,7 @@ export class KernelBridge implements vscode.Disposable {
    * Broadcasts kernel selection to all registered webviews.
    * Used when a runtime is selected that should apply to multiple documents.
    *
-   * @param runtime - Selected runtime to broadcast
+   * @param runtime - Selected runtime to broadcast.
    */
   public async broadcastKernelSelected(runtime: RuntimeDTO): Promise<void> {
     const runtimeData = runtime.toJSON();
@@ -579,7 +582,7 @@ export class KernelBridge implements vscode.Disposable {
    * Handles kernel-ready message from webview.
    * Sends the pending kernel-selected message to complete kernel initialization.
    *
-   * @param uri - Document URI
+   * @param uri - Document URI.
    */
   public async handleKernelReady(uri: vscode.Uri): Promise<void> {
     const key = uri.toString();
@@ -621,8 +624,9 @@ export class KernelBridge implements vscode.Disposable {
    * Gets a local kernel client by ID.
    * Used by network proxy to route messages to local ZMQ kernels.
    *
-   * @param kernelId - Kernel identifier
-   * @returns Local kernel client or undefined
+   * @param kernelId - Kernel identifier.
+   *
+   * @returns Local kernel client or undefined.
    */
   public getLocalKernel(kernelId: string): LocalKernelClient | undefined {
     return this._localKernels.get(kernelId);
@@ -632,8 +636,9 @@ export class KernelBridge implements vscode.Disposable {
    * Gets the local kernel client for a document.
    * Used by runtime bridge to interrupt/restart kernels for specific documents.
    *
-   * @param uri - Document URI
-   * @returns Local kernel client or undefined
+   * @param uri - The target document identifier to look up.
+   *
+   * @returns Local kernel client or undefined.
    */
   public getKernelForDocument(uri: vscode.Uri): LocalKernelClient | undefined {
     const key = uri.toString();

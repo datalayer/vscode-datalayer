@@ -17,24 +17,28 @@ import { vsCodeAPI } from "../messageHandler";
 /**
  * Provider interface for inline code completions (from jupyter-ui).
  */
-interface IInlineCompletionProvider<T = any> {
+export interface IInlineCompletionProvider<T = any> {
+  /** Human-readable name of the provider. */
   readonly name: string;
+  /** Unique identifier for the provider. */
   readonly identifier?: string;
+  /** Configuration schema for provider settings. */
   readonly schema?: any;
+  /** Fetches completion suggestions for the given request and context. */
   fetch(request: any, context: any): Promise<IInlineCompletionList<T>>;
 }
 
 /**
  * List of completion items returned by a provider.
  */
-interface IInlineCompletionList<T = IInlineCompletionItem> {
+export interface IInlineCompletionList<T = IInlineCompletionItem> {
   items: T[];
 }
 
 /**
  * Individual completion item to be displayed as inline suggestion.
  */
-interface IInlineCompletionItem {
+export interface IInlineCompletionItem {
   insertText: string;
   filterText?: string;
   isSnippet?: boolean;
@@ -44,13 +48,13 @@ interface IInlineCompletionItem {
 /**
  * Context information for inline completion requests.
  */
-interface IInlineCompletionContext {
+export interface IInlineCompletionContext {
   widget?: any;
   triggerKind?: any;
 }
 
 /**
- * Cell language type
+ * Cell language type.
  */
 type CellLanguage = "python" | "markdown" | "unknown";
 
@@ -76,6 +80,9 @@ export class LSPCompletionProvider implements IInlineCompletionProvider<IInlineC
     window.addEventListener("message", this.handleMessage.bind(this));
   }
 
+  /**
+   * Schema with default configuration for debounce and timeout.
+   */
   get schema() {
     return {
       default: {
@@ -87,6 +94,7 @@ export class LSPCompletionProvider implements IInlineCompletionProvider<IInlineC
 
   /**
    * Handle messages from extension host.
+   * @param event - Incoming message event from the extension.
    */
   private handleMessage(event: MessageEvent): void {
     const message = event.data;
@@ -110,9 +118,10 @@ export class LSPCompletionProvider implements IInlineCompletionProvider<IInlineC
   /**
    * Fetch completion suggestions from LSP.
    *
-   * @param request - Completion request with text and cursor position
-   * @param context - Completion context
-   * @returns Promise resolving to list of completion items
+   * @param request - Completion request with text and cursor position.
+   * @param context - Completion context.
+   *
+   * @returns Promise resolving to list of completion items.
    */
   async fetch(
     request: any, // CompletionHandler.IRequest
@@ -188,6 +197,9 @@ export class LSPCompletionProvider implements IInlineCompletionProvider<IInlineC
 
   /**
    * Detect the language of the cell from the context.
+   * @param context - Completion context with active cell info.
+   *
+   * @returns Detected cell language or 'unknown'.
    */
   private detectCellLanguage(context: IInlineCompletionContext): CellLanguage {
     const widget = context.widget;
@@ -219,6 +231,9 @@ export class LSPCompletionProvider implements IInlineCompletionProvider<IInlineC
 
   /**
    * Get the cell ID from the context.
+   * @param context - Completion context with active cell info.
+   *
+   * @returns Cell ID string or null if no active cell.
    */
   private getCellId(context: IInlineCompletionContext): string | null {
     const widget = context.widget;
@@ -233,9 +248,10 @@ export class LSPCompletionProvider implements IInlineCompletionProvider<IInlineC
 
   /**
    * Convert character offset to line/character position.
-   * @param text - The full text content
-   * @param offset - Character offset in the text
-   * @returns Line and character position (0-indexed)
+   * @param text - The full text content.
+   * @param offset - Character offset in the text.
+   *
+   * @returns Line and character position (0-indexed).
    */
   private offsetToPosition(
     text: string,
@@ -258,6 +274,13 @@ export class LSPCompletionProvider implements IInlineCompletionProvider<IInlineC
 
   /**
    * Request completions from extension host via postMessage.
+   * @param cellId - Unique identifier of the active cell.
+   * @param language - Detected language of the cell.
+   * @param position - Cursor position in the cell.
+   * @param position.line - Zero-indexed line number.
+   * @param position.character - Zero-indexed character offset in line.
+   *
+   * @returns Promise resolving to array of completion items.
    */
   private async requestCompletions(
     cellId: string,

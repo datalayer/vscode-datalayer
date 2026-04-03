@@ -16,43 +16,74 @@ import type { OutlineItem, OutlineUpdateMessage } from "../types/messages";
 
 // Use minimal type definitions to avoid JupyterLab peer dependency issues
 // These types match the JupyterLab INotebookModel and ICellModel interfaces
-type NotebookModel = {
-  cells: {
-    length: number;
-    get: (index: number) => CellModel;
-    changed: {
-      connect: (slot: (list: unknown, change: unknown) => void) => void;
-      disconnect: (slot: (list: unknown, change: unknown) => void) => void;
-    };
-  };
-  sharedModel: {
-    changed: {
-      connect: (slot: () => void) => void;
-      disconnect: (slot: () => void) => void;
-    };
-  };
-};
 
-type CellModel = {
+/**
+ * Signal interface providing connect and disconnect for change notifications.
+ * @template T - Slot function signature for signal handlers.
+ */
+export interface SignalConnection<T extends (...args: never[]) => void> {
+  /** Connects a slot function to the signal. */
+  connect: (slot: T) => void;
+  /** Disconnects a slot function from the signal. */
+  disconnect: (slot: T) => void;
+}
+
+/** Minimal cell model interface matching JupyterLab ICellModel. */
+export interface CellModel {
+  /** Cell type identifier. */
   type: "code" | "markdown" | "raw";
+  /** Shared model providing source access and change signals. */
   sharedModel: {
+    /** Returns the cell source text. */
     getSource: () => string;
-    changed: {
-      connect: (slot: () => void) => void;
-      disconnect: (slot: () => void) => void;
-    };
+    /** Signal emitted when the cell content changes. */
+    changed: SignalConnection<() => void>;
   };
-};
+}
 
-interface UseNotebookOutlineOptions {
+/** Minimal notebook model interface matching JupyterLab INotebookModel. */
+export interface NotebookModel {
+  /** Cell list with indexed access and change notification. */
+  cells: {
+    /** Number of cells in the notebook. */
+    length: number;
+    /** Returns the cell model at the given index. */
+    get: (index: number) => CellModel;
+    /** Signal emitted when cells are added, removed, or reordered. */
+    changed: SignalConnection<(list: unknown, change: unknown) => void>;
+  };
+  /** Shared model providing document-level change signals. */
+  sharedModel: {
+    /** Signal emitted when the shared model changes. */
+    changed: SignalConnection<() => void>;
+  };
+}
+
+/** VS Code API subset for posting outline messages to the extension host. */
+export interface OutlineMessageSender {
+  /** Sends an outline update message to the extension host. */
+  postMessage: (message: OutlineUpdateMessage) => void;
+}
+
+/** Options for the useNotebookOutline hook controlling outline extraction and messaging. */
+export interface UseNotebookOutlineOptions {
+  /** Live notebook model to extract outline from. */
   notebookModel: NotebookModel | null;
+  /** URI of the document for outline identification. */
   documentUri: string;
-  vscode: { postMessage: (message: OutlineUpdateMessage) => void };
+  /** VS Code API for posting outline messages. */
+  vscode: OutlineMessageSender;
 }
 
 /**
- * Custom hook to extract and send notebook outline to the extension.
- * Monitors live changes to cells and sends real-time updates.
+ * Extracts and sends a live notebook outline to the extension, monitoring cell changes in real-time.
+ * @param props - Hook configuration properties.
+ * @param props.notebookModel - Live notebook model to extract outline from.
+ * @param props.documentUri - URI of the document for outline identification.
+ * @param props.vscode - VS Code API for posting outline messages.
+ *
+ * @returns The current outline items array.
+ *
  */
 export function useNotebookOutline({
   notebookModel,
@@ -322,6 +353,7 @@ export function useNotebookOutline({
   }, [sendOutlineUpdate]);
 
   return {
+    /** Triggers a manual refresh of the notebook outline sent to the extension host. */
     refreshOutline: sendOutlineUpdate,
   };
 }

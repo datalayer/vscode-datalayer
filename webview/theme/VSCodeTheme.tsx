@@ -15,6 +15,7 @@ import React, { useEffect, type ReactNode } from "react";
 import { JupyterReactTheme } from "@datalayer/jupyter-react";
 import { PrimerVSCodeTheme } from "./PrimerVSCodeTheme";
 
+/** Props for the VSCodeTheme component. */
 export interface VSCodeThemeProps {
   colorMode: "light" | "dark";
   loadJupyterLabCss?: boolean;

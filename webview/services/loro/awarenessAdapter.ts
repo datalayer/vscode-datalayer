@@ -59,14 +59,16 @@ export class AwarenessAdapter implements AwarenessProvider {
   }
 
   /**
-   * Get the local user's awareness state
+   * Get the local user's awareness state.
+   * @returns Current local awareness state or null.
    */
   getLocalState(): UserState | null {
     return this.localState;
   }
 
   /**
-   * Get all awareness states from all users
+   * Get all awareness states from all users.
+   * @returns Map of client IDs to their awareness states.
    */
   getStates(): Map<number, UserState> {
     const states = new Map<number, UserState>();
@@ -95,7 +97,8 @@ export class AwarenessAdapter implements AwarenessProvider {
   }
 
   /**
-   * Set the entire local state
+   * Set the entire local state.
+   * @param state - New awareness state for the local user.
    */
   setLocalState(state: UserState): void {
     this.localState = state;
@@ -104,7 +107,9 @@ export class AwarenessAdapter implements AwarenessProvider {
   }
 
   /**
-   * Update a specific field in the local state
+   * Update a specific field in the local state.
+   * @param field - Name of the state field to update.
+   * @param value - New value for the field.
    */
   setLocalStateField(field: string, value: unknown): void {
     if (!this.localState) {
@@ -121,7 +126,9 @@ export class AwarenessAdapter implements AwarenessProvider {
   }
 
   /**
-   * Register update listener
+   * Register update listener.
+   * @param type - Event type, must be 'update'.
+   * @param cb - Callback invoked when awareness state updates.
    */
   on(type: "update", cb: () => void): void {
     if (type === "update") {
@@ -130,7 +137,9 @@ export class AwarenessAdapter implements AwarenessProvider {
   }
 
   /**
-   * Unregister update listener
+   * Unregister update listener.
+   * @param type - Event type, must be 'update'.
+   * @param cb - Callback to remove from listeners.
    */
   off(type: "update", cb: () => void): void {
     if (type === "update") {
@@ -139,7 +148,8 @@ export class AwarenessAdapter implements AwarenessProvider {
   }
 
   /**
-   * Encode all ephemeral state to bytes for transmission (uses Loro's native encoding)
+   * Encode all ephemeral state to bytes for transmission (uses Loro's native encoding).
+   * @returns Encoded ephemeral state as byte array.
    */
   encodeLocalState(): Uint8Array {
     try {
@@ -155,7 +165,8 @@ export class AwarenessAdapter implements AwarenessProvider {
   }
 
   /**
-   * Decode and apply remote ephemeral state from bytes (uses Loro's native decoding)
+   * Decode and apply remote ephemeral state from bytes (uses Loro's native decoding).
+   * @param bytes - Encoded ephemeral state from remote peer.
    */
   decodeRemoteState(bytes: Uint8Array): void {
     try {
@@ -171,7 +182,7 @@ export class AwarenessAdapter implements AwarenessProvider {
   }
 
   /**
-   * Clean up resources
+   * Clean up resources.
    */
   dispose(): void {
     this.updateListeners.clear();
@@ -179,7 +190,7 @@ export class AwarenessAdapter implements AwarenessProvider {
   }
 
   /**
-   * Update the ephemeral store with current local state
+   * Update the ephemeral store with current local state.
    */
   private updateEphemeralStore(): void {
     if (!this.localState) {
@@ -199,7 +210,7 @@ export class AwarenessAdapter implements AwarenessProvider {
   }
 
   /**
-   * Notify all update listeners
+   * Notify all update listeners.
    */
   private notifyListeners(): void {
     this.updateListeners.forEach((cb) => {

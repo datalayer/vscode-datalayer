@@ -16,9 +16,12 @@
 import * as vscode from "vscode";
 
 /**
- * Registers a chat context provider for Datalayer notebooks (.ipynb) and lexical documents (.lexical, .dlex).
- * This allows Copilot Chat to automatically access the content of these files
- * when they are open, without requiring manual file attachment.
+ * Registers a chat context provider for Datalayer notebooks (.ipynb) and lexical documents (.lexical, .dlex),
+ * allowing Copilot Chat to automatically access the content of these files when they are open.
+ * @param _context - VS Code extension context for registering disposables.
+ *
+ * @returns Composite disposable for all registered context providers.
+ *
  */
 export function registerChatContextProvider(
   _context: vscode.ExtensionContext,
@@ -90,7 +93,10 @@ export function registerChatContextProvider(
 }
 
 /**
- * Extract context from a Jupyter notebook file
+ * Extracts context from a Jupyter notebook file by reading and parsing its cells.
+ * @param uri - URI of the notebook file to extract context from.
+ *
+ * @returns Notebook context with cell contents or undefined on failure.
  */
 async function getNotebookContext(uri: vscode.Uri): Promise<
   | {
@@ -137,7 +143,10 @@ async function getNotebookContext(uri: vscode.Uri): Promise<
 }
 
 /**
- * Extract context from a Lexical document file
+ * Extracts context from a Lexical document file by parsing its JSON structure.
+ * @param uri - URI of the lexical file to extract context from.
+ *
+ * @returns Lexical document context with text content or undefined on failure.
  */
 async function getLexicalContext(uri: vscode.Uri): Promise<
   | {
@@ -169,7 +178,10 @@ async function getLexicalContext(uri: vscode.Uri): Promise<
 }
 
 /**
- * Extract plain text from Lexical JSON structure
+ * Extracts plain text from a Lexical JSON structure by traversing root children.
+ * @param data - Parsed Lexical JSON data to extract text from.
+ *
+ * @returns Plain text content extracted from the Lexical structure.
  */
 function extractTextFromLexical(data: unknown): string {
   if (typeof data === "string") {
@@ -193,7 +205,10 @@ function extractTextFromLexical(data: unknown): string {
 }
 
 /**
- * Recursively extract text from Lexical nodes
+ * Recursively extracts text from Lexical nodes by walking the tree of children.
+ * @param nodes - Array of Lexical node objects to traverse.
+ *
+ * @returns Concatenated text content from all nodes.
  */
 function extractTextFromNodes(nodes: unknown[]): string {
   if (!Array.isArray(nodes)) {

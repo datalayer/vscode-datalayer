@@ -11,10 +11,13 @@
 
 import React, { useState } from "react";
 
+/** Props for the InsertLinkDialog component. */
 export interface InsertLinkDialogProps {
   initialText?: string;
   initialUrl?: string;
+  /** Called when the user confirms the link insertion. */
   onInsert: (url: string, text: string) => void;
+  /** Called when the dialog is closed or cancelled. */
   onClose: () => void;
 }
 

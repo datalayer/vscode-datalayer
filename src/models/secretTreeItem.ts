@@ -17,17 +17,12 @@ import type { SecretDTO } from "@datalayer/core/lib/models/Secret";
  * Tree item for displaying a secret with masked value.
  * Shows secret name, variant, and masked value but never the actual secret value.
  *
- * @example
- * ```typescript
- * const item = new SecretTreeItem(secretDto);
- * // Displays: "my_secret" with description "password • ••••••••"
- * ```
  */
 export class SecretTreeItem extends vscode.TreeItem {
   /**
-   * Creates a new SecretTreeItem.
+   * Creates a new SecretTreeItem with masked value display and security tooltip.
    *
-   * @param secret - Secret model from Datalayer
+   * @param secret - Secret DTO from the Datalayer platform.
    */
   constructor(public readonly secret: SecretDTO) {
     super(secret.name, vscode.TreeItemCollapsibleState.None);
