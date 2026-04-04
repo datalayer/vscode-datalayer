@@ -43,6 +43,7 @@ export const selectKernelParamsSchema = z.object({
     ),
   durationMinutes: z
     .number()
+    .int()
     .positive()
     .optional()
     .describe(

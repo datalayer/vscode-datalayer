@@ -4,17 +4,24 @@ This document describes the testing strategy and how to write tests for the Data
 
 ## Overview
 
-The extension uses:
+The project has **1,300+ total tests** (extension + webview):
 
-- **Mocha** for test framework (required by VS Code)
-- **@vscode/test-cli** for running tests in VS Code Extension Host environment
+- **Extension tests**: Mocha TDD UI via `@vscode/test-cli`, running in VS Code Extension Host
+- **Webview tests**: Vitest with jsdom environment
 - **Custom mocks** for VS Code APIs and SDK (no jest/sinon needed)
+- **Coverage**: ~43% statements, ~89% branches, ~36% functions (extension only), tracked via Codecov
 
 ## Running Tests
 
 ```bash
-# Run all tests (41 tests in ~60ms)
+# Run extension tests (extension tests)
 npm test
+
+# Run webview tests (webview tests)
+npm run test:webview
+
+# Run extension tests with coverage
+npm run test:coverage
 
 # Compile tests only
 npm run compile-tests
@@ -29,7 +36,21 @@ npm test -- --grep "authProvider"
 npm run pretest && npm test
 ```
 
-**Note:** Code coverage is not available for VS Code extensions because tests run in a separate Extension Host process that coverage tools cannot instrument. Test quality is measured by test count and thoroughness, not coverage metrics.
+### Test Module Interception
+
+`src/test/setup.js` stubs `@datalayer/core` and browser-only packages so that extension tests can run in the Node.js test runner. This is required because many dependencies expect a browser environment with DOM APIs.
+
+### ESM Compatibility
+
+- `scripts/fix-css-imports.js` strips CSS imports from `@primer/react` and fixes directory imports in `@datalayer/icons-react` (runs automatically in `pretest`).
+- `sync:tools` uses `node --import ./scripts/ignore-css-preload.mjs --import tsx` for Node 22 compatibility.
+- `@datalayer/core` has a `src/node.ts` entry point (Node.js-safe, no React components) for extension host usage.
+
+### Coverage
+
+- ~43% statements, ~89% branches, ~36% functions (extension only)
+- Tracked via Codecov with dual flags: `extension` and `webview`
+- **Coverage exclusions**: `kernel/`, `pyodide/`, `commands/`, `ui/templates/`, `jupyter/`, `notebookProvider.js`, `lexicalProvider.js`
 
 ## Feature Testing Scenarios
 
@@ -397,14 +418,15 @@ test("uses SDK correctly", async () => {
 
 ## Test Quality Metrics
 
-**Current Status:** 41/41 tests passing (100%)
+**Current Status:** 1,300+/1,300+ tests passing (100%) - extension + webview
 
 ### Quality Validation
 
 - ✅ **Type Safety**: Zero type-check errors in test code
 - ✅ **Lint Compliance**: Zero ESLint warnings
 - ✅ **Strong Typing**: All mocks use proper TypeScript interfaces
-- ✅ **Test Success**: 100% pass rate (~60ms execution time)
+- ✅ **Test Success**: 100% pass rate (1,300+ tests)
+- ✅ **Coverage**: ~43% statements, ~89% branches, ~36% functions (extension)
 
 ### Focus Areas
 

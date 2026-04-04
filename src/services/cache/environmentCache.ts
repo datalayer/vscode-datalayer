@@ -107,7 +107,7 @@ export class EnvironmentCache {
       const environments = await datalayer.listEnvironments();
 
       // Datalayer returns Environment model instances, store them directly
-      this._environments = environments;
+      this._environments = environments ?? [];
       this._lastFetch = Date.now();
     } catch (_error) {
       // On error, keep existing cache but mark as stale
