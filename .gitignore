@@ -32,10 +32,11 @@ Thumbs.db
 .env.local
 
 # Documentation (auto-generated)
-docs/
+/docs/
 docs-html/
 docs-markdown/
 
 # Code coverage
 coverage/
+coverage-webview/
 .nyc_output/

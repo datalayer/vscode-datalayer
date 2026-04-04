@@ -23,8 +23,8 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  test:
-    name: Run Tests
+  extension-tests:
+    name: Extension Tests (${{ matrix.os }})
     strategy:
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
@@ -53,7 +53,7 @@ jobs:
       - name: Compile tests
         run: npm run compile-tests
 
-      - name: Run unit tests
+      - name: Run extension tests
         run: |
           if [ "$RUNNER_OS" = "Linux" ]; then
             xvfb-run -a npm test
@@ -67,11 +67,45 @@ jobs:
         run: xvfb-run -a npm run test:coverage
         shell: bash
 
-      - name: Upload coverage to Codecov (Ubuntu only)
+      - name: Upload extension coverage to Codecov
         if: matrix.os == 'ubuntu-latest'
         uses: codecov/codecov-action@v5
         with:
           files: ./coverage/lcov.info
-          flags: unittests
-          name: vscode-extension
+          flags: extension
+          name: extension-tests
+          fail_ci_if_error: false
+
+  webview-tests:
+    name: Webview Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: "22"
+          cache: "npm"
+
+      - name: Install system dependencies for keytar
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libsecret-1-dev
+
+      - name: Install dependencies
+        run: npm install --ignore-engines
+
+      - name: Run webview tests with coverage
+        run: npx vitest run --coverage
+
+      - name: Upload webview coverage to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          files: ./coverage-webview/lcov.info
+          flags: webview
+          name: webview-tests
           fail_ci_if_error: false

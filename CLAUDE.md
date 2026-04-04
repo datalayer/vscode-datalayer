@@ -91,7 +91,7 @@ Constructor `@param` for private params uses `checkConstructors: false` to avoid
 
 - Every directory under `src/`, `webview/`, `scripts/` must have a `README.md`
 - Enforced by `scripts/check-readmes.sh` in `npm run check`
-- 69 directories covered
+- 75 directories covered
 
 ### Pre-commit Hooks (Husky + lint-staged)
 
@@ -118,6 +118,39 @@ Conventional commits encouraged (warns but does not block):
 - Config: `knip.json`
 - Run: `npm run check:dead-code`
 - Finds unused exports, files, dependencies, and types
+
+## Testing
+
+### Test Suites
+
+- **1,300+ total tests**: extension tests + webview tests
+- **Extension tests**: Mocha TDD UI via `@vscode/test-cli`, running in VS Code Extension Host
+- **Webview tests**: Vitest with jsdom environment
+- **ESLint**: 0 errors, 28 warnings (all `no-console`)
+
+### Commands
+
+```bash
+npm test                 # Run extension tests (extension tests)
+npm run test:webview     # Run webview tests (webview tests)
+npm run test:coverage    # Extension tests with coverage
+```
+
+### Coverage
+
+- ~43% statements, ~89% branches, ~36% functions (extension only)
+- Tracked via Codecov with dual flags (`extension` and `webview`)
+- **Coverage exclusions**: `kernel/`, `pyodide/`, `commands/`, `ui/templates/`, `jupyter/`, `notebookProvider.js`, `lexicalProvider.js`
+
+### Test Module Interception
+
+`src/test/setup.js` stubs `@datalayer/core` and browser-only packages for the Node.js test runner. This is required because extension tests run in Node.js but some dependencies expect a browser environment.
+
+### ESM Compatibility Fixes
+
+- **`scripts/fix-css-imports.js`**: Strips CSS imports from `@primer/react` and fixes directory imports in `@datalayer/icons-react`. Runs automatically in `pretest`.
+- **`sync:tools`**: Uses `node --import ./scripts/ignore-css-preload.mjs --import tsx` for Node 22 compatibility when running sync scripts.
+- **`@datalayer/core` Node entry point**: `src/node.ts` provides a Node.js-safe entry point (no React components) for use in the extension host context.
 
 ## CI/CD Workflows (`.github/workflows/`)
 

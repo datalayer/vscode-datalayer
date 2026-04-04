@@ -25,6 +25,11 @@ export default [
       "webpack.config.js",
       "*.config.js",
       "*.config.mjs",
+      "scripts/ignore-css-preload.mjs",
+      "src/test/css-loader.mjs",
+      "src/test/register-css-hook.mjs",
+      "src/test/register-css-hook.js",
+      "src/test/setup.js",
     ],
   },
   {
@@ -40,7 +45,7 @@ export default [
       ecmaVersion: 2022,
       sourceType: "module",
       parserOptions: {
-        project: ["./tsconfig.json", "./tsconfig.webview.json"],
+        project: ["./tsconfig.json", "./tsconfig.webview.json", "./tsconfig.webview-test.json"],
         tsconfigRootDir: import.meta.dirname,
       },
     },
@@ -267,12 +272,19 @@ export default [
   },
   // Relax rules in test files
   {
-    files: ["**/*.test.ts", "**/__tests__/**/*.ts", "**/test/**/*.ts"],
+    files: [
+      "**/*.test.ts",
+      "**/*.test.tsx",
+      "**/__tests__/**/*.ts",
+      "**/test/**/*.ts",
+      "**/test/**/*.tsx",
+    ],
     rules: {
       "@typescript-eslint/no-explicit-any": "warn",
       "@typescript-eslint/no-floating-promises": "off",
       "@typescript-eslint/no-unused-vars": "warn",
       "@typescript-eslint/explicit-function-return-type": "off",
+      "@typescript-eslint/consistent-type-assertions": "off",
       "no-console": "off",
       "jsdoc/require-jsdoc": "off",
       "jsdoc/require-param": "off",

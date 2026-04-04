@@ -11,5 +11,5 @@
     "preserveSymlinks": false
   },
   "include": ["webview"],
-  "exclude": ["node_modules", "src"]
+  "exclude": ["node_modules", "src", "webview/test"]
 }

@@ -105,13 +105,34 @@ The project includes comprehensive GitHub Actions workflows that run on every PR
 All PRs must pass these automated checks:
 
 - ✅ TypeScript compilation without errors
-- ✅ ESLint rules with zero warnings
+- ✅ ESLint rules with zero errors (28 warnings allowed, all `no-console`)
 - ✅ Prettier formatting compliance
-- ✅ All 41 tests passing
+- ✅ All 1,300+ tests passing (extension + webview)
 - ✅ 100% documentation coverage
 - ✅ Extension builds successfully on all platforms
 - ✅ No console.log statements in production code
 - ✅ No `any` types without explicit justification
+
+### Testing Requirements
+
+All PRs must include appropriate tests:
+
+```bash
+# Run extension tests (Mocha TDD UI, 960 tests)
+npm test
+
+# Run webview tests (Vitest + jsdom, 369 tests)
+npm run test:webview
+
+# Run extension tests with coverage
+npm run test:coverage
+```
+
+- **Extension tests** use Mocha TDD UI via `@vscode/test-cli` and run in the VS Code Extension Host
+- **Webview tests** use Vitest with jsdom environment
+- `src/test/setup.js` stubs `@datalayer/core` and browser-only packages for Node.js compatibility
+- Coverage is tracked via Codecov with dual flags (`extension` and `webview`)
+- See [TESTING.md](./TESTING.md) for the full testing guide
 
 ## Architecture Overview
 

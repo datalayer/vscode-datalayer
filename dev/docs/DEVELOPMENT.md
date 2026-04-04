@@ -56,22 +56,26 @@ npm run watch:debug
 ```
 
 **When to use inline source maps:**
+
 - Debugging webview code in Extension Development Host
 - Tracing errors in React components
 - Understanding webpack bundling issues
 
 **When to use hidden source maps (default):**
+
 - Creating VSIX packages for distribution
 - Testing bundle size optimizations
 - Production builds
 
 **How it works:**
+
 - The `WEBVIEW_DEBUG` environment variable controls the webpack `devtool` setting
 - When enabled: Full source code embedded in bundles (larger but easier debugging)
 - When disabled: External `.map` files generated but not referenced in bundles (smaller, post-mortem debugging only)
 
 **Manual source map loading:**
 If you have a production build with hidden source maps and need to debug:
+
 1. Open browser DevTools in the webview
 2. Right-click in Sources panel → "Add source map"
 3. Point to the `.map` file in `dist/` directory
@@ -120,6 +124,7 @@ npm run apply:patches
 #### 1. Make Changes in Local Packages
 
 Edit code in any of these locations:
+
 - `../core/src/`
 - `../jupyter-ui/packages/lexical/src/`
 - `../jupyter-ui/packages/react/src/`
@@ -128,17 +133,20 @@ Edit code in any of these locations:
 #### 2. Sync Changes to Extension
 
 **Option A: Manual Sync**
+
 ```bash
 npm run sync:jupyter
 ```
 
 This script will:
+
 1. Run `npx gulp resources-to-lib` for core and jupyter-lexical (copies images, examples)
 2. Build TypeScript (`npm run build:lib`) for core, jupyter-lexical, and jupyter-react
 3. Copy `lib/`, `style/`, and `package.json` files to `node_modules/@datalayer/`
 4. Skip lexical-loro build (uses existing lib/ due to TypeScript issues with Yjs)
 
 **Option B: Watch Mode (Recommended for Active Development)**
+
 ```bash
 npm run sync:jupyter:watch
 ```
@@ -163,6 +171,7 @@ npm run create:patches
 ```
 
 This will:
+
 1. Run a final sync to ensure latest changes
 2. Generate patches in the `patches/` directory using `patch-package`
 3. Patches are for: `@datalayer/core`, `@datalayer/jupyter-lexical`, `@datalayer/jupyter-react`, `cmake-ts`
@@ -172,6 +181,7 @@ This will:
 #### 5. Working in CI / Clean Installs
 
 On CI or after a fresh `npm install`:
+
 1. The `postinstall` script runs automatically
 2. `bash scripts/apply-patches.sh` applies all patches from `patches/`
 3. No manual sync needed - patches are applied to installed packages
@@ -298,6 +308,7 @@ npm run vscode:prepublish # Production packaging
 ```
 
 **CI Integration**: CI automatically rebuilds the icon font when:
+
 - SVG files in `resources/icons/` are modified
 - Build script `scripts/build-icons.js` is updated
 
@@ -310,21 +321,25 @@ npm run vscode:prepublish # Production packaging
    - Square aspect ratio recommended (e.g., 20x20 viewBox)
 
 2. **Add to Project**:
+
    ```bash
    # Copy SVG to icons directory
    cp my-icon.svg resources/icons/
    ```
 
 3. **Regenerate Font**:
+
    ```bash
    npm run build:icons
    ```
+
    This generates:
    - `resources/datalayer-icons.woff` - Icon font
    - `resources/datalayer-icons.json` - Unicode mapping
 
 4. **Register in package.json**:
    Check `resources/datalayer-icons.json` for the assigned unicode, then add:
+
    ```json
    {
      "contributes": {
@@ -342,6 +357,7 @@ npm run vscode:prepublish # Production packaging
    ```
 
 5. **Use in Code**:
+
    ```typescript
    // In commands (package.json)
    "icon": "$(my-icon)"
@@ -499,9 +515,10 @@ node scripts/validate-tool-schemas.js
 ### Quality Metrics (Current Status)
 
 - ✅ **Type Check**: 0 errors (strict TypeScript)
-- ✅ **Lint**: 0 warnings (ESLint with @typescript-eslint)
+- ✅ **Lint**: 0 errors, 28 warnings (all `no-console`) (ESLint with @typescript-eslint)
 - ✅ **Documentation**: 100% coverage (466/466 items documented)
-- ✅ **Tests**: 41/41 passing (100% success rate)
+- ✅ **Tests**: 1,300+/1,300+ passing (extension + webview, 100% success rate)
+- ✅ **Coverage**: ~43% statements, ~89% branches, ~36% functions (extension)
 - ✅ **Format**: Prettier compliance
 
 ### Pre-Commit Checklist
@@ -516,8 +533,14 @@ Before committing any code:
 ## Testing
 
 ```bash
-# Run all tests (41 tests in ~60ms)
+# Run extension tests (960 tests, Mocha TDD UI)
 npm test
+
+# Run webview tests (369 tests, Vitest + jsdom)
+npm run test:webview
+
+# Run extension tests with coverage
+npm run test:coverage
 
 # Compile tests
 npm run compile-tests
@@ -528,14 +551,30 @@ npm run watch-tests
 
 See [TESTING.md](./TESTING.md) for comprehensive testing guide.
 
+### Test Module Interception
+
+`src/test/setup.js` stubs `@datalayer/core` and browser-only packages so that extension tests can run in the Node.js test runner without browser APIs.
+
+### ESM Compatibility Fixes
+
+- `scripts/fix-css-imports.js` strips CSS imports from `@primer/react` and fixes directory imports in `@datalayer/icons-react` (runs in `postinstall`).
+- `sync:tools` uses `node --import ./scripts/ignore-css-preload.mjs --import tsx` for Node 22 compatibility.
+- `@datalayer/core` provides a `src/node.ts` entry point (Node.js-safe, no React components) for extension host usage.
+
+### Coverage
+
+- ~43% statements, ~89% branches, ~36% functions (extension only)
+- Tracked via Codecov with dual flags: `extension` and `webview`
+- Exclusions: `kernel/`, `pyodide/`, `commands/`, `ui/templates/`, `jupyter/`, `notebookProvider.js`, `lexicalProvider.js`
+
 ## Test Infrastructure
 
 ### Overview
 
-- **Framework**: Mocha (required by VS Code extension testing)
+- **Extension tests**: Mocha TDD UI via `@vscode/test-cli` (runs in Extension Host)
+- **Webview tests**: Vitest with jsdom environment
 - **Assertion**: Node.js built-in `assert` module
 - **Mock System**: Custom mock factory with TypeScript interfaces
-- **Test Runner**: @vscode/test-cli (runs in Extension Host)
 
 ### Type-Safe Mock System
 
@@ -927,7 +966,7 @@ The `LSPTabCompletionProvider` implements `isApplicable()` to enable Tab complet
 // In lspTabProvider.ts
 export class LSPTabCompletionProvider {
   readonly name = "LSP (Python & Markdown)";
-  readonly rank = 600;  // Higher than kernel's 550
+  readonly rank = 600; // Higher than kernel's 550
 
   async isApplicable(context: any): Promise<boolean> {
     // LSP completions work without a kernel, unlike KernelCompleterProvider
@@ -945,7 +984,7 @@ The Tab key handler in `NotebookBase.tsx` ensures Tab always invokes dropdown co
 
 ```typescript
 // In NotebookBase.tsx handleKeyDown
-if (event.key === 'Tab') {
+if (event.key === "Tab") {
   if (inlineCompleter?.current) {
     // Visible inline suggestion → accept it
     inlineCompleter.accept();
@@ -975,13 +1014,13 @@ This prevents pending inline completion requests from delaying dropdown invocati
 useEffect(() => {
   notebook.model?.cells.forEach((cell) => {
     const language = detectCellLanguage(cell); // python | markdown | unknown
-    if (language === 'python' || language === 'markdown') {
+    if (language === "python" || language === "markdown") {
       vscode.postMessage({
-        type: 'lsp-document-open',
+        type: "lsp-document-open",
         cellId: cell.id,
         notebookId: notebookId,
         content: cell.sharedModel.getSource(),
-        language: language
+        language: language,
       });
     }
   });
@@ -989,9 +1028,9 @@ useEffect(() => {
   // Listen for content changes
   notebook.model?.contentChanged.connect(() => {
     vscode.postMessage({
-      type: 'lsp-document-sync',
+      type: "lsp-document-sync",
       cellId: cell.id,
-      content: cell.sharedModel.getSource()
+      content: cell.sharedModel.getSource(),
     });
   });
 }, [notebook]);
@@ -1122,20 +1161,24 @@ LSPTabCompletionPlugin displays dropdown menu via LexicalTypeaheadMenuPlugin
 
 ```typescript
 // In LSPTabCompletionPlugin.tsx
-editor.registerCommand(KEY_TAB_COMMAND, (event) => {
-  // Check if inline completion is active
-  if (hasActiveInlineCompletion(jupyterInputNode)) {
-    return false; // Let inline completion handle Tab
-  }
+editor.registerCommand(
+  KEY_TAB_COMMAND,
+  (event) => {
+    // Check if inline completion is active
+    if (hasActiveInlineCompletion(jupyterInputNode)) {
+      return false; // Let inline completion handle Tab
+    }
 
-  if (isMenuOpen) {
-    return false; // Menu already open
-  }
+    if (isMenuOpen) {
+      return false; // Menu already open
+    }
 
-  event?.preventDefault();
-  fetchCompletions(jupyterInputNode, offset);
-  return true; // LSP handles Tab
-}, COMMAND_PRIORITY_CRITICAL);
+    event?.preventDefault();
+    fetchCompletions(jupyterInputNode, offset);
+    return true; // LSP handles Tab
+  },
+  COMMAND_PRIORITY_CRITICAL,
+);
 ```
 
 **Reused Infrastructure**:
@@ -1172,14 +1215,14 @@ Initial implementation had a race condition where the completion response from t
 ```typescript
 // WRONG - Race condition (resolver registered AFTER sending message)
 this.vscodeAPI.postMessage(message);
-return new Promise(resolve => {
+return new Promise((resolve) => {
   this.pendingRequests.set(requestId, resolver); // Response may arrive before this!
 });
 
 // CORRECT - Resolver registered BEFORE sending message
-return new Promise(resolve => {
+return new Promise((resolve) => {
   this.pendingRequests.set(requestId, resolver); // Register first
-  this.vscodeAPI.postMessage(message);           // Then send
+  this.vscodeAPI.postMessage(message); // Then send
 });
 ```
 
@@ -1238,12 +1281,18 @@ The LSP completion provider was created with `useMemo` but never disposed when d
 ```typescript
 // WRONG - No cleanup, instances accumulate
 const lexicalLSPProvider = React.useMemo(() => {
-  return new LexicalLSPCompletionProvider(lexicalId || documentUri || "", vscode);
+  return new LexicalLSPCompletionProvider(
+    lexicalId || documentUri || "",
+    vscode,
+  );
 }, [lexicalId, documentUri, vscode]);
 
 // CORRECT - Dispose on cleanup
 const lexicalLSPProvider = React.useMemo(() => {
-  return new LexicalLSPCompletionProvider(lexicalId || documentUri || "", vscode);
+  return new LexicalLSPCompletionProvider(
+    lexicalId || documentUri || "",
+    vscode,
+  );
 }, [lexicalId, documentUri, vscode]);
 
 React.useEffect(() => {
@@ -1254,6 +1303,7 @@ React.useEffect(() => {
 ```
 
 **Symptoms Before Fixes**:
+
 - First Tab press: Completions fetched (98 items) but no dropdown appeared
 - Second Tab press: Ignored ("menu already open"), default Tab inserted tab character
 - Console: "No resolver found for requestId" appeared twice before resolving (3 provider instances)
@@ -1404,6 +1454,7 @@ const { selectedRuntime, serviceManager } = useRuntimeManager();
 ```
 
 When runtime changes:
+
 1. `selectedRuntime?.ingress` changes (e.g., "http://pyodide-local" → "http://local-kernel-...")
 2. Notebook2 re-renders (cheap React VDOM diff)
 3. `useKernelId` detects `kernelId` prop change → calls `kernels.startNew()`
@@ -1425,12 +1476,14 @@ The extension uses a Template Method pattern for kernel management, eliminating 
 #### Base Manager Classes
 
 **BaseKernelManager** (`webview/services/base/baseKernelManager.ts`):
+
 - Abstract base class implementing common `Kernel.IManager` methods
 - Template Method pattern: subclasses only implement `startNew()`
 - Provides: `shutdown()`, `dispose()`, `running()`, `requestRunning()`, signal management
 - Type discriminator: `KernelManagerType = "mock" | "pyodide" | "local" | "remote"`
 
 **BaseSessionManager** (`webview/services/base/baseSessionManager.ts`):
+
 - Abstract base class implementing common `Session.IManager` methods
 - Template Method pattern: subclasses only implement `startNew()`
 - Provides: session lifecycle, disposal, signals, `requestRunning()`
@@ -1439,25 +1492,30 @@ The extension uses a Template Method pattern for kernel management, eliminating 
 #### Service Manager Implementations
 
 **MockServiceManager** (`webview/services/mockServiceManager.ts`):
+
 - Extends base classes for read-only notebook viewing
 - Throws helpful errors when execution is attempted
 - Used when no kernel is selected
 
 **LocalKernelServiceManager** (`webview/services/localKernelServiceManager.ts`):
+
 - Extends base classes for direct ZMQ communication with VS Code Python environments
 - Creates `LocalKernelConnection` bypassing HTTP/WebSocket flow
 - Detects local kernel URLs: `http://local-kernel-<kernelId>.localhost`
 
 **Remote ServiceManager** (`webview/services/serviceManager.ts`):
+
 - Standard JupyterLab `ServiceManager` for remote Jupyter servers
 - Unchanged from JupyterLab implementation
 
 **ServiceManagerFactory** (`webview/services/serviceManagerFactory.ts`):
+
 - Type-safe factory with discriminated unions
 - Methods: `create(options)`, `isMock(manager)`, `getType(manager)`
 - Includes 'pyodide' type that throws "not yet implemented" for future PR
 
 **MutableServiceManager** (`webview/services/mutableServiceManager.ts`):
+
 - Enables hot-swapping between kernel types without re-rendering `Notebook2`
 - Uses Proxy pattern to forward calls to current underlying manager
 - Methods: `updateConnection()`, `updateServiceManager()`, `resetToMock()`
@@ -1639,11 +1697,13 @@ The extension uses GitHub Copilot's Language Model Tools API to provide programm
 ### Architecture
 
 **Tool Definitions** (`src/tools/definitions/tools/*.ts`):
+
 - TypeScript interfaces with full type safety
 - JSDoc descriptions for AI model understanding
 - Parameter schemas with validation
 
 **Schema Generator** (`scripts/generate-tool-schemas.js`):
+
 - Parses TypeScript object literals without eval()
 - Extracts name, description, and parameters
 - Syncs to `package.json` `contributes.languageModelTools`
@@ -1666,20 +1726,20 @@ node scripts/validate-tool-schemas.js
 1. **Create Tool Definition** (`src/tools/definitions/tools/myTool.ts`):
 
 ```typescript
-import type { ToolDefinition } from '../schema';
+import type { ToolDefinition } from "../schema";
 
 export const myTool: ToolDefinition = {
-  name: 'datalayer_myTool',
-  displayName: 'My Tool',
-  description: 'Description for the AI model',
+  name: "datalayer_myTool",
+  displayName: "My Tool",
+  description: "Description for the AI model",
   parameters: {
     properties: {
       myParam: {
-        type: 'string',
-        description: 'Parameter description',
+        type: "string",
+        description: "Parameter description",
       },
     },
-    required: ['myParam'],
+    required: ["myParam"],
   },
 } as const;
 ```
@@ -1687,9 +1747,9 @@ export const myTool: ToolDefinition = {
 2. **Export Tool** (`src/tools/definitions/tools/index.ts`):
 
 ```typescript
-export * from './myTool';
-import { myTool } from './myTool';
-export const allToolDefinitions = [/* existing */, myTool];
+export * from "./myTool";
+import { myTool } from "./myTool";
+export const allToolDefinitions = [, /* existing */ myTool];
 ```
 
 3. **Implement Operation** (`src/tools/core/myOperation.ts`):
@@ -1720,6 +1780,7 @@ The schema is automatically added to `package.json` with correct structure.
 ### Schema Generator Implementation
 
 **Parser Features**:
+
 - Handles TypeScript syntax (as const, single quotes, trailing commas)
 - Parses nested objects and arrays
 - Extracts string literals with proper escaping
@@ -1776,6 +1837,7 @@ export const insertBlocksTool: ToolDefinition = {
 ### Current Tools (13 total)
 
 **Notebook Tools** (8):
+
 - `datalayer_createNotebook` - Create new notebooks
 - `datalayer_insertCell` - Insert cells at specific positions
 - `datalayer_executeCell` - Execute cells and get outputs
@@ -1785,6 +1847,7 @@ export const insertBlocksTool: ToolDefinition = {
 - `datalayer_getActiveDocument` - Get active document info
 
 **Lexical Tools** (5):
+
 - `datalayer_insertBlock` - Insert single block
 - `datalayer_insertBlocks` - **Batch insert multiple blocks** (NEW)
 - `datalayer_readBlocks` - Read blocks with formatting
@@ -1796,11 +1859,13 @@ export const insertBlocksTool: ToolDefinition = {
 **Purpose**: Allows Copilot to create complex documents with a single API call instead of many sequential `insertBlock` calls.
 
 **Benefits**:
+
 - **Performance**: One message instead of N messages for N blocks
 - **Atomicity**: All blocks inserted or none (stops on first error)
 - **Simplicity**: Cleaner code for AI model
 
 **Implementation Layers** (8 layers):
+
 1. **Tool Definition** - `src/tools/definitions/tools/insertBlocks.ts`
 2. **Operation** - `src/tools/core/lexical/insertBlocks.ts`
 3. **Adapter** - `src/tools/adapters/vscode/VSCodeLexicalHandle.ts`
@@ -1815,17 +1880,18 @@ export const insertBlocksTool: ToolDefinition = {
 ```typescript
 // Single call to create multi-section document
 await insertBlocks({
-  insert_after_block_id: 'TOP',
+  insert_after_block_id: "TOP",
   blocks: [
-    { blockType: 'heading', source: '# Introduction' },
-    { blockType: 'paragraph', source: 'Overview text...' },
-    { blockType: 'heading', source: '## Section 1' },
-    { blockType: 'code', source: 'console.log("example");' },
-  ]
+    { blockType: "heading", source: "# Introduction" },
+    { blockType: "paragraph", source: "Overview text..." },
+    { blockType: "heading", source: "## Section 1" },
+    { blockType: "code", source: 'console.log("example");' },
+  ],
 });
 ```
 
 **Error Handling**:
+
 - Validates each block has required fields (blockType, source)
 - Stops on first failure with descriptive error
 - Returns success with last inserted block ID for chaining
@@ -1909,7 +1975,7 @@ const cacheDir = path.join(
   ".cache",
   "datalayer-pyodide",
   pyodideVersion,
-  "packages"
+  "packages",
 );
 
 // Ensure cache directory exists
@@ -1920,7 +1986,7 @@ console.log(`[PyodideKernelClient] Using package cache: ${cacheDir}`);
 const { loadPyodide } = await import("pyodide");
 
 this._pyodide = await loadPyodide({
-  packageCacheDir: cacheDir,  // CRITICAL: Enables persistent caching
+  packageCacheDir: cacheDir, // CRITICAL: Enables persistent caching
   stdout: (text: string) => this._handleStdout(text),
   stderr: (text: string) => this._handleStderr(text),
 } as Parameters<typeof loadPyodide>[0]);
@@ -1961,7 +2027,7 @@ const cacheDir = path.join(
   ".cache",
   "datalayer-pyodide",
   pyodideVersion,
-  "packages"
+  "packages",
 );
 
 // Ensure cache directory exists
@@ -2010,7 +2076,7 @@ const cacheDir = path.join(
   ".cache",
   "datalayer-pyodide",
   npmPyodideVersion,
-  "packages"
+  "packages",
 );
 
 // Ensure cache directory exists
@@ -2077,19 +2143,21 @@ Created `scripts/validate-pyodide-version.js` to auto-sync hardcoded version str
 
 ```javascript
 // Read installed Pyodide version from node_modules
-const pyodidePackageJson = require('../node_modules/pyodide/package.json');
+const pyodidePackageJson = require("../node_modules/pyodide/package.json");
 const installedVersion = pyodidePackageJson.version;
 
 // Check each file for hardcoded version strings
 for (const file of filesToSync) {
-  const content = fs.readFileSync(filePath, 'utf8');
+  const content = fs.readFileSync(filePath, "utf8");
   const match = content.match(file.pattern);
 
   if (foundVersion !== installedVersion) {
     // Auto-fix the mismatch
     const updatedContent = file.replace(content, installedVersion);
-    fs.writeFileSync(filePath, updatedContent, 'utf8');
-    console.log(`   ✅ ${file.description}: ${foundVersion} → ${installedVersion}`);
+    fs.writeFileSync(filePath, updatedContent, "utf8");
+    console.log(
+      `   ✅ ${file.description}: ${foundVersion} → ${installedVersion}`,
+    );
   }
 }
 ```
