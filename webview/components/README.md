@@ -6,6 +6,7 @@ Reusable React components shared between notebook and lexical editors.
 
 - **RuntimeProgressBar.tsx** - Progress bar showing remaining runtime credits with color transitions (blue to yellow to red) based on time remaining. Provides visual urgency as runtime approaches expiration.
 - **notebookStyles.ts** - Centralized CSS configuration for notebook cells and container styling. Eliminates duplicate style definitions and includes JupyterLab notebook container styling with VS Code theme integration.
+- **ErrorBoundary.tsx** - React error boundary wrapping webview editors. Catches rendering errors and displays a recovery UI with a "Try Again" button instead of crashing the entire panel. Used at the root render of both NotebookEditor and LexicalWebview.
 - **index.ts** - Export barrel for shared components.
 
 ## Subdirectories
