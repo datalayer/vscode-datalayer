@@ -66,7 +66,7 @@ export class LSPTextDocumentProvider
       return "";
     }
 
-    const cellId = match[1];
+    const cellId = match[1]!;
     ServiceLoggers.main.debug(
       `[LSP-ContentProvider] Extracted cellId: ${cellId}`,
     );

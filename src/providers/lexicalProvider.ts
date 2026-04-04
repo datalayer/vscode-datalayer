@@ -143,7 +143,7 @@ export class LexicalProvider extends BaseDocumentProvider<LexicalDocument> {
       }
 
       const uri = vscode.Uri.joinPath(
-        workspaceFolders[0].uri,
+        workspaceFolders[0]!.uri,
         `new-${Date.now()}.dlex`,
       ).with({ scheme: "untitled" });
 
@@ -532,7 +532,7 @@ export class LexicalProvider extends BaseDocumentProvider<LexicalDocument> {
           if (webviewsForDocument.length !== 1) {
             throw new Error("Expected exactly one webview for document");
           }
-          const panel = webviewsForDocument[0].webviewPanel;
+          const panel = webviewsForDocument[0]!.webviewPanel;
           const response = await this.postMessageWithResponse<
             number[] | undefined
           >(panel, "getFileData", {});
@@ -1459,7 +1459,7 @@ export class LexicalProvider extends BaseDocumentProvider<LexicalDocument> {
     const match = completion.match(codeBlockRegex);
     if (match) {
       // Extract code and trim trailing newlines only (preserve meaningful spaces)
-      return match[1].replace(/\n+$/, "");
+      return match[1]!.replace(/\n+$/, "");
     }
 
     // Remove trailing newlines from direct completions

@@ -153,7 +153,7 @@ export class LSPCompletionService {
         return null;
       }
 
-      return hovers[0];
+      return hovers[0] ?? null;
     } catch (_error) {
       return null;
     }

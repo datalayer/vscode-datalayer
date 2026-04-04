@@ -254,7 +254,7 @@ function protocolVerification(protocols?: string | string[]): string[] {
       },
       {} as Record<string, number>,
     );
-  const duplicates = Object.keys(uniq).filter((a) => uniq[a] > 1);
+  const duplicates = Object.keys(uniq).filter((a) => (uniq[a] ?? 0) > 1);
   if (duplicates.length > 0) {
     throw new SyntaxError(
       `${ERROR_PREFIX.CONSTRUCTOR_ERROR} The subprotocol '${duplicates[0]}' is duplicated.`,

@@ -60,13 +60,15 @@ export class ActiveRuntimeStrategy implements AutoConnectStrategy {
         });
 
         const runtime = sortedRuntimes[0];
-        const remainingMinutes = Math.floor(
-          (runtime.expiredAt.getTime() - now) / 60000,
-        );
-        ServiceLoggers.runtime.debug(
-          `[ActiveRuntimeStrategy] Using runtime with most time available: ${runtime.uid} (~${remainingMinutes} minutes remaining)`,
-        );
-        return runtime;
+        if (runtime !== undefined) {
+          const remainingMinutes = Math.floor(
+            (runtime.expiredAt.getTime() - now) / 60000,
+          );
+          ServiceLoggers.runtime.debug(
+            `[ActiveRuntimeStrategy] Using runtime with most time available: ${runtime.uid} (~${remainingMinutes} minutes remaining)`,
+          );
+          return runtime;
+        }
       }
 
       ServiceLoggers.runtime.debug(

@@ -216,7 +216,7 @@ suite("WebSocketKernelClient Types Tests", () => {
 
       assert.strictEqual(result.success, false);
       assert.strictEqual(result.outputs.length, 1);
-      assert.strictEqual(result.outputs[0].type, "error");
+      assert.strictEqual(result.outputs[0]!.type, "error");
     });
 
     test("can create a result with no outputs", () => {
@@ -244,10 +244,10 @@ suite("WebSocketKernelClient Types Tests", () => {
       };
 
       assert.strictEqual(result.outputs.length, 4);
-      assert.strictEqual(result.outputs[0].type, "stream");
-      assert.strictEqual(result.outputs[1].type, "display_data");
-      assert.strictEqual(result.outputs[2].type, "stream");
-      assert.strictEqual(result.outputs[3].type, "execute_result");
+      assert.strictEqual(result.outputs[0]!.type, "stream");
+      assert.strictEqual(result.outputs[1]!.type, "display_data");
+      assert.strictEqual(result.outputs[2]!.type, "stream");
+      assert.strictEqual(result.outputs[3]!.type, "execute_result");
     });
   });
 });

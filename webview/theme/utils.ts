@@ -55,9 +55,9 @@ export function rgbaToHex(color: string): string {
   }
 
   const [, r, g, b, a] = match;
-  const red = parseInt(r, 10);
-  const green = parseInt(g, 10);
-  const blue = parseInt(b, 10);
+  const red = parseInt(r!, 10);
+  const green = parseInt(g!, 10);
+  const blue = parseInt(b!, 10);
 
   let hex =
     "#" +

@@ -630,7 +630,7 @@ await pyodide_kernel.ipython_shell.run_cell_async('''${escapedCode}''')
       const errorMatch = lastLine.match(/^(\w+(?:Error|Exception)):\s*(.*)$/);
 
       if (errorMatch) {
-        ename = errorMatch[1];
+        ename = errorMatch[1] ?? "PythonError";
         evalue = errorMatch[2] || errorMessage;
       } else {
         ename = error.name || "PythonError";

@@ -234,7 +234,7 @@ export class WebSocketKernelClient {
       if (listResponse.ok) {
         const kernels = (await listResponse.json()) as Array<{ id: string }>;
         if (kernels.length > 0) {
-          this._kernelId = kernels[0].id;
+          this._kernelId = kernels[0]!.id;
           return;
         }
       }

@@ -127,6 +127,7 @@
     "anyfile",
     "unsub",
     "Jtoken",
-    "mytoken"
+    "mytoken",
+    "numpy"
   ]
 }

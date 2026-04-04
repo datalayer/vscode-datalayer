@@ -74,6 +74,7 @@
     "watch-tests": "tsc -p . -w --outDir out",
     "watch:debug": "npm run clean:dist && cross-env WEBVIEW_DEBUG=1 webpack --watch",
     "watch:lib": "tsc --project tsconfig.json --rootDir src --outDir lib --declaration --declarationDir lib --watch --preserveWatchOutput",
+    "analyze": "cross-env ANALYZE=true NODE_OPTIONS=--max-old-space-size=8192 webpack --mode production",
     "release": "standard-version",
     "release:minor": "standard-version --release-as minor",
     "release:major": "standard-version --release-as major",
@@ -196,6 +197,7 @@
     "typescript": "^5.8.3",
     "vitest": "^4.1.2",
     "webpack": "^5.105.4",
+    "webpack-bundle-analyzer": "^5.3.0",
     "webpack-cli": "^6.0.1"
   },
   "lint-staged": {

@@ -374,7 +374,7 @@ export function registerRuntimeCommands(
           }
 
           // Test deleteRuntime API with detailed error handling
-          const runtime = runtimes[0];
+          const runtime = runtimes[0]!;
           const podName = runtime.podName;
           if (!podName) {
             throw new Error("Runtime missing podName from Datalayer");
@@ -513,7 +513,7 @@ export function registerRuntimeCommands(
 
         // If only one runtime, confirm termination
         if (runtimes.length === 1) {
-          const runtime = runtimes[0];
+          const runtime = runtimes[0]!;
           const name = runtime.givenName;
 
           const confirmed = await showTwoStepConfirmation(

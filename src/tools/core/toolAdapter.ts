@@ -381,7 +381,7 @@ export class VSCodeToolAdapter<
     }
 
     if (choices.length === 1) {
-      return choices[0].location;
+      return choices[0]!.location;
     }
 
     const selected = await vscode.window.showQuickPick(choices, {

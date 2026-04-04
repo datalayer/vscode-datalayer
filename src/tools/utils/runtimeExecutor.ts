@@ -217,7 +217,7 @@ async function createKernelConnection(runtime: RuntimeDTO): Promise<{
 
     if (runningKernels.length > 0) {
       // Use the first available kernel (typically the default Python kernel)
-      const kernelModel = runningKernels[0];
+      const kernelModel = runningKernels[0]!;
       // eslint-disable-next-line no-console
       console.log(
         `[runtimeExecutor] Connecting to existing kernel: ${kernelModel.id} (${kernelModel.name})`,

@@ -115,7 +115,7 @@ export class KernelBridge implements vscode.Disposable {
         throw new Error("No webview found for document");
       }
       // Use first matching webview
-      const webviewPanel = allWebviews[0];
+      const webviewPanel = allWebviews[0]!;
       this._webviews.set(key, webviewPanel);
     }
 
@@ -168,7 +168,7 @@ export class KernelBridge implements vscode.Disposable {
         throw new Error("No webview found for document");
       }
       // Use first matching webview
-      const webviewPanel = allWebviews[0];
+      const webviewPanel = allWebviews[0]!;
       this._webviews.set(key, webviewPanel);
     }
 
@@ -233,7 +233,7 @@ export class KernelBridge implements vscode.Disposable {
         throw new Error("No webview found for document");
       }
       // Use first matching webview
-      const webviewPanel = allWebviews[0];
+      const webviewPanel = allWebviews[0]!;
       this._webviews.set(key, webviewPanel);
     }
 
@@ -307,7 +307,7 @@ export class KernelBridge implements vscode.Disposable {
         throw new Error("No webview found for document");
       }
       // Use first matching webview
-      const webviewPanel = allWebviews[0];
+      const webviewPanel = allWebviews[0]!;
       this._webviews.set(key, webviewPanel);
     }
 

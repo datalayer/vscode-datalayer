@@ -110,7 +110,7 @@ export class LocalKernelClient {
     // This matches VS Code's behavior for untitled files
     const workspaceFolders = vscode.workspace.workspaceFolders;
     if (workspaceFolders && workspaceFolders.length > 0) {
-      return workspaceFolders[0].uri.fsPath;
+      return workspaceFolders[0]!.uri.fsPath;
     }
 
     return undefined;

@@ -52,7 +52,7 @@ export async function _createLocalNotebook(
   }
 
   const notebookUri = vscode.Uri.joinPath(
-    workspaceFolders[0].uri,
+    workspaceFolders[0]!.uri,
     finalFilename,
   );
 

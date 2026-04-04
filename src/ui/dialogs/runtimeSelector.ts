@@ -232,7 +232,8 @@ export async function selectDatalayerRuntime(
 
   if (
     items.length === 0 ||
-    (items.length === 1 && items[0].kind === vscode.QuickPickItemKind.Separator)
+    (items.length === 1 &&
+      items[0]!.kind === vscode.QuickPickItemKind.Separator)
   ) {
     vscode.window.showInformationMessage(
       "No runtimes or environments available",
@@ -255,9 +256,9 @@ export async function selectDatalayerRuntime(
   // This enables instant visual feedback like showing a spinner
   if (onRuntimeSelected) {
     quickPick.onDidChangeSelection((selected) => {
-      if (selected.length > 0 && selected[0].runtime) {
+      if (selected.length > 0 && selected[0]!.runtime) {
         // Existing runtime selected - call callback immediately for instant feedback
-        void onRuntimeSelected(selected[0].runtime);
+        void onRuntimeSelected(selected[0]!.runtime);
       }
       // Note: For create actions, callback is called AFTER user accepts all creation options
       // (see below where createRuntime is called)

@@ -12,6 +12,7 @@ const path = require("path");
 const webpack = require("webpack");
 const miniSVGDataURI = require("mini-svg-data-uri");
 const CopyPlugin = require("copy-webpack-plugin");
+const { BundleAnalyzerPlugin } = require("webpack-bundle-analyzer");
 
 // Helper to resolve package paths in monorepo (hoisted node_modules)
 /**
@@ -798,7 +799,9 @@ const datasourceEditDialogConfig = {
   ],
 };
 
-module.exports = [
+// When ANALYZE=true, add BundleAnalyzerPlugin to each config.
+// Each config gets its own report file to avoid overwriting.
+const configs = [
   extensionConfig,
   webviewConfig,
   lexicalWebviewConfig,
@@ -807,3 +810,35 @@ module.exports = [
   datasourceEditDialogConfig,
   // aguiExampleConfig, // Commented out - file doesn't exist
 ];
+
+if (process.env.ANALYZE === "true") {
+  const configNames = [
+    "extension",
+    "webview",
+    "lexical",
+    "showcase",
+    "datasource",
+    "datasource-edit",
+  ];
+  configs.forEach((config, index) => {
+    const name = configNames[index] || `config-${index}`;
+    config.plugins = config.plugins || [];
+    config.plugins.push(
+      new BundleAnalyzerPlugin({
+        analyzerMode: "static",
+        reportFilename: path.resolve(
+          __dirname,
+          `dist/bundle-report-${name}.html`,
+        ),
+        openAnalyzer: false,
+        generateStatsFile: true,
+        statsFilename: path.resolve(
+          __dirname,
+          `dist/bundle-stats-${name}.json`,
+        ),
+      }),
+    );
+  });
+}
+
+module.exports = configs;

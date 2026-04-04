@@ -97,7 +97,7 @@ export class LexicalCollaborationService {
         const pathParts = document.uri.path.split("/").filter((p) => p);
         if (pathParts.length >= 2) {
           // Second to last part is the document UID
-          documentId = pathParts[pathParts.length - 2];
+          documentId = pathParts[pathParts.length - 2] ?? null;
         }
 
         // Fallback to metadata lookup as last resort

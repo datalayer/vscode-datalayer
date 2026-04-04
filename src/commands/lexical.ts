@@ -56,7 +56,7 @@ function sendLexicalCommand(command: string): void {
   // If there's only one webview, use it
   if (activeWebviews.size === 1) {
     const [webview] = Array.from(activeWebviews.values());
-    webview.postMessage({
+    webview!.postMessage({
       type: "format-command",
       body: { command },
     });

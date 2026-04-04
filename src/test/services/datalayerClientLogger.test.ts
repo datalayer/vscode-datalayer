@@ -15,11 +15,17 @@ import * as assert from "assert";
 import { DatalayerClientOperationTracker } from "../../services/logging/datalayerClientLogger";
 
 suite("DatalayerClientOperationTracker Tests", () => {
-  // Use type assertion to access private static methods for testing
-  const Tracker = DatalayerClientOperationTracker as unknown as Record<
-    string,
-    Function
-  >;
+  // Typed interface for accessing private static methods in tests
+  interface TrackerMethods {
+    sanitizeArgs: (args: unknown[]) => unknown[];
+    summarizeResult: (result: unknown) => string;
+    isNetworkError: (error: unknown, message?: string) => boolean;
+    isAuthError: (error: unknown, message?: string) => boolean;
+    isRateLimitError: (error: unknown, message?: string) => boolean;
+    isServerError: (error: unknown, message?: string) => boolean;
+  }
+
+  const Tracker = DatalayerClientOperationTracker as unknown as TrackerMethods;
 
   setup(() => {
     DatalayerClientOperationTracker.clearOperations();

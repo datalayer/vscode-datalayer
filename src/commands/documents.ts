@@ -787,7 +787,7 @@ export function registerDocumentCommands(
 
               // Process each file
               for (let i = 0; i < supportedFiles.length; i++) {
-                const fileUri = supportedFiles[i];
+                const fileUri = supportedFiles[i]!;
                 const filePath = fileUri.fsPath;
                 const fileName = filePath.split(/[\\/]/).pop() || "document";
 
@@ -871,7 +871,7 @@ export function registerDocumentCommands(
                 vscode.window.showInformationMessage(
                   isMultiple
                     ? `Successfully copied ${successCount} file(s) to space "${defaultSpace.name}"`
-                    : `Successfully copied "${supportedFiles[0].fsPath.split(/[\\/]/).pop()}" to space "${defaultSpace.name}"`,
+                    : `Successfully copied "${supportedFiles[0]?.fsPath.split(/[\\/]/).pop() ?? "document"}" to space "${defaultSpace.name}"`,
                 );
               } else if (successCount === 0) {
                 vscode.window.showErrorMessage(

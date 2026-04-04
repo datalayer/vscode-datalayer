@@ -23,6 +23,7 @@ import { SecretTreeItem } from "../models/secretTreeItem";
 import type { SettingsTreeItem } from "../models/settingsTreeItem";
 import { TreeSectionItem } from "../models/treeSectionItem";
 import { DatalayerAuthProvider } from "../services/core/authProvider";
+import { ServiceLoggers } from "../services/logging/loggers";
 
 /**
  * Tree data provider for the Datalayer Settings view.
@@ -155,15 +156,15 @@ export class SettingsTreeProvider implements vscode.TreeDataProvider<SettingsTre
         this.datasourcesCache.length,
       );
       if (this.datasourcesCache.length > 0) {
-        // eslint-disable-next-line no-console
-        console.log("[Settings] First datasource:", {
-          name: this.datasourcesCache[0].name,
-          type: this.datasourcesCache[0].type,
-          raw: this.datasourcesCache[0],
-        });
+        ServiceLoggers.main.debug(
+          `[Settings] First datasource: ${this.datasourcesCache[0]!.name} (${this.datasourcesCache[0]!.type})`,
+        );
       }
     } catch (error) {
-      console.error("[Settings] Failed to load datasources:", error);
+      ServiceLoggers.main.error(
+        "[Settings] Failed to load datasources",
+        error instanceof Error ? error : undefined,
+      );
       // Silently fail - tree will be empty
       this.datasourcesCache = [];
     }

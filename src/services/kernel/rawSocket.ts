@@ -755,11 +755,11 @@ function ensureIOPubContent(message: KernelMessage.IMessage): void {
     const names = Object.keys(fields);
     const content = message.content as Record<string, unknown>;
     for (let i = 0; i < names.length; i++) {
-      let args = fields[names[i]];
+      const fieldName = names[i]!;
+      let args = fields[fieldName];
       if (!Array.isArray(args)) {
         args = [args];
       }
-      const fieldName = names[i];
       if (
         !(fieldName in content) ||
         typeof content[fieldName] !== (args as unknown[])[0]

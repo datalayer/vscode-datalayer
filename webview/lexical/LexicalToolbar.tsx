@@ -149,9 +149,9 @@ function colorToHex(color: string): string {
   // Parse rgb/rgba format
   const match = computedColor.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
   if (match) {
-    const r = parseInt(match[1]).toString(16).padStart(2, "0");
-    const g = parseInt(match[2]).toString(16).padStart(2, "0");
-    const b = parseInt(match[3]).toString(16).padStart(2, "0");
+    const r = parseInt(match[1]!).toString(16).padStart(2, "0");
+    const g = parseInt(match[2]!).toString(16).padStart(2, "0");
+    const b = parseInt(match[3]!).toString(16).padStart(2, "0");
     return `#${r}${g}${b}`;
   }
 
@@ -406,7 +406,7 @@ export function LexicalToolbar({
         // Extract text color
         const colorMatch = style.match(/color:\s*([^;]+)/);
         if (colorMatch) {
-          const color = colorMatch[1].trim();
+          const color = colorMatch[1]!.trim();
           setTextColor(colorToHex(color));
         } else {
           // No explicit color set, use theme default
@@ -421,7 +421,7 @@ export function LexicalToolbar({
         // Extract highlight/background color
         const bgColorMatch = style.match(/background-color:\s*([^;]+)/);
         if (bgColorMatch) {
-          const bgColor = bgColorMatch[1].trim();
+          const bgColor = bgColorMatch[1]!.trim();
           setHighlightColor(colorToHex(bgColor));
         } else {
           // No explicit background color, use default
@@ -431,7 +431,7 @@ export function LexicalToolbar({
         // Extract font size
         const fontSizeMatch = style.match(/font-size:\s*([^;]+)/);
         if (fontSizeMatch) {
-          const size = fontSizeMatch[1].trim();
+          const size = fontSizeMatch[1]!.trim();
           // Normalize to "pt" format if needed
           const normalizedSize = size.endsWith("pt") ? size : `${size}pt`;
           setFontSize(normalizedSize);
@@ -443,7 +443,7 @@ export function LexicalToolbar({
         // Extract font family
         const fontFamilyMatch = style.match(/font-family:\s*([^;]+)/);
         if (fontFamilyMatch) {
-          const family = fontFamilyMatch[1].trim();
+          const family = fontFamilyMatch[1]!.trim();
           // Remove quotes if present
           const cleanFamily = family.replace(/['"]/g, "");
           setFontFamily(cleanFamily);
@@ -753,14 +753,14 @@ export function LexicalToolbar({
   const increaseFontSize = () => {
     const currentIndex = FONT_SIZE_OPTIONS.indexOf(fontSize);
     if (currentIndex < FONT_SIZE_OPTIONS.length - 1) {
-      applyFontSize(FONT_SIZE_OPTIONS[currentIndex + 1]);
+      applyFontSize(FONT_SIZE_OPTIONS[currentIndex + 1]!);
     }
   };
 
   const decreaseFontSize = () => {
     const currentIndex = FONT_SIZE_OPTIONS.indexOf(fontSize);
     if (currentIndex > 0) {
-      applyFontSize(FONT_SIZE_OPTIONS[currentIndex - 1]);
+      applyFontSize(FONT_SIZE_OPTIONS[currentIndex - 1]!);
     }
   };
 

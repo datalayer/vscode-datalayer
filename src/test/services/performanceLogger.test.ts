@@ -283,7 +283,7 @@ suite("Performance Logger Tests", () => {
           errorEntries.length > 0,
           "Expected error log on failure status",
         );
-        assert.ok(errorEntries[0].msg.includes("failure"));
+        assert.ok(errorEntries[0]!.msg.includes("failure"));
       });
 
       test("logs info level for success status", () => {
@@ -309,7 +309,7 @@ suite("Performance Logger Tests", () => {
           infoEntries.length > 0,
           "Expected info log on success status",
         );
-        assert.ok(infoEntries[0].msg.includes("success"));
+        assert.ok(infoEntries[0]!.msg.includes("success"));
       });
     });
   });

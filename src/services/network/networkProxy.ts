@@ -424,7 +424,7 @@ export class NotebookNetworkService {
       return;
     }
 
-    const kernelId = match[1];
+    const kernelId = match[1]!;
 
     if (!this._kernelBridge) {
       console.error("[NotebookNetwork] Kernel bridge not available");

@@ -1,40 +1,58 @@
+# === Build/dev artifacts ===
 .vscode/**
 .vscode-test/**
 out/**
 native/**
+src/**
+webview/**
+scripts/**
+dev/**
+patches/**
+docs/**
+docs-html/**
+docs-markdown/**
+coverage/**
+coverage-webview/**
+
+# === Config files ===
+.gitignore
+.yarnrc
+webpack.config.js
+vitest.config.ts
+vsc-extension-quickstart.md
+**/tsconfig.json
+**/tsconfig*.json
+**/eslint.config.mjs
+**/.vscode-test.*
+.mypy_cache/**
+**/.mypy_cache/**
+commitlint.config.js
+cspell.json
+knip.json
+.husky/**
+.prettierrc
+.editorconfig
+typedoc.json
+netlify.toml
+
+# === Source maps (not needed at runtime) ===
+**/*.map
+
+# === TypeScript sources (only JS needed at runtime) ===
+**/*.ts
+!**/*.d.ts
+
+# === Showcase bundle (dev-only) ===
+dist/showcase.js
+dist/showcase.js.LICENSE.txt
+dist/*.LICENSE.txt
+dist/bundle-report-*.html
+dist/bundle-stats-*.json
+
+# === node_modules: exclude everything ===
 node_modules/**
-!node_modules/@vscode/codicons/dist/**
-# @datalayer packages - be selective to reduce size
-!node_modules/@datalayer/*/lib/**
-!node_modules/@datalayer/*/style/**
-!node_modules/@datalayer/*/schema/**
-# Exclude unnecessary @datalayer subdirectories
-node_modules/@datalayer/*/lib/examples/**
-node_modules/@datalayer/*/node_modules/**
-node_modules/@datalayer/**/*.map
-node_modules/@datalayer/**/test/**
-node_modules/@datalayer/**/tests/**
-node_modules/@datalayer/**/__tests__/**
-node_modules/@datalayer/**/*.spec.*
-node_modules/@datalayer/**/*.test.*
-# Safety net: exclude @datalayer dist/build/src that should never be in VSIX
-# These are webpack bundles (plotly.js, excalidraw etc.) not needed at runtime
-dist/node_modules/@datalayer/*/dist/**
-dist/node_modules/@datalayer/*/build/**
-dist/node_modules/@datalayer/*/src/**
-dist/node_modules/@datalayer/**/jupyter_*/**
-dist/node_modules/@datalayer/**/datalayer_*/**
-dist/node_modules/@datalayer/**/lexical_*/**
-dist/node_modules/@datalayer/**/__pycache__/**
-dist/node_modules/@datalayer/**/.git/**
-dist/node_modules/@datalayer/**/.mypy_cache/**
-!node_modules/pyodide/**
-!node_modules/lexical/**
-!node_modules/@lexical/**
-!node_modules/react/**
-!node_modules/react-dom/**
-!node_modules/@jupyterlab/**
-!node_modules/@primer/**
+
+# --- Whitelist: webpack externals (native bindings, not bundled) ---
 !node_modules/zeromq/**
 !node_modules/cmake-ts/**
 !node_modules/prebuild-install/**
@@ -42,21 +60,42 @@ dist/node_modules/@datalayer/**/.mypy_cache/**
 !node_modules/bufferutil/**
 !node_modules/utf-8-validate/**
 !node_modules/keytar/**
-src/**
+!node_modules/pyodide/**
+!node_modules/react/**
+!node_modules/react-dom/**
+
+# --- Whitelist: externalized UI packages ---
+!node_modules/lexical/**
+!node_modules/@lexical/**
+!node_modules/@jupyterlab/**
+!node_modules/@primer/react/**
+!node_modules/@vscode/codicons/dist/**
+
+# --- Whitelist: @datalayer packages (only the ones actually used) ---
+!node_modules/@datalayer/core/lib/**
+!node_modules/@datalayer/core/style/**
+!node_modules/@datalayer/core/schema/**
+!node_modules/@datalayer/core/package.json
+!node_modules/@datalayer/jupyter-react/lib/**
+!node_modules/@datalayer/jupyter-react/style/**
+!node_modules/@datalayer/jupyter-react/schema/**
+!node_modules/@datalayer/jupyter-react/package.json
+!node_modules/@datalayer/jupyter-lexical/lib/**
+!node_modules/@datalayer/jupyter-lexical/style/**
+!node_modules/@datalayer/jupyter-lexical/package.json
+!node_modules/@datalayer/icons-react/**
+!node_modules/@datalayer/lexical-loro/lib/**
+!node_modules/@datalayer/lexical-loro/package.json
+!node_modules/@datalayer/primer-addons/lib/**
+!node_modules/@datalayer/primer-addons/style/**
+!node_modules/@datalayer/primer-addons/package.json
+
+# Exclude examples from whitelisted @datalayer packages
+node_modules/@datalayer/*/lib/examples/**
+
+# Exclude @primer/css (not imported, @primer/react is separate)
+node_modules/@primer/css/**
+
+# === Resources ===
 !resources/agents/**
 resources/icons/**
-.gitignore
-.yarnrc
-webpack.config.js
-vsc-extension-quickstart.md
-**/tsconfig.json
-**/eslint.config.mjs
-**/*.map
-**/*.ts
-**/.vscode-test.*
-.mypy_cache/**
-**/.mypy_cache/**
-patches/**
-dist/showcase.js
-dist/showcase.js.LICENSE.txt
-dist/*.LICENSE.txt

@@ -172,7 +172,7 @@ suite("DocumentRegistry Tests", () => {
 
       const lexicals = registry.getByType("lexical");
       assert.strictEqual(lexicals.length, 1);
-      assert.strictEqual(lexicals[0].type, "lexical");
+      assert.strictEqual(lexicals[0]!.type, "lexical");
     });
   });
 

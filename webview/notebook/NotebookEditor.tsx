@@ -799,7 +799,7 @@ function NotebookEditorCore({
             // Extract cell index from itemId (format: "cell-X" or "cell-X-hY-Z" for headings)
             const match = message.itemId.match(/cell-(\d+)/);
             if (match) {
-              const cellIndex = parseInt(match[1], 10);
+              const cellIndex = parseInt(match[1]!, 10);
 
               // Scroll to the cell
               setTimeout(() => {

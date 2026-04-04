@@ -139,7 +139,7 @@ export class NotebookProvider extends BaseDocumentProvider<NotebookDocument> {
         }
 
         const uri = vscode.Uri.joinPath(
-          workspaceFolders[0].uri,
+          workspaceFolders[0]!.uri,
           `new-${NotebookProvider.newNotebookFileId++}.ipynb`,
         ).with({ scheme: "untitled" });
 
@@ -327,7 +327,7 @@ export class NotebookProvider extends BaseDocumentProvider<NotebookDocument> {
           if (!webviewsForDocument.length) {
             throw new Error("Could not find webview to save for");
           }
-          const panel = webviewsForDocument[0];
+          const panel = webviewsForDocument[0]!;
           const response = await this.postMessageWithResponse<number[]>(
             panel,
             "getFileData",
@@ -823,7 +823,7 @@ Complete the code at <CURSOR>:`;
     const codeBlockRegex = /^```[a-z]*\n([\s\S]*?)\n```$/;
     const match = completion.match(codeBlockRegex);
     if (match) {
-      return match[1].trim();
+      return match[1]!.trim();
     }
 
     return completion;

@@ -270,7 +270,7 @@ suite("EnvironmentCache Extended Tests", () => {
       );
 
       assert.strictEqual(result.length, 1);
-      assert.strictEqual(result[0].name, "env1");
+      assert.strictEqual(result[0]!.name, "env1");
     });
 
     test("marks cache as stale on error (lastFetch = 0)", async () => {

@@ -103,7 +103,7 @@ async function handleActiveRuntime(
     };
   }
 
-  const runtime = runningRuntimes[0];
+  const runtime = runningRuntimes[0]!;
   await ctx.kernelBridge.connectWebviewDocument(ctx.documentUri, runtime);
 
   return {

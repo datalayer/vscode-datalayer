@@ -115,7 +115,7 @@ suite("EnvironmentCache Tests", () => {
       );
 
       assert.strictEqual(environments.length, 2);
-      assert.strictEqual(environments[0].name, "python-env");
+      assert.strictEqual(environments[0]!.name, "python-env");
       assert.strictEqual(mockDatalayer.listEnvironments.calls.length, 1);
     });
 
