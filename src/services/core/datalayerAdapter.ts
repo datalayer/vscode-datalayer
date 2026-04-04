@@ -42,10 +42,12 @@ export function createVSCodeDatalayer(
   // Get configuration from VS Code settings
   const vsCodeConfig = vscode.workspace.getConfiguration("datalayer.services");
 
-  // Get individual service URLs with fallback to production default
+  // Get individual service URLs with fallback to production defaults
   const defaultUrl = "https://prod1.datalayer.run";
+  const runtimesDefaultUrl = "https://r1.datalayer.run";
   const iamRunUrl = vsCodeConfig.get<string>("iamUrl") ?? defaultUrl;
-  const runtimesRunUrl = vsCodeConfig.get<string>("runtimesUrl") ?? defaultUrl;
+  const runtimesRunUrl =
+    vsCodeConfig.get<string>("runtimesUrl") ?? runtimesDefaultUrl;
   const spacerRunUrl = vsCodeConfig.get<string>("spacerUrl") ?? defaultUrl;
 
   // Only log if ServiceLoggers is initialized (avoid initialization order issues)

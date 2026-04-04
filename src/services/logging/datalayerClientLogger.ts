@@ -353,10 +353,10 @@ export class DatalayerClientOperationTracker {
    */
   private static isAuthError(errorMessage: string): boolean {
     return (
-      errorMessage.includes("Not authenticated") ||
+      errorMessage.includes("not authenticated") ||
       errorMessage.includes("401") ||
-      errorMessage.includes("Unauthorized") ||
-      errorMessage.includes("Invalid token")
+      errorMessage.includes("unauthorized") ||
+      errorMessage.includes("invalid token")
     );
   }
 
@@ -376,7 +376,7 @@ export class DatalayerClientOperationTracker {
     return (
       errorObj?.status === 429 ||
       errorMessage.includes("rate limit") ||
-      errorMessage.includes("Too Many Requests")
+      errorMessage.includes("too many requests")
     );
   }
 
@@ -395,8 +395,8 @@ export class DatalayerClientOperationTracker {
   ): boolean {
     return (
       (errorObj?.status !== undefined && errorObj.status >= 500) ||
-      errorMessage.includes("Service Unavailable") ||
-      errorMessage.includes("Internal Server Error")
+      errorMessage.includes("service unavailable") ||
+      errorMessage.includes("internal server error")
     );
   }
 
@@ -421,7 +421,7 @@ export class DatalayerClientOperationTracker {
     },
   ): Promise<void> {
     const errorObj = error as { message?: string; status?: number };
-    const errorMessage = errorObj?.message || "Unknown error";
+    const errorMessage = (errorObj?.message || "Unknown error").toLowerCase();
 
     if (DatalayerClientOperationTracker.isAuthError(errorMessage)) {
       logger.info("Authentication required, will be handled by auth system");

@@ -171,7 +171,7 @@ async function writeDocumentContent(
  * Fetches document content with up to 3 retries.
  * @param document - The Datalayer document model.
  *
- * @returns Parsed JSON content of the fetched document.
+ * @returns The fetched document content as a string or parsed JSON object.
  *
  * @throws Error if content cannot be fetched after retries.
  */

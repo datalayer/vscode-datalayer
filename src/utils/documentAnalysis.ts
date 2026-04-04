@@ -13,6 +13,8 @@
 
 import * as vscode from "vscode";
 
+import { ServiceLoggers } from "../services/logging/loggers";
+
 /**
  * Result of analyzing all open documents categorized by editor type and location.
  */
@@ -51,7 +53,7 @@ function classifyTab(
   localDatalayerDocuments: string[],
   cloudDatalayerDocuments: string[],
 ): void {
-  console.log(
+  ServiceLoggers.main.debug(
     `[DocumentAnalysis] Tab: label="${tab.label}", input type=${tab.input?.constructor.name}`,
   );
 
@@ -70,12 +72,12 @@ function classifyTab(
   const uriString = uri.toString();
   const scheme = uri.scheme;
 
-  console.log(
+  ServiceLoggers.main.debug(
     `[DocumentAnalysis] Tab URI: ${uriString}, viewType=${viewType}, scheme=${scheme}`,
   );
 
   if (scheme === "datalayer") {
-    console.log(
+    ServiceLoggers.main.debug(
       `[DocumentAnalysis] Categorized as CLOUD (datalayer:// scheme)`,
     );
     cloudDatalayerDocuments.push(uriString);
@@ -87,22 +89,22 @@ function classifyTab(
   }
 
   if (viewType && DATALAYER_VIEW_TYPES.has(viewType)) {
-    console.log(
+    ServiceLoggers.main.debug(
       `[DocumentAnalysis] Categorized as LOCAL DATALAYER (viewType match: ${viewType})`,
     );
     localDatalayerDocuments.push(uriString);
   } else if (viewType === "jupyter-notebook") {
-    console.log(
+    ServiceLoggers.main.debug(
       `[DocumentAnalysis] Categorized as NATIVE (jupyter-notebook viewType)`,
     );
     nativeNotebooks.push(uriString);
   } else if (uriString.endsWith(".ipynb")) {
-    console.log(
+    ServiceLoggers.main.debug(
       `[DocumentAnalysis] Categorized as LOCAL DATALAYER (fallback - .ipynb file)`,
     );
     localDatalayerDocuments.push(uriString);
   } else if (uriString.endsWith(".dlex") || uriString.endsWith(".lexical")) {
-    console.log(
+    ServiceLoggers.main.debug(
       `[DocumentAnalysis] Categorized as LOCAL DATALAYER (lexical file)`,
     );
     localDatalayerDocuments.push(uriString);
@@ -125,32 +127,20 @@ export function analyzeOpenDocuments(): DocumentAnalysisResult {
   const localDatalayerDocuments: string[] = [];
   const cloudDatalayerDocuments: string[] = [];
 
-  console.log("[DocumentAnalysis] Starting analysis...");
-  console.log(
-    "[DocumentAnalysis] Total notebook documents:",
-    vscode.workspace.notebookDocuments.length,
-  );
-  console.log(
-    "[DocumentAnalysis] Total tab groups:",
-    vscode.window.tabGroups.all.length,
-  );
-  console.log(
-    "[DocumentAnalysis] Active text editor:",
-    vscode.window.activeTextEditor?.document.uri.toString(),
-  );
-  console.log(
-    "[DocumentAnalysis] Active notebook editor:",
-    vscode.window.activeNotebookEditor?.notebook.uri.toString(),
-  );
-  console.log(
-    "[DocumentAnalysis] Visible text editors:",
-    vscode.window.visibleTextEditors.length,
-  );
+  ServiceLoggers.main.debug("[DocumentAnalysis] Starting analysis...", {
+    notebookDocuments: vscode.workspace.notebookDocuments.length,
+    tabGroups: vscode.window.tabGroups.all.length,
+    activeTextEditor:
+      vscode.window.activeTextEditor?.document.uri.toString() ?? "none",
+    activeNotebookEditor:
+      vscode.window.activeNotebookEditor?.notebook.uri.toString() ?? "none",
+    visibleTextEditors: vscode.window.visibleTextEditors.length,
+  });
 
   // For Datalayer custom editor documents, we MUST use tab groups
   // because they are CustomDocument, not NotebookDocument!
   for (const group of vscode.window.tabGroups.all) {
-    console.log(
+    ServiceLoggers.main.debug(
       `[DocumentAnalysis] Checking tab group ${group.activeTab?.label}`,
     );
     for (const tab of group.tabs) {
@@ -168,17 +158,12 @@ export function analyzeOpenDocuments(): DocumentAnalysisResult {
     localDatalayerDocuments.length +
     cloudDatalayerDocuments.length;
 
-  console.log("[DocumentAnalysis] Results:");
-  console.log(`  - Native: ${nativeNotebooks.length}`, nativeNotebooks);
-  console.log(
-    `  - Local Datalayer: ${localDatalayerDocuments.length}`,
-    localDatalayerDocuments,
-  );
-  console.log(
-    `  - Cloud Datalayer: ${cloudDatalayerDocuments.length}`,
-    cloudDatalayerDocuments,
-  );
-  console.log(`  - Total: ${total}`);
+  ServiceLoggers.main.debug("[DocumentAnalysis] Results.", {
+    native: nativeNotebooks.length,
+    localDatalayer: localDatalayerDocuments.length,
+    cloudDatalayer: cloudDatalayerDocuments.length,
+    total,
+  });
 
   // Determine majority type
   let majorityType: "native" | "local" | "cloud" | "none" = "none";
@@ -204,16 +189,20 @@ export function analyzeOpenDocuments(): DocumentAnalysisResult {
     }
   }
 
-  console.log(`[DocumentAnalysis] Majority type: ${majorityType}`);
+  ServiceLoggers.main.debug(
+    `[DocumentAnalysis] Majority type: ${majorityType}`,
+  );
 
   // Get active document URI
   let activeDocumentUri: string | undefined;
   const activeEditor = vscode.window.activeNotebookEditor;
   if (activeEditor) {
     activeDocumentUri = activeEditor.notebook.uri.toString();
-    console.log(`[DocumentAnalysis] Active document: ${activeDocumentUri}`);
+    ServiceLoggers.main.debug(
+      `[DocumentAnalysis] Active document: ${activeDocumentUri}`,
+    );
   } else {
-    console.log(`[DocumentAnalysis] No active document editor`);
+    ServiceLoggers.main.debug(`[DocumentAnalysis] No active document editor`);
   }
 
   return {

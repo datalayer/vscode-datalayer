@@ -647,7 +647,8 @@ export class ProxiedWebSocket extends EventTarget {
       bodyData.data?.type === "Buffer" &&
       bodyData.data?.data
     ) {
-      (bodyData.data as unknown) = new ArrayBuffer(bodyData.data.data.length);
+      const bytes = new Uint8Array(bodyData.data.data);
+      (bodyData.data as unknown) = bytes.buffer;
     }
     if (DEBUG_WEBSOCKET) {
       console.log(

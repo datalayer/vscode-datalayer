@@ -4,6 +4,9 @@
  * MIT License
  */
 
+// Adapted from VS Code Jupyter extension (Microsoft Corporation)
+// Original: https://github.com/microsoft/vscode-jupyter
+
 /**
  * Raw ZMQ socket wrapper for direct kernel communication.
  * Creates a WebSocket-like interface over ZMQ channels.
@@ -643,13 +646,13 @@ export class RawSocket {
  * @param clientId - Unique client identifier for the kernel session.
  * @param username - Username for kernel message headers.
  *
- * @returns Object containing the JupyterLab kernel connection and socket.
+ * @returns Object containing the JupyterLab kernel connection.
  */
 export function createRawKernel(
   connection: IKernelConnection,
   clientId: string,
   username: string,
-): { realKernel: unknown; socket: null } {
+): { realKernel: unknown } {
   const jupyterLab = require("@jupyterlab/services");
 
   // Create custom WebSocket class that uses RawSocket
@@ -678,7 +681,7 @@ export function createRawKernel(
     },
   });
 
-  return { realKernel, socket: null };
+  return { realKernel };
 }
 
 // Helper functions for message validation

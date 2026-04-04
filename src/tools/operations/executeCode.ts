@@ -42,91 +42,15 @@ export const executeCodeOperation: ToolOperation<ExecuteCodeParams, unknown> = {
   async execute(params, context): Promise<unknown> {
     const { code } = params;
 
-    // eslint-disable-next-line no-console
-    console.log("=== [executeCode] START EXECUTION ===");
-    // eslint-disable-next-line no-console
-    console.log(
-      "[executeCode] Code to execute:",
-      code.substring(0, 100) + (code.length > 100 ? "..." : ""),
-    );
-    // eslint-disable-next-line no-console
-    console.log("[executeCode] Context format:", context.format);
-    // eslint-disable-next-line no-console
-    console.log("[executeCode] Context documentId:", context.documentId);
-    // eslint-disable-next-line no-console
-    console.log(
-      "[executeCode] Context extras keys:",
-      Object.keys(context.extras || {}),
-    );
-
-    // Log documentsContext if available
-    if (context.extras?.documentsContext) {
-      const docCtx = context.extras.documentsContext as {
-        activeDocument?: {
-          fileName: string;
-          type: string;
-          editorType: string;
-          viewType?: string;
-          scheme: string;
-        };
-        totalCount: number;
-        counts: Record<string, number>;
-      };
-      // eslint-disable-next-line no-console
-      console.log("[executeCode] DocumentsContext:", {
-        activeDocument: docCtx.activeDocument
-          ? {
-              fileName: docCtx.activeDocument.fileName,
-              type: docCtx.activeDocument.type,
-              editorType: docCtx.activeDocument.editorType,
-              viewType: docCtx.activeDocument.viewType,
-              scheme: docCtx.activeDocument.scheme,
-            }
-          : "NONE",
-        totalCount: docCtx.totalCount,
-        counts: docCtx.counts,
-      });
-    } else {
-      console.error("[executeCode] NO documentsContext in context.extras!");
-    }
-
     // PRIMARY PATH: Check for active document and which editor is being used
     const docInfo = getActiveDocumentInfo();
-    // eslint-disable-next-line no-console
-    console.log(
-      "[executeCode] Active document info:",
-      docInfo
-        ? {
-            uri: docInfo.uri.toString(),
-            editorType: docInfo.editorType,
-            viewType: docInfo.viewType,
-          }
-        : "NONE",
-    );
 
     // Route to appropriate executeCode based on editor type
     if (docInfo) {
-      const { uri, editorType, viewType } = docInfo;
-      // eslint-disable-next-line no-console
-      console.log("[executeCode] Document scheme:", uri.scheme);
-      // eslint-disable-next-line no-console
-      console.log("[executeCode] Document path:", uri.path);
-      // eslint-disable-next-line no-console
-      console.log("[executeCode] Editor type:", editorType);
-      // eslint-disable-next-line no-console
-      console.log("[executeCode] View type:", viewType);
-
-      // Extract filename
-      const fileName = uri.path.split("/").pop() || "";
-      // eslint-disable-next-line no-console
-      console.log("[executeCode] Document filename:", fileName);
+      const { uri, editorType } = docInfo;
 
       // Only execute on Datalayer custom editors, NOT native notebook editor
       if (editorType === "datalayer-notebook") {
-        // eslint-disable-next-line no-console
-        console.log(
-          "[executeCode] Delegating to Datalayer notebook executeCode",
-        );
         try {
           // Import notebook operations from /tools export (Node.js compatible, excludes React components)
           const {
@@ -138,18 +62,11 @@ export const executeCodeOperation: ToolOperation<ExecuteCodeParams, unknown> = {
           const documentId = services.documentRegistry.getIdFromUri(
             uri.toString(),
           );
-          // eslint-disable-next-line no-console
-          console.log("[executeCode] Resolved documentId:", documentId);
 
           // Pass documentId in context
           const result = await notebookToolOperations.executeCode.execute(
             { code },
             { ...context, documentId } as any, // eslint-disable-line @typescript-eslint/no-explicit-any
-          );
-          // eslint-disable-next-line no-console
-          console.log(
-            "[executeCode] Notebook executeCode result:",
-            typeof result,
           );
           return result;
         } catch (error) {
@@ -157,15 +74,6 @@ export const executeCodeOperation: ToolOperation<ExecuteCodeParams, unknown> = {
           throw error;
         }
       } else if (editorType === "datalayer-lexical") {
-        // eslint-disable-next-line no-console
-        console.log(
-          "[executeCode] Delegating to Datalayer lexical executeCode",
-        );
-        // eslint-disable-next-line no-console
-        console.log("[executeCode] Lexical context:", {
-          documentId: context.documentId,
-          hasExecutor: !!context.executor,
-        });
         try {
           // Import lexical operations from /tools export (Node.js compatible, excludes React components)
           const {
@@ -177,23 +85,11 @@ export const executeCodeOperation: ToolOperation<ExecuteCodeParams, unknown> = {
           const documentId = services.documentRegistry.getIdFromUri(
             uri.toString(),
           );
-          // eslint-disable-next-line no-console
-          console.log("[executeCode] Resolved documentId:", documentId);
 
           // Pass documentId in context
           const result = await lexicalToolOperations.executeCode.execute(
             { code },
             { ...context, documentId } as any, // eslint-disable-line @typescript-eslint/no-explicit-any
-          );
-          // eslint-disable-next-line no-console
-          console.log(
-            "[executeCode] Lexical executeCode result:",
-            typeof result,
-          );
-          // eslint-disable-next-line no-console
-          console.log(
-            "[executeCode] Result preview:",
-            JSON.stringify(result).substring(0, 200),
           );
           return result;
         } catch (error) {
@@ -201,28 +97,12 @@ export const executeCodeOperation: ToolOperation<ExecuteCodeParams, unknown> = {
           throw error;
         }
       } else if (editorType === "native-notebook") {
-        // eslint-disable-next-line no-console
-        console.log(
-          "[executeCode] Native VS Code notebook editor detected - not supported",
-        );
-        // eslint-disable-next-line no-console
-        console.log("[executeCode] Falling through to runtime fallback");
       } else {
-        // eslint-disable-next-line no-console
-        console.log("[executeCode] Other editor type:", editorType);
-        // eslint-disable-next-line no-console
-        console.log("[executeCode] Falling through to runtime fallback");
       }
     } else {
-      // eslint-disable-next-line no-console
-      console.log("[executeCode] No active document detected");
     }
 
     // FALLBACK PATH: No document, try runtime (new behavior)
-    // eslint-disable-next-line no-console
-    console.log(
-      "[executeCode] No active document, attempting runtime fallback...",
-    );
 
     const runtimesTreeProvider = getRuntimesTreeProvider();
     if (!runtimesTreeProvider) {
@@ -239,18 +119,7 @@ export const executeCodeOperation: ToolOperation<ExecuteCodeParams, unknown> = {
 
     // Check what runtimes are cached
     const cachedRuntimes = runtimesTreeProvider.getCachedRuntimes();
-    // eslint-disable-next-line no-console
-    console.log("[executeCode] Cached runtimes count:", cachedRuntimes.length);
     if (cachedRuntimes.length > 0) {
-      // eslint-disable-next-line no-console
-      console.log(
-        "[executeCode] Cached runtimes:",
-        cachedRuntimes.map((r) => ({
-          name: r.givenName,
-          uid: r.uid,
-          expiredAt: r.expiredAt.toISOString(),
-        })),
-      );
     }
 
     // Use ActiveRuntimeStrategy to select best runtime (most time remaining)
@@ -290,11 +159,6 @@ export const executeCodeOperation: ToolOperation<ExecuteCodeParams, unknown> = {
         );
       }
     }
-
-    // eslint-disable-next-line no-console
-    console.log(
-      `[executeCode] Using runtime fallback: ${runtime.givenName} (${runtime.uid})`,
-    );
 
     // Notify user about runtime execution (fire-and-forget)
     void vscode.window.showInformationMessage(

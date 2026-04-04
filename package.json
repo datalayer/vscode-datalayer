@@ -1483,7 +1483,7 @@
         },
         "datalayer.services.runtimesUrl": {
           "type": "string",
-          "default": "https://prod1.datalayer.run",
+          "default": "https://r1.datalayer.run",
           "description": "Runtimes service URL for computational environments"
         },
         "datalayer.services.spacerUrl": {

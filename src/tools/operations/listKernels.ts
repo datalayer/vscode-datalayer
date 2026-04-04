@@ -132,7 +132,6 @@ async function discoverCloudKernels(
           metadata: {
             environmentName: runtime.environmentName,
             ingress: runtime.ingress,
-            token: runtime.token,
             minutesRemaining,
             burningRate: runtime.burningRate,
           },

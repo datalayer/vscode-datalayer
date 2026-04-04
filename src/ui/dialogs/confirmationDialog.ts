@@ -46,13 +46,6 @@ export async function showTwoStepConfirmation(
   const capitalizedAction = action.charAt(0).toUpperCase() + action.slice(1);
   const consequencesList = consequences.map((c) => `  ${c}`).join("\n");
 
-  // eslint-disable-next-line no-console
-  console.log("[DEBUG confirmationDialog] Showing QuickPick confirmation");
-  // eslint-disable-next-line no-console
-  console.log("[DEBUG confirmationDialog] Item:", itemName);
-  // eslint-disable-next-line no-console
-  console.log("[DEBUG confirmationDialog] Action:", action);
-
   // Use QuickPick for reliable UI interaction (VS Code notifications are broken)
   const selected = await vscode.window.showQuickPick(
     [
