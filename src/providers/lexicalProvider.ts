@@ -138,7 +138,9 @@ export class LexicalProvider extends BaseDocumentProvider<LexicalDocument> {
       const workspaceFolders = vscode.workspace.workspaceFolders;
       if (!workspaceFolders || workspaceFolders.length === 0) {
         vscode.window.showErrorMessage(
-          "Creating new Datalayer Lexical documents currently requires opening a workspace",
+          vscode.l10n.t(
+            "Creating new Datalayer Lexical documents currently requires opening a workspace",
+          ),
         );
         return;
       }
@@ -199,7 +201,9 @@ export class LexicalProvider extends BaseDocumentProvider<LexicalDocument> {
           // Lexical documents are custom editors (webviews), not text editors
           // Send test message to all active lexical webviews
           if (provider.webviews.size === 0) {
-            vscode.window.showErrorMessage("No lexical documents open");
+            vscode.window.showErrorMessage(
+              vscode.l10n.t("No lexical documents open"),
+            );
             return;
           }
 
@@ -227,7 +231,10 @@ export class LexicalProvider extends BaseDocumentProvider<LexicalDocument> {
           }
 
           vscode.window.showInformationMessage(
-            `Test message sent to ${sentCount} lexical document(s)! Check Developer Console (Help > Toggle Developer Tools) for webview logs.`,
+            vscode.l10n.t(
+              "Test message sent to {0} lexical document(s)! Check Developer Console (Help > Toggle Developer Tools) for webview logs.",
+              sentCount,
+            ),
           );
         },
       ),
@@ -496,13 +503,17 @@ export class LexicalProvider extends BaseDocumentProvider<LexicalDocument> {
 
       if (!authState.isAuthenticated) {
         // Show login prompt
+        const logInLabel = vscode.l10n.t("Log In");
+        const cancelLabel = vscode.l10n.t("Cancel");
         const choice = await vscode.window.showWarningMessage(
-          "You must be logged in to Datalayer to open remote documents. Would you like to log in now?",
-          "Log In",
-          "Cancel",
+          vscode.l10n.t(
+            "You must be logged in to Datalayer to open remote documents. Would you like to log in now?",
+          ),
+          logInLabel,
+          cancelLabel,
         );
 
-        if (choice === "Log In") {
+        if (choice === logInLabel) {
           // Trigger login command
           await vscode.commands.executeCommand("datalayer.login");
 
@@ -652,7 +663,10 @@ export class LexicalProvider extends BaseDocumentProvider<LexicalDocument> {
             error,
           );
           vscode.window.showErrorMessage(
-            `Failed to initialize Lexical editor: ${error.message}`,
+            vscode.l10n.t(
+              "Failed to initialize Lexical editor: {0}",
+              error.message,
+            ),
           );
         });
       } else if (
@@ -991,9 +1005,18 @@ export class LexicalProvider extends BaseDocumentProvider<LexicalDocument> {
     // Add cache busting to force fresh load
     const cacheBust = `?v=${Date.now()}`;
 
+    // Pass the l10n bundle to the webview so @vscode/l10n can initialize translations.
+    // vscode.l10n.bundle is undefined when running with the default (English) locale.
+    const l10nBundle = vscode.l10n.bundle ?? {};
+    // Escape characters that can break inline script contents when embedding JSON
+    const l10nBundleJson = JSON.stringify(l10nBundle)
+      .replace(/</g, "\\u003c")
+      .replace(/\u2028/g, "\\u2028")
+      .replace(/\u2029/g, "\\u2029");
+
     return /* html */ `
       <!DOCTYPE html>
-      <html lang="en">
+      <html lang="${vscode.env.language}">
       <head>
         <meta charset="UTF-8">
         <!--
@@ -1018,6 +1041,8 @@ export class LexicalProvider extends BaseDocumentProvider<LexicalDocument> {
           window.__webpack_public_path__ = '${distUri}/';
           // Set webpack nonce for CSP compliance on dynamically created script tags
           window.__webpack_nonce__ = '${nonce}';
+          // l10n bundle for @vscode/l10n translations in the webview
+          window.__l10nBundle__ = ${l10nBundleJson};
         </script>
       </head>
       <body style="margin: 0; padding: 0; background-color: var(--vscode-editor-background); color: var(--vscode-editor-foreground);">
@@ -1125,7 +1150,10 @@ export class LexicalProvider extends BaseDocumentProvider<LexicalDocument> {
           }
         } catch (error) {
           vscode.window.showErrorMessage(
-            `Failed to open URL: ${error instanceof Error ? error.message : String(error)}`,
+            vscode.l10n.t(
+              "Failed to open URL: {0}",
+              error instanceof Error ? error.message : String(error),
+            ),
           );
         }
       },

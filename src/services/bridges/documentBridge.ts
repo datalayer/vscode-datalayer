@@ -86,7 +86,7 @@ async function waitForExtensionReady(timeout = 30000): Promise<void> {
   return vscode.window.withProgress(
     {
       location: vscode.ProgressLocation.Notification,
-      title: "Loading Datalayer document...",
+      title: vscode.l10n.t("Loading Datalayer document..."),
       cancellable: false,
     },
     async () => {

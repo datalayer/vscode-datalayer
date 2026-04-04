@@ -40,10 +40,12 @@ export function registerCreateCommands(context: vscode.ExtensionContext): void {
             "datalayer.jupyter-notebook-new",
           );
         } catch (error) {
+          const errorMsg =
+            error instanceof Error
+              ? error.message
+              : vscode.l10n.t("Unknown error");
           vscode.window.showErrorMessage(
-            `Failed to create notebook: ${
-              error instanceof Error ? error.message : "Unknown error"
-            }`,
+            vscode.l10n.t("Failed to create notebook: {0}", errorMsg),
           );
         }
       },
@@ -61,10 +63,12 @@ export function registerCreateCommands(context: vscode.ExtensionContext): void {
         try {
           await vscode.commands.executeCommand("datalayer.lexical-editor-new");
         } catch (error) {
+          const errorMsg =
+            error instanceof Error
+              ? error.message
+              : vscode.l10n.t("Unknown error");
           vscode.window.showErrorMessage(
-            `Failed to create lexical document: ${
-              error instanceof Error ? error.message : "Unknown error"
-            }`,
+            vscode.l10n.t("Failed to create lexical document: {0}", errorMsg),
           );
         }
       },

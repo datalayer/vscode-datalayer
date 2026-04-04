@@ -259,7 +259,7 @@ export class DatalayerAuthProvider
       this._onAuthStateChanged.fire(this._authState);
 
       await vscode.window.showInformationMessage(
-        `Successfully logged in as ${result.user.displayName}`,
+        vscode.l10n.t("Successfully logged in as {0}", result.user.displayName),
       );
     } catch (error) {
       const errorMessage =
@@ -277,7 +277,9 @@ export class DatalayerAuthProvider
       };
 
       this._onAuthStateChanged.fire(this._authState);
-      await vscode.window.showErrorMessage(`Login failed: ${errorMessage}`);
+      await vscode.window.showErrorMessage(
+        vscode.l10n.t("Login failed: {0}", errorMessage),
+      );
       throw error;
     }
   }
@@ -356,7 +358,11 @@ export class DatalayerAuthProvider
       });
 
       await vscode.window.showInformationMessage(
-        `Successfully logged in with ${provider} as ${result.user.displayName}`,
+        vscode.l10n.t(
+          "Successfully logged in with {0} as {1}",
+          provider,
+          result.user.displayName,
+        ),
       );
     } catch (error) {
       const errorMessage =
@@ -375,7 +381,7 @@ export class DatalayerAuthProvider
 
       this._onAuthStateChanged.fire(this._authState);
       await vscode.window.showErrorMessage(
-        `${provider} login failed: ${errorMessage}`,
+        vscode.l10n.t("{0} login failed: {1}", provider, errorMessage),
       );
       throw error;
     }
@@ -421,7 +427,9 @@ export class DatalayerAuthProvider
 
       this.logger.info("Logout successful - Datalayer cleared keyring");
       this._onAuthStateChanged.fire(this._authState);
-      await vscode.window.showInformationMessage("Successfully logged out");
+      await vscode.window.showInformationMessage(
+        vscode.l10n.t("Successfully logged out"),
+      );
     } catch (error) {
       // Even if API fails, Datalayer clears local storage
       this.logger.error("Logout error (local state cleared)", error as Error);
@@ -457,33 +465,37 @@ export class DatalayerAuthProvider
 
     if (state.isAuthenticated && state.user) {
       const user = state.user;
+      const logoutLabel = `$(sign-out) ${vscode.l10n.t("Logout")}`;
+      const visitPlatformLabel = `$(home) ${vscode.l10n.t("Visit Datalayer Platform")}`;
+      const viewDocsLabel = `$(book) ${vscode.l10n.t("View Documentation")}`;
+      const reportIssueLabel = `$(github) ${vscode.l10n.t("Report Issue")}`;
       const items: vscode.QuickPickItem[] = [
-        { label: "$(sign-out) Logout" },
+        { label: logoutLabel },
         { label: "", kind: vscode.QuickPickItemKind.Separator },
-        { label: "$(home) Visit Datalayer Platform" },
-        { label: "$(book) View Documentation" },
-        { label: "$(github) Report Issue" },
+        { label: visitPlatformLabel },
+        { label: viewDocsLabel },
+        { label: reportIssueLabel },
       ];
 
       const displayName = user.displayName;
       const selected = await vscode.window.showQuickPick(items, {
-        title: "Datalayer - Help & Feedback",
-        placeHolder: `Connected as ${displayName}`,
+        title: vscode.l10n.t("Datalayer - Help & Feedback"),
+        placeHolder: vscode.l10n.t("Connected as {0}", displayName),
       });
 
       if (!selected) {
         return;
       }
 
-      if (selected.label === "$(sign-out) Logout") {
+      if (selected.label === logoutLabel) {
         await this.logout();
-      } else if (selected.label === "$(home) Visit Datalayer Platform") {
+      } else if (selected.label === visitPlatformLabel) {
         await vscode.env.openExternal(vscode.Uri.parse("https://datalayer.io"));
-      } else if (selected.label === "$(book) View Documentation") {
+      } else if (selected.label === viewDocsLabel) {
         await vscode.env.openExternal(
           vscode.Uri.parse("https://docs.datalayer.io"),
         );
-      } else if (selected.label === "$(github) Report Issue") {
+      } else if (selected.label === reportIssueLabel) {
         await vscode.env.openExternal(
           vscode.Uri.parse(
             "https://github.com/datalayer/vscode-datalayer/issues/new",
@@ -491,32 +503,36 @@ export class DatalayerAuthProvider
         );
       }
     } else {
+      const loginLabel = `$(sign-in) ${vscode.l10n.t("Login")}`;
+      const visitPlatformLabel2 = `$(home) ${vscode.l10n.t("Visit Datalayer Platform")}`;
+      const viewDocsLabel2 = `$(book) ${vscode.l10n.t("View Documentation")}`;
+      const reportIssueLabel2 = `$(github) ${vscode.l10n.t("Report Issue")}`;
       const items: vscode.QuickPickItem[] = [
-        { label: "$(sign-in) Login" },
+        { label: loginLabel },
         { label: "", kind: vscode.QuickPickItemKind.Separator },
-        { label: "$(home) Visit Datalayer Platform" },
-        { label: "$(book) View Documentation" },
-        { label: "$(github) Report Issue" },
+        { label: visitPlatformLabel2 },
+        { label: viewDocsLabel2 },
+        { label: reportIssueLabel2 },
       ];
 
       const selected = await vscode.window.showQuickPick(items, {
-        title: "Datalayer - Help & Feedback",
-        placeHolder: "Not connected to Datalayer",
+        title: vscode.l10n.t("Datalayer - Help & Feedback"),
+        placeHolder: vscode.l10n.t("Not connected to Datalayer"),
       });
 
       if (!selected) {
         return;
       }
 
-      if (selected.label === "$(sign-in) Login") {
+      if (selected.label === loginLabel) {
         await this.login();
-      } else if (selected.label === "$(home) Visit Datalayer Platform") {
+      } else if (selected.label === visitPlatformLabel2) {
         await vscode.env.openExternal(vscode.Uri.parse("https://datalayer.io"));
-      } else if (selected.label === "$(book) View Documentation") {
+      } else if (selected.label === viewDocsLabel2) {
         await vscode.env.openExternal(
           vscode.Uri.parse("https://docs.datalayer.io"),
         );
-      } else if (selected.label === "$(github) Report Issue") {
+      } else if (selected.label === reportIssueLabel2) {
         await vscode.env.openExternal(
           vscode.Uri.parse(
             "https://github.com/datalayer/vscode-datalayer/issues/new",

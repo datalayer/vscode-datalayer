@@ -162,7 +162,7 @@ export const executeCodeOperation: ToolOperation<ExecuteCodeParams, unknown> = {
 
     // Notify user about runtime execution (fire-and-forget)
     void vscode.window.showInformationMessage(
-      `Executing code on runtime: ${runtime.givenName}`,
+      vscode.l10n.t("Executing code on runtime: {0}", runtime.givenName),
     );
 
     // Execute on runtime

@@ -291,7 +291,7 @@ export class NotebookDocument
     }
 
     this._onDidChange.fire({
-      label: "Edit",
+      label: vscode.l10n.t("Edit"),
       undo: async () => {
         this._edits.pop();
         if (this._edits.length > 0) {

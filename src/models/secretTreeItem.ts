@@ -33,13 +33,19 @@ export class SecretTreeItem extends vscode.TreeItem {
     // Tooltip with secret details (NO actual value)
     this.tooltip = new vscode.MarkdownString();
     this.tooltip.appendMarkdown(`**${secret.name}**\n\n`);
-    this.tooltip.appendMarkdown(`- **Type:** ${secret.variant}\n`);
-    if (secret.description) {
-      this.tooltip.appendMarkdown(`- **Description:** ${secret.description}\n`);
-    }
-    this.tooltip.appendMarkdown(`- **ID:** ${secret.uid}\n`);
     this.tooltip.appendMarkdown(
-      `\n_Value is hidden for security. Use "View Secret Value" to reveal._`,
+      `- **${vscode.l10n.t("Type")}:** ${secret.variant}\n`,
+    );
+    if (secret.description) {
+      this.tooltip.appendMarkdown(
+        `- **${vscode.l10n.t("Description")}:** ${secret.description}\n`,
+      );
+    }
+    this.tooltip.appendMarkdown(
+      `- **${vscode.l10n.t("ID")}:** ${secret.uid}\n`,
+    );
+    this.tooltip.appendMarkdown(
+      `\n_${vscode.l10n.t('Value is hidden for security. Use "View Secret Value" to reveal.')}_`,
     );
 
     // Use key icon

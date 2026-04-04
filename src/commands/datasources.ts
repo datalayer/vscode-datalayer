@@ -70,13 +70,17 @@ export function registerDatasourcesCommands(
       "datalayer.deleteDatasource",
       async (item: DatasourceTreeItem) => {
         const datasource = item.datasource;
+        const deleteLabel = vscode.l10n.t("Delete");
         const confirmation = await vscode.window.showWarningMessage(
-          `Are you sure you want to delete datasource "${datasource.name}"?`,
+          vscode.l10n.t(
+            'Are you sure you want to delete datasource "{0}"?',
+            datasource.name,
+          ),
           { modal: true },
-          "Delete",
+          deleteLabel,
         );
 
-        if (confirmation !== "Delete") {
+        if (confirmation !== deleteLabel) {
           return;
         }
 
@@ -85,7 +89,10 @@ export function registerDatasourcesCommands(
           await datalayer.deleteDatasource(datasource.uid);
 
           vscode.window.showInformationMessage(
-            `Datasource "${datasource.name}" deleted successfully`,
+            vscode.l10n.t(
+              'Datasource "{0}" deleted successfully',
+              datasource.name,
+            ),
           );
 
           // Refresh the tree
@@ -98,7 +105,7 @@ export function registerDatasourcesCommands(
               ? error.message
               : "Failed to delete datasource";
           vscode.window.showErrorMessage(
-            `Failed to delete datasource: ${errorMessage}`,
+            vscode.l10n.t("Failed to delete datasource: {0}", errorMessage),
           );
         }
       },

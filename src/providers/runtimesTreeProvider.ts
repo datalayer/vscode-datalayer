@@ -98,8 +98,16 @@ export class RuntimesTreeProvider implements vscode.TreeDataProvider<RuntimesTre
     // Root level - return two section headers
     if (!element) {
       return [
-        new TreeSectionItem("Runtimes", "runtimes-section", "vm"),
-        new TreeSectionItem("Snapshots", "snapshots-section", "archive"),
+        new TreeSectionItem(
+          vscode.l10n.t("Runtimes"),
+          "runtimes-section",
+          "vm",
+        ),
+        new TreeSectionItem(
+          vscode.l10n.t("Snapshots"),
+          "snapshots-section",
+          "archive",
+        ),
       ];
     }
 

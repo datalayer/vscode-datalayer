@@ -37,12 +37,12 @@ export class RuntimeTreeItem extends vscode.TreeItem {
 
     // Tooltip with full details
     this.tooltip = new vscode.MarkdownString(
-      `**Runtime:** ${runtime.givenName || runtime.podName}\n\n` +
-        `**Environment:** ${runtime.environmentTitle || runtime.environmentName}\n\n` +
-        `**Started:** ${runtime.startedAt.toLocaleString()}\n\n` +
-        `**Expires:** ${runtime.expiredAt.toLocaleString()}\n\n` +
-        `**Time Remaining:** ${timeRemaining}\n\n` +
-        `**Credits/hour:** ${runtime.burningRate}`,
+      `**${vscode.l10n.t("Runtime")}:** ${runtime.givenName || runtime.podName}\n\n` +
+        `**${vscode.l10n.t("Environment")}:** ${runtime.environmentTitle || runtime.environmentName}\n\n` +
+        `**${vscode.l10n.t("Started")}:** ${runtime.startedAt.toLocaleString()}\n\n` +
+        `**${vscode.l10n.t("Expires")}:** ${runtime.expiredAt.toLocaleString()}\n\n` +
+        `**${vscode.l10n.t("Time Remaining")}:** ${timeRemaining}\n\n` +
+        `**${vscode.l10n.t("Credits/hour")}:** ${runtime.burningRate}`,
     );
 
     // Context for menu items
@@ -62,7 +62,7 @@ export class RuntimeTreeItem extends vscode.TreeItem {
     const remaining = this.runtime.expiredAt.getTime() - now.getTime();
 
     if (remaining < 0) {
-      return "Expired";
+      return vscode.l10n.t("Expired");
     }
 
     const minutes = Math.floor(remaining / (1000 * 60));

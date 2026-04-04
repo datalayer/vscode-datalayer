@@ -42,29 +42,35 @@ export function registerSecretsCommands(
         const variant = await vscode.window.showQuickPick(
           [
             {
-              label: "Generic",
-              description: "General-purpose secret",
+              label: vscode.l10n.t("Generic"),
+              description: vscode.l10n.t("General-purpose secret"),
               value: "generic" as const,
             },
             {
-              label: "Password",
-              description: "User password or authentication credential",
+              label: vscode.l10n.t("Password"),
+              description: vscode.l10n.t(
+                "User password or authentication credential",
+              ),
               value: "password" as const,
             },
             {
-              label: "Key",
-              description: "API key, access key, or cryptographic key",
+              label: vscode.l10n.t("Key"),
+              description: vscode.l10n.t(
+                "API key, access key, or cryptographic key",
+              ),
               value: "key" as const,
             },
             {
-              label: "Token",
-              description: "Bearer token, OAuth token, or session token",
+              label: vscode.l10n.t("Token"),
+              description: vscode.l10n.t(
+                "Bearer token, OAuth token, or session token",
+              ),
               value: "token" as const,
             },
           ],
           {
-            title: "Create Secret - Step 1 of 4",
-            placeHolder: "Select secret type",
+            title: vscode.l10n.t("Create Secret - Step 1 of 4"),
+            placeHolder: vscode.l10n.t("Select secret type"),
           },
         );
 
@@ -74,21 +80,23 @@ export function registerSecretsCommands(
 
         // Step 2: Enter name
         const name = await vscode.window.showInputBox({
-          title: "Create Secret - Step 2 of 4",
-          prompt: "Enter secret name",
-          placeHolder: "my_secret",
+          title: vscode.l10n.t("Create Secret - Step 2 of 4"),
+          prompt: vscode.l10n.t("Enter secret name"),
+          placeHolder: vscode.l10n.t("my_secret"),
           validateInput: (value) => {
             if (!value || value.trim().length === 0) {
-              return "Secret name cannot be empty";
+              return vscode.l10n.t("Secret name cannot be empty");
             }
             if (value.length < 3) {
-              return "Secret name must be at least 3 characters";
+              return vscode.l10n.t("Secret name must be at least 3 characters");
             }
             if (value.length > 50) {
-              return "Secret name must be 50 characters or less";
+              return vscode.l10n.t("Secret name must be 50 characters or less");
             }
             if (!/^[a-zA-Z0-9_-]+$/.test(value)) {
-              return "Secret name can only contain letters, numbers, hyphens, and underscores";
+              return vscode.l10n.t(
+                "Secret name can only contain letters, numbers, hyphens, and underscores",
+              );
             }
             return undefined;
           },
@@ -100,16 +108,18 @@ export function registerSecretsCommands(
 
         // Step 3: Enter value (password input)
         const value = await vscode.window.showInputBox({
-          title: "Create Secret - Step 3 of 4",
-          prompt: "Enter secret value",
-          placeHolder: "Enter the secret value...",
+          title: vscode.l10n.t("Create Secret - Step 3 of 4"),
+          prompt: vscode.l10n.t("Enter secret value"),
+          placeHolder: vscode.l10n.t("Enter the secret value..."),
           password: true, // Mask input
           validateInput: (value) => {
             if (!value || value.trim().length === 0) {
-              return "Secret value cannot be empty";
+              return vscode.l10n.t("Secret value cannot be empty");
             }
             if (value.length > 4096) {
-              return "Secret value must be 4096 characters or less";
+              return vscode.l10n.t(
+                "Secret value must be 4096 characters or less",
+              );
             }
             return undefined;
           },
@@ -121,12 +131,16 @@ export function registerSecretsCommands(
 
         // Step 4: Enter description (optional)
         const description = await vscode.window.showInputBox({
-          title: "Create Secret - Step 4 of 4",
-          prompt: "Enter description (optional)",
-          placeHolder: "Description of what this secret is for...",
+          title: vscode.l10n.t("Create Secret - Step 4 of 4"),
+          prompt: vscode.l10n.t("Enter description (optional)"),
+          placeHolder: vscode.l10n.t(
+            "Description of what this secret is for...",
+          ),
           validateInput: (value) => {
             if (value && value.length > 500) {
-              return "Description must be 500 characters or less";
+              return vscode.l10n.t(
+                "Description must be 500 characters or less",
+              );
             }
             return undefined;
           },
@@ -138,7 +152,7 @@ export function registerSecretsCommands(
         await vscode.window.withProgress(
           {
             location: vscode.ProgressLocation.Notification,
-            title: `Creating secret "${name}"...`,
+            title: vscode.l10n.t('Creating secret "{0}"...', name),
             cancellable: false,
           },
           async () => {
@@ -150,7 +164,7 @@ export function registerSecretsCommands(
             });
 
             vscode.window.showInformationMessage(
-              `Secret "${name}" created successfully`,
+              vscode.l10n.t('Secret "{0}" created successfully', name),
             );
 
             // Refresh the settings tree
@@ -159,7 +173,10 @@ export function registerSecretsCommands(
         );
       } catch (error) {
         vscode.window.showErrorMessage(
-          `Failed to create secret: ${error instanceof Error ? error.message : error}`,
+          vscode.l10n.t(
+            "Failed to create secret: {0}",
+            error instanceof Error ? error.message : String(error),
+          ),
         );
       }
     }),
@@ -174,22 +191,24 @@ export function registerSecretsCommands(
       "datalayer.viewSecret",
       async (item: SecretTreeItem) => {
         if (!item || !item.secret) {
-          vscode.window.showErrorMessage("No secret selected");
+          vscode.window.showErrorMessage(vscode.l10n.t("No secret selected"));
           return;
         }
 
         const secret = item.secret;
 
         // Show warning before displaying value
+        const showSecretLabel = vscode.l10n.t("Show Secret Value");
         const proceed = await vscode.window.showWarningMessage(
-          `You are about to view the value of secret "${secret.name}". ` +
-            `Make sure no one is looking over your shoulder and that ` +
-            `screen sharing/recording is disabled.`,
+          vscode.l10n.t(
+            'You are about to view the value of secret "{0}". Make sure no one is looking over your shoulder and that screen sharing/recording is disabled.',
+            secret.name,
+          ),
           { modal: true },
-          "Show Secret Value",
+          showSecretLabel,
         );
 
-        if (proceed !== "Show Secret Value") {
+        if (proceed !== showSecretLabel) {
           return;
         }
 
@@ -199,30 +218,42 @@ export function registerSecretsCommands(
           const fullSecret = await datalayer.getSecret(secret.uid);
 
           if (!fullSecret || !fullSecret.value) {
-            vscode.window.showErrorMessage("Failed to retrieve secret value");
+            vscode.window.showErrorMessage(
+              vscode.l10n.t("Failed to retrieve secret value"),
+            );
             return;
           }
 
           // Show value in an information message
+          const copyLabel = vscode.l10n.t("Copy to Clipboard");
+          const closeLabel = vscode.l10n.t("Close");
           const action = await vscode.window.showInformationMessage(
-            `Secret: ${secret.name}`,
+            vscode.l10n.t("Secret: {0}", secret.name),
             {
               modal: true,
-              detail: `Value: ${fullSecret.value}\n\nType: ${secret.variant}\nDescription: ${secret.description || "None"}`,
+              detail: vscode.l10n.t(
+                "Value: {0}\n\nType: {1}\nDescription: {2}",
+                fullSecret.value,
+                secret.variant,
+                secret.description || vscode.l10n.t("None"),
+              ),
             },
-            "Copy to Clipboard",
-            "Close",
+            copyLabel,
+            closeLabel,
           );
 
-          if (action === "Copy to Clipboard") {
+          if (action === copyLabel) {
             await vscode.env.clipboard.writeText(fullSecret.value);
             vscode.window.showInformationMessage(
-              "Secret value copied to clipboard",
+              vscode.l10n.t("Secret value copied to clipboard"),
             );
           }
         } catch (error) {
           vscode.window.showErrorMessage(
-            `Failed to view secret: ${error instanceof Error ? error.message : error}`,
+            vscode.l10n.t(
+              "Failed to view secret: {0}",
+              error instanceof Error ? error.message : String(error),
+            ),
           );
         }
       },
@@ -238,7 +269,7 @@ export function registerSecretsCommands(
       "datalayer.copySecretValue",
       async (item: SecretTreeItem) => {
         if (!item || !item.secret) {
-          vscode.window.showErrorMessage("No secret selected");
+          vscode.window.showErrorMessage(vscode.l10n.t("No secret selected"));
           return;
         }
 
@@ -250,18 +281,26 @@ export function registerSecretsCommands(
           const fullSecret = await datalayer.getSecret(secret.uid);
 
           if (!fullSecret || !fullSecret.value) {
-            vscode.window.showErrorMessage("Failed to retrieve secret value");
+            vscode.window.showErrorMessage(
+              vscode.l10n.t("Failed to retrieve secret value"),
+            );
             return;
           }
 
           // Copy to clipboard
           await vscode.env.clipboard.writeText(fullSecret.value);
           vscode.window.showInformationMessage(
-            `Secret "${secret.name}" value copied to clipboard`,
+            vscode.l10n.t(
+              'Secret "{0}" value copied to clipboard',
+              secret.name,
+            ),
           );
         } catch (error) {
           vscode.window.showErrorMessage(
-            `Failed to copy secret: ${error instanceof Error ? error.message : error}`,
+            vscode.l10n.t(
+              "Failed to copy secret: {0}",
+              error instanceof Error ? error.message : String(error),
+            ),
           );
         }
       },
@@ -277,7 +316,7 @@ export function registerSecretsCommands(
       "datalayer.renameSecret",
       async (item: SecretTreeItem) => {
         if (!item || !item.secret) {
-          vscode.window.showErrorMessage("No secret selected");
+          vscode.window.showErrorMessage(vscode.l10n.t("No secret selected"));
           return;
         }
 
@@ -286,25 +325,29 @@ export function registerSecretsCommands(
 
         // Prompt for new name
         const newName = await vscode.window.showInputBox({
-          title: `Rename Secret: ${oldName}`,
-          prompt: "Enter new name",
+          title: vscode.l10n.t("Rename Secret: {0}", oldName),
+          prompt: vscode.l10n.t("Enter new name"),
           value: oldName,
           placeHolder: oldName,
           validateInput: (value) => {
             if (!value || value.trim().length === 0) {
-              return "Secret name cannot be empty";
+              return vscode.l10n.t("Secret name cannot be empty");
             }
             if (value.length < 3) {
-              return "Secret name must be at least 3 characters";
+              return vscode.l10n.t("Secret name must be at least 3 characters");
             }
             if (value.length > 50) {
-              return "Secret name must be 50 characters or less";
+              return vscode.l10n.t("Secret name must be 50 characters or less");
             }
             if (!/^[a-zA-Z0-9_-]+$/.test(value)) {
-              return "Secret name can only contain letters, numbers, hyphens, and underscores";
+              return vscode.l10n.t(
+                "Secret name can only contain letters, numbers, hyphens, and underscores",
+              );
             }
             if (value === oldName) {
-              return "New name must be different from current name";
+              return vscode.l10n.t(
+                "New name must be different from current name",
+              );
             }
             return undefined;
           },
@@ -318,7 +361,11 @@ export function registerSecretsCommands(
           await vscode.window.withProgress(
             {
               location: vscode.ProgressLocation.Notification,
-              title: `Renaming secret "${oldName}" to "${newName}"...`,
+              title: vscode.l10n.t(
+                'Renaming secret "{0}" to "{1}"...',
+                oldName,
+                newName,
+              ),
               cancellable: false,
             },
             async () => {
@@ -336,7 +383,11 @@ export function registerSecretsCommands(
               });
 
               vscode.window.showInformationMessage(
-                `Secret renamed from "${oldName}" to "${newName}"`,
+                vscode.l10n.t(
+                  'Secret renamed from "{0}" to "{1}"',
+                  oldName,
+                  newName,
+                ),
               );
 
               // Refresh the settings tree
@@ -345,7 +396,10 @@ export function registerSecretsCommands(
           );
         } catch (error) {
           vscode.window.showErrorMessage(
-            `Failed to rename secret: ${error instanceof Error ? error.message : error}`,
+            vscode.l10n.t(
+              "Failed to rename secret: {0}",
+              error instanceof Error ? error.message : String(error),
+            ),
           );
         }
       },
@@ -361,7 +415,7 @@ export function registerSecretsCommands(
       "datalayer.deleteSecret",
       async (item: SecretTreeItem) => {
         if (!item || !item.secret) {
-          vscode.window.showErrorMessage("No secret selected");
+          vscode.window.showErrorMessage(vscode.l10n.t("No secret selected"));
           return;
         }
 
@@ -371,14 +425,14 @@ export function registerSecretsCommands(
         // Show two-step confirmation dialog
         const confirmed = await showTwoStepConfirmation({
           itemName: secretName,
-          action: "delete",
           consequences: [
-            "This secret will be permanently deleted",
-            "Any applications or services using this secret will lose access",
-            "This action cannot be undone",
+            vscode.l10n.t("This secret will be permanently deleted"),
+            vscode.l10n.t(
+              "Any applications or services using this secret will lose access",
+            ),
+            vscode.l10n.t("This action cannot be undone"),
           ],
-          actionButton: "Delete Secret",
-          finalActionButton: "Delete Secret",
+          actionButton: vscode.l10n.t("Delete Secret"),
         });
 
         if (!confirmed) {
@@ -389,7 +443,7 @@ export function registerSecretsCommands(
           await vscode.window.withProgress(
             {
               location: vscode.ProgressLocation.Notification,
-              title: `Deleting secret "${secretName}"...`,
+              title: vscode.l10n.t('Deleting secret "{0}"...', secretName),
               cancellable: false,
             },
             async () => {
@@ -397,7 +451,7 @@ export function registerSecretsCommands(
               await datalayer.deleteSecret(secret.uid);
 
               vscode.window.showInformationMessage(
-                `Secret "${secretName}" deleted successfully`,
+                vscode.l10n.t('Secret "{0}" deleted successfully', secretName),
               );
 
               // Refresh the settings tree
@@ -406,7 +460,10 @@ export function registerSecretsCommands(
           );
         } catch (error) {
           vscode.window.showErrorMessage(
-            `Failed to delete secret: ${error instanceof Error ? error.message : error}`,
+            vscode.l10n.t(
+              "Failed to delete secret: {0}",
+              error instanceof Error ? error.message : String(error),
+            ),
           );
         }
       },

@@ -109,7 +109,10 @@ export function registerRuntimeCommands(
               );
 
               vscode.window.showInformationMessage(
-                `Selected runtime: ${selectedRuntime.givenName || selectedRuntime.uid}`,
+                vscode.l10n.t(
+                  "Selected runtime: {0}",
+                  selectedRuntime.givenName || selectedRuntime.uid,
+                ),
               );
             } else {
               // User cancelled - clear the spinner by sending kernel-terminated message
@@ -127,7 +130,9 @@ export function registerRuntimeCommands(
         }
 
         vscode.window.showInformationMessage(
-          "Please open a notebook or lexical editor first to select a runtime",
+          vscode.l10n.t(
+            "Please open a notebook or lexical editor first to select a runtime",
+          ),
         );
         return;
       }
@@ -145,7 +150,9 @@ export function registerRuntimeCommands(
     vscode.commands.registerCommand("datalayer.resetRuntime", async () => {
       await controllerManager.refreshControllers();
       vscode.window.showInformationMessage(
-        "Runtime controllers refreshed. Select a runtime from the kernel picker.",
+        vscode.l10n.t(
+          "Runtime controllers refreshed. Select a runtime from the kernel picker.",
+        ),
       );
     }),
   );
@@ -158,7 +165,9 @@ export function registerRuntimeCommands(
     vscode.commands.registerCommand("datalayer.showRuntimeStatus", async () => {
       await controllerManager.refreshControllers();
       vscode.window.showInformationMessage(
-        "Runtime controllers are available in the kernel picker. Select 'Datalayer Platform' to choose a runtime.",
+        vscode.l10n.t(
+          "Runtime controllers are available in the kernel picker. Select 'Datalayer Platform' to choose a runtime.",
+        ),
       );
     }),
   );
@@ -173,7 +182,9 @@ export function registerRuntimeCommands(
       async (_selectRuntimeUid?: string) => {
         await controllerManager.refreshControllers();
         vscode.window.showInformationMessage(
-          "Runtime controllers refreshed. Available runtimes are shown in the kernel picker.",
+          vscode.l10n.t(
+            "Runtime controllers refreshed. Available runtimes are shown in the kernel picker.",
+          ),
         );
       },
     ),
@@ -205,7 +216,7 @@ export function registerRuntimeCommands(
         const authState = authProvider.getAuthState();
         if (!authState.isAuthenticated) {
           vscode.window.showErrorMessage(
-            "Please login first to manage runtimes",
+            vscode.l10n.t("Please login first to manage runtimes"),
           );
           return;
         }
@@ -214,7 +225,9 @@ export function registerRuntimeCommands(
         const runtimes = await datalayer.listRuntimes();
 
         if (!runtimes || runtimes.length === 0) {
-          vscode.window.showInformationMessage("No running runtimes found");
+          vscode.window.showInformationMessage(
+            vscode.l10n.t("No running runtimes found"),
+          );
           return;
         }
 
@@ -223,7 +236,7 @@ export function registerRuntimeCommands(
           const now = new Date();
           const msRemaining = expiredAt.getTime() - now.getTime();
           if (msRemaining <= 0) {
-            return "expired";
+            return vscode.l10n.t("expired");
           }
 
           const minutes = Math.floor(msRemaining / 60000);
@@ -231,9 +244,9 @@ export function registerRuntimeCommands(
 
           if (hours > 0) {
             const remainingMinutes = minutes % 60;
-            return `${hours}h ${remainingMinutes}m left`;
+            return vscode.l10n.t("{0}h {1}m left", hours, remainingMinutes);
           }
-          return `${minutes}m left`;
+          return vscode.l10n.t("{0}m left", minutes);
         };
 
         // Create QuickPick items for individual runtimes
@@ -251,16 +264,18 @@ export function registerRuntimeCommands(
           ...runtimeItems,
           { label: "", kind: vscode.QuickPickItemKind.Separator },
           {
-            label: `$(trash) Terminate All (${runtimes.length} runtime${runtimes.length !== 1 ? "s" : ""})`,
-            description: "⚠️  This will terminate all running runtimes",
+            label: `$(trash) ${runtimes.length === 1 ? vscode.l10n.t("Terminate All ({0} runtime)", runtimes.length) : vscode.l10n.t("Terminate All ({0} runtimes)", runtimes.length)}`,
+            description: vscode.l10n.t(
+              "This will terminate all running runtimes",
+            ),
             isTerminateAll: true,
           },
         ];
 
         // Show QuickPick
         const selected = await vscode.window.showQuickPick(allItems, {
-          placeHolder: "Select runtime to terminate",
-          title: "Terminate Runtimes",
+          placeHolder: vscode.l10n.t("Select runtime to terminate"),
+          title: vscode.l10n.t("Terminate Runtimes"),
         });
 
         if (!selected) {
@@ -297,11 +312,29 @@ export function registerRuntimeCommands(
 
           if (failures === 0) {
             vscode.window.showInformationMessage(
-              `Successfully terminated all ${runtimes.length} runtime${runtimes.length !== 1 ? "s" : ""}`,
+              runtimes.length === 1
+                ? vscode.l10n.t(
+                    "Successfully terminated {0} runtime",
+                    runtimes.length,
+                  )
+                : vscode.l10n.t(
+                    "Successfully terminated all {0} runtimes",
+                    runtimes.length,
+                  ),
             );
           } else {
             vscode.window.showWarningMessage(
-              `Terminated ${successes} runtime${successes !== 1 ? "s" : ""}, ${failures} failed`,
+              successes === 1
+                ? vscode.l10n.t(
+                    "Terminated {0} runtime, {1} failed",
+                    successes,
+                    failures,
+                  )
+                : vscode.l10n.t(
+                    "Terminated {0} runtimes, {1} failed",
+                    successes,
+                    failures,
+                  ),
             );
           }
 
@@ -330,7 +363,7 @@ export function registerRuntimeCommands(
         await datalayer.deleteRuntime(selectedRuntime.podName);
 
         vscode.window.showInformationMessage(
-          `Runtime "${runtimeName}" terminated successfully`,
+          vscode.l10n.t('Runtime "{0}" terminated successfully', runtimeName),
         );
 
         // Notify all open documents that runtime was terminated
@@ -339,7 +372,7 @@ export function registerRuntimeCommands(
         const errorMessage =
           error instanceof Error ? error.message : String(error);
         vscode.window.showErrorMessage(
-          `Failed to terminate runtime: ${errorMessage}`,
+          vscode.l10n.t("Failed to terminate runtime: {0}", errorMessage),
         );
       }
     }),
@@ -359,7 +392,7 @@ export function registerRuntimeCommands(
           const authState = authProvider.getAuthState();
           if (!authState.isAuthenticated) {
             vscode.window.showErrorMessage(
-              "Please login first to debug runtime termination",
+              vscode.l10n.t("Please login first to debug runtime termination"),
             );
             return;
           }
@@ -368,7 +401,7 @@ export function registerRuntimeCommands(
 
           if (!runtimes || runtimes.length === 0) {
             vscode.window.showInformationMessage(
-              "No runtimes found for debugging",
+              vscode.l10n.t("No runtimes found for debugging"),
             );
             return;
           }
@@ -381,20 +414,27 @@ export function registerRuntimeCommands(
           }
 
           vscode.window.showInformationMessage(
-            `Debug: Terminating runtime "${runtime.givenName}". Check console for details.`,
+            vscode.l10n.t(
+              'Debug: Terminating runtime "{0}". Check console for details.',
+              runtime.givenName,
+            ),
           );
 
           const _result = await datalayer.deleteRuntime(podName);
           vscode.window.showInformationMessage(
-            `Debug: Runtime terminated successfully. Result: ${JSON.stringify(
-              _result,
-            )}`,
+            vscode.l10n.t(
+              "Debug: Runtime terminated successfully. Result: {0}",
+              JSON.stringify(_result),
+            ),
           );
         } catch (error: unknown) {
           const errorMessage =
             error instanceof Error ? error.message : String(error);
           vscode.window.showErrorMessage(
-            `Debug: Runtime termination failed. Error: ${errorMessage}. Check console for full details.`,
+            vscode.l10n.t(
+              "Debug: Runtime termination failed. Error: {0}. Check console for full details.",
+              errorMessage,
+            ),
           );
         }
       },
@@ -438,7 +478,9 @@ export function registerRuntimeCommands(
             // Check authentication before calling API
             if (!authProvider.isAuthenticated()) {
               vscode.window.showErrorMessage(
-                "You must be logged in to terminate Datalayer runtimes. Local kernels can be terminated without login.",
+                vscode.l10n.t(
+                  "You must be logged in to terminate Datalayer runtimes. Local kernels can be terminated without login.",
+                ),
               );
               return;
             }
@@ -447,9 +489,14 @@ export function registerRuntimeCommands(
             const runtimeName =
               runtimeObj.givenName ||
               runtimeObj.given_name ||
-              runtimeObj.podName;
+              runtimeObj.podName ||
+              runtimeObj.uid ||
+              "runtime";
             vscode.window.showInformationMessage(
-              `Runtime "${runtimeName}" terminated successfully.`,
+              vscode.l10n.t(
+                'Runtime "{0}" terminated successfully.',
+                runtimeName,
+              ),
             );
           } else {
             // Local kernel (Python environment, Jupyter server, or Pyodide)
@@ -460,14 +507,14 @@ export function registerRuntimeCommands(
               runtimeObj.given_name ||
               "kernel";
             vscode.window.showInformationMessage(
-              `Disconnected from "${kernelName}".`,
+              vscode.l10n.t('Disconnected from "{0}".', kernelName),
             );
           }
         } catch (error: unknown) {
           const errorMessage =
             error instanceof Error ? error.message : String(error);
           vscode.window.showErrorMessage(
-            `Failed to terminate runtime: ${errorMessage}`,
+            vscode.l10n.t("Failed to terminate runtime: {0}", errorMessage),
           );
           return; // Don't clear runtime if termination failed
         }
@@ -498,7 +545,9 @@ export function registerRuntimeCommands(
         const authState = authProvider.getAuthState();
         if (!authState.isAuthenticated) {
           vscode.window.showErrorMessage(
-            "You must be logged in to manage runtimes. Please run 'Datalayer: Login' first.",
+            vscode.l10n.t(
+              "You must be logged in to manage runtimes. Please run 'Datalayer: Login' first.",
+            ),
           );
           return;
         }
@@ -507,7 +556,9 @@ export function registerRuntimeCommands(
         const runtimes = await datalayer.listRuntimes();
 
         if (!runtimes || runtimes.length === 0) {
-          vscode.window.showInformationMessage("No active runtimes found.");
+          vscode.window.showInformationMessage(
+            vscode.l10n.t("No active runtimes found."),
+          );
           return;
         }
 
@@ -536,14 +587,14 @@ export function registerRuntimeCommands(
           return {
             label: name,
             description: `${environment} - ${status}`,
-            detail: `Credits: ${runtime.burningRate}`,
+            detail: vscode.l10n.t("Credits: {0}", runtime.burningRate),
             runtime: runtime,
           };
         });
 
         const selected = (await vscode.window.showQuickPick(items, {
-          placeHolder: "Select a runtime to terminate",
-          title: "Terminate Runtime",
+          placeHolder: vscode.l10n.t("Select a runtime to terminate"),
+          title: vscode.l10n.t("Terminate Runtime"),
         })) as RuntimeQuickPickItem | undefined;
 
         if (selected && selected.runtime) {
@@ -559,7 +610,7 @@ export function registerRuntimeCommands(
         const errorMessage =
           error instanceof Error ? error.message : String(error);
         vscode.window.showErrorMessage(
-          `Failed to terminate runtime: ${errorMessage}`,
+          vscode.l10n.t("Failed to terminate runtime: {0}", errorMessage),
         );
       }
     }),
@@ -597,7 +648,10 @@ export function registerRuntimeCommands(
             vscode.window.withProgress(
               {
                 location: vscode.ProgressLocation.Notification,
-                title: `Creating runtime: ${runtime.givenName}`,
+                title: vscode.l10n.t(
+                  "Creating runtime: {0}",
+                  runtime.givenName,
+                ),
                 cancellable: false,
               },
               async () => {
@@ -616,7 +670,10 @@ export function registerRuntimeCommands(
 
       if (selectedRuntime) {
         vscode.window.showInformationMessage(
-          `Runtime "${selectedRuntime.givenName || selectedRuntime.uid}" is ready`,
+          vscode.l10n.t(
+            'Runtime "{0}" is ready',
+            selectedRuntime.givenName || selectedRuntime.uid,
+          ),
         );
         // Immediately refresh to show the runtime (may use cached data)
         runtimesTreeProvider?.refresh();
@@ -656,7 +713,7 @@ export function registerRuntimeCommands(
         try {
           await datalayer.deleteRuntime(item.runtime.podName);
           vscode.window.showInformationMessage(
-            `Runtime "${runtimeName}" terminated successfully`,
+            vscode.l10n.t('Runtime "{0}" terminated successfully', runtimeName),
           );
           // Wait a moment for server to process deletion before refreshing
           await new Promise((resolve) => setTimeout(resolve, 500));
@@ -668,7 +725,7 @@ export function registerRuntimeCommands(
           const errorMessage =
             error instanceof Error ? error.message : String(error);
           vscode.window.showErrorMessage(
-            `Failed to terminate runtime: ${errorMessage}`,
+            vscode.l10n.t("Failed to terminate runtime: {0}", errorMessage),
           );
         }
       },
@@ -688,7 +745,7 @@ export function registerRuntimeCommands(
           const authState = authProvider.getAuthState();
           if (!authState.isAuthenticated) {
             vscode.window.showErrorMessage(
-              "Please login first to manage runtimes",
+              vscode.l10n.t("Please login first to manage runtimes"),
             );
             return;
           }
@@ -697,7 +754,9 @@ export function registerRuntimeCommands(
           const runtimes = await datalayer.listRuntimes();
 
           if (!runtimes || runtimes.length === 0) {
-            vscode.window.showInformationMessage("No running runtimes found");
+            vscode.window.showInformationMessage(
+              vscode.l10n.t("No running runtimes found"),
+            );
             return;
           }
 
@@ -714,14 +773,19 @@ export function registerRuntimeCommands(
           await vscode.window.withProgress(
             {
               location: vscode.ProgressLocation.Notification,
-              title: "Terminating runtimes...",
+              title: vscode.l10n.t("Terminating runtimes..."),
               cancellable: false,
             },
             async (progress) => {
               const results = await Promise.allSettled(
                 runtimes.map((runtime, index) => {
                   progress.report({
-                    message: `Terminating ${runtime.givenName || runtime.podName} (${index + 1}/${runtimes.length})`,
+                    message: vscode.l10n.t(
+                      "Terminating {0} ({1}/{2})",
+                      runtime.givenName || runtime.podName,
+                      index + 1,
+                      runtimes.length,
+                    ),
                   });
                   return datalayer.deleteRuntime(runtime.podName);
                 }),
@@ -735,11 +799,29 @@ export function registerRuntimeCommands(
 
               if (failures === 0) {
                 vscode.window.showInformationMessage(
-                  `Successfully terminated all ${runtimes.length} runtime${runtimes.length !== 1 ? "s" : ""}`,
+                  runtimes.length === 1
+                    ? vscode.l10n.t(
+                        "Successfully terminated {0} runtime",
+                        runtimes.length,
+                      )
+                    : vscode.l10n.t(
+                        "Successfully terminated all {0} runtimes",
+                        runtimes.length,
+                      ),
                 );
               } else {
                 vscode.window.showWarningMessage(
-                  `Terminated ${successes} runtime${successes !== 1 ? "s" : ""}, ${failures} failed`,
+                  successes === 1
+                    ? vscode.l10n.t(
+                        "Terminated {0} runtime, {1} failed",
+                        successes,
+                        failures,
+                      )
+                    : vscode.l10n.t(
+                        "Terminated {0} runtimes, {1} failed",
+                        successes,
+                        failures,
+                      ),
                 );
               }
             },
@@ -755,7 +837,7 @@ export function registerRuntimeCommands(
           const errorMessage =
             error instanceof Error ? error.message : String(error);
           vscode.window.showErrorMessage(
-            `Failed to terminate runtimes: ${errorMessage}`,
+            vscode.l10n.t("Failed to terminate runtimes: {0}", errorMessage),
           );
         }
       },
@@ -771,7 +853,7 @@ export function registerRuntimeCommands(
       "datalayer.runtimes.createSnapshot",
       async (item: RuntimeTreeItem) => {
         if (!item || !item.runtime) {
-          vscode.window.showErrorMessage("No runtime selected");
+          vscode.window.showErrorMessage(vscode.l10n.t("No runtime selected"));
           return;
         }
 
@@ -781,7 +863,10 @@ export function registerRuntimeCommands(
         // Check if runtime is running (has ingress URL)
         if (!runtime.ingress) {
           vscode.window.showErrorMessage(
-            `Runtime "${runtimeName}" must be running to create a snapshot`,
+            vscode.l10n.t(
+              'Runtime "{0}" must be running to create a snapshot',
+              runtimeName,
+            ),
           );
           return;
         }
@@ -793,17 +878,19 @@ export function registerRuntimeCommands(
 
         // Prompt for snapshot name
         const snapshotName = await vscode.window.showInputBox({
-          title: `Create Snapshot from "${runtimeName}"`,
-          prompt: "Enter a name for the snapshot",
-          placeHolder: "e.g., my-checkpoint",
+          title: vscode.l10n.t('Create Snapshot from "{0}"', runtimeName),
+          prompt: vscode.l10n.t("Enter a name for the snapshot"),
+          placeHolder: vscode.l10n.t("e.g., my-checkpoint"),
           value: suggestedName,
           validateInput: (value) => {
             if (!value || value.trim().length === 0) {
-              return "Snapshot name cannot be empty";
+              return vscode.l10n.t("Snapshot name cannot be empty");
             }
             // Basic validation - alphanumeric, hyphens, underscores
             if (!/^[a-zA-Z0-9_-]+$/.test(value)) {
-              return "Snapshot name can only contain letters, numbers, hyphens, and underscores";
+              return vscode.l10n.t(
+                "Snapshot name can only contain letters, numbers, hyphens, and underscores",
+              );
             }
             return undefined;
           },
@@ -815,9 +902,11 @@ export function registerRuntimeCommands(
 
         // Prompt for snapshot description
         const description = await vscode.window.showInputBox({
-          title: `Create Snapshot from "${runtimeName}"`,
-          prompt: "Enter a description for the snapshot (optional)",
-          placeHolder: "e.g., Checkpoint after training model",
+          title: vscode.l10n.t('Create Snapshot from "{0}"', runtimeName),
+          prompt: vscode.l10n.t(
+            "Enter a description for the snapshot (optional)",
+          ),
+          placeHolder: vscode.l10n.t("e.g., Checkpoint after training model"),
         });
 
         if (description === undefined) {
@@ -828,20 +917,26 @@ export function registerRuntimeCommands(
         const stopAfterSnapshot = await vscode.window.showQuickPick(
           [
             {
-              label: "$(debug-continue) Keep runtime running",
-              description: "Continue using the runtime after creating snapshot",
+              label: `$(debug-continue) ${vscode.l10n.t("Keep runtime running")}`,
+              description: vscode.l10n.t(
+                "Continue using the runtime after creating snapshot",
+              ),
               picked: true,
               stop: false,
             },
             {
-              label: "$(debug-stop) Stop runtime after snapshot",
-              description: "Terminate the runtime after snapshot is created",
+              label: `$(debug-stop) ${vscode.l10n.t("Stop runtime after snapshot")}`,
+              description: vscode.l10n.t(
+                "Terminate the runtime after snapshot is created",
+              ),
               stop: true,
             },
           ],
           {
-            title: `Create Snapshot from "${runtimeName}"`,
-            placeHolder: "What should happen to the runtime after snapshot?",
+            title: vscode.l10n.t('Create Snapshot from "{0}"', runtimeName),
+            placeHolder: vscode.l10n.t(
+              "What should happen to the runtime after snapshot?",
+            ),
           },
         );
 
@@ -854,7 +949,7 @@ export function registerRuntimeCommands(
           await vscode.window.withProgress(
             {
               location: vscode.ProgressLocation.Notification,
-              title: `Creating snapshot "${snapshotName}"...`,
+              title: vscode.l10n.t('Creating snapshot "{0}"...', snapshotName),
               cancellable: false,
             },
             async () => {
@@ -866,7 +961,10 @@ export function registerRuntimeCommands(
               );
 
               vscode.window.showInformationMessage(
-                `Snapshot "${snapshotName}" created successfully!`,
+                vscode.l10n.t(
+                  'Snapshot "{0}" created successfully!',
+                  snapshotName,
+                ),
               );
 
               // Refresh the runtime tree
@@ -876,7 +974,9 @@ export function registerRuntimeCommands(
             },
           );
         } catch (error) {
-          vscode.window.showErrorMessage(`Failed to create snapshot: ${error}`);
+          vscode.window.showErrorMessage(
+            vscode.l10n.t("Failed to create snapshot: {0}", String(error)),
+          );
         }
       },
     ),
@@ -950,7 +1050,7 @@ async function terminateRuntime(
     await vscode.window.withProgress(
       {
         location: vscode.ProgressLocation.Notification,
-        title: `Terminating runtime "${name}"...`,
+        title: vscode.l10n.t('Terminating runtime "{0}"...', name),
         cancellable: false,
       },
       async () => {
@@ -966,7 +1066,7 @@ async function terminateRuntime(
 
     // Show success message
     vscode.window.showInformationMessage(
-      `Runtime "${name}" terminated successfully.`,
+      vscode.l10n.t('Runtime "{0}" terminated successfully.', name),
     );
 
     // Notify all open documents that runtime was terminated
@@ -974,7 +1074,11 @@ async function terminateRuntime(
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : String(error);
     vscode.window.showErrorMessage(
-      `Failed to terminate runtime "${name}": ${errorMessage}`,
+      vscode.l10n.t(
+        'Failed to terminate runtime "{0}": {1}',
+        name,
+        errorMessage,
+      ),
     );
   }
 }

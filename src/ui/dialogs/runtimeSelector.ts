@@ -70,15 +70,15 @@ function formatRuntimeTimeInfo(runtime: RuntimeDTO): string {
     const diffDays = Math.floor(diffHours / 24);
 
     if (diffDays > 0) {
-      return ` • Started ${diffDays} day${diffDays > 1 ? "s" : ""} ago`;
+      return ` • ${diffDays === 1 ? vscode.l10n.t("Started {0} day ago", diffDays) : vscode.l10n.t("Started {0} days ago", diffDays)}`;
     }
     if (diffHours > 0) {
-      return ` • Started ${diffHours} hour${diffHours > 1 ? "s" : ""} ago`;
+      return ` • ${diffHours === 1 ? vscode.l10n.t("Started {0} hour ago", diffHours) : vscode.l10n.t("Started {0} hours ago", diffHours)}`;
     }
     if (diffMins > 0) {
-      return ` • Started ${diffMins} minute${diffMins > 1 ? "s" : ""} ago`;
+      return ` • ${diffMins === 1 ? vscode.l10n.t("Started {0} minute ago", diffMins) : vscode.l10n.t("Started {0} minutes ago", diffMins)}`;
     }
-    return ` • Just started`;
+    return ` • ${vscode.l10n.t("Just started")}`;
   } catch (_error) {
     return "";
   }
@@ -103,7 +103,7 @@ function buildRuntimeQuickPickItems(
       const displayName =
         runtimeData.givenName ??
         runtimeData.podName ??
-        `Runtime ${runtimeData.uid.slice(0, 8)}`;
+        vscode.l10n.t("Runtime {0}", runtimeData.uid.slice(0, 8));
       const env =
         runtimeData.environmentTitle ??
         runtimeData.environmentName ??
@@ -113,23 +113,24 @@ function buildRuntimeQuickPickItems(
       items.push({
         label: `$(play) ${displayName}`,
         description: env,
-        detail: `Status: ready${timeInfo}`,
+        detail: `${vscode.l10n.t("Status: ready")}${timeInfo}`,
         runtime: runtime,
       });
     }
 
     items.push({
-      label: "Create New Runtime",
+      label: vscode.l10n.t("Create New Runtime"),
       kind: vscode.QuickPickItemKind.Separator,
     });
   }
 
   for (const env of environments) {
-    const envTitle = env.title ?? env.name ?? "Unknown";
+    const envTitle = env.title ?? env.name ?? vscode.l10n.t("Unknown");
     items.push({
-      label: `$(add) Create new ${envTitle} Runtime`,
+      label: `$(add) ${vscode.l10n.t("Create new {0} Runtime", envTitle)}`,
       description: env.name,
-      detail: env.description ?? `Create a new ${envTitle} runtime`,
+      detail:
+        env.description ?? vscode.l10n.t("Create a new {0} runtime", envTitle),
       action: "create",
       environment: env,
     });
@@ -155,8 +156,8 @@ async function loadRuntimeData(
     {
       location: vscode.ProgressLocation.Notification,
       title: hideExistingRuntimes
-        ? "Loading Datalayer environments..."
-        : "Loading Datalayer runtimes...",
+        ? vscode.l10n.t("Loading Datalayer environments...")
+        : vscode.l10n.t("Loading Datalayer runtimes..."),
       cancellable: true,
     },
     async (_progress, token) => {
@@ -174,7 +175,9 @@ async function loadRuntimeData(
           );
         return { runtimes, environments };
       } catch (error) {
-        vscode.window.showErrorMessage(`Failed to load runtimes: ${error}`);
+        vscode.window.showErrorMessage(
+          vscode.l10n.t("Failed to load runtimes: {0}", String(error)),
+        );
         return null;
       }
     },
@@ -237,7 +240,7 @@ export async function selectDatalayerRuntime(
       items[0]!.kind === vscode.QuickPickItemKind.Separator)
   ) {
     vscode.window.showInformationMessage(
-      "No runtimes or environments available",
+      vscode.l10n.t("No runtimes or environments available"),
     );
     return undefined;
   }
@@ -245,11 +248,11 @@ export async function selectDatalayerRuntime(
   // Create QuickPick with instant callback support
   const quickPick = vscode.window.createQuickPick<RuntimeQuickPickItem>();
   quickPick.title = hideExistingRuntimes
-    ? "Create New Runtime"
-    : "Select Datalayer Runtime";
+    ? vscode.l10n.t("Create New Runtime")
+    : vscode.l10n.t("Select Datalayer Runtime");
   quickPick.placeholder = hideExistingRuntimes
-    ? "Choose an environment for your new runtime"
-    : "Choose an existing runtime or create a new one";
+    ? vscode.l10n.t("Choose an environment for your new runtime")
+    : vscode.l10n.t("Choose an existing runtime or create a new one");
   quickPick.ignoreFocusOut = true;
   quickPick.items = items;
 
@@ -327,16 +330,18 @@ async function selectSnapshot(
 
     // Add "Start fresh" option at the top
     items.push({
-      label: "$(file-directory) Start with fresh environment",
-      description: "No snapshot",
-      detail: "Create runtime from scratch without any saved state",
+      label: `$(file-directory) ${vscode.l10n.t("Start with fresh environment")}`,
+      description: vscode.l10n.t("No snapshot"),
+      detail: vscode.l10n.t(
+        "Create runtime from scratch without any saved state",
+      ),
       action: "fresh",
     });
 
     // Add separator if there are snapshots
     if (snapshots.length > 0) {
       items.push({
-        label: "Start from Snapshot",
+        label: vscode.l10n.t("Start from Snapshot"),
         kind: vscode.QuickPickItemKind.Separator,
       });
 
@@ -361,9 +366,10 @@ async function selectSnapshot(
           }
 
           items.push({
-            label: `$(archive) ${snapshotData.name || `Snapshot ${snapshotData.uid?.slice(0, 8)}`}`,
+            label: `$(archive) ${snapshotData.name || vscode.l10n.t("Snapshot {0}", snapshotData.uid?.slice(0, 8) ?? "")}`,
             description: dateInfo,
-            detail: snapshotData.description || "Saved runtime state",
+            detail:
+              snapshotData.description || vscode.l10n.t("Saved runtime state"),
             snapshotId: snapshotData.uid,
           });
         } catch (_error) {
@@ -375,11 +381,11 @@ async function selectSnapshot(
 
     // Show QuickPick
     const selected = await vscode.window.showQuickPick(items, {
-      title: "Start Runtime from Snapshot?",
+      title: vscode.l10n.t("Start Runtime from Snapshot?"),
       placeHolder:
         snapshots.length > 0
-          ? "Choose a snapshot or start fresh"
-          : "No snapshots available - will start fresh",
+          ? vscode.l10n.t("Choose a snapshot or start fresh")
+          : vscode.l10n.t("No snapshots available - will start fresh"),
       ignoreFocusOut: true,
     });
 
@@ -448,13 +454,16 @@ export async function createRuntime(
   // Step 2: Prompt for runtime name (human-readable)
   const suggestedName = generateRuntimeName();
   const name = await vscode.window.showInputBox({
-    title: `Create ${environment.title ?? environment.name} Runtime`,
-    prompt: "Enter a friendly name for the new runtime",
-    placeHolder: `e.g., ${suggestedName}`,
+    title: vscode.l10n.t(
+      "Create {0} Runtime",
+      environment.title ?? environment.name,
+    ),
+    prompt: vscode.l10n.t("Enter a friendly name for the new runtime"),
+    placeHolder: vscode.l10n.t("e.g., {0}", suggestedName),
     value: suggestedName, // Pre-populate with generated name
     validateInput: (value) => {
       if (!value || value.trim().length === 0) {
-        return "Runtime name cannot be empty";
+        return vscode.l10n.t("Runtime name cannot be empty");
       }
       // Allow any human-readable name - the API will handle any restrictions
       return undefined;
@@ -509,25 +518,29 @@ export async function createRuntime(
     : defaultMinutes;
 
   // Build the prompt message
-  let promptMessage = "Enter the runtime duration in minutes (max 24 hours)";
+  let promptMessage = vscode.l10n.t(
+    "Enter the runtime duration in minutes (max 24 hours)",
+  );
   if (netAvailableCredits !== undefined && maxMinutes !== undefined) {
     const reservedInfo = hasActiveRuntimes
-      ? " (after existing reservations)"
+      ? vscode.l10n.t(" (after existing reservations)")
       : "";
-    promptMessage = `You have ${netAvailableCredits.toFixed(
-      1,
-    )} credits available${reservedInfo}. Max ${maxMinutes} minutes for ${
-      environment.name
-    }`;
+    promptMessage = vscode.l10n.t(
+      "You have {0} credits available{1}. Max {2} minutes for {3}",
+      netAvailableCredits.toFixed(1),
+      reservedInfo,
+      maxMinutes,
+      environment.name,
+    );
   }
 
   // Prompt for runtime duration in minutes
   const minutesInput = await vscode.window.showInputBox({
-    title: `Set Runtime Duration for "${name}"`,
+    title: vscode.l10n.t('Set Runtime Duration for "{0}"', name),
     prompt: promptMessage,
     placeHolder: maxMinutes
-      ? `Minutes (max: ${maxMinutes})`
-      : `Minutes (max: 1440)`,
+      ? vscode.l10n.t("Minutes (max: {0})", maxMinutes)
+      : vscode.l10n.t("Minutes (max: {0})", 1440),
     value: suggestedMinutes.toString(), // Pre-populate with suggested value
     validateInput: (value) => {
       if (!value || value.trim().length === 0) {
@@ -535,22 +548,26 @@ export async function createRuntime(
       }
       const num = Number(value);
       if (isNaN(num) || num <= 0) {
-        return "Duration must be a positive number";
+        return vscode.l10n.t("Duration must be a positive number");
       }
 
       // Enforce 24-hour maximum
       if (num > 1440) {
-        return "Maximum runtime duration is 24 hours (1440 minutes)";
+        return vscode.l10n.t(
+          "Maximum runtime duration is 24 hours (1440 minutes)",
+        );
       }
 
       // Check against credits-based maximum
       if (maxMinutes && num > maxMinutes) {
         if (netAvailableCredits !== undefined) {
-          return `Maximum duration is ${maxMinutes} minutes with your available credits (${netAvailableCredits.toFixed(
-            1,
-          )} credits)`;
+          return vscode.l10n.t(
+            "Maximum duration is {0} minutes with your available credits ({1} credits)",
+            maxMinutes,
+            netAvailableCredits.toFixed(1),
+          );
         } else {
-          return `Maximum duration is ${maxMinutes} minutes`;
+          return vscode.l10n.t("Maximum duration is {0} minutes", maxMinutes);
         }
       }
       return undefined;
@@ -584,14 +601,14 @@ export async function createRuntime(
   return vscode.window.withProgress(
     {
       location: vscode.ProgressLocation.Notification,
-      title: `Creating runtime "${name}"...`,
+      title: vscode.l10n.t('Creating runtime "{0}"...', name),
       cancellable: false,
     },
     async (progress) => {
       try {
         progress.report({
           increment: 0,
-          message: "Requesting runtime creation...",
+          message: vscode.l10n.t("Requesting runtime creation..."),
         });
 
         // Trigger spinner callback NOW - user has accepted all options
@@ -629,13 +646,13 @@ export async function createRuntime(
 
         progress.report({
           increment: 25,
-          message: "Runtime created successfully!",
+          message: vscode.l10n.t("Runtime created successfully!"),
         });
 
         // Wait for the runtime to be ready with connection info
         progress.report({
           increment: 25,
-          message: "Waiting for runtime to be ready...",
+          message: vscode.l10n.t("Waiting for runtime to be ready..."),
         });
 
         let attempts = 0;
@@ -659,30 +676,32 @@ export async function createRuntime(
           attempts++;
           progress.report({
             increment: 2,
-            message: `Waiting for runtime... (${attempts}s)`,
+            message: vscode.l10n.t("Waiting for runtime... ({0}s)", attempts),
           });
         }
 
         // Complete the progress to 100%
         progress.report({
           increment: 100 - 50 - attempts * 2,
-          message: "Complete!",
+          message: vscode.l10n.t("Complete!"),
         });
 
         if (readyRuntime) {
           vscode.window.showInformationMessage(
-            `Runtime "${name}" created and ready!`,
+            vscode.l10n.t('Runtime "{0}" created and ready!', name),
           );
           return readyRuntime;
         }
 
         // If we still don't have connection info, return what we have
         vscode.window.showInformationMessage(
-          `Runtime "${name}" created but still initializing`,
+          vscode.l10n.t('Runtime "{0}" created but still initializing', name),
         );
         return runtime;
       } catch (error) {
-        vscode.window.showErrorMessage(`Failed to create runtime: ${error}`);
+        vscode.window.showErrorMessage(
+          vscode.l10n.t("Failed to create runtime: {0}", String(error)),
+        );
         return undefined;
       }
     },
@@ -699,8 +718,8 @@ export async function createRuntime(
  */
 export async function setRuntime(): Promise<string | undefined> {
   return vscode.window.showInputBox({
-    title: "Select Runtime",
-    placeHolder: "URL to a Jupyter Server",
+    title: vscode.l10n.t("Select Runtime"),
+    placeHolder: vscode.l10n.t("URL to a Jupyter Server"),
     validateInput: async (text) => {
       if (!text) {
         return null;
@@ -712,7 +731,7 @@ export async function setRuntime(): Promise<string | undefined> {
         return null;
       } catch (_reason) {
         return {
-          message: "Invalid Jupyter Server URL",
+          message: vscode.l10n.t("Invalid Jupyter Server URL"),
           severity: vscode.InputBoxValidationSeverity.Error,
         };
       }

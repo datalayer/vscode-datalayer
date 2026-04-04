@@ -52,7 +52,7 @@ export async function showKernelSelector(
 
   const options: KernelOption[] = [
     {
-      label: "Datalayer Platform",
+      label: vscode.l10n.t("Datalayer Platform"),
       action: async () => {
         try {
           // eslint-disable-next-line no-console
@@ -80,7 +80,9 @@ export async function showKernelSelector(
                 "[KernelSelector] User still not authenticated after login attempt",
               );
               vscode.window.showWarningMessage(
-                "You must be logged in to use Datalayer Platform kernels",
+                vscode.l10n.t(
+                  "You must be logged in to use Datalayer Platform kernels",
+                ),
               );
               return;
             }
@@ -123,7 +125,10 @@ export async function showKernelSelector(
               // Spinner message already sent via onRuntimeSelected callback
               await kernelBridge.connectWebviewDocument(documentUri, runtime);
               vscode.window.showInformationMessage(
-                `Connected to runtime "${runtime.givenName || runtime.podName}"`,
+                vscode.l10n.t(
+                  'Connected to runtime "{0}"',
+                  runtime.givenName || runtime.podName,
+                ),
               );
 
               // Refresh the runtimes tree to show the new/selected runtime
@@ -151,13 +156,16 @@ export async function showKernelSelector(
             error,
           );
           vscode.window.showErrorMessage(
-            `Failed to connect to Datalayer Platform: ${error instanceof Error ? error.message : String(error)}`,
+            vscode.l10n.t(
+              "Failed to connect to Datalayer Platform: {0}",
+              error instanceof Error ? error.message : String(error),
+            ),
           );
         }
       },
     },
     {
-      label: "Python Environments...",
+      label: vscode.l10n.t("Python Environments..."),
       action: async () => {
         const kernelInfo = await showPythonEnvironmentPicker();
         if (kernelInfo && documentUri) {
@@ -168,11 +176,17 @@ export async function showKernelSelector(
               kernelInfo,
             );
             vscode.window.showInformationMessage(
-              `Connected to Python environment: ${kernelInfo.displayName}`,
+              vscode.l10n.t(
+                "Connected to Python environment: {0}",
+                kernelInfo.displayName,
+              ),
             );
           } catch (error) {
             vscode.window.showErrorMessage(
-              `Failed to connect to Python environment: ${error}`,
+              vscode.l10n.t(
+                "Failed to connect to Python environment: {0}",
+                String(error),
+              ),
             );
           }
         }
@@ -180,7 +194,7 @@ export async function showKernelSelector(
     },
     {
       label: "Pyodide",
-      description: "Run Python in the browser without a server",
+      description: vscode.l10n.t("Run Python in the browser without a server"),
       action: async () => {
         if (documentUri) {
           try {
@@ -193,7 +207,9 @@ export async function showKernelSelector(
             // eslint-disable-next-line no-console
             console.log("[KernelSelector] Successfully connected to Pyodide");
             vscode.window.showInformationMessage(
-              "Switched to Pyodide (Browser Python). Python code will run in your browser.",
+              vscode.l10n.t(
+                "Switched to Pyodide (Browser Python). Python code will run in your browser.",
+              ),
             );
           } catch (error) {
             console.error(
@@ -201,7 +217,7 @@ export async function showKernelSelector(
               error,
             );
             vscode.window.showErrorMessage(
-              `Failed to switch to Pyodide: ${error}`,
+              vscode.l10n.t("Failed to switch to Pyodide: {0}", String(error)),
             );
           }
         } else {
@@ -212,7 +228,7 @@ export async function showKernelSelector(
       },
     },
     {
-      label: "Existing Jupyter Server...",
+      label: vscode.l10n.t("Existing Jupyter Server..."),
       action: async () => {
         const kernelInfo = await showJupyterServerPicker();
         if (kernelInfo && documentUri) {
@@ -249,11 +265,17 @@ export async function showKernelSelector(
               kernelInfo,
             );
             vscode.window.showInformationMessage(
-              `Connected to Jupyter server: ${kernelInfo.displayName}`,
+              vscode.l10n.t(
+                "Connected to Jupyter server: {0}",
+                kernelInfo.displayName,
+              ),
             );
           } catch (error) {
             vscode.window.showErrorMessage(
-              `Failed to connect to Jupyter server: ${error}`,
+              vscode.l10n.t(
+                "Failed to connect to Jupyter server: {0}",
+                String(error),
+              ),
             );
           }
         }
@@ -279,8 +301,8 @@ export async function showKernelSelector(
       "Runtime";
 
     options.push({
-      label: `$(trash) Terminate Runtime: ${runtimeName}`,
-      description: "Stop and remove the current runtime",
+      label: `$(trash) ${vscode.l10n.t("Terminate Runtime: {0}", runtimeName)}`,
+      description: vscode.l10n.t("Stop and remove the current runtime"),
       isSeparator: true, // Mark as needing separator before it
       action: async () => {
         // Import confirmation utilities
@@ -324,7 +346,9 @@ export async function showKernelSelector(
   });
 
   const selected = await vscode.window.showQuickPick(items, {
-    placeHolder: "Select a kernel source or manage current runtime",
+    placeHolder: vscode.l10n.t(
+      "Select a kernel source or manage current runtime",
+    ),
   });
 
   if (selected?.option) {

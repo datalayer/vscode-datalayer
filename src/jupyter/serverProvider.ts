@@ -31,13 +31,13 @@ import { ServiceLoggers } from "../services/logging/loggers";
  * Commands that appear in the Datalayer kernel picker
  */
 const CREATE_GPU_RUNTIME: JupyterServerCommand = {
-  label: "$(add) Create GPU Runtime",
-  description: "Launch AI environment on Datalayer platform",
+  label: `$(add) ${vscode.l10n.t("Create GPU Runtime")}`,
+  description: vscode.l10n.t("Launch AI environment on Datalayer platform"),
 };
 
 const CREATE_CPU_RUNTIME: JupyterServerCommand = {
-  label: "$(add) Create CPU Runtime",
-  description: "Launch Python CPU environment",
+  label: `$(add) ${vscode.l10n.t("Create CPU Runtime")}`,
+  description: vscode.l10n.t("Launch Python CPU environment"),
 };
 
 /**
@@ -204,8 +204,12 @@ export class DatalayerJupyterServerProvider
         this.isAuthenticated = true;
       } catch (error) {
         console.error("[DatalayerJupyterServerProvider] Login error:", error);
+        const errorMsg =
+          error instanceof Error
+            ? error.message
+            : vscode.l10n.t("Unknown error");
         vscode.window.showErrorMessage(
-          `Authentication failed: ${error instanceof Error ? error.message : "Unknown error"}`,
+          vscode.l10n.t("Authentication failed: {0}", errorMsg),
         );
         return undefined;
       }
@@ -229,8 +233,10 @@ export class DatalayerJupyterServerProvider
         "[DatalayerJupyterServerProvider] Command execution error:",
         error,
       );
+      const errorMsg =
+        error instanceof Error ? error.message : vscode.l10n.t("Unknown error");
       vscode.window.showErrorMessage(
-        `Failed to create runtime: ${error instanceof Error ? error.message : "Unknown error"}`,
+        vscode.l10n.t("Failed to create runtime: {0}", errorMsg),
       );
       return undefined;
     }
@@ -269,7 +275,9 @@ export class DatalayerJupyterServerProvider
         console.error(
           "[DatalayerJupyterServerProvider] GPU environment 'ai-env' not found",
         );
-        vscode.window.showErrorMessage("GPU environment not found on platform");
+        vscode.window.showErrorMessage(
+          vscode.l10n.t("GPU environment not found on platform"),
+        );
         return undefined;
       }
 
@@ -297,7 +305,10 @@ export class DatalayerJupyterServerProvider
       this.serverChangeEmitter.fire();
 
       vscode.window.showInformationMessage(
-        `Runtime "${runtime.givenName || runtime.podName}" created successfully!`,
+        vscode.l10n.t(
+          'Runtime "{0}" created successfully!',
+          runtime.givenName || runtime.podName || "",
+        ),
       );
 
       return this.runtimeToJupyterServer(runtime);
@@ -343,7 +354,9 @@ export class DatalayerJupyterServerProvider
         console.error(
           "[DatalayerJupyterServerProvider] CPU environment 'python-cpu-env' not found",
         );
-        vscode.window.showErrorMessage("CPU environment not found on platform");
+        vscode.window.showErrorMessage(
+          vscode.l10n.t("CPU environment not found on platform"),
+        );
         return undefined;
       }
 
@@ -371,7 +384,10 @@ export class DatalayerJupyterServerProvider
       this.serverChangeEmitter.fire();
 
       vscode.window.showInformationMessage(
-        `Runtime "${runtime.givenName || runtime.podName}" created successfully!`,
+        vscode.l10n.t(
+          'Runtime "{0}" created successfully!',
+          runtime.givenName || runtime.podName || "",
+        ),
       );
 
       return this.runtimeToJupyterServer(runtime);

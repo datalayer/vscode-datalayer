@@ -9,6 +9,7 @@
  * Dialog for inserting/editing links in the editor.
  */
 
+import * as l10n from "@vscode/l10n";
 import React, { useState } from "react";
 
 /** Props for the InsertLinkDialog component. */
@@ -36,12 +37,12 @@ export const InsertLinkDialog: React.FC<InsertLinkDialogProps> = ({
 
   const handleInsert = () => {
     if (!url || url === "https://") {
-      setError("Please enter a valid URL");
+      setError(l10n.t("Please enter a valid URL"));
       return;
     }
 
     if (!text) {
-      setError("Please enter link text");
+      setError(l10n.t("Please enter link text"));
       return;
     }
 
@@ -72,7 +73,7 @@ export const InsertLinkDialog: React.FC<InsertLinkDialogProps> = ({
           color: "var(--vscode-foreground)",
         }}
       >
-        Insert Link
+        {l10n.t("Insert Link")}
       </h2>
 
       <div style={{ marginBottom: "12px" }}>
@@ -85,7 +86,7 @@ export const InsertLinkDialog: React.FC<InsertLinkDialogProps> = ({
             color: "var(--vscode-foreground)",
           }}
         >
-          Link Text
+          {l10n.t("Link Text")}
         </label>
         <input
           id="link-text"
@@ -96,7 +97,7 @@ export const InsertLinkDialog: React.FC<InsertLinkDialogProps> = ({
             setError("");
           }}
           onKeyDown={handleKeyDown}
-          placeholder="Enter link text"
+          placeholder={l10n.t("Enter link text")}
           autoFocus
           style={{
             width: "100%",
@@ -121,7 +122,7 @@ export const InsertLinkDialog: React.FC<InsertLinkDialogProps> = ({
             color: "var(--vscode-foreground)",
           }}
         >
-          URL
+          {l10n.t("URL")}
         </label>
         <input
           id="link-url"
@@ -177,7 +178,7 @@ export const InsertLinkDialog: React.FC<InsertLinkDialogProps> = ({
             cursor: "pointer",
           }}
         >
-          Cancel
+          {l10n.t("Cancel")}
         </button>
         <button
           onClick={handleInsert}
@@ -199,7 +200,7 @@ export const InsertLinkDialog: React.FC<InsertLinkDialogProps> = ({
             opacity: url && text ? 1 : 0.6,
           }}
         >
-          Insert
+          {l10n.t("Insert")}
         </button>
       </div>
     </div>

@@ -36,7 +36,7 @@ export function registerThemeCommands(context: vscode.ExtensionContext): void {
 function showPrimerThemeShowcase(context: vscode.ExtensionContext): void {
   const panel = vscode.window.createWebviewPanel(
     "datalayer.primerThemeShowcase",
-    "Primer Theme Showcase",
+    vscode.l10n.t("Primer Theme Showcase"),
     vscode.ViewColumn.One,
     {
       enableScripts: true,
@@ -99,7 +99,7 @@ function getWebviewContent(
   const nonce = getNonce();
 
   return `<!DOCTYPE html>
-<html lang="en">
+<html lang="${vscode.env.language}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">

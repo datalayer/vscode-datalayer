@@ -376,12 +376,12 @@ export class OAuthFlowManager extends BaseService {
       await vscode.window.withProgress(
         {
           location: vscode.ProgressLocation.Notification,
-          title: `Authenticating with ${provider}`,
+          title: vscode.l10n.t("Authenticating with {0}", provider),
           cancellable: true,
         },
         async (progress, token) => {
           progress.report({
-            message: "Waiting for browser authentication...",
+            message: vscode.l10n.t("Waiting for browser authentication..."),
           });
 
           // Handle cancellation
@@ -397,7 +397,9 @@ export class OAuthFlowManager extends BaseService {
           // Wait for flow to complete
           try {
             const result = await flowPromise;
-            progress.report({ message: "Authentication successful!" });
+            progress.report({
+              message: vscode.l10n.t("Authentication successful!"),
+            });
             return result;
           } catch (error) {
             throw error;
@@ -510,7 +512,9 @@ export class OAuthFlowManager extends BaseService {
           new Error("Invalid OAuth state"),
         );
         await vscode.window.showErrorMessage(
-          "Invalid OAuth state - potential CSRF attack or expired flow",
+          vscode.l10n.t(
+            "Invalid OAuth state - potential CSRF attack or expired flow",
+          ),
         );
         return;
       }
@@ -528,7 +532,10 @@ export class OAuthFlowManager extends BaseService {
     } catch (error) {
       this.logger.error("Error processing OAuth callback", error as Error);
       await vscode.window.showErrorMessage(
-        `Failed to process OAuth callback: ${error instanceof Error ? error.message : "Unknown error"}`,
+        vscode.l10n.t(
+          "Failed to process OAuth callback: {0}",
+          error instanceof Error ? error.message : "Unknown error",
+        ),
       );
     }
   }

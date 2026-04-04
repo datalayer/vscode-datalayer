@@ -63,7 +63,9 @@ export async function showPythonEnvironmentPicker(): Promise<
     const pythonExt = vscode.extensions.getExtension("ms-python.python");
     if (!pythonExt) {
       vscode.window.showErrorMessage(
-        "Python extension is not installed. Please install the Python extension to use Python environments.",
+        vscode.l10n.t(
+          "Python extension is not installed. Please install the Python extension to use Python environments.",
+        ),
       );
       return undefined;
     }
@@ -75,7 +77,7 @@ export async function showPythonEnvironmentPicker(): Promise<
         await vscode.window.withProgress(
           {
             location: vscode.ProgressLocation.Notification,
-            title: "Activating Python extension...",
+            title: vscode.l10n.t("Activating Python extension..."),
             cancellable: false,
           },
           async () => {
@@ -90,7 +92,10 @@ export async function showPythonEnvironmentPicker(): Promise<
           activationError,
         );
         vscode.window.showErrorMessage(
-          `Failed to activate Python extension: ${activationError}. Please try again.`,
+          vscode.l10n.t(
+            "Failed to activate Python extension: {0}. Please try again.",
+            String(activationError),
+          ),
         );
         return undefined;
       }
@@ -101,7 +106,9 @@ export async function showPythonEnvironmentPicker(): Promise<
 
     if (!pythonApi || !pythonApi.environments) {
       vscode.window.showErrorMessage(
-        "Python extension API is not available. Please update to the latest Python extension.",
+        vscode.l10n.t(
+          "Python extension API is not available. Please update to the latest Python extension.",
+        ),
       );
       return undefined;
     }
@@ -129,15 +136,17 @@ export async function showPythonEnvironmentPicker(): Promise<
 
     // Add "Create New Environment" option at the top
     items.push({
-      label: "$(add) Create Python Environment",
-      description: "Create a new virtual environment or Conda environment",
-      detail: "Opens the Python environment creation wizard",
+      label: `$(add) ${vscode.l10n.t("Create Python Environment")}`,
+      description: vscode.l10n.t(
+        "Create a new virtual environment or Conda environment",
+      ),
+      detail: vscode.l10n.t("Opens the Python environment creation wizard"),
       isCreateNew: true,
     });
 
     // Add separator
     items.push({
-      label: "Existing Environments",
+      label: vscode.l10n.t("Existing Environments"),
       kind: vscode.QuickPickItemKind.Separator,
     });
 
@@ -164,8 +173,8 @@ export async function showPythonEnvironmentPicker(): Promise<
       items.push(...envItems);
     } else {
       items.push({
-        label: "No Python environments found",
-        description: "Create one using the option above",
+        label: vscode.l10n.t("No Python environments found"),
+        description: vscode.l10n.t("Create one using the option above"),
       });
     }
 
@@ -175,7 +184,7 @@ export async function showPythonEnvironmentPicker(): Promise<
     for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
       // Show the quick pick
       const selected = await vscode.window.showQuickPick(items, {
-        placeHolder: "Select a Python environment",
+        placeHolder: vscode.l10n.t("Select a Python environment"),
         matchOnDescription: true,
         matchOnDetail: true,
       });
@@ -200,16 +209,19 @@ export async function showPythonEnvironmentPicker(): Promise<
 
           // Re-add "Create New Environment" option
           items.push({
-            label: "$(add) Create Python Environment",
-            description:
+            label: `$(add) ${vscode.l10n.t("Create Python Environment")}`,
+            description: vscode.l10n.t(
               "Create a new virtual environment or Conda environment",
-            detail: "Opens the Python environment creation wizard",
+            ),
+            detail: vscode.l10n.t(
+              "Opens the Python environment creation wizard",
+            ),
             isCreateNew: true,
           });
 
           // Re-add separator
           items.push({
-            label: "Existing Environments",
+            label: vscode.l10n.t("Existing Environments"),
             kind: vscode.QuickPickItemKind.Separator,
           });
 
@@ -235,8 +247,8 @@ export async function showPythonEnvironmentPicker(): Promise<
             items.push(...envItems);
           } else {
             items.push({
-              label: "No Python environments found",
-              description: "Create one using the option above",
+              label: vscode.l10n.t("No Python environments found"),
+              description: vscode.l10n.t("Create one using the option above"),
             });
           }
 
@@ -248,7 +260,7 @@ export async function showPythonEnvironmentPicker(): Promise<
             error,
           );
           vscode.window.showErrorMessage(
-            `Failed to create environment: ${error}`,
+            vscode.l10n.t("Failed to create environment: {0}", String(error)),
           );
           return undefined;
         }
@@ -265,12 +277,14 @@ export async function showPythonEnvironmentPicker(): Promise<
 
     // If we exhausted all attempts
     vscode.window.showWarningMessage(
-      "Maximum environment creation attempts reached. Please try again.",
+      vscode.l10n.t(
+        "Maximum environment creation attempts reached. Please try again.",
+      ),
     );
     return undefined;
   } catch (error) {
     vscode.window.showErrorMessage(
-      `Failed to select Python environment: ${error}`,
+      vscode.l10n.t("Failed to select Python environment: {0}", String(error)),
     );
     return undefined;
   }
@@ -303,7 +317,7 @@ async function processSelectedEnvironment(
     );
     if (!resolvedEnv) {
       vscode.window.showErrorMessage(
-        `Failed to resolve environment: ${env.path}`,
+        vscode.l10n.t("Failed to resolve environment: {0}", env.path),
       );
       return undefined;
     }
@@ -335,7 +349,9 @@ async function processSelectedEnvironment(
       },
     };
   } catch (error) {
-    vscode.window.showErrorMessage(`Failed to process environment: ${error}`);
+    vscode.window.showErrorMessage(
+      vscode.l10n.t("Failed to process environment: {0}", String(error)),
+    );
     return undefined;
   }
 }
@@ -350,14 +366,14 @@ export async function showJupyterServerPicker(): Promise<
   NativeKernelInfo | undefined
 > {
   const serverUrl = await vscode.window.showInputBox({
-    prompt: "Enter the URL of the Jupyter server",
-    placeHolder: "http://localhost:8888/?token=...",
+    prompt: vscode.l10n.t("Enter the URL of the Jupyter server"),
+    placeHolder: vscode.l10n.t("http://localhost:8888/?token=..."),
     validateInput: (value) => {
       try {
         new URL(value);
         return undefined;
       } catch {
-        return "Please enter a valid URL";
+        return vscode.l10n.t("Please enter a valid URL");
       }
     },
   });
@@ -380,7 +396,9 @@ export async function showJupyterServerPicker(): Promise<
       token: token,
     };
   } catch (error) {
-    vscode.window.showErrorMessage(`Invalid Jupyter server URL: ${error}`);
+    vscode.window.showErrorMessage(
+      vscode.l10n.t("Invalid Jupyter server URL: {0}", String(error)),
+    );
     return undefined;
   }
 }
@@ -409,28 +427,30 @@ export async function showNativeKernelPicker(): Promise<
   const pythonExt = vscode.extensions.getExtension("ms-python.python");
   if (pythonExt) {
     items.push({
-      label: "$(symbol-namespace) Python Environments...",
-      description: "Select from installed Python environments",
+      label: `$(symbol-namespace) ${vscode.l10n.t("Python Environments...")}`,
+      description: vscode.l10n.t("Select from installed Python environments"),
       source: "python",
     });
   }
 
   // Always show Jupyter server option
   items.push({
-    label: "$(server) Existing Jupyter Server...",
-    description: "Connect to a remote Jupyter server",
+    label: `$(server) ${vscode.l10n.t("Existing Jupyter Server...")}`,
+    description: vscode.l10n.t("Connect to a remote Jupyter server"),
     source: "jupyter-server",
   });
 
   if (items.length === 0) {
     vscode.window.showErrorMessage(
-      "No kernel sources available. Please install the Python extension.",
+      vscode.l10n.t(
+        "No kernel sources available. Please install the Python extension.",
+      ),
     );
     return undefined;
   }
 
   const selected = await vscode.window.showQuickPick(items, {
-    placeHolder: "Select a kernel source",
+    placeHolder: vscode.l10n.t("Select a kernel source"),
   });
 
   if (!selected) {

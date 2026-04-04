@@ -467,7 +467,10 @@ await pyodide_kernel.ipython_shell.run_cell_async('''${escapedCode}''')
     // Truncate large outputs to prevent UI freeze
     if (text.length > 1_000_000) {
       text =
-        text.substring(0, 1_000_000) + "\n\n[Output truncated at 1MB limit]";
+        text.substring(0, 1_000_000) +
+        "\n\n[" +
+        vscode.l10n.t("Output truncated at 1MB limit") +
+        "]";
     }
 
     const output = new vscode.NotebookCellOutput([
@@ -496,7 +499,10 @@ await pyodide_kernel.ipython_shell.run_cell_async('''${escapedCode}''')
     // Truncate large outputs
     if (text.length > 1_000_000) {
       text =
-        text.substring(0, 1_000_000) + "\n\n[Output truncated at 1MB limit]";
+        text.substring(0, 1_000_000) +
+        "\n\n[" +
+        vscode.l10n.t("Output truncated at 1MB limit") +
+        "]";
     }
 
     const output = new vscode.NotebookCellOutput([

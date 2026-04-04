@@ -25,8 +25,17 @@ export function getDatasourceEditDialogHtml(
 
   const nonce = getNonce();
 
+  // Pass the l10n bundle to the webview so @vscode/l10n can initialize translations.
+  // vscode.l10n.bundle is undefined when running with the default (English) locale.
+  const l10nBundle = vscode.l10n.bundle ?? {};
+  // Escape characters that can break inline script contents when embedding JSON
+  const l10nBundleJson = JSON.stringify(l10nBundle)
+    .replace(/</g, "\\u003c")
+    .replace(/\u2028/g, "\\u2028")
+    .replace(/\u2029/g, "\\u2029");
+
   return `<!DOCTYPE html>
-<html lang="en">
+<html lang="${vscode.env.language}">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -61,6 +70,7 @@ export function getDatasourceEditDialogHtml(
 </head>
 <body>
   <div id="root"></div>
+  <script nonce="${nonce}">window.__l10nBundle__ = ${l10nBundleJson};</script>
   <script nonce="${nonce}" src="${scriptUri}"></script>
 </body>
 </html>`;

@@ -52,7 +52,7 @@ export function registerSnapshotCommands(
       "datalayer.snapshots.restore",
       async (item: SnapshotTreeItem) => {
         if (!item || !item.snapshot) {
-          vscode.window.showErrorMessage("No snapshot selected");
+          vscode.window.showErrorMessage(vscode.l10n.t("No snapshot selected"));
           return;
         }
 
@@ -66,7 +66,9 @@ export function registerSnapshotCommands(
           // Get available environments
           const environments = await datalayer.listEnvironments();
           if (!environments || environments.length === 0) {
-            vscode.window.showErrorMessage("No environments available");
+            vscode.window.showErrorMessage(
+              vscode.l10n.t("No environments available"),
+            );
             return;
           }
 
@@ -90,8 +92,10 @@ export function registerSnapshotCommands(
           }));
 
           const selectedEnv = await vscode.window.showQuickPick(envItems, {
-            title: `Restore from Snapshot: ${snapshotName}`,
-            placeHolder: "Select an environment for the new runtime",
+            title: vscode.l10n.t("Restore from Snapshot: {0}", snapshotName),
+            placeHolder: vscode.l10n.t(
+              "Select an environment for the new runtime",
+            ),
           });
 
           if (!selectedEnv) {
@@ -107,14 +111,21 @@ export function registerSnapshotCommands(
 
           if (runtime) {
             vscode.window.showInformationMessage(
-              `Runtime "${runtime.givenName}" created from snapshot "${snapshotName}"!`,
+              vscode.l10n.t(
+                'Runtime "{0}" created from snapshot "{1}"!',
+                runtime.givenName,
+                snapshotName,
+              ),
             );
             // Refresh runtimes tree to show the new runtime and update snapshots section
             runtimesTreeProvider?.refresh();
           }
         } catch (error) {
           vscode.window.showErrorMessage(
-            `Failed to restore from snapshot: ${error}`,
+            vscode.l10n.t(
+              "Failed to restore from snapshot: {0}",
+              String(error),
+            ),
           );
         }
       },
@@ -130,7 +141,7 @@ export function registerSnapshotCommands(
       "datalayer.snapshots.delete",
       async (item: SnapshotTreeItem) => {
         if (!item || !item.snapshot) {
-          vscode.window.showErrorMessage("No snapshot selected");
+          vscode.window.showErrorMessage(vscode.l10n.t("No snapshot selected"));
           return;
         }
 
@@ -138,16 +149,15 @@ export function registerSnapshotCommands(
         const snapshotName = snapshot.name;
 
         // Show confirmation dialog
+        const deleteSnapshotLabel = vscode.l10n.t("Delete Snapshot");
         const confirmed = await showTwoStepConfirmation({
           itemName: snapshotName,
-          action: "delete",
           consequences: [
-            "This snapshot will be permanently deleted",
-            "Any saved state in this snapshot will be lost",
-            "This action cannot be undone",
+            vscode.l10n.t("This snapshot will be permanently deleted"),
+            vscode.l10n.t("Any saved state in this snapshot will be lost"),
+            vscode.l10n.t("This action cannot be undone"),
           ],
-          actionButton: "Delete Snapshot",
-          finalActionButton: "Delete Snapshot",
+          actionButton: deleteSnapshotLabel,
         });
 
         if (!confirmed) {
@@ -158,20 +168,25 @@ export function registerSnapshotCommands(
           await vscode.window.withProgress(
             {
               location: vscode.ProgressLocation.Notification,
-              title: `Deleting snapshot "${snapshotName}"...`,
+              title: vscode.l10n.t('Deleting snapshot "{0}"...', snapshotName),
               cancellable: false,
             },
             async () => {
               await snapshot.delete();
               vscode.window.showInformationMessage(
-                `Snapshot "${snapshotName}" deleted successfully`,
+                vscode.l10n.t(
+                  'Snapshot "{0}" deleted successfully',
+                  snapshotName,
+                ),
               );
               // Refresh the runtimes tree (includes snapshots section)
               runtimesTreeProvider?.refresh();
             },
           );
         } catch (error) {
-          vscode.window.showErrorMessage(`Failed to delete snapshot: ${error}`);
+          vscode.window.showErrorMessage(
+            vscode.l10n.t("Failed to delete snapshot: {0}", String(error)),
+          );
         }
       },
     ),
@@ -186,7 +201,7 @@ export function registerSnapshotCommands(
       "datalayer.snapshots.viewDetails",
       async (item: SnapshotTreeItem) => {
         if (!item || !item.snapshot) {
-          vscode.window.showErrorMessage("No snapshot selected");
+          vscode.window.showErrorMessage(vscode.l10n.t("No snapshot selected"));
           return;
         }
 
@@ -206,19 +221,21 @@ export function registerSnapshotCommands(
 **ID:** ${snapshotData.uid}`;
 
         // Show in information message or quick pick
+        const restoreLabel = vscode.l10n.t("Restore from Snapshot");
+        const deleteLabel = vscode.l10n.t("Delete Snapshot");
         const action = await vscode.window.showInformationMessage(
-          `Snapshot: ${snapshot.name}`,
+          vscode.l10n.t("Snapshot: {0}", snapshot.name),
           { detail: details, modal: false },
-          "Restore from Snapshot",
-          "Delete Snapshot",
+          restoreLabel,
+          deleteLabel,
         );
 
-        if (action === "Restore from Snapshot") {
+        if (action === restoreLabel) {
           await vscode.commands.executeCommand(
             "datalayer.snapshots.restore",
             item,
           );
-        } else if (action === "Delete Snapshot") {
+        } else if (action === deleteLabel) {
           await vscode.commands.executeCommand(
             "datalayer.snapshots.delete",
             item,

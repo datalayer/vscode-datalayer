@@ -9,6 +9,7 @@
  * Dialog for inserting YouTube videos into the editor.
  */
 
+import * as l10n from "@vscode/l10n";
 import React, { useState } from "react";
 
 /** Props for the InsertYouTubeDialog component. */
@@ -67,7 +68,7 @@ export const InsertYouTubeDialog: React.FC<InsertYouTubeDialogProps> = ({
       onInsert(videoId);
       onClose();
     } else {
-      setError("Invalid YouTube URL or video ID");
+      setError(l10n.t("Invalid YouTube URL or video ID"));
     }
   };
 
@@ -94,7 +95,7 @@ export const InsertYouTubeDialog: React.FC<InsertYouTubeDialogProps> = ({
           color: "var(--vscode-foreground)",
         }}
       >
-        Insert YouTube Video
+        {l10n.t("Insert YouTube Video")}
       </h2>
 
       <div style={{ marginBottom: "12px" }}>
@@ -107,7 +108,7 @@ export const InsertYouTubeDialog: React.FC<InsertYouTubeDialogProps> = ({
             color: "var(--vscode-foreground)",
           }}
         >
-          YouTube URL or Video ID
+          {l10n.t("YouTube URL or Video ID")}
         </label>
         <input
           id="youtube-url"
@@ -118,7 +119,7 @@ export const InsertYouTubeDialog: React.FC<InsertYouTubeDialogProps> = ({
             setError("");
           }}
           onKeyDown={handleKeyDown}
-          placeholder="https://www.youtube.com/watch?v=..."
+          placeholder={l10n.t("https://www.youtube.com/watch?v=...")}
           autoFocus
           style={{
             width: "100%",
@@ -151,7 +152,7 @@ export const InsertYouTubeDialog: React.FC<InsertYouTubeDialogProps> = ({
           marginBottom: "16px",
         }}
       >
-        Supported formats:
+        {l10n.t("Supported formats:")}
         <ul style={{ margin: "4px 0", paddingLeft: "20px" }}>
           <li>https://www.youtube.com/watch?v=VIDEO_ID</li>
           <li>https://youtu.be/VIDEO_ID</li>
@@ -179,7 +180,7 @@ export const InsertYouTubeDialog: React.FC<InsertYouTubeDialogProps> = ({
             cursor: "pointer",
           }}
         >
-          Cancel
+          {l10n.t("Cancel")}
         </button>
         <button
           onClick={handleInsert}
@@ -199,7 +200,7 @@ export const InsertYouTubeDialog: React.FC<InsertYouTubeDialogProps> = ({
             opacity: url ? 1 : 0.6,
           }}
         >
-          Insert
+          {l10n.t("Insert")}
         </button>
       </div>
     </div>

@@ -10,6 +10,7 @@
  * Uses shared toolbar components to maintain consistency with LexicalToolbar.
  */
 
+import * as l10n from "@vscode/l10n";
 import React, {
   useState,
   useEffect,
@@ -330,40 +331,40 @@ export const NotebookToolbar: React.FC<NotebookToolbarProps> = ({
       {
         id: "code",
         icon: "codicon codicon-add",
-        label: "Code",
-        title: "Add Code Cell",
+        label: l10n.t("Code"),
+        title: l10n.t("Add Code Cell"),
         onClick: handleAddCodeCell,
         priority: 1,
       },
       {
         id: "markdown",
         icon: "codicon codicon-add",
-        label: "Markdown",
-        title: "Add Markdown Cell",
+        label: l10n.t("Markdown"),
+        title: l10n.t("Add Markdown Cell"),
         onClick: handleAddMarkdownCell,
         priority: 2,
       },
       {
         id: "runAll",
         icon: "codicon codicon-run-all",
-        label: "Run All",
-        title: "Run All Cells",
+        label: l10n.t("Run All"),
+        title: l10n.t("Run All Cells"),
         onClick: handleRunAll,
         priority: 3,
       },
       {
         id: "runCell",
         icon: "codicon codicon-play",
-        label: "Run Cell",
-        title: "Run Active Cell",
+        label: l10n.t("Run Cell"),
+        title: l10n.t("Run Active Cell"),
         onClick: handleRunCell,
         priority: 4,
       },
       {
         id: "clearOutputs",
         icon: "codicon codicon-clear-all",
-        label: "Clear",
-        title: "Clear All Outputs",
+        label: l10n.t("Clear"),
+        title: l10n.t("Clear All Outputs"),
         onClick: handleClearAllOutputs,
         priority: 5,
       },
@@ -442,7 +443,7 @@ export const NotebookToolbar: React.FC<NotebookToolbarProps> = ({
                     animation: "pulse 2s infinite",
                   }}
                 ></span>
-                <span>Collaborative • Auto-saved</span>
+                <span>{l10n.t("Collaborative \u2022 Auto-saved")}</span>
               </div>
             )}
 

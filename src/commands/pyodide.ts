@@ -33,14 +33,18 @@ const NATIVE_PRELOAD_KEY = "datalayer.pyodide.nativePreloaded";
 export async function clearPyodideCache(
   context: vscode.ExtensionContext,
 ): Promise<void> {
+  const clearCacheLabel = vscode.l10n.t("Clear Cache");
+  const cancelLabel = vscode.l10n.t("Cancel");
   const confirmation = await vscode.window.showWarningMessage(
-    "This will clear all cached Pyodide packages for both native and webview notebooks. They will need to be re-downloaded when you next use the Pyodide kernel. Continue?",
+    vscode.l10n.t(
+      "This will clear all cached Pyodide packages for both native and webview notebooks. They will need to be re-downloaded when you next use the Pyodide kernel. Continue?",
+    ),
     { modal: true },
-    "Clear Cache",
-    "Cancel",
+    clearCacheLabel,
+    cancelLabel,
   );
 
-  if (confirmation !== "Clear Cache") {
+  if (confirmation !== clearCacheLabel) {
     return;
   }
 
@@ -90,7 +94,9 @@ export async function clearPyodideCache(
   );
 
   vscode.window.showInformationMessage(
-    "Pyodide cache cleared (packages + old core files + webview cache). Reload the extension window to be prompted for re-download.",
+    vscode.l10n.t(
+      "Pyodide cache cleared (packages + old core files + webview cache). Reload the extension window to be prompted for re-download.",
+    ),
   );
 }
 

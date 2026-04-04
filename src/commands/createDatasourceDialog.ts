@@ -13,6 +13,7 @@
 import * as vscode from "vscode";
 
 import { getServiceContainer } from "../extension";
+import { ServiceLoggers } from "../services/logging/loggers";
 import { getDatasourceEditDialogHtml } from "../ui/templates/datasourceEditTemplate";
 import { getDatasourceDialogHtml } from "../ui/templates/datasourceTemplate";
 
@@ -41,7 +42,7 @@ async function showDatasourceDialog(
 ): Promise<void> {
   const panel = vscode.window.createWebviewPanel(
     "datalayer.datasourceCreation",
-    "Create Datasource",
+    vscode.l10n.t("Create Datasource"),
     vscode.ViewColumn.One,
     {
       enableScripts: true,
@@ -129,14 +130,19 @@ async function showDatasourceDialog(
     switch (message.type) {
       case "create-datasource":
         try {
-          console.log(
-            "[Datasource] Creating datasource with data:",
-            message.body,
+          ServiceLoggers.main.debug(
+            "[Datasource] Creating datasource with data",
+            { data: message.body },
           );
           const datasource = await datalayer.createDatasource(message.body);
-          console.log("[Datasource] Created successfully:", datasource);
+          ServiceLoggers.main.debug("[Datasource] Created successfully", {
+            name: datasource.name,
+          });
           vscode.window.showInformationMessage(
-            `Datasource "${datasource.name}" created successfully`,
+            vscode.l10n.t(
+              'Datasource "{0}" created successfully',
+              datasource.name,
+            ),
           );
 
           // Refresh settings tree
@@ -148,7 +154,10 @@ async function showDatasourceDialog(
 
           panel.dispose();
         } catch (error) {
-          console.error("[Datasource] Error creating datasource:", error);
+          ServiceLoggers.main.error(
+            "[Datasource] Error creating datasource",
+            error instanceof Error ? error : undefined,
+          );
           const errorMessage =
             error instanceof Error
               ? error.message
@@ -183,7 +192,7 @@ export async function showDatasourceEditDialog(
 ): Promise<void> {
   const panel = vscode.window.createWebviewPanel(
     "datalayer.datasourceEdit",
-    "Loading Datasource...",
+    vscode.l10n.t("Loading Datasource..."),
     vscode.ViewColumn.One,
     {
       enableScripts: true,
@@ -259,7 +268,7 @@ export async function showDatasourceEditDialog(
     const token = datalayer.getToken();
 
     // Update panel title with datasource name
-    panel.title = `Datasource: ${datasource.name}`;
+    panel.title = vscode.l10n.t("Datasource: {0}", datasource.name);
 
     panel.webview.postMessage({
       type: "init-edit",
@@ -278,9 +287,15 @@ export async function showDatasourceEditDialog(
       },
     });
   } catch (error) {
-    console.error("[Datasource] Error loading datasource:", error);
+    ServiceLoggers.main.error(
+      "[Datasource] Error loading datasource",
+      error instanceof Error ? error : undefined,
+    );
     vscode.window.showErrorMessage(
-      `Failed to load datasource: ${error instanceof Error ? error.message : "Unknown error"}`,
+      vscode.l10n.t(
+        "Failed to load datasource: {0}",
+        error instanceof Error ? error.message : vscode.l10n.t("Unknown error"),
+      ),
     );
     panel.dispose();
     return;
@@ -293,17 +308,18 @@ export async function showDatasourceEditDialog(
     switch (message.type) {
       case "update-datasource":
         try {
-          console.log(
-            "[Datasource] Updating datasource with data:",
-            message.body,
+          ServiceLoggers.main.debug(
+            "[Datasource] Updating datasource with data",
+            { data: message.body },
           );
           const datasource = await datalayer.updateDatasource(
             message.body.uid,
             message.body,
           );
-          console.log("[Datasource] Update API call completed");
-          console.log("[Datasource] Response type:", typeof datasource);
-          console.log("[Datasource] Response value:", datasource);
+          ServiceLoggers.main.debug("[Datasource] Update API call completed", {
+            responseType: typeof datasource,
+            responseValue: datasource,
+          });
 
           // Check if datasource is valid before accessing properties
           if (!datasource) {
@@ -311,9 +327,14 @@ export async function showDatasourceEditDialog(
           }
 
           const datasourceName = message.body.name; // Use the name we sent
-          console.log("[Datasource] Updated successfully");
+          ServiceLoggers.main.debug("[Datasource] Updated successfully", {
+            name: datasourceName,
+          });
           vscode.window.showInformationMessage(
-            `Datasource "${datasourceName}" updated successfully`,
+            vscode.l10n.t(
+              'Datasource "{0}" updated successfully',
+              datasourceName,
+            ),
           );
 
           // Refresh settings tree
@@ -325,7 +346,10 @@ export async function showDatasourceEditDialog(
 
           panel.dispose();
         } catch (error) {
-          console.error("[Datasource] Error updating datasource:", error);
+          ServiceLoggers.main.error(
+            "[Datasource] Error updating datasource",
+            error instanceof Error ? error : undefined,
+          );
           const errorMessage =
             error instanceof Error
               ? error.message

@@ -73,11 +73,16 @@ export function registerInternalCommands(
           "datalayer.sidebarOpenedOnFirstRun",
           false,
         );
-        await vscode.window.showInformationMessage(
-          "Onboarding state reset! Reload window to see welcome notification.",
-          "Reload Now",
+        const reloadNowLabel = vscode.l10n.t("Reload Now");
+        const result = await vscode.window.showInformationMessage(
+          vscode.l10n.t(
+            "Onboarding state reset. Reload the window to see the welcome notification.",
+          ),
+          reloadNowLabel,
         );
-        await vscode.commands.executeCommand("workbench.action.reloadWindow");
+        if (result === reloadNowLabel) {
+          await vscode.commands.executeCommand("workbench.action.reloadWindow");
+        }
       },
     ),
   );

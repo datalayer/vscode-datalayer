@@ -49,7 +49,9 @@ function sendLexicalCommand(command: string): void {
   // For custom editors, we need to find the webview differently
   // Try to find an active webview that matches a .lexical file
   if (activeWebviews.size === 0) {
-    vscode.window.showWarningMessage("No Lexical document is currently open.");
+    vscode.window.showWarningMessage(
+      vscode.l10n.t("No Lexical document is currently open."),
+    );
     return;
   }
 
@@ -78,7 +80,7 @@ function sendLexicalCommand(command: string): void {
 
   // Fallback: show a warning
   vscode.window.showWarningMessage(
-    "Please click on a Lexical document to use this command.",
+    vscode.l10n.t("Please click on a Lexical document to use this command."),
   );
 }
 

@@ -182,15 +182,23 @@ export async function showUnifiedWelcomePrompt(
   // Build message
   const message =
     configItems.length === 2
-      ? "Welcome to Datalayer! Configure recommended settings (default editor & Jupyter tools)?"
-      : `Welcome to Datalayer! Configure recommended ${configItems[0]}?`;
+      ? vscode.l10n.t(
+          "Welcome to Datalayer! Configure recommended settings (default editor & Jupyter tools)?",
+        )
+      : vscode.l10n.t(
+          "Welcome to Datalayer! Configure recommended {0}?",
+          configItems[0] ?? "",
+        );
 
   // Show notification with action buttons
+  const applyRecommendedLabel = vscode.l10n.t("Apply Recommended");
+  const customizeLabel = vscode.l10n.t("Customize");
+  const notNowLabel = vscode.l10n.t("Not Now");
   const selected = await vscode.window.showInformationMessage(
     message,
-    "Apply Recommended",
-    "Customize",
-    "Not Now",
+    applyRecommendedLabel,
+    customizeLabel,
+    notNowLabel,
   );
 
   // Only mark as complete if user explicitly chose "Not Now"
@@ -202,7 +210,7 @@ export async function showUnifiedWelcomePrompt(
     return;
   }
 
-  if (selected === "Not Now") {
+  if (selected === notNowLabel) {
     logger.info("User chose 'Not Now' - marking onboarding complete");
     await context.globalState.update(ONBOARDING_COMPLETE_KEY, true);
     return;
@@ -211,7 +219,7 @@ export async function showUnifiedWelcomePrompt(
   logger.info("User chose onboarding action", { action: selected });
 
   // Handle user choice
-  if (selected === "Apply Recommended") {
+  if (selected === applyRecommendedLabel) {
     await applyRecommendedSettings(
       hasJupyter,
       jupyterToolsEnabled,
@@ -221,16 +229,20 @@ export async function showUnifiedWelcomePrompt(
     await context.globalState.update(ONBOARDING_COMPLETE_KEY, true);
 
     // Show success message with reload option
+    const reloadNowLabel = vscode.l10n.t("Reload Now");
+    const laterLabel = vscode.l10n.t("Later");
     const reload = await vscode.window.showInformationMessage(
-      "✅ Configuration applied! Reload window to ensure all changes take effect.",
-      "Reload Now",
-      "Later",
+      vscode.l10n.t(
+        "Configuration applied! Reload window to ensure all changes take effect.",
+      ),
+      reloadNowLabel,
+      laterLabel,
     );
 
-    if (reload === "Reload Now") {
+    if (reload === reloadNowLabel) {
       await vscode.commands.executeCommand("workbench.action.reloadWindow");
     }
-  } else if (selected === "Customize") {
+  } else if (selected === customizeLabel) {
     await showCustomizationUI(
       hasJupyter,
       jupyterToolsEnabled,
@@ -331,35 +343,38 @@ async function showCustomizationUI(
   const choices: SettingChoice[] = [];
 
   // Option 1: Default editor
+  const defaultNotebookEditorLabel = vscode.l10n.t("Default Notebook Editor");
   choices.push({
     label: isDefaultEditor
-      ? "$(check) Default Notebook Editor"
-      : "$(circle-outline) Default Notebook Editor",
+      ? `$(check) ${defaultNotebookEditorLabel}`
+      : `$(circle-outline) ${defaultNotebookEditorLabel}`,
     description: isDefaultEditor
-      ? "Already set to Datalayer"
-      : "Set Datalayer as default for .ipynb files",
+      ? vscode.l10n.t("Already set to Datalayer")
+      : vscode.l10n.t("Set Datalayer as default for .ipynb files"),
     setting: "defaultEditor",
     alreadySet: isDefaultEditor,
   });
 
   // Option 2: Jupyter tools (only if Jupyter installed)
   if (hasJupyter) {
+    const jupyterToolsLabel = vscode.l10n.t("Jupyter Tools");
     choices.push({
       label: !jupyterToolsEnabled
-        ? "$(check) Jupyter Tools"
-        : "$(circle-outline) Jupyter Tools",
+        ? `$(check) ${jupyterToolsLabel}`
+        : `$(circle-outline) ${jupyterToolsLabel}`,
       description: !jupyterToolsEnabled
-        ? "Already disabled (no conflicts)"
-        : "Disable to avoid Copilot tool conflicts",
+        ? vscode.l10n.t("Already disabled (no conflicts)")
+        : vscode.l10n.t("Disable to avoid Copilot tool conflicts"),
       setting: "jupyterTools",
       alreadySet: !jupyterToolsEnabled,
     });
   }
 
   const selected = await vscode.window.showQuickPick(choices, {
-    title: "Customize Settings",
-    placeHolder:
-      "Select settings to apply (already configured settings marked ✓)",
+    title: vscode.l10n.t("Customize Settings"),
+    placeHolder: vscode.l10n.t(
+      "Select settings to apply (already configured settings marked check)",
+    ),
     canPickMany: true,
     ignoreFocusOut: true,
   });
@@ -407,13 +422,18 @@ async function showCustomizationUI(
   }
 
   // Show success message
+  const reloadNowLabel = vscode.l10n.t("Reload Now");
+  const laterLabel = vscode.l10n.t("Later");
   const reload = await vscode.window.showInformationMessage(
-    `✅ Applied ${selected.length} setting(s). Reload window to ensure all changes take effect.`,
-    "Reload Now",
-    "Later",
+    vscode.l10n.t(
+      "Applied {0} setting(s). Reload window to ensure all changes take effect.",
+      selected.length,
+    ),
+    reloadNowLabel,
+    laterLabel,
   );
 
-  if (reload === "Reload Now") {
+  if (reload === reloadNowLabel) {
     await vscode.commands.executeCommand("workbench.action.reloadWindow");
   }
 }

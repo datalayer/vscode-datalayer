@@ -4,6 +4,7 @@
  * MIT License
  */
 
+import * as l10n from "@vscode/l10n";
 import React, { useState, useEffect } from "react";
 import {
   Box,
@@ -17,6 +18,7 @@ import {
   Textarea,
 } from "@primer/react";
 import { AlertIcon } from "@primer/octicons-react";
+
 import { PrimerVSCodeTheme } from "../theme/PrimerVSCodeTheme";
 
 // VS Code API - declare and acquire
@@ -88,19 +90,21 @@ export function DatasourceDialog({ colorMode }: DatasourceDialogProps) {
     const newErrors: Record<string, string> = {};
 
     if (!formData.name || formData.name.length < 3) {
-      newErrors.name = "Name must be at least 3 characters";
+      newErrors.name = l10n.t("Name must be at least 3 characters");
     }
 
     if (!formData.description) {
-      newErrors.description = "Description is required";
+      newErrors.description = l10n.t("Description is required");
     }
 
     if (formData.type === "Amazon Athena") {
       if (!formData.database) {
-        newErrors.database = "Database is required for Amazon Athena";
+        newErrors.database = l10n.t("Database is required for Amazon Athena");
       }
       if (!formData.output_bucket) {
-        newErrors.output_bucket = "Output bucket is required for Amazon Athena";
+        newErrors.output_bucket = l10n.t(
+          "Output bucket is required for Amazon Athena",
+        );
       }
     }
 
@@ -146,7 +150,7 @@ export function DatasourceDialog({ colorMode }: DatasourceDialogProps) {
     return (
       <PrimerVSCodeTheme colorMode={colorMode}>
         <Box sx={{ p: 3, textAlign: "center" }}>
-          <Text>Loading...</Text>
+          <Text>{l10n.t("Loading...")}</Text>
         </Box>
       </PrimerVSCodeTheme>
     );
@@ -156,14 +160,14 @@ export function DatasourceDialog({ colorMode }: DatasourceDialogProps) {
     <PrimerVSCodeTheme colorMode={colorMode}>
       <Box sx={{ p: 3, maxWidth: 600 }}>
         <Heading as="h1" sx={{ mb: 3 }}>
-          Create Datasource
+          {l10n.t("Create Datasource")}
         </Heading>
 
         <Flash variant="warning" sx={{ mb: 3 }}>
           <AlertIcon />
           <Box>
             <Text sx={{ fontWeight: "bold", display: "inline" }}>
-              Required secrets:{" "}
+              {l10n.t("Required secrets:")}{" "}
             </Text>
             <Text sx={{ fontSize: 1, display: "inline" }}>
               {getRequiredSecrets()}
@@ -178,7 +182,7 @@ export function DatasourceDialog({ colorMode }: DatasourceDialogProps) {
         )}
 
         <FormControl required disabled={isSubmitting} sx={{ mb: 3 }}>
-          <FormControl.Label>Type</FormControl.Label>
+          <FormControl.Label>{l10n.t("Type")}</FormControl.Label>
           <Select
             value={formData.type}
             onChange={(e) =>
@@ -188,19 +192,21 @@ export function DatasourceDialog({ colorMode }: DatasourceDialogProps) {
               })
             }
           >
-            <Select.Option value="Amazon Athena">Amazon Athena</Select.Option>
+            <Select.Option value="Amazon Athena">
+              {l10n.t("Amazon Athena")}
+            </Select.Option>
             <Select.Option value="Google BigQuery">
-              Google BigQuery
+              {l10n.t("Google BigQuery")}
             </Select.Option>
             <Select.Option value="Microsoft Sentinel">
-              Microsoft Sentinel
+              {l10n.t("Microsoft Sentinel")}
             </Select.Option>
-            <Select.Option value="Splunk">Splunk</Select.Option>
+            <Select.Option value="Splunk">{l10n.t("Splunk")}</Select.Option>
           </Select>
         </FormControl>
 
         <FormControl required disabled={isSubmitting} sx={{ mb: 3 }}>
-          <FormControl.Label>Name</FormControl.Label>
+          <FormControl.Label>{l10n.t("Name")}</FormControl.Label>
           <TextInput
             value={formData.name}
             onChange={(e) => setFormData({ ...formData, name: e.target.value })}
@@ -213,12 +219,12 @@ export function DatasourceDialog({ colorMode }: DatasourceDialogProps) {
             </FormControl.Validation>
           )}
           <FormControl.Caption>
-            Short name that uniquely identifies your datasource
+            {l10n.t("Short name that uniquely identifies your datasource")}
           </FormControl.Caption>
         </FormControl>
 
         <FormControl required disabled={isSubmitting} sx={{ mb: 3 }}>
-          <FormControl.Label>Description</FormControl.Label>
+          <FormControl.Label>{l10n.t("Description")}</FormControl.Label>
           <Textarea
             value={formData.description}
             onChange={(e) =>
@@ -238,7 +244,7 @@ export function DatasourceDialog({ colorMode }: DatasourceDialogProps) {
         {formData.type === "Amazon Athena" && (
           <>
             <FormControl required disabled={isSubmitting} sx={{ mb: 3 }}>
-              <FormControl.Label>Database</FormControl.Label>
+              <FormControl.Label>{l10n.t("Database")}</FormControl.Label>
               <TextInput
                 value={formData.database || ""}
                 onChange={(e) =>
@@ -255,13 +261,13 @@ export function DatasourceDialog({ colorMode }: DatasourceDialogProps) {
             </FormControl>
 
             <FormControl required disabled={isSubmitting} sx={{ mb: 3 }}>
-              <FormControl.Label>Output Bucket</FormControl.Label>
+              <FormControl.Label>{l10n.t("Output Bucket")}</FormControl.Label>
               <TextInput
                 value={formData.output_bucket || ""}
                 onChange={(e) =>
                   setFormData({ ...formData, output_bucket: e.target.value })
                 }
-                placeholder="s3://my-bucket/path/"
+                placeholder={l10n.t("s3://my-bucket/path/")}
                 validationStatus={errors.output_bucket ? "error" : undefined}
                 block
               />
@@ -280,13 +286,13 @@ export function DatasourceDialog({ colorMode }: DatasourceDialogProps) {
             variant="primary"
             disabled={isSubmitting}
           >
-            {isSubmitting ? "Creating..." : "Create"}
+            {isSubmitting ? l10n.t("Creating...") : l10n.t("Create")}
           </Button>
           <Button
             onClick={() => vscode.postMessage({ type: "cancel" })}
             disabled={isSubmitting}
           >
-            Cancel
+            {l10n.t("Cancel")}
           </Button>
         </Box>
       </Box>

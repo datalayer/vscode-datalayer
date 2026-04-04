@@ -77,8 +77,10 @@ export class DatalayerRuntimeSelector {
 
     // Create QuickPick
     const quickPick = vscode.window.createQuickPick<RuntimeQuickPickItem>();
-    quickPick.title = "Select Datalayer Runtime";
-    quickPick.placeholder = "Choose a runtime or create a new one";
+    quickPick.title = vscode.l10n.t("Select Datalayer Runtime");
+    quickPick.placeholder = vscode.l10n.t(
+      "Choose a runtime or create a new one",
+    );
     quickPick.items = items;
     quickPick.ignoreFocusOut = true;
 
@@ -98,7 +100,12 @@ export class DatalayerRuntimeSelector {
           quickPick.hide();
         } catch (error) {
           vscode.window.showErrorMessage(
-            `Failed to create runtime: ${error instanceof Error ? error.message : "Unknown error"}`,
+            vscode.l10n.t(
+              "Failed to create runtime: {0}",
+              error instanceof Error
+                ? error.message
+                : vscode.l10n.t("Unknown error"),
+            ),
           );
           quickPick.busy = false;
         }
@@ -113,7 +120,10 @@ export class DatalayerRuntimeSelector {
             vscode.NotebookControllerAffinity.Preferred,
           );
           vscode.window.showInformationMessage(
-            `Switched to: ${controller.label.replace("Datalayer: ", "")}`,
+            vscode.l10n.t(
+              "Switched to: {0}",
+              controller.label.replace("Datalayer: ", ""),
+            ),
           );
         }
         quickPick.hide();
@@ -140,15 +150,15 @@ export class DatalayerRuntimeSelector {
 
     // Add creation commands at top
     items.push({
-      label: "$(add) Create GPU Runtime",
-      description: "Launch AI environment on Datalayer platform",
+      label: `$(add) ${vscode.l10n.t("Create GPU Runtime")}`,
+      description: vscode.l10n.t("Launch AI environment on Datalayer platform"),
       type: "command",
       commandFn: () => this.createGpuRuntime(),
     });
 
     items.push({
-      label: "$(add) Create CPU Runtime",
-      description: "Launch Python CPU environment",
+      label: `$(add) ${vscode.l10n.t("Create CPU Runtime")}`,
+      description: vscode.l10n.t("Launch Python CPU environment"),
       type: "command",
       commandFn: () => this.createCpuRuntime(),
     });
@@ -227,7 +237,9 @@ export class DatalayerRuntimeSelector {
     const gpuEnv = environments.find((e) => e.name === "ai-env");
 
     if (!gpuEnv) {
-      vscode.window.showErrorMessage("GPU environment not found on platform");
+      vscode.window.showErrorMessage(
+        vscode.l10n.t("GPU environment not found on platform"),
+      );
       return;
     }
 
@@ -241,7 +253,10 @@ export class DatalayerRuntimeSelector {
     await this.controllerManager.ensureRuntimeController(runtime);
 
     vscode.window.showInformationMessage(
-      `Runtime "${runtime.givenName || runtime.podName}" created successfully!`,
+      vscode.l10n.t(
+        'Runtime "{0}" created successfully!',
+        runtime.givenName || runtime.podName,
+      ),
     );
   }
 
@@ -262,7 +277,9 @@ export class DatalayerRuntimeSelector {
     const cpuEnv = environments.find((e) => e.name === "python-cpu-env");
 
     if (!cpuEnv) {
-      vscode.window.showErrorMessage("CPU environment not found on platform");
+      vscode.window.showErrorMessage(
+        vscode.l10n.t("CPU environment not found on platform"),
+      );
       return;
     }
 
@@ -276,7 +293,10 @@ export class DatalayerRuntimeSelector {
     await this.controllerManager.ensureRuntimeController(runtime);
 
     vscode.window.showInformationMessage(
-      `Runtime "${runtime.givenName || runtime.podName}" created successfully!`,
+      vscode.l10n.t(
+        'Runtime "{0}" created successfully!',
+        runtime.givenName || runtime.podName,
+      ),
     );
   }
 }

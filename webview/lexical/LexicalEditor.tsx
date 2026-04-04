@@ -11,6 +11,7 @@
  * and markdown shortcuts. Includes optional toolbar and automatic saving functionality.
  */
 
+import * as l10n from "@vscode/l10n";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   $getRoot,
@@ -809,7 +810,7 @@ function LexicalEditorInner({
           contentEditable={
             <ContentEditable
               className="lexical-editor-content"
-              aria-label="Lexical Editor"
+              aria-label={l10n.t("Lexical Editor")}
             />
           }
           ErrorBoundary={LexicalErrorBoundary}

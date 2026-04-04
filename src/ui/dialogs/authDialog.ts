@@ -27,16 +27,17 @@ export async function showAuthenticationDialog(
   source?: string,
 ): Promise<boolean> {
   const message = source
-    ? `Connect to Datalayer to use ${source.toLowerCase()}`
-    : "Connect to Datalayer to use cloud runtimes";
+    ? vscode.l10n.t("Connect to Datalayer to use {0}", source)
+    : vscode.l10n.t("Connect to Datalayer to use cloud runtimes");
 
+  const loginLabel = vscode.l10n.t("Login");
   const action = await vscode.window.showInformationMessage(
     message,
-    "Login",
-    "Cancel",
+    loginLabel,
+    vscode.l10n.t("Cancel"),
   );
 
-  return action === "Login";
+  return action === loginLabel;
 }
 
 /**
@@ -68,8 +69,8 @@ export async function promptAndLogin(source?: string): Promise<boolean> {
  */
 export function showAuthenticationError(context?: string): void {
   const message = context
-    ? `Please login to Datalayer first (${context})`
-    : "Please login to Datalayer first";
+    ? vscode.l10n.t("Please login to Datalayer first ({0})", context)
+    : vscode.l10n.t("Please login to Datalayer first");
 
   vscode.window.showErrorMessage(message);
 }

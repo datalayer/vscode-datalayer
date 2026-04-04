@@ -38,6 +38,33 @@ Every directory has a `README.md` documenting its files, exports, and patterns.
 - **NotebookActions** from `@jupyterlab/notebook` for cell manipulation (not commands or store methods).
 - Use Datalayer client directly with handlers pattern (no wrapper services).
 
+## Internationalization (i18n / l10n)
+
+Full guide: [INTERNATIONALIZATION.md](./INTERNATIONALIZATION.md)
+
+**What to localize** (wrap with `vscode.l10n.t()`):
+
+- All user-facing strings: notifications, button labels, QuickPick items, progress titles, tooltips, placeholders, error messages shown in UI.
+
+**What NOT to localize**:
+
+- Log messages (`ServiceLoggers.*`, `logger.*`) — developers read these in English.
+- `Error` constructor arguments for internal errors not shown to users.
+- Command IDs, API paths, configuration keys.
+
+**Key rules**:
+
+- In `package.json`, use `%key%` references with values in `package.nls.json` / `package.nls.es.json`.
+- In `src/`, use `vscode.l10n.t("English string", ...args)`. In `webview/`, use `l10n.t()` from `@vscode/l10n`.
+- Keep codicons outside `l10n.t()`: `"$(check) " + vscode.l10n.t("Done")`, NOT `vscode.l10n.t("$(check) Done")`.
+- Store button labels in variables before passing to `showInformationMessage` and reuse for return-value comparison.
+- Use separate strings for singular/plural: `count === 1 ? l10n.t("{0} runtime") : l10n.t("{0} runtimes")`.
+- Never build user-facing strings with template literals — always use `l10n.t("text {0}", var)` with positional placeholders.
+- Never concatenate localized fragments — use a single `l10n.t()` call with `{0}`, `{1}` so translators can reorder.
+- Proper nouns (GitHub, Pyodide, Datalayer) are NOT localized.
+- Spanish translations must include accents (sesion -> sesión, mas -> más, donde -> dónde) and opening punctuation marks.
+- Add all new keys to both `l10n/bundle.l10n.json` (English with translator comment) and `l10n/bundle.l10n.es.json` (Spanish translation).
+
 ## TypeScript Strictness
 
 - **`noUncheckedIndexedAccess: true`** - Array/object index access returns `T | undefined`. Use `!` assertion only when bounds are guaranteed (e.g., inside length-checked blocks or bounded loops). Prefer `?? defaultValue` or `if (x !== undefined)` checks.

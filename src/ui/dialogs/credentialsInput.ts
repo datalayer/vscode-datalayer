@@ -32,7 +32,7 @@ export interface CredentialsInput {
  */
 function validateHandle(handle: string): string | null {
   if (!handle || handle.trim().length === 0) {
-    return "Handle cannot be empty";
+    return vscode.l10n.t("Handle cannot be empty");
   }
 
   return null;
@@ -47,7 +47,7 @@ function validateHandle(handle: string): string | null {
  */
 function validatePassword(password: string): string | null {
   if (!password || password.trim().length === 0) {
-    return "Password cannot be empty";
+    return vscode.l10n.t("Password cannot be empty");
   }
 
   return null;
@@ -60,9 +60,9 @@ function validatePassword(password: string): string | null {
  */
 async function promptForHandle(): Promise<string | undefined> {
   const handle = await vscode.window.showInputBox({
-    title: "Datalayer Authentication",
-    prompt: "Enter your handle (username or email)",
-    placeHolder: "username or email@example.com",
+    title: vscode.l10n.t("Datalayer Authentication"),
+    prompt: vscode.l10n.t("Enter your handle (username or email)"),
+    placeHolder: vscode.l10n.t("username or email@example.com"),
     ignoreFocusOut: true,
     validateInput: (value: string) => {
       return validateHandle(value);
@@ -79,9 +79,9 @@ async function promptForHandle(): Promise<string | undefined> {
  */
 async function promptForPassword(): Promise<string | undefined> {
   const password = await vscode.window.showInputBox({
-    title: "Datalayer Authentication",
-    prompt: "Enter your password",
-    placeHolder: "Password",
+    title: vscode.l10n.t("Datalayer Authentication"),
+    prompt: vscode.l10n.t("Enter your password"),
+    placeHolder: vscode.l10n.t("Password"),
     password: true, // Mask input
     ignoreFocusOut: true,
     validateInput: (value: string) => {

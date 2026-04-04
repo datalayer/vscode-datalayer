@@ -11,6 +11,7 @@
 
 import React, { useEffect, useState } from "react";
 import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext";
+import * as l10n from "@vscode/l10n";
 import { $getSelection, $isRangeSelection } from "lexical";
 import { INSERT_INLINE_COMMAND } from "@datalayer/jupyter-lexical";
 
@@ -113,7 +114,7 @@ export function ContextMenuPlugin(): JSX.Element {
         }}
       >
         <i className="codicon codicon-comment-add" />
-        Add Comment
+        {l10n.t("Add Comment")}
       </button>
     </div>
   );

@@ -102,8 +102,12 @@ export class SmartDynamicControllerManager implements vscode.Disposable {
       "Pyodide (by Datalayer)",
     );
 
-    controller.description = "Offline Python execution (WebAssembly)";
-    controller.detail = "Browser-based Python kernel powered by Pyodide";
+    controller.description = vscode.l10n.t(
+      "Offline Python execution (WebAssembly)",
+    );
+    controller.detail = vscode.l10n.t(
+      "Browser-based Python kernel powered by Pyodide",
+    );
     controller.supportedLanguages = ["python", "markdown", "raw"];
     controller.supportsExecutionOrder = true;
 
@@ -167,8 +171,11 @@ export class SmartDynamicControllerManager implements vscode.Disposable {
     );
 
     const environmentName = runtimeData.environmentName || "Runtime";
-    controller.description = `Connected to ${environmentName}`;
-    controller.detail = `Pod: ${runtimeData.podName || runtime.uid}`;
+    controller.description = vscode.l10n.t("Connected to {0}", environmentName);
+    controller.detail = vscode.l10n.t(
+      "Pod: {0}",
+      runtimeData.podName || runtime.uid,
+    );
     controller.supportedLanguages = ["python", "markdown", "raw"];
     controller.supportsExecutionOrder = true;
 
@@ -237,7 +244,9 @@ export class SmartDynamicControllerManager implements vscode.Disposable {
 
     if (!controllerToUse) {
       vscode.window.showErrorMessage(
-        "No controller available. Please select a kernel from the dropdown.",
+        vscode.l10n.t(
+          "No controller available. Please select a kernel from the dropdown.",
+        ),
       );
       return;
     }
@@ -370,7 +379,10 @@ export class SmartDynamicControllerManager implements vscode.Disposable {
         this._pyodideKernels.set(notebookUri, kernelClient);
       } catch (error) {
         vscode.window.showErrorMessage(
-          `Failed to initialize Pyodide kernel: ${error instanceof Error ? error.message : String(error)}`,
+          vscode.l10n.t(
+            "Failed to initialize Pyodide kernel: {0}",
+            error instanceof Error ? error.message : String(error),
+          ),
         );
         return;
       }
@@ -463,7 +475,10 @@ export class SmartDynamicControllerManager implements vscode.Disposable {
         );
 
         vscode.window.showInformationMessage(
-          `Runtime "${controller.label.replace("Datalayer: ", "")}" is now selected.`,
+          vscode.l10n.t(
+            'Runtime "{0}" is now selected.',
+            controller.label.replace("Datalayer: ", ""),
+          ),
         );
       }
     }

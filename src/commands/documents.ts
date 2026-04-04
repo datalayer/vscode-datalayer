@@ -69,7 +69,9 @@ export function registerDocumentCommands(
       async (documentOrItem: unknown, spaceName?: string) => {
         try {
           if (!documentOrItem) {
-            vscode.window.showErrorMessage("No document selected");
+            vscode.window.showErrorMessage(
+              vscode.l10n.t("No document selected"),
+            );
             return;
           }
 
@@ -83,10 +85,12 @@ export function registerDocumentCommands(
           if (itemWithData.data && itemWithData.data.document) {
             document = itemWithData.data.document;
             spaceName =
-              itemWithData.data.spaceName ?? spaceName ?? "Unknown Space";
+              itemWithData.data.spaceName ??
+              spaceName ??
+              vscode.l10n.t("Unknown Space");
           } else {
             document = documentOrItem as Document;
-            spaceName = spaceName ?? "Unknown Space";
+            spaceName = spaceName ?? vscode.l10n.t("Unknown Space");
           }
 
           const docName = getDocumentDisplayName(document);
@@ -97,13 +101,13 @@ export function registerDocumentCommands(
             vscode.window.withProgress(
               {
                 location: vscode.ProgressLocation.Notification,
-                title: `Opening notebook: ${docName}`,
+                title: vscode.l10n.t("Opening notebook: {0}", docName),
                 cancellable: false,
               },
               async (progress) => {
                 progress.report({
                   increment: 0,
-                  message: "Downloading notebook content...",
+                  message: vscode.l10n.t("Downloading notebook content..."),
                 });
 
                 const uri = await documentBridge.openDocument(
@@ -114,7 +118,7 @@ export function registerDocumentCommands(
 
                 progress.report({
                   increment: 75,
-                  message: "Opening notebook editor...",
+                  message: vscode.l10n.t("Opening notebook editor..."),
                 });
 
                 await vscode.commands.executeCommand(
@@ -123,20 +127,23 @@ export function registerDocumentCommands(
                   "datalayer.jupyter-notebook",
                 );
 
-                progress.report({ increment: 100, message: "Done!" });
+                progress.report({
+                  increment: 100,
+                  message: vscode.l10n.t("Done!"),
+                });
               },
             );
           } else if (isLexical) {
             vscode.window.withProgress(
               {
                 location: vscode.ProgressLocation.Notification,
-                title: `Opening lexical document: ${docName}`,
+                title: vscode.l10n.t("Opening lexical document: {0}", docName),
                 cancellable: false,
               },
               async (progress) => {
                 progress.report({
                   increment: 0,
-                  message: "Downloading document content...",
+                  message: vscode.l10n.t("Downloading document content..."),
                 });
 
                 const uri = await documentBridge.openDocument(
@@ -147,7 +154,9 @@ export function registerDocumentCommands(
 
                 progress.report({
                   increment: 50,
-                  message: "Opening document in read-only mode...",
+                  message: vscode.l10n.t(
+                    "Opening document in read-only mode...",
+                  ),
                 });
 
                 await vscode.commands.executeCommand(
@@ -156,23 +165,33 @@ export function registerDocumentCommands(
                   "datalayer.lexical-editor",
                 );
 
-                progress.report({ increment: 100, message: "Done!" });
+                progress.report({
+                  increment: 100,
+                  message: vscode.l10n.t("Done!"),
+                });
               },
             );
           } else if (isCell) {
             vscode.window.showInformationMessage(
-              `Cell viewer coming soon: ${docName}`,
+              vscode.l10n.t("Cell viewer coming soon: {0}", docName),
             );
           } else {
             vscode.window.showInformationMessage(
-              `Document type not supported: ${typeInfo.type} (${docName})`,
+              vscode.l10n.t(
+                "Document type not supported: {0} ({1})",
+                typeInfo.type,
+                docName,
+              ),
             );
           }
         } catch (error) {
           vscode.window.showErrorMessage(
-            `Failed to open document: ${
-              error instanceof Error ? error.message : "Unknown error"
-            }`,
+            vscode.l10n.t(
+              "Failed to open document: {0}",
+              error instanceof Error
+                ? error.message
+                : vscode.l10n.t("Unknown error"),
+            ),
           );
         }
       },
@@ -208,19 +227,26 @@ export function registerDocumentCommands(
             // Called from command palette, title bar, or root - prompt for space
             const spaces = await datalayer.getMySpaces();
             if (!spaces || spaces.length === 0) {
-              vscode.window.showErrorMessage("No spaces available");
+              vscode.window.showErrorMessage(
+                vscode.l10n.t("No spaces available"),
+              );
               return;
             }
 
             const spaceItems = spaces.map((s) => ({
-              label: s.variant === "default" ? `${s.name} (Default)` : s.name,
+              label:
+                s.variant === "default"
+                  ? `${s.name} (${vscode.l10n.t("Default")})`
+                  : s.name,
               space: s,
             }));
 
             const selectedSpace = await vscode.window.showQuickPick(
               spaceItems,
               {
-                placeHolder: "Select a space to create the notebook in",
+                placeHolder: vscode.l10n.t(
+                  "Select a space to create the notebook in",
+                ),
               },
             );
 
@@ -232,11 +258,11 @@ export function registerDocumentCommands(
           }
 
           const name = await vscode.window.showInputBox({
-            prompt: "Enter notebook name",
-            placeHolder: "My Notebook",
+            prompt: vscode.l10n.t("Enter notebook name"),
+            placeHolder: vscode.l10n.t("My Notebook"),
             validateInput: (value) => {
               if (!value || value.trim().length === 0) {
-                return "Notebook name is required";
+                return vscode.l10n.t("Notebook name is required");
               }
               return null;
             },
@@ -247,14 +273,18 @@ export function registerDocumentCommands(
           }
 
           const description = await vscode.window.showInputBox({
-            prompt: "Enter notebook description (optional)",
-            placeHolder: "A brief description of the notebook",
+            prompt: vscode.l10n.t("Enter notebook description (optional)"),
+            placeHolder: vscode.l10n.t("A brief description of the notebook"),
           });
 
           await vscode.window.withProgress(
             {
               location: vscode.ProgressLocation.Notification,
-              title: `Creating notebook "${name}" in space "${space.name}"...`,
+              title: vscode.l10n.t(
+                'Creating notebook "{0}" in space "{1}"...',
+                name,
+                space.name,
+              ),
               cancellable: false,
             },
             async () => {
@@ -266,7 +296,7 @@ export function registerDocumentCommands(
 
               if (notebook) {
                 vscode.window.showInformationMessage(
-                  `Successfully created notebook "${name}"`,
+                  vscode.l10n.t('Successfully created notebook "{0}"', name),
                 );
                 spacesTreeProvider.refreshSpace(space.uid);
               } else {
@@ -276,9 +306,12 @@ export function registerDocumentCommands(
           );
         } catch (error) {
           vscode.window.showErrorMessage(
-            `Failed to create notebook: ${
-              error instanceof Error ? error.message : "Unknown error"
-            }`,
+            vscode.l10n.t(
+              "Failed to create notebook: {0}",
+              error instanceof Error
+                ? error.message
+                : vscode.l10n.t("Unknown error"),
+            ),
           );
         }
       },
@@ -314,19 +347,26 @@ export function registerDocumentCommands(
             // Called from command palette, title bar, or root - prompt for space
             const spaces = await datalayer.getMySpaces();
             if (!spaces || spaces.length === 0) {
-              vscode.window.showErrorMessage("No spaces available");
+              vscode.window.showErrorMessage(
+                vscode.l10n.t("No spaces available"),
+              );
               return;
             }
 
             const spaceItems = spaces.map((s) => ({
-              label: s.variant === "default" ? `${s.name} (Default)` : s.name,
+              label:
+                s.variant === "default"
+                  ? `${s.name} (${vscode.l10n.t("Default")})`
+                  : s.name,
               space: s,
             }));
 
             const selectedSpace = await vscode.window.showQuickPick(
               spaceItems,
               {
-                placeHolder: "Select a space to create the document in",
+                placeHolder: vscode.l10n.t(
+                  "Select a space to create the document in",
+                ),
               },
             );
 
@@ -338,11 +378,11 @@ export function registerDocumentCommands(
           }
 
           const name = await vscode.window.showInputBox({
-            prompt: "Enter document name",
-            placeHolder: "My Document",
+            prompt: vscode.l10n.t("Enter document name"),
+            placeHolder: vscode.l10n.t("My Document"),
             validateInput: (value) => {
               if (!value || value.trim().length === 0) {
-                return "Document name is required";
+                return vscode.l10n.t("Document name is required");
               }
               return null;
             },
@@ -353,14 +393,18 @@ export function registerDocumentCommands(
           }
 
           const description = await vscode.window.showInputBox({
-            prompt: "Enter document description (optional)",
-            placeHolder: "A brief description of the document",
+            prompt: vscode.l10n.t("Enter document description (optional)"),
+            placeHolder: vscode.l10n.t("A brief description of the document"),
           });
 
           await vscode.window.withProgress(
             {
               location: vscode.ProgressLocation.Notification,
-              title: `Creating lexical document "${name}" in space "${space.name}"...`,
+              title: vscode.l10n.t(
+                'Creating lexical document "{0}" in space "{1}"...',
+                name,
+                space.name,
+              ),
               cancellable: false,
             },
             async () => {
@@ -372,7 +416,10 @@ export function registerDocumentCommands(
 
               if (document) {
                 vscode.window.showInformationMessage(
-                  `Successfully created lexical document "${name}"`,
+                  vscode.l10n.t(
+                    'Successfully created lexical document "{0}"',
+                    name,
+                  ),
                 );
                 spacesTreeProvider.refreshSpace(space.uid);
               } else {
@@ -382,9 +429,12 @@ export function registerDocumentCommands(
           );
         } catch (error) {
           vscode.window.showErrorMessage(
-            `Failed to create lexical document: ${
-              error instanceof Error ? error.message : "Unknown error"
-            }`,
+            vscode.l10n.t(
+              "Failed to create lexical document: {0}",
+              error instanceof Error
+                ? error.message
+                : vscode.l10n.t("Unknown error"),
+            ),
           );
         }
       },
@@ -407,7 +457,7 @@ export function registerDocumentCommands(
 
           if (!itemWithData.data?.document) {
             vscode.window.showErrorMessage(
-              "Please select a document to rename",
+              vscode.l10n.t("Please select a document to rename"),
             );
             return;
           }
@@ -417,11 +467,11 @@ export function registerDocumentCommands(
           const currentName = document.name;
 
           const newName = await vscode.window.showInputBox({
-            prompt: "Enter new name",
+            prompt: vscode.l10n.t("Enter new name"),
             value: currentName,
             validateInput: (value) => {
               if (!value || value.trim().length === 0) {
-                return "Name is required";
+                return vscode.l10n.t("Name is required");
               }
               return null;
             },
@@ -434,7 +484,11 @@ export function registerDocumentCommands(
           await vscode.window.withProgress(
             {
               location: vscode.ProgressLocation.Notification,
-              title: `Renaming "${currentName}" to "${newName}"...`,
+              title: vscode.l10n.t(
+                'Renaming "{0}" to "{1}"...',
+                currentName,
+                newName,
+              ),
               cancellable: false,
             },
             async () => {
@@ -446,7 +500,7 @@ export function registerDocumentCommands(
                 await document.update(newName, existingDescription);
 
                 vscode.window.showInformationMessage(
-                  `Successfully renamed to "${newName}"`,
+                  vscode.l10n.t('Successfully renamed to "{0}"', newName),
                 );
                 spacesTreeProvider.refresh();
               } catch (updateError) {
@@ -454,7 +508,7 @@ export function registerDocumentCommands(
                   `Failed to rename item: ${
                     updateError instanceof Error
                       ? updateError.message
-                      : "Unknown error"
+                      : vscode.l10n.t("Unknown error")
                   }`,
                 );
               }
@@ -462,9 +516,12 @@ export function registerDocumentCommands(
           );
         } catch (error) {
           vscode.window.showErrorMessage(
-            `Failed to rename item: ${
-              error instanceof Error ? error.message : "Unknown error"
-            }`,
+            vscode.l10n.t(
+              "Failed to rename item: {0}",
+              error instanceof Error
+                ? error.message
+                : vscode.l10n.t("Unknown error"),
+            ),
           );
         }
       },
@@ -487,7 +544,7 @@ export function registerDocumentCommands(
 
           if (!itemWithData.data?.document) {
             vscode.window.showErrorMessage(
-              "Please select a document to delete",
+              vscode.l10n.t("Please select a document to delete"),
             );
             return;
           }
@@ -507,7 +564,7 @@ export function registerDocumentCommands(
           await vscode.window.withProgress(
             {
               location: vscode.ProgressLocation.Notification,
-              title: `Deleting "${itemName}"...`,
+              title: vscode.l10n.t('Deleting "{0}"...', itemName),
               cancellable: false,
             },
             async () => {
@@ -517,7 +574,7 @@ export function registerDocumentCommands(
                 await document.delete();
 
                 vscode.window.showInformationMessage(
-                  `Successfully deleted "${itemName}"`,
+                  vscode.l10n.t('Successfully deleted "{0}"', itemName),
                 );
                 spacesTreeProvider.refresh();
               } catch (deleteError) {
@@ -525,7 +582,7 @@ export function registerDocumentCommands(
                   `Failed to delete item: ${
                     deleteError instanceof Error
                       ? deleteError.message
-                      : "Unknown error"
+                      : vscode.l10n.t("Unknown error")
                   }`,
                 );
               }
@@ -533,9 +590,12 @@ export function registerDocumentCommands(
           );
         } catch (error) {
           vscode.window.showErrorMessage(
-            `Failed to delete item: ${
-              error instanceof Error ? error.message : "Unknown error"
-            }`,
+            vscode.l10n.t(
+              "Failed to delete item: {0}",
+              error instanceof Error
+                ? error.message
+                : vscode.l10n.t("Unknown error"),
+            ),
           );
         }
       },
@@ -558,14 +618,15 @@ export function registerDocumentCommands(
 
           if (!itemWithData.data?.document) {
             vscode.window.showErrorMessage(
-              "Please select a document to download",
+              vscode.l10n.t("Please select a document to download"),
             );
             return;
           }
 
           const document = itemWithData.data.document;
           const docName = document.name;
-          const spaceName = itemWithData.data.spaceName || "Unknown Space";
+          const spaceName =
+            itemWithData.data.spaceName || vscode.l10n.t("Unknown Space");
           const typeInfo = detectDocumentType(document);
           const { isNotebook, isLexical } = typeInfo;
 
@@ -584,7 +645,10 @@ export function registerDocumentCommands(
             defaultFilename = `${defaultFilename}${extension}`;
           } else {
             vscode.window.showErrorMessage(
-              `Cannot download document of type: ${typeInfo.type}`,
+              vscode.l10n.t(
+                "Cannot download document of type: {0}",
+                typeInfo.type,
+              ),
             );
             return;
           }
@@ -601,7 +665,9 @@ export function registerDocumentCommands(
                   "Lexical Documents": ["dlex"],
                   "All Files": ["*"],
                 },
-            title: `Download ${isNotebook ? "Notebook" : "Document"} from ${spaceName}`,
+            title: isNotebook
+              ? vscode.l10n.t("Download Notebook from {0}", spaceName)
+              : vscode.l10n.t("Download Document from {0}", spaceName),
           });
 
           if (!uri) {
@@ -611,13 +677,13 @@ export function registerDocumentCommands(
           await vscode.window.withProgress(
             {
               location: vscode.ProgressLocation.Notification,
-              title: `Downloading "${docName}"...`,
+              title: vscode.l10n.t('Downloading "{0}"...', docName),
               cancellable: false,
             },
             async (progress) => {
               progress.report({
                 increment: 0,
-                message: "Fetching content from Datalayer...",
+                message: vscode.l10n.t("Fetching content from Datalayer..."),
               });
 
               // Fetch content from the document
@@ -638,7 +704,7 @@ export function registerDocumentCommands(
                 retries--;
                 if (retries > 0) {
                   progress.report({
-                    message: `Retrying... (${3 - retries}/3)`,
+                    message: vscode.l10n.t("Retrying... ({0}/3)", 3 - retries),
                   });
                   await new Promise((resolve) => setTimeout(resolve, 1000));
                 }
@@ -653,7 +719,7 @@ export function registerDocumentCommands(
 
               progress.report({
                 increment: 50,
-                message: "Saving to disk...",
+                message: vscode.l10n.t("Saving to disk..."),
               });
 
               // Write content to the selected location
@@ -669,19 +735,26 @@ export function registerDocumentCommands(
 
               progress.report({
                 increment: 100,
-                message: "Done!",
+                message: vscode.l10n.t("Done!"),
               });
 
               vscode.window.showInformationMessage(
-                `Successfully downloaded "${docName}" to ${uri.fsPath}`,
+                vscode.l10n.t(
+                  'Successfully downloaded "{0}" to {1}',
+                  docName,
+                  uri.fsPath,
+                ),
               );
             },
           );
         } catch (error) {
           vscode.window.showErrorMessage(
-            `Failed to download document: ${
-              error instanceof Error ? error.message : "Unknown error"
-            }`,
+            vscode.l10n.t(
+              "Failed to download document: {0}",
+              error instanceof Error
+                ? error.message
+                : vscode.l10n.t("Unknown error"),
+            ),
           );
         }
       },
@@ -710,7 +783,9 @@ export function registerDocumentCommands(
             if (!authProvider.isAuthenticated()) {
               // Login failed or was cancelled - show a message
               vscode.window.showInformationMessage(
-                "Authentication required to copy files to Datalayer space.",
+                vscode.l10n.t(
+                  "Authentication required to copy files to Datalayer space.",
+                ),
               );
               return;
             }
@@ -720,7 +795,9 @@ export function registerDocumentCommands(
           const filesToCopy = uris && uris.length > 0 ? uris : [uri];
 
           if (!filesToCopy || filesToCopy.length === 0) {
-            vscode.window.showErrorMessage("Please select files to copy");
+            vscode.window.showErrorMessage(
+              vscode.l10n.t("Please select files to copy"),
+            );
             return;
           }
 
@@ -736,7 +813,9 @@ export function registerDocumentCommands(
 
           if (supportedFiles.length === 0) {
             vscode.window.showErrorMessage(
-              "No supported files selected. Only .ipynb, .dlex, and .lexical files are supported.",
+              vscode.l10n.t(
+                "No supported files selected. Only .ipynb, .dlex, and .lexical files are supported.",
+              ),
             );
             return;
           }
@@ -745,7 +824,10 @@ export function registerDocumentCommands(
           const filteredCount = filesToCopy.length - supportedFiles.length;
           if (filteredCount > 0) {
             vscode.window.showWarningMessage(
-              `${filteredCount} file(s) skipped (unsupported type). Only .ipynb, .dlex, and .lexical files are supported.`,
+              vscode.l10n.t(
+                "{0} file(s) skipped (unsupported type). Only .ipynb, .dlex, and .lexical files are supported.",
+                filteredCount,
+              ),
             );
           }
 
@@ -756,15 +838,15 @@ export function registerDocumentCommands(
             {
               location: vscode.ProgressLocation.Notification,
               title: isMultiple
-                ? `Copying ${totalFiles} files to Datalayer...`
-                : `Copying file to Datalayer...`,
+                ? vscode.l10n.t("Copying {0} files to Datalayer...", totalFiles)
+                : vscode.l10n.t("Copying file to Datalayer..."),
               cancellable: false,
             },
             async (progress) => {
               // Get default space once for all files
               progress.report({
                 increment: 0,
-                message: "Finding default space...",
+                message: vscode.l10n.t("Finding default space..."),
               });
 
               const spaces = await datalayer.getMySpaces();
@@ -795,8 +877,13 @@ export function registerDocumentCommands(
                 progress.report({
                   increment: progressPercent,
                   message: isMultiple
-                    ? `[${i + 1}/${totalFiles}] ${fileName}...`
-                    : `Uploading ${fileName}...`,
+                    ? vscode.l10n.t(
+                        "[{0}/{1}] {2}...",
+                        i + 1,
+                        totalFiles,
+                        fileName,
+                      )
+                    : vscode.l10n.t("Uploading {0}...", fileName),
                 });
 
                 try {
@@ -853,14 +940,16 @@ export function registerDocumentCommands(
                 } catch (error) {
                   failureCount++;
                   const errorMsg =
-                    error instanceof Error ? error.message : "Unknown error";
+                    error instanceof Error
+                      ? error.message
+                      : vscode.l10n.t("Unknown error");
                   errors.push(`${fileName}: ${errorMsg}`);
                 }
               }
 
               progress.report({
                 increment: 100,
-                message: "Done!",
+                message: vscode.l10n.t("Done!"),
               });
 
               // Refresh the spaces tree to show new documents
@@ -870,25 +959,46 @@ export function registerDocumentCommands(
               if (failureCount === 0) {
                 vscode.window.showInformationMessage(
                   isMultiple
-                    ? `Successfully copied ${successCount} file(s) to space "${defaultSpace.name}"`
-                    : `Successfully copied "${supportedFiles[0]?.fsPath.split(/[\\/]/).pop() ?? "document"}" to space "${defaultSpace.name}"`,
+                    ? vscode.l10n.t(
+                        'Successfully copied {0} file(s) to space "{1}"',
+                        successCount,
+                        defaultSpace.name,
+                      )
+                    : vscode.l10n.t(
+                        'Successfully copied "{0}" to space "{1}"',
+                        supportedFiles[0]?.fsPath.split(/[\\/]/).pop() ??
+                          vscode.l10n.t("document"),
+                        defaultSpace.name,
+                      ),
                 );
               } else if (successCount === 0) {
                 vscode.window.showErrorMessage(
-                  `Failed to copy ${failureCount} file(s):\n${errors.join("\n")}`,
+                  vscode.l10n.t(
+                    "Failed to copy {0} file(s): {1}",
+                    failureCount,
+                    errors.join("\n"),
+                  ),
                 );
               } else {
                 vscode.window.showWarningMessage(
-                  `Copied ${successCount} file(s), but ${failureCount} failed:\n${errors.join("\n")}`,
+                  vscode.l10n.t(
+                    "Copied {0} file(s), but {1} failed: {2}",
+                    successCount,
+                    failureCount,
+                    errors.join("\n"),
+                  ),
                 );
               }
             },
           );
         } catch (error) {
           vscode.window.showErrorMessage(
-            `Failed to copy files to Datalayer: ${
-              error instanceof Error ? error.message : "Unknown error"
-            }`,
+            vscode.l10n.t(
+              "Failed to copy files to Datalayer: {0}",
+              error instanceof Error
+                ? error.message
+                : vscode.l10n.t("Unknown error"),
+            ),
           );
         }
       },

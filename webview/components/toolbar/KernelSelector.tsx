@@ -11,6 +11,7 @@
  * @module components/toolbar/KernelSelector
  */
 
+import * as l10n from "@vscode/l10n";
 import React from "react";
 import { ToolbarButton } from "./ToolbarButton";
 import type { RuntimeJSON } from "@datalayer/core/lib/client";
@@ -84,12 +85,12 @@ export const KernelSelector: React.FC<KernelSelectorProps> = ({
       // Don't show "Datalayer: " prefix for local kernels or Pyodide
       return isPyodide || isLocalKernel
         ? runtimeName
-        : `Datalayer: ${runtimeName}`;
+        : l10n.t("Datalayer: {0}", runtimeName);
     }
     if (kernelName) {
       return kernelName;
     }
-    return "Select Kernel";
+    return l10n.t("Select Kernel");
   };
 
   const getKernelIcon = () => {
@@ -130,8 +131,8 @@ export const KernelSelector: React.FC<KernelSelectorProps> = ({
       loading={isLoading}
       title={
         selectedRuntime
-          ? `Change runtime (current: ${getKernelText()})`
-          : "Select a Datalayer runtime or Jupyter kernel"
+          ? l10n.t("Change runtime (current: {0})", getKernelText())
+          : l10n.t("Select a Datalayer runtime or Jupyter kernel")
       }
     />
   );

@@ -11,6 +11,7 @@
  * @module components/toolbar/OverflowMenu
  */
 
+import * as l10n from "@vscode/l10n";
 import React, { useState, useRef, useEffect } from "react";
 import { ToolbarButton } from "./ToolbarButton";
 
@@ -49,9 +50,10 @@ export interface OverflowMenuProps {
 export const OverflowMenu: React.FC<OverflowMenuProps> = ({
   actions,
   icon = "codicon codicon-ellipsis",
-  title = "More actions",
+  title: titleProp,
   disabled = false,
 }) => {
+  const title = titleProp ?? l10n.t("More actions");
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLDivElement>(null);

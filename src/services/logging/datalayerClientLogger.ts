@@ -431,13 +431,16 @@ export class DatalayerClientOperationTracker {
 
     if (DatalayerClientOperationTracker.isNetworkError(error)) {
       logger.warn("Network connectivity issue detected");
+      const retryLabel = vscode.l10n.t("Retry");
       vscode.window
         .showErrorMessage(
-          "Network error. Please check your connection and try again.",
-          "Retry",
+          vscode.l10n.t(
+            "Network error. Please check your connection and try again.",
+          ),
+          retryLabel,
         )
         .then((selection) => {
-          if (selection === "Retry") {
+          if (selection === retryLabel) {
             logger.info("User requested retry after network error");
           }
         });
@@ -449,7 +452,9 @@ export class DatalayerClientOperationTracker {
     ) {
       logger.warn("Rate limit encountered");
       vscode.window.showWarningMessage(
-        "Too many requests. Please wait a moment before trying again.",
+        vscode.l10n.t(
+          "Too many requests. Please wait a moment before trying again.",
+        ),
       );
       return;
     }
@@ -457,7 +462,9 @@ export class DatalayerClientOperationTracker {
     if (DatalayerClientOperationTracker.isServerError(errorObj, errorMessage)) {
       logger.error("Service appears to be down");
       vscode.window.showErrorMessage(
-        "Datalayer service is temporarily unavailable. Please try again later.",
+        vscode.l10n.t(
+          "Datalayer service is temporarily unavailable. Please try again later.",
+        ),
       );
       return;
     }

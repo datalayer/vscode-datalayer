@@ -134,7 +134,9 @@ export class NotebookProvider extends BaseDocumentProvider<NotebookDocument> {
         const workspaceFolders = vscode.workspace.workspaceFolders;
         if (!workspaceFolders || workspaceFolders.length === 0) {
           vscode.window.showErrorMessage(
-            "Creating new Datalayer notebook files currently requires opening a workspace",
+            vscode.l10n.t(
+              "Creating new Datalayer notebook files currently requires opening a workspace",
+            ),
           );
           return;
         }
@@ -291,13 +293,17 @@ export class NotebookProvider extends BaseDocumentProvider<NotebookDocument> {
 
       if (!authState.isAuthenticated) {
         // Show login prompt
+        const logInLabel = vscode.l10n.t("Log In");
+        const cancelLabel = vscode.l10n.t("Cancel");
         const choice = await vscode.window.showWarningMessage(
-          "You must be logged in to Datalayer to open remote notebooks. Would you like to log in now?",
-          "Log In",
-          "Cancel",
+          vscode.l10n.t(
+            "You must be logged in to Datalayer to open remote notebooks. Would you like to log in now?",
+          ),
+          logInLabel,
+          cancelLabel,
         );
 
-        if (choice === "Log In") {
+        if (choice === logInLabel) {
           // Trigger login command
           await vscode.commands.executeCommand("datalayer.login");
 
@@ -1000,7 +1006,9 @@ Complete the code at <CURSOR>:`;
         }
       })
       .catch((error) => {
-        vscode.window.showErrorMessage(`Failed to select runtime: ${error}`);
+        vscode.window.showErrorMessage(
+          vscode.l10n.t("Failed to select runtime: {0}", String(error)),
+        );
       });
   }
 

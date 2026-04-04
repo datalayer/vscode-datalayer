@@ -29,7 +29,7 @@ function openAgUIExample(context: vscode.ExtensionContext): void {
   // Create or show webview panel
   const panel = vscode.window.createWebviewPanel(
     "datalayerAgUIExample",
-    "ag-ui Notebook Example",
+    vscode.l10n.t("ag-ui Notebook Example"),
     vscode.ViewColumn.One,
     {
       enableScripts: true,
@@ -64,7 +64,7 @@ function getWebviewContent(
   );
 
   return `<!DOCTYPE html>
-<html lang="en">
+<html lang="${vscode.env.language}">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
