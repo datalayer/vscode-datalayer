@@ -7,6 +7,13 @@
 import * as vscode from "vscode";
 import { getPrimerVSCodeThemeCSS } from "../styles/primerVSCodeTheme";
 
+/**
+ * Generates the HTML content for the datasource creation dialog webview with Primer theme CSS and CSP.
+ * @param webview - Webview instance for generating secure URIs and CSP source.
+ * @param extensionUri - Extension root URI for resolving bundled script paths.
+ *
+ * @returns Complete HTML string for the creation dialog webview.
+ */
 export function getDatasourceDialogHtml(
   webview: vscode.Webview,
   extensionUri: vscode.Uri,
@@ -58,6 +65,9 @@ export function getDatasourceDialogHtml(
 </html>`;
 }
 
+/** Generates a cryptographically random 32-character nonce for CSP headers.
+ * @returns A 32-character alphanumeric nonce string.
+ */
 function getNonce(): string {
   let text = "";
   const possible =

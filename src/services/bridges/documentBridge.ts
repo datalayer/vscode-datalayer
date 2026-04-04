@@ -52,6 +52,7 @@ let extensionReadyResolve: (() => void) | null = null;
 /**
  * Notifies DocumentBridge that the extension is ready.
  * Called from extension.ts after successful activation.
+ *
  */
 export function notifyExtensionReady(): void {
   if (extensionReadyResolve) {
@@ -69,8 +70,9 @@ export function notifyExtensionReady(): void {
  * Returns immediately if already ready.
  * Shows progress notification to user during wait.
  *
- * @param timeout - Maximum time to wait in milliseconds (default: 30000)
- * @returns Promise that resolves when extension is ready or rejects on timeout
+ * @param timeout - Maximum time to wait in milliseconds (default: 30000).
+ *
+ * @returns Promise that resolves when extension is ready or rejects on timeout.
  */
 async function waitForExtensionReady(timeout = 30000): Promise<void> {
   if (!extensionReadyPromise) {
@@ -110,11 +112,6 @@ async function waitForExtensionReady(timeout = 30000): Promise<void> {
  * Manages document lifecycle between Datalayer platform and local filesystem.
  * Singleton service that handles document caching and runtime association.
  *
- * @example
- * ```typescript
- * const bridge = DocumentBridge.getInstance(context);
- * const uri = await bridge.openDocument(document, spaceId, spaceName);
- * ```
  */
 export class DocumentBridge {
   private static instance: DocumentBridge;
@@ -192,9 +189,10 @@ export class DocumentBridge {
    * Gets the singleton instance of DocumentBridge.
    * Waits for extension initialization if necessary.
    *
-   * @param context - Extension context (required on first call)
-   * @param datalayer - Datalayer instance (required on first call)
-   * @returns The singleton instance
+   * @param context - Extension context (required on first call).
+   * @param datalayer - Datalayer instance (required on first call).
+   *
+   * @returns The singleton instance.
    */
   static async getInstanceAsync(
     context?: vscode.ExtensionContext,
@@ -235,10 +233,12 @@ export class DocumentBridge {
    * Gets the singleton instance of DocumentBridge (synchronous).
    * Use getInstanceAsync() for better reliability during startup.
    *
-   * @param context - Extension context (required on first call)
-   * @param datalayer - Datalayer instance (required on first call)
-   * @returns The singleton instance
-   * @deprecated Use getInstanceAsync() for documents opened during VS Code startup
+   * @param context - Extension context (required on first call).
+   * @param datalayer - Datalayer instance (required on first call).
+   *
+   * @returns The singleton instance.
+   *
+   * @deprecated Use getInstanceAsync() for documents opened during VS Code startup.
    */
   static getInstance(
     context?: vscode.ExtensionContext,
@@ -256,10 +256,11 @@ export class DocumentBridge {
    * Opens a document from Datalayer platform.
    * Downloads content, caches locally, and creates virtual URI for VS Code.
    *
-   * @param document - The document to open
-   * @param spaceId - ID of the containing space
-   * @param spaceName - Name of the containing space
-   * @returns Virtual URI for the opened document
+   * @param document - The document to open.
+   * @param spaceId - ID of the containing space.
+   * @param spaceName - Name of the containing space.
+   *
+   * @returns Virtual URI for the opened document.
    */
   async openDocument(
     document: Document,
@@ -485,8 +486,9 @@ export class DocumentBridge {
    * Gets document metadata by path.
    * Resolves virtual URIs to real paths for lookup.
    *
-   * @param inputPath - Virtual or real filesystem path
-   * @returns Document metadata if found
+   * @param inputPath - Virtual or real filesystem path.
+   *
+   * @returns Document metadata if found.
    */
   getMetadataByPath(inputPath: string): DocumentMetadata | undefined {
     let realPath = inputPath;
@@ -512,8 +514,9 @@ export class DocumentBridge {
   /**
    * Gets document metadata by document ID.
    *
-   * @param documentId - Document UID
-   * @returns Document metadata if found
+   * @param documentId - Document UID.
+   *
+   * @returns Document metadata if found.
    */
   getMetadataById(documentId: string): DocumentMetadata | undefined {
     return this.documentMetadata.get(documentId);
@@ -523,8 +526,9 @@ export class DocumentBridge {
    * Gets document metadata by VS Code URI.
    * Handles both real filesystem and virtual URI schemes.
    *
-   * @param uri - Document URI
-   * @returns Document metadata if found
+   * @param uri - The target document identifier to look up.
+   *
+   * @returns Document metadata if found.
    */
   getDocumentMetadata(uri: vscode.Uri): DocumentMetadata | undefined {
     // Direct O(1) lookup by URI
@@ -535,7 +539,7 @@ export class DocumentBridge {
   /**
    * Clears cached document from filesystem and memory.
    *
-   * @param documentId - Document UID to clear
+   * @param documentId - Document UID to clear.
    */
   clearDocument(documentId: string): void {
     const metadata = this.documentMetadata.get(documentId);
@@ -551,8 +555,9 @@ export class DocumentBridge {
    * Ensures a runtime exists for the document.
    * Verifies cached runtime status or creates a new one if needed.
    *
-   * @param documentId - Document UID needing runtime
-   * @returns Runtime instance or undefined if creation fails
+   * @param documentId - Document UID needing runtime.
+   *
+   * @returns Runtime instance or undefined if creation fails.
    */
   async ensureRuntime(documentId: string): Promise<RuntimeDTO | undefined> {
     const metadata = this.documentMetadata.get(documentId);
@@ -607,7 +612,7 @@ export class DocumentBridge {
   /**
    * Gets list of active runtime pod names.
    *
-   * @returns Array of runtime pod names
+   * @returns Array of runtime pod names.
    */
   getActiveRuntimes(): string[] {
     return Array.from(this.activeRuntimes);

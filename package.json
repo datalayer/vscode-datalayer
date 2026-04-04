@@ -25,7 +25,7 @@
   "scripts": {
     "apply:patches": "bash scripts/apply-patches.sh",
     "build:icons": "node scripts/build-icons.js",
-    "check": "npm run format:check && npm run lint && npm run type-check",
+    "check": "npm run format:check && npm run lint && npm run type-check && npm run docs:check-readmes",
     "check:fix": "npm run format && npm run lint:fix && npm run type-check",
     "clean": "rm -rf dist out *.vsix",
     "clean:dist": "rm -rf dist",
@@ -37,7 +37,9 @@
     "copy:pyodide": "node scripts/copy-pyodide.js",
     "create:patches": "bash scripts/create-patches.sh",
     "docs": "typedoc",
-    "docs:coverage": "typedoc --validation || true",
+    "docs:coverage": "typedoc --validation",
+    "docs:check-readmes": "bash scripts/check-readmes.sh",
+    "docs:check": "bash scripts/check-readmes.sh && typedoc --validation",
     "docs:markdown": "typedoc --plugin typedoc-plugin-markdown --out docs-markdown",
     "docs:watch": "typedoc --watch",
     "format": "prettier --write 'src/**/*.{ts,tsx,js,jsx,json,css,md}' 'webview/**/*.{ts,tsx,js,jsx,json,css,md}' '*.{js,json,md}' 'tsconfig*.json' '.vscode/*.json' '.github/workflows/*.yml'",
@@ -64,7 +66,8 @@
     "watch": "npm run clean:dist && webpack --watch",
     "watch-tests": "tsc -p . -w --outDir out",
     "watch:debug": "npm run clean:dist && cross-env WEBVIEW_DEBUG=1 webpack --watch",
-    "watch:lib": "tsc --project tsconfig.json --rootDir src --outDir lib --declaration --declarationDir lib --watch --preserveWatchOutput"
+    "watch:lib": "tsc --project tsconfig.json --rootDir src --outDir lib --declaration --declarationDir lib --watch --preserveWatchOutput",
+    "prepare": "husky"
   },
   "dependencies": {
     "@codemirror/autocomplete": "^6.20.1",
@@ -147,6 +150,9 @@
     "cross-env": "^7.0.3",
     "css-loader": "^5.1.3",
     "eslint": "^9.39.2",
+    "eslint-plugin-jsdoc": "^62.9.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.4.0",
     "mini-svg-data-uri": "^1.4.4",
     "null-loader": "^4.0.1",
     "ovsx": "^0.10.10",
@@ -169,6 +175,19 @@
     "typescript": "^5.8.3",
     "webpack": "^5.105.4",
     "webpack-cli": "^6.0.1"
+  },
+  "lint-staged": {
+    "*.{ts,tsx}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{js,jsx}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{json,css,md,yml}": [
+      "prettier --write"
+    ]
   },
   "activationEvents": [
     "onStartupFinished"

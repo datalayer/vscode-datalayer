@@ -17,9 +17,10 @@ import type { ToolExecutor } from "@datalayer/jupyter-react";
 declare const window: Window;
 
 /**
- * VS Code webview API interface
+ * VS Code webview API interface for sending messages to the extension host.
  */
-interface VSCodeAPI {
+export interface VSCodeAPI {
+  /** Sends a message to the VS Code extension host. */
   postMessage(message: unknown): void;
 }
 
@@ -27,12 +28,6 @@ interface VSCodeAPI {
  * Bridge executor - sends messages to extension host via webview API.
  * Used by webviews that need to communicate with extension host.
  *
- * @example
- * ```typescript
- * const vscode = acquireVsCodeApi();
- * const executor = new BridgeExecutor(notebookId, vscode);
- * await executor.execute("notebook.insertCell", { cellType: "code", source: "print('hi')" });
- * ```
  */
 export class BridgeExecutor implements ToolExecutor {
   private pendingRequests: Map<
@@ -62,11 +57,12 @@ export class BridgeExecutor implements ToolExecutor {
   }
 
   /**
-   * Execute a command by sending message to VS Code extension host
+   * Executes a command by sending a message to VS Code extension host and awaiting the response.
    *
-   * @param command - Operation command (e.g., "notebook.insertCell")
-   * @param args - Command arguments
-   * @returns Result from extension host
+   * @param command - Operation command to execute (e.g., "notebook.insertCell").
+   * @param args - Command arguments to pass along with the request.
+   *
+   * @returns Result from the extension host after command execution.
    */
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   async execute(command: string, args: any): Promise<any> {

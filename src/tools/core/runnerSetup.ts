@@ -25,7 +25,9 @@ let combinedOperationsCache: Record<
 > | null = null;
 
 /**
- * Get combined operations, loading them once and caching
+ * Loads combined operations once and caches them to avoid repeated lazy imports.
+ * @returns Cached map of operation names to their implementations.
+ *
  * @internal
  */
 async function getOrLoadOperations(): Promise<
@@ -45,8 +47,8 @@ export class Runner {
   /**
    * Creates a new Runner instance.
    *
-   * @param operations - Map of operation names to their implementations
-   * @param executor - Executor instance for performing operations, or null for direct execution
+   * @param operations - Map of operation names to their implementations.
+   * @param executor - Executor instance for performing operations, or null for direct execution.
    */
   constructor(
     private operations: Record<string, ToolOperation<unknown, unknown>>,
@@ -56,10 +58,12 @@ export class Runner {
   /**
    * Executes a tool operation by name.
    *
-   * @param operationName - Name of the operation to execute
-   * @param args - Arguments for the operation
-   * @returns Promise resolving to the operation result
-   * @throws Error if operation is not found
+   * @param operationName - Name of the operation to execute.
+   * @param args - Arguments for the operation.
+   *
+   * @returns Promise resolving to the operation result.
+   *
+   * @throws Error if the operation name is not found in the registry.
    */
   async execute(operationName: string, args: unknown): Promise<unknown> {
     const operation = this.operations[operationName];
@@ -89,9 +93,10 @@ interface BridgeExecutor {
    * Executes a tool operation in the appropriate context.
    * Routes VS Code operations locally, bridges others to webview.
    *
-   * @param operationName - Name of the operation to execute
-   * @param args - Arguments for the operation
-   * @returns Promise resolving to the operation result
+   * @param operationName - Name of the operation to execute.
+   * @param args - Arguments for the operation.
+   *
+   * @returns Promise resolving to the operation result.
    */
   execute(operationName: string, args: unknown): Promise<unknown>;
 }
@@ -109,23 +114,16 @@ const VS_CODE_OPERATIONS = new Set([
 ]);
 
 /**
- * Creates a Runner instance for extension-side tool execution
+ * Creates a Runner instance for extension-side tool execution.
  *
  * The Runner uses a smart executor that:
- * - Executes VS Code-specific operations locally (they need VS Code APIs)
- * - Bridges notebook/lexical operations to webview (they need document state)
+ * - Executes VS Code-specific operations locally (they need VS Code APIs).
+ * - Bridges notebook/lexical operations to webview (they need document state).
  *
- * @param webviewPanel - VS Code webview panel for message communication
- * @returns Promise resolving to Runner instance configured with smart executor
+ * @param webviewPanel - VS Code webview panel for message communication.
  *
- * @example
- * ```typescript
- * const runner = await createExtensionRunner(webviewPanel);
- * const result = await runner.execute("insertCell", {
- *   cellType: "code",
- *   source: "print('hello')"
- * });
- * ```
+ * @returns Promise resolving to Runner instance configured with smart executor.
+ *
  */
 export async function createExtensionRunner(
   webviewPanel: vscode.WebviewPanel,

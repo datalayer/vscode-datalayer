@@ -33,13 +33,8 @@ const nameConfig: Config = {
  * Generates a unique, human-readable name for a runtime.
  * Uses the pattern: Adjective-Animal (e.g., "Brave-Tiger").
  *
- * @returns A generated runtime name with capitalized words separated by hyphens
+ * @returns A generated runtime name with capitalized words separated by hyphens.
  *
- * @example
- * ```typescript
- * const name = generateRuntimeName();
- * // Returns something like: "Brave-Tiger"
- * ```
  */
 export function generateRuntimeName(): string {
   return uniqueNamesGenerator(nameConfig);

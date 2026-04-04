@@ -7,17 +7,26 @@
 import { useEffect, useRef, useCallback } from "react";
 import { LexicalEditor, $getRoot } from "lexical";
 import { $isHeadingNode } from "@lexical/rich-text";
-import { OutlineItem, OutlineUpdateMessage } from "../types/messages";
+import { OutlineItem } from "../types/messages";
+import type { OutlineMessageSender } from "./useNotebookOutline";
 
-interface UseLexicalOutlineProps {
+/** Props for the useLexicalOutline hook controlling outline extraction from a Lexical editor. */
+export interface UseLexicalOutlineProps {
+  /** Lexical editor instance to monitor for changes. */
   editor: LexicalEditor | null;
+  /** URI of the document for outline identification. */
   documentUri: string;
-  vscode: { postMessage: (message: OutlineUpdateMessage) => void };
+  /** VS Code API for posting outline messages. */
+  vscode: OutlineMessageSender;
 }
 
 /**
- * Hook to extract and send outline data from a Lexical editor.
- * Monitors the editor state and extracts headings and code blocks.
+ * Extracts headings and code blocks from a Lexical editor and sends outline updates to the extension.
+ * @param props - Hook configuration properties.
+ * @param props.editor - Lexical editor instance to monitor for changes.
+ * @param props.documentUri - URI of the document for outline identification.
+ * @param props.vscode - VS Code API for posting outline messages.
+ *
  */
 export function useLexicalOutline({
   editor,

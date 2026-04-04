@@ -79,7 +79,7 @@ export interface NotebookState {
 }
 
 /**
- * Initial state
+ * Default values for all notebook state properties, used on creation and reset.
  */
 const initialState = {
   nbformat: undefined,
@@ -95,13 +95,8 @@ const initialState = {
 };
 
 /**
- * Creates a new isolated Notebook store instance.
- * Each webview should create its own store to prevent state sharing.
- *
- * IMPORTANT: This is a factory function, NOT a global singleton.
- * Calling this multiple times creates independent store instances.
- *
- * @returns A new Zustand store instance for Notebook state management
+ * Creates a new isolated Notebook store instance; each webview should call this to prevent state sharing across editors.
+ * @returns A new Zustand store instance for Notebook state management.
  */
 export const createNotebookStore = () =>
   create<NotebookState>((set) => ({

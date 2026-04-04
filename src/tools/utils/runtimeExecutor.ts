@@ -25,37 +25,30 @@ import type { IOutput } from "@jupyterlab/nbformat";
  * Contains standard Jupyter output objects and execution metadata.
  */
 export interface ExecuteCodeResult {
-  /** Whether execution completed successfully (no connection errors) */
+  /** Whether execution completed successfully (no connection errors). */
   success: boolean;
-  /** Standard Jupyter outputs (stream, execute_result, display_data, error) */
+  /** Standard Jupyter outputs (stream, execute_result, display_data, error). */
   outputs?: IOutput[];
-  /** Error message if execution failed */
+  /** Error message if execution failed. */
   error?: string;
-  /** Execution count from the kernel */
+  /** Execution count from the kernel. */
   executionCount?: number;
 }
 
 /**
- * Execute code directly on a Datalayer runtime using Jupyter kernel protocol.
+ * Executes code directly on a Datalayer runtime using Jupyter kernel protocol.
  *
  * This function:
- * 1. Creates a WebSocket connection to the runtime
- * 2. Connects to the default kernel (or starts a new one)
- * 3. Executes the code using KernelExecutor
- * 4. Returns standard Jupyter IOutput[] objects
+ * 1. Creates a WebSocket connection to the runtime.
+ * 2. Connects to the default kernel (or starts a new one).
+ * 3. Executes the code using KernelExecutor.
+ * 4. Returns standard Jupyter IOutput[] objects.
  *
- * @param runtime - The runtime to execute code on (must have ingress and token)
- * @param code - Python code to execute
- * @returns Promise resolving to execution result with outputs
+ * @param runtime - The runtime to execute code on (must have ingress and token).
+ * @param code - Python code to execute.
  *
- * @example
- * ```typescript
- * const runtime = await strategy.tryConnect({ runtimesTreeProvider });
- * const result = await executeOnRuntime(runtime, "print('hello')");
- * if (result.success) {
- *   console.log("Outputs:", result.outputs);
- * }
- * ```
+ * @returns Promise resolving to execution result with outputs.
+ *
  */
 export async function executeOnRuntime(
   runtime: RuntimeDTO,
@@ -158,17 +151,19 @@ export async function executeOnRuntime(
 }
 
 /**
- * Create a WebSocket kernel connection for a Datalayer runtime.
+ * Creates a WebSocket kernel connection for a Datalayer runtime.
  *
  * This function:
- * 1. Creates ServerConnection settings with runtime ingress and token
- * 2. Creates a KernelManager for managing kernels
- * 3. Lists existing kernels and connects to the default Python kernel
- * 4. If no kernel exists, starts a new Python kernel
+ * 1. Creates ServerConnection settings with runtime ingress and token.
+ * 2. Creates a KernelManager for managing kernels.
+ * 3. Lists existing kernels and connects to the default Python kernel.
+ * 4. If no kernel exists, starts a new Python kernel.
  *
- * @param runtime - The runtime to connect to
- * @returns Promise resolving to kernel connection and manager
- * @throws Error if connection fails
+ * @param runtime - The runtime to connect to.
+ *
+ * @returns Promise resolving to kernel connection and manager.
+ *
+ * @throws Error if connection fails.
  *
  * @internal
  */

@@ -17,7 +17,7 @@ import { CompletionHandler } from "@jupyterlab/completer";
 import { vsCodeAPI, MessageHandler, Disposable } from "../messageHandler";
 
 /**
- * Cell language type
+ * Cell language type.
  */
 type CellLanguage = "python" | "markdown" | "unknown";
 
@@ -60,8 +60,9 @@ export class LSPTabCompletionProvider {
    * Check if this provider is applicable to the current context.
    * Returns true for Python and Markdown cells (LSP works without kernel).
    *
-   * @param context - Completion context with widget, editor, session
-   * @returns Promise resolving to true if provider should be used
+   * @param context - Completion context with widget, editor, session.
+   *
+   * @returns Promise resolving to true if provider should be used.
    */
   async isApplicable(context: any): Promise<boolean> {
     // LSP completions work without a kernel, unlike KernelCompleterProvider
@@ -75,6 +76,7 @@ export class LSPTabCompletionProvider {
   /**
    * Handle messages from extension host.
    * Called by MessageHandler with the message data directly (not MessageEvent).
+   * @param message - Message data from the extension host.
    */
   private handleMessage(message: any): void {
     if (message.type === "lsp-completion-response") {
@@ -96,9 +98,10 @@ export class LSPTabCompletionProvider {
   /**
    * Fetch completion suggestions from LSP for dropdown menu.
    *
-   * @param request - Completion request with text and cursor position
-   * @param context - Completion context with widget, editor, session
-   * @returns Promise resolving to completion reply for dropdown
+   * @param request - Completion request with text and cursor position.
+   * @param context - Completion context with widget, editor, session.
+   *
+   * @returns Promise resolving to completion reply for dropdown.
    */
   async fetch(
     request: CompletionHandler.IRequest,
@@ -267,6 +270,9 @@ export class LSPTabCompletionProvider {
 
   /**
    * Convert VS Code CompletionItemKind to JupyterLab completion type.
+   * @param kind - VS Code CompletionItemKind enum value.
+   *
+   * @returns JupyterLab completion type string.
    */
   private convertCompletionKind(kind: number | undefined): string {
     if (!kind) {
@@ -333,6 +339,9 @@ export class LSPTabCompletionProvider {
 
   /**
    * Detect the language of the active cell from context.
+   * @param context - Completion context with active cell info.
+   *
+   * @returns Detected cell language or 'unknown'.
    */
   private detectCellLanguage(context: any): CellLanguage {
     const widget = context.widget;
@@ -364,6 +373,9 @@ export class LSPTabCompletionProvider {
 
   /**
    * Get the cell ID from the context.
+   * @param context - Completion context with active cell info.
+   *
+   * @returns Cell ID string or null if no active cell.
    */
   private getCellId(context: any): string | null {
     const widget = context.widget;
@@ -378,9 +390,10 @@ export class LSPTabCompletionProvider {
 
   /**
    * Convert character offset to line/character position.
-   * @param text - The full text content
-   * @param offset - Character offset in the text
-   * @returns Line and character position (0-indexed)
+   * @param text - The full text content.
+   * @param offset - Character offset in the text.
+   *
+   * @returns Line and character position (0-indexed).
    */
   private offsetToPosition(
     text: string,
@@ -403,9 +416,12 @@ export class LSPTabCompletionProvider {
 
   /**
    * Convert line/character position to character offset.
-   * @param text - The full text content
-   * @param position - Line and character position
-   * @returns Character offset in the text
+   * @param text - The full text content.
+   * @param position - Line and character position.
+   * @param position.line - Zero-indexed line number.
+   * @param position.character - Zero-indexed character offset in line.
+   *
+   * @returns Character offset in the text.
    */
   private positionToOffset(
     text: string,
@@ -431,6 +447,13 @@ export class LSPTabCompletionProvider {
   /**
    * Request completions from extension host via postMessage.
    * Deduplicates identical requests to avoid spamming Pylance.
+   * @param cellId - Unique identifier of the active cell.
+   * @param language - Detected language of the cell.
+   * @param position - Cursor position in the cell.
+   * @param position.line - Zero-indexed line number.
+   * @param position.character - Zero-indexed character offset in line.
+   *
+   * @returns Promise resolving to array of completion items.
    */
   private async requestCompletions(
     cellId: string,

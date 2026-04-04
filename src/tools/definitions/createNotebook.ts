@@ -6,6 +6,7 @@
 
 import type { ToolDefinition } from "@datalayer/jupyter-react";
 
+/** Tool definition for creating Jupyter notebooks with smart location detection. */
 export const createNotebookTool: ToolDefinition = {
   name: "datalayer_createNotebook",
   displayName: "Create Notebook",

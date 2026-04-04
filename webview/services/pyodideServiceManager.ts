@@ -8,7 +8,7 @@
 
 /**
  * Minimal ServiceManager for Pyodide that makes ZERO HTTP requests
- * This is a complete reimplementation that doesn't inherit from ServiceManager
+ * This is a complete reimplementation that doesn't inherit from ServiceManager.
  */
 
 import {
@@ -28,8 +28,6 @@ import { BaseKernelManager, BaseSessionManager } from "./base";
  *
  * Extends BaseKernelManager to inherit common functionality while
  * providing Pyodide-specific implementation for kernel creation.
- *
- * @extends {BaseKernelManager}
  */
 class MinimalKernelManager extends BaseKernelManager {
   readonly managerType = "pyodide" as const;
@@ -47,8 +45,9 @@ class MinimalKernelManager extends BaseKernelManager {
    * Start a new Pyodide kernel.
    * Creates inline kernel using Blob URL for Web Worker (bypasses CSP).
    *
-   * @param options - Kernel creation options
-   * @returns Promise resolving to Pyodide kernel connection
+   * @param options - Kernel creation options.
+   *
+   * @returns Promise resolving to Pyodide kernel connection.
    */
   async startNew(
     options: Kernel.IKernelOptions = {},
@@ -79,7 +78,7 @@ class MinimalKernelManager extends BaseKernelManager {
   /**
    * Shut down specific Pyodide kernel.
    *
-   * @param id - Kernel identifier
+   * @param id - Kernel identifier.
    */
   override async shutdown(id: string): Promise<void> {
     this.log(`shutdown called for kernel: ${id}`);
@@ -124,8 +123,6 @@ class MinimalKernelManager extends BaseKernelManager {
  *
  * Extends BaseSessionManager to inherit common functionality while
  * providing Pyodide-specific session creation (creates kernel + minimal session).
- *
- * @extends {BaseSessionManager}
  */
 class MinimalSessionManager extends BaseSessionManager {
   readonly managerType = "pyodide" as const;
@@ -133,8 +130,8 @@ class MinimalSessionManager extends BaseSessionManager {
   /**
    * Create minimal session manager.
    *
-   * @param _kernelManager - Minimal kernel manager for Pyodide
-   * @param serverSettings - Jupyter server connection settings
+   * @param _kernelManager - Minimal kernel manager for Pyodide.
+   * @param serverSettings - Jupyter server connection settings.
    */
   constructor(
     private _kernelManager: MinimalKernelManager,
@@ -147,8 +144,9 @@ class MinimalSessionManager extends BaseSessionManager {
    * Start a new Pyodide session.
    * Creates kernel first, then wraps in minimal session connection.
    *
-   * @param options - Session creation options
-   * @returns Promise resolving to session connection
+   * @param options - Session creation options.
+   *
+   * @returns Promise resolving to session connection.
    */
   async startNew(
     options: Session.ISessionOptions,
@@ -217,9 +215,11 @@ class MinimalSessionManager extends BaseSessionManager {
 }
 
 /**
- * Minimal ServiceManager for Pyodide - NO HTTP REQUESTS
+ * Minimal ServiceManager for Pyodide - NO HTTP REQUESTS.
  *
- * @param _pyodideUrl - Optional Pyodide CDN URL (unused - default: official CDN)
+ * @param _pyodideUrl - Optional Pyodide CDN URL (unused, uses official CDN).
+ *
+ * @returns ServiceManager configured for Pyodide execution.
  */
 export function createPyodideServiceManager(
   _pyodideUrl?: string,

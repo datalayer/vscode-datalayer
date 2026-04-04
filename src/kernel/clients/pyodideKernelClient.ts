@@ -21,7 +21,7 @@ import type { PyodideInterface } from "pyodide";
 import pyodideKernelCode from "../../../webview/services/pyodide/pyodide_kernel.py";
 
 /**
- * Pending execution context for routing Pyodide messages to correct cell
+ * Pending execution context for routing Pyodide messages to correct cell.
  */
 interface PendingExecution {
   execution: vscode.NotebookCellExecution;
@@ -31,7 +31,7 @@ interface PendingExecution {
 }
 
 /**
- * Queued execution item
+ * Queued execution item containing the message ID, code, and execution context.
  */
 interface QueuedExecution {
   msgId: number;
@@ -43,6 +43,7 @@ interface QueuedExecution {
  * Pyodide kernel client for native VS Code notebooks.
  * Uses Pyodide npm package for Node.js environment.
  * Implements sequential execution queue matching Jupyter semantics.
+ *
  */
 export class PyodideKernelClient {
   private _pyodide: PyodideInterface | null = null;
@@ -62,8 +63,8 @@ export class PyodideKernelClient {
   } | null = null;
 
   /**
-   * Creates a new Pyodide kernel client.
-   * Uses the bundled Pyodide from npm package (no external downloads needed).
+   * Creates a new Pyodide kernel client instance.
+   * Uses the bundled Pyodide from npm package with no external downloads needed.
    */
   constructor() {
     // No initialization needed - Pyodide npm package is self-contained
@@ -75,7 +76,7 @@ export class PyodideKernelClient {
    * Pre-downloads packages from VS Code configuration.
    * Must be called before executing any code.
    *
-   * @throws {Error} If initialization fails
+   * @throws If Pyodide runtime loading or package installation fails.
    */
   async initialize(): Promise<void> {
     if (this._pyodide) {
@@ -157,8 +158,8 @@ sys.modules['pyodide_kernel'] = pyodide_kernel
   }
 
   /**
-   * Sets up IPython callbacks for capturing formatted output and clean error tracebacks.
-   * This ensures errors don't contain internal Pyodide stack frames.
+   * Sets up IPython callbacks for capturing formatted output and clean error tracebacks,
+   * ensuring errors do not contain internal Pyodide stack frames.
    */
   private async _setupIPythonCallbacks(): Promise<void> {
     if (!this._pyodide) {
@@ -257,9 +258,9 @@ pyodide_kernel.ipython_shell.displayhook.publish_execution_result = publishExecu
   }
 
   /**
-   * Pre-downloads Python packages from VS Code configuration.
+   * Pre-downloads Python packages listed in VS Code configuration.
    * Uses micropip to install packages, which caches them for faster subsequent loads.
-   * Runs silently in the background - errors are logged but don't block initialization.
+   * Runs silently in the background and errors are logged but do not block initialization.
    */
   private async _preloadPackages(): Promise<void> {
     try {
@@ -324,11 +325,12 @@ backend_inline.configure_inline_support(pyodide_kernel.ipython_shell, 'inline')
 
   /**
    * Executes Python code in a notebook cell.
-   * Queues execution for sequential processing.
+   * Queues execution for sequential processing matching Jupyter semantics.
    *
-   * @param code - Python code to execute
-   * @param execution - VS Code notebook cell execution context
-   * @throws {Error} If Python code execution fails
+   * @param code - Python code string to execute in the Pyodide runtime.
+   * @param execution - VS Code notebook cell execution context for output routing.
+   *
+   * @throws If Python code execution fails or kernel is not initialized.
    */
   async execute(
     code: string,
@@ -359,8 +361,8 @@ backend_inline.configure_inline_support(pyodide_kernel.ipython_shell, 'inline')
   }
 
   /**
-   * Processes execution queue sequentially.
-   * Ensures only one cell executes at a time per kernel.
+   * Processes the execution queue sequentially to ensure only one cell executes at a time,
+   * matching Jupyter kernel semantics.
    */
   private async _processQueue(): Promise<void> {
     if (this._isExecuting || this._executionQueue.length === 0) {
@@ -442,7 +444,8 @@ await pyodide_kernel.ipython_shell.run_cell_async('''${escapedCode}''')
   }
 
   /**
-   * Handles stdout output from Pyodide.
+   * Handles stdout output from Pyodide and routes it to the correct cell output.
+   * @param text - Standard output text from Python execution.
    */
   private _handleStdout(text: string): void {
     // During initialization (no active execution), log to console for debugging
@@ -470,7 +473,8 @@ await pyodide_kernel.ipython_shell.run_cell_async('''${escapedCode}''')
   }
 
   /**
-   * Handles stderr output from Pyodide.
+   * Handles stderr output from Pyodide and routes it to the correct cell error output.
+   * @param text - Standard error text from Python execution.
    */
   private _handleStderr(text: string): void {
     // During initialization (no active execution), log to console for debugging
@@ -498,8 +502,11 @@ await pyodide_kernel.ipython_shell.run_cell_async('''${escapedCode}''')
   }
 
   /**
-   * Handles display_data messages (matplotlib plots, widgets, etc.).
-   * This is called when IPython's display() or when matplotlib creates plots.
+   * Handles display_data messages such as matplotlib plots and widgets.
+   * Called when IPython's display() function is invoked or matplotlib creates plots.
+   * @param msgId - Execution message ID for routing output to the correct cell.
+   * @param data - MIME-typed display data such as text/html or image/png.
+   * @param metadata - Optional display metadata providing rendering hints.
    */
   private _handleDisplayData(
     msgId: number,
@@ -575,8 +582,10 @@ await pyodide_kernel.ipython_shell.run_cell_async('''${escapedCode}''')
   }
 
   /**
-   * Handles error messages (exceptions, tracebacks).
+   * Handles error messages including exceptions and tracebacks.
    * Formats Python tracebacks in Jupyter style without JavaScript stack traces.
+   * @param msgId - Execution message ID for routing error to the correct cell.
+   * @param error - The error object or value thrown during execution.
    */
   private _handleError(msgId: number, error: unknown): void {
     const pending = this._pendingExecutions.get(msgId);
@@ -644,13 +653,13 @@ await pyodide_kernel.ipython_shell.run_cell_async('''${escapedCode}''')
   }
 
   /**
-   * Handles error messages from IPython shell with clean, pre-formatted tracebacks.
-   * IPython automatically filters out internal Pyodide frames, providing clean Python-only tracebacks.
+   * Handles error messages from IPython shell with clean pre-formatted tracebacks.
+   * IPython automatically filters out internal Pyodide frames for Python-only tracebacks.
    *
-   * @param msgId - Execution message ID
-   * @param ename - Error name (e.g., "SyntaxError", "NameError")
-   * @param evalue - Error message
-   * @param traceback - Pre-formatted traceback lines from IPython (already clean!)
+   * @param msgId - Execution message ID for routing to the correct cell.
+   * @param ename - Error class name such as SyntaxError or NameError.
+   * @param evalue - Human-readable error message string.
+   * @param traceback - Pre-formatted traceback lines from IPython already cleaned of internal frames.
    */
   private _handleIPythonError(
     msgId: number,
@@ -688,8 +697,8 @@ await pyodide_kernel.ipython_shell.run_cell_async('''${escapedCode}''')
   }
 
   /**
-   * Disposes of the kernel.
-   * Should be called when notebook is closed.
+   * Releases all kernel resources and clears pending executions.
+   * Should be called when the notebook is closed.
    */
   dispose(): void {
     this._pyodide = null;

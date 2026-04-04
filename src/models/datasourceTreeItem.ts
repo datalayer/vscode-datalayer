@@ -16,16 +16,12 @@ import type { DatasourceDTO } from "@datalayer/core/lib/models/Datasource";
 /**
  * Tree item for displaying a datasource.
  *
- * @example
- * ```typescript
- * const item = new DatasourceTreeItem(datasourceDTO);
- * ```
  */
 export class DatasourceTreeItem extends vscode.TreeItem {
   /**
-   * Creates a new DatasourceTreeItem.
+   * Creates a new DatasourceTreeItem with icon, tooltip, and click command.
    *
-   * @param datasource - Datasource DTO from Datalayer
+   * @param datasource - Datasource DTO from the Datalayer platform.
    */
   constructor(public readonly datasource: DatasourceDTO) {
     super(datasource.name, vscode.TreeItemCollapsibleState.None);

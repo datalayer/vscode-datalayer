@@ -17,15 +17,15 @@ import * as vscode from "vscode";
  * Configuration for two-step destructive action confirmations.
  */
 export interface TwoStepConfirmationConfig {
-  /** The item/resource name being acted upon */
+  /** The item/resource name being acted upon. */
   itemName: string;
-  /** The action being performed (e.g., "delete", "terminate") */
+  /** The action being performed (e.g., "delete", "terminate"). */
   action: string;
-  /** The consequences of the action (array of bullet points) */
+  /** The consequences of the action (array of bullet points). */
   consequences: string[];
-  /** The action button text for step 1 (e.g., "Delete", "Terminate") */
+  /** The action button text for step 1 (e.g., "Delete", "Terminate"). */
   actionButton: string;
-  /** The final confirmation button text (e.g., "Yes, Delete", "Yes, Terminate") */
+  /** The final confirmation button text (e.g., "Yes, Delete", "Yes, Terminate"). */
   finalActionButton: string;
 }
 
@@ -33,23 +33,10 @@ export interface TwoStepConfirmationConfig {
  * Shows a single confirmation for destructive actions.
  * Uses a non-intrusive notification with clear consequences listed.
  *
- * @param config - Configuration for the confirmation
- * @returns Promise that resolves to true if user confirmed, false otherwise
+ * @param config - Configuration for the confirmation.
  *
- * @example
- * ```typescript
- * const confirmed = await showTwoStepConfirmation({
- *   itemName: "My Runtime",
- *   action: "terminate",
- *   consequences: [
- *     "Stop all running notebooks",
- *     "Clear runtime state",
- *     "Potentially lose unsaved work"
- *   ],
- *   actionButton: "Terminate",
- *   finalActionButton: "Terminate"  // Not used anymore but kept for compatibility
- * });
- * ```
+ * @returns Promise that resolves to true if user confirmed, false otherwise.
+ *
  */
 export async function showTwoStepConfirmation(
   config: TwoStepConfirmationConfig,
@@ -100,6 +87,9 @@ export async function showTwoStepConfirmation(
 export const CommonConfirmations = {
   /**
    * Runtime termination confirmation.
+   * @param runtimeName - Display name of the runtime to terminate.
+   *
+   * @returns Configuration for the termination confirmation dialog.
    */
   terminateRuntime: (runtimeName: string): TwoStepConfirmationConfig => ({
     itemName: runtimeName,
@@ -115,6 +105,9 @@ export const CommonConfirmations = {
 
   /**
    * Terminate all runtimes confirmation.
+   * @param count - Number of active runtimes to terminate.
+   *
+   * @returns Configuration for the bulk termination confirmation dialog.
    */
   terminateAllRuntimes: (count: number): TwoStepConfirmationConfig => ({
     itemName: `all ${count} runtime${count !== 1 ? "s" : ""}`,
@@ -131,6 +124,9 @@ export const CommonConfirmations = {
 
   /**
    * Document deletion confirmation.
+   * @param documentName - Display name of the document to delete.
+   *
+   * @returns Configuration for the deletion confirmation dialog.
    */
   deleteDocument: (documentName: string): TwoStepConfirmationConfig => ({
     itemName: documentName,

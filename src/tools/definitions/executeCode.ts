@@ -16,6 +16,7 @@ import type { ToolDefinition } from "@datalayer/jupyter-react";
  *
  * @module tools/definitions/executeCode
  */
+/** Tool definition for executing Python code on the active document or runtime. */
 export const executeCodeTool: ToolDefinition = {
   name: "datalayer_executeCode",
   displayName: "Execute Code",

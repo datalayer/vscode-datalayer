@@ -59,17 +59,22 @@ if (!WebSocketCtor) {
     "[LoroAdapter] FATAL: Could not find any WebSocket constructor.",
   );
   WebSocketCtor = class DummyWebSocket {
+    /** No-op event listener registration. */
     on() {}
+    /** No-op message send. */
     send() {}
+    /** No-op connection close. */
     close() {}
+    /** No-op event listener registration (DOM-style). */
     addEventListener() {}
+    /** No-op event listener removal. */
     removeEventListener() {}
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } as any;
 }
 
 /**
- * Message types exchanged between extension and webview for Loro collaboration
+ * Message types exchanged between extension and webview for Loro collaboration.
  */
 export interface LoroMessage {
   type: "connect" | "disconnect" | "message" | "status" | "error";
@@ -100,9 +105,9 @@ export class LoroWebSocketAdapter {
   /**
    * Create a new Loro WebSocket adapter.
    *
-   * @param adapterId - Unique identifier for this adapter instance
-   * @param websocketUrl - URL of the Loro WebSocket server to connect to
-   * @param webview - VS Code Webview instance to send messages to
+   * @param adapterId - Unique identifier for this adapter instance.
+   * @param websocketUrl - URL of the Loro WebSocket server to connect to.
+   * @param webview - VS Code Webview instance to send messages to.
    */
   constructor(
     private readonly adapterId: string,
@@ -117,7 +122,7 @@ export class LoroWebSocketAdapter {
    * Messages received while disconnected are queued and sent upon reconnection.
    * Automatically attempts to reconnect with exponential backoff on close.
    *
-   * @returns void
+   * @returns Void.
    */
   connect(): void {
     if (this.ws || this.isDisposed) {
@@ -232,6 +237,10 @@ export class LoroWebSocketAdapter {
     }
   }
 
+  /**
+   * Process raw message data from WebSocket, forwarding to webview.
+   * @param buffer - Raw message buffer to parse and forward.
+   */
   private processMessageData(buffer: Buffer): void {
     // Try to parse as JSON first
     try {
@@ -256,7 +265,7 @@ export class LoroWebSocketAdapter {
    * Check if the WebSocket is currently connected and ready to send.
    * Verifies that the WebSocket exists and readyState is 1 (OPEN).
    *
-   * @returns true if connected and ready, false otherwise
+   * @returns True if connected and ready, false otherwise.
    */
   isConnected(): boolean {
     return this.ws !== null && this.ws.readyState === 1;
@@ -267,7 +276,7 @@ export class LoroWebSocketAdapter {
    * Cancels any pending reconnection timers and closes the WebSocket connection.
    * Safe to call multiple times; handles null checks internally.
    *
-   * @returns void
+   * @returns Void.
    */
   disconnect(): void {
     if (this.reconnectTimer) {
@@ -287,8 +296,9 @@ export class LoroWebSocketAdapter {
    * If not connected, messages are queued up to maxQueueSize and sent when connection establishes.
    * Queue overflow is silently dropped to prevent memory issues.
    *
-   * @param data - The data to send (string, array, or object)
-   * @returns void
+   * @param data - The data to send (string, array, or object).
+   *
+   * @returns Void.
    */
   send(data: unknown): void {
     // WebSocket.OPEN = 1
@@ -321,14 +331,9 @@ export class LoroWebSocketAdapter {
   }
 
   /**
-   * Handle incoming messages from the webview.
-   * Routes messages to appropriate handlers:
-   * - 'connect': Initiates WebSocket connection
-   * - 'disconnect': Closes WebSocket connection
-   * - 'message': Forwards data to WebSocket server
+   * Routes incoming webview messages to connect, disconnect, or send handlers.
    *
-   * @param message - The message from the webview with type, adapterId, and optional data
-   * @returns void
+   * @param message - The message from the webview with type, adapterId, and optional data.
    */
   handleMessage(message: LoroMessage): void {
     switch (message.type) {
@@ -371,7 +376,7 @@ export class LoroWebSocketAdapter {
    * Marks the adapter as disposed, disconnects from the server, and clears the message queue.
    * After disposal, the adapter should not be used.
    *
-   * @returns void
+   * @returns Void.
    */
   dispose(): void {
     this.isDisposed = true;
@@ -407,7 +412,8 @@ export class LoroWebSocketAdapter {
    * Send a message to the webview via postMessage.
    * Wraps the call in try-catch to handle serialization or connection errors.
    *
-   * @param message - The message to send to the webview
+   * @param message - Loro collaboration payload to forward to the webview.
+   *
    * @private
    */
   private sendToWebview(message: LoroMessage): void {

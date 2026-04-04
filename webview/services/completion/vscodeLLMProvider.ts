@@ -7,7 +7,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 /**
- * Type definitions for inline completion (not exported from published package)
+ * Type definitions for inline completion (not exported from published package).
  */
 
 /**
@@ -15,16 +15,17 @@
  * Implementations fetch completion suggestions from various sources (LLMs, static analysis, etc.).
  * @template T - Type of completion items, defaults to any
  */
-interface IInlineCompletionProvider<T = any> {
+export interface IInlineCompletionProvider<T = any> {
   /** Human-readable name of the completion provider */
   readonly name: string;
   /** Configuration schema for provider settings */
   readonly schema?: any;
   /**
    * Fetch completion suggestions for the current context.
-   * @param request - Completion request with text and cursor position
-   * @param context - Contextual information about the completion request
-   * @returns Promise resolving to list of completion items
+   * @param request - Completion request with text and cursor position.
+   * @param context - Contextual information about the completion request.
+   *
+   * @returns Promise resolving to list of completion items.
    */
   fetch(request: any, context: any): Promise<IInlineCompletionList<T>>;
 }
@@ -33,7 +34,7 @@ interface IInlineCompletionProvider<T = any> {
  * Context information for inline completion requests.
  * Contains additional metadata about the editing environment.
  */
-interface IInlineCompletionContext {
+export interface IInlineCompletionContext {
   /** Widget or editor instance where completion is requested */
   widget?: any;
   /** How the completion was triggered (automatic, manual, etc.) */
@@ -43,7 +44,7 @@ interface IInlineCompletionContext {
 /**
  * Individual completion item to be displayed as inline suggestion.
  */
-interface IInlineCompletionItem {
+export interface IInlineCompletionItem {
   /** Text to insert when completion is accepted */
   insertText: string;
   /** Additional properties for extended completion metadata */
@@ -54,7 +55,7 @@ interface IInlineCompletionItem {
  * List of completion items returned by a provider.
  * @template T - Type of completion items, defaults to IInlineCompletionItem
  */
-interface IInlineCompletionList<T = IInlineCompletionItem> {
+export interface IInlineCompletionList<T = IInlineCompletionItem> {
   /** Array of completion items to display */
   items: T[];
 }
@@ -65,7 +66,7 @@ import { vsCodeAPI } from "../messageHandler";
  * VS Code LLM-powered inline completion provider for Jupyter notebooks.
  *
  * Uses VS Code's Language Model API (Copilot and other registered LLM providers)
- * to provide intelligent code completions in notebook cells.
+ * To provide intelligent code completions in notebook cells.
  */
 export class VSCodeLLMProvider implements IInlineCompletionProvider<IInlineCompletionItem> {
   /** Human-readable name displayed in UI */
@@ -87,9 +88,10 @@ export class VSCodeLLMProvider implements IInlineCompletionProvider<IInlineCompl
   /**
    * Fetch inline completion suggestions.
    *
-   * @param request - Completion request with text and cursor offset
-   * @param context - Completion context (notebook panel, active cell, etc.)
-   * @returns Promise resolving to list of completion items
+   * @param request - Completion request with text and cursor offset.
+   * @param context - Completion context (notebook panel, active cell, etc.).
+   *
+   * @returns Promise resolving to list of completion items.
    */
   async fetch(
     request: any, // CompletionHandler.IRequest
@@ -149,9 +151,10 @@ export class VSCodeLLMProvider implements IInlineCompletionProvider<IInlineCompl
    * Includes ALL cells before and after the active cell to provide maximum context.
    * Markdown cells are converted to comments.
    *
-   * @param request - Completion request
-   * @param context - Completion context
-   * @returns Prefix, suffix, and language for LLM prompt
+   * @param request - Completion request.
+   * @param context - Completion context.
+   *
+   * @returns Prefix, suffix, and language for LLM prompt.
    */
   private extractContext(
     request: any, // CompletionHandler.IRequest
@@ -218,8 +221,9 @@ export class VSCodeLLMProvider implements IInlineCompletionProvider<IInlineCompl
    * Code cells are included as-is.
    * Markdown cells are converted to comments.
    *
-   * @param cell - Notebook cell
-   * @returns Cell content as text
+   * @param cell - Notebook cell.
+   *
+   * @returns Cell content as text.
    */
   private cellToText(cell: any): string {
     const cellModel = cell.model.sharedModel;
@@ -241,10 +245,11 @@ export class VSCodeLLMProvider implements IInlineCompletionProvider<IInlineCompl
   /**
    * Get LLM completion via message passing to extension.
    *
-   * @param prefix - Code before cursor
-   * @param suffix - Code after cursor
-   * @param language - Programming language
-   * @returns Completion string or null if no models available
+   * @param prefix - Code before cursor.
+   * @param suffix - Code after cursor.
+   * @param language - Programming language.
+   *
+   * @returns Completion string or null if no models available.
    */
   private async getLLMCompletion(
     prefix: string,

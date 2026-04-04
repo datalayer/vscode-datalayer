@@ -22,12 +22,12 @@ import {
 } from "../schemas/createLexical";
 
 /**
- * Lexical creation parameters
+ * Parameters for creating a Lexical document (aliased from schema type).
  */
 export type LexicalCreationParams = CreateLexicalParams;
 
 /**
- * Lexical creation result
+ * Result of Lexical document creation (aliased from unified result type).
  */
 export type LexicalCreationResult = CreateDocumentResult;
 

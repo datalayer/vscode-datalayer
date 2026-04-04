@@ -45,6 +45,7 @@ export interface IDocumentBridge {
    * @param document - The document to open
    * @param spaceId - ID of the containing space
    * @param spaceName - Name of the containing space
+   *
    * @returns Virtual URI for the opened document
    */
   openDocument(
@@ -58,6 +59,7 @@ export interface IDocumentBridge {
    * Resolves virtual URIs to real paths for lookup.
    *
    * @param inputPath - Virtual or real filesystem path
+   *
    * @returns Document metadata if found
    */
   getMetadataByPath(inputPath: string): DocumentMetadata | undefined;
@@ -66,6 +68,7 @@ export interface IDocumentBridge {
    * Gets document metadata by document ID.
    *
    * @param documentId - Document UID
+   *
    * @returns Document metadata if found
    */
   getMetadataById(documentId: string): DocumentMetadata | undefined;
@@ -75,6 +78,7 @@ export interface IDocumentBridge {
    * Handles both real filesystem and virtual URI schemes.
    *
    * @param uri - Document URI
+   *
    * @returns Document metadata if found
    */
   getDocumentMetadata(uri: vscode.Uri): DocumentMetadata | undefined;
@@ -91,6 +95,7 @@ export interface IDocumentBridge {
    * Verifies cached runtime status or creates a new one if needed.
    *
    * @param documentId - Document UID needing runtime
+   *
    * @returns Runtime instance or undefined if creation fails
    */
   ensureRuntime(documentId: string): Promise<RuntimeDTO | undefined>;

@@ -18,18 +18,12 @@ import type { RuntimeDTO } from "@datalayer/core/lib/models/RuntimeDTO";
  * Tree item for displaying a runtime in the VS Code tree view.
  * Shows runtime details with appropriate icons and formatting.
  *
- * @example
- * ```typescript
- * const item = new RuntimeTreeItem(runtime);
- * // Displays: "my-runtime"
- * // Description: "Python 3.11 • 2h 30m left"
- * ```
  */
 export class RuntimeTreeItem extends vscode.TreeItem {
   /**
-   * Creates a new RuntimeTreeItem.
+   * Creates a new RuntimeTreeItem with formatted description and tooltip.
    *
-   * @param runtime - The Runtime model instance to display
+   * @param runtime - The RuntimeDTO instance containing runtime details to display.
    */
   constructor(public readonly runtime: RuntimeDTO) {
     super(
@@ -59,9 +53,9 @@ export class RuntimeTreeItem extends vscode.TreeItem {
   }
 
   /**
-   * Calculates and formats the time remaining until runtime expires.
+   * Calculates and formats the time remaining until the runtime expires.
    *
-   * @returns Formatted string like "2h 30m" or "15m" or "Expired"
+   * @returns Formatted duration string like "2h 30m", "15m", or "Expired".
    */
   private getTimeRemaining(): string {
     const now = new Date();

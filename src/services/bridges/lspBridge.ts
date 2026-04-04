@@ -43,8 +43,8 @@ export class LSPBridge {
   /**
    * Handle an LSP request message from the webview.
    *
-   * @param message - LSP request message
-   * @param webview - Webview to send response to
+   * @param message - LSP request message.
+   * @param webview - Webview to send response to.
    */
   public async handleMessage(
     message: LSPRequest,
@@ -94,7 +94,9 @@ export class LSPBridge {
   }
 
   /**
-   * Handle completion request.
+   * Processes an LSP completion request and returns matching items to the webview.
+   * @param message - LSP completion request with cell and position info.
+   * @param webview - Webview to send completion results to.
    */
   private async handleCompletionRequest(
     message: LSPCompletionRequest,
@@ -153,7 +155,9 @@ export class LSPBridge {
   }
 
   /**
-   * Handle hover request.
+   * Processes an LSP hover request and returns documentation info to the webview.
+   * @param message - LSP hover request with cell and position info.
+   * @param webview - Webview to send hover results to.
    */
   private async handleHoverRequest(
     message: LSPHoverRequest,
@@ -193,6 +197,7 @@ export class LSPBridge {
 
   /**
    * Handle document sync (content update).
+   * @param message - Sync request with cell ID and updated content.
    */
   private handleDocumentSync(message: LSPDocumentSyncRequest): void {
     this.documentManager.updateCellContent(message.cellId, message.content);
@@ -200,6 +205,7 @@ export class LSPBridge {
 
   /**
    * Handle document open (create virtual document).
+   * @param message - Open request with notebook, cell, content, and language info.
    */
   private async handleDocumentOpen(
     message: LSPDocumentOpenRequest,
@@ -215,6 +221,7 @@ export class LSPBridge {
 
   /**
    * Handle document close (remove virtual document).
+   * @param message - Close request with cell ID to remove.
    */
   private handleDocumentClose(message: LSPDocumentCloseRequest): void {
     this.documentManager.closeCellDocument(message.cellId);
@@ -222,6 +229,7 @@ export class LSPBridge {
 
   /**
    * Get the document manager instance.
+   * @returns The LSP document manager.
    */
   public getDocumentManager(): LSPDocumentManager {
     return this.documentManager;
@@ -229,6 +237,7 @@ export class LSPBridge {
 
   /**
    * Get the completion service instance.
+   * @returns The LSP completion service.
    */
   public getCompletionService(): LSPCompletionService {
     return this.completionService;

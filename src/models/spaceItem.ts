@@ -70,22 +70,15 @@ export interface SpaceItemData {
  * Tree item representing a space or document in the explorer.
  * Automatically configures tooltip, icon, and command based on item type.
  *
- * @example
- * ```typescript
- * const item = new SpaceItem("My Space", TreeItemCollapsibleState.Collapsed, {
- *   type: ItemType.SPACE,
- *   space: spaceModel
- * });
- * ```
  */
 export class SpaceItem extends vscode.TreeItem {
   /**
-   * Creates a new SpaceItem.
+   * Creates a new SpaceItem with automatic tooltip, icon, and command configuration.
    *
-   * @param label - Display label for the tree item
-   * @param collapsibleState - Whether item can be expanded/collapsed
-   * @param data - Associated data containing type and models
-   * @param parent - Parent item for hierarchical navigation
+   * @param label - Display label for the tree item.
+   * @param collapsibleState - Whether the item can be expanded or collapsed.
+   * @param data - Associated data containing the item type and model instances.
+   * @param parent - Optional parent item for hierarchical navigation.
    */
   constructor(
     public override readonly label: string,
@@ -102,6 +95,7 @@ export class SpaceItem extends vscode.TreeItem {
 
   /**
    * Generates tooltip text based on item type and data.
+   * @returns Tooltip string or undefined if no tooltip applies.
    */
   private getTooltip(): string | undefined {
     switch (this.data.type) {
@@ -131,6 +125,7 @@ export class SpaceItem extends vscode.TreeItem {
 
   /**
    * Selects appropriate VS Code theme icon based on item type.
+   * @returns Theme icon matching the item type or undefined.
    */
   private getIcon(): vscode.ThemeIcon | undefined {
     switch (this.data.type) {
@@ -163,6 +158,7 @@ export class SpaceItem extends vscode.TreeItem {
 
   /**
    * Selects document icon based on type and file extension.
+   * @returns Theme icon for the document type.
    */
   private getDocumentIcon(): vscode.ThemeIcon {
     if (!this.data.document) {
@@ -210,6 +206,7 @@ export class SpaceItem extends vscode.TreeItem {
   /**
    * Generates VS Code command for item interaction.
    * Returns appropriate command based on item type and error state.
+   * @returns Command configuration or undefined for non-interactive items.
    */
   private getCommand(): vscode.Command | undefined {
     if (this.data.type === ItemType.NOTEBOOK && this.data.document) {

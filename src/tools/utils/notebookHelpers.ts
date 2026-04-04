@@ -20,8 +20,12 @@ import { getServiceContainer } from "../../extension";
  * Internal function to create a LOCAL notebook file.
  * NOT exposed to Copilot - called by CreateNotebookTool.
  *
- * @param filename - Optional filename (will generate if not provided)
- * @returns Notebook URI
+ * @param filename - Optional filename (will generate if not provided).
+ *
+ * @returns Notebook URI pointing to the created file.
+ *
+ * @throws Error if no workspace folder is open.
+ *
  * @internal
  */
 export async function _createLocalNotebook(
@@ -85,10 +89,14 @@ export async function _createLocalNotebook(
  * Internal function to create a REMOTE/CLOUD notebook.
  * NOT exposed to Copilot - called by CreateNotebookTool.
  *
- * @param notebookName - Name of the notebook
- * @param description - Optional description
- * @param spaceName - Optional space name (defaults to "Personal")
- * @returns Notebook URI
+ * @param notebookName - Display name for the cloud notebook (extension auto-added if missing).
+ * @param description - Optional text describing the notebook's purpose.
+ * @param spaceName - Target Datalayer space name (defaults to "Personal").
+ *
+ * @returns Notebook URI pointing to the created cloud notebook.
+ *
+ * @throws Error if user is not authenticated, no spaces are available, or target space is not found.
+ *
  * @internal
  */
 export async function _createRemoteNotebook(

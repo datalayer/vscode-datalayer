@@ -25,60 +25,60 @@ import { createDocumentParamsSchema } from "../schemas/createDocument";
 /** Document location type: local file system or cloud platform */
 type DocumentLocation = "local" | "cloud";
 
-/** Document type: Jupyter notebook or Lexical rich text */
-type DocumentType = "notebook" | "lexical";
+/** Document type: Jupyter notebook or Lexical rich text. */
+export type DocumentType = "notebook" | "lexical";
 
 /**
- * Result of user intent detection for document location
+ * Result of user intent detection for document location based on context analysis.
  */
 interface IntentDetectionResult {
-  /** Target location for document creation */
+  /** Target location for document creation. */
   location: DocumentLocation;
-  /** Confidence score (0-100) based on detection priority */
+  /** Confidence score (0-100) based on detection priority. */
   confidence: number;
-  /** Reason explaining the detected location */
+  /** Reason explaining the detected location. */
   reason: string;
-  /** Chat message to display to user about the choice */
+  /** Chat message to display to user about the choice. */
   chatMessage: string;
 }
 
 /**
- * Parameters for unified document creation
+ * Parameters for unified document creation supporting both local and cloud targets.
  */
 export interface CreateDocumentParams {
-  /** Name of the document */
+  /** Name of the document. */
   name: string;
-  /** Optional description of the document */
+  /** Optional description of the document. */
   description?: string;
-  /** Target space name for cloud documents */
+  /** Target space name for cloud documents. */
   spaceName?: string;
-  /** Target space ID for cloud documents */
+  /** Target space ID for cloud documents. */
   spaceId?: string;
-  /** Document location ("local", "cloud", or "remote" synonym for cloud) */
+  /** Document location ("local", "cloud", or "remote" synonym for cloud). */
   location?: "local" | "cloud" | "remote";
-  /** Type of document to create */
+  /** Type of document to create. */
   documentType: DocumentType;
-  /** Initial cells for notebooks (array of cell objects) */
+  /** Initial cells for notebooks (array of cell objects). */
   initialCells?: unknown[];
 }
 
 /**
- * Result of document creation operation
+ * Result of document creation operation including URI and optional metadata.
  */
 export interface CreateDocumentResult {
-  /** Whether document creation succeeded */
+  /** Whether document creation succeeded. */
   success: boolean;
-  /** URI of the created document */
+  /** URI of the created document. */
   uri: string;
-  /** ID of the created document */
+  /** ID of the created document. */
   documentId?: string;
-  /** ID of the created notebook (backward compatibility) */
+  /** ID of the created notebook (backward compatibility). */
   notebookId?: string;
-  /** Space name where cloud document was created */
+  /** Space name where cloud document was created. */
   spaceName?: string;
-  /** Error message if creation failed */
+  /** Error message if creation failed. */
   error?: string;
-  /** Chat message describing the result */
+  /** Chat message describing the result. */
   chatMessage?: string;
 }
 
@@ -99,20 +99,21 @@ export interface CreateDocumentResult {
  * 8. <50% confidence: Ambiguous → Prompt user
  */
 /**
- * Tool operation for creating documents (notebooks or lexical)
+ * Tool operation for creating documents (notebooks or lexical).
  */
 export const createDocumentOperation: ToolOperation<
   CreateDocumentParams,
   CreateDocumentResult
 > = {
-  /** Tool name for MCP registration */
+  /** Tool name for MCP registration. */
   name: "createDocument",
 
   /**
-   * Execute document creation
-   * @param params - Document creation parameters
-   * @param context - Tool execution context with Datalayer and auth
-   * @returns Result of document creation
+   * Executes document creation with smart intent detection for location.
+   * @param params - Document creation parameters.
+   * @param context - Tool execution context with Datalayer and auth.
+   *
+   * @returns Result of document creation.
    */
   async execute(params, context): Promise<CreateDocumentResult> {
     // Validate params with Zod
@@ -208,10 +209,12 @@ export const createDocumentOperation: ToolOperation<
 };
 
 /**
- * Detects user intent for document location based on rich context analysis
- * @param params - Document creation parameters
- * @param context - Execution context with extras containing workspace and auth info
- * @returns Intent detection result with location, confidence, reason, and message
+ * Detects user intent for document location based on rich context analysis.
+ * @param params - Document creation parameters.
+ * @param context - Execution context with extras containing workspace and auth info.
+ * @param context.extras - Additional context like workspace folders and auth state.
+ *
+ * @returns Intent detection result with location, confidence, reason, and message.
  */
 async function detectIntent(
   params: CreateDocumentParams,

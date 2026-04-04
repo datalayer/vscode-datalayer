@@ -17,7 +17,7 @@ import type { ILogger } from "../interfaces/ILogger";
 import type { PyodideInterface } from "pyodide";
 
 /**
- * Key for storing whether packages have been preloaded for native notebooks
+ * Key for storing whether packages have been preloaded for native notebooks.
  */
 const NATIVE_PRELOAD_KEY = "datalayer.pyodide.nativePreloaded";
 
@@ -26,8 +26,8 @@ const NATIVE_PRELOAD_KEY = "datalayer.pyodide.nativePreloaded";
  * Respects the preloadBehavior configuration setting.
  * Runs in background without blocking extension activation.
  *
- * @param context - Extension context
- * @param logger - Logger instance
+ * @param context - Extension context.
+ * @param logger - Logger instance.
  */
 export async function preloadPackagesForNativeNotebooks(
   context: vscode.ExtensionContext,
@@ -74,8 +74,8 @@ export async function preloadPackagesForNativeNotebooks(
 /**
  * Executes the actual package preload by initializing Pyodide and downloading packages.
  *
- * @param packages - List of package names to download
- * @param logger - Logger instance
+ * @param packages - List of package names to download.
+ * @param logger - Logger instance.
  */
 async function _executePreload(
   packages: string[],

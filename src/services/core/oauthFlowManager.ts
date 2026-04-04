@@ -17,12 +17,12 @@ import type { ILogger } from "../interfaces/ILogger";
 import { BaseService } from "./baseService";
 
 /**
- * OAuth provider type supported by the platform
+ * OAuth provider type supported by the platform.
  */
 export type OAuthProvider = "github" | "linkedin";
 
 /**
- * Result of a successful OAuth flow
+ * Result of a successful OAuth flow.
  */
 export interface OAuthResult {
   /** JWT token received from OAuth callback */
@@ -32,7 +32,7 @@ export interface OAuthResult {
 }
 
 /**
- * Internal representation of a pending OAuth flow
+ * Internal representation of a pending OAuth flow.
  */
 interface OAuthPendingFlow {
   /** OAuth provider for this flow */
@@ -46,7 +46,7 @@ interface OAuthPendingFlow {
 }
 
 /**
- * OAuth authorization response with possible field name variations
+ * OAuth authorization response with possible field name variations.
  * (handles server API inconsistencies)
  */
 interface OAuthAuthzResponse {
@@ -65,18 +65,6 @@ interface OAuthAuthzResponse {
  * - State-based CSRF protection
  * - Timeout handling for abandoned flows
  *
- * @example
- * ```typescript
- * const oauthManager = new OAuthFlowManager(context, logger);
- * await oauthManager.initialize();
- *
- * try {
- *   const result = await oauthManager.startOAuthFlow('github');
- *   console.log('Authenticated with token:', result.token);
- * } catch (error) {
- *   console.error('OAuth flow failed:', error);
- * }
- * ```
  */
 export class OAuthFlowManager extends BaseService {
   /**
@@ -86,17 +74,17 @@ export class OAuthFlowManager extends BaseService {
   private pendingFlows = new Map<string, OAuthPendingFlow>();
 
   /**
-   * Timeout duration for OAuth flows (5 minutes)
+   * Timeout duration for OAuth flows (5 minutes).
    */
   private static readonly FLOW_TIMEOUT_MS = 5 * 60 * 1000;
 
   /**
-   * Extension identifier used for URI handler registration
+   * Extension identifier used for URI handler registration.
    */
   private readonly extensionId: string;
 
   /**
-   * Disposable for URI handler
+   * Disposable for URI handler.
    */
   private uriHandlerDisposable?: vscode.Disposable;
 
@@ -169,30 +157,16 @@ export class OAuthFlowManager extends BaseService {
   }
 
   /**
-   * Start an OAuth authentication flow.
+   * Starts an OAuth authentication flow by generating a state parameter,
+   * opening the browser to the authorization URL, waiting for the callback,
+   * and returning the authentication token.
    *
-   * This method:
-   * 1. Generates a secure random state parameter (CSRF protection)
-   * 2. Gets OAuth authorization URL from the platform API
-   * 3. Opens system browser to the authorization URL
-   * 4. Waits for OAuth callback via URI handler
-   * 5. Returns the authentication token
+   * @param provider - OAuth provider (github or linkedin).
    *
-   * @param provider - OAuth provider (github or linkedin)
-   * @returns Promise that resolves with authentication token
-   * @throws Error if flow times out, is cancelled, or fails
+   * @returns Promise that resolves with authentication token.
    *
-   * @example
-   * ```typescript
-   * try {
-   *   const result = await oauthManager.startOAuthFlow('github');
-   *   console.log('Token:', result.token);
-   * } catch (error) {
-   *   if (error.message.includes('timeout')) {
-   *     console.log('User did not complete authentication in time');
-   *   }
-   * }
-   * ```
+   * @throws Error if flow times out, is cancelled, or fails.
+   *
    */
   async startOAuthFlow(provider: OAuthProvider): Promise<OAuthResult> {
     this.logger.info("Starting OAuth flow", { provider });
@@ -445,14 +419,11 @@ export class OAuthFlowManager extends BaseService {
   }
 
   /**
-   * Handle OAuth callback from URI handler.
+   * Processes the OAuth callback by extracting the token from the URI,
+   * validating the state parameter for CSRF protection, and resolving
+   * the pending authentication promise.
    *
-   * This method:
-   * 1. Extracts state and token from callback URI
-   * 2. Validates state parameter (CSRF protection)
-   * 3. Resolves the pending OAuth flow promise
-   *
-   * @param uri - Callback URI from OAuth provider
+   * @param uri - Callback URI from OAuth provider.
    */
   private async handleOAuthCallback(uri: vscode.Uri): Promise<void> {
     this.logger.debug("Processing OAuth callback", {
@@ -562,15 +533,12 @@ export class OAuthFlowManager extends BaseService {
   }
 
   /**
-   * Validate OAuth state parameter and consume the pending flow.
+   * Validates the OAuth state parameter for CSRF protection, checks TTL
+   * expiration, and removes it from pending flows for one-time use.
    *
-   * This method provides CSRF protection by:
-   * - Checking if state exists in pending flows
-   * - Verifying the flow hasn't expired (TTL check)
-   * - Removing state after validation (one-time use)
+   * @param state - State parameter from OAuth callback.
    *
-   * @param state - State parameter from OAuth callback
-   * @returns Pending flow if valid, null otherwise
+   * @returns Pending flow if valid, null otherwise.
    */
   private validateAndConsume(state: string): OAuthPendingFlow | null {
     // Check if state exists
@@ -606,6 +574,7 @@ export class OAuthFlowManager extends BaseService {
 
   /**
    * Get count of pending OAuth flows (for testing/debugging).
+   * @returns Number of currently pending OAuth flows.
    */
   getPendingFlowCount(): number {
     return this.pendingFlows.size;

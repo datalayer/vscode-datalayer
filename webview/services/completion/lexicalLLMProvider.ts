@@ -18,11 +18,6 @@
  * - Handles prefix overlap detection to extract only new completion text
  * - Times out requests after 15 seconds to prevent hanging
  *
- * @example
- * ```typescript
- * const provider = new LexicalVSCodeLLMProvider();
- * <LexicalInlineCompletionPlugin providers={[provider]} />
- * ```
  */
 
 import { vsCodeAPI } from "../messageHandler";
@@ -31,8 +26,10 @@ import { vsCodeAPI } from "../messageHandler";
  * Provider interface for LLM completion services.
  * Matches @datalayer/jupyter-lexical interface.
  */
-interface IInlineCompletionProvider {
+export interface IInlineCompletionProvider {
+  /** Human-readable name of the provider. */
   readonly name: string;
+  /** Fetches completion suggestions for the given request and context. */
   fetch(
     request: CompletionRequest,
     context: CompletionContext,
@@ -42,7 +39,7 @@ interface IInlineCompletionProvider {
 /**
  * Completion request sent to provider.
  */
-interface CompletionRequest {
+export interface CompletionRequest {
   /** Full cell text */
   text: string;
   /** Cursor position in text */
@@ -54,7 +51,7 @@ interface CompletionRequest {
 /**
  * Context information for completion request.
  */
-interface CompletionContext {
+export interface CompletionContext {
   /** Text before cursor */
   before: string;
   /** Text after cursor */
@@ -68,7 +65,7 @@ interface CompletionContext {
 /**
  * List of completion suggestions from provider.
  */
-interface CompletionList {
+export interface CompletionList {
   /** Array of completion items */
   items: CompletionItem[];
 }
@@ -76,7 +73,7 @@ interface CompletionList {
 /**
  * Single completion suggestion.
  */
-interface CompletionItem {
+export interface CompletionItem {
   /** Text to insert if accepted */
   insertText: string;
 }
@@ -109,9 +106,10 @@ export class LexicalVSCodeLLMProvider implements IInlineCompletionProvider {
    * Fetches code completion from VS Code's Language Model API.
    * Handles prefix overlap detection to return only new text.
    *
-   * @param request - Code text and cursor position
-   * @param context - Code before and after cursor
-   * @returns Promise with completion suggestions
+   * @param request - Code text and cursor position.
+   * @param context - Code before and after cursor.
+   *
+   * @returns Promise with completion suggestions.
    *
    * @remarks
    * The LLM may return full completion including typed prefix.
@@ -218,12 +216,13 @@ export class LexicalVSCodeLLMProvider implements IInlineCompletionProvider {
    * Requests completion from extension host via message passing.
    * Implements request/response pattern with timeout protection.
    *
-   * @param prefix - Code before cursor
-   * @param suffix - Code after cursor
-   * @param language - Programming language identifier
-   * @param contentType - Content type (code or prose) for prompt selection
-   * @param trigger - Trigger type (auto or manual)
-   * @returns Completion text or null if timeout/error
+   * @param prefix - Code before cursor.
+   * @param suffix - Code after cursor.
+   * @param language - Programming language identifier.
+   * @param contentType - Content type (code or prose) for prompt selection.
+   * @param trigger - Trigger type (auto or manual).
+   *
+   * @returns Completion text or null if timeout/error.
    *
    * @remarks
    * Uses request ID matching to correlate responses.

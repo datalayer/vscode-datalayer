@@ -19,10 +19,11 @@ import { VSCodeLoroProvider } from "./vsCodeLoroProvider";
  * Create a VS Code Loro provider.
  * This factory is used by LoroCollaborationPlugin to create collaboration providers.
  *
- * @param id - Document ID
- * @param docMap - Map of document ID to Loro document instances
- * @param websocketUrl - WebSocket URL (not used in VS Code, adapter ID used instead)
- * @returns Provider instance
+ * @param id - Document ID.
+ * @param docMap - Map of document ID to Loro document instances.
+ * @param websocketUrl - WebSocket URL (not used in VS Code, adapter ID used instead).
+ *
+ * @returns Provider instance.
  */
 export function createVSCodeLoroProvider(
   id: string,

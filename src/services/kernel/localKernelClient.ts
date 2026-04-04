@@ -24,8 +24,7 @@ import { createRawKernel, IKernelConnection } from "./rawSocket";
 
 /**
  * Client for local Python kernels using direct ZMQ communication.
- * Works with environments that only have ipykernel installed (no jupyter-server needed).
- */
+ * Works with environments that only have ipykernel installed (no jupyter-server needed). */
 export class LocalKernelClient {
   /** Kernel information including Python path and kernel spec */
   private _kernelInfo: NativeKernelInfo;
@@ -50,8 +49,8 @@ export class LocalKernelClient {
 
   /**
    * Creates a new LocalKernelClient instance.
-   * @param kernelInfo - Kernel information including Python path and kernel spec
-   * @param documentUri - Optional document URI for setting kernel working directory
+   * @param kernelInfo - Kernel information including Python path and kernel spec.
+   * @param documentUri - Optional document URI for setting kernel working directory.
    */
   constructor(kernelInfo: NativeKernelInfo, documentUri?: vscode.Uri) {
     this._kernelInfo = kernelInfo;
@@ -60,7 +59,7 @@ export class LocalKernelClient {
 
   /**
    * Start the local kernel by spawning ipykernel and connecting via ZMQ.
-   * @throws Error if the client has been disposed or if kernel type is jupyter-server
+   * @throws Error if the client has been disposed or if kernel type is jupyter-server.
    */
   public async start(): Promise<void> {
     if (this._disposed) {
@@ -84,12 +83,10 @@ export class LocalKernelClient {
   }
 
   /**
-   * Get the working directory for the kernel process.
-   * - For file URIs: Returns the parent directory of the file
-   * - For virtual URIs (datalayer://): Returns workspace root folder
-   * - If no URI or workspace: Returns undefined (uses process cwd)
+   * Determines the working directory for the kernel process based on the
+   * document URI scheme, falling back to workspace root or undefined.
    *
-   * @returns Absolute path to use as kernel working directory
+   * @returns Absolute path to use as kernel working directory.
    */
   private getKernelWorkingDirectory(): string | undefined {
     if (!this._documentUri) {
@@ -179,7 +176,7 @@ export class LocalKernelClient {
 
   /**
    * Create a kernel connection file with random ports.
-   * @returns Object containing the connection file path and configuration
+   * @returns Object containing the connection file path and configuration.
    */
   private async createConnectionFile(): Promise<{
     file: string;
@@ -213,7 +210,7 @@ export class LocalKernelClient {
 
   /**
    * Find a free port by letting the OS assign one.
-   * @returns A free port number assigned by the operating system
+   * @returns A free port number assigned by the operating system.
    */
   private async findFreePort(): Promise<number> {
     return new Promise((resolve, reject) => {
@@ -234,8 +231,9 @@ export class LocalKernelClient {
 
   /**
    * Execute code on the kernel.
-   * @param code - The code to execute
-   * @throws Error if kernel not started
+   * @param code - The code to execute.
+   *
+   * @throws Error if kernel not started.
    */
   public async executeCode(code: string): Promise<void> {
     if (!this._realKernel) {
@@ -248,7 +246,7 @@ export class LocalKernelClient {
 
   /**
    * Get the underlying kernel connection.
-   * @returns The JupyterLab kernel connection instance, or undefined if not started
+   * @returns The JupyterLab kernel connection instance, or undefined if not started.
    */
   public getKernel(): Kernel.IKernelConnection | undefined {
     return this._realKernel;
@@ -256,8 +254,9 @@ export class LocalKernelClient {
 
   /**
    * Get the raw WebSocket for proxying (internal use by LocalKernelProxy).
+   * @returns The raw WebSocket instance, or undefined if kernel not started.
+   *
    * @internal
-   * @returns The raw WebSocket instance, or undefined if kernel not started
    */
   public getRawSocket(): unknown {
     if (!this._realKernel) {
@@ -271,7 +270,7 @@ export class LocalKernelClient {
 
   /**
    * Get native kernel information (Python path, kernel spec, etc.).
-   * @returns Native kernel information
+   * @returns Native kernel information.
    */
   public getNativeKernelInfo(): NativeKernelInfo {
     return this._kernelInfo;
@@ -279,8 +278,9 @@ export class LocalKernelClient {
 
   /**
    * Get kernel information from the running kernel.
-   * @returns Kernel information object
-   * @throws Error if kernel not started
+   * @returns Kernel information object.
+   *
+   * @throws Error if kernel not started.
    */
   public async getKernelInfo(): Promise<unknown> {
     if (!this._realKernel) {
@@ -293,7 +293,7 @@ export class LocalKernelClient {
 
   /**
    * Interrupt the kernel by sending SIGINT signal.
-   * @throws Error if kernel process not running
+   * @throws Error if kernel process not running.
    */
   public async interrupt(): Promise<void> {
     if (!this._kernelProcess || !this._kernelProcess.pid) {
@@ -307,13 +307,9 @@ export class LocalKernelClient {
   }
 
   /**
-   * Restart the kernel by killing the current process and starting a new one.
-   * If the client has been disposed, it will be re-initialized.
-   *
-   * Note: For local kernels, we skip the shutdown() API call because:
-   * - Local kernels don't have a Jupyter server running
-   * - We use direct ZMQ connections, so shutdown() would fail with "Failed to parse URL"
-   * - We kill the kernel process directly with SIGTERM instead
+   * Restarts the kernel by killing the current process and starting a new one.
+   * Skips Jupyter shutdown API and uses direct SIGTERM since local kernels
+   * communicate via ZMQ rather than through a Jupyter server.
    */
   public async restart(): Promise<void> {
     console.log("[LocalKernelClient] Restarting kernel...");
@@ -375,12 +371,8 @@ export class LocalKernelClient {
   }
 
   /**
-   * Dispose of the kernel client and clean up resources.
-   *
-   * Note: For local kernels, we skip the shutdown() API call because:
-   * - Local kernels don't have a Jupyter server running
-   * - We use direct ZMQ connections, so shutdown() would fail with "Failed to parse URL"
-   * - We kill the kernel process directly with SIGTERM instead
+   * Releases all kernel resources by killing the process via SIGTERM
+   * and closing ZMQ sockets, bypassing Jupyter shutdown API.
    */
   public dispose(): void {
     if (this._disposed) {

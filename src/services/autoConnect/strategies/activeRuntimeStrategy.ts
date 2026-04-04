@@ -23,10 +23,17 @@ import type {
 /**
  * Strategy that uses any available running runtime.
  * Selects the runtime with the most time remaining to maximize session duration.
+ *
  */
 export class ActiveRuntimeStrategy implements AutoConnectStrategy {
   readonly name = "Active Runtime";
 
+  /**
+   * Attempt to connect using the runtime with the most remaining time.
+   * @param context - Auto-connect context with runtime tree provider.
+   *
+   * @returns The best available runtime, or null if none found.
+   */
   async tryConnect(context: AutoConnectContext): Promise<RuntimeDTO | null> {
     // Get runtimes from the tree provider cache (already loaded in sidebar)
     const runtimes = context.runtimesTreeProvider?.getCachedRuntimes() || [];

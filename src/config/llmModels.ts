@@ -48,14 +48,16 @@ export const DEFAULT_MODEL_STRATEGIES: readonly ModelSelectionStrategy[] = [
 ] as const;
 
 /**
- * Select the best available language model based on configured strategies.
+ * Selects the best available language model by trying each configured strategy in order.
  *
  * Tries each strategy in order until a model is found.
  * Logs detailed information about model selection process.
  *
- * @param context - Context string for logging (e.g., "LexicalProvider", "NotebookProvider")
- * @param strategies - Model selection strategies (defaults to DEFAULT_MODEL_STRATEGIES)
- * @returns Selected language model or undefined if none available
+ * @param context - Context string for logging (e.g., "LexicalProvider", "NotebookProvider").
+ * @param strategies - Model selection strategies (defaults to DEFAULT_MODEL_STRATEGIES).
+ *
+ * @returns Selected language model or undefined if none available.
+ *
  */
 export async function selectBestLanguageModel(
   context: string,
@@ -123,8 +125,10 @@ export interface ModelSelectionOptions {
 }
 
 /**
- * Check if language model API is available.
+ * Checks if the VS Code language model API is available in the current version.
  * Returns false if vscode.lm is not available (older VS Code versions).
+ * @returns True if the language model API is available.
+ *
  */
 export function isLanguageModelAPIAvailable(): boolean {
   return (

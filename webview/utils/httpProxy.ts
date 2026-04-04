@@ -14,13 +14,13 @@
 import { MessageHandler } from "../services/messageHandler";
 
 /**
- * Make an HTTP request proxied through the VS Code extension.
- * This bypasses CORS restrictions by having the extension host make the request.
+ * Makes an HTTP request proxied through the VS Code extension host, bypassing CORS restrictions.
+ * @param url - Target URL to fetch.
+ * @param init - Standard Fetch API request options.
+ * @param messageHandler - Message handler instance for extension communication.
  *
- * @param url - URL to fetch
- * @param init - Fetch init options
- * @param messageHandler - Message handler instance to use
- * @returns Promise resolving to Response-like object
+ * @returns Promise resolving to a Response-like object with status, headers, and body.
+ *
  */
 export async function proxyFetch(
   url: string,

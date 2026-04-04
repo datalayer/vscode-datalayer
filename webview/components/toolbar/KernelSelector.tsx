@@ -16,6 +16,7 @@ import { ToolbarButton } from "./ToolbarButton";
 import type { RuntimeJSON } from "@datalayer/core/lib/client";
 import { isLocalKernelUrl } from "../../../src/constants/kernelConstants";
 
+/** Props for the KernelSelector component. */
 export interface KernelSelectorProps {
   /** Currently selected Datalayer runtime */
   selectedRuntime?: RuntimeJSON;

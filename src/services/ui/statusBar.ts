@@ -10,8 +10,8 @@
  *
  * @module services/statusBar
  *
- * @see {@link https://code.visualstudio.com/api/ux-guidelines/status-bar | VS Code Status Bar UX Guidelines}
- * @see {@link https://code.visualstudio.com/api/references/vscode-api#StatusBarItem | VS Code StatusBarItem API}
+ * @see {@link https://code.visualstudio.com/api/ux-guidelines/status-bar | VS Code Status Bar UX Guidelines}.
+ * @see {@link https://code.visualstudio.com/api/references/vscode-api#StatusBarItem | VS Code StatusBarItem API}.
  */
 
 import * as vscode from "vscode";
@@ -21,20 +21,10 @@ import { DatalayerAuthProvider } from "../core/authProvider";
  * Manages the Datalayer status bar item.
  *
  * This class provides a singleton status bar item that displays the current
- * authentication state and allows quick access to login/logout functionality.
+ * Authentication state and allows quick access to login/logout functionality.
  * The status bar automatically updates when the authentication state changes.
  *
- * @example
- * ```typescript
- * // In extension activation
- * const authProvider = DatalayerAuthProvider.getInstance(datalayer, context);
- * const statusBar = DatalayerStatusBar.getInstance(authProvider);
- *
- * // Status bar automatically updates when auth state changes
- * // No manual updates needed - handled via event listeners
- * ```
- *
- * @see {@link DatalayerAuthProvider} - for authentication management
+ * @see {@link DatalayerAuthProvider} - for authentication management.
  */
 export class DatalayerStatusBar implements vscode.Disposable {
   /**
@@ -46,8 +36,9 @@ export class DatalayerStatusBar implements vscode.Disposable {
   /**
    * VS Code status bar item that displays authentication state.
    *
+   * @see {@link https://code.visualstudio.com/api/references/vscode-api#StatusBarItem | StatusBarItem API Reference}.
+   *
    * @internal
-   * @see {@link https://code.visualstudio.com/api/references/vscode-api#StatusBarItem | StatusBarItem API Reference}
    */
   private statusBarItem: vscode.StatusBarItem;
 
@@ -61,10 +52,11 @@ export class DatalayerStatusBar implements vscode.Disposable {
    * Private constructor for singleton pattern.
    *
    * Creates a new status bar item and sets up event listeners for
-   * authentication state changes. The status bar item is positioned
-   * on the right side of the status bar with priority 100.
+   * Authentication state changes. The status bar item is positioned
+   * On the right side of the status bar with priority 100.
    *
-   * @param authProvider - The authentication provider to monitor
+   * @param authProvider - The authentication provider to monitor.
+   *
    * @internal
    */
   private constructor(authProvider: DatalayerAuthProvider) {
@@ -89,21 +81,15 @@ export class DatalayerStatusBar implements vscode.Disposable {
    * Get or create the singleton instance of the status bar.
    *
    * This method implements the singleton pattern to ensure only one
-   * status bar item is created for the extension. The authProvider
-   * parameter is required only on first call.
+   * Status bar item is created for the extension. The authProvider
+   * Parameter is required only on first call.
    *
-   * @param authProvider - The authentication provider (required on first call)
-   * @returns The singleton instance of DatalayerStatusBar
-   * @throws Error if authProvider is not provided on first call
+   * @param authProvider - The authentication provider (required on first call).
    *
-   * @example
-   * ```typescript
-   * // First call - authProvider required
-   * const statusBar = DatalayerStatusBar.getInstance(authProvider);
+   * @returns The singleton instance of DatalayerStatusBar.
    *
-   * // Subsequent calls - authProvider optional
-   * const sameStatusBar = DatalayerStatusBar.getInstance();
-   * ```
+   * @throws Error if authProvider is not provided on first call.
+   *
    */
   static getInstance(authProvider?: DatalayerAuthProvider): DatalayerStatusBar {
     if (!DatalayerStatusBar.instance) {
@@ -121,12 +107,12 @@ export class DatalayerStatusBar implements vscode.Disposable {
    * Update the status bar item based on authentication state.
    *
    * This method reads the current authentication state and updates
-   * the status bar appearance accordingly:
+   * The status bar appearance accordingly:
    * - When authenticated: Shows "Datalayer" with user info in tooltip
    * - When not authenticated: Shows "Datalayer: Not Connected" with warning colors
    *
    * The status bar item's command and visual style are also updated
-   * to reflect the current state.
+   * To reflect the current state.
    *
    * @internal
    */
@@ -155,17 +141,9 @@ export class DatalayerStatusBar implements vscode.Disposable {
    * Dispose of the status bar item.
    *
    * Cleans up the VS Code status bar item resource. This method should
-   * be called when the extension is deactivated to properly release
-   * the status bar resources.
+   * Be called when the extension is deactivated to properly release
+   * The status bar resources.
    *
-   * @example
-   * ```typescript
-   * // In extension deactivate function
-   * export function deactivate() {
-   *   const statusBar = DatalayerStatusBar.getInstance();
-   *   statusBar.dispose();
-   * }
-   * ```
    */
   dispose(): void {
     this.statusBarItem.dispose();

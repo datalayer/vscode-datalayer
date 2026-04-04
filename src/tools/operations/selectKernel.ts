@@ -27,7 +27,7 @@ import { ensurePythonExtensionActive } from "../utils/pythonExtensionActivation"
 import { getActiveDocumentOperation } from "./getActiveDocument";
 
 /**
- * Select kernel result
+ * Result of a kernel selection operation including connection status.
  */
 export interface SelectKernelResult {
   success: boolean;

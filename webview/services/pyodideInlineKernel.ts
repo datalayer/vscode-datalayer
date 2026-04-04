@@ -8,7 +8,7 @@
 
 /**
  * Pyodide kernel that uses inline Web Worker (Blob URL) to bypass CSP restrictions
- * Loads Pyodide from bundled resources using fetch+eval instead of importScripts
+ * Loads Pyodide from bundled resources using fetch+eval instead of importScripts.
  */
 
 import { Kernel, ServerConnection, KernelMessage } from "@jupyterlab/services";
@@ -84,7 +84,11 @@ interface ExecuteRequestHeader {
 }
 
 /**
- * Helper to create IAnyMessageArgs from a kernel message
+ * Helper to create IAnyMessageArgs from a kernel message.
+ * @param msg - Raw kernel message object.
+ * @param direction - Whether message was sent or received.
+ *
+ * @returns Formatted message args for Lumino signals.
  */
 function createMessageArgs(
   msg: Record<string, unknown>,
@@ -97,7 +101,7 @@ function createMessageArgs(
 }
 
 /**
- * Inline Pyodide kernel that creates Web Worker from Blob URL
+ * Inline Pyodide kernel that creates Web Worker from Blob URL.
  */
 export class PyodideInlineKernel implements Kernel.IKernelConnection {
   private _worker: Worker;
@@ -115,13 +119,13 @@ export class PyodideInlineKernel implements Kernel.IKernelConnection {
    * Current kernel status as exposed to Jupyter clients.
    *
    * - The kernel starts in the "starting" state while the inline Web Worker
-   *   bootstraps Pyodide and loads the Python kernel code.
+   *   Bootstraps Pyodide and loads the Python kernel code.
    * - Once the worker has finished initialization, it sends a WorkerReadyMessage
-   *   back to the main thread.
+   *   Back to the main thread.
    * - The worker message handler in this class updates `_status` to "idle" when
-   *   the ready message is received and emits the `_statusChanged` signal.
+   *   The ready message is received and emits the `_statusChanged` signal.
    * - Subsequent transitions (e.g. "busy" during execution, "idle" on completion)
-   *   are driven by WorkerStatusMessage messages sent by the worker.
+   *   Are driven by WorkerStatusMessage messages sent by the worker.
    *
    * @see WorkerReadyMessage
    * @see WorkerStatusMessage
@@ -281,6 +285,10 @@ export class PyodideInlineKernel implements Kernel.IKernelConnection {
       });
   }
 
+  /**
+   * Process incoming worker messages and emit appropriate signals.
+   * @param msg - Message received from the Pyodide web worker.
+   */
   private _handleWorkerMessage(msg: WorkerMessage): void {
     // Log errors with full details
     if (msg.type === "error") {
@@ -536,6 +544,9 @@ export class PyodideInlineKernel implements Kernel.IKernelConnection {
     }
   }
 
+  /**
+   * Promise resolving to kernel info metadata.
+   */
   get info(): Promise<any> {
     return Promise.resolve({
       protocol_version: "5.3",
@@ -556,6 +567,9 @@ export class PyodideInlineKernel implements Kernel.IKernelConnection {
     });
   }
 
+  /**
+   * Promise resolving to the kernel spec model.
+   */
   get spec(): Promise<any> {
     return Promise.resolve({
       name: "pyodide",
@@ -565,46 +579,79 @@ export class PyodideInlineKernel implements Kernel.IKernelConnection {
     });
   }
 
+  /**
+   * Current execution status of the Pyodide kernel.
+   */
   get status(): Kernel.Status {
     return this._status;
   }
 
+  /**
+   * Current connection status of the worker.
+   */
   get connectionStatus(): Kernel.ConnectionStatus {
     return this._connectionStatus;
   }
 
+  /**
+   * Signal emitted when the kernel is disposed.
+   */
   get disposed(): ISignal<this, void> {
     return this._disposed;
   }
 
+  /**
+   * Signal emitted for IOPub channel messages.
+   */
   get iopubMessage(): ISignal<this, any> {
     return this._iopubMessage;
   }
 
+  /**
+   * Signal emitted when kernel status changes.
+   */
   get statusChanged(): ISignal<this, Kernel.Status> {
     return this._statusChanged;
   }
 
+  /**
+   * Signal emitted when connection status changes.
+   */
   get connectionStatusChanged(): ISignal<this, Kernel.ConnectionStatus> {
     return this._connectionStatusChanged;
   }
 
+  /**
+   * Signal emitted when pending input state changes.
+   */
   get pendingInput(): ISignal<this, boolean> {
     return this._pendingInput;
   }
 
+  /**
+   * Signal emitted for any sent or received message.
+   */
   get anyMessage(): ISignal<this, any> {
     return this._anyMessage;
   }
 
+  /**
+   * Signal emitted for unhandled kernel messages.
+   */
   get unhandledMessage(): ISignal<this, KernelMessage.IMessage> {
     return this._unhandledMessage;
   }
 
+  /**
+   * Whether this kernel has been disposed.
+   */
   get isDisposed(): boolean {
     return this._worker === null;
   }
 
+  /**
+   * Terminate the worker and dispose resources.
+   */
   dispose(): void {
     if (this._worker) {
       this._worker.terminate();
@@ -613,18 +660,39 @@ export class PyodideInlineKernel implements Kernel.IKernelConnection {
     }
   }
 
+  /**
+   * Clone the kernel connection (not supported for Pyodide).
+   * @param _options - Clone options (unused).
+   *
+   * @returns Never returns, always throws.
+   *
+   * @throws Always throws because Pyodide kernels do not support cloning.
+   */
   clone(_options?: any): Kernel.IKernelConnection {
     throw new Error("Cloning not supported for PyodideInlineKernel");
   }
 
+  /**
+   * Shut down the Pyodide kernel and dispose resources.
+   */
   async shutdown(): Promise<void> {
     this.dispose();
   }
 
+  /**
+   * Request kernel info metadata.
+   * @returns Promise resolving to kernel info reply.
+   */
   async requestKernelInfo(): Promise<any> {
     return this.info;
   }
 
+  /**
+   * Request code completion suggestions.
+   * @param content - Completion request with cursor position.
+   *
+   * @returns Promise resolving to completion matches.
+   */
   async requestComplete(content: any): Promise<any> {
     return {
       status: "ok",
@@ -635,10 +703,22 @@ export class PyodideInlineKernel implements Kernel.IKernelConnection {
     };
   }
 
+  /**
+   * Request object inspection (not supported for Pyodide).
+   * @param _content - Inspection request content (unused).
+   *
+   * @returns Promise resolving to empty inspection result.
+   */
   async requestInspect(_content: any): Promise<any> {
     return { status: "ok", found: false, data: {}, metadata: {} };
   }
 
+  /**
+   * Request command history (returns empty for Pyodide).
+   * @param _content - History request content (unused).
+   *
+   * @returns Promise resolving to empty history.
+   */
   async requestHistory(_content: any): Promise<any> {
     return { status: "ok", history: [] };
   }
@@ -737,6 +817,14 @@ export class PyodideInlineKernel implements Kernel.IKernelConnection {
     this._isExecuting = false;
   }
 
+  /**
+   * Execute code in the Pyodide kernel via worker.
+   * @param content - Execution request with code string.
+   * @param _disposeOnDone - Whether to dispose future after completion (unused).
+   * @param _metadata - Optional metadata for the request (unused).
+   *
+   * @returns Kernel future tracking execution progress.
+   */
   requestExecute(content: any, _disposeOnDone?: boolean, _metadata?: any): any {
     const msgId = this._messageId++;
     const startTime = new Date().toISOString();
@@ -997,18 +1085,42 @@ export class PyodideInlineKernel implements Kernel.IKernelConnection {
     return future;
   }
 
+  /**
+   * Check if code is complete (always returns complete for Pyodide).
+   * @param _content - Is-complete request content (unused).
+   *
+   * @returns Promise resolving to complete status.
+   */
   async requestIsComplete(_content: any): Promise<any> {
     return { status: "complete" };
   }
 
+  /**
+   * Request comm info (returns empty for Pyodide).
+   * @param _content - Comm info request content (unused).
+   *
+   * @returns Promise resolving to empty comms.
+   */
   async requestCommInfo(_content: any): Promise<any> {
     return { comms: {}, status: "ok" };
   }
 
+  /**
+   * Send input reply (no-op for Pyodide).
+   * @param _content - Input reply content (unused).
+   */
   sendInputReply(_content: any): void {
     // No-op for Pyodide
   }
 
+  /**
+   * Send shell message (not supported for Pyodide).
+   * @param _msg - Shell message to send (unused).
+   * @param _expectReply - Whether to expect a reply (unused).
+   * @param _disposeOnDone - Whether to dispose after done (unused).
+   *
+   * @throws Always throws because Pyodide does not support direct shell messaging.
+   */
   sendShellMessage(
     _msg: any,
     _expectReply?: boolean,
@@ -1017,6 +1129,11 @@ export class PyodideInlineKernel implements Kernel.IKernelConnection {
     throw new Error("sendShellMessage not implemented");
   }
 
+  /**
+   * Register a comm target (no-op for Pyodide).
+   * @param _targetName - Comm target name (unused).
+   * @param _callback - Handler for comm open messages (unused).
+   */
   registerCommTarget(
     _targetName: string,
     _callback: (comm: any, msg: any) => void | PromiseLike<void>,
@@ -1024,6 +1141,11 @@ export class PyodideInlineKernel implements Kernel.IKernelConnection {
     // No-op for Pyodide
   }
 
+  /**
+   * Remove a comm target (no-op for Pyodide).
+   * @param _targetName - Comm target name (unused).
+   * @param _callback - Handler to remove (unused).
+   */
   removeCommTarget(
     _targetName: string,
     _callback: (comm: any, msg: any) => void | PromiseLike<void>,
@@ -1031,6 +1153,11 @@ export class PyodideInlineKernel implements Kernel.IKernelConnection {
     // No-op for Pyodide
   }
 
+  /**
+   * Register a message hook (no-op for Pyodide).
+   * @param _msgId - Message ID to hook (unused).
+   * @param _hook - Hook function (unused).
+   */
   registerMessageHook(
     _msgId: string,
     _hook: (msg: any) => boolean | PromiseLike<boolean>,
@@ -1038,6 +1165,11 @@ export class PyodideInlineKernel implements Kernel.IKernelConnection {
     // No-op for Pyodide
   }
 
+  /**
+   * Remove a message hook (no-op for Pyodide).
+   * @param _msgId - Message ID to unhook (unused).
+   * @param _hook - Hook function to remove (unused).
+   */
   removeMessageHook(
     _msgId: string,
     _hook: (msg: any) => boolean | PromiseLike<boolean>,
@@ -1045,15 +1177,29 @@ export class PyodideInlineKernel implements Kernel.IKernelConnection {
     // No-op for Pyodide
   }
 
+  /**
+   * Reconnect to the kernel (no-op for Pyodide).
+   */
   async reconnect(): Promise<void> {
     // No-op for Pyodide
   }
 
   // Missing IKernelConnection methods - stub implementations
+  /**
+   * Whether the kernel has pending input requests.
+   */
   get hasPendingInput(): boolean {
     return false;
   }
 
+  /**
+   * Send control message (not supported for Pyodide).
+   * @param _msg - Control message to send (unused).
+   * @param _expectReply - Whether to expect a reply (unused).
+   * @param _disposeOnDone - Whether to dispose after done (unused).
+   *
+   * @throws Always throws because Pyodide does not support control messages.
+   */
   sendControlMessage<T extends KernelMessage.ControlMessageType>(
     _msg: KernelMessage.IControlMessage<T>,
     _expectReply?: boolean,
@@ -1062,6 +1208,13 @@ export class PyodideInlineKernel implements Kernel.IKernelConnection {
     throw new Error("sendControlMessage not implemented for Pyodide");
   }
 
+  /**
+   * Request debugging (not supported for Pyodide).
+   * @param _content - Debug request content (unused).
+   * @param _disposeOnDone - Whether to dispose after done (unused).
+   *
+   * @throws Always throws because Pyodide does not support debugging.
+   */
   requestDebug(
     _content: KernelMessage.IDebugRequestMsg["content"],
     _disposeOnDone?: boolean,
@@ -1069,6 +1222,13 @@ export class PyodideInlineKernel implements Kernel.IKernelConnection {
     throw new Error("requestDebug not implemented for Pyodide");
   }
 
+  /**
+   * Request subshell creation (not supported for Pyodide).
+   * @param _content - Subshell creation request (unused).
+   * @param _disposeOnDone - Whether to dispose after done (unused).
+   *
+   * @throws Always throws because Pyodide does not support subshells.
+   */
   requestCreateSubshell(
     _content: KernelMessage.ICreateSubshellRequestMsg["content"],
     _disposeOnDone?: boolean,
@@ -1076,6 +1236,13 @@ export class PyodideInlineKernel implements Kernel.IKernelConnection {
     throw new Error("requestCreateSubshell not implemented for Pyodide");
   }
 
+  /**
+   * Request subshell deletion (not supported for Pyodide).
+   * @param _content - Subshell deletion request (unused).
+   * @param _disposeOnDone - Whether to dispose after done (unused).
+   *
+   * @throws Always throws because Pyodide does not support subshells.
+   */
   requestDeleteSubshell(
     _content: KernelMessage.IDeleteSubshellRequestMsg["content"],
     _disposeOnDone?: boolean,
@@ -1083,6 +1250,13 @@ export class PyodideInlineKernel implements Kernel.IKernelConnection {
     throw new Error("requestDeleteSubshell not implemented for Pyodide");
   }
 
+  /**
+   * Request subshell listing (not supported for Pyodide).
+   * @param _content - Subshell list request (unused).
+   * @param _disposeOnDone - Whether to dispose after done (unused).
+   *
+   * @throws Always throws because Pyodide does not support subshells.
+   */
   requestListSubshell(
     _content: KernelMessage.IListSubshellRequestMsg["content"],
     _disposeOnDone?: boolean,
@@ -1090,24 +1264,46 @@ export class PyodideInlineKernel implements Kernel.IKernelConnection {
     throw new Error("requestListSubshell not implemented for Pyodide");
   }
 
+  /**
+   * Create a comm (not supported for Pyodide).
+   * @param _targetName - Comm target name (unused).
+   * @param _commId - Optional comm ID (unused).
+   *
+   * @throws Always throws because Pyodide does not support comms.
+   */
   createComm(_targetName: string, _commId?: string): any {
     throw new Error("createComm not implemented for Pyodide");
   }
 
+  /**
+   * Check if a comm exists (always false for Pyodide).
+   * @param _commId - Comm ID to check (unused).
+   *
+   * @returns Always false.
+   */
   hasComm(_commId: string): boolean {
     return false;
   }
 
+  /**
+   * Remove input guard (no-op for Pyodide).
+   */
   removeInputGuard(): void {
     // No-op for Pyodide
   }
 
+  /**
+   * Whether the kernel supports subshells.
+   */
   get supportsSubshells(): boolean {
     return false;
   }
 
   subshellId: string | null = null;
 
+  /**
+   * Interrupt execution (not supported, web workers cannot be interrupted).
+   */
   async interrupt(): Promise<void> {
     // Pyodide in web worker cannot be interrupted mid-execution (browser limitation)
     // Web workers run to completion and cannot be stopped without terminating the entire worker
@@ -1119,6 +1315,9 @@ export class PyodideInlineKernel implements Kernel.IKernelConnection {
     // Do nothing - let the execution complete naturally
   }
 
+  /**
+   * Restart the Pyodide kernel by terminating and recreating the worker.
+   */
   async restart(): Promise<void> {
     console.log("[PyodideInlineKernel] Restart requested - terminating worker");
 

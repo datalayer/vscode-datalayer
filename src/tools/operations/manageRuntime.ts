@@ -20,41 +20,44 @@ import {
 } from "../schemas/manageRuntime";
 
 /**
- * Runtime information structure
+ * Describes a runtime instance with its current state and configuration.
  */
 export interface RuntimeInfo {
-  /** Unique identifier for the runtime instance */
+  /** Unique identifier for the runtime instance. */
   id: string;
-  /** Display name of the runtime */
+  /** Display name of the runtime. */
   name: string;
-  /** Configured environment for the runtime (e.g., 'python-3.11') */
+  /** Configured environment for the runtime (e.g., 'python-3.11'). */
   environment?: string;
-  /** Current status of the runtime */
+  /** Current status of the runtime. */
   status: "running" | "stopped" | "error";
-  /** Duration in minutes for which the runtime is allocated */
+  /** Duration in minutes for which the runtime is allocated. */
   durationMinutes?: number;
-  /** Additional metadata from the runtime provider */
+  /** Additional metadata from the runtime provider. */
   metadata?: Record<string, unknown>;
 }
 
 /**
- * Result types for runtime operations
+ * Result of a runtime creation attempt including success status and optional error.
  */
 export interface RuntimeCreationResult {
-  /** Whether the runtime creation operation succeeded */
+  /** Whether the runtime creation operation succeeded. */
   success: boolean;
-  /** Created runtime information if successful */
+  /** Created runtime information if successful. */
   runtime?: RuntimeInfo;
-  /** Error message if operation failed */
+  /** Error message if operation failed. */
   error?: string;
 }
 
+/**
+ * Result of connecting to an existing runtime including success status and optional error.
+ */
 export interface RuntimeConnectionResult {
-  /** Whether the runtime connection operation succeeded */
+  /** Whether the runtime connection operation succeeded. */
   success: boolean;
-  /** Connected runtime information if successful */
+  /** Connected runtime information if successful. */
   runtime?: RuntimeInfo;
-  /** Error message if operation failed */
+  /** Error message if operation failed. */
   error?: string;
 }
 
@@ -64,33 +67,25 @@ export interface RuntimeConnectionResult {
  * Starts a new Datalayer runtime (compute instance) with specified
  * or default parameters. Requires Datalayer and authentication.
  *
- * @example
- * ```typescript
- * const result = await startRuntimeOperation.execute(
- *   { environment: 'python-3.11', durationMinutes: 60 },
- *   { datalayer, auth }
- * );
- * if (result.success) {
- *   console.log(`Runtime started: ${result.runtime.name}`);
- * }
- * ```
  */
 /**
- * Exported constant for starting a runtime operation
- * @type {ToolOperation<StartRuntimeParams, RuntimeCreationResult>}
+ * Exported constant for starting a runtime operation.
  */
 export const startRuntimeOperation: ToolOperation<
   StartRuntimeParams,
   RuntimeCreationResult
 > = {
-  /** Operation name for tool system registration */
+  /** Operation name for tool system registration. */
   name: "startRuntime",
 
   /**
-   * Executes the start runtime operation
-   * @param params - Validated startup parameters including optional environment and duration
-   * @param context - Execution context containing Datalayer and authentication providers
-   * @returns Promise resolving to the runtime creation result with status and error details
+   * Executes the start runtime operation.
+   * @param params - Validated startup parameters including optional environment and duration.
+   * @param context - Execution context containing Datalayer and authentication providers.
+   *
+   * @returns Promise resolving to the runtime creation result with status and error details.
+   *
+   * @throws Error if Datalayer client is missing or user is not authenticated.
    */
   async execute(params, context): Promise<RuntimeCreationResult> {
     // Validate params with Zod
@@ -186,33 +181,25 @@ export const startRuntimeOperation: ToolOperation<
  *
  * Connects an existing runtime to a notebook to enable code execution.
  *
- * @example
- * ```typescript
- * const result = await connectRuntimeOperation.execute(
- *   { runtimeName: 'my-runtime', notebookUri: 'datalayer:/...' },
- *   { datalayer, auth, extras }
- * );
- * if (result.success) {
- *   console.log(`Connected runtime: ${result.runtime.name}`);
- * }
- * ```
  */
 /**
- * Exported constant for connecting to an existing runtime operation
- * @type {ToolOperation<ConnectRuntimeParams, RuntimeConnectionResult>}
+ * Exported constant for connecting to an existing runtime operation.
  */
 export const connectRuntimeOperation: ToolOperation<
   ConnectRuntimeParams,
   RuntimeConnectionResult
 > = {
-  /** Operation name for tool system registration */
+  /** Operation name for tool system registration. */
   name: "connectRuntime",
 
   /**
-   * Executes the connect runtime operation
-   * @param params - Validated connection parameters including runtime name and optional notebook URI
-   * @param context - Execution context containing Datalayer, auth providers, and platform-specific connection callback
-   * @returns Promise resolving to the runtime connection result with status and error details
+   * Executes the connect runtime operation.
+   * @param params - Validated connection parameters including runtime name and optional notebook URI.
+   * @param context - Execution context containing Datalayer, auth providers, and platform-specific connection callback.
+   *
+   * @returns Promise resolving to the runtime connection result with status and error details.
+   *
+   * @throws Error if Datalayer client is missing, user is not authenticated, or connection callback is absent.
    */
   async execute(params, context): Promise<RuntimeConnectionResult> {
     // Validate params with Zod

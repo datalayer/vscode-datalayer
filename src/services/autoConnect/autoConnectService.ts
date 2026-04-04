@@ -8,9 +8,9 @@
  * Auto-connect service for automatically connecting notebooks and lexical documents to runtimes.
  *
  * Implements a strategy pattern where multiple strategies can be tried in sequence
- * until one successfully returns a runtime.
+ * Until one successfully returns a runtime.
  *
- * Configuration: datalayer.autoConnect.strategies
+ * Configuration: datalayer.autoConnect.strategies.
  * - ["Pyodide"] - Always use browser Python (default)
  * - ["Active Runtime", "Pyodide"] - Try cloud runtime first, fallback to Pyodide
  * - ["Ask"] - Always ask user
@@ -53,8 +53,9 @@ export interface AutoConnectStrategy {
 
   /**
    * Attempts to connect to a runtime using this strategy.
-   * @param context - Context information for the connection attempt
-   * @returns Runtime if successful, null if strategy cannot provide a runtime
+   * @param context - Context information for the connection attempt.
+   *
+   * @returns Runtime if successful, null if strategy cannot provide a runtime.
    */
   tryConnect(context: AutoConnectContext): Promise<RuntimeDTO | null>;
 }
@@ -71,6 +72,7 @@ export interface AutoConnectResult {
 
 /**
  * Service for auto-connecting documents to runtimes based on configured strategies.
+ *
  */
 export class AutoConnectService {
   private readonly strategies = new Map<string, AutoConnectStrategy>();
@@ -83,14 +85,15 @@ export class AutoConnectService {
   }
 
   /**
-   * Attempts to auto-connect to a runtime using configured strategies.
+   * Attempts to auto-connect to a runtime using configured strategies in order.
    *
-   * @param documentUri - Document being opened
-   * @param currentRuntime - Currently selected runtime, if any
-   * @param datalayer - Datalayer client
-   * @param authProvider - Authentication provider
-   * @param runtimesTreeProvider - Optional tree provider for accessing cached runtimes
-   * @returns Result with runtime and strategy name, or null if all strategies fail
+   * @param documentUri - Document being opened.
+   * @param currentRuntime - Currently selected runtime, if any.
+   * @param datalayer - Datalayer client for API calls.
+   * @param authProvider - Authentication provider for checking login state.
+   * @param runtimesTreeProvider - Optional tree provider for accessing cached runtimes.
+   *
+   * @returns Result with runtime and strategy name, or null if all strategies fail.
    */
   async connect(
     documentUri: vscode.Uri,

@@ -5,10 +5,10 @@
  */
 
 /**
- * Runner Setup for Webview
+ * Runner Setup for Webview.
  *
  * Creates Runner instances with DefaultExecutor for executing tool operations
- * directly in the webview context (notebook or lexical).
+ * Directly in the webview context (notebook or lexical).
  *
  * @module webview/services/runnerSetup
  */
@@ -18,7 +18,7 @@ import { formatResponse } from "@datalayer/jupyter-react";
 /**
  * Simple Runner implementation for tool execution in webview.
  * Maps operation names to their implementations and executes them directly.
- * Generic to support different operation types (notebook, lexical, etc.)
+ * Generic to support different operation types (notebook, lexical, etc.).
  */
 export class WebviewRunner {
   constructor(
@@ -35,11 +35,13 @@ export class WebviewRunner {
    * It does NOT call operations - operations only run in extension host where validation happens.
    * It calls the executor which directly invokes state methods.
    *
-   * @param operationName - Name of the state method to execute
-   * @param args - Arguments for the state method (already in state parameter format)
-   * @param format - Response format ("json" or "toon"), defaults to "toon"
-   * @returns Promise resolving to the formatted result
-   * @throws Error if executor is not available
+   * @param operationName - Name of the state method to execute.
+   * @param args - Arguments for the state method (already in state parameter format).
+   * @param format - Response format ("json" or "toon"), defaults to "toon".
+   *
+   * @returns Promise resolving to the formatted result.
+   *
+   * @throws Error if executor is not available.
    */
   async execute(
     operationName: string,
@@ -69,7 +71,7 @@ export class WebviewRunner {
   /**
    * Gets the list of available operation names.
    *
-   * @returns Array of operation names
+   * @returns Array of operation names.
    */
   getAvailableOperations(): string[] {
     return Object.keys(this.operations);
@@ -78,8 +80,9 @@ export class WebviewRunner {
   /**
    * Checks if an operation is available.
    *
-   * @param operationName - Name of the operation
-   * @returns True if operation exists
+   * @param operationName - Identifier of the tool operation to check.
+   *
+   * @returns True if operation exists.
    */
   hasOperation(operationName: string): boolean {
     return operationName in this.operations;
@@ -89,23 +92,11 @@ export class WebviewRunner {
 /**
  * Creates a Runner instance for notebook webview with all notebook operations.
  *
- * @param notebookToolOperations - Notebook tool operations from @datalayer/jupyter-react
- * @param executor - DefaultExecutor instance for executing operations (NotebookDefaultExecutor)
- * @returns WebviewRunner configured with notebook operations
+ * @param notebookToolOperations - Notebook tool operations from @datalayer/jupyter-react.
+ * @param executor - DefaultExecutor instance for executing operations (NotebookDefaultExecutor).
  *
- * @example
- * ```typescript
- * import { notebookToolOperations, DefaultExecutor } from "@datalayer/jupyter-react";
- * import { useNotebookStore2 } from "@datalayer/jupyter-react";
+ * @returns WebviewRunner configured with notebook operations.
  *
- * const notebookStore = useNotebookStore2();
- * const executor = new DefaultExecutor(notebookId, notebookStore);
- * const runner = createNotebookRunner(notebookToolOperations, executor);
- * const result = await runner.execute("insertCell", {
- *   cellType: "code",
- *   source: "print('hello')"
- * });
- * ```
  */
 export function createNotebookRunner(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -119,23 +110,11 @@ export function createNotebookRunner(
 /**
  * Creates a Runner instance for lexical webview with all lexical operations.
  *
- * @param lexicalToolOperations - Lexical tool operations from @datalayer/jupyter-lexical
- * @param executor - DefaultExecutor instance for executing operations (LexicalDefaultExecutor)
- * @returns WebviewRunner configured with lexical operations
+ * @param lexicalToolOperations - Lexical tool operations from @datalayer/jupyter-lexical.
+ * @param executor - DefaultExecutor instance for executing operations (LexicalDefaultExecutor).
  *
- * @example
- * ```typescript
- * import { lexicalToolOperations, DefaultExecutor } from "@datalayer/jupyter-lexical";
- * import { useLexicalStore } from "@datalayer/jupyter-lexical";
+ * @returns WebviewRunner configured with lexical operations.
  *
- * const lexicalState = useLexicalStore();
- * const executor = new DefaultExecutor(lexicalId, lexicalState);
- * const runner = createLexicalRunner(lexicalToolOperations, executor);
- * const result = await runner.execute("insertBlock", {
- *   blockType: "code",
- *   source: "print('hello')"
- * });
- * ```
  */
 export function createLexicalRunner(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -150,18 +129,14 @@ export function createLexicalRunner(
  * Sets up tool execution message listener for webview.
  * Listens for "tool-execution" messages from the extension and executes them via the runner.
  *
- * @param runner - WebviewRunner instance to use for execution
- * @param vscodeAPI - VS Code webview API for posting messages
- * @returns Cleanup function to remove the listener
+ * @param runner - WebviewRunner instance to use for execution.
+ * @param vscodeAPI - VS Code webview API for posting messages.
+ * @param vscodeAPI.postMessage - Method to send messages to extension.
+ * @param mutableServiceManager - Optional service manager for runtime switching.
+ * @param mutableServiceManager.updateToPyodide - Method to switch to Pyodide runtime.
  *
- * @example
- * ```typescript
- * const runner = createNotebookRunner(notebookToolOperations);
- * const cleanup = setupToolExecutionListener(runner, vsCodeAPI);
+ * @returns Cleanup function to remove the listener.
  *
- * // Later, when component unmounts:
- * cleanup();
- * ```
  */
 export function setupToolExecutionListener(
   runner: WebviewRunner,

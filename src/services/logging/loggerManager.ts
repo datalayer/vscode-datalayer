@@ -23,8 +23,7 @@ export { LogLevel } from "../interfaces/ILoggerManager";
 
 /**
  * Central logging manager for the Datalayer VS Code extension.
- * Manages multiple log channels with different purposes.
- */
+ * Manages multiple log channels with different purposes. */
 export class LoggerManager implements ILoggerManager {
   private static instance: LoggerManager;
   private channels = new Map<string, vscode.LogOutputChannel>();
@@ -52,8 +51,11 @@ export class LoggerManager implements ILoggerManager {
   /**
    * Gets or creates the singleton instance.
    *
-   * @param context - VS Code extension context (required for initial creation)
-   * @returns The singleton LoggerManager instance
+   * @param context - VS Code extension context (required for initial creation).
+   *
+   * @returns The singleton LoggerManager instance.
+   *
+   * @throws Error if context is not provided on first initialization.
    */
   static getInstance(context?: vscode.ExtensionContext): LoggerManager {
     if (!LoggerManager.instance) {
@@ -68,8 +70,9 @@ export class LoggerManager implements ILoggerManager {
   /**
    * Create or get a logger for a specific channel.
    *
-   * @param channelName - Name of the logging channel
-   * @returns Logger instance for the specified channel
+   * @param channelName - Name of the logging channel.
+   *
+   * @returns Logger instance for the specified channel.
    */
   createLogger(channelName: string): Logger {
     if (!this.channels.has(channelName)) {
@@ -89,9 +92,9 @@ export class LoggerManager implements ILoggerManager {
   }
 
   /**
-   * Get configuration for external integrations (Datalayer handlers, etc.)
+   * Get configuration for external integrations (Datalayer handlers, etc.).
    *
-   * @returns Copy of the current logger configuration
+   * @returns Copy of the current logger configuration.
    */
   getConfig(): LoggerConfig {
     return { ...this.config };
@@ -101,7 +104,7 @@ export class LoggerManager implements ILoggerManager {
    * Updates logging configuration.
    * Affects all existing and future loggers.
    *
-   * @param config - Partial configuration to update
+   * @param config - Partial configuration to update.
    */
   setConfig(config: Partial<LoggerConfig>): void {
     this.config = {
@@ -148,6 +151,9 @@ export class LoggerManager implements ILoggerManager {
 
   /**
    * Parse log level string to enum value.
+   * @param level - Log level string (trace, debug, info, warn, error).
+   *
+   * @returns Corresponding LogLevel enum value.
    */
   private parseLogLevel(level: string): LogLevel {
     switch (level.toLowerCase()) {
@@ -180,8 +186,7 @@ export class LoggerManager implements ILoggerManager {
 }
 
 /**
- * Individual logger instance for a specific channel.
- */
+ * Individual logger instance for a specific channel. */
 export class Logger {
   constructor(
     private channel: vscode.LogOutputChannel,
@@ -193,6 +198,8 @@ export class Logger {
 
   /**
    * Log trace level message with optional context.
+   * @param message - Message to log at trace level.
+   * @param context - Optional key-value metadata for the log entry.
    */
   trace(message: string, context?: Record<string, unknown>): void {
     this.log(LogLevel.TRACE, message, context);
@@ -200,6 +207,8 @@ export class Logger {
 
   /**
    * Log debug level message with optional context.
+   * @param message - Message to log at debug level.
+   * @param context - Optional key-value metadata for the log entry.
    */
   debug(message: string, context?: Record<string, unknown>): void {
     this.log(LogLevel.DEBUG, message, context);
@@ -207,6 +216,8 @@ export class Logger {
 
   /**
    * Log info level message with optional context.
+   * @param message - Message to log at info level.
+   * @param context - Optional key-value metadata for the log entry.
    */
   info(message: string, context?: Record<string, unknown>): void {
     this.log(LogLevel.INFO, message, context);
@@ -214,6 +225,8 @@ export class Logger {
 
   /**
    * Log warning level message with optional context.
+   * @param message - Message to log at warn level.
+   * @param context - Optional key-value metadata for the log entry.
    */
   warn(message: string, context?: Record<string, unknown>): void {
     this.log(LogLevel.WARN, message, context);
@@ -221,6 +234,9 @@ export class Logger {
 
   /**
    * Log error level message with error object and optional context.
+   * @param message - Message to log at error level.
+   * @param error - Optional Error object with stack trace.
+   * @param context - Optional key-value metadata for the log entry.
    */
   error(
     message: string,
@@ -244,10 +260,11 @@ export class Logger {
    * Log method calls with timing information.
    * Automatically logs start, completion, and error states with duration.
    *
-   * @param operation - Name of the operation being timed
-   * @param fn - Async function to execute and time
-   * @param context - Optional context information
-   * @returns Promise that resolves with the function result
+   * @param operation - Name of the operation being timed.
+   * @param fn - Async function to execute and time.
+   * @param context - Optional context information.
+   *
+   * @returns Promise that resolves with the function result.
    */
   async timeAsync<T>(
     operation: string,
@@ -275,6 +292,9 @@ export class Logger {
 
   /**
    * Internal logging method that handles level filtering and formatting.
+   * @param level - Log severity level for filtering.
+   * @param message - Message string to log.
+   * @param context - Optional key-value metadata to append.
    */
   private log(
     level: LogLevel,

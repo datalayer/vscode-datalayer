@@ -36,9 +36,12 @@ let ui: ExtensionUI | undefined;
 let lspBridge: import("./services/bridges/lspBridge").LSPBridge | undefined;
 
 /**
- * Get the global service container instance.
+ * Gets the global service container instance used for dependency injection.
+ * @returns The initialized service container singleton.
+ *
+ * @throws Error if called before extension activation.
+ *
  * @internal
- * @throws Error if called before extension activation
  */
 export function getServiceContainer(): ServiceContainer {
   if (!services) {
@@ -50,44 +53,50 @@ export function getServiceContainer(): ServiceContainer {
 }
 
 /**
- * Get the outline tree provider instance.
- * @returns The outline tree provider or undefined if not initialized
+ * Gets the outline tree provider instance for document structure navigation.
+ * @returns The outline tree provider or undefined if not initialized.
+ *
  */
 export function getOutlineTreeProvider() {
   return ui?.outlineTreeProvider;
 }
 
 /**
- * Get the runtimes tree provider instance.
- * @returns The runtimes tree provider or undefined if not initialized
+ * Gets the runtimes tree provider instance for cloud runtime management.
+ * @returns The runtimes tree provider or undefined if not initialized.
+ *
  */
 export function getRuntimesTreeProvider() {
   return ui?.runtimesTreeProvider;
 }
 
 /**
- * Get the settings tree provider instance.
- * @returns The settings tree provider or undefined if not initialized
+ * Gets the settings tree provider instance for datasource and secret management.
+ * @returns The settings tree provider or undefined if not initialized.
+ *
  */
 export function getSettingsTreeProvider() {
   return ui?.settingsTreeProvider;
 }
 
 /**
- * Get the LSP bridge instance for notebook cell LSP integration.
- * @returns The LSP bridge or undefined if not initialized
+ * Gets the LSP bridge instance for notebook cell language server protocol integration.
+ * @returns The LSP bridge or undefined if not initialized.
+ *
  */
 export function getLSPBridge() {
   return lspBridge;
 }
 
 /**
- * Activates the Datalayer VS Code extension.
+ * Activates the Datalayer VS Code extension by initializing all services, UI, and commands.
  * This function is called when the extension is activated by VS Code.
  * It orchestrates the initialization of all components using the service container.
  *
- * @param context - The extension context provided by VS Code
- * @returns Promise that resolves when activation is complete
+ * @param context - The extension context provided by VS Code.
+ *
+ * @returns Promise that resolves when activation is complete.
+ *
  */
 export async function activate(
   context: vscode.ExtensionContext,
@@ -571,15 +580,14 @@ export async function activate(
 }
 
 /**
- * Refreshes the runtimes tree view.
- * Called after runtime operations to update the tree.
+ * Refreshes the runtimes tree view after runtime operations to update the displayed state.
  */
 export function refreshRuntimesTree(): void {
   ui?.runtimesTreeProvider.refresh();
 }
 
 /**
- * Deactivates the extension and cleans up resources.
+ * Deactivates the extension and cleans up resources including tracked operations and LSP bridge.
  * This function is called when the extension is deactivated or VS Code is closing.
  * All disposables are automatically cleaned up through the context.subscriptions array.
  */

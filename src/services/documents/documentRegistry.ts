@@ -5,7 +5,7 @@
  */
 
 /**
- * Unified Document Registry
+ * Unified Document Registry.
  *
  * Maintains bidirectional mapping between document IDs and document URIs.
  * Works for BOTH notebooks AND lexical documents.
@@ -22,11 +22,11 @@
 import * as vscode from "vscode";
 import { getActiveCustomEditorUri } from "../../utils/activeDocument";
 
-/** Document type: notebook (.ipynb) or lexical (.lexical) */
-type DocumentType = "notebook" | "lexical";
+/** Document type: notebook (.ipynb) or lexical (.lexical). */
+export type DocumentType = "notebook" | "lexical";
 
-/** Registry entry for a document */
-interface DocumentRegistryEntry {
+/** Registry entry storing document identifier, URI, type, and optional webview panel. */
+export interface DocumentRegistryEntry {
   /** Document identifier (UID for remote, URI for local) */
   documentId: string;
   /** VS Code document URI */
@@ -38,30 +38,30 @@ interface DocumentRegistryEntry {
 }
 
 /**
- * Bidirectional registry for document ID ↔ document URI mapping
- * Handles both notebooks (.ipynb) and lexical documents (.lexical)
+ * Bidirectional registry for document ID ↔ document URI mapping.
+ * Handles both notebooks (.ipynb) and lexical documents (.lexical).
  */
 class DocumentRegistry {
   /**
-   * Map from documentId → entry
+   * Map from documentId → entry.
    * - Local: "file:///path/to/doc.ipynb" → {id, uri, type: "notebook"}
    * - Remote: "01KAJ42KE2XKM7NBNZV568KXQX" → {id, uri: "datalayer://...", type: "notebook"}
    */
   private idToEntry = new Map<string, DocumentRegistryEntry>();
 
   /**
-   * Map from documentUri → documentId
-   * Reverse lookup for when we have URI but need ID
+   * Map from documentUri → documentId.
+   * Reverse lookup for when we have URI but need ID.
    */
   private uriToId = new Map<string, string>();
 
   /**
-   * Register a document with its ID, URI, and type
+   * Register a document with its ID, URI, and type.
    *
-   * @param documentId - Document identifier (UID for remote, URI for local)
-   * @param documentUri - VS Code document URI
-   * @param type - Document type (notebook or lexical)
-   * @param webviewPanel - Optional webview panel for tool execution messaging
+   * @param documentId - Document identifier (UID for remote, URI for local).
+   * @param documentUri - VS Code document URI.
+   * @param type - Document type (notebook or lexical).
+   * @param webviewPanel - Optional webview panel for tool execution messaging.
    */
   register(
     documentId: string,
@@ -80,10 +80,11 @@ class DocumentRegistry {
   }
 
   /**
-   * Get webview panel for a document
+   * Get webview panel for a document.
    *
-   * @param documentUri - Document URI
-   * @returns Webview panel or undefined if not registered or no webview
+   * @param documentUri - String representation of the document's VS Code URI.
+   *
+   * @returns Webview panel or undefined if not registered or no webview.
    */
   getWebviewPanel(documentUri: string): vscode.WebviewPanel | undefined {
     const documentId = this.uriToId.get(documentUri);
@@ -95,10 +96,10 @@ class DocumentRegistry {
   }
 
   /**
-   * Get webview panel for active document
-   * Checks active custom editor tab (notebook or lexical)
+   * Get webview panel for active document.
+   * Checks active custom editor tab (notebook or lexical).
    *
-   * @returns Webview panel or undefined if no active document with webview
+   * @returns Webview panel or undefined if no active document with webview.
    */
   getActiveWebviewPanel(): vscode.WebviewPanel | undefined {
     // Check for active custom editor (notebook or lexical)
@@ -110,9 +111,9 @@ class DocumentRegistry {
   }
 
   /**
-   * Unregister a document by its URI (called when webview is closed)
+   * Unregister a document by its URI (called when webview is closed).
    *
-   * @param documentUri - VS Code document URI
+   * @param documentUri - VS Code document URI.
    */
   unregisterByUri(documentUri: string): void {
     const documentId = this.uriToId.get(documentUri);
@@ -128,11 +129,13 @@ class DocumentRegistry {
   }
 
   /**
-   * Convert document ID to document URI
+   * Convert document ID to document URI.
    *
-   * @param documentId - Document identifier
-   * @returns Document URI
-   * @throws Error if documentId is not registered
+   * @param documentId - Unique identifier assigned during registration.
+   *
+   * @returns The VS Code URI string associated with the given identifier.
+   *
+   * @throws Error if the identifier is not registered.
    */
   getUriFromId(documentId: string): string {
     const entry = this.idToEntry.get(documentId);
@@ -147,11 +150,13 @@ class DocumentRegistry {
   }
 
   /**
-   * Convert document URI to document ID
+   * Convert document URI to document ID.
    *
-   * @param documentUri - Document URI
-   * @returns Document ID
-   * @throws Error if documentUri is not registered
+   * @param documentUri - String representation of the document's VS Code URI.
+   *
+   * @returns The unique identifier assigned during registration.
+   *
+   * @throws Error if the URI is not registered.
    */
   getIdFromUri(documentUri: string): string {
     const id = this.uriToId.get(documentUri);
@@ -166,11 +171,13 @@ class DocumentRegistry {
   }
 
   /**
-   * Get full registry entry for a document ID
+   * Get full registry entry for a document ID.
    *
-   * @param documentId - Document identifier
-   * @returns Registry entry with id, uri, and type
-   * @throws Error if documentId is not registered
+   * @param documentId - Document identifier.
+   *
+   * @returns Registry entry with id, uri, and type.
+   *
+   * @throws Error if documentId is not registered.
    */
   getEntry(documentId: string): DocumentRegistryEntry {
     const entry = this.idToEntry.get(documentId);
@@ -185,40 +192,44 @@ class DocumentRegistry {
   }
 
   /**
-   * Check if a document is registered
+   * Check if a document is registered.
    *
-   * @param documentId - Document identifier
-   * @returns True if registered
+   * @param documentId - Document identifier.
+   *
+   * @returns True if registered.
    */
   has(documentId: string): boolean {
     return this.idToEntry.has(documentId);
   }
 
   /**
-   * Get document type (notebook or lexical)
+   * Get document type (notebook or lexical).
    *
-   * @param documentId - Document identifier
-   * @returns Document type
-   * @throws Error if documentId is not registered
+   * @param documentId - Unique identifier assigned during registration.
+   *
+   * @returns Whether the document is a notebook or lexical type.
+   *
+   * @throws Error if the identifier is not registered.
    */
   getType(documentId: string): DocumentType {
     return this.getEntry(documentId).type;
   }
 
   /**
-   * Get all registered document IDs
+   * Get all registered document IDs.
    *
-   * @returns Array of document IDs
+   * @returns Array of document IDs.
    */
   getAllIds(): string[] {
     return Array.from(this.idToEntry.keys());
   }
 
   /**
-   * Get all registered documents of a specific type
+   * Get all registered documents of a specific type.
    *
-   * @param type - Document type to filter by
-   * @returns Array of registry entries
+   * @param type - Document type to filter by.
+   *
+   * @returns Array of registry entries.
    */
   getByType(type: DocumentType): DocumentRegistryEntry[] {
     return Array.from(this.idToEntry.values()).filter(
@@ -227,7 +238,7 @@ class DocumentRegistry {
   }
 
   /**
-   * Clear all registrations (for testing)
+   * Clear all registrations (for testing).
    */
   clear(): void {
     this.idToEntry.clear();
@@ -236,7 +247,8 @@ class DocumentRegistry {
   }
 
   /**
-   * Get registry statistics
+   * Get registry statistics.
+   * @returns Object with total, notebook, and lexical document counts.
    */
   getStats(): {
     /** Total number of registered documents */
@@ -257,6 +269,6 @@ class DocumentRegistry {
 }
 
 /**
- * Export the class for ServiceContainer to instantiate
+ * Export the class for ServiceContainer to instantiate.
  */
 export { DocumentRegistry };

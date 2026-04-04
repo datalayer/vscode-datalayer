@@ -45,6 +45,7 @@ export interface ILoggerManager {
    * Creates or retrieves a logger for a specific channel.
    *
    * @param channelName - Name of the logging channel
+   *
    * @returns Logger instance for the channel
    */
   createLogger(channelName: string): ILogger;

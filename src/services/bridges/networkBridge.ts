@@ -57,7 +57,8 @@ export class NetworkBridgeService extends BaseService {
   /**
    * Registers network-related message handlers with the DocumentMessageRouter.
    *
-   * @param router - The message router to register handlers with
+   * @param router - The message router to register handlers with.
+   * @param router.registerHandler - Method to register a message type handler.
    */
   public registerNetworkHandlers(router: {
     registerHandler: (

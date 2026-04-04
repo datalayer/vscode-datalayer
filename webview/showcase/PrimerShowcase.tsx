@@ -44,10 +44,12 @@ import {
 } from "@primer/octicons-react";
 import { PrimerVSCodeTheme } from "../theme/PrimerVSCodeTheme";
 
-interface PrimerShowcaseProps {
+/** Props for the PrimerShowcase component controlling theme mode. */
+export interface PrimerShowcaseProps {
   colorMode: "light" | "dark";
 }
 
+/** Showcase component demonstrating Primer React components with VS Code theming. */
 export function PrimerShowcase({ colorMode }: PrimerShowcaseProps) {
   console.log("PrimerShowcase rendering with colorMode:", colorMode);
 

@@ -90,8 +90,9 @@ export interface Kernel {
   /**
    * Executes code in the kernel without affecting the execution count & execution history.
    *
-   * @param code Code to be executed.
-   * @param token Triggers the cancellation of the execution.
+   * @param code - Code to be executed.
+   * @param token - Triggers the cancellation of the execution.
+   *
    * @returns Async iterable of outputs, that completes when the execution is complete.
    */
   executeCode(code: string, token: CancellationToken): AsyncIterable<Output>;
@@ -110,7 +111,8 @@ export interface Kernels {
    * Only kernels which have already been started by the user and belonging
    * to Notebooks that are currently opened will be returned.
    *
-   * @param uri URI of the resource (notebook document)
+   * @param uri - URI of the resource (notebook document)
+   *
    * @returns The kernel instance, or undefined if no kernel is associated
    */
   getKernel(uri: Uri): Thenable<Kernel | undefined>;

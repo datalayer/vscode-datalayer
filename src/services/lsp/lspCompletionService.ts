@@ -15,15 +15,14 @@ import { LSPDocumentManager } from "./lspDocumentManager";
 
 /**
  * Service for handling LSP completion requests.
- * Coordinates with LSPDocumentManager and VS Code's LSP infrastructure.
- */
+ * Coordinates with LSPDocumentManager and VS Code's LSP infrastructure. */
 export class LSPCompletionService {
   private documentManager: LSPDocumentManager;
 
   /**
    * Create a new LSPCompletionService.
    *
-   * @param documentManager - Document manager for accessing virtual documents
+   * @param documentManager - Document manager for accessing virtual documents.
    */
   constructor(documentManager: LSPDocumentManager) {
     this.documentManager = documentManager;
@@ -32,10 +31,13 @@ export class LSPCompletionService {
   /**
    * Get completions for a cell at a specific position.
    *
-   * @param cellId - Cell identifier
-   * @param position - Position in the cell (line and character)
-   * @param trigger - Optional trigger character
-   * @returns Promise that resolves to array of completion items
+   * @param cellId - Cell identifier.
+   * @param position - Position in the cell (line and character).
+   * @param position.line - Zero-based line number in the cell.
+   * @param position.character - Zero-based character offset in the line.
+   * @param trigger - Optional trigger character.
+   *
+   * @returns Promise that resolves to array of completion items.
    */
   public async getCompletions(
     cellId: string,
@@ -88,8 +90,9 @@ export class LSPCompletionService {
   /**
    * Resolve additional details for a completion item.
    *
-   * @param item - Completion item to resolve
-   * @returns Promise that resolves to resolved completion item
+   * @param item - Completion item to resolve.
+   *
+   * @returns Promise that resolves to resolved completion item.
    */
   public async resolveCompletion(
     item: vscode.CompletionItem,
@@ -108,9 +111,12 @@ export class LSPCompletionService {
   /**
    * Get hover information for a cell at a specific position.
    *
-   * @param cellId - Cell identifier
-   * @param position - Position in the cell (line and character)
-   * @returns Promise that resolves to hover information or null
+   * @param cellId - Cell identifier.
+   * @param position - Position in the cell (line and character).
+   * @param position.line - Zero-based line number in the cell.
+   * @param position.character - Zero-based character offset in the line.
+   *
+   * @returns Promise that resolves to hover information or null.
    */
   public async getHover(
     cellId: string,
@@ -154,7 +160,7 @@ export class LSPCompletionService {
   /**
    * Ensure Python extension is active and configured for a document.
    *
-   * @param documentUri - Document URI
+   * @param documentUri - VS Code URI of the document requiring Python support.
    */
   private async ensurePythonExtensionActive(
     documentUri: vscode.Uri,

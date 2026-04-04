@@ -19,11 +19,12 @@ import { createRuntime } from "../ui/dialogs/runtimeSelector";
 import { getServiceContainer } from "../extension";
 
 /**
- * Registers all snapshot-related commands.
+ * Registers all snapshot-related commands for restoration, deletion, and viewing details.
  * Snapshots are now part of the runtimes tree view.
  *
- * @param context - Extension context for command subscriptions
- * @param runtimesTreeProvider - The Runtimes tree view provider (includes snapshots section)
+ * @param context - Extension context for command subscriptions.
+ * @param runtimesTreeProvider - The Runtimes tree view provider (includes snapshots section).
+ *
  */
 export function registerSnapshotCommands(
   context: vscode.ExtensionContext,

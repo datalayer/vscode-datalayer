@@ -17,6 +17,7 @@ import type { OutlineItem } from "../../webview/types/messages";
 /**
  * Tree provider for document outline view.
  * Manages outline data from multiple documents and handles navigation.
+ *
  */
 export class OutlineTreeProvider implements vscode.TreeDataProvider<OutlineTreeItem> {
   private _onDidChangeTreeData = new vscode.EventEmitter<
@@ -35,8 +36,10 @@ export class OutlineTreeProvider implements vscode.TreeDataProvider<OutlineTreeI
   private webviewPanels = new Map<string, vscode.WebviewPanel>();
 
   /**
-   * Register a webview panel for a document.
+   * Registers a webview panel for a document.
    * Required for navigation functionality.
+   * @param documentUri - URI string identifying the document.
+   * @param panel - Webview panel to register for this document.
    */
   public registerWebviewPanel(
     documentUri: string,
@@ -86,8 +89,11 @@ export class OutlineTreeProvider implements vscode.TreeDataProvider<OutlineTreeI
   }
 
   /**
-   * Update outline for a document.
-   * Called when webview sends outline-update message.
+   * Updates the outline for a document.
+   * Called when the webview sends an outline-update message.
+   * @param documentUri - URI string identifying the document.
+   * @param items - Array of outline items to display.
+   * @param activeItemId - ID of the currently active item.
    */
   public updateOutline(
     documentUri: string,
@@ -108,8 +114,9 @@ export class OutlineTreeProvider implements vscode.TreeDataProvider<OutlineTreeI
   }
 
   /**
-   * Set the active document.
-   * Called when user switches between editors.
+   * Sets the active document for outline display.
+   * Called when the user switches between editors.
+   * @param uri - URI of the document to set as active.
    */
   public setActiveDocument(uri: string | undefined): void {
     if (this.activeDocumentUri !== uri) {
@@ -120,8 +127,9 @@ export class OutlineTreeProvider implements vscode.TreeDataProvider<OutlineTreeI
   }
 
   /**
-   * Navigate to an outline item.
-   * Sends message to webview to scroll to the item.
+   * Navigates to an outline item in the editor.
+   * Sends a message to the webview to scroll to the item.
+   * @param item - Outline tree item to scroll to in the editor.
    */
   public async navigateToItem(item: OutlineTreeItem): Promise<void> {
     if (!this.activeDocumentUri) {
@@ -152,14 +160,20 @@ export class OutlineTreeProvider implements vscode.TreeDataProvider<OutlineTreeI
   }
 
   /**
-   * Get tree item for display.
+   * Gets a tree item for display in the outline view.
+   * @param element - Tree item element to convert for display.
+   *
+   * @returns The VS Code tree item representation.
    */
   getTreeItem(element: OutlineTreeItem): vscode.TreeItem {
     return element;
   }
 
   /**
-   * Get children for tree hierarchy.
+   * Gets children for tree hierarchy display.
+   * @param element - Parent element, or undefined for root items.
+   *
+   * @returns Array of child outline tree items.
    */
   getChildren(element?: OutlineTreeItem): OutlineTreeItem[] {
     if (!this.activeDocumentUri) {
@@ -201,7 +215,8 @@ export class OutlineTreeProvider implements vscode.TreeDataProvider<OutlineTreeI
 }
 
 /**
- * Tree item representing an outline entry.
+ * Tree item representing an outline entry with navigation support.
+ *
  */
 export class OutlineTreeItem extends vscode.TreeItem {
   constructor(
@@ -240,7 +255,8 @@ export class OutlineTreeItem extends vscode.TreeItem {
   }
 
   /**
-   * Get tooltip text.
+   * Gets tooltip text for the outline item.
+   * @returns Formatted tooltip with item type and content preview.
    */
   private getTooltip(): string {
     let type: string;

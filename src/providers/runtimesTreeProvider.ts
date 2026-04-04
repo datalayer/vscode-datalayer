@@ -9,8 +9,9 @@
  * Displays running runtimes and snapshots in separate collapsible sections
  * with auto-refresh capabilities for runtimes.
  *
- * @see https://code.visualstudio.com/api/extension-guides/tree-view
  * @module providers/runtimesTreeProvider
+ *
+ * @see https://code.visualstudio.com/api/extension-guides/tree-view
  */
 
 import * as vscode from "vscode";
@@ -29,11 +30,6 @@ import type { RuntimeSnapshotDTO } from "@datalayer/core/lib/models/RuntimeSnaps
  * and snapshots in separate collapsible sections with automatic refresh
  * for time remaining updates.
  *
- * @example
- * ```typescript
- * const provider = new RuntimesTreeProvider(authProvider);
- * provider.refresh(); // Refresh entire tree
- * ```
  */
 export class RuntimesTreeProvider implements vscode.TreeDataProvider<RuntimesTreeItem> {
   private _onDidChangeTreeData: vscode.EventEmitter<
@@ -49,9 +45,9 @@ export class RuntimesTreeProvider implements vscode.TreeDataProvider<RuntimesTre
   private refreshTimer?: NodeJS.Timeout;
 
   /**
-   * Creates a new RuntimesTreeProvider.
+   * Creates a new RuntimesTreeProvider with automatic refresh on auth changes.
    *
-   * @param authProvider - Authentication provider for user state management
+   * @param authProvider - Authentication provider for user state management.
    */
   constructor(authProvider: DatalayerAuthProvider) {
     this.authService = authProvider;
@@ -75,8 +71,9 @@ export class RuntimesTreeProvider implements vscode.TreeDataProvider<RuntimesTre
   /**
    * Gets the tree item representation for display.
    *
-   * @param element - The tree item to convert
-   * @returns The tree item for VS Code to display
+   * @param element - The tree item to convert for display.
+   *
+   * @returns The tree item for VS Code to display.
    */
   getTreeItem(element: RuntimesTreeItem): vscode.TreeItem {
     return element;
@@ -85,8 +82,9 @@ export class RuntimesTreeProvider implements vscode.TreeDataProvider<RuntimesTre
   /**
    * Gets the children of a tree item.
    *
-   * @param element - The parent element, or undefined for root
-   * @returns Array of runtime, snapshot, or section tree items
+   * @param element - The parent element, or undefined for root.
+   *
+   * @returns Array of runtime, snapshot, or section tree items.
    */
   async getChildren(element?: RuntimesTreeItem): Promise<RuntimesTreeItem[]> {
     const authState = this.authService.getAuthState();
@@ -189,7 +187,7 @@ export class RuntimesTreeProvider implements vscode.TreeDataProvider<RuntimesTre
    * Gets the currently cached runtimes.
    * Returns the most recently loaded runtimes without making a new API call.
    *
-   * @returns Array of cached runtime DTOs
+   * @returns Array of cached runtime DTOs.
    */
   getCachedRuntimes(): RuntimeDTO[] {
     return this.runtimesCache;

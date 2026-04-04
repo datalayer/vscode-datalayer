@@ -19,8 +19,11 @@ import {
 } from "lexical";
 import { $isHeadingNode } from "@lexical/rich-text";
 
-interface NavigationPluginProps {
+/** Props for the NavigationPlugin component controlling outline navigation. */
+export interface NavigationPluginProps {
+  /** Target node key to navigate to, or null when no navigation is pending. */
   navigationTarget: string | null;
+  /** Callback invoked after navigation completes to clear the target. */
   onNavigated: () => void;
 }
 

@@ -7,7 +7,7 @@
  * Manages virtual TextDocuments for notebook cells using vscode-notebook-cell:// URIs.
  * Creates virtual documents that Pylance and Markdown LSP can analyze without temp files.
  *
- * URI format: vscode-notebook-cell://datalayer/{type}/{docId}#{cellId}.{ext}
+ * URI format: vscode-notebook-cell://datalayer/{type}/{docId}#{cellId}.{ext}.
  * - type: "notebook" or "lexical"
  * - docId: notebook or lexical document identifier
  * - cellId: unique cell identifier
@@ -21,8 +21,7 @@ import { CellLanguage, VirtualDocument } from "./types";
 
 /**
  * Manages virtual TextDocuments for notebook cells using vscode-notebook-cell:// URIs.
- * Uses VS Code's TextDocumentContentProvider to serve cell content in memory.
- */
+ * Uses VS Code's TextDocumentContentProvider to serve cell content in memory. */
 export class LSPDocumentManager implements vscode.TextDocumentContentProvider {
   /** Map of cell ID to virtual document info */
   private documents = new Map<string, VirtualDocument>();
@@ -33,7 +32,7 @@ export class LSPDocumentManager implements vscode.TextDocumentContentProvider {
   /** Event fired when document content changes (required by TextDocumentContentProvider) */
   public readonly onDidChange = this._onDidChangeEmitter.event;
 
-  /** Content provider disposable */
+  /** Subscription for the vscode-notebook-cell content provider registration. */
   private contentProviderDisposable?: vscode.Disposable;
 
   constructor() {
@@ -48,8 +47,9 @@ export class LSPDocumentManager implements vscode.TextDocumentContentProvider {
   /**
    * Provide text document content (required by TextDocumentContentProvider).
    *
-   * @param uri - Document URI
-   * @returns Document content or undefined if not found
+   * @param uri - VS Code URI with cell identifier encoded in the fragment.
+   *
+   * @returns Document content or undefined if not found.
    */
   provideTextDocumentContent(uri: vscode.Uri): string | undefined {
     // Extract cellId from URI fragment
@@ -77,12 +77,13 @@ export class LSPDocumentManager implements vscode.TextDocumentContentProvider {
   /**
    * Create a new virtual document for a cell.
    *
-   * @param notebookId - Unique notebook identifier
-   * @param cellId - Unique cell identifier
-   * @param content - Initial cell content
-   * @param language - Cell language (python or markdown)
-   * @param source - Source type (notebook or lexical)
-   * @returns Promise that resolves to URI of the created document
+   * @param notebookId - Unique notebook identifier.
+   * @param cellId - Unique cell identifier.
+   * @param content - Initial cell content.
+   * @param language - Cell language (python or markdown).
+   * @param source - Source type (notebook or lexical).
+   *
+   * @returns Promise that resolves to URI of the created document.
    */
   public async createCellDocument(
     notebookId: string,
@@ -144,8 +145,8 @@ export class LSPDocumentManager implements vscode.TextDocumentContentProvider {
   /**
    * Update the content of an existing virtual document.
    *
-   * @param cellId - Cell identifier
-   * @param content - New cell content
+   * @param cellId - Cell identifier.
+   * @param content - New cell content.
    */
   public updateCellContent(cellId: string, content: string): void {
     const virtualDoc = this.documents.get(cellId);
@@ -168,7 +169,7 @@ export class LSPDocumentManager implements vscode.TextDocumentContentProvider {
   /**
    * Close and remove a virtual document for a cell.
    *
-   * @param cellId - Cell identifier
+   * @param cellId - Cell identifier.
    */
   public closeCellDocument(cellId: string): void {
     const virtualDoc = this.documents.get(cellId);
@@ -190,8 +191,9 @@ export class LSPDocumentManager implements vscode.TextDocumentContentProvider {
   /**
    * Get virtual document info for a cell.
    *
-   * @param cellId - Cell identifier
-   * @returns Virtual document or undefined
+   * @param cellId - Cell identifier.
+   *
+   * @returns Virtual document or undefined.
    */
   public getCellDocument(cellId: string): VirtualDocument | undefined {
     return this.documents.get(cellId);
@@ -200,8 +202,9 @@ export class LSPDocumentManager implements vscode.TextDocumentContentProvider {
   /**
    * Get TextDocument for a cell (opens if not already open).
    *
-   * @param cellId - Cell identifier
-   * @returns Promise that resolves to TextDocument or undefined
+   * @param cellId - Cell identifier.
+   *
+   * @returns Promise that resolves to TextDocument or undefined.
    */
   public async getTextDocument(
     cellId: string,
@@ -235,8 +238,9 @@ export class LSPDocumentManager implements vscode.TextDocumentContentProvider {
   /**
    * Extract cell ID from vscode-notebook-cell:// URI.
    *
-   * @param uri - Document URI
-   * @returns Cell ID or undefined
+   * @param uri - Document URI.
+   *
+   * @returns Cell ID or undefined.
    */
   private extractCellIdFromUri(uri: vscode.Uri): string | undefined {
     // URI format: vscode-notebook-cell://datalayer/{type}/{docId}#{cellId}.{ext}

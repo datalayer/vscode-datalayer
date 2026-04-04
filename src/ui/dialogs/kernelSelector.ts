@@ -30,12 +30,13 @@ interface KernelOption {
  * Shows a kernel selection menu with available options.
  * This provides a clean interface for selecting between different kernel types.
  *
- * @param datalayer - Datalayer instance
- * @param authProvider - Authentication provider
- * @param kernelBridge - Kernel bridge for connecting notebooks
- * @param documentUri - Optional document URI for context
- * @param currentRuntime - Currently selected runtime (if any)
- * @returns Promise that resolves when selection is complete
+ * @param datalayer - Datalayer instance for cloud runtime access.
+ * @param authProvider - Authentication provider for login state.
+ * @param kernelBridge - Kernel bridge for connecting notebooks to kernels.
+ * @param documentUri - Optional document URI for context.
+ * @param currentRuntime - Currently selected runtime (if any).
+ *
+ * @returns Promise that resolves when selection is complete.
  */
 export async function showKernelSelector(
   datalayer: DatalayerClient,

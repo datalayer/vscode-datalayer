@@ -8,8 +8,9 @@
  * Tree data provider for the Datalayer Settings view.
  * Displays secrets and datasources in separate collapsible sections.
  *
- * @see https://code.visualstudio.com/api/extension-guides/tree-view
  * @module providers/settingsTreeProvider
+ *
+ * @see https://code.visualstudio.com/api/extension-guides/tree-view
  */
 
 import * as vscode from "vscode";
@@ -27,11 +28,6 @@ import type { DatasourceDTO } from "@datalayer/core/lib/models/Datasource";
  * Implements VS Code's TreeDataProvider interface to display secrets
  * and datasources in separate collapsible sections.
  *
- * @example
- * ```typescript
- * const provider = new SettingsTreeProvider(authProvider);
- * provider.refresh(); // Refresh entire tree
- * ```
  */
 export class SettingsTreeProvider implements vscode.TreeDataProvider<SettingsTreeItem> {
   private _onDidChangeTreeData: vscode.EventEmitter<
@@ -46,9 +42,9 @@ export class SettingsTreeProvider implements vscode.TreeDataProvider<SettingsTre
   private datasourcesCache: DatasourceDTO[] = [];
 
   /**
-   * Creates a new SettingsTreeProvider.
+   * Creates a new SettingsTreeProvider with automatic refresh on auth changes.
    *
-   * @param authProvider - Authentication provider for user state management
+   * @param authProvider - Authentication provider for user state management.
    */
   constructor(authProvider: DatalayerAuthProvider) {
     this.authService = authProvider;
@@ -69,8 +65,9 @@ export class SettingsTreeProvider implements vscode.TreeDataProvider<SettingsTre
   /**
    * Gets the tree item representation for display.
    *
-   * @param element - The tree item to convert
-   * @returns The tree item for VS Code to display
+   * @param element - The tree item to convert for display.
+   *
+   * @returns The tree item for VS Code to display.
    */
   getTreeItem(element: SettingsTreeItem): vscode.TreeItem {
     return element;
@@ -79,8 +76,9 @@ export class SettingsTreeProvider implements vscode.TreeDataProvider<SettingsTre
   /**
    * Gets the children of a tree item.
    *
-   * @param element - The parent element, or undefined for root
-   * @returns Array of secret, datasource, or section tree items
+   * @param element - The parent element, or undefined for root.
+   *
+   * @returns Array of secret, datasource, or section tree items.
    */
   async getChildren(element?: SettingsTreeItem): Promise<SettingsTreeItem[]> {
     const authState = this.authService.getAuthState();

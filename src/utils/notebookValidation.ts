@@ -9,11 +9,12 @@ import { getActiveCustomEditorUri } from "./activeDocument";
 /**
  * Checks if a URI belongs to a Datalayer custom editor notebook.
  * Datalayer notebooks can be:
- * - Local files opened with datalayer.jupyter-notebook viewType
- * - Remote files with datalayer:// scheme
+ * - Local files opened with datalayer.jupyter-notebook viewType.
+ * - Remote files with datalayer:// scheme.
  *
- * @param uri - The URI to check
- * @returns True if it's a Datalayer notebook, false otherwise
+ * @param uri - The URI to check.
+ *
+ * @returns True if it's a Datalayer notebook, false otherwise.
  */
 export function isDatalayerNotebook(uri: vscode.Uri): boolean {
   // Check for Datalayer virtual file system scheme
@@ -37,7 +38,7 @@ export function isDatalayerNotebook(uri: vscode.Uri): boolean {
  * Finds the active Datalayer notebook URI.
  * Only returns URIs that belong to Datalayer custom editor notebooks.
  *
- * @returns The URI of the active Datalayer notebook, or undefined if none found
+ * @returns The URI of the active Datalayer notebook, or undefined if none found.
  */
 export function getActiveDatalayerNotebook(): vscode.Uri | undefined {
   // Get the active custom editor URI
@@ -55,8 +56,9 @@ export function getActiveDatalayerNotebook(): vscode.Uri | undefined {
  * Validates that a notebook URI is a Datalayer custom editor notebook.
  * Throws a descriptive error if validation fails.
  *
- * @param uri - The URI to validate
- * @throws Error if the notebook is not a Datalayer custom editor notebook
+ * @param uri - The URI to validate.
+ *
+ * @throws Error if the notebook is not a Datalayer custom editor notebook.
  */
 export function validateDatalayerNotebook(uri: vscode.Uri): void {
   if (!isDatalayerNotebook(uri)) {

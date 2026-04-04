@@ -39,24 +39,6 @@
  * - startNew() - abstract, must be implemented by subclasses
  * - Single _activeSession field simplifies state management
  *
- * @example
- * ```typescript
- * // Creating a new session manager type
- * class CustomSessionManager extends BaseSessionManager {
- *   readonly managerType = 'custom' as const;
- *
- *   async startNew(options: Session.ISessionOptions): Promise<Session.ISessionConnection> {
- *     // Create kernel first
- *     const kernel = await this._kernelManager.startNew(options.kernel);
- *
- *     // Wrap in session connection
- *     const session = createSessionConnection(kernel, options);
- *     this._activeSession = session;
- *     this._runningChanged.emit([session.model]);
- *     return session;
- *   }
- * }
- * ```
  */
 
 import { Session, ServerConnection } from "@jupyterlab/services";
@@ -71,23 +53,13 @@ export type SessionManagerType = "mock" | "pyodide" | "local" | "remote";
  * Abstract base class for session manager implementations.
  *
  * Implements common Session.IManager interface methods that are identical
- * across all manager types.
+ * Across all manager types.
  *
  * This class implements the standard JupyterLab Session.IManager interface
- * for managing notebook sessions across different execution environments.
+ * For managing notebook sessions across different execution environments.
  *
  * @abstract
  *
- * @example
- * ```typescript
- * class MySessionManager extends BaseSessionManager {
- *   readonly managerType = 'custom' as const;
- *
- *   async startNew(options: Session.ISessionOptions): Promise<Session.ISessionConnection> {
- *     // Custom session creation logic
- *   }
- * }
- * ```
  */
 export abstract class BaseSessionManager implements Session.IManager {
   /**
@@ -137,7 +109,7 @@ export abstract class BaseSessionManager implements Session.IManager {
   /**
    * Creates a new session manager instance.
    *
-   * @param serverSettings - Jupyter server connection settings
+   * @param serverSettings - Jupyter server connection settings.
    */
   constructor(public serverSettings: ServerConnection.ISettings) {}
 
@@ -207,7 +179,7 @@ export abstract class BaseSessionManager implements Session.IManager {
    * For custom managers (mock, local, Pyodide), returns the current active session.
    * Remote managers should override this to query the actual Jupyter server.
    *
-   * @returns Promise resolving to array of running session models
+   * @returns Promise resolving to array of running session models.
    */
   async requestRunning(): Promise<Session.IModel[]> {
     this.log("requestRunning called");
@@ -225,8 +197,9 @@ export abstract class BaseSessionManager implements Session.IManager {
   /**
    * Find a session by ID.
    *
-   * @param id - Session identifier
-   * @returns Session model if found
+   * @param id - Session identifier.
+   *
+   * @returns Session model if found.
    */
   async findById(id: string): Promise<Session.IModel | undefined> {
     return this._activeSession?.id === id
@@ -237,8 +210,9 @@ export abstract class BaseSessionManager implements Session.IManager {
   /**
    * Find a session by path.
    *
-   * @param path - Notebook path
-   * @returns Session model if found
+   * @param path - Notebook path.
+   *
+   * @returns Session model if found.
    */
   async findByPath(path: string): Promise<Session.IModel | undefined> {
     return this._activeSession?.path === path
@@ -249,8 +223,9 @@ export abstract class BaseSessionManager implements Session.IManager {
   /**
    * Get session model by ID.
    *
-   * @param id - Session identifier
-   * @returns Session model or undefined
+   * @param id - Session identifier.
+   *
+   * @returns Session model or undefined.
    */
   getModel(id: string): Session.IModel | undefined {
     return this._activeSession?.id === id
@@ -261,7 +236,7 @@ export abstract class BaseSessionManager implements Session.IManager {
   /**
    * Shut down a specific session by ID.
    *
-   * @param id - Session identifier
+   * @param id - Session identifier.
    */
   async shutdown(id: string): Promise<void> {
     this.log(`shutdown called for session: ${id}`);
@@ -291,7 +266,7 @@ export abstract class BaseSessionManager implements Session.IManager {
   /**
    * Stop session if needed (for compatibility).
    *
-   * @param path - Notebook path
+   * @param path - Notebook path.
    */
   async stopIfNeeded(path: string): Promise<void> {
     if (this._activeSession?.path === path) {
@@ -329,8 +304,8 @@ export abstract class BaseSessionManager implements Session.IManager {
   /**
    * Unified logging helper.
    *
-   * @param _message - Log message (unused - logging disabled)
-   * @param _args - Additional arguments (unused - logging disabled)
+   * @param _message - Log message (unused - logging disabled).
+   * @param _args - Additional arguments (unused - logging disabled).
    */
   protected log(_message: string, ..._args: unknown[]): void {
     // Logging disabled to reduce console clutter
@@ -339,8 +314,9 @@ export abstract class BaseSessionManager implements Session.IManager {
   /**
    * Validate that a session with the given ID exists.
    *
-   * @param id - Session ID to validate
-   * @throws {Error} If no active session or ID doesn't match
+   * @param id - Session ID to validate.
+   *
+   * @throws If no active session or ID doesn't match.
    */
   protected validateSessionId(id: string): void {
     if (!this._activeSession) {
@@ -357,8 +333,9 @@ export abstract class BaseSessionManager implements Session.IManager {
    * Start a new session.
    * Must be implemented by subclasses.
    *
-   * @param options - Session creation options
-   * @returns Promise resolving to the new session connection
+   * @param options - Session creation options.
+   *
+   * @returns Promise resolving to the new session connection.
    */
   abstract startNew(
     options: Session.ISessionOptions,
@@ -371,8 +348,11 @@ export abstract class BaseSessionManager implements Session.IManager {
   /**
    * Connect to an existing session.
    *
-   * @param _options - Connection options (unused in base implementation)
-   * @returns Session connection
+   * @param _options - Connection options (unused in base implementation).
+   *
+   * @returns Session connection.
+   *
+   * @throws If no active session exists and startNew must be used instead.
    */
   connectTo(
     _options: Session.ISessionConnection.IOptions,

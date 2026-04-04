@@ -56,6 +56,7 @@ export interface ILogger {
    * @param operation - Name of the operation being timed
    * @param fn - Async function to execute and time
    * @param context - Optional context information
+   *
    * @returns Promise that resolves with the function result
    */
   timeAsync<T>(

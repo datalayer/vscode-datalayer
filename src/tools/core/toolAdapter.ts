@@ -45,7 +45,11 @@ export class VSCodeToolAdapter<
   ) {}
 
   /**
-   * Prepares the tool invocation with user-facing messages
+   * Prepares the tool invocation with user-facing messages.
+   * @param options - Invocation preparation options with input parameters.
+   * @param _token - Cancellation token (unused).
+   *
+   * @returns Invocation message and confirmation details.
    */
   async prepareInvocation(
     options: vscode.LanguageModelToolInvocationPrepareOptions<TParams>,
@@ -77,7 +81,11 @@ export class VSCodeToolAdapter<
   }
 
   /**
-   * Executes the tool by delegating to the core operation
+   * Executes the tool by delegating to the core operation.
+   * @param options - Invocation options containing input parameters.
+   * @param _token - Cancellation token (unused).
+   *
+   * @returns Tool result formatted for VS Code language model.
    */
   async invoke(
     options: vscode.LanguageModelToolInvocationOptions<TParams>,
@@ -132,7 +140,10 @@ export class VSCodeToolAdapter<
   }
 
   /**
-   * Builds the execution context for the operation
+   * Builds the execution context for the operation.
+   * @param params - Tool input parameters for context resolution.
+   *
+   * @returns Execution context with document ID, format, and extras.
    */
   private async buildExecutionContext(
     params: TParams,
@@ -197,7 +208,8 @@ export class VSCodeToolAdapter<
   }
 
   /**
-   * Builds extras for create operations (createNotebook, createLexical) with VS Code-specific logic
+   * Builds extras for create operations (createNotebook, createLexical) with VS Code-specific logic.
+   * @returns Extras map with Datalayer client, auth, and document creation callbacks.
    */
   private buildCreateDocumentExtras(): Record<string, unknown> {
     const services = getServiceContainer();
@@ -281,7 +293,8 @@ export class VSCodeToolAdapter<
   }
 
   /**
-   * Builds default extras for non-createNotebook tools
+   * Builds default extras for non-createNotebook tools.
+   * @returns Extras map with Datalayer client, auth, and runtime settings.
    */
   private buildDefaultExtras(): Record<string, unknown> {
     const services = getServiceContainer();
@@ -324,8 +337,12 @@ export class VSCodeToolAdapter<
   }
 
   /**
-   * Prompts user to choose notebook location when intent is ambiguous
-   * (VS Code-specific UI)
+   * Prompts user to choose notebook location when intent is ambiguous (VS Code-specific UI).
+   * @param spaceName - Optional space name to show in cloud option description.
+   *
+   * @returns Selected location or undefined if cancelled.
+   *
+   * @throws Error if neither workspace nor authentication is available.
    */
   private async promptForLocation(
     spaceName?: string,
@@ -375,12 +392,9 @@ export class VSCodeToolAdapter<
   }
 
   /**
-   * Opens a created notebook in the editor (VS Code-specific post-execution)
-   */
-  /**
-   * Open a notebook document in the editor
-   * Handles both local (file://) and cloud (datalayer://) schemes
-   * Always uses the Datalayer notebook editor
+   * Opens a notebook document in the Datalayer custom editor.
+   * Handles both local (file://) and cloud (datalayer://) schemes.
+   * @param uriString - URI string of the notebook to open.
    */
   private async openNotebook(uriString: string): Promise<void> {
     const uri = vscode.Uri.parse(uriString);
@@ -394,7 +408,12 @@ export class VSCodeToolAdapter<
   }
 
   /**
-   * Resolves notebook ID from parameters or active editor
+   * Resolves notebook ID from parameters or active editor with retry logic.
+   * @param params - Tool parameters potentially containing notebook_uri.
+   *
+   * @returns Resolved notebook ID or URI string.
+   *
+   * @throws Error if no active Datalayer notebook is found after retries.
    */
   private async resolveNotebookId(params: TParams): Promise<string> {
     // Try to get URI from parameters (with retry logic for async notebook initialization)
@@ -443,7 +462,12 @@ export class VSCodeToolAdapter<
   }
 
   /**
-   * Resolves Lexical document ID from parameters or active editor
+   * Resolves Lexical document ID from parameters or active editor.
+   * @param params - Tool parameters potentially containing documentUri.
+   *
+   * @returns Resolved lexical document ID or URI string.
+   *
+   * @throws Error if no active Lexical document is found.
    */
   private async resolveLexicalId(params: TParams): Promise<string> {
     // Try to get URI from parameters
@@ -499,7 +523,10 @@ export class VSCodeToolAdapter<
   }
 
   /**
-   * Formats operation result for VS Code
+   * Formats operation result for VS Code language model consumption.
+   * @param result - Raw operation result to format.
+   *
+   * @returns Language model tool result with formatted text.
    */
   private formatResult(result: unknown): vscode.LanguageModelToolResult {
     // Convert result to user-friendly string
@@ -531,8 +558,14 @@ export class VSCodeToolAdapter<
   }
 
   /**
-   * Executes operation by sending message to active webview
-   * Uses the Runner pattern: extension → webview message → DefaultExecutor
+   * Executes operation by sending message to active webview.
+   * Uses the Runner pattern: extension -> webview message -> DefaultExecutor.
+   * @param operationName - Name of the operation to execute in the webview.
+   * @param args - Arguments to pass to the operation.
+   *
+   * @returns Promise resolving to the operation result from the webview.
+   *
+   * @throws Error if no active webview is found or operation times out.
    */
   private async executeVSCodeCommand<T>(
     operationName: string,
@@ -612,7 +645,12 @@ export class VSCodeToolAdapter<
   }
 
   /**
-   * Resolves a message by calling the message function with params
+   * Resolves a message by calling the message function with params or using the fallback.
+   * @param messageFn - Optional function that generates a message from params.
+   * @param params - Tool input parameters to pass to the message function.
+   * @param fallback - Default message if messageFn is undefined.
+   *
+   * @returns Resolved message string.
    */
   private resolveMessage(
     messageFn: ((params: TParams) => string) | undefined,

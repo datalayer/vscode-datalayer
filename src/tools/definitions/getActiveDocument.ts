@@ -17,6 +17,7 @@
 
 import type { ToolDefinition } from "@datalayer/jupyter-react";
 
+/** Tool definition for retrieving the active document URI and metadata. */
 export const getActiveDocumentTool: ToolDefinition = {
   name: "datalayer_getActiveDocument",
   displayName: "Get Active Document",

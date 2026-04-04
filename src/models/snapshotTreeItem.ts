@@ -19,18 +19,12 @@ import { formatRelativeTime } from "../utils/dateFormatter";
  * Tree item for displaying a snapshot in the VS Code tree view.
  * Shows snapshot details with appropriate icons and formatting.
  *
- * @example
- * ```typescript
- * const item = new SnapshotTreeItem(snapshot);
- * // Displays: "my-checkpoint"
- * // Description: "Python 3.11 • 2 days ago"
- * ```
  */
 export class SnapshotTreeItem extends vscode.TreeItem {
   /**
-   * Creates a new SnapshotTreeItem.
+   * Creates a new SnapshotTreeItem with environment and age display.
    *
-   * @param snapshot - The RuntimeSnapshotDTO instance to display
+   * @param snapshot - The RuntimeSnapshotDTO instance containing snapshot details.
    */
   constructor(public readonly snapshot: RuntimeSnapshotDTO) {
     super(snapshot.name, vscode.TreeItemCollapsibleState.None);
@@ -57,9 +51,9 @@ export class SnapshotTreeItem extends vscode.TreeItem {
   }
 
   /**
-   * Calculates and formats the time since snapshot was created.
+   * Calculates and formats the time elapsed since the snapshot was created.
    *
-   * @returns Formatted string like "2 days ago" or "5 hours ago"
+   * @returns Formatted relative time string like "2 days ago" or "5 hours ago".
    */
   private getTimeAgo(): string {
     const snapshotData = this.snapshot.toJSON();

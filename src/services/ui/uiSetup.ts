@@ -47,16 +47,12 @@ export interface ExtensionUI {
  * Initializes all UI components for the extension.
  * Registers providers, creates tree views, and sets up the status bar.
  *
- * @param context - VS Code extension context
- * @param authProvider - Authentication provider instance
- * @param datalayer - Datalayer instance
- * @returns Container with all initialized UI components
+ * @param context - VS Code extension context.
+ * @param authProvider - Authentication provider instance.
+ * @param datalayer - Datalayer instance.
  *
- * @example
- * ```typescript
- * const ui = await initializeUI(context, authProvider, datalayer);
- * // UI components are registered and ready
- * ```
+ * @returns Container with all initialized UI components.
+ *
  */
 export async function initializeUI(
   context: vscode.ExtensionContext,

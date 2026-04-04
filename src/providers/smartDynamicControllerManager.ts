@@ -23,6 +23,7 @@ import { promptAndLogin } from "../ui/dialogs/authDialog";
 
 /**
  * Manages notebook controllers with a main selector and runtime-specific controllers.
+ *
  */
 export class SmartDynamicControllerManager implements vscode.Disposable {
   /** VS Code extension context for accessing API and managing subscriptions */
@@ -66,9 +67,9 @@ export class SmartDynamicControllerManager implements vscode.Disposable {
 
   /**
    * Creates a new SmartDynamicControllerManager instance.
-   * @param context VS Code extension context for managing subscriptions
-   * @param datalayer Datalayer client for API communication
-   * @param authProvider Authentication provider for managing user login state
+   * @param context - VS Code extension context for managing subscriptions.
+   * @param datalayer - Datalayer client for API communication.
+   * @param authProvider - Authentication provider for managing user login state.
    */
   constructor(
     context: vscode.ExtensionContext,
@@ -116,11 +117,12 @@ export class SmartDynamicControllerManager implements vscode.Disposable {
   }
 
   /**
-   * Get a controller by ID.
+   * Gets a controller by ID.
    * Used by DatalayerRuntimeSelector to access controllers for QuickPick display.
    *
-   * @param controllerId - Controller ID to retrieve
-   * @returns The controller or undefined if not found
+   * @param controllerId - Controller ID to retrieve.
+   *
+   * @returns The controller or undefined if not found.
    */
   public getController(
     controllerId: string,
@@ -130,6 +132,9 @@ export class SmartDynamicControllerManager implements vscode.Disposable {
 
   /**
    * Creates or gets a runtime-specific controller.
+   * @param runtime - Runtime DTO to create or retrieve a controller for.
+   *
+   * @returns The notebook controller for the runtime, or undefined.
    */
   public async ensureRuntimeController(
     runtime: RuntimeDTO,
@@ -208,10 +213,10 @@ export class SmartDynamicControllerManager implements vscode.Disposable {
 
   /**
    * Executes cells with the specified runtime.
-   * @param cells - Cells to execute
-   * @param notebook - The notebook document
-   * @param runtime - The runtime to use
-   * @param executingController - The controller that is actually executing (might be Platform or Runtime controller)
+   * @param cells - Notebook cells to execute.
+   * @param notebook - The notebook document containing the cells.
+   * @param runtime - The Datalayer runtime to execute against.
+   * @param executingController - The controller performing execution, which may differ from the runtime controller.
    */
   private async executeCells(
     cells: vscode.NotebookCell[],
@@ -264,6 +269,9 @@ export class SmartDynamicControllerManager implements vscode.Disposable {
 
   /**
    * Executes a single cell via WebSocket.
+   * @param cell - Notebook cell to execute.
+   * @param kernelClient - WebSocket client for kernel communication.
+   * @param controller - Controller used for creating cell executions.
    */
   private async executeCell(
     cell: vscode.NotebookCell,
@@ -338,9 +346,9 @@ export class SmartDynamicControllerManager implements vscode.Disposable {
    * Executes cells using Pyodide kernel (browser-based Python).
    * Creates kernel on-demand and reuses it for the notebook lifetime.
    *
-   * @param cells - Cells to execute
-   * @param notebook - Notebook document
-   * @param controller - Pyodide controller
+   * @param cells - Notebook cells to execute.
+   * @param notebook - Notebook document containing the cells.
+   * @param controller - Pyodide controller for execution management.
    */
   private async executePyodideCells(
     cells: vscode.NotebookCell[],
@@ -397,8 +405,9 @@ export class SmartDynamicControllerManager implements vscode.Disposable {
 
   /**
    * Gets the unique controller ID for a specific runtime.
-   * @param runtime The runtime DTO to get the controller ID for
-   * @returns The unique controller identifier string
+   * @param runtime - The runtime DTO to derive the controller ID from.
+   *
+   * @returns The unique controller identifier string.
    */
   private getRuntimeControllerId(runtime: RuntimeDTO): string {
     return `datalayer-runtime-${runtime.uid}`;
@@ -407,7 +416,7 @@ export class SmartDynamicControllerManager implements vscode.Disposable {
   /**
    * Selects or switches a runtime for a specific notebook.
    * This can be called anytime to select or switch runtimes.
-   * @param notebook - The notebook to select runtime for
+   * @param notebook - The notebook to select a runtime for.
    */
   public async selectRuntimeForNotebook(
     notebook: vscode.NotebookDocument,
@@ -458,7 +467,8 @@ export class SmartDynamicControllerManager implements vscode.Disposable {
   }
 
   /**
-   * Cleans up on notebook close.
+   * Cleans up resources when a notebook is closed.
+   * @param notebook - The notebook document being closed.
    */
   public onDidCloseNotebook(notebook: vscode.NotebookDocument): void {
     const notebookUri = notebook.uri.toString();

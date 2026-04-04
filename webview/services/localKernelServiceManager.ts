@@ -6,10 +6,10 @@
 
 /**
  * Custom ServiceManager for local kernels that returns LocalKernelConnection
- * instead of going through the standard Jupyter server session flow.
+ * Instead of going through the standard Jupyter server session flow.
  *
  * This bypasses the HTTP/WebSocket API entirely and provides a pre-connected
- * kernel directly to JupyterLab components.
+ * Kernel directly to JupyterLab components.
  *
  * @module localKernelServiceManager
  */
@@ -48,6 +48,10 @@ class LocalKernelManager extends BaseKernelManager {
   /**
    * Start a new local kernel connection.
    * Creates LocalKernelConnection with direct ZMQ communication to VS Code.
+   * @param _options - Partial kernel options (unused for local).
+   * @param _connectOptions - Connection options (unused for local).
+   *
+   * @returns Promise resolving to local kernel connection.
    */
   async startNew(
     _options?: Partial<Pick<Kernel.IModel, "name">>,
@@ -82,6 +86,11 @@ class LocalKernelManager extends BaseKernelManager {
   /**
    * Connect to existing kernel.
    * For local kernels, returns active kernel or throws.
+   * @param _options - Kernel connection options (unused).
+   *
+   * @returns The active kernel connection.
+   *
+   * @throws If no active kernel exists and startNew must be used instead.
    */
   override connectTo(
     _options: Kernel.IKernelConnection.IOptions,
@@ -115,6 +124,10 @@ class LocalSessionManager extends BaseSessionManager {
   /**
    * Start a new local session with LocalKernelConnection.
    * Creates a session that wraps our direct ZMQ kernel connection.
+   * @param options - Session creation options (name, path, type).
+   * @param _connectOptions - Connection options (unused for local).
+   *
+   * @returns Promise resolving to session with local kernel.
    */
   async startNew(
     options: Session.ISessionOptions,
@@ -232,7 +245,12 @@ class LocalSessionManager extends BaseSessionManager {
 /**
  * Create a minimal ServiceManager for local kernels.
  * This service manager returns LocalKernelConnection when sessions are created,
- * bypassing the standard Jupyter server HTTP/WebSocket flow.
+ * Bypassing the standard Jupyter server HTTP/WebSocket flow.
+ * @param kernelId - Unique identifier for the local kernel.
+ * @param kernelName - Display name of the kernel spec.
+ * @param url - Base URL for kernel connection endpoints.
+ *
+ * @returns ServiceManager configured for local kernel communication.
  */
 export function createLocalKernelServiceManager(
   kernelId: string,

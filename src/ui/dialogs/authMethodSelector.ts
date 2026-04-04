@@ -26,24 +26,15 @@ interface AuthMethodQuickPickItem extends vscode.QuickPickItem {
 }
 
 /**
- * Show authentication method selection dialog.
+ * Shows the authentication method selection dialog.
  *
  * Presents user with three authentication options:
- * - Handle/Password credentials
- * - GitHub OAuth
- * - LinkedIn OAuth
+ * - Handle/Password credentials.
+ * - GitHub OAuth.
+ * - LinkedIn OAuth.
  *
- * @returns Selected authentication method, or undefined if cancelled
+ * @returns Selected authentication method, or undefined if cancelled.
  *
- * @example
- * ```typescript
- * const method = await showAuthMethodPicker();
- * if (method === 'email-password') {
- *   // Handle credentials login
- * } else if (method) {
- *   // Handle OAuth login
- * }
- * ```
  */
 export async function showAuthMethodPicker(): Promise<AuthMethod | undefined> {
   const items: AuthMethodQuickPickItem[] = [

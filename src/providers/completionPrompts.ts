@@ -34,20 +34,12 @@ export interface ProseCompletionVars {
 }
 
 /**
- * Generate prompt for code completions.
- * Focuses on completing code at cursor position.
+ * Generates a prompt for code completions at the cursor position.
  *
- * @param vars - Code context variables
- * @returns Formatted prompt string
+ * @param vars - Code context variables including language and surrounding code.
  *
- * @example
- * ```typescript
- * const prompt = getCodeCompletionPrompt({
- *   language: 'python',
- *   prefix: 'def calculate_sum(a, b):\n    ',
- *   suffix: '\n    return result'
- * });
- * ```
+ * @returns Formatted prompt string for the language model.
+ *
  */
 export function getCodeCompletionPrompt(vars: CodeCompletionVars): string {
   return `Complete the following ${vars.language} code. Only return the completion, no explanations or markdown.
@@ -60,19 +52,13 @@ Complete the code at <CURSOR>:`;
 }
 
 /**
- * Generate prompt for prose/writing completions.
- * Focuses on natural language continuation.
+ * Generates a prompt for prose and writing completions.
+ * Focuses on natural language continuation matching the existing tone and style.
  *
- * @param vars - Prose context variables
- * @returns Formatted prompt string
+ * @param vars - Prose context variables including surrounding text.
  *
- * @example
- * ```typescript
- * const prompt = getProseCompletionPrompt({
- *   prefix: 'The main objective of this research is to',
- *   suffix: 'using machine learning techniques.'
- * });
- * ```
+ * @returns Formatted prompt string for the language model.
+ *
  */
 export function getProseCompletionPrompt(vars: ProseCompletionVars): string {
   return `You are a writing assistant. Continue the following text naturally at <CURSOR>.
@@ -90,11 +76,16 @@ Suggested completion:`;
 }
 
 /**
- * Get appropriate prompt based on content type.
+ * Selects and generates the appropriate prompt based on content type.
  *
- * @param contentType - 'code' or 'prose'
- * @param vars - Context variables (language for code, prefix/suffix for both)
- * @returns Formatted prompt string
+ * @param contentType - Whether to generate a code or prose completion prompt.
+ * @param vars - Context variables including optional language and surrounding text.
+ * @param vars.language - Programming language for code completions.
+ * @param vars.prefix - Text before the cursor position.
+ * @param vars.suffix - Text after the cursor position.
+ *
+ * @returns Formatted prompt string for the language model.
+ *
  */
 export function getPromptForContentType(
   contentType: "code" | "prose",

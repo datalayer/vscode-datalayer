@@ -32,18 +32,10 @@ export type RuntimeSelectCallback = (runtime: RuntimeJSON | undefined) => void;
 export type KernelInitializingCallback = (isInitializing: boolean) => void;
 
 /**
- * Handler for kernel-starting messages.
- * Signals that kernel initialization has started (before kernel is created).
+ * Handles kernel-starting messages by setting the initialization flag to true before the kernel is created.
+ * @param _message - The kernel-starting message from the extension.
+ * @param setKernelInitializing - Callback to update the initialization state.
  *
- * @param _message - The kernel-starting message from extension
- * @param setKernelInitializing - Callback to update initialization state
- *
- * @example
- * ```typescript
- * case "kernel-starting":
- *   handleKernelStarting(message, setKernelInitializing);
- *   break;
- * ```
  */
 export function handleKernelStarting(
   _message: KernelStartingMessage,
@@ -53,26 +45,12 @@ export function handleKernelStarting(
 }
 
 /**
- * Handler for kernel-selected and runtime-selected messages.
- * Extracts runtime from message and calls the selection callback.
+ * Handles kernel-selected and runtime-selected messages by extracting the runtime, updating state, and managing spinner visibility per runtime type.
+ * @param message - The kernel or runtime selected message from the extension.
+ * @param selectRuntime - Callback to update runtime state from useRuntimeManager.
+ * @param updateStore - Optional callback to update editor-specific store.
+ * @param setKernelInitializing - Optional callback to clear the initialization state.
  *
- * For Pyodide and Datalayer cloud runtimes, the spinner is kept visible
- * until the kernel monitoring code detects the kernel is ready (status='idle').
- * For local/remote kernels, the spinner is cleared immediately since they're
- * ready as soon as they're selected.
- *
- * @param message - The kernel/runtime selected message from extension
- * @param selectRuntime - Callback to update runtime state (from useRuntimeManager)
- * @param updateStore - Optional callback to update editor-specific store
- * @param setKernelInitializing - Optional callback to clear initialization state
- *
- * @example
- * ```typescript
- * case "kernel-selected":
- * case "runtime-selected":
- *   handleRuntimeSelected(message, selectRuntime, (rt) => store.getState().setRuntime(rt), setKernelInitializing);
- *   break;
- * ```
  */
 export function handleRuntimeSelected(
   message: KernelSelectedMessage | RuntimeSelectedMessage,
@@ -103,24 +81,10 @@ export function handleRuntimeSelected(
 }
 
 /**
- * Handler for kernel-terminated and runtime-terminated messages.
- * Clears the current runtime immediately to ensure cleanup.
+ * Handles kernel-terminated and runtime-terminated messages by clearing the runtime immediately to stop further operations.
+ * @param selectRuntime - Callback to update runtime state from useRuntimeManager.
+ * @param updateStore - Optional callback to update editor-specific store.
  *
- * IMPORTANT: For Datalayer runtimes, this terminates the runtime on the server,
- * which causes the kernel URLs to become inaccessible. The jupyter-react Output
- * components will show CORS errors as they try to disconnect - this is expected
- * and unavoidable. The errors are harmless and will stop once cleanup completes.
- *
- * @param selectRuntime - Callback to update runtime state (from useRuntimeManager)
- * @param updateStore - Optional callback to update editor-specific store
- *
- * @example
- * ```typescript
- * case "kernel-terminated":
- * case "runtime-terminated":
- *   handleRuntimeTerminated(selectRuntime, (rt) => store.getState().setRuntime(rt));
- *   break;
- * ```
  */
 export function handleRuntimeTerminated(
   selectRuntime: RuntimeSelectCallback,
@@ -138,19 +102,11 @@ export function handleRuntimeTerminated(
 }
 
 /**
- * Handler for runtime-expired messages.
- * Resets to mock service manager with a small delay.
+ * Handles runtime-expired messages by resetting to mock service manager after a small delay.
+ * @param selectRuntime - Callback to update runtime state from useRuntimeManager.
+ * @param updateStore - Optional callback to update editor-specific store.
+ * @param delay - Delay in milliseconds before clearing the runtime.
  *
- * @param selectRuntime - Callback to update runtime state (from useRuntimeManager)
- * @param updateStore - Optional callback to update editor-specific store
- * @param delay - Delay in ms before clearing runtime (default: 100ms)
- *
- * @example
- * ```typescript
- * case "runtime-expired":
- *   handleRuntimeExpired(selectRuntime, (rt) => store.getState().setRuntime(rt));
- *   break;
- * ```
  */
 export function handleRuntimeExpired(
   selectRuntime: RuntimeSelectCallback,
@@ -164,29 +120,21 @@ export function handleRuntimeExpired(
 }
 
 /**
- * Extended runtime type with credits information (for local Jupyter servers)
+ * Extended runtime type with credits information for local Jupyter servers.
  */
 export interface RuntimeWithCredits extends RuntimeJSON {
-  /** Number of credits used */
+  /** Number of credits consumed by the runtime. */
   creditsUsed?: number;
-  /** Credit limit */
+  /** Maximum number of credits available for the runtime. */
   creditsLimit?: number;
 }
 
 /**
- * Handler for set-runtime messages (from local Jupyter server).
- * Creates a RuntimeJSON object from base URL and token.
+ * Handles set-runtime messages from a local Jupyter server by creating a RuntimeJSON object.
+ * @param message - The set-runtime message containing server base URL and token.
+ * @param selectRuntime - Callback to update runtime state from useRuntimeManager.
+ * @param updateStore - Optional callback to update editor-specific store.
  *
- * @param message - The set-runtime message from extension
- * @param selectRuntime - Callback to update runtime state (from useRuntimeManager)
- * @param updateStore - Optional callback to update editor-specific store
- *
- * @example
- * ```typescript
- * case "set-runtime":
- *   handleSetRuntime(message, selectRuntime, (rt) => store.getState().setRuntime(rt));
- *   break;
- * ```
  */
 export function handleSetRuntime(
   message: SetRuntimeMessage,
@@ -216,38 +164,13 @@ export function handleSetRuntime(
 }
 
 /**
- * Create a unified message handler for all runtime-related messages.
- * Returns a function that can be used in a switch statement.
+ * Creates a unified message handler object for all runtime-related messages, suitable for use in a switch statement.
+ * @param selectRuntime - Callback from useRuntimeManager to update the active runtime.
+ * @param setKernelInitializing - Callback to update the kernel initialization state.
+ * @param updateStore - Optional callback to update editor-specific store.
  *
- * @param selectRuntime - Callback from useRuntimeManager
- * @param setKernelInitializing - Callback to update kernel initialization state
- * @param updateStore - Optional store update callback
- * @returns Object with handler methods for each message type
+ * @returns Object with handler methods for each runtime message type.
  *
- * @example
- * ```typescript
- * const runtimeHandlers = createRuntimeMessageHandlers(
- *   selectRuntime,
- *   setKernelInitializing,
- *   (rt) => store.getState().setRuntime(rt)
- * );
- *
- * // In message handler:
- * switch (message.type) {
- *   case "kernel-starting":
- *     runtimeHandlers.onKernelStarting(message);
- *     break;
- *   case "kernel-selected":
- *   case "runtime-selected":
- *     runtimeHandlers.onRuntimeSelected(message);
- *     break;
- *   case "kernel-terminated":
- *   case "runtime-terminated":
- *     runtimeHandlers.onRuntimeTerminated();
- *     break;
- *   // ... etc
- * }
- * ```
  */
 export function createRuntimeMessageHandlers(
   selectRuntime: RuntimeSelectCallback,
@@ -255,11 +178,21 @@ export function createRuntimeMessageHandlers(
   updateStore?: RuntimeSelectCallback,
 ) {
   return {
-    /** Handler for kernel-starting messages */
+    /**
+     * Delegates kernel-starting messages to set the initialization flag.
+     * @param message - The kernel-starting message from the extension.
+     *
+     * @returns Nothing.
+     */
     onKernelStarting: (message: KernelStartingMessage) =>
       handleKernelStarting(message, setKernelInitializing),
 
-    /** Handler for kernel-selected and runtime-selected messages */
+    /**
+     * Delegates kernel-selected and runtime-selected messages to update the active runtime.
+     * @param message - The kernel or runtime selected message.
+     *
+     * @returns Nothing.
+     */
     onRuntimeSelected: (
       message: KernelSelectedMessage | RuntimeSelectedMessage,
     ) =>
@@ -270,14 +203,23 @@ export function createRuntimeMessageHandlers(
         setKernelInitializing,
       ),
 
-    /** Handler for kernel-terminated and runtime-terminated messages */
+    /** Delegates kernel-terminated and runtime-terminated messages to clear runtime state.
+     * @returns Nothing.
+     */
     onRuntimeTerminated: () =>
       handleRuntimeTerminated(selectRuntime, updateStore),
 
-    /** Handler for runtime-expired messages */
+    /** Delegates runtime-expired messages to reset to mock service manager.
+     * @returns Nothing.
+     */
     onRuntimeExpired: () => handleRuntimeExpired(selectRuntime, updateStore),
 
-    /** Handler for set-runtime messages from local Jupyter server */
+    /**
+     * Delegates set-runtime messages to configure a local Jupyter server connection.
+     * @param message - The set-runtime message with server URL and token.
+     *
+     * @returns Nothing.
+     */
     onSetRuntime: (message: SetRuntimeMessage) =>
       handleSetRuntime(message, selectRuntime, updateStore),
   };

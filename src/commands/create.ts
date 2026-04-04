@@ -8,8 +8,9 @@
  * Simple document creation commands for local notebooks and lexical documents.
  * These commands just create local untitled files in the workspace.
  *
- * @see https://code.visualstudio.com/api/extension-guides/command
  * @module commands/create
+ *
+ * @see https://code.visualstudio.com/api/extension-guides/command
  *
  * @remarks
  * For creating documents in Datalayer Spaces, use the existing commands:
@@ -20,9 +21,10 @@
 import * as vscode from "vscode";
 
 /**
- * Registers simple create commands for local document creation.
+ * Registers simple create commands for local notebook and lexical document creation.
  *
- * @param context - Extension context for command subscriptions
+ * @param context - Extension context for command subscriptions.
+ *
  */
 export function registerCreateCommands(context: vscode.ExtensionContext): void {
   /**

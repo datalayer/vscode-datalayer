@@ -20,7 +20,7 @@ import type {
 } from "@datalayer/core/lib/models/RuntimeDTO";
 
 /**
- * Jupyter message structure according to the protocol.
+ * Jupyter message structure according to the wire protocol specification.
  */
 export interface JupyterMessage {
   /** Message header containing protocol metadata */
@@ -51,7 +51,7 @@ export interface JupyterMessage {
 }
 
 /**
- * Execution result from kernel.
+ * Execution result containing outputs and status from kernel code execution.
  */
 export interface ExecutionResult {
   /** Array of outputs produced during execution */
@@ -61,7 +61,7 @@ export interface ExecutionResult {
 }
 
 /**
- * Output from code execution.
+ * Individual output item from code execution including streams, results, and errors.
  */
 export interface ExecutionOutput {
   /** Type of output produced */
@@ -83,6 +83,7 @@ export interface ExecutionOutput {
 /**
  * WebSocket-based kernel client for Jupyter protocol communication.
  * Handles connection, execution, and message processing for native notebooks.
+ *
  */
 export class WebSocketKernelClient {
   /** WebSocket connection instance */
@@ -111,9 +112,9 @@ export class WebSocketKernelClient {
   >();
 
   /**
-   * Creates a new WebSocketKernelClient.
+   * Creates a new WebSocketKernelClient for communicating with a Jupyter kernel.
    *
-   * @param runtime - The Datalayer runtime to connect to
+   * @param runtime - The Datalayer runtime configuration to connect to.
    */
   constructor(
     runtime: RuntimeDTO | RuntimeJSON,
@@ -140,9 +141,9 @@ export class WebSocketKernelClient {
   }
 
   /**
-   * Connects to the kernel via WebSocket.
+   * Connects to the kernel via WebSocket using the runtime ingress URL.
    *
-   * @returns Promise that resolves when connected
+   * @returns Promise that resolves when the connection is established.
    */
   public async connect(): Promise<void> {
     if (this._connected || this._connecting) {
@@ -265,6 +266,7 @@ export class WebSocketKernelClient {
 
   /**
    * Gets the WebSocket URL for kernel communication.
+   * @returns Fully constructed WebSocket URL with kernel ID and session ID.
    */
   private getWebSocketUrl(): string {
     const baseUrl = this._runtime
@@ -285,6 +287,7 @@ export class WebSocketKernelClient {
 
   /**
    * Handles WebSocket message event.
+   * @param data - Raw WebSocket message data to parse and route.
    */
   private onMessage(data: unknown): void {
     try {
@@ -358,6 +361,7 @@ export class WebSocketKernelClient {
 
   /**
    * Handles WebSocket error event.
+   * @param error - WebSocket error to propagate to all pending requests.
    */
   private onError(error: Error): void {
     // Reject all pending requests
@@ -381,7 +385,11 @@ export class WebSocketKernelClient {
   }
 
   /**
-   * Creates a Jupyter message.
+   * Creates a Jupyter protocol message with proper headers and session information.
+   * @param msgType - Jupyter message type such as execute_request.
+   * @param content - Message content payload to include.
+   *
+   * @returns Formatted Jupyter protocol message ready for sending.
    */
   private createMessage(msgType: string, content: unknown): JupyterMessage {
     const msgId = uuidv4();
@@ -404,6 +412,9 @@ export class WebSocketKernelClient {
 
   /**
    * Sends a message over WebSocket.
+   * @param msg - Jupyter message to serialize and send.
+   *
+   * @throws If the WebSocket is not connected.
    */
   private sendMessage(msg: JupyterMessage): void {
     if (!this._ws || this._ws.readyState !== WebSocket.OPEN) {
@@ -414,10 +425,11 @@ export class WebSocketKernelClient {
   }
 
   /**
-   * Executes code in the kernel.
+   * Executes code in the kernel and collects all outputs.
    *
-   * @param code - Code to execute
-   * @returns Execution result with outputs
+   * @param code - Python code string to execute.
+   *
+   * @returns Execution result containing outputs and success status.
    */
   public async execute(code: string): Promise<ExecutionResult> {
     if (!this._connected) {

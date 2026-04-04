@@ -17,7 +17,7 @@ import { AwarenessAdapter } from "./awarenessAdapter";
 import { vsCodeAPI, MessageHandler, Disposable } from "../messageHandler";
 
 /**
- * Message types for extension communication
+ * Message types for extension communication.
  */
 export interface LoroMessage {
   type: "connect" | "disconnect" | "message" | "status" | "error";
@@ -26,7 +26,7 @@ export interface LoroMessage {
 }
 
 /**
- * WebSocket message protocol for Loro synchronization
+ * WebSocket message protocol for Loro synchronization.
  */
 export interface WebSocketMessage {
   type: "update" | "ephemeral" | "query-snapshot" | "query-ephemeral";
@@ -69,12 +69,12 @@ export class VSCodeLoroProvider implements Provider {
   private documentId: string;
 
   /**
-   * Creates a new VS Code Loro provider instance
-   * @param adapterId - Unique adapter identifier for this provider
-   * @param doc - Loro document instance for CRDT operations
-   * @param userName - Username for awareness state
-   * @param userColor - User's display color for awareness presence
-   * @param websocketUrl - Optional WebSocket URL for server connection
+   * Creates a new VS Code Loro provider instance.
+   * @param adapterId - Unique adapter identifier for this provider.
+   * @param doc - Loro document instance for CRDT operations.
+   * @param userName - Username for awareness state.
+   * @param userColor - User's display color for awareness presence.
+   * @param websocketUrl - Optional WebSocket URL for server connection.
    */
   constructor(
     adapterId: string,
@@ -137,14 +137,14 @@ export class VSCodeLoroProvider implements Provider {
   }
 
   /**
-   * Get the awareness provider
+   * Get the awareness provider.
    */
   get awareness(): AwarenessProvider {
     return this._awareness;
   }
 
   /**
-   * Connect to the collaboration server
+   * Connect to the collaboration server.
    */
   connect(): void {
     // Re-register message handler if it was disposed
@@ -164,7 +164,7 @@ export class VSCodeLoroProvider implements Provider {
   }
 
   /**
-   * Disconnect from the collaboration server
+   * Disconnect from the collaboration server.
    */
   disconnect(): void {
     this.sendToExtension({
@@ -182,33 +182,33 @@ export class VSCodeLoroProvider implements Provider {
   }
 
   /**
-   * Register event listener for synchronization state changes
-   * @param type - Event type 'sync'
-   * @param cb - Callback function receiving sync state
+   * Register event listener for synchronization state changes.
+   * @param type - Event type 'sync'.
+   * @param cb - Callback function receiving sync state.
    */
   on(type: "sync", cb: (isSynced: boolean) => void): void;
   /**
-   * Register event listener for connection status changes
-   * @param type - Event type 'status'
-   * @param cb - Callback function receiving status object
+   * Register event listener for connection status changes.
+   * @param type - Event type 'status'.
+   * @param cb - Callback function receiving status object.
    */
   on(type: "status", cb: (status: { status: string }) => void): void;
   /**
-   * Register event listener for remote document updates
-   * @param type - Event type 'update'
-   * @param cb - Callback function receiving update data
+   * Register event listener for remote document updates.
+   * @param type - Event type 'update'.
+   * @param cb - Callback function receiving update data.
    */
   on(type: "update", cb: (update: unknown) => void): void;
   /**
-   * Register event listener for document reload events
-   * @param type - Event type 'reload'
-   * @param cb - Callback function receiving reloaded document
+   * Register event listener for document reload events.
+   * @param type - Event type 'reload'.
+   * @param cb - Callback function receiving reloaded document.
    */
   on(type: "reload", cb: (doc: LoroDoc) => void): void;
   /**
-   * Register event listener implementation
-   * @param type - Event type
-   * @param cb - Callback function
+   * Register event listener implementation.
+   * @param type - Event type.
+   * @param cb - Callback function.
    */
   on(type: string, cb: Function): void {
     switch (type) {
@@ -228,33 +228,33 @@ export class VSCodeLoroProvider implements Provider {
   }
 
   /**
-   * Unregister event listener for synchronization state changes
-   * @param type - Event type 'sync'
-   * @param cb - Callback function to remove
+   * Unregister event listener for synchronization state changes.
+   * @param type - Event type 'sync'.
+   * @param cb - Callback function to remove.
    */
   off(type: "sync", cb: (isSynced: boolean) => void): void;
   /**
-   * Unregister event listener for connection status changes
-   * @param type - Event type 'status'
-   * @param cb - Callback function to remove
+   * Unregister event listener for connection status changes.
+   * @param type - Event type 'status'.
+   * @param cb - Callback function to remove.
    */
   off(type: "status", cb: (status: { status: string }) => void): void;
   /**
-   * Unregister event listener for remote document updates
-   * @param type - Event type 'update'
-   * @param cb - Callback function to remove
+   * Unregister event listener for remote document updates.
+   * @param type - Event type 'update'.
+   * @param cb - Callback function to remove.
    */
   off(type: "update", cb: (update: unknown) => void): void;
   /**
-   * Unregister event listener for document reload events
-   * @param type - Event type 'reload'
-   * @param cb - Callback function to remove
+   * Unregister event listener for document reload events.
+   * @param type - Event type 'reload'.
+   * @param cb - Callback function to remove.
    */
   off(type: "reload", cb: (doc: LoroDoc) => void): void;
   /**
-   * Unregister event listener implementation
-   * @param type - Event type
-   * @param cb - Callback function to remove
+   * Unregister event listener implementation.
+   * @param type - Event type.
+   * @param cb - Callback function to remove.
    */
   off(type: string, cb: Function): void {
     switch (type) {
@@ -274,7 +274,8 @@ export class VSCodeLoroProvider implements Provider {
   }
 
   /**
-   * Handle messages from the extension
+   * Handle messages from the extension.
+   * @param messageData - Raw message data from extension host.
    */
   private handleExtensionMessage(messageData: unknown): void {
     const message = messageData as LoroMessage;
@@ -342,7 +343,8 @@ export class VSCodeLoroProvider implements Provider {
   }
 
   /**
-   * Handle WebSocket messages
+   * Handle WebSocket messages.
+   * @param message - Parsed WebSocket message for Loro sync.
    */
   private handleWebSocketMessage(message: WebSocketMessage): void {
     switch (message.type) {
@@ -385,7 +387,8 @@ export class VSCodeLoroProvider implements Provider {
   }
 
   /**
-   * Send a message to the extension
+   * Send a message to the extension.
+   * @param message - Loro message to send via postMessage.
    */
   private sendToExtension(message: LoroMessage): void {
     // Use VS Code webview API singleton from messageHandler

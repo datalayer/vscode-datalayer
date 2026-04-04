@@ -173,11 +173,11 @@ export const notebookCellStyles = {
 } as const;
 
 /**
- * Height calculation for notebook container (subtracts toolbar height)
+ * Height calculation for notebook container, subtracting 31px toolbar height from viewport.
  */
 export const notebookHeight = "calc(100vh - 31px)";
 
 /**
- * Cell sidebar margin
+ * Left margin in pixels reserved for the cell sidebar action buttons.
  */
 export const cellSidebarMargin = 120;

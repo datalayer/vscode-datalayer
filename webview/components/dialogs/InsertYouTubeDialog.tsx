@@ -11,8 +11,11 @@
 
 import React, { useState } from "react";
 
+/** Props for the InsertYouTubeDialog component. */
 export interface InsertYouTubeDialogProps {
+  /** Called when the user confirms the YouTube video insertion. */
   onInsert: (videoId: string) => void;
+  /** Called when the dialog is closed or cancelled. */
   onClose: () => void;
 }
 

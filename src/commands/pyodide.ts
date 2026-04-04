@@ -23,10 +23,12 @@ const PRELOADED_PACKAGES_KEY = "datalayer.pyodide.preloadedPackages";
 const NATIVE_PRELOAD_KEY = "datalayer.pyodide.nativePreloaded";
 
 /**
- * Clear the Pyodide package cache for BOTH native and webview notebooks.
+ * Clears the Pyodide package cache for BOTH native and webview notebooks.
  * - Native notebooks: Deletes ~/.cache/datalayer-pyodide/ (packages) AND globalStorage/pyodide/ (old core files)
  * - Webview notebooks: Reloads webviews to clear IndexedDB cache
  * This removes all downloaded Python packages and old Pyodide core files, forcing them to be re-downloaded on next use.
+ * @param context - Extension context for accessing global state and storage paths.
+ *
  */
 export async function clearPyodideCache(
   context: vscode.ExtensionContext,
@@ -91,7 +93,9 @@ export async function clearPyodideCache(
 }
 
 /**
- * Register Pyodide-related commands
+ * Registers Pyodide-related commands for cache management.
+ * @param context - Extension context for command registration.
+ *
  */
 export function registerPyodideCommands(
   context: vscode.ExtensionContext,

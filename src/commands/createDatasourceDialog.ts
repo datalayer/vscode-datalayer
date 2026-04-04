@@ -15,6 +15,13 @@ import { getDatasourceDialogHtml } from "../ui/templates/datasourceTemplate";
 import { getDatasourceEditDialogHtml } from "../ui/templates/datasourceEditTemplate";
 import { getServiceContainer } from "../extension";
 
+/**
+ * Registers the command to open the datasource creation dialog.
+ * @param context - Extension context for command registration.
+ *
+ * @returns Disposable for the registered command.
+ *
+ */
 export function createDatasourceDialogCommand(
   context: vscode.ExtensionContext,
 ): vscode.Disposable {
@@ -24,6 +31,10 @@ export function createDatasourceDialogCommand(
   );
 }
 
+/**
+ * Opens a webview panel with the datasource creation form.
+ * @param context - Extension context for accessing extension URI and resources.
+ */
 async function showDatasourceDialog(
   context: vscode.ExtensionContext,
 ): Promise<void> {
@@ -159,6 +170,12 @@ async function showDatasourceDialog(
   });
 }
 
+/**
+ * Opens a webview panel with the datasource edit form for the given datasource.
+ * @param context - Extension context for accessing extension URI and resources.
+ * @param datasourceUid - Unique identifier of the datasource to edit.
+ *
+ */
 export async function showDatasourceEditDialog(
   context: vscode.ExtensionContext,
   datasourceUid: string,

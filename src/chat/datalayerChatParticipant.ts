@@ -8,19 +8,16 @@ import * as vscode from "vscode";
  *
  * Uses Datalayer tools to interact with notebooks and lexical documents.
  * Always calls getActiveDocument first, then listAvailableBlocks for lexical documents.
- *
- * @example
- * ```
- * @datalayer connect to pyodide, insert a fibonacci cell, and run all cells
- * @datalayer explain this notebook
- * @datalayer what cells are in this document?
- * ```
  */
 export class DatalayerChatParticipant {
   private participant: vscode.ChatParticipant | undefined;
 
   constructor(private context: vscode.ExtensionContext) {}
 
+  /**
+   * Registers the chat participant with VS Code and configures its icon.
+   * @returns Disposable to unregister the chat participant.
+   */
   public register(): vscode.Disposable {
     // Create the chat participant
     this.participant = vscode.chat.createChatParticipant(
@@ -41,6 +38,13 @@ export class DatalayerChatParticipant {
     return this.participant;
   }
 
+  /**
+   * Handles incoming chat requests by fetching document context and invoking tools.
+   * @param request - The chat request containing user prompt.
+   * @param _context - Chat context with conversation history.
+   * @param stream - Response stream for sending messages back.
+   * @param token - Cancellation token to abort the request.
+   */
   private async handleChatRequest(
     request: vscode.ChatRequest,
     _context: vscode.ChatContext,
@@ -169,7 +173,13 @@ export class DatalayerChatParticipant {
   }
 
   /**
-   * Process model response and handle tool calls in a loop
+   * Processes model response and handles tool calls in a recursive loop.
+   * @param model - Language model to send requests to.
+   * @param messages - Accumulated conversation messages.
+   * @param tools - Available Datalayer tools for the model.
+   * @param stream - Response stream for output.
+   * @param request - Original chat request with tool invocation token.
+   * @param token - Cancellation token.
    */
   private async processModelResponse(
     model: vscode.LanguageModelChat,
@@ -253,8 +263,11 @@ export class DatalayerChatParticipant {
   }
 
   /**
-   * Convert VS Code chat history to language model messages.
+   * Converts VS Code chat history to language model messages.
    * Extracts user prompts and assistant responses from previous turns.
+   * @param history - Array of previous chat request and response turns.
+   *
+   * @returns Converted language model messages for the conversation.
    */
   private convertHistoryToMessages(
     history: ReadonlyArray<vscode.ChatRequestTurn | vscode.ChatResponseTurn>,
@@ -286,7 +299,8 @@ export class DatalayerChatParticipant {
   }
 
   /**
-   * Build a simple system prompt that instructs the model to use Datalayer tools
+   * Builds a simple system prompt that instructs the model to use Datalayer tools.
+   * @returns System prompt string with document type instructions.
    */
   private buildSimpleSystemPrompt(): string {
     return `You are a Datalayer assistant helping with Jupyter Notebooks (.ipynb) and Lexical Documents (.dlex).

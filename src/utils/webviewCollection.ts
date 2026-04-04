@@ -26,8 +26,9 @@ export class WebviewCollection {
   /**
    * Gets all webviews for a given URI.
    *
-   * @param uri - Document URI to find webviews for
-   * @returns Iterable of webview panels
+   * @param uri - Document URI to find webviews for.
+   *
+   * @returns Iterable of webview panels.
    */
   public *get(uri: vscode.Uri): Iterable<vscode.WebviewPanel> {
     const key = uri.toString();
@@ -42,8 +43,8 @@ export class WebviewCollection {
    * Adds a webview to the collection.
    * Automatically sets up disposal cleanup when the webview is closed.
    *
-   * @param uri - Document URI to associate with webview
-   * @param webviewPanel - The webview panel to track
+   * @param uri - Document URI to associate with webview.
+   * @param webviewPanel - The webview panel to track.
    */
   public add(uri: vscode.Uri, webviewPanel: vscode.WebviewPanel): void {
     const entry = { resource: uri.toString(), webviewPanel };

@@ -24,7 +24,7 @@ import * as vscode from "vscode";
  * lightweight command, allowing kernel discovery to work even when
  * no Python files are open.
  *
- * @returns Promise that resolves when extension is active (or after timeout)
+ * @returns Promise resolving to true if Python extension activated, false otherwise.
  */
 export async function ensurePythonExtensionActive(): Promise<boolean> {
   const pythonExt = vscode.extensions.getExtension("ms-python.python");

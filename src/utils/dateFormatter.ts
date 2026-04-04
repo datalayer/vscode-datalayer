@@ -12,16 +12,12 @@
 
 /**
  * Formats a date for use in snapshot names.
- * Returns format: YYYY-MM-DD_HH-MM-SS
+ * Returns format: YYYY-MM-DD_HH-MM-SS.
  *
- * @param date - The date to format
- * @returns Formatted string like "2025-11-06_14-30-45"
+ * @param date - The date to format.
  *
- * @example
- * ```typescript
- * const name = formatDateForName(new Date());
- * // Returns: "2025-11-06_14-30-45"
- * ```
+ * @returns Formatted string like "2025-11-06_14-30-45".
+ *
  */
 export function formatDateForName(date: Date): string {
   const year = date.getFullYear();
@@ -38,14 +34,10 @@ export function formatDateForName(date: Date): string {
  * Formats a date as a relative time string (e.g., "2 hours ago", "3 days ago").
  * Provides human-readable relative time descriptions.
  *
- * @param date - The date to format relative to now
- * @returns Formatted string like "just now", "5 minutes ago", "2 days ago"
+ * @param date - The date to format relative to now.
  *
- * @example
- * ```typescript
- * const timeAgo = formatRelativeTime(new Date(Date.now() - 3600000));
- * // Returns: "1 hour ago"
- * ```
+ * @returns Formatted string like "just now", "5 minutes ago", "2 days ago".
+ *
  */
 export function formatRelativeTime(date: Date): string {
   const now = Date.now();

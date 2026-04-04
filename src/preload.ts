@@ -45,6 +45,7 @@ try {
 
 // Now load and re-export the actual extension
 // Using require() here instead of import to maintain execution order control
+/** Re-exported extension module loaded after native module preloading. */
 const extension = require("./extension");
 
 // Re-export all extension exports

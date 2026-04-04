@@ -8,8 +8,9 @@
  * Virtual file system provider for Datalayer documents.
  * Maps remote documents to clean datalayer:// URIs for VS Code integration.
  *
- * @see https://code.visualstudio.com/api/extension-guides/virtual-documents
  * @module providers/documentsFileSystemProvider
+ *
+ * @see https://code.visualstudio.com/api/extension-guides/virtual-documents
  */
 
 import * as vscode from "vscode";
@@ -21,12 +22,6 @@ import * as path from "path";
  * Allows VS Code to display "datalayer://Space Name/Notebook.ipynb" instead of temp paths.
  * Persists mappings across VS Code restarts using globalState.
  *
- * @example
- * ```typescript
- * const provider = DatalayerFileSystemProvider.getInstance();
- * provider.initialize(context);
- * const virtualUri = provider.registerMapping('My Space/notebook.ipynb', '/tmp/real-path.ipynb');
- * ```
  */
 export class DatalayerFileSystemProvider implements vscode.FileSystemProvider {
   private static instance: DatalayerFileSystemProvider;
@@ -47,7 +42,7 @@ export class DatalayerFileSystemProvider implements vscode.FileSystemProvider {
 
   /**
    * Gets the singleton instance of DatalayerFileSystemProvider.
-   * @returns The singleton instance
+   * @returns The singleton provider instance.
    */
   static getInstance(): DatalayerFileSystemProvider {
     if (!DatalayerFileSystemProvider.instance) {
@@ -57,10 +52,10 @@ export class DatalayerFileSystemProvider implements vscode.FileSystemProvider {
   }
 
   /**
-   * Initialize the provider with extension context for persistent storage.
+   * Initializes the provider with extension context for persistent storage.
    * Restores any previously saved mappings from globalState.
    *
-   * @param context - Extension context for accessing globalState
+   * @param context - Extension context for accessing globalState.
    */
   initialize(context: vscode.ExtensionContext): void {
     this.context = context;
@@ -68,8 +63,8 @@ export class DatalayerFileSystemProvider implements vscode.FileSystemProvider {
   }
 
   /**
-   * Load saved mappings from persistent storage.
-   * Only restores mappings where the real file still exists.
+   * Loads saved mappings from persistent storage.
+   * Only restores mappings where the real file still exists on disk.
    */
   private loadMappings(): void {
     if (!this.context) {
@@ -116,12 +111,13 @@ export class DatalayerFileSystemProvider implements vscode.FileSystemProvider {
   }
 
   /**
-   * Register a mapping between a virtual URI and a real file path.
+   * Registers a mapping between a virtual URI and a real file path.
    * Persists the mapping to globalState for restoration after restart.
    *
-   * @param virtualPath - Clean path for the virtual URI (e.g., "Space Name/Notebook.ipynb")
-   * @param realPath - Actual file system path to the document
-   * @returns The created virtual URI with datalayer:// scheme
+   * @param virtualPath - Clean path for the virtual URI such as "Space Name/Notebook.ipynb".
+   * @param realPath - Actual file system path to the document on disk.
+   *
+   * @returns The created virtual URI with datalayer:// scheme.
    */
   registerMapping(virtualPath: string, realPath: string): vscode.Uri {
     // Sanitize the virtual path to ensure it doesn't contain URI-illegal characters
@@ -149,10 +145,11 @@ export class DatalayerFileSystemProvider implements vscode.FileSystemProvider {
   }
 
   /**
-   * Get the real file path for a virtual URI.
+   * Gets the real file path for a virtual URI.
    *
-   * @param uri - Virtual URI to resolve
-   * @returns Real file path or undefined if not found
+   * @param uri - Virtual URI to resolve to a local file path.
+   *
+   * @returns Real file path or undefined if no mapping exists.
    */
   getRealPath(uri: vscode.Uri): string | undefined {
     // Strip query parameters from URI before lookup
@@ -162,20 +159,21 @@ export class DatalayerFileSystemProvider implements vscode.FileSystemProvider {
   }
 
   /**
-   * Get the virtual URI for a real file path.
+   * Gets the virtual URI for a real file path.
    *
-   * @param realPath - Real file path to resolve
-   * @returns Virtual URI or undefined if not found
+   * @param realPath - Real file path to resolve to a virtual URI.
+   *
+   * @returns Virtual URI or undefined if no mapping exists.
    */
   getVirtualUri(realPath: string): vscode.Uri | undefined {
     return this.realToVirtual.get(realPath);
   }
 
   /**
-   * Remove a mapping for a closed document.
-   * Updates persistent storage.
+   * Removes a mapping for a closed document.
+   * Updates persistent storage accordingly.
    *
-   * @param uri - Virtual URI to remove
+   * @param uri - Virtual URI whose mapping should be removed.
    */
   removeMapping(uri: vscode.Uri): void {
     const key = uri.toString();
@@ -191,20 +189,25 @@ export class DatalayerFileSystemProvider implements vscode.FileSystemProvider {
   }
 
   /**
-   * Watch a file or directory for changes.
+   * Watches a file or directory for changes.
    *
-   * @param _uri - The URI to watch
-   * @returns A disposable that stops watching when disposed
+   * @param _uri - The URI to watch for changes.
+   *
+   * @returns A disposable that stops watching when disposed.
    */
   watch(_uri: vscode.Uri): vscode.Disposable {
     return new vscode.Disposable(() => {});
   }
 
   /**
-   * Get metadata about a file or directory.
+   * Gets metadata about a file or directory.
    *
-   * @param uri - The URI of the file or directory
-   * @returns Metadata about the file or directory
+   * @param uri - The URI of the file or directory to inspect.
+   *
+   * @returns File stat containing type, timestamps, and size.
+   *
+   * @throws If the file is not found.
+   *
    */
   stat(uri: vscode.Uri): vscode.FileStat {
     const realPath = this.getRealPath(uri);
@@ -224,10 +227,14 @@ export class DatalayerFileSystemProvider implements vscode.FileSystemProvider {
   }
 
   /**
-   * Read the contents of a directory.
+   * Reads the contents of a directory.
    *
-   * @param uri - The URI of the directory
-   * @returns Array of [name, type] tuples representing directory contents
+   * @param uri - The URI of the directory to list.
+   *
+   * @returns Array of name and type tuples representing directory entries.
+   *
+   * @throws If the directory is not found.
+   *
    */
   readDirectory(uri: vscode.Uri): [string, vscode.FileType][] {
     const realPath = this.getRealPath(uri);
@@ -251,9 +258,11 @@ export class DatalayerFileSystemProvider implements vscode.FileSystemProvider {
   }
 
   /**
-   * Create a new directory.
+   * Creates a new directory at the given URI.
    *
-   * @param uri - The URI of the directory to create
+   * @param uri - The URI of the directory to create.
+   *
+   * @throws If the URI has no mapping.
    */
   createDirectory(uri: vscode.Uri): void {
     const realPath = this.getRealPath(uri);
@@ -267,12 +276,15 @@ export class DatalayerFileSystemProvider implements vscode.FileSystemProvider {
   }
 
   /**
-   * Read the contents of a file.
+   * Reads the contents of a file from the mapped real path.
    * Mappings are restored from persistent storage during initialization,
    * so this should always find the real path for valid documents.
    *
-   * @param uri - The URI of the file to read
-   * @returns The file contents as a byte array
+   * @param uri - The URI of the file to read.
+   *
+   * @returns The file contents as a byte array.
+   *
+   * @throws If the file is not found or has no mapping.
    */
   readFile(uri: vscode.Uri): Uint8Array {
     const realPath = this.getRealPath(uri);
@@ -289,11 +301,15 @@ export class DatalayerFileSystemProvider implements vscode.FileSystemProvider {
   }
 
   /**
-   * Write data to a file.
+   * Writes data to a file at the mapped real path.
    *
-   * @param uri - The URI of the file to write
-   * @param content - The content to write
-   * @param options - Write options (create and overwrite flags)
+   * @param uri - The URI of the file to write.
+   * @param content - The binary content to write to disk.
+   * @param options - Write options controlling create and overwrite behavior.
+   * @param options.create - Whether to create the file if it does not exist.
+   * @param options.overwrite - Whether to overwrite existing file content.
+   *
+   * @throws If the file is not found or cannot be written.
    */
   writeFile(
     uri: vscode.Uri,
@@ -323,10 +339,13 @@ export class DatalayerFileSystemProvider implements vscode.FileSystemProvider {
   }
 
   /**
-   * Delete a file or directory.
+   * Deletes a file or directory and removes its mapping.
    *
-   * @param uri - The URI to delete
-   * @param options - Delete options (recursive flag)
+   * @param uri - The URI of the resource to delete.
+   * @param options - Delete options controlling recursive behavior.
+   * @param options.recursive - Whether to delete directory contents recursively.
+   *
+   * @throws If the file or directory is not found.
    */
   delete(uri: vscode.Uri, options: { recursive: boolean }): void {
     const realPath = this.getRealPath(uri);
@@ -351,11 +370,14 @@ export class DatalayerFileSystemProvider implements vscode.FileSystemProvider {
   }
 
   /**
-   * Rename or move a file or directory.
+   * Renames or moves a file or directory and updates mappings.
    *
-   * @param oldUri - The current URI
-   * @param newUri - The new URI
-   * @param options - Rename options (overwrite flag)
+   * @param oldUri - The current URI of the resource.
+   * @param newUri - The target URI after the rename or move.
+   * @param options - Rename options controlling overwrite behavior.
+   * @param options.overwrite - Whether to overwrite if target already exists.
+   *
+   * @throws If the source or target is not found or already exists.
    */
   rename(
     oldUri: vscode.Uri,

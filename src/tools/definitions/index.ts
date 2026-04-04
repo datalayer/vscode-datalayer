@@ -38,11 +38,10 @@ import { selectKernelTool } from "./selectKernel";
 import { executeCodeTool } from "./executeCode";
 
 /**
- * Get all tool definitions
+ * Loads all tool definitions from VS Code-specific and package sources asynchronously.
  *
- * This function loads tool definitions from packages.
+ * @returns Promise resolving to array of all tool definitions.
  *
- * @returns Promise resolving to array of all tool definitions
  * @internal
  */
 async function getAllToolDefinitionsAsync() {
@@ -133,6 +132,6 @@ export const allToolDefinitions = [
 ] as const;
 
 /**
- * Export the async function for use in registration
+ * Export the async function for use in tool registration.
  */
 export { getAllToolDefinitionsAsync };

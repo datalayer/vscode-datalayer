@@ -25,19 +25,6 @@ import type {
  * Provides centralized message routing with handler registration pattern.
  * Eliminates code duplication between NotebookProvider and LexicalProvider.
  *
- * @example
- * ```typescript
- * const router = new DocumentMessageRouter(logger);
- * await router.initialize();
- *
- * // Register handlers
- * router.registerHandler('select-runtime', async (msg, ctx) => {
- *   // Handle runtime selection
- * });
- *
- * // Route message
- * await router.routeMessage(message, context);
- * ```
  */
 export class DocumentMessageRouter extends BaseService {
   private readonly handlers: MessageHandlerMap = new Map();
@@ -49,9 +36,10 @@ export class DocumentMessageRouter extends BaseService {
   /**
    * Registers a message handler for a specific message type.
    *
-   * @param messageType - The message type to handle (e.g., 'select-runtime')
-   * @param handler - The handler function to call
-   * @throws Error if handler is already registered for this type
+   * @param messageType - The message type to handle (e.g., 'select-runtime').
+   * @param handler - The handler function to call.
+   *
+   * @throws Error if handler is already registered for this type.
    */
   public registerHandler(messageType: string, handler: MessageHandler): void {
     if (this.handlers.has(messageType)) {
@@ -68,8 +56,8 @@ export class DocumentMessageRouter extends BaseService {
    * Routes a message to the appropriate handler.
    * If no handler is registered, logs a warning and continues.
    *
-   * @param message - The message from the webview
-   * @param context - The document context
+   * @param message - The message from the webview.
+   * @param context - Document and webview references for handling the message.
    */
   public async routeMessage(
     message: ExtensionMessage,
@@ -105,8 +93,9 @@ export class DocumentMessageRouter extends BaseService {
   /**
    * Checks if a handler is registered for a message type.
    *
-   * @param messageType - The message type to check
-   * @returns True if a handler is registered
+   * @param messageType - The message type to check.
+   *
+   * @returns True if a handler is registered.
    */
   public hasHandler(messageType: string): boolean {
     return this.handlers.has(messageType);
@@ -115,8 +104,9 @@ export class DocumentMessageRouter extends BaseService {
   /**
    * Unregisters a handler for a message type.
    *
-   * @param messageType - The message type to unregister
-   * @returns True if a handler was removed
+   * @param messageType - The message type to unregister.
+   *
+   * @returns True if a handler was removed.
    */
   public unregisterHandler(messageType: string): boolean {
     const removed = this.handlers.delete(messageType);
@@ -131,7 +121,7 @@ export class DocumentMessageRouter extends BaseService {
   /**
    * Gets all registered message types.
    *
-   * @returns Array of registered message types
+   * @returns Array of registered message types.
    */
   public getRegisteredTypes(): string[] {
     return Array.from(this.handlers.keys());

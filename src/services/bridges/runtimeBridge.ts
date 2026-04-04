@@ -67,7 +67,7 @@ export class RuntimeBridgeService extends BaseService {
    * Sets the fallback handler for kernel selection failures.
    * Only used by notebookProvider for Datalayer runtime selector.
    *
-   * @param fallback - Callback to invoke when kernel selector fails
+   * @param fallback - Callback to invoke when kernel selector fails.
    */
   public setKernelSelectionFallback(fallback: KernelSelectionFallback): void {
     this._kernelSelectionFallback = fallback;
@@ -76,7 +76,8 @@ export class RuntimeBridgeService extends BaseService {
   /**
    * Registers runtime-related message handlers with the DocumentMessageRouter.
    *
-   * @param router - The message router to register handlers with
+   * @param router - The message router to register handlers with.
+   * @param router.registerHandler - Method to register a message type handler.
    */
   public registerRuntimeHandlers(router: {
     registerHandler: (
@@ -121,7 +122,7 @@ export class RuntimeBridgeService extends BaseService {
   /**
    * Handles runtime/kernel selection requests.
    *
-   * @param context - Document context
+   * @param context - Document context.
    */
   private async handleRuntimeSelection(
     context: DocumentContext,
@@ -156,8 +157,8 @@ export class RuntimeBridgeService extends BaseService {
   /**
    * Handles runtime termination requests.
    *
-   * @param message - Extension message containing runtime info
-   * @param context - Document context
+   * @param message - Extension message containing runtime info.
+   * @param context - Document context.
    */
   private async handleRuntimeTermination(
     message: ExtensionMessage,
@@ -226,8 +227,8 @@ export class RuntimeBridgeService extends BaseService {
   /**
    * Handles runtime expiration notifications.
    *
-   * @param message - Extension message containing runtime info
-   * @param context - Document context
+   * @param message - Extension message containing runtime info.
+   * @param context - Document context.
    */
   private async handleRuntimeExpiration(
     message: ExtensionMessage,
@@ -269,7 +270,7 @@ export class RuntimeBridgeService extends BaseService {
    * Handles kernel interrupt requests.
    * Sends SIGINT to the local kernel process.
    *
-   * @param context - Document context
+   * @param context - Document context.
    */
   private async handleKernelInterrupt(context: DocumentContext): Promise<void> {
     const kernelBridge = getServiceContainer().kernelBridge;
@@ -309,7 +310,7 @@ export class RuntimeBridgeService extends BaseService {
    * Handles kernel restart requests.
    * Currently not implemented for local kernels and runtimes.
    *
-   * @param _context - Document context (unused)
+   * @param _context - Document context (unused).
    */
   private async handleKernelRestart(_context: DocumentContext): Promise<void> {
     this.logger.warn(

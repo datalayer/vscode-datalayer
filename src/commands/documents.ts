@@ -8,8 +8,9 @@
  * Document management commands for the Datalayer VS Code extension.
  * Handles opening, creating, renaming, deleting, downloading, and copying notebooks and lexical documents.
  *
- * @see https://code.visualstudio.com/api/extension-guides/command
  * @module commands/documents
+ *
+ * @see https://code.visualstudio.com/api/extension-guides/command
  *
  * @remarks
  * This module registers the following commands:
@@ -45,9 +46,9 @@ import type { SpaceDTO } from "@datalayer/core/lib/models/SpaceDTO";
  * Registers commands for opening, creating, renaming, and deleting notebooks
  * and lexical documents with Datalayer platform integration.
  *
- * @param context - Extension context for command subscriptions
- * @param documentBridge - Bridge for document lifecycle management
- * @param spacesTreeProvider - Tree provider for UI refresh operations
+ * @param context - Extension context for command subscriptions.
+ * @param documentBridge - Bridge for document lifecycle management.
+ * @param spacesTreeProvider - Tree provider for UI refresh operations.
  *
  */
 export function registerDocumentCommands(

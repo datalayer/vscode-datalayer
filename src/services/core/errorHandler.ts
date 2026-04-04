@@ -23,22 +23,6 @@ import { extractErrorInfo, type ErrorInfo } from "../../types/errors";
  * Centralized error handler service.
  * Provides consistent error handling across the extension.
  *
- * @example
- * ```typescript
- * try {
- *   await riskyOperation();
- * } catch (error) {
- *   await errorHandler.handle(error, {
- *     showUser: true,
- *     actionable: [
- *       {
- *         title: 'Retry',
- *         action: async () => await riskyOperation()
- *       }
- *     ]
- *   });
- * }
- * ```
  */
 export class ErrorHandler implements IErrorHandler {
   constructor(private logger: ILogger) {}
@@ -47,8 +31,8 @@ export class ErrorHandler implements IErrorHandler {
    * Handles an error with specified options.
    * Logs, displays to user, and offers actions based on configuration.
    *
-   * @param error - The error to handle
-   * @param options - Error handling options
+   * @param error - The error to handle.
+   * @param options - Error handling options.
    */
   async handle(error: Error, options: ErrorHandlerOptions = {}): Promise<void> {
     const {
@@ -77,6 +61,9 @@ export class ErrorHandler implements IErrorHandler {
 
   /**
    * Shows error to user with actionable options.
+   * @param errorInfo - Structured error information to display.
+   * @param severity - Severity level for the notification type.
+   * @param actionable - Array of action buttons with callbacks.
    */
   private async showErrorToUser(
     errorInfo: ErrorInfo,
@@ -138,6 +125,9 @@ export class ErrorHandler implements IErrorHandler {
 
   /**
    * Converts technical error info to user-friendly message.
+   * @param errorInfo - Structured error information to convert.
+   *
+   * @returns User-friendly error message string.
    */
   private getUserFriendlyMessage(errorInfo: ErrorInfo): string {
     switch (errorInfo.code) {
@@ -171,9 +161,10 @@ export class ErrorHandler implements IErrorHandler {
    * Wraps an async operation with automatic error handling.
    * Catches errors and handles them according to options.
    *
-   * @param operation - Async operation to wrap
-   * @param options - Error handling options
-   * @returns Operation result or undefined on error
+   * @param operation - Async operation to wrap.
+   * @param options - Error handling options.
+   *
+   * @returns Operation result or undefined on error.
    */
   async wrap<T>(
     operation: () => Promise<T>,
@@ -190,9 +181,9 @@ export class ErrorHandler implements IErrorHandler {
   /**
    * Shows a user-friendly error notification.
    *
-   * @param message - User-friendly error message
-   * @param severity - Severity level (default: "error")
-   * @param actions - Optional actions for the user
+   * @param message - User-friendly error message.
+   * @param severity - Severity level (default: "error").
+   * @param actions - Optional actions for the user.
    */
   async showError(
     message: string,

@@ -8,15 +8,16 @@
  * Disposable utility classes for resource management.
  * Implements the disposable pattern for proper cleanup of resources.
  *
- * @see https://code.visualstudio.com/api/references/vscode-api#Disposable
  * @module utils/dispose
+ *
+ * @see https://code.visualstudio.com/api/references/vscode-api#Disposable
  */
 
 import type * as vscode from "vscode";
 
 /**
  * Disposes of all items in the disposables array.
- * @param disposables - Array of disposables to clean up
+ * @param disposables - Array of disposables to clean up.
  */
 export function disposeAll(disposables: vscode.Disposable[]): void {
   while (disposables.length) {
@@ -31,23 +32,11 @@ export function disposeAll(disposables: vscode.Disposable[]): void {
  * Abstract base class for implementing the disposable pattern.
  * Manages a collection of child disposables and ensures proper cleanup.
  *
- * @example
- * ```typescript
- * class MyCustomEditor extends Disposable {
- *   constructor() {
- *     super();
- *     // Register disposables that should be cleaned up
- *     this._register(vscode.workspace.onDidChangeConfiguration(() => {
- *       // Handle config change
- *     }));
- *   }
- * }
- * ```
  */
 export abstract class Disposable {
-  /** Whether this instance has been disposed */
+  /** Whether this instance has been disposed. */
   private _isDisposed = false;
-  /** Collection of child disposables to clean up */
+  /** Collection of child disposables to clean up. */
   protected _disposables: vscode.Disposable[] = [];
 
   /**
@@ -63,8 +52,9 @@ export abstract class Disposable {
 
   /**
    * Registers a disposable to be cleaned up when this instance is disposed.
-   * @param value - The disposable to register
-   * @returns The registered disposable
+   * @param value - The disposable to register.
+   *
+   * @returns The registered disposable.
    */
   protected _register<T extends vscode.Disposable>(value: T): T {
     if (this._isDisposed) {
@@ -77,7 +67,7 @@ export abstract class Disposable {
 
   /**
    * Gets whether this instance has been disposed.
-   * @returns True if disposed, false otherwise
+   * @returns True if disposed, false otherwise.
    */
   protected get isDisposed(): boolean {
     return this._isDisposed;

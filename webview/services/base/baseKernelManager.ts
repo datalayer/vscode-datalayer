@@ -31,21 +31,6 @@
  * - Kernel creation (startNew) is abstract and must be provided by subclasses
  * - Single active kernel model simplifies state management for custom managers
  *
- * @example
- * ```typescript
- * // Creating a new kernel manager type
- * class CustomKernelManager extends BaseKernelManager {
- *   readonly managerType = 'custom' as const;
- *
- *   async startNew(options?: Partial<Pick<Kernel.IModel, "name">>): Promise<Kernel.IKernelConnection> {
- *     // Custom kernel creation logic
- *     const kernel = await createMyCustomKernel(options);
- *     this._activeKernel = kernel;
- *     this._runningChanged.emit([kernel.model]);
- *     return kernel;
- *   }
- * }
- * ```
  */
 
 import { Kernel, ServerConnection } from "@jupyterlab/services";
@@ -73,23 +58,13 @@ export interface ITypedKernelManager extends Kernel.IManager {
  * Abstract base class for kernel manager implementations.
  *
  * Implements common Kernel.IManager interface methods that are identical
- * across all manager types, reducing code duplication and ensuring consistency.
+ * Across all manager types, reducing code duplication and ensuring consistency.
  *
  * This class implements both the standard JupyterLab Kernel.IManager interface
- * and the custom ITypedKernelManager interface for type discrimination.
+ * And the custom ITypedKernelManager interface for type discrimination.
  *
  * @abstract
  *
- * @example
- * ```typescript
- * class MyKernelManager extends BaseKernelManager {
- *   readonly managerType = 'custom' as const;
- *
- *   async startNew(options?: any): Promise<Kernel.IKernelConnection> {
- *     // Custom kernel creation logic
- *   }
- * }
- * ```
  */
 export abstract class BaseKernelManager implements ITypedKernelManager {
   /**
@@ -142,7 +117,7 @@ export abstract class BaseKernelManager implements ITypedKernelManager {
   /**
    * Creates a new kernel manager instance.
    *
-   * @param serverSettings - Jupyter server connection settings
+   * @param serverSettings - Jupyter server connection settings.
    */
   constructor(public serverSettings: ServerConnection.ISettings) {}
 
@@ -165,12 +140,6 @@ export abstract class BaseKernelManager implements ITypedKernelManager {
   /**
    * Signal emitted when running kernels change.
    *
-   * @example
-   * ```typescript
-   * manager.runningChanged.connect((sender, models) => {
-   *   console.log(`Running kernels: ${models.length}`);
-   * });
-   * ```
    */
   get runningChanged(): ISignal<this, Kernel.IModel[]> {
     return this._runningChanged;
@@ -179,12 +148,6 @@ export abstract class BaseKernelManager implements ITypedKernelManager {
   /**
    * Signal emitted when kernel connection fails.
    *
-   * @example
-   * ```typescript
-   * manager.connectionFailure.connect((sender, error) => {
-   *   console.error('Kernel connection failed:', error);
-   * });
-   * ```
    */
   get connectionFailure(): ISignal<this, Error> {
     return this._connectionFailure;
@@ -229,12 +192,6 @@ export abstract class BaseKernelManager implements ITypedKernelManager {
    *
    * @yields {Kernel.IModel} Running kernel models
    *
-   * @example
-   * ```typescript
-   * for (const model of manager.running()) {
-   *   console.log(`Kernel: ${model.id} (${model.name})`);
-   * }
-   * ```
    */
   *running(): IterableIterator<Kernel.IModel> {
     if (this._activeKernel) {
@@ -248,7 +205,7 @@ export abstract class BaseKernelManager implements ITypedKernelManager {
    * For custom managers (mock, local, Pyodide), returns the current active kernel.
    * Remote managers should override this to query the actual Jupyter server.
    *
-   * @returns Promise resolving to array of running kernel models
+   * @returns Promise resolving to array of running kernel models.
    */
   async requestRunning(): Promise<Kernel.IModel[]> {
     this.log("requestRunning called");
@@ -270,8 +227,9 @@ export abstract class BaseKernelManager implements ITypedKernelManager {
    *
    * Standard implementation checks if the active kernel matches.
    *
-   * @param id - Kernel identifier
-   * @returns Kernel model if found, undefined otherwise
+   * @param id - Kernel identifier.
+   *
+   * @returns Kernel model if found, undefined otherwise.
    */
   async findById(id: string): Promise<Kernel.IModel | undefined> {
     return this._activeKernel?.id === id ? this._activeKernel.model : undefined;
@@ -283,12 +241,8 @@ export abstract class BaseKernelManager implements ITypedKernelManager {
    * Standard implementation for single-kernel managers.
    * Shuts down the active kernel if IDs match, emits runningChanged signal.
    *
-   * @param id - Kernel identifier to shut down
+   * @param id - Kernel identifier to shut down.
    *
-   * @example
-   * ```typescript
-   * await manager.shutdown('kernel-123');
-   * ```
    */
   async shutdown(id: string): Promise<void> {
     this.log(`shutdown called for kernel: ${id}`);
@@ -308,10 +262,6 @@ export abstract class BaseKernelManager implements ITypedKernelManager {
    * Standard implementation for single-kernel managers.
    * Shuts down the active kernel if one exists.
    *
-   * @example
-   * ```typescript
-   * await manager.shutdownAll();
-   * ```
    */
   async shutdownAll(): Promise<void> {
     this.log("shutdownAll called");
@@ -354,14 +304,9 @@ export abstract class BaseKernelManager implements ITypedKernelManager {
   /**
    * Unified logging helper with manager type prefix.
    *
-   * @param _message - Log message (unused - logging disabled)
-   * @param _args - Additional arguments to log (unused - logging disabled)
+   * @param _message - Log message (unused - logging disabled).
+   * @param _args - Additional arguments to log (unused - logging disabled).
    *
-   * @example
-   * ```typescript
-   * this.log("Starting kernel", { name: "python3" });
-   * // Output: [PyodideKernelManager] Starting kernel { name: "python3" }
-   * ```
    */
   protected log(_message: string, ..._args: unknown[]): void {
     // Logging disabled to reduce console clutter
@@ -370,8 +315,9 @@ export abstract class BaseKernelManager implements ITypedKernelManager {
   /**
    * Validate that a kernel with the given ID exists.
    *
-   * @param id - Kernel ID to validate
-   * @throws {Error} If no active kernel or ID doesn't match
+   * @param id - Kernel ID to validate.
+   *
+   * @throws If no active kernel or ID doesn't match.
    */
   protected validateKernelId(id: string): void {
     if (!this._activeKernel) {
@@ -388,11 +334,12 @@ export abstract class BaseKernelManager implements ITypedKernelManager {
    * Start a new kernel.
    *
    * Must be implemented by subclasses to provide manager-specific
-   * kernel creation logic.
+   * Kernel creation logic.
    *
-   * @param options - Kernel creation options (name, etc.)
-   * @param connectOptions - Connection options (clientId, username, etc.)
-   * @returns Promise resolving to the new kernel connection
+   * @param options - Kernel creation options (name, etc.).
+   * @param connectOptions - Connection options (clientId, username, etc.).
+   *
+   * @returns Promise resolving to the new kernel connection.
    */
   abstract startNew(
     options?: Partial<Pick<Kernel.IModel, "name">>,
@@ -406,10 +353,13 @@ export abstract class BaseKernelManager implements ITypedKernelManager {
    * Connect to an existing kernel.
    *
    * For single-kernel managers, typically returns the active kernel
-   * or throws an error. Override for custom behavior.
+   * Or throws an error. Override for custom behavior.
    *
-   * @param _options - Connection options (unused in base implementation)
-   * @returns Kernel connection
+   * @param _options - Connection options (unused in base implementation).
+   *
+   * @returns Kernel connection.
+   *
+   * @throws If no active kernel exists and startNew must be used instead.
    */
   connectTo(
     _options: Kernel.IKernelConnection.IOptions,

@@ -100,8 +100,10 @@ export class DatalayerJupyterServerProvider
   }
 
   /**
-   * Provides the list of Datalayer runtime servers.
-   * Called by Jupyter extension to populate kernel picker.
+   * Provides the list of Datalayer runtime servers for the Jupyter extension kernel picker.
+   * @param _token - Cancellation token for the operation.
+   *
+   * @returns Array of available Datalayer runtime servers.
    */
   async provideJupyterServers(
     _token: vscode.CancellationToken,
@@ -127,8 +129,11 @@ export class DatalayerJupyterServerProvider
   }
 
   /**
-   * Resolves connection information for a Datalayer runtime server.
-   * Called when user selects a runtime from the picker.
+   * Resolves connection information for a Datalayer runtime server when selected by the user.
+   * @param server - Server to resolve connection information for.
+   * @param _token - Cancellation token for the operation.
+   *
+   * @returns Resolved server with connection details.
    */
   async resolveJupyterServer(
     server: JupyterServer,
@@ -140,8 +145,11 @@ export class DatalayerJupyterServerProvider
   }
 
   /**
-   * Provides commands that appear below servers in kernel picker.
-   * This is where "Create GPU Runtime" and "Create CPU Runtime" appear!
+   * Provides commands that appear below servers in the kernel picker for creating new runtimes.
+   * @param _value - Filter string from the kernel picker search.
+   * @param _token - Cancellation token for the operation.
+   *
+   * @returns Array of available runtime creation commands.
    */
   async provideCommands(
     _value: string | undefined,
@@ -156,8 +164,11 @@ export class DatalayerJupyterServerProvider
   }
 
   /**
-   * Handles command execution when user clicks a command.
-   * Returns the newly created runtime server or undefined.
+   * Handles command execution when user clicks a runtime creation command in the kernel picker.
+   * @param command - The command selected by the user.
+   * @param _token - Cancellation token for the operation.
+   *
+   * @returns Newly created runtime server or undefined if cancelled.
    */
   async handleCommand(
     command: JupyterServerCommand,
@@ -222,7 +233,8 @@ export class DatalayerJupyterServerProvider
   }
 
   /**
-   * Create GPU runtime flow
+   * Creates a GPU runtime through the environment selection and creation flow.
+   * @returns The created GPU Jupyter server or undefined if creation fails.
    */
   private async createGpuRuntime(): Promise<JupyterServer | undefined> {
     console.log("[DatalayerJupyterServerProvider] createGpuRuntime started");
@@ -291,7 +303,8 @@ export class DatalayerJupyterServerProvider
   }
 
   /**
-   * Create CPU runtime flow
+   * Creates a CPU runtime through the environment selection and creation flow.
+   * @returns The created CPU Jupyter server or undefined if creation fails.
    */
   private async createCpuRuntime(): Promise<JupyterServer | undefined> {
     console.log("[DatalayerJupyterServerProvider] createCpuRuntime started");
@@ -360,7 +373,10 @@ export class DatalayerJupyterServerProvider
   }
 
   /**
-   * Convert Datalayer RuntimeDTO to JupyterServer with connection information
+   * Converts a Datalayer RuntimeDTO to a JupyterServer with connection information for the Jupyter extension.
+   * @param runtime - Datalayer runtime to convert.
+   *
+   * @returns JupyterServer with connection info and display label.
    */
   private runtimeToJupyterServer(runtime: RuntimeDTO): JupyterServer {
     // Convert runtime to JSON to access connection properties
@@ -394,7 +410,7 @@ export class DatalayerJupyterServerProvider
   }
 
   /**
-   * Cleanup
+   * Disposes all resources including auth listener, server collection, and event emitter.
    */
   dispose(): void {
     this.authStateListener.dispose();
@@ -403,7 +419,7 @@ export class DatalayerJupyterServerProvider
   }
 
   /**
-   * Event that fires when server list changes
+   * Event that fires when the server list changes due to runtime creation or authentication state changes.
    */
   get onDidChangeServers(): vscode.Event<void> {
     return this.serverChangeEmitter.event;

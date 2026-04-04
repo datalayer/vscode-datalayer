@@ -27,7 +27,8 @@ declare function acquireVsCodeApi(): {
 
 const vscode = acquireVsCodeApi();
 
-interface DatasourceEditDialogProps {
+/** Props for the DatasourceEditDialog component. */
+export interface DatasourceEditDialogProps {
   colorMode: "light" | "dark";
 }
 
@@ -52,6 +53,7 @@ interface FormData {
   description: string;
 }
 
+/** Webview dialog for editing an existing datasource. */
 export function DatasourceEditDialog({ colorMode }: DatasourceEditDialogProps) {
   const [isReady, setIsReady] = useState(false);
   const [datasource, setDatasource] = useState<DatasourceData | null>(null);

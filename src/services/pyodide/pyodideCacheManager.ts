@@ -19,8 +19,7 @@ import type { PyodideInterface } from "pyodide";
 
 /**
  * Manages Pyodide cache in local filesystem for native notebooks.
- * Separate from browser IndexedDB cache used by webview notebooks.
- */
+ * Separate from browser IndexedDB cache used by webview notebooks. */
 export class PyodideCacheManager {
   constructor(private readonly _globalStoragePath: string) {}
 
@@ -28,9 +27,10 @@ export class PyodideCacheManager {
    * Ensures Pyodide core files are cached locally.
    * Downloads from CDN if not present.
    *
-   * @param version - Pyodide version
-   * @param progress - Optional progress reporter
-   * @returns Path to local Pyodide directory
+   * @param version - Pyodide release number to download (e.g. "0.29.0").
+   * @param progress - Optional progress reporter.
+   *
+   * @returns Path to local Pyodide directory.
    */
   async ensurePyodideCore(
     version: string,
@@ -98,9 +98,11 @@ export class PyodideCacheManager {
    * Preloads packages into local Pyodide cache.
    * Must be called after ensurePyodideCore().
    *
-   * @param version - Pyodide version
-   * @param packages - Package names to download
-   * @param progress - Optional progress reporter
+   * @param version - Pyodide release number matching the core installation.
+   * @param packages - Package names to download.
+   * @param progress - Optional progress reporter.
+   *
+   * @returns Lists of succeeded and failed package names.
    */
   async preloadPackages(
     version: string,
@@ -182,8 +184,8 @@ export class PyodideCacheManager {
   /**
    * Downloads a file from URL to local path.
    *
-   * @param url - File URL
-   * @param destPath - Destination path
+   * @param url - Remote CDN location of the file to download.
+   * @param destPath - Local filesystem location to write the downloaded file.
    */
   private async _downloadFile(url: string, destPath: string): Promise<void> {
     return new Promise<void>((resolve, reject) => {

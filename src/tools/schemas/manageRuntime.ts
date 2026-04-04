@@ -13,7 +13,7 @@
 import { z } from "zod";
 
 /**
- * Schema for startRuntime parameters
+ * Zod schema defining the validation rules for startRuntime parameters.
  */
 export const startRuntimeParamsSchema = z.object({
   environment: z
@@ -29,7 +29,7 @@ export const startRuntimeParamsSchema = z.object({
 });
 
 /**
- * Schema for connectRuntime parameters
+ * Zod schema defining the validation rules for connectRuntime parameters.
  */
 export const connectRuntimeParamsSchema = z.object({
   runtimeName: z.string().describe("Name of runtime to connect"),
@@ -40,7 +40,10 @@ export const connectRuntimeParamsSchema = z.object({
 });
 
 /**
- * Inferred TypeScript types from schemas
+ * Inferred TypeScript type for start runtime parameters from the Zod schema.
  */
 export type StartRuntimeParams = z.infer<typeof startRuntimeParamsSchema>;
+/**
+ * Inferred TypeScript type for connect runtime parameters from the Zod schema.
+ */
 export type ConnectRuntimeParams = z.infer<typeof connectRuntimeParamsSchema>;

@@ -9,8 +9,9 @@
  * Handles both local notebooks and collaborative Datalayer notebooks with real-time
  * synchronization, runtime management, and webview communication.
  *
- * @see https://code.visualstudio.com/api/extension-guides/custom-editors
  * @module providers/notebookProvider
+ *
+ * @see https://code.visualstudio.com/api/extension-guides/custom-editors
  */
 
 import * as vscode from "vscode";
@@ -37,6 +38,7 @@ import {
  * Custom editor provider for Jupyter notebooks with dual-mode support.
  * Handles both local file-based notebooks and collaborative Datalayer notebooks
  * with runtime management, webview communication, and real-time synchronization.
+ *
  */
 export class NotebookProvider extends BaseDocumentProvider<NotebookDocument> {
   private static newNotebookFileId = 1;
@@ -44,8 +46,9 @@ export class NotebookProvider extends BaseDocumentProvider<NotebookDocument> {
   /**
    * Registers the notebook editor provider and commands.
    *
-   * @param context - Extension context for resource management
-   * @returns Disposable for cleanup
+   * @param context - Extension context for resource management.
+   *
+   * @returns Disposable for cleanup.
    */
   public static register(context: vscode.ExtensionContext): vscode.Disposable {
     const provider = new NotebookProvider(context);
@@ -200,9 +203,9 @@ export class NotebookProvider extends BaseDocumentProvider<NotebookDocument> {
   private readonly documents = new Map<string, NotebookDocument>();
 
   /**
-   * Creates a new NotebookProvider.
+   * Creates a new NotebookProvider with runtime bridge configuration.
    *
-   * @param context - Extension context for resource access
+   * @param context - Extension context for resource access.
    */
   constructor(context: vscode.ExtensionContext) {
     super(context);
@@ -221,13 +224,14 @@ export class NotebookProvider extends BaseDocumentProvider<NotebookDocument> {
   }
 
   /**
-   * Send a message to a webview panel and wait for a response.
+   * Sends a message to a webview panel and waits for a response.
    * Uses the request/response pattern inherited from BaseDocumentProvider.
    *
-   * @param panel - Webview panel to send message to
-   * @param message - Message to send (should include type and requestId)
-   * @param requestId - Request ID to match response
-   * @returns Promise resolving to the response
+   * @param panel - Webview panel to send the message to.
+   * @param message - Message to send including type and requestId.
+   * @param requestId - Request ID to match the response callback.
+   *
+   * @returns Promise resolving to the webview response.
    */
   public async sendToWebviewWithResponse(
     panel: vscode.WebviewPanel,
@@ -266,10 +270,12 @@ export class NotebookProvider extends BaseDocumentProvider<NotebookDocument> {
   /**
    * Opens a custom document for the notebook editor.
    *
-   * @param uri - Document URI to open
-   * @param openContext - Context including backup information
-   * @param _token - Cancellation token
-   * @returns Promise resolving to the notebook document
+   * @param uri - Document URI to open.
+   * @param openContext - Context including backup information.
+   * @param openContext.backupId - Optional backup identifier for restoration.
+   * @param _token - Cancellation token for aborting the operation.
+   *
+   * @returns Promise resolving to the notebook document.
    */
   override async openCustomDocument(
     uri: vscode.Uri,
@@ -377,10 +383,11 @@ export class NotebookProvider extends BaseDocumentProvider<NotebookDocument> {
   /**
    * Resolves a custom editor by setting up the webview and initializing communication.
    *
-   * @param document - The notebook document to display
-   * @param webviewPanel - The webview panel for the editor
-   * @param _token - Cancellation token
-   * @returns Promise that resolves when editor is ready
+   * @param document - The notebook document to display.
+   * @param webviewPanel - The webview panel for the editor.
+   * @param _token - Cancellation token for aborting the operation.
+   *
+   * @returns Promise that resolves when the editor is ready.
    */
   override async resolveCustomEditor(
     document: NotebookDocument,
@@ -609,15 +616,15 @@ export class NotebookProvider extends BaseDocumentProvider<NotebookDocument> {
   }
 
   /**
-   * Proactively create LSP virtual documents for all Python and Markdown cells.
-   * This allows Pylance to start analyzing BEFORE the webview finishes loading,
+   * Proactively creates LSP virtual documents for all Python and Markdown cells.
+   * This allows Pylance to start analyzing before the webview finishes loading,
    * providing instant completions when the user presses Tab.
    *
    * Native VS Code notebooks create TextDocuments immediately when opening,
-   * giving Pylance time to analyze. Datalayer notebooks now do the same!
+   * giving Pylance time to analyze. Datalayer notebooks now do the same.
    *
-   * @param notebookId - Unique notebook identifier
-   * @param documentData - Raw .ipynb file bytes
+   * @param notebookId - Unique notebook identifier.
+   * @param documentData - Raw .ipynb file bytes to parse.
    */
   private async createProactiveLSPDocuments(
     notebookId: string,
@@ -710,12 +717,13 @@ export class NotebookProvider extends BaseDocumentProvider<NotebookDocument> {
   }
 
   /**
-   * Get LLM completion from VS Code Language Model API.
+   * Gets an LLM completion from VS Code Language Model API.
    *
-   * @param prefix - Code before cursor
-   * @param suffix - Code after cursor
-   * @param language - Programming language
-   * @returns Completion string or null
+   * @param prefix - Code text before the cursor position.
+   * @param suffix - Code text after the cursor position.
+   * @param language - Programming language for context.
+   *
+   * @returns Completion string or null if unavailable.
    */
   private async getLLMCompletion(
     prefix: string,
@@ -767,10 +775,11 @@ Complete the code at <CURSOR>:`;
   }
 
   /**
-   * Clean LLM completion output by removing markdown code blocks.
+   * Cleans LLM completion output by removing markdown code blocks.
    *
-   * @param completion - Raw completion from LLM
-   * @returns Cleaned completion
+   * @param completion - Raw completion text from the language model.
+   *
+   * @returns Cleaned completion text ready for insertion.
    */
   private cleanCompletion(completion: string): string {
     completion = completion.trim();
@@ -786,11 +795,12 @@ Complete the code at <CURSOR>:`;
   }
 
   /**
-   * Saves a custom document.
+   * Saves a custom document to its original location.
    *
-   * @param document - Document to save
-   * @param cancellation - Cancellation token
-   * @returns Promise that resolves when save is complete
+   * @param document - Notebook document to persist.
+   * @param cancellation - Cancellation token for aborting the save.
+   *
+   * @returns Promise that resolves when the save is complete.
    */
   public override saveCustomDocument(
     document: NotebookDocument,
@@ -802,10 +812,11 @@ Complete the code at <CURSOR>:`;
   /**
    * Saves a custom document to a new location.
    *
-   * @param document - Document to save
-   * @param destination - Target URI for saving
-   * @param cancellation - Cancellation token
-   * @returns Promise that resolves when save is complete
+   * @param document - Notebook document to save.
+   * @param destination - Target URI for the saved copy.
+   * @param cancellation - Cancellation token for aborting the save.
+   *
+   * @returns Promise that resolves when the save is complete.
    */
   public override saveCustomDocumentAs(
     document: NotebookDocument,
@@ -816,11 +827,12 @@ Complete the code at <CURSOR>:`;
   }
 
   /**
-   * Reverts a custom document to its saved state.
+   * Reverts a custom document to its last saved state.
    *
-   * @param document - Document to revert
-   * @param cancellation - Cancellation token
-   * @returns Promise that resolves when revert is complete
+   * @param document - Notebook document to revert.
+   * @param cancellation - Cancellation token for aborting the revert.
+   *
+   * @returns Promise that resolves when the revert is complete.
    */
   public override revertCustomDocument(
     document: NotebookDocument,
@@ -830,12 +842,13 @@ Complete the code at <CURSOR>:`;
   }
 
   /**
-   * Creates a backup of a custom document.
+   * Creates a backup of a custom document for crash recovery.
    *
-   * @param document - Document to backup
-   * @param context - Backup context with destination
-   * @param cancellation - Cancellation token
-   * @returns Promise resolving to backup descriptor
+   * @param document - Notebook document to backup.
+   * @param context - Backup context with destination URI.
+   * @param cancellation - Cancellation token for aborting the backup.
+   *
+   * @returns Promise resolving to backup descriptor with cleanup function.
    */
   public override backupCustomDocument(
     document: NotebookDocument,
@@ -846,10 +859,11 @@ Complete the code at <CURSOR>:`;
   }
 
   /**
-   * Get the static HTML used for the editor's webviews.
+   * Gets the HTML content for the editor's webview.
    *
-   * @param webview - The webview instance
-   * @returns HTML content for the webview
+   * @param webview - The webview instance to generate content for.
+   *
+   * @returns HTML content string for the webview.
    */
   private getHtmlForWebview(webview: vscode.Webview): string {
     // Read Pyodide version from configuration
@@ -905,8 +919,9 @@ Complete the code at <CURSOR>:`;
   /**
    * Gets the URI for a notebook document.
    *
-   * @param document - The notebook document
-   * @returns The document URI
+   * @param document - The notebook document to extract the URI from.
+   *
+   * @returns The document URI identifying the file location.
    */
   protected override getDocumentUri(document: NotebookDocument): vscode.Uri {
     return document.uri;
@@ -916,7 +931,7 @@ Complete the code at <CURSOR>:`;
    * Shows the Datalayer runtime selector dialog.
    * Helper method to avoid code duplication.
    *
-   * @param document - The notebook document
+   * @param document - The notebook document to connect a runtime to.
    */
   private showDatalayerRuntimeSelector(document: NotebookDocument): void {
     const datalayer = getServiceContainer().datalayer;
@@ -962,7 +977,7 @@ Complete the code at <CURSOR>:`;
   /**
    * Attempts to auto-connect the document to a runtime using configured strategies.
    *
-   * @param documentUri - URI of the document being opened
+   * @param documentUri - URI of the document being opened.
    */
   private async tryAutoConnect(documentUri: vscode.Uri): Promise<void> {
     try {

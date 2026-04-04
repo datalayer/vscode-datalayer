@@ -12,6 +12,9 @@ export class RealFileContextProvider {
 
   constructor(private context: vscode.ExtensionContext) {}
 
+  /**
+   * Initializes the context file provider by creating a context file and watching for tab changes.
+   */
   async activate(): Promise<void> {
     // Create context file in workspace .vscode folder
     const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
@@ -53,6 +56,9 @@ export class RealFileContextProvider {
     await this.openContextFileInBackground();
   }
 
+  /**
+   * Writes current editor context information to the context file for Copilot consumption.
+   */
   private async updateContextFile(): Promise<void> {
     if (!this.contextFilePath) {
       return;
@@ -86,6 +92,9 @@ export class RealFileContextProvider {
     );
   }
 
+  /**
+   * Opens the context file in a background tab so Copilot can access it without user visibility.
+   */
   private async openContextFileInBackground(): Promise<void> {
     if (!this.contextFilePath) {
       return;

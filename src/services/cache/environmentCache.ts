@@ -38,7 +38,7 @@ export class EnvironmentCache {
   /**
    * Gets the singleton instance of EnvironmentCache.
    *
-   * @returns The singleton instance
+   * @returns The singleton instance.
    */
   public static getInstance(): EnvironmentCache {
     if (!EnvironmentCache._instance) {
@@ -55,10 +55,11 @@ export class EnvironmentCache {
   /**
    * Gets cached environments or fetches them if cache is stale.
    *
-   * @param datalayer - Datalayer instance
-   * @param authProvider - Authentication provider to check if user is logged in
-   * @param forceRefresh - Force refresh even if cache is valid
-   * @returns Array of available environments
+   * @param datalayer - Datalayer instance.
+   * @param authProvider - Authentication provider to check if user is logged in.
+   * @param forceRefresh - Force refresh even if cache is valid.
+   *
+   * @returns Array of available environments.
    */
   public async getEnvironments(
     datalayer: DatalayerClient,
@@ -95,7 +96,7 @@ export class EnvironmentCache {
   /**
    * Fetches environments from the API.
    *
-   * @param datalayer - Datalayer instance
+   * @param datalayer - Datalayer instance.
    */
   private async fetchEnvironments(datalayer: DatalayerClient): Promise<void> {
     this._fetching = true;
@@ -148,7 +149,7 @@ export class EnvironmentCache {
    * Refreshes environment cache when user logs in.
    * Should be called when authentication state changes to authenticated.
    *
-   * @param datalayer - Datalayer instance
+   * @param datalayer - Datalayer instance.
    */
   public async onUserLogin(datalayer: DatalayerClient): Promise<void> {
     // Clear stale cache and fetch fresh environments
@@ -171,7 +172,7 @@ export class EnvironmentCache {
   /**
    * Sets custom cache timeout.
    *
-   * @param timeout - Timeout in milliseconds
+   * @param timeout - Timeout in milliseconds.
    */
   public setCacheTimeout(timeout: number): void {
     this._cacheTimeout = timeout;
@@ -180,7 +181,7 @@ export class EnvironmentCache {
   /**
    * Gets current cache status.
    *
-   * @returns Cache status information
+   * @returns Cache status information.
    */
   public getStatus(): {
     /** Number of cached environments */

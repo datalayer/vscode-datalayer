@@ -24,18 +24,14 @@ import { getServiceContainer } from "../../extension";
  * Sets up authentication state synchronization with UI components.
  * Configures event handlers and initial context variables.
  *
- * @param authProvider - Authentication provider instance
- * @param spacesTreeProvider - Spaces tree view provider
- * @param controllerManager - Dynamic controller manager
- * @param runtimesTreeProvider - Runtimes tree view provider
- * @param settingsTreeProvider - Settings tree view provider
- * @returns Function to manually update authentication state
+ * @param authProvider - Authentication provider instance.
+ * @param spacesTreeProvider - Spaces tree view provider.
+ * @param controllerManager - Dynamic controller manager.
+ * @param runtimesTreeProvider - Runtimes tree view provider.
+ * @param settingsTreeProvider - Settings tree view provider.
  *
- * @example
- * ```typescript
- * const updateAuth = setupAuthStateManagement(authProvider, spacesTree, platformController, runtimesTree, settingsTree);
- * // Authentication state changes are handled automatically
- * ```
+ * @returns Function to manually update authentication state.
+ *
  */
 export function setupAuthStateManagement(
   authProvider: DatalayerAuthProvider,

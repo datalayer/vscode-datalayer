@@ -18,16 +18,10 @@ import * as vscode from "vscode";
  * Uses a bottom-right notification instead of blocking modal dialog.
  * This ensures a better user experience that doesn't interrupt workflow.
  *
- * @param source - Optional source description (e.g., "Datalayer Platform", "Runtime Selection")
- * @returns Promise that resolves to true if user clicked Login, false otherwise
+ * @param source - Optional source description (e.g., "Datalayer Platform", "Runtime Selection").
  *
- * @example
- * ```typescript
- * const shouldLogin = await showAuthenticationDialog("Datalayer Platform");
- * if (shouldLogin) {
- *   await vscode.commands.executeCommand("datalayer.login");
- * }
- * ```
+ * @returns Promise that resolves to true if user clicked Login, false otherwise.
+ *
  */
 export async function showAuthenticationDialog(
   source?: string,
@@ -49,18 +43,10 @@ export async function showAuthenticationDialog(
  * Shows authentication dialog and executes login command if user accepts.
  * This is a convenience function that combines the dialog with the login action.
  *
- * @param source - Optional source description
- * @returns Promise that resolves to true if login was initiated, false if cancelled
+ * @param source - Optional source description.
  *
- * @example
- * ```typescript
- * const loginInitiated = await promptAndLogin("Runtime Selection");
- * if (!loginInitiated) {
- *   // User cancelled, handle accordingly
- *   return;
- * }
- * // Continue with authenticated flow
- * ```
+ * @returns Promise that resolves to true if login was initiated, false if cancelled.
+ *
  */
 export async function promptAndLogin(source?: string): Promise<boolean> {
   const shouldLogin = await showAuthenticationDialog(source);
@@ -78,7 +64,7 @@ export async function promptAndLogin(source?: string): Promise<boolean> {
  * Shows a simpler error message for authentication requirements.
  * Use this for contexts where a full modal dialog would be disruptive.
  *
- * @param context - Optional context description
+ * @param context - Optional context description for the error message.
  */
 export function showAuthenticationError(context?: string): void {
   const message = context

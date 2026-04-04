@@ -24,32 +24,32 @@ import { hasIpykernel } from "../utils/ipykernelDetection";
 import { ensurePythonExtensionActive } from "../utils/pythonExtensionActivation";
 
 /**
- * Kernel information representing a local or cloud kernel available for execution
+ * Kernel information representing a local or cloud kernel available for execution.
  */
 export interface KernelInfo {
-  /** Unique identifier for the kernel */
+  /** Unique identifier for the kernel. */
   id: string;
-  /** Technical name of the kernel (e.g., "python3") */
+  /** Technical name of the kernel (e.g., "python3"). */
   name: string;
-  /** Human-readable display name shown in UI */
+  /** Human-readable display name shown in UI. */
   displayName: string;
-  /** Programming language supported by the kernel */
+  /** Programming language supported by the kernel. */
   language: string;
-  /** Execution environment type */
+  /** Execution environment type. */
   type: "local" | "cloud";
-  /** Current operational status of the kernel */
+  /** Current operational status of the kernel. */
   status: "idle" | "busy" | "starting" | "stopped";
-  /** Additional metadata about the kernel (e.g., Python path, environment info) */
+  /** Additional metadata about the kernel (e.g., Python path, environment info). */
   metadata?: Record<string, unknown>;
 }
 
 /**
- * Result of listing available kernels
+ * Result of listing available kernels with optional chat context message.
  */
 export interface ListKernelsResult {
-  /** Array of available kernels matching the filter criteria */
+  /** Array of available kernels matching the filter criteria. */
   kernels: KernelInfo[];
-  /** Optional informative message for AI chat context about the kernels found */
+  /** Optional informative message for AI chat context about the kernels found. */
   chatMessage?: string;
 }
 
@@ -66,11 +66,12 @@ export const listKernelsOperation: ToolOperation<
   name: "listKernels",
 
   /**
-   * Execute the list kernels operation
+   * Executes the list kernels operation.
    *
-   * @param params - Parameters controlling which kernels to list and how to filter them
-   * @param context - Execution context containing Datalayer client and auth provider
-   * @returns Promise resolving to list of available kernels with optional chat message
+   * @param params - Parameters controlling which kernels to list and how to filter them.
+   * @param context - Execution context containing Datalayer client and auth provider.
+   *
+   * @returns Promise resolving to list of available kernels with optional chat message.
    */
   async execute(params, context): Promise<ListKernelsResult> {
     // Validate params with Zod

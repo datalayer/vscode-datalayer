@@ -22,31 +22,32 @@ import { selectKernelOperation } from "../operations/selectKernel";
 import { executeCodeOperation } from "../operations/executeCode";
 
 /**
- * Combined operations registry type
+ * Combined operations registry type.
  *
- * Maps operation names to their corresponding ToolOperation implementations
+ * Maps operation names to their corresponding ToolOperation implementations.
  */
 export interface CombinedOperations {
-  /** List available Jupyter kernels */
+  /** Lists available Jupyter kernels for notebook execution. */
   listKernels: ToolOperation<unknown, unknown>;
-  /** Select a Jupyter kernel for the active document */
+  /** Selects a Jupyter kernel for the active document. */
   selectKernel: ToolOperation<unknown, unknown>;
-  /** Get the currently active document in VS Code */
+  /** Gets the currently active document in VS Code. */
   getActiveDocument: ToolOperation<unknown, unknown>;
-  /** Create a new notebook (local or remote) */
+  /** Creates a new notebook (local or remote). */
   createNotebook: ToolOperation<unknown, unknown>;
-  /** Create a new Lexical document */
+  /** Creates a new Lexical document. */
   createLexical: ToolOperation<unknown, unknown>;
-  /** Execute code in a notebook or runtime */
+  /** Executes code in a notebook or runtime. */
   executeCode: ToolOperation<unknown, unknown>;
-  /** Additional operations from notebook and lexical packages */
+  /** Additional operations from notebook and lexical packages. */
   [key: string]: ToolOperation<unknown, unknown>;
 }
 
 /**
- * Get combined operations registry
+ * Builds and returns the combined operations registry by lazily loading package operations.
  *
- * @returns Combined operations registry
+ * @returns Combined operations registry mapping operation names to implementations.
+ *
  * @internal
  */
 export async function getCombinedOperations(): Promise<CombinedOperations> {
@@ -80,29 +81,23 @@ export async function getCombinedOperations(): Promise<CombinedOperations> {
 }
 
 /**
- * Validation result for tool definitions
+ * Validation result indicating whether all tool definitions have matching operations.
  */
 export interface ToolValidationResult {
-  /** Whether all tool definitions have corresponding operations */
+  /** Whether all tool definitions have corresponding operations. */
   valid: boolean;
-  /** Array of error messages for missing operations */
+  /** Array of error messages for missing operations. */
   errors: string[];
 }
 
 /**
- * Validates that all tool definitions have corresponding operations
+ * Validates that all tool definitions have corresponding operations.
  *
- * @param definitions - Array of tool definitions to validate
- * @param operations - Registry of available operations
- * @returns Validation result with errors if any
+ * @param definitions - Array of tool definitions to validate.
+ * @param operations - Registry of available operations.
  *
- * @example
- * ```typescript
- * const validation = validateToolDefinitions(allToolDefinitions, allOperations);
- * if (!validation.valid) {
- *   console.error("Missing operations:", validation.errors);
- * }
- * ```
+ * @returns Validation result with errors if any.
+ *
  */
 export function validateToolDefinitions(
   definitions: readonly ToolDefinition[],
@@ -130,15 +125,12 @@ export function validateToolDefinitions(
  * This function replaces manual tool registration with automatic
  * registration based on tool definitions and core operations.
  *
- * @param context - VS Code extension context
- * @param definitions - Optional array of tool definitions (if not provided, will be loaded dynamically)
- * @param operations - Optional registry of core operations (if not provided, will be loaded dynamically)
+ * @param context - VS Code extension context.
+ * @param definitions - Optional array of tool definitions (if not provided, will be loaded dynamically).
+ * @param operations - Optional registry of core operations (if not provided, will be loaded dynamically).
  *
- * @example
- * ```typescript
- * // In extension.ts activate():
- * await registerVSCodeTools(context);
- * ```
+ * @throws Error if tool validation fails in non-production environments.
+ *
  */
 export async function registerVSCodeTools(
   context: vscode.ExtensionContext,
@@ -202,22 +194,14 @@ export async function registerVSCodeTools(
 }
 
 /**
- * Registers a single tool (for testing or selective registration)
+ * Registers a single tool (for testing or selective registration).
  *
- * @param context - VS Code extension context
- * @param definition - Tool definition to register
- * @param operation - Core operation implementation
- * @returns Disposable for cleanup
+ * @param context - VS Code extension context.
+ * @param definition - Tool definition to register.
+ * @param operation - Core operation implementation.
  *
- * @example
- * ```typescript
- * // Register a single tool for testing
- * const disposable = registerSingleTool(
- *   context,
- *   createNotebookDefinition,
- *   createNotebookOperation
- * );
- * ```
+ * @returns Disposable for cleanup.
+ *
  */
 export function registerSingleTool(
   context: vscode.ExtensionContext,

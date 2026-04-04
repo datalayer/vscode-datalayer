@@ -12,6 +12,16 @@
  */
 
 /**
+ * Describes an action that can be presented to the user in an error notification.
+ */
+export interface ErrorAction {
+  /** Display title for the action button. */
+  title: string;
+  /** Callback invoked when the user selects this action. */
+  action: () => void | Promise<void>;
+}
+
+/**
  * Options for error handling behavior.
  */
 export interface ErrorHandlerOptions {
@@ -22,7 +32,7 @@ export interface ErrorHandlerOptions {
   /** Severity level for user notifications */
   severity?: "error" | "warning" | "info";
   /** Actionable items to present to user */
-  actionable?: Array<{ title: string; action: () => void | Promise<void> }>;
+  actionable?: ErrorAction[];
   /** Additional context for debugging */
   context?: Record<string, unknown>;
 }
@@ -38,6 +48,7 @@ export interface IErrorHandler {
    *
    * @param error - The error to handle
    * @param options - Error handling options
+   *
    * @returns Promise resolving when handling is complete
    */
   handle(error: Error, options?: ErrorHandlerOptions): Promise<void>;
@@ -48,6 +59,7 @@ export interface IErrorHandler {
    *
    * @param operation - Async operation to wrap
    * @param options - Error handling options
+   *
    * @returns Promise resolving to operation result or undefined on error
    */
   wrap<T>(
@@ -61,11 +73,12 @@ export interface IErrorHandler {
    * @param message - User-friendly error message
    * @param severity - Severity level
    * @param actions - Optional actions for the user
+   *
    * @returns Promise resolving to selected action or undefined
    */
   showError(
     message: string,
     severity?: "error" | "warning" | "info",
-    actions?: Array<{ title: string; action: () => void | Promise<void> }>,
+    actions?: ErrorAction[],
   ): Promise<void>;
 }

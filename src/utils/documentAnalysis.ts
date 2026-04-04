@@ -13,31 +13,34 @@
 
 import * as vscode from "vscode";
 
+/**
+ * Result of analyzing all open documents categorized by editor type and location.
+ */
 export interface DocumentAnalysisResult {
-  /** Native VS Code notebooks (opened with default notebook editor) */
+  /** Native VS Code notebooks (opened with default notebook editor). */
   nativeNotebooks: string[];
-  /** Local Datalayer documents - notebooks and lexicals (file:// or untitled://) */
+  /** Local Datalayer documents - notebooks and lexicals (file:// or untitled://). */
   localDatalayerDocuments: string[];
-  /** Cloud Datalayer documents - notebooks and lexicals (datalayer:// scheme) */
+  /** Cloud Datalayer documents - notebooks and lexicals (datalayer:// scheme). */
   cloudDatalayerDocuments: string[];
-  /** Total count of all documents */
+  /** Total count of all documents. */
   total: number;
-  /** Majority type based on counts */
+  /** Majority type based on counts. */
   majorityType: "native" | "local" | "cloud" | "none";
-  /** Active document URI (if any) */
+  /** Active document URI (if any). */
   activeDocumentUri?: string;
 }
 
 /**
  * Analyzes ALL open documents (notebooks AND lexicals) in VS Code workspace.
  *
- * ULTRA SMART DETECTION:
- * - Checks vscode.window.tabGroups to get ALL open documents including custom editors
- * - Distinguishes native VS Code notebooks from Datalayer local documents
- * - Detects cloud Datalayer documents (notebooks + lexicals) via datalayer:// URI scheme
- * - Includes lexical documents in the analysis for complete context
+ * Smart detection approach:
+ * - Checks vscode.window.tabGroups to get all open documents including custom editors.
+ * - Distinguishes native VS Code notebooks from Datalayer local documents.
+ * - Detects cloud Datalayer documents (notebooks + lexicals) via datalayer:// URI scheme.
+ * - Includes lexical documents in the analysis for complete context.
  *
- * @returns Complete analysis of all open documents with categorization
+ * @returns Complete analysis of all open documents with categorization.
  */
 export function analyzeOpenDocuments(): DocumentAnalysisResult {
   const nativeNotebooks: string[] = [];
@@ -208,7 +211,7 @@ export function analyzeOpenDocuments(): DocumentAnalysisResult {
 /**
  * Gets all open notebook URIs (regardless of type).
  *
- * @returns Array of all notebook URIs currently open in workspace
+ * @returns Array of all notebook URIs currently open in workspace.
  */
 export function getAllOpenNotebookUris(): string[] {
   return vscode.workspace.notebookDocuments.map((nb) => nb.uri.toString());
@@ -217,7 +220,7 @@ export function getAllOpenNotebookUris(): string[] {
 /**
  * Gets the active notebook URI (if any).
  *
- * @returns URI of the active notebook, or undefined if no notebook is active
+ * @returns URI of the active notebook, or undefined if no notebook is active.
  */
 export function getActiveNotebookUri(): string | undefined {
   const activeEditor = vscode.window.activeNotebookEditor;
@@ -227,8 +230,9 @@ export function getActiveNotebookUri(): string | undefined {
 /**
  * Checks if a URI is a Datalayer document (notebook or lexical, local or cloud).
  *
- * @param uri - The URI to check
- * @returns True if it's a Datalayer document (not native)
+ * @param uri - The URI to check.
+ *
+ * @returns True if it's a Datalayer document (not native).
  */
 export function isDatalayerNotebook(uri: vscode.Uri): boolean {
   // Cloud Datalayer documents (notebooks or lexicals)
@@ -275,8 +279,9 @@ export function isDatalayerNotebook(uri: vscode.Uri): boolean {
 /**
  * Checks if a URI is a cloud Datalayer document (notebook or lexical).
  *
- * @param uri - The URI to check
- * @returns True if it's a cloud document
+ * @param uri - The URI to check.
+ *
+ * @returns True if it's a cloud document.
  */
 export function isCloudNotebook(uri: vscode.Uri): boolean {
   return uri.scheme === "datalayer";
@@ -285,8 +290,9 @@ export function isCloudNotebook(uri: vscode.Uri): boolean {
 /**
  * Checks if a URI is a local document (notebook or lexical, native or Datalayer).
  *
- * @param uri - The URI to check
- * @returns True if it's a local file
+ * @param uri - The URI to check.
+ *
+ * @returns True if it's a local file.
  */
 export function isLocalNotebook(uri: vscode.Uri): boolean {
   return (
