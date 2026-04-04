@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2023 Datalayer, Inc.
+ * Copyright (c) 2021-2025 Datalayer, Inc.
  *
  * MIT License
  */
@@ -12,10 +12,10 @@
  */
 
 import {
-  uniqueNamesGenerator,
   adjectives,
   animals,
   Config,
+  uniqueNamesGenerator,
 } from "unique-names-generator";
 
 /**

@@ -11,8 +11,8 @@
  * @module models/runtimeTreeItem
  */
 
-import * as vscode from "vscode";
 import type { RuntimeDTO } from "@datalayer/core/lib/models/RuntimeDTO";
+import * as vscode from "vscode";
 
 /**
  * Tree item for displaying a runtime in the VS Code tree view.

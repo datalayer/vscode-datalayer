@@ -11,11 +11,13 @@
  * @module services/pyodide/pyodideCacheManager
  */
 
-import * as vscode from "vscode";
 import * as fs from "fs/promises";
-import * as path from "path";
 import * as https from "https";
+import * as path from "path";
 import type { PyodideInterface } from "pyodide";
+import * as vscode from "vscode";
+
+import { ServiceLoggers } from "../logging/loggers";
 
 /**
  * Manages Pyodide cache in local filesystem for native notebooks.
@@ -45,9 +47,9 @@ export class PyodideCacheManager {
     // Check if already cached
     try {
       await fs.access(pyodideCacheDir);
-      console.log(
+      ServiceLoggers.runtime.debug(
         "[PyodideCacheManager] Using cached Pyodide at:",
-        pyodideCacheDir,
+        { detail: pyodideCacheDir },
       );
       progress?.report({
         message: "Pyodide core files already cached",
@@ -56,7 +58,7 @@ export class PyodideCacheManager {
       return pyodideCacheDir;
     } catch {
       // Not cached, need to download
-      console.log(
+      ServiceLoggers.runtime.debug(
         "[PyodideCacheManager] Downloading Pyodide v" + version + "...",
       );
     }
@@ -87,9 +89,9 @@ export class PyodideCacheManager {
       await this._downloadFile(url, destPath);
     }
 
-    console.log(
+    ServiceLoggers.runtime.debug(
       "[PyodideCacheManager] Pyodide core downloaded to:",
-      pyodideCacheDir,
+      { detail: pyodideCacheDir },
     );
     return pyodideCacheDir;
   }
@@ -167,14 +169,16 @@ export class PyodideCacheManager {
       try {
         await micropip.install(pkg);
         succeeded.push(pkg);
-        console.log(`[PyodideCacheManager] Downloaded package: ${pkg}`);
+        ServiceLoggers.runtime.debug(
+          `[PyodideCacheManager] Downloaded package: ${pkg}`,
+        );
       } catch (error) {
         failed.push(pkg);
         console.warn(`[PyodideCacheManager] Failed to download ${pkg}:`, error);
       }
     }
 
-    console.log(
+    ServiceLoggers.runtime.debug(
       `[PyodideCacheManager] Package preload complete: ${succeeded.length} succeeded, ${failed.length} failed`,
     );
 

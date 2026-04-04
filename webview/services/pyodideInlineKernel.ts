@@ -11,13 +11,14 @@
  * Loads Pyodide from bundled resources using fetch+eval instead of importScripts.
  */
 
-import { Kernel, ServerConnection, KernelMessage } from "@jupyterlab/services";
-import { Signal, ISignal } from "@lumino/signaling";
+import { Kernel, KernelMessage, ServerConnection } from "@jupyterlab/services";
+import { ISignal, Signal } from "@lumino/signaling";
+
+// @ts-ignore - Import Python file as raw text
+import pyodideKernelCode from "./pyodide/pyodide_kernel.py";
 // Worker will be imported as raw JavaScript via webpack asset/source loader
 // @ts-ignore - Import worker file as raw text
 import pyodideWorkerCode from "./pyodide/pyodideWorker.worker.js";
-// @ts-ignore - Import Python file as raw text
-import pyodideKernelCode from "./pyodide/pyodide_kernel.py";
 
 // Worker message types
 interface WorkerStatusMessage {
@@ -286,7 +287,161 @@ export class PyodideInlineKernel implements Kernel.IKernelConnection {
   }
 
   /**
-   * Process incoming worker messages and emit appropriate signals.
+   * Creates a standard iopub message header.
+   * @param msgType - Jupyter message type identifier.
+   *
+   * @returns Header object with message ID, type, timestamp, username, and session.
+   */
+  private _createIopubHeader(msgType: string): Record<string, unknown> {
+    return {
+      msg_id: `${msgType}_${Date.now()}`,
+      msg_type: msgType,
+      date: new Date().toISOString(),
+      username: this.username,
+      session: this.clientId,
+    };
+  }
+
+  /**
+   * Emits an iopub message on both iopub and any-message signals.
+   * @param iopubMsg - The iopub message object to emit.
+   */
+  private _emitIopub(iopubMsg: Record<string, unknown>): void {
+    this._iopubMessage.emit(createMessageArgs(iopubMsg));
+    this._anyMessage.emit(createMessageArgs(iopubMsg));
+  }
+
+  /**
+   * Handles a worker 'status' message by updating kernel status and emitting iopub events.
+   * @param msg - Worker message containing the new kernel status and optional execution ID.
+   * @param parentHeader - Header from the parent request that triggered this status change.
+   */
+  private _handleStatusMessage(
+    msg: WorkerStatusMessage,
+    parentHeader: Record<string, unknown>,
+  ): void {
+    const status = msg.status as Kernel.Status;
+    if (status !== this._status) {
+      this._status = status;
+      this._statusChanged.emit(this._status);
+    }
+
+    // When transitioning to busy, increment execution count and send execute_input
+    const statusMsgId = "id" in msg ? (msg as { id: number }).id : undefined;
+    if (
+      status === "busy" &&
+      this._currentExecuteCode &&
+      statusMsgId !== undefined
+    ) {
+      this._executionCount++;
+      this._executionCounts.set(statusMsgId, this._executionCount);
+
+      this._emitIopub({
+        header: this._createIopubHeader("execute_input"),
+        parent_header: parentHeader,
+        metadata: {},
+        content: {
+          code: this._currentExecuteCode,
+          execution_count: this._executionCount,
+        },
+        channel: "iopub",
+      });
+    }
+
+    this._emitIopub({
+      header: this._createIopubHeader("status"),
+      parent_header: parentHeader,
+      metadata: {},
+      content: { execution_state: status },
+      channel: "iopub",
+    });
+
+    const msgId = "id" in msg ? (msg as { id: number }).id : undefined;
+    if (status === "idle" && msgId !== undefined) {
+      this._executionHeaders.delete(msgId);
+      this._executionCounts.delete(msgId);
+    }
+  }
+
+  /**
+   * Formats an execute_result into a MIME bundle for iopub emission.
+   * @param msg - Worker message containing the execution result to format.
+   *
+   * @returns Object with MIME-typed data and associated metadata.
+   */
+  private _formatResultData(msg: WorkerExecuteResultMessage): {
+    data: Record<string, any>;
+    metadata: Record<string, any>;
+  } {
+    let metadata: Record<string, any> = msg.metadata || {};
+
+    if (
+      msg.result &&
+      typeof msg.result === "object" &&
+      !Array.isArray(msg.result)
+    ) {
+      const keys = Object.keys(msg.result);
+      const hasMimeType = keys.some(
+        (k) =>
+          k.startsWith("text/") ||
+          k.startsWith("image/") ||
+          k.startsWith("application/"),
+      );
+
+      if (hasMimeType) {
+        console.error("MIME bundle in execute_result! Keys:", keys.join(", "));
+        const data = msg.result as Record<string, any>;
+        if (data["application/vnd.plotly.v1+json"]) {
+          console.error("PLOTLY JSON in execute_result - REMOVING text/html!");
+          delete data["text/html"];
+        }
+        return { data, metadata };
+      }
+
+      console.error("Non-MIME object in execute_result, stringifying");
+      return { data: { "text/plain": String(msg.result) }, metadata };
+    }
+
+    return { data: { "text/plain": String(msg.result) }, metadata };
+  }
+
+  /**
+   * Handles a worker 'execute_result' message.
+   * @param msg - Worker message containing the execution result and optional execution ID.
+   * @param parentHeader - Header from the parent execute_request that produced this result.
+   */
+  private _handleExecuteResultMessage(
+    msg: WorkerExecuteResultMessage,
+    parentHeader: Record<string, unknown>,
+  ): void {
+    const resultKeys =
+      msg.result && typeof msg.result === "object"
+        ? Object.keys(msg.result)
+        : [];
+    console.error(
+      "[PyodideInlineKernel] execute_result! Result keys:",
+      resultKeys.join(", "),
+    );
+
+    const msgId = "id" in msg ? (msg as { id: number }).id : undefined;
+    const executionCount =
+      msgId !== undefined
+        ? this._executionCounts.get(msgId) || this._executionCount
+        : this._executionCount;
+
+    const { data, metadata } = this._formatResultData(msg);
+
+    this._emitIopub({
+      header: this._createIopubHeader("execute_result"),
+      parent_header: parentHeader,
+      metadata: {},
+      content: { execution_count: executionCount, data, metadata },
+      channel: "iopub",
+    });
+  }
+
+  /**
+   * Dispatches incoming worker messages to type-specific handlers and emits iopub signals.
    * @param msg - Message received from the Pyodide web worker.
    */
   private _handleWorkerMessage(msg: WorkerMessage): void {
@@ -300,8 +455,6 @@ export class PyodideInlineKernel implements Kernel.IKernelConnection {
     }
 
     // IMPORTANT: Get the correct parent header for this execution
-    // Each message has an 'id' that corresponds to the execution msgId
-    // WorkerReadyMessage and WorkerFetchRequestMessage don't have execution-related IDs
     const msgId =
       msg.type !== "ready" && msg.type !== "fetch-request" ? msg.id : undefined;
     const parentHeader =
@@ -309,196 +462,27 @@ export class PyodideInlineKernel implements Kernel.IKernelConnection {
         ? this._executionHeaders.get(msgId) || this._currentExecuteHeader || {}
         : this._currentExecuteHeader || {};
 
-    // Debug logging for message routing (disabled)
-
     if (msg.type === "status") {
-      const status = msg.status as Kernel.Status;
-      if (status !== this._status) {
-        this._status = status;
-        this._statusChanged.emit(this._status);
-      }
-
-      // When transitioning to busy, increment execution count and send execute_input
-      if (
-        status === "busy" &&
-        this._currentExecuteCode &&
-        msg.id !== undefined
-      ) {
-        this._executionCount++;
-
-        // Store execution count for this specific execution ID
-        this._executionCounts.set(msg.id, this._executionCount);
-
-        // Emit execute_input message with execution count
-        const executeInputMsg = {
-          header: {
-            msg_id: `execute_input_${Date.now()}`,
-            msg_type: "execute_input",
-            date: new Date().toISOString(),
-            username: this.username,
-            session: this.clientId,
-          },
-          parent_header: parentHeader,
-          metadata: {},
-          content: {
-            code: this._currentExecuteCode,
-            execution_count: this._executionCount,
-          },
-          channel: "iopub",
-        };
-        this._iopubMessage.emit(createMessageArgs(executeInputMsg));
-        this._anyMessage.emit(createMessageArgs(executeInputMsg));
-      }
-
-      // Emit status message
-      const iopubMsg = {
-        header: {
-          msg_id: `status_${Date.now()}`,
-          msg_type: "status",
-          date: new Date().toISOString(), // Required for timing hooks
-          username: this.username,
-          session: this.clientId,
-        },
-        parent_header: parentHeader,
-        metadata: {},
-        content: {
-          execution_state: status,
-        },
-        channel: "iopub",
-      };
-      this._iopubMessage.emit(createMessageArgs(iopubMsg));
-      this._anyMessage.emit(createMessageArgs(iopubMsg));
-
-      // Clean up header and execution count after execution completes (status goes to idle)
-      if (status === "idle" && msg.id !== undefined) {
-        this._executionHeaders.delete(msg.id);
-        this._executionCounts.delete(msg.id);
-      }
+      this._handleStatusMessage(msg, parentHeader);
     } else if (msg.type === "stream") {
-      // Emit stream output (stdout/stderr) as iopub message
-      const iopubMsg = {
-        header: {
-          msg_id: `stream_${Date.now()}`,
-          msg_type: "stream",
-          date: new Date().toISOString(), // Required for timing hooks
-          username: this.username,
-          session: this.clientId,
-        },
+      this._emitIopub({
+        header: this._createIopubHeader("stream"),
         parent_header: parentHeader,
         metadata: {},
-        content: {
-          name: msg.name, // 'stdout' or 'stderr'
-          text: msg.text,
-        },
+        content: { name: msg.name, text: msg.text },
         channel: "iopub",
-      };
-      this._iopubMessage.emit(createMessageArgs(iopubMsg));
-      this._anyMessage.emit(createMessageArgs(iopubMsg));
+      });
     } else if (msg.type === "execute_result") {
-      const resultKeys =
-        msg.result && typeof msg.result === "object"
-          ? Object.keys(msg.result)
-          : [];
-      console.error(
-        "🔵🔵🔵 [PyodideInlineKernel] execute_result! Result keys:",
-        resultKeys.join(", "),
-      );
-
-      // Get the execution count for this specific execution
-      const executionCount =
-        msg.id !== undefined
-          ? this._executionCounts.get(msg.id) || this._executionCount
-          : this._executionCount;
-
-      // Format the result data - handle rich display outputs
-      let data: Record<string, any>;
-      let metadata: Record<string, any> = msg.metadata || {};
-
-      // Check if result is already a MIME bundle (dict with mime types as keys)
-      if (
-        msg.result &&
-        typeof msg.result === "object" &&
-        !Array.isArray(msg.result)
-      ) {
-        const keys = Object.keys(msg.result);
-        const hasMimeType = keys.some(
-          (k) =>
-            k.startsWith("text/") ||
-            k.startsWith("image/") ||
-            k.startsWith("application/"),
-        );
-
-        if (hasMimeType) {
-          // It's already a MIME bundle
-          console.error(
-            "✅✅✅ MIME bundle in execute_result! Keys:",
-            keys.join(", "),
-          );
-          data = msg.result as Record<string, any>;
-
-          // Filter out text/html if Plotly JSON exists (same as display_data)
-          if (data["application/vnd.plotly.v1+json"]) {
-            console.error(
-              "🎯🎯🎯 PLOTLY JSON in execute_result - REMOVING text/html!",
-            );
-            delete data["text/html"];
-            console.error(
-              "🎯🎯🎯 After filtering, keys:",
-              Object.keys(data).join(", "),
-            );
-          }
-        } else {
-          // Regular object, stringify it
-          console.error(
-            "⚠️⚠️⚠️ Non-MIME object in execute_result, stringifying",
-          );
-          data = {
-            "text/plain": String(msg.result),
-          };
-        }
-      } else {
-        // Primitive value or array
-        data = {
-          "text/plain": String(msg.result),
-        };
-      }
-
-      // Emit execute result as iopub message
-      const iopubMsg = {
-        header: {
-          msg_id: `execute_result_${Date.now()}`,
-          msg_type: "execute_result",
-          date: new Date().toISOString(), // Required for timing hooks
-          username: this.username,
-          session: this.clientId,
-        },
-        parent_header: parentHeader,
-        metadata: {},
-        content: {
-          execution_count: executionCount,
-          data: data,
-          metadata: metadata,
-        },
-        channel: "iopub",
-      };
-      this._iopubMessage.emit(createMessageArgs(iopubMsg));
-      this._anyMessage.emit(createMessageArgs(iopubMsg));
+      this._handleExecuteResultMessage(msg, parentHeader);
     } else if (msg.type === "display_data") {
-      // Emit display_data (e.g., matplotlib figures, Plotly) as iopub message
       const dataKeys = msg.data ? Object.keys(msg.data) : [];
       console.error(
-        "🎨 [PyodideInlineKernel] display_data received! Keys:",
+        "[PyodideInlineKernel] display_data received! Keys:",
         dataKeys.join(", "),
       );
 
-      const iopubMsg = {
-        header: {
-          msg_id: `display_data_${Date.now()}`,
-          msg_type: "display_data",
-          date: new Date().toISOString(),
-          username: this.username,
-          session: this.clientId,
-        },
+      this._emitIopub({
+        header: this._createIopubHeader("display_data"),
         parent_header: parentHeader,
         metadata: {},
         content: {
@@ -507,23 +491,14 @@ export class PyodideInlineKernel implements Kernel.IKernelConnection {
           transient: {},
         },
         channel: "iopub",
-      };
-      this._iopubMessage.emit(createMessageArgs(iopubMsg));
-      this._anyMessage.emit(createMessageArgs(iopubMsg));
+      });
     } else if (msg.type === "error") {
       console.error(
-        `🔴🔴🔴 [PyodideInlineKernel] ERROR received! ename="${msg.ename}", evalue="${msg.evalue}" 🔴🔴🔴`,
+        `[PyodideInlineKernel] ERROR received! ename="${msg.ename}", evalue="${msg.evalue}"`,
       );
 
-      // Emit error as iopub message
-      const iopubMsg = {
-        header: {
-          msg_id: `error_${Date.now()}`,
-          msg_type: "error",
-          date: new Date().toISOString(),
-          username: this.username,
-          session: this.clientId,
-        },
+      this._emitIopub({
+        header: this._createIopubHeader("error"),
         parent_header: parentHeader,
         metadata: {},
         content: {
@@ -532,9 +507,7 @@ export class PyodideInlineKernel implements Kernel.IKernelConnection {
           traceback: msg.traceback || [],
         },
         channel: "iopub",
-      };
-      this._iopubMessage.emit(createMessageArgs(iopubMsg));
-      this._anyMessage.emit(createMessageArgs(iopubMsg));
+      });
     } else if (msg.type === "ready") {
       this._isReady = true;
       this._status = "idle";
@@ -759,7 +732,7 @@ export class PyodideInlineKernel implements Kernel.IKernelConnection {
           let executionError: Error | null = null;
 
           // Listen for idle status or error for THIS specific execution
-          const statusHandler = (_sender: any, msgArgs: any) => {
+          const statusHandler = (_sender: any, msgArgs: any): void => {
             const msg = msgArgs.msg || msgArgs;
             // Wait for idle status that matches our parent header
             if (
@@ -948,7 +921,7 @@ export class PyodideInlineKernel implements Kernel.IKernelConnection {
 
     // Create a promise that resolves when execution is complete
     const executionPromise = new Promise<any>((resolve) => {
-      const handler = (_sender: any, msgArgs: any) => {
+      const handler = (_sender: any, msgArgs: any): void => {
         // Unwrap message from IAnyMessageArgs format
         const msg = msgArgs.msg || msgArgs;
 
@@ -1061,7 +1034,7 @@ export class PyodideInlineKernel implements Kernel.IKernelConnection {
       set: (cb: any) => {
         onReplyCallback = cb; // Store callback so getter can return it
         // Call the callback when execution completes
-        executionPromise.then((replyMsg) => {
+        void executionPromise.then((replyMsg) => {
           if (onReplyCallback) {
             onReplyCallback(replyMsg);
           }

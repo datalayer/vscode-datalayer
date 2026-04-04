@@ -19,18 +19,18 @@
  * - `datalayer.showRuntimeStatus` - Displays current runtime status
  */
 
-import * as vscode from "vscode";
-import { getServiceContainer } from "../extension";
-import { SmartDynamicControllerManager } from "../providers/smartDynamicControllerManager";
-import { RuntimesTreeProvider } from "../providers/runtimesTreeProvider";
-import { RuntimeTreeItem } from "../models/runtimeTreeItem";
-import {
-  showTwoStepConfirmation,
-  CommonConfirmations,
-} from "../ui/dialogs/confirmationDialog";
-
-import type { RuntimeDTO } from "@datalayer/core/lib/models/RuntimeDTO";
 import type { DatalayerClient } from "@datalayer/core/lib/client";
+import type { RuntimeDTO } from "@datalayer/core/lib/models/RuntimeDTO";
+import * as vscode from "vscode";
+
+import { getServiceContainer } from "../extension";
+import { RuntimeTreeItem } from "../models/runtimeTreeItem";
+import { RuntimesTreeProvider } from "../providers/runtimesTreeProvider";
+import { SmartDynamicControllerManager } from "../providers/smartDynamicControllerManager";
+import {
+  CommonConfirmations,
+  showTwoStepConfirmation,
+} from "../ui/dialogs/confirmationDialog";
 import { formatDateForName } from "../utils/dateFormatter";
 
 interface RuntimeQuickPickItem extends vscode.QuickPickItem {
@@ -424,6 +424,7 @@ export function registerRuntimeCommands(
           ingress?: string;
         };
 
+        // eslint-disable-next-line no-console
         console.log(
           "[RuntimeTerminate] Terminating runtime object:",
           JSON.stringify(runtimeObj, null, 2),
@@ -436,6 +437,7 @@ export function registerRuntimeCommands(
             runtimeObj.ingress?.startsWith("http://local-kernel-") ||
             runtimeObj.ingress === "http://pyodide-local";
           const isDatalayerRuntime = !isLocalKernel && !!runtimeObj.podName;
+          // eslint-disable-next-line no-console
           console.log(
             "[RuntimeTerminate] isLocalKernel:",
             isLocalKernel,
@@ -447,6 +449,7 @@ export function registerRuntimeCommands(
 
           if (isDatalayerRuntime) {
             // Datalayer runtime - call API to terminate
+            // eslint-disable-next-line no-console
             console.log(
               "[RuntimeTerminate] Terminating Datalayer runtime via API",
             );
@@ -470,6 +473,7 @@ export function registerRuntimeCommands(
           } else {
             // Local kernel (Python environment, Jupyter server, or Pyodide)
             // Just disconnect - no API call needed
+            // eslint-disable-next-line no-console
             console.log(
               "[RuntimeTerminate] Disconnecting local kernel (no API call)",
             );
@@ -658,27 +662,34 @@ export function registerRuntimeCommands(
     vscode.commands.registerCommand(
       "datalayer.runtimes.terminate",
       async (item: RuntimeTreeItem) => {
+        // eslint-disable-next-line no-console
         console.log("[DEBUG] terminate command triggered with item:", item);
         if (!item || !item.runtime) {
+          // eslint-disable-next-line no-console
           console.log("[DEBUG] No item or runtime provided, exiting");
           return;
         }
 
         const runtimeName = item.runtime.givenName || item.runtime.podName;
+        // eslint-disable-next-line no-console
         console.log("[DEBUG] Terminating runtime:", runtimeName);
+        // eslint-disable-next-line no-console
         console.log("[DEBUG] About to show confirmation dialog...");
 
         const confirmed = await showTwoStepConfirmation(
           CommonConfirmations.terminateRuntime(runtimeName),
         );
 
+        // eslint-disable-next-line no-console
         console.log("[DEBUG] Confirmation dialog result:", confirmed);
 
         if (!confirmed) {
+          // eslint-disable-next-line no-console
           console.log("[DEBUG] User cancelled termination");
           return;
         }
 
+        // eslint-disable-next-line no-console
         console.log("[DEBUG] User confirmed, proceeding with termination...");
 
         try {
@@ -711,11 +722,13 @@ export function registerRuntimeCommands(
     vscode.commands.registerCommand(
       "datalayer.runtimes.terminateAll",
       async () => {
+        // eslint-disable-next-line no-console
         console.log("[DEBUG] terminateAll command triggered");
         try {
           // Check authentication
           const authState = authProvider.getAuthState();
           if (!authState.isAuthenticated) {
+            // eslint-disable-next-line no-console
             console.log("[DEBUG] Not authenticated");
             vscode.window.showErrorMessage(
               "Please login first to manage runtimes",
@@ -725,6 +738,7 @@ export function registerRuntimeCommands(
 
           // Fetch all runtimes
           const runtimes = await datalayer.listRuntimes();
+          // eslint-disable-next-line no-console
           console.log("[DEBUG] Found runtimes:", runtimes?.length);
 
           if (!runtimes || runtimes.length === 0) {

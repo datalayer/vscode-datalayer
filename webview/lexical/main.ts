@@ -10,9 +10,9 @@
  * Handles WASM configuration and global setup before React initialization.
  */
 
-import { initializeRequireJSStub } from "../utils/requirejsStub";
-
 import "./LexicalWebview";
+
+import { initializeRequireJSStub } from "../utils/requirejsStub";
 
 // Configure webpack public path for WASM loading (loro-crdt)
 declare let __webpack_public_path__: string;

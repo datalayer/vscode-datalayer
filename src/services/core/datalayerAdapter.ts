@@ -11,11 +11,12 @@
  * @module services/datalayerAdapter
  */
 
-import * as vscode from "vscode";
-import { DatalayerClient } from "@datalayer/core/lib/client";
 import type { DatalayerClientConfig } from "@datalayer/core/lib/client";
-import { ServiceLoggers } from "../logging/loggers";
+import { DatalayerClient } from "@datalayer/core/lib/client";
+import * as vscode from "vscode";
+
 import { DatalayerClientOperationTracker } from "../logging/datalayerClientLogger";
+import { ServiceLoggers } from "../logging/loggers";
 
 /**
  * Configuration options for the VS Code Datalayer.

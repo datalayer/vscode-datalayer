@@ -15,12 +15,13 @@
 
 import type { ToolOperation } from "@datalayer/jupyter-react";
 import { validateWithZod } from "@datalayer/jupyter-react";
+
+import { createDocumentParamsSchema } from "../schemas/createDocument";
+import { createCloudLexical, createLocalLexical } from "./createLexicalHelpers";
 import {
   createCloudNotebook,
   createLocalNotebook,
 } from "./createNotebookHelpers";
-import { createCloudLexical, createLocalLexical } from "./createLexicalHelpers";
-import { createDocumentParamsSchema } from "../schemas/createDocument";
 
 /** Document location type: local file system or cloud platform */
 type DocumentLocation = "local" | "cloud";
@@ -216,88 +217,18 @@ export const createDocumentOperation: ToolOperation<
  *
  * @returns Intent detection result with location, confidence, reason, and message.
  */
-async function detectIntent(
-  params: CreateDocumentParams,
-  context: { extras?: unknown },
-): Promise<IntentDetectionResult> {
-  const {
-    name = "",
-    description = "",
-    spaceName,
-    location,
-    documentType,
-  } = params;
-  const { extras } = context;
-
-  /**
-   * Context provided by platform adapter containing workspace and document analysis
-   */
-  const extrasWithContext = extras as {
-    /** Whether a workspace is open */
-    hasWorkspace?: boolean;
-    /** Whether user is authenticated */
-    isAuthenticated?: boolean;
-    /** URI of currently active notebook */
-    activeNotebookUri?: string;
-    /** URIs of all open notebooks */
-    openNotebookUris?: string[];
-    /** Analysis of open notebooks by type */
-    notebookAnalysis?: {
-      /** Count of native Jupyter notebooks */
-      nativeCount: number;
-      /** Count of local Datalayer notebooks */
-      localDatalayerCount: number;
-      /** Count of cloud Datalayer notebooks */
-      cloudDatalayerCount: number;
-      /** Total notebook count */
-      totalCount: number;
-      /** Majority type among open notebooks */
-      majorityType: "native" | "local" | "cloud" | "none";
-    };
-  };
-
-  /** Whether workspace is currently open */
-  const hasWorkspace = extrasWithContext.hasWorkspace ?? false;
-  /** Whether user is authenticated with Datalayer */
-  const isAuthenticated = extrasWithContext.isAuthenticated ?? false;
-  /** URI of the currently active notebook document */
-  const activeNotebook = extrasWithContext.activeNotebookUri;
-  /** Array of URIs for all open notebook documents */
-  const openNotebooks = extrasWithContext.openNotebookUris ?? [];
-  /** Analysis of open documents by location type */
-  const notebookAnalysis = extrasWithContext.notebookAnalysis;
-
-  /** User-friendly label for the document type */
-  const docTypeLabel =
-    documentType === "notebook" ? "notebook" : "lexical document";
-
-  // Priority 1: Explicit location parameter (95% confidence)
-  if (location) {
-    const loc: DocumentLocation = location === "remote" ? "cloud" : location;
-    return {
-      location: loc,
-      confidence: 95,
-      reason: `Explicit location: ${location}`,
-      chatMessage: `Creating **${loc}** ${docTypeLabel} (you specified "${location}")`,
-    };
-  }
-
-  // Priority 2: Space name mentioned (90% confidence → cloud)
-  if (spaceName) {
-    return {
-      location: "cloud",
-      confidence: 90,
-      reason: `Space specified: ${spaceName}`,
-      chatMessage: `Creating **cloud** ${docTypeLabel} in space "${spaceName}"`,
-    };
-  }
-
-  // Priority 3: Keywords in name/description (88% confidence)
-  /** Combined text of name and description for keyword analysis */
-  const textToCheck = `${name} ${description}`.toLowerCase();
-  /** Keywords indicating preference for local documents */
+/**
+ * Detects intent from keywords in name/description text.
+ * @param textToCheck - Lowercased combined text of name and description.
+ * @param docTypeLabel - Document type label for chat messages.
+ *
+ * @returns Intent result if keyword-based detection succeeds, null otherwise.
+ */
+function detectKeywordIntent(
+  textToCheck: string,
+  docTypeLabel: string,
+): IntentDetectionResult | null {
   const localKeywords = ["local", "workspace", "file", "disk"];
-  /** Keywords indicating preference for cloud documents */
   const cloudKeywords = [
     "cloud",
     "remote",
@@ -307,9 +238,7 @@ async function detectIntent(
     "collaborative",
   ];
 
-  /** Whether local keywords found in name/description */
   const hasLocalKeyword = localKeywords.some((kw) => textToCheck.includes(kw));
-  /** Whether cloud keywords found in name/description */
   const hasCloudKeyword = cloudKeywords.some((kw) => textToCheck.includes(kw));
 
   if (hasLocalKeyword && !hasCloudKeyword) {
@@ -330,64 +259,79 @@ async function detectIntent(
     };
   }
 
-  // Priority 4: Majority type from document analysis (85% confidence)
-  if (notebookAnalysis && notebookAnalysis.totalCount > 0) {
-    /** Destructure notebook analysis data */
-    const {
-      majorityType,
-      localDatalayerCount,
-      cloudDatalayerCount,
-      nativeCount,
-      totalCount,
-    } = notebookAnalysis;
+  return null;
+}
 
-    if (majorityType === "cloud") {
-      return {
-        location: "cloud",
-        confidence: 85,
-        reason: `Majority of open documents are cloud (${cloudDatalayerCount}/${totalCount})`,
-        chatMessage: `Creating **cloud** ${docTypeLabel} (you have ${cloudDatalayerCount} cloud document${cloudDatalayerCount > 1 ? "s" : ""} open)`,
-      };
-    }
-
-    if (majorityType === "local") {
-      /** Total count of local documents (Datalayer + native) */
-      const localTotal = localDatalayerCount + nativeCount;
-      return {
-        location: "local",
-        confidence: 85,
-        reason: `Majority of open documents are local (${localTotal}/${totalCount})`,
-        chatMessage: `Creating **local** ${docTypeLabel} (you have ${localTotal} local document${localTotal > 1 ? "s" : ""} open)`,
-      };
-    }
+/**
+ * Detects intent from open document analysis (majority type).
+ * @param notebookAnalysis - Analysis of currently open documents.
+ * @param notebookAnalysis.nativeCount - Number of notebooks opened via VS Code native editor.
+ * @param notebookAnalysis.localDatalayerCount - Number of notebooks opened locally via Datalayer editor.
+ * @param notebookAnalysis.cloudDatalayerCount - Number of notebooks opened from a cloud Datalayer space.
+ * @param notebookAnalysis.totalCount - Total number of open notebooks across all editor types.
+ * @param notebookAnalysis.majorityType - Which editor type has the most open notebooks.
+ * @param docTypeLabel - Document type label for chat messages.
+ *
+ * @returns Intent result if analysis produces a signal, null otherwise.
+ */
+function detectAnalysisIntent(
+  notebookAnalysis: {
+    nativeCount: number;
+    localDatalayerCount: number;
+    cloudDatalayerCount: number;
+    totalCount: number;
+    majorityType: "native" | "local" | "cloud" | "none";
+  },
+  docTypeLabel: string,
+): IntentDetectionResult | null {
+  if (notebookAnalysis.totalCount === 0) {
+    return null;
   }
 
-  // Priority 5: Active document context (80% confidence)
-  if (activeNotebook) {
-    if (activeNotebook.startsWith("datalayer:")) {
-      return {
-        location: "cloud",
-        confidence: 80,
-        reason: "Active cloud document",
-        chatMessage: `Creating **cloud** ${docTypeLabel} (you have a cloud document open)`,
-      };
-    } else {
-      return {
-        location: "local",
-        confidence: 80,
-        reason: "Active local document",
-        chatMessage: `Creating **local** ${docTypeLabel} (you have a local document open)`,
-      };
-    }
+  const {
+    majorityType,
+    localDatalayerCount,
+    cloudDatalayerCount,
+    nativeCount,
+    totalCount,
+  } = notebookAnalysis;
+
+  if (majorityType === "cloud") {
+    return {
+      location: "cloud",
+      confidence: 85,
+      reason: `Majority of open documents are cloud (${cloudDatalayerCount}/${totalCount})`,
+      chatMessage: `Creating **cloud** ${docTypeLabel} (you have ${cloudDatalayerCount} cloud document${cloudDatalayerCount > 1 ? "s" : ""} open)`,
+    };
   }
 
-  // Priority 6: Check all open documents (65% confidence)
-  /** Count of local documents among open notebooks */
+  if (majorityType === "local") {
+    const localTotal = localDatalayerCount + nativeCount;
+    return {
+      location: "local",
+      confidence: 85,
+      reason: `Majority of open documents are local (${localTotal}/${totalCount})`,
+      chatMessage: `Creating **local** ${docTypeLabel} (you have ${localTotal} local document${localTotal > 1 ? "s" : ""} open)`,
+    };
+  }
+
+  return null;
+}
+
+/**
+ * Detects intent from open notebook URIs by counting local vs cloud.
+ * @param openNotebooks - URIs of all open notebooks.
+ * @param docTypeLabel - Document type label for chat messages.
+ *
+ * @returns Intent result if a clear signal exists, null otherwise.
+ */
+function detectOpenNotebookIntent(
+  openNotebooks: string[],
+  docTypeLabel: string,
+): IntentDetectionResult | null {
   let localCount = 0;
-  /** Count of cloud documents among open notebooks */
   let cloudCount = 0;
 
-  /** Analyze all open notebooks to count local vs cloud */
   for (const nb of openNotebooks) {
     if (nb.startsWith("datalayer:")) {
       cloudCount++;
@@ -414,7 +358,22 @@ async function detectIntent(
     };
   }
 
-  // Priority 7: Environment signals (60% confidence)
+  return null;
+}
+
+/**
+ * Determines intent from environment signals (workspace state and authentication).
+ * @param hasWorkspace - Whether a VS Code workspace is open.
+ * @param isAuthenticated - Whether the user is authenticated with Datalayer.
+ * @param docTypeLabel - Document type label for chat messages.
+ *
+ * @returns Intent result based on environment signals.
+ */
+function detectEnvironmentIntent(
+  hasWorkspace: boolean,
+  isAuthenticated: boolean,
+  docTypeLabel: string,
+): IntentDetectionResult {
   if (isAuthenticated && !hasWorkspace) {
     return {
       location: "cloud",
@@ -433,22 +392,121 @@ async function detectIntent(
     };
   }
 
-  // Priority 8: Both available → Prefer cloud when authenticated (70% confidence)
-  // User preference: when logged in to Datalayer, default to cloud/remote
   if (hasWorkspace && isAuthenticated) {
     return {
       location: "cloud",
       confidence: 70,
-      reason: "Authenticated user with workspace → prefer cloud",
+      reason: "Authenticated user with workspace - prefer cloud",
       chatMessage: `Creating **cloud** ${docTypeLabel} (you're authenticated to Datalayer - use 'location: local' to override)`,
     };
   }
 
-  // Priority 9: Neither available → Default to local (25% confidence)
   return {
     location: "local",
     confidence: 25,
     reason: "No signals, defaulting to local",
     chatMessage: `Creating **local** ${docTypeLabel} (default choice)`,
   };
+}
+
+/**
+ * Determines whether a new document should be created locally or in the cloud based on environment signals.
+ * @param params - Document creation parameters including optional explicit location preference.
+ * @param context - Execution context with optional additional state from the caller.
+ * @param context.extras - Additional runtime state such as open notebook URIs and authentication status.
+ *
+ * @returns Resolved intent indicating cloud or local with a confidence score.
+ */
+async function detectIntent(
+  params: CreateDocumentParams,
+  context: { extras?: unknown },
+): Promise<IntentDetectionResult> {
+  const {
+    name = "",
+    description = "",
+    spaceName,
+    location,
+    documentType,
+  } = params;
+  const { extras } = context;
+
+  const extrasWithContext = extras as {
+    hasWorkspace?: boolean;
+    isAuthenticated?: boolean;
+    activeNotebookUri?: string;
+    openNotebookUris?: string[];
+    notebookAnalysis?: {
+      nativeCount: number;
+      localDatalayerCount: number;
+      cloudDatalayerCount: number;
+      totalCount: number;
+      majorityType: "native" | "local" | "cloud" | "none";
+    };
+  };
+
+  const hasWorkspace = extrasWithContext.hasWorkspace ?? false;
+  const isAuthenticated = extrasWithContext.isAuthenticated ?? false;
+  const activeNotebook = extrasWithContext.activeNotebookUri;
+  const openNotebooks = extrasWithContext.openNotebookUris ?? [];
+  const notebookAnalysis = extrasWithContext.notebookAnalysis;
+  const docTypeLabel =
+    documentType === "notebook" ? "notebook" : "lexical document";
+
+  // Priority 1: Explicit location parameter (95% confidence)
+  if (location) {
+    const loc: DocumentLocation = location === "remote" ? "cloud" : location;
+    return {
+      location: loc,
+      confidence: 95,
+      reason: `Explicit location: ${location}`,
+      chatMessage: `Creating **${loc}** ${docTypeLabel} (you specified "${location}")`,
+    };
+  }
+
+  // Priority 2: Space name mentioned (90% confidence)
+  if (spaceName) {
+    return {
+      location: "cloud",
+      confidence: 90,
+      reason: `Space specified: ${spaceName}`,
+      chatMessage: `Creating **cloud** ${docTypeLabel} in space "${spaceName}"`,
+    };
+  }
+
+  // Priority 3: Keywords in name/description (88% confidence)
+  const keywordResult = detectKeywordIntent(
+    `${name} ${description}`.toLowerCase(),
+    docTypeLabel,
+  );
+  if (keywordResult) {
+    return keywordResult;
+  }
+
+  // Priority 4: Majority type from document analysis (85% confidence)
+  if (notebookAnalysis) {
+    const analysisResult = detectAnalysisIntent(notebookAnalysis, docTypeLabel);
+    if (analysisResult) {
+      return analysisResult;
+    }
+  }
+
+  // Priority 5: Active document context (80% confidence)
+  if (activeNotebook) {
+    const isCloud = activeNotebook.startsWith("datalayer:");
+    return {
+      location: isCloud ? "cloud" : "local",
+      confidence: 80,
+      reason: isCloud ? "Active cloud document" : "Active local document",
+      chatMessage: `Creating **${isCloud ? "cloud" : "local"}** ${docTypeLabel} (you have a ${isCloud ? "cloud" : "local"} document open)`,
+    };
+  }
+
+  // Priority 6: Check all open documents (65% confidence)
+  const notebookResult = detectOpenNotebookIntent(openNotebooks, docTypeLabel);
+  if (notebookResult) {
+    return notebookResult;
+  }
+
+  // Priorities 7-9: Environment signals and defaults
+  return detectEnvironmentIntent(hasWorkspace, isAuthenticated, docTypeLabel);
 }

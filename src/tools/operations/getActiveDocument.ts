@@ -28,14 +28,17 @@ export interface ActiveDocumentResult {
  * @returns Active document info with type, URI, and filename.
  */
 export async function getActiveDocument(): Promise<ActiveDocumentResult> {
+  // eslint-disable-next-line no-console
   console.log("[Datalayer getActiveDocument] Tool invoked");
 
   try {
     // Check for active custom editor (lexical/notebook)
+    // eslint-disable-next-line no-console
     console.log("[Datalayer getActiveDocument] Checking for custom editors");
     const uri = getActiveCustomEditorUri();
 
     if (!uri) {
+      // eslint-disable-next-line no-console
       console.log("[Datalayer getActiveDocument] No active editor found");
       return {
         success: true,
@@ -44,6 +47,7 @@ export async function getActiveDocument(): Promise<ActiveDocumentResult> {
       };
     }
 
+    // eslint-disable-next-line no-console
     console.log(
       "[Datalayer getActiveDocument] Found custom editor:",
       uri.toString(),
@@ -75,6 +79,7 @@ export async function getActiveDocument(): Promise<ActiveDocumentResult> {
       fileName,
     };
 
+    // eslint-disable-next-line no-console
     console.log("[Datalayer getActiveDocument] Result:", {
       type,
       fileName,
@@ -108,10 +113,12 @@ export const getActiveDocumentOperation: import("@datalayer/jupyter-react").Tool
     _params: Record<string, never>,
     _context: import("@datalayer/jupyter-react").ToolExecutionContext,
   ): Promise<ActiveDocumentResult> {
+    // eslint-disable-next-line no-console
     console.log("[Datalayer getActiveDocument] Operation execute() called");
 
     const result = await getActiveDocument();
 
+    // eslint-disable-next-line no-console
     console.log("[Datalayer getActiveDocument] Returning result:", result);
 
     return result;

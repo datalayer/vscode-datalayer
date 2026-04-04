@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2021-2025 Datalayer, Inc.
+ *
  * MIT License
  */
 
@@ -11,16 +12,17 @@
  */
 
 import * as vscode from "vscode";
-import { LSPDocumentManager } from "../lsp/lspDocumentManager";
+
 import { LSPCompletionService } from "../lsp/lspCompletionService";
+import { LSPDocumentManager } from "../lsp/lspDocumentManager";
 import {
+  LSPCompletionRequest,
+  LSPDocumentCloseRequest,
+  LSPDocumentOpenRequest,
+  LSPDocumentSyncRequest,
+  LSPHoverRequest,
   LSPRequest,
   LSPResponse,
-  LSPCompletionRequest,
-  LSPHoverRequest,
-  LSPDocumentSyncRequest,
-  LSPDocumentOpenRequest,
-  LSPDocumentCloseRequest,
   SerializableCompletionItem,
 } from "../lsp/types";
 

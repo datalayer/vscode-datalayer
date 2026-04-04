@@ -12,14 +12,15 @@
 
 import type { ToolOperation } from "@datalayer/jupyter-react";
 import { validateWithZod } from "@datalayer/jupyter-react";
+
+import {
+  type CreateLexicalParams,
+  createLexicalParamsSchema,
+} from "../schemas/createLexical";
 import {
   createDocumentOperation,
   type CreateDocumentResult,
 } from "../utils/createDocument";
-import {
-  createLexicalParamsSchema,
-  type CreateLexicalParams,
-} from "../schemas/createLexical";
 
 /**
  * Parameters for creating a Lexical document (aliased from schema type).

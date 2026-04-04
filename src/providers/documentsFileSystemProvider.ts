@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2023 Datalayer, Inc.
+ * Copyright (c) 2021-2025 Datalayer, Inc.
  *
  * MIT License
  */
@@ -13,9 +13,9 @@
  * @see https://code.visualstudio.com/api/extension-guides/virtual-documents
  */
 
-import * as vscode from "vscode";
 import * as fs from "fs";
 import * as path from "path";
+import * as vscode from "vscode";
 
 /**
  * Virtual file system provider that maps Datalayer documents to clean URI scheme.
@@ -83,7 +83,7 @@ export class DatalayerFileSystemProvider implements vscode.FileSystemProvider {
         try {
           const virtualUri = vscode.Uri.parse(virtualUriString);
           this.realToVirtual.set(realPath, virtualUri);
-        } catch (error) {
+        } catch (_error) {
           // Skip invalid URIs
         }
       }
@@ -139,7 +139,7 @@ export class DatalayerFileSystemProvider implements vscode.FileSystemProvider {
     this.realToVirtual.set(realPath, virtualUri);
 
     // Persist mapping to storage (fire and forget)
-    this.saveMappings();
+    void this.saveMappings();
 
     return virtualUri;
   }
@@ -185,7 +185,7 @@ export class DatalayerFileSystemProvider implements vscode.FileSystemProvider {
     this.virtualToReal.delete(key);
 
     // Persist the change (fire and forget)
-    this.saveMappings();
+    void this.saveMappings();
   }
 
   /**

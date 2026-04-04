@@ -1,9 +1,7 @@
 /*
  * Copyright (c) 2021-2025 Datalayer, Inc.
- * MIT License
  *
- * Adapted from VS Code Jupyter extension (Microsoft Corporation)
- * Original: https://github.com/microsoft/vscode-jupyter
+ * MIT License
  */
 
 /**
@@ -14,13 +12,13 @@
  */
 
 import type { KernelMessage } from "@jupyterlab/services";
+import type { Channel } from "@jupyterlab/services/lib/kernel/messages";
 import { serialize as jupyterLabSerialize } from "@jupyterlab/services/lib/kernel/serialize";
 import * as wireProtocol from "@nteract/messaging/lib/wire-protocol";
-import type * as WebSocketWS from "ws";
-import type { Dealer, Subscriber } from "zeromq";
-import type { Channel } from "@jupyterlab/services/lib/kernel/messages";
 import * as fs from "fs";
 import * as path from "path";
+import type * as WebSocketWS from "ws";
+import type { Dealer, Subscriber } from "zeromq";
 
 /**
  * Kernel connection configuration (from connection file).
@@ -111,7 +109,7 @@ interface IChannels {
   iopub: Subscriber;
 }
 
-const noop = () => {};
+const noop = (): void => {};
 
 /**
  * Loads zeromq native module with prebuild support.
@@ -171,7 +169,10 @@ function getZeroMQ(): typeof import("zeromq") {
  *
  * @throws Error if the specified channel port is not found in the configuration.
  */
-function formConnectionString(config: IKernelConnection, channel: string) {
+function formConnectionString(
+  config: IKernelConnection,
+  channel: string,
+): string {
   const portDelimiter = config.transport === "tcp" ? ":" : "-";
   const port = config[`${channel}_port` as keyof IKernelConnection];
   if (!port) {
@@ -300,7 +301,7 @@ export class RawSocket {
   /**
    * Dispose the socket, closing all channels if not already closed.
    */
-  public dispose() {
+  public dispose(): void {
     if (!this.closed) {
       this.close();
     }
@@ -311,7 +312,7 @@ export class RawSocket {
    */
   public close(): void {
     this.closed = true;
-    const closer = (closable: { close(): void }) => {
+    const closer = (closable: { close(): void }): void => {
       try {
         closable.close();
       } catch (ex) {
@@ -440,7 +441,7 @@ export class RawSocket {
   private async processSocketMessages(
     channel: Channel,
     readable: Subscriber | Dealer,
-  ) {
+  ): Promise<void> {
     for await (const msg of readable) {
       if (this.closed) {
         break;
@@ -516,7 +517,7 @@ export class RawSocket {
    * @param channel - Channel the message was received on.
    * @param data - Raw ZMQ message frames to decode.
    */
-  private onIncomingMessage(channel: Channel, data: unknown) {
+  private onIncomingMessage(channel: Channel, data: unknown): void {
     let decoded: KernelMessage.IMessage;
     if (this.closed) {
       // TypeScript needs the assertion here since {} doesn't have all required properties
@@ -553,7 +554,10 @@ export class RawSocket {
    * @param message - Decoded kernel message to deliver.
    * @param channel - Channel for field validation fallback.
    */
-  private fireOnMessage(message: KernelMessage.IMessage, channel: Channel) {
+  private fireOnMessage(
+    message: KernelMessage.IMessage,
+    channel: Channel,
+  ): void {
     if (!this.closed) {
       try {
         ensureFields(message, channel);
@@ -576,7 +580,10 @@ export class RawSocket {
    * @param msg - Kernel message to encode and send.
    * @param bypassHooking - If true, skip send hooks.
    */
-  private sendMessage(msg: KernelMessage.IMessage, bypassHooking: boolean) {
+  private sendMessage(
+    msg: KernelMessage.IMessage,
+    bypassHooking: boolean,
+  ): void {
     const data = wireProtocol.encode(
       msg as Parameters<typeof wireProtocol.encode>[0],
       this.connection.key,
@@ -613,7 +620,7 @@ export class RawSocket {
    * @param channel - Target channel name (shell, control, stdin).
    * @param data - Encoded message data to send.
    */
-  private postToSocket(channel: string, data: unknown) {
+  private postToSocket(channel: string, data: unknown): void {
     const socket = (this.channels as unknown as Record<string, Dealer>)[
       channel
     ];
@@ -642,7 +649,7 @@ export function createRawKernel(
   connection: IKernelConnection,
   clientId: string,
   username: string,
-) {
+): { realKernel: unknown; socket: null } {
   const jupyterLab = require("@jupyterlab/services");
 
   // Create custom WebSocket class that uses RawSocket
@@ -706,7 +713,7 @@ const IOPUB_CONTENT_FIELDS = {
  * @param message - Kernel message to validate and patch.
  * @param channel - Channel to set if missing from message.
  */
-function ensureFields(message: KernelMessage.IMessage, channel: Channel) {
+function ensureFields(message: KernelMessage.IMessage, channel: Channel): void {
   const header = message.header as unknown as Record<string, unknown>;
   HEADER_FIELDS.forEach((field) => {
     if (typeof header[field] !== "string") {
@@ -731,7 +738,7 @@ function ensureFields(message: KernelMessage.IMessage, channel: Channel) {
  * Ensures IOPub messages have correctly typed content fields matching their message type.
  * @param message - IOPub message whose content fields will be validated.
  */
-function ensureIOPubContent(message: KernelMessage.IMessage) {
+function ensureIOPubContent(message: KernelMessage.IMessage): void {
   if (message.channel !== "iopub") {
     return;
   }

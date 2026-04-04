@@ -11,6 +11,7 @@
  * @module services/loggers
  */
 
+import type { ILogger } from "../interfaces/ILogger";
 import type { ILoggerManager } from "../interfaces/ILoggerManager";
 
 /**
@@ -58,7 +59,7 @@ export class ServiceLoggers {
    * Main DatalayerClient Datalayer operations logger.
    * Use for general Datalayer lifecycle and configuration.
    */
-  static get datalayerClient() {
+  static get datalayerClient(): ILogger {
     ServiceLoggers.ensureInitialized();
     return ServiceLoggers.loggerManager.createLogger("Client");
   }
@@ -67,7 +68,7 @@ export class ServiceLoggers {
    * DatalayerClient authentication operations logger.
    * Use for login, logout, whoami, and token management via Datalayer.
    */
-  static get datalayerClientAuth() {
+  static get datalayerClientAuth(): ILogger {
     ServiceLoggers.ensureInitialized();
     return ServiceLoggers.loggerManager.createLogger("Authentication");
   }
@@ -76,7 +77,7 @@ export class ServiceLoggers {
    * DatalayerClient runtime management operations logger.
    * Use for runtime creation, management, environments, and snapshots via Datalayer.
    */
-  static get datalayerClientRuntime() {
+  static get datalayerClientRuntime(): ILogger {
     ServiceLoggers.ensureInitialized();
     return ServiceLoggers.loggerManager.createLogger("Runtimes");
   }
@@ -85,7 +86,7 @@ export class ServiceLoggers {
    * DatalayerClient spacer/document operations logger.
    * Use for spaces, notebooks, lexical documents, and items via Datalayer.
    */
-  static get datalayerClientSpacer() {
+  static get datalayerClientSpacer(): ILogger {
     ServiceLoggers.ensureInitialized();
     return ServiceLoggers.loggerManager.createLogger("Spaces");
   }
@@ -94,7 +95,7 @@ export class ServiceLoggers {
    * DatalayerClient network operations logger.
    * Use for API calls, network requests, and connectivity via Datalayer.
    */
-  static get datalayerClientNetwork() {
+  static get datalayerClientNetwork(): ILogger {
     ServiceLoggers.ensureInitialized();
     return ServiceLoggers.loggerManager.createLogger("Network");
   }
@@ -107,7 +108,7 @@ export class ServiceLoggers {
    * Direct authentication operations logger.
    * Use for VS Code-specific auth UI, dialogs, and state management.
    */
-  static get auth() {
+  static get auth(): ILogger {
     ServiceLoggers.ensureInitialized();
     return ServiceLoggers.loggerManager.createLogger("VS Code Auth");
   }
@@ -116,7 +117,7 @@ export class ServiceLoggers {
    * Direct runtime operations logger.
    * Use for VS Code-specific runtime UI, kernel management, and notebooks.
    */
-  static get runtime() {
+  static get runtime(): ILogger {
     ServiceLoggers.ensureInitialized();
     return ServiceLoggers.loggerManager.createLogger("VS Code Runtimes");
   }
@@ -125,7 +126,7 @@ export class ServiceLoggers {
    * Notebook operations logger.
    * Use for notebook editing, cell execution, and document management.
    */
-  static get notebook() {
+  static get notebook(): ILogger {
     ServiceLoggers.ensureInitialized();
     return ServiceLoggers.loggerManager.createLogger("Notebooks");
   }
@@ -134,7 +135,7 @@ export class ServiceLoggers {
    * Real-time collaboration logger.
    * Use for collaborative editing, WebSocket connections, and synchronization.
    */
-  static get collaboration() {
+  static get collaboration(): ILogger {
     ServiceLoggers.ensureInitialized();
     return ServiceLoggers.loggerManager.createLogger("Collaboration");
   }
@@ -143,7 +144,7 @@ export class ServiceLoggers {
    * Main extension operations logger.
    * Use for extension lifecycle, activation, commands, and general coordination.
    */
-  static get main() {
+  static get main(): ILogger {
     ServiceLoggers.ensureInitialized();
     return ServiceLoggers.loggerManager.createLogger("Extension");
   }
@@ -160,7 +161,7 @@ export class ServiceLoggers {
    *
    * @returns Logger instance.
    */
-  static getLogger(channelName: string) {
+  static getLogger(channelName: string): ILogger {
     ServiceLoggers.ensureInitialized();
     return ServiceLoggers.loggerManager.createLogger(channelName);
   }

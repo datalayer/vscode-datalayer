@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2023 Datalayer, Inc.
+ * Copyright (c) 2021-2025 Datalayer, Inc.
  *
  * MIT License
  */
@@ -11,12 +11,12 @@
  * @module models/spaceItem
  */
 
-import * as vscode from "vscode";
-import * as path from "path";
 import { ItemTypes } from "@datalayer/core/lib/client/constants";
-import type { SpaceDTO } from "@datalayer/core/lib/models/SpaceDTO";
-import type { NotebookDTO } from "@datalayer/core/lib/models/NotebookDTO";
 import type { LexicalDTO } from "@datalayer/core/lib/models/LexicalDTO";
+import type { NotebookDTO } from "@datalayer/core/lib/models/NotebookDTO";
+import type { SpaceDTO } from "@datalayer/core/lib/models/SpaceDTO";
+import * as path from "path";
+import * as vscode from "vscode";
 
 /**
  * Type alias for any Datalayer document model (Notebook or Lexical).

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2023 Datalayer, Inc.
+ * Copyright (c) 2021-2025 Datalayer, Inc.
  *
  * MIT License
  */
@@ -10,8 +10,10 @@
  * Initializes the React-based notebook editor in the webview context.
  */
 
-import { setStylesTarget } from "typestyle";
 import "./NotebookEditor";
+
+import { setStylesTarget } from "typestyle";
+
 import { getNonce } from "../utils";
 
 // Fix to apply styled-components style should be set directly at the entry point start.

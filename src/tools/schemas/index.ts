@@ -14,8 +14,8 @@
 export * from "./getActiveDocument";
 
 // Document creation schemas
-export * from "./createNotebook";
 export * from "./createLexical";
+export * from "./createNotebook";
 
 // Kernel management schemas
 export * from "./listKernels";

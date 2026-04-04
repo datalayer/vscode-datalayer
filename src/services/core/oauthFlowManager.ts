@@ -11,8 +11,9 @@
  * @module services/oauthFlowManager
  */
 
-import * as vscode from "vscode";
 import * as crypto from "crypto";
+import * as vscode from "vscode";
+
 import type { ILogger } from "../interfaces/ILogger";
 import { BaseService } from "./baseService";
 

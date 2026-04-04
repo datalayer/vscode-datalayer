@@ -15,15 +15,16 @@
  */
 
 import {
-  KernelMessage,
   Kernel,
-  ServerConnection,
+  KernelMessage,
   KernelSpec,
+  ServerConnection,
 } from "@jupyterlab/services";
-import { ISignal, Signal } from "@lumino/signaling";
 import { JSONObject } from "@lumino/coreutils";
-import { ProxiedWebSocket } from "./serviceManager";
+import { ISignal, Signal } from "@lumino/signaling";
+
 import { vsCodeAPI } from "./messageHandler";
+import { ProxiedWebSocket } from "./serviceManager";
 
 /**
  * A custom KernelConnection that wraps a local kernel WebSocket.
@@ -118,6 +119,7 @@ export class LocalKernelConnection implements Kernel.IKernelConnection {
       this._resolveInfo = resolve;
     });
 
+    // eslint-disable-next-line no-console
     console.log(`[LocalKernelConnection] Created for kernel ${this._id}`);
   }
 
@@ -133,6 +135,7 @@ export class LocalKernelConnection implements Kernel.IKernelConnection {
         channel?: string;
       };
 
+      // eslint-disable-next-line no-console
       console.log(
         `[LocalKernelConnection] Received message: ${msg.header.msg_type}, channel: ${msgWithChannel.channel}`,
       );
@@ -152,6 +155,7 @@ export class LocalKernelConnection implements Kernel.IKernelConnection {
           if (newStatus && newStatus !== this._status) {
             this._status = newStatus;
             this._statusChanged.emit(this._status);
+            // eslint-disable-next-line no-console
             console.log(
               `[LocalKernelConnection] Status changed to: ${this._status}`,
             );
@@ -164,6 +168,7 @@ export class LocalKernelConnection implements Kernel.IKernelConnection {
           if (content.status === "ok") {
             this._infoReply = content;
             this._resolveInfo(content); // Resolve the promise
+            // eslint-disable-next-line no-console
             console.log(
               `[LocalKernelConnection] Received kernel_info_reply, kernel is ready`,
             );
@@ -386,6 +391,7 @@ export class LocalKernelConnection implements Kernel.IKernelConnection {
     this._ws.close();
     this._disposed.emit();
     Signal.clearData(this);
+    // eslint-disable-next-line no-console
     console.log(
       `[LocalKernelConnection] Disposed kernel connection ${this._id}`,
     );
@@ -444,6 +450,7 @@ export class LocalKernelConnection implements Kernel.IKernelConnection {
    * @returns A resolved promise.
    */
   reconnect(): Promise<void> {
+    // eslint-disable-next-line no-console
     console.log(
       `[LocalKernelConnection] Reconnect called (no-op for local kernels)`,
     );
@@ -456,6 +463,7 @@ export class LocalKernelConnection implements Kernel.IKernelConnection {
    * @returns A resolved promise.
    */
   shutdown(): Promise<void> {
+    // eslint-disable-next-line no-console
     console.log(`[LocalKernelConnection] Shutdown called`);
     this.dispose();
     return Promise.resolve();
@@ -484,6 +492,7 @@ export class LocalKernelConnection implements Kernel.IKernelConnection {
    * @returns A promise that resolves when the interrupt request is sent.
    */
   interrupt(): Promise<void> {
+    // eslint-disable-next-line no-console
     console.log(`[LocalKernelConnection] Interrupt called`);
 
     // Send message to extension host to interrupt the kernel process (SIGINT)
@@ -493,6 +502,7 @@ export class LocalKernelConnection implements Kernel.IKernelConnection {
         type: "interrupt-kernel",
         body: {},
       });
+      // eslint-disable-next-line no-console
       console.log(
         `[LocalKernelConnection] Sent interrupt-kernel message to extension`,
       );
@@ -525,6 +535,7 @@ export class LocalKernelConnection implements Kernel.IKernelConnection {
       };
 
       this._ws.send(JSON.stringify(msg));
+      // eslint-disable-next-line no-console
       console.log(
         `[LocalKernelConnection] Interrupt request sent via WebSocket:`,
         msg.header.msg_id,
@@ -545,6 +556,7 @@ export class LocalKernelConnection implements Kernel.IKernelConnection {
    * @returns A resolved promise.
    */
   restart(): Promise<void> {
+    // eslint-disable-next-line no-console
     console.log(`[LocalKernelConnection] Restart called`);
 
     // Send message to extension host to restart the kernel process
@@ -553,6 +565,7 @@ export class LocalKernelConnection implements Kernel.IKernelConnection {
         type: "restart-kernel",
         body: {},
       });
+      // eslint-disable-next-line no-console
       console.log(
         `[LocalKernelConnection] Sent restart-kernel message to extension`,
       );
@@ -622,6 +635,7 @@ export class LocalKernelConnection implements Kernel.IKernelConnection {
    * @returns A promise that resolves with the kernel info reply.
    */
   requestKernelInfo(): Promise<KernelMessage.IInfoReplyMsg | undefined> {
+    // eslint-disable-next-line no-console
     console.log(`[LocalKernelConnection] Requesting kernel info`);
 
     // If we already have info, return it
@@ -710,6 +724,7 @@ export class LocalKernelConnection implements Kernel.IKernelConnection {
   async requestHistory(
     _content: KernelMessage.IHistoryRequestMsg["content"],
   ): Promise<KernelMessage.IHistoryReplyMsg> {
+    // eslint-disable-next-line no-console
     console.log(
       `[LocalKernelConnection] requestHistory called (returning empty history)`,
     );
@@ -752,6 +767,7 @@ export class LocalKernelConnection implements Kernel.IKernelConnection {
     KernelMessage.IExecuteRequestMsg,
     KernelMessage.IExecuteReplyMsg
   > {
+    // eslint-disable-next-line no-console
     console.log(`[LocalKernelConnection] Executing code:`, content.code);
 
     const msg: KernelMessage.IExecuteRequestMsg = {

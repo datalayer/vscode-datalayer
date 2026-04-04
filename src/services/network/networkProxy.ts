@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2023 Datalayer, Inc.
+ * Copyright (c) 2021-2025 Datalayer, Inc.
  *
  * MIT License
  */
@@ -12,13 +12,15 @@
  */
 
 import * as vscode from "vscode";
+
+import {
+  isLocalKernelUrl,
+  LOCAL_KERNEL_URL_PREFIX,
+} from "../../constants/kernelConstants";
 import { ExtensionMessage } from "../../types/vscode/messages";
 import type { IKernelBridge } from "../interfaces/IKernelBridge";
+import { ServiceLoggers } from "../logging/loggers";
 import { LocalKernelProxy } from "./localKernelProxy";
-import {
-  LOCAL_KERNEL_URL_PREFIX,
-  isLocalKernelUrl,
-} from "../../constants/kernelConstants";
 
 /**
  * Handles network communications between webview and Jupyter servers.
@@ -34,9 +36,9 @@ export class NotebookNetworkService {
   private readonly _connectionToKernel = new Map<string, string>();
 
   constructor(private readonly _kernelBridge?: IKernelBridge) {
-    console.log(
+    ServiceLoggers.runtime.debug(
       "[NotebookNetwork] Constructor called with kernelBridge:",
-      !!_kernelBridge,
+      { value: !!_kernelBridge },
     );
   }
 
@@ -146,7 +148,7 @@ export class NotebookNetworkService {
     }
 
     const kernelId = match[1];
-    console.log(
+    ServiceLoggers.runtime.debug(
       `[NotebookNetwork] Local kernel REST API request: ${requestBody.method} ${requestBody.url}`,
     );
 
@@ -171,7 +173,7 @@ export class NotebookNetworkService {
           connections: 1,
         },
       };
-      console.log(
+      ServiceLoggers.runtime.debug(
         `[NotebookNetwork] Creating session with kernel ID: ${kernelId}, connections: 1`,
       );
 
@@ -193,7 +195,7 @@ export class NotebookNetworkService {
     ) {
       // Delete session - return 204 No Content (must not have a body)
       // For local kernels, don't actually delete the session - just acknowledge
-      console.log(
+      ServiceLoggers.runtime.debug(
         `[NotebookNetwork] DELETE session request (not actually deleting for local kernel): ${path}`,
       );
       this.postMessage(
@@ -314,11 +316,15 @@ export class NotebookNetworkService {
     };
     const wsURL = new URL(wsBody.origin);
 
-    console.log(`[NotebookNetwork] openWebsocket called: ${wsBody.origin}`);
+    ServiceLoggers.runtime.debug(
+      `[NotebookNetwork] openWebsocket called: ${wsBody.origin}`,
+    );
 
     // Check if this is a local kernel connection using shared utility
     if (isLocalKernelUrl(wsBody.origin)) {
-      console.log(`[NotebookNetwork] Detected local kernel WebSocket request`);
+      ServiceLoggers.runtime.debug(
+        `[NotebookNetwork] Detected local kernel WebSocket request`,
+      );
       this._openLocalKernel(message, webview);
       return;
     }
@@ -446,19 +452,19 @@ export class NotebookNetworkService {
     // Reuse existing proxy for this kernel, or create new one
     let proxy = this._localKernelProxies.get(kernelId);
     if (!proxy) {
-      console.log(
+      ServiceLoggers.runtime.debug(
         `[NotebookNetwork] Creating new local kernel proxy for: ${kernelId}`,
       );
       proxy = new LocalKernelProxy(kernelClient, webview, id!);
       this._localKernelProxies.set(kernelId, proxy);
     } else {
-      console.log(
+      ServiceLoggers.runtime.debug(
         `[NotebookNetwork] Reusing existing local kernel proxy for: ${kernelId}`,
       );
       // Register this new connection with the proxy and get the fake kernel_info_reply
       const openBody = proxy.addConnection(id!);
       // Notify webview that connection is open, including the fake kernel_info_reply
-      console.log(
+      ServiceLoggers.runtime.debug(
         `[NotebookNetwork] Sending websocket-open with fake reply for connection ID: ${id}`,
       );
       this.postMessage(webview, "websocket-open", openBody, id);
@@ -475,7 +481,7 @@ export class NotebookNetworkService {
         this._connectionToKernel.values(),
       ).includes(kernelId);
       if (!hasOtherConnections) {
-        console.log(
+        ServiceLoggers.runtime.debug(
           `[NotebookNetwork] No more connections to kernel ${kernelId}, closing proxy`,
         );
         this._localKernelProxies.delete(kernelId);
@@ -497,12 +503,12 @@ export class NotebookNetworkService {
     const localProxy = kernelId
       ? this._localKernelProxies.get(kernelId)
       : undefined;
-    console.log(
+    ServiceLoggers.runtime.debug(
       `[NotebookNetwork] sendWebsocketMessage: id=${id}, kernelId=${kernelId}, hasProxy=${!!localProxy}, hasWS=${!!this._websockets.get(id ?? "")}`,
     );
     if (localProxy) {
       const wsData = body as { data: unknown };
-      console.log(
+      ServiceLoggers.runtime.debug(
         `[NotebookNetwork] Routing to local proxy, data type=${typeof wsData.data}`,
       );
       localProxy.handleMessage(wsData.data);
@@ -512,7 +518,9 @@ export class NotebookNetworkService {
     // Otherwise, use regular WebSocket
     const ws = this._websockets.get(id ?? "");
     if (!ws) {
-      console.log(`[NotebookNetwork] No WebSocket found for id=${id}`);
+      ServiceLoggers.runtime.debug(
+        `[NotebookNetwork] No WebSocket found for id=${id}`,
+      );
       return;
     }
     const wsData = body as {

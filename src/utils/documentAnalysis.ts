@@ -31,6 +31,84 @@ export interface DocumentAnalysisResult {
   activeDocumentUri?: string;
 }
 
+/** View types that indicate a local Datalayer document. */
+const DATALAYER_VIEW_TYPES = new Set([
+  "datalayer.jupyter-notebook",
+  "datalayer.lexical",
+  "datalayer.lexical-editor",
+]);
+
+/**
+ * Classifies a single tab and appends its URI to the appropriate category list.
+ * @param tab - VS Code tab to classify.
+ * @param nativeNotebooks - Accumulator for native notebook URIs.
+ * @param localDatalayerDocuments - Accumulator for local Datalayer document URIs.
+ * @param cloudDatalayerDocuments - Accumulator for cloud Datalayer document URIs.
+ */
+function classifyTab(
+  tab: vscode.Tab,
+  nativeNotebooks: string[],
+  localDatalayerDocuments: string[],
+  cloudDatalayerDocuments: string[],
+): void {
+  console.log(
+    `[DocumentAnalysis] Tab: label="${tab.label}", input type=${tab.input?.constructor.name}`,
+  );
+
+  if (!tab.input || typeof tab.input !== "object") {
+    return;
+  }
+
+  const tabInput = tab.input as { uri?: vscode.Uri; viewType?: string };
+  const uri = tabInput.uri;
+  const viewType = tabInput.viewType;
+
+  if (!uri) {
+    return;
+  }
+
+  const uriString = uri.toString();
+  const scheme = uri.scheme;
+
+  console.log(
+    `[DocumentAnalysis] Tab URI: ${uriString}, viewType=${viewType}, scheme=${scheme}`,
+  );
+
+  if (scheme === "datalayer") {
+    console.log(
+      `[DocumentAnalysis] Categorized as CLOUD (datalayer:// scheme)`,
+    );
+    cloudDatalayerDocuments.push(uriString);
+    return;
+  }
+
+  if (scheme !== "file" && scheme !== "untitled") {
+    return;
+  }
+
+  if (viewType && DATALAYER_VIEW_TYPES.has(viewType)) {
+    console.log(
+      `[DocumentAnalysis] Categorized as LOCAL DATALAYER (viewType match: ${viewType})`,
+    );
+    localDatalayerDocuments.push(uriString);
+  } else if (viewType === "jupyter-notebook") {
+    console.log(
+      `[DocumentAnalysis] Categorized as NATIVE (jupyter-notebook viewType)`,
+    );
+    nativeNotebooks.push(uriString);
+  } else if (uriString.endsWith(".ipynb")) {
+    console.log(
+      `[DocumentAnalysis] Categorized as LOCAL DATALAYER (fallback - .ipynb file)`,
+    );
+    localDatalayerDocuments.push(uriString);
+  } else if (uriString.endsWith(".dlex") || uriString.endsWith(".lexical")) {
+    console.log(
+      `[DocumentAnalysis] Categorized as LOCAL DATALAYER (lexical file)`,
+    );
+    localDatalayerDocuments.push(uriString);
+  }
+}
+
 /**
  * Analyzes ALL open documents (notebooks AND lexicals) in VS Code workspace.
  *
@@ -76,72 +154,12 @@ export function analyzeOpenDocuments(): DocumentAnalysisResult {
       `[DocumentAnalysis] Checking tab group ${group.activeTab?.label}`,
     );
     for (const tab of group.tabs) {
-      console.log(
-        `[DocumentAnalysis] Tab: label="${tab.label}", input type=${tab.input?.constructor.name}`,
+      classifyTab(
+        tab,
+        nativeNotebooks,
+        localDatalayerDocuments,
+        cloudDatalayerDocuments,
       );
-
-      if (!tab.input || typeof tab.input !== "object") {
-        continue;
-      }
-
-      // Check for CustomEditorTabInput (Datalayer notebooks/lexicals) or NotebookEditorTabInput (native)
-      const tabInput = tab.input as { uri?: vscode.Uri; viewType?: string };
-      const uri = tabInput.uri;
-      const viewType = tabInput.viewType;
-
-      if (!uri) {
-        continue;
-      }
-
-      const uriString = uri.toString();
-      const scheme = uri.scheme;
-
-      console.log(
-        `[DocumentAnalysis] Tab URI: ${uriString}, viewType=${viewType}, scheme=${scheme}`,
-      );
-
-      // Cloud Datalayer documents (datalayer:// scheme) - includes notebooks AND lexicals
-      if (scheme === "datalayer") {
-        console.log(
-          `[DocumentAnalysis] ✓ Categorized as CLOUD (datalayer:// scheme)`,
-        );
-        cloudDatalayerDocuments.push(uriString);
-        continue;
-      }
-
-      // Local files - check viewType for both notebooks and lexicals
-      if (scheme === "file" || scheme === "untitled") {
-        if (
-          viewType === "datalayer.jupyter-notebook" ||
-          viewType === "datalayer.lexical" ||
-          viewType === "datalayer.lexical-editor"
-        ) {
-          console.log(
-            `[DocumentAnalysis] ✓ Categorized as LOCAL DATALAYER (viewType match: ${viewType})`,
-          );
-          localDatalayerDocuments.push(uriString);
-        } else if (viewType === "jupyter-notebook") {
-          console.log(
-            `[DocumentAnalysis] ✓ Categorized as NATIVE (jupyter-notebook viewType)`,
-          );
-          nativeNotebooks.push(uriString);
-        } else if (uriString.endsWith(".ipynb")) {
-          // Fallback: if it's .ipynb but no viewType, assume Datalayer
-          console.log(
-            `[DocumentAnalysis] ✓ Categorized as LOCAL DATALAYER (fallback - .ipynb file)`,
-          );
-          localDatalayerDocuments.push(uriString);
-        } else if (
-          uriString.endsWith(".dlex") ||
-          uriString.endsWith(".lexical")
-        ) {
-          // Lexical documents (.dlex or legacy .lexical)
-          console.log(
-            `[DocumentAnalysis] ✓ Categorized as LOCAL DATALAYER (lexical file)`,
-          );
-          localDatalayerDocuments.push(uriString);
-        }
-      }
     }
   }
 

@@ -15,9 +15,11 @@
  */
 
 import type { RuntimeDTO } from "@datalayer/core/lib/models/RuntimeDTO";
+
+import { ServiceLoggers } from "../../logging/loggers";
 import type {
-  AutoConnectStrategy,
   AutoConnectContext,
+  AutoConnectStrategy,
 } from "../autoConnectService";
 
 /**
@@ -61,19 +63,21 @@ export class ActiveRuntimeStrategy implements AutoConnectStrategy {
         const remainingMinutes = Math.floor(
           (runtime.expiredAt.getTime() - now) / 60000,
         );
-        console.log(
+        ServiceLoggers.runtime.debug(
           `[ActiveRuntimeStrategy] Using runtime with most time available: ${runtime.uid} (~${remainingMinutes} minutes remaining)`,
         );
         return runtime;
       }
 
-      console.log(
+      ServiceLoggers.runtime.debug(
         "[ActiveRuntimeStrategy] All runtimes are expired, no valid runtime available",
       );
       return null;
     }
 
-    console.log("[ActiveRuntimeStrategy] No running runtimes available");
+    ServiceLoggers.runtime.debug(
+      "[ActiveRuntimeStrategy] No running runtimes available",
+    );
     return null;
   }
 }

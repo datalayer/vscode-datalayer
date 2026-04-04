@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2023 Datalayer, Inc.
+ * Copyright (c) 2021-2025 Datalayer, Inc.
  *
  * MIT License
  */
@@ -16,33 +16,107 @@
  * @see https://code.visualstudio.com/api/extension-guides/custom-editors
  */
 
-import * as vscode from "vscode";
-import { disposeAll } from "../utils/dispose";
-import { getNonce } from "../utils/webviewSecurity";
-import { LexicalDocument } from "../models/lexicalDocument";
-import {
-  LexicalCollaborationService,
-  LexicalCollaborationConfig,
-} from "../services/collaboration/lexicalCollaboration";
-import {
-  getServiceContainer,
-  getOutlineTreeProvider,
-  getRuntimesTreeProvider,
-} from "../extension";
 import type { RuntimeDTO } from "@datalayer/core/lib/models/RuntimeDTO";
-import { BaseDocumentProvider } from "./baseDocumentProvider";
-import { LoroWebSocketAdapter } from "../services/collaboration/loroWebSocketAdapter";
-import { AutoConnectService } from "../services/autoConnect/autoConnectService";
-import { DatalayerAuthProvider } from "../services/core/authProvider";
-import {
-  selectBestLanguageModel,
-  isLanguageModelAPIAvailable,
-} from "../config/llmModels";
 import type {
   InlineCompletionConfig,
   TriggerMode,
 } from "@datalayer/jupyter-lexical";
+import * as vscode from "vscode";
+
+import {
+  isLanguageModelAPIAvailable,
+  selectBestLanguageModel,
+} from "../config/llmModels";
+import {
+  getOutlineTreeProvider,
+  getRuntimesTreeProvider,
+  getServiceContainer,
+} from "../extension";
+import { LexicalDocument } from "../models/lexicalDocument";
+import { AutoConnectService } from "../services/autoConnect/autoConnectService";
+import {
+  LexicalCollaborationConfig,
+  LexicalCollaborationService,
+} from "../services/collaboration/lexicalCollaboration";
+import { LoroWebSocketAdapter } from "../services/collaboration/loroWebSocketAdapter";
+import { DatalayerAuthProvider } from "../services/core/authProvider";
+import { disposeAll } from "../utils/dispose";
+import { getNonce } from "../utils/webviewSecurity";
+import { BaseDocumentProvider } from "./baseDocumentProvider";
 import { getPromptForContentType } from "./completionPrompts";
+
+/**
+ * Extracts text content from a code block node's children, concatenating text from
+ * code-highlight and direct text nodes.
+ * @param children - Array of child nodes of a code block.
+ *
+ * @returns Concatenated text content.
+ */
+function extractCodeBlockText(children: unknown[]): string {
+  let content = "";
+  for (const textNode of children) {
+    const textNodeObj = textNode as Record<string, unknown>;
+    if (
+      textNodeObj.type === "code-highlight" &&
+      textNodeObj.children &&
+      Array.isArray(textNodeObj.children)
+    ) {
+      for (const highlight of textNodeObj.children) {
+        const highlightObj = highlight as Record<string, unknown>;
+        if (highlightObj.text) {
+          content += highlightObj.text as string;
+        }
+      }
+    } else if (textNodeObj.text) {
+      content += textNodeObj.text as string;
+    }
+  }
+  return content;
+}
+
+/**
+ * Extracts a JupyterInputNode's UUID, language, and content from the serialized JSON node.
+ * @param nodeObj - Object representing a jupyter-input node.
+ *
+ * @returns Extracted node info or null if language is unsupported or uuid is missing.
+ */
+function extractJupyterInputNode(
+  nodeObj: Record<string, unknown>,
+): { uuid: string; language: string; content: string } | null {
+  const uuid =
+    (nodeObj.jupyterInputNodeUuid as string) ||
+    (nodeObj.uuid as string) ||
+    (nodeObj.__uuid as string);
+  const language = (nodeObj.language as string) || "python";
+
+  let content = "";
+  if (nodeObj.children && Array.isArray(nodeObj.children)) {
+    for (const child of nodeObj.children) {
+      const childObj = child as Record<string, unknown>;
+      if (
+        childObj.type === "code" &&
+        childObj.children &&
+        Array.isArray(childObj.children)
+      ) {
+        content += extractCodeBlockText(childObj.children);
+      } else if (childObj.text) {
+        content += childObj.text as string;
+      }
+    }
+  }
+
+  let lspLanguage: "python" | "markdown" | null = null;
+  if (language === "python" || language === "py") {
+    lspLanguage = "python";
+  } else if (language === "markdown" || language === "md") {
+    lspLanguage = "markdown";
+  }
+
+  if (lspLanguage && uuid) {
+    return { uuid, language: lspLanguage, content };
+  }
+  return null;
+}
 
 /**
  * Custom editor provider for Lexical documents.
@@ -104,7 +178,7 @@ export class LexicalProvider extends BaseDocumentProvider<LexicalDocument> {
     );
 
     // Register callback for runtime termination notifications
-    import("../commands/internal").then(({ onRuntimeTerminated }) => {
+    void import("../commands/internal").then(({ onRuntimeTerminated }) => {
       onRuntimeTerminated(async (uri: vscode.Uri) => {
         // Send kernel-terminated message to lexical webview
         const entry = provider.webviews.get(uri.toString());
@@ -128,17 +202,20 @@ export class LexicalProvider extends BaseDocumentProvider<LexicalDocument> {
             return;
           }
 
+          // eslint-disable-next-line no-console
           console.log(
-            "[LexicalProvider] 🧪 Available lexical webviews:",
+            "[LexicalProvider] Available lexical webviews:",
             Array.from(provider.webviews.keys()),
           );
+          // eslint-disable-next-line no-console
           console.log(
-            "[LexicalProvider] 🧪 Sending test message to all lexical webviews",
+            "[LexicalProvider] Sending test message to all lexical webviews",
           );
 
           let sentCount = 0;
           for (const [uri, entry] of provider.webviews.entries()) {
-            console.log("[LexicalProvider] 🧪 Sending to:", uri);
+            // eslint-disable-next-line no-console
+            console.log("[LexicalProvider] Sending to:", uri);
             await entry.webviewPanel.webview.postMessage({
               type: "test-completion-trigger",
               body: {
@@ -553,49 +630,9 @@ export class LexicalProvider extends BaseDocumentProvider<LexicalDocument> {
 
     webviewPanel.webview.onDidReceiveMessage(async (e) => {
       if (e.type === "response") {
-        // Handle response messages from webview (for sendToWebviewWithResponse)
-        const { requestId, body } = e;
-        if (requestId) {
-          const callback = this._callbacks.get(requestId);
-          if (callback) {
-            this._callbacks.delete(requestId);
-            callback(body);
-          }
-        }
+        this.handleResponseMessage(e);
       } else if (e.type === "llm-completion-request") {
-        // Handle LLM completion request with detailed logging
-        const contentType = e.contentType || "code";
-        const trigger = e.trigger || "auto";
-
-        console.log("[LexicalProvider] 🚀 Received llm-completion-request:", {
-          requestId: e.requestId,
-          prefix: e.prefix?.substring(0, 50) + "...",
-          suffix: e.suffix?.substring(0, 50) + "...",
-          language: e.language,
-          contentType,
-          trigger,
-        });
-
-        const completion = await this.getLLMCompletion(
-          e.prefix,
-          e.suffix,
-          e.language,
-          contentType,
-        );
-
-        console.log("[LexicalProvider] 📤 Sending llm-completion-response:", {
-          requestId: e.requestId,
-          hasCompletion: !!completion,
-          completionLength: completion?.length || 0,
-          contentType,
-        });
-
-        webviewPanel.webview.postMessage({
-          type: "llm-completion-response",
-          requestId: e.requestId,
-          completion: completion,
-          contentType,
-        });
+        await this.handleLLMCompletionRequest(e, webviewPanel);
       } else if (
         e.type === "lsp-completion-request" ||
         e.type === "lsp-hover-request" ||
@@ -603,18 +640,7 @@ export class LexicalProvider extends BaseDocumentProvider<LexicalDocument> {
         e.type === "lsp-document-open" ||
         e.type === "lsp-document-close"
       ) {
-        // Handle LSP messages (completions, hover, document sync)
-        // Forward to LSP bridge
-        const { getLSPBridge } = await import("../extension");
-        const lspBridge = getLSPBridge();
-
-        if (lspBridge) {
-          await lspBridge.handleMessage(e, webviewPanel.webview);
-        } else {
-          console.warn(
-            "[LexicalProvider] LSP bridge not available, ignoring message",
-          );
-        }
+        await this.handleLSPMessage(e, webviewPanel);
       } else if (e.type === "ready") {
         // Send content when webview signals it's ready
         // NOTE: This can be called multiple times if webview is reused for different documents
@@ -636,7 +662,7 @@ export class LexicalProvider extends BaseDocumentProvider<LexicalDocument> {
         // Handle Loro collaboration messages
         this.handleLoroMessage(e, webviewPanel);
       } else {
-        this.onMessage(webviewPanel, document, e);
+        void this.onMessage(webviewPanel, document, e);
       }
     });
 
@@ -680,7 +706,7 @@ export class LexicalProvider extends BaseDocumentProvider<LexicalDocument> {
     });
 
     // Function to send initial content
-    const sendInitialContent = async () => {
+    const sendInitialContent = async (): Promise<void> => {
       const isFromDatalayer = document.uri.scheme === "datalayer";
 
       if (isFromDatalayer) {
@@ -756,7 +782,7 @@ export class LexicalProvider extends BaseDocumentProvider<LexicalDocument> {
       // 🚀 PROACTIVE LSP: Create virtual documents IMMEDIATELY for fast completions
       // Fire-and-forget: Don't block lexical opening waiting for documents
       // Pylance will analyze in the background while webview loads
-      this.createProactiveLSPDocuments(lexicalId, document.documentData);
+      void this.createProactiveLSPDocuments(lexicalId, document.documentData);
 
       // Try auto-connect after sending initial content
       await this.tryAutoConnect(document.uri);
@@ -813,59 +839,9 @@ export class LexicalProvider extends BaseDocumentProvider<LexicalDocument> {
         }
         const nodeObj = node as Record<string, unknown>;
         if (nodeObj.type === "jupyter-input") {
-          // JupyterInputNode found!
-          // In serialized JSON, the UUID is stored as 'jupyterInputNodeUuid'
-          // (at runtime it's just 'uuid', but we're reading the raw JSON here)
-          const uuid =
-            (nodeObj.jupyterInputNodeUuid as string) ||
-            (nodeObj.uuid as string) ||
-            (nodeObj.__uuid as string);
-          const language = (nodeObj.language as string) || "python";
-
-          // Extract text content from children
-          let content = "";
-          if (nodeObj.children && Array.isArray(nodeObj.children)) {
-            for (const child of nodeObj.children) {
-              const childObj = child as Record<string, unknown>;
-              if (
-                childObj.type === "code" &&
-                childObj.children &&
-                Array.isArray(childObj.children)
-              ) {
-                // Code block - concatenate text nodes
-                for (const textNode of childObj.children) {
-                  const textNodeObj = textNode as Record<string, unknown>;
-                  if (
-                    textNodeObj.type === "code-highlight" &&
-                    textNodeObj.children &&
-                    Array.isArray(textNodeObj.children)
-                  ) {
-                    for (const highlight of textNodeObj.children) {
-                      const highlightObj = highlight as Record<string, unknown>;
-                      if (highlightObj.text) {
-                        content += highlightObj.text as string;
-                      }
-                    }
-                  } else if (textNodeObj.text) {
-                    content += textNodeObj.text as string;
-                  }
-                }
-              } else if (childObj.text) {
-                content += childObj.text as string;
-              }
-            }
-          }
-
-          // Determine LSP language
-          let lspLanguage: "python" | "markdown" | null = null;
-          if (language === "python" || language === "py") {
-            lspLanguage = "python";
-          } else if (language === "markdown" || language === "md") {
-            lspLanguage = "markdown";
-          }
-
-          if (lspLanguage && uuid) {
-            jupyterInputNodes.push({ uuid, language: lspLanguage, content });
+          const inputNode = extractJupyterInputNode(nodeObj);
+          if (inputNode) {
+            jupyterInputNodes.push(inputNode);
           }
         }
 
@@ -1088,8 +1064,9 @@ export class LexicalProvider extends BaseDocumentProvider<LexicalDocument> {
       manualTriggerKey: config.get("prosellm.triggerKey", "Cmd+Shift+,"),
     };
 
+    // eslint-disable-next-line no-console
     console.log(
-      "[LexicalProvider] 🔧 Completion config created:",
+      "[LexicalProvider] Completion config created:",
       JSON.stringify(completionConfig, null, 2),
     );
 
@@ -1283,6 +1260,102 @@ export class LexicalProvider extends BaseDocumentProvider<LexicalDocument> {
   }
 
   /**
+   * Handles a "response" message from the webview for request-response patterns.
+   * @param e - The response message containing requestId and body.
+   * @param e.requestId - Unique identifier used to match the response to its pending callback.
+   * @param e.body - The response payload returned by the webview.
+   */
+  private handleResponseMessage(e: {
+    requestId?: string;
+    body?: unknown;
+  }): void {
+    const { requestId, body } = e;
+    if (requestId) {
+      const callback = this._callbacks.get(requestId);
+      if (callback) {
+        this._callbacks.delete(requestId);
+        callback(body);
+      }
+    }
+  }
+
+  /**
+   * Handles an LLM completion request by generating and sending a completion response.
+   * @param e - The completion request message.
+   * @param e.requestId - Unique identifier to correlate the response with the request.
+   * @param e.prefix - Source text preceding the cursor position.
+   * @param e.suffix - Source text following the cursor position.
+   * @param e.language - Programming language of the content being completed.
+   * @param e.contentType - Whether the completion context is code or prose.
+   * @param e.trigger - Event that triggered the completion request.
+   * @param webviewPanel - The webview panel to send the completion response to.
+   */
+  private async handleLLMCompletionRequest(
+    e: {
+      requestId: string;
+      prefix: string;
+      suffix: string;
+      language: string;
+      contentType?: "code" | "prose";
+      trigger?: string;
+    },
+    webviewPanel: vscode.WebviewPanel,
+  ): Promise<void> {
+    const contentType = e.contentType || "code";
+
+    console.log("[LexicalProvider] Received llm-completion-request:", {
+      requestId: e.requestId,
+      prefix: e.prefix?.substring(0, 50) + "...",
+      suffix: e.suffix?.substring(0, 50) + "...",
+      language: e.language,
+      contentType,
+      trigger: e.trigger || "auto",
+    });
+
+    const completion = await this.getLLMCompletion(
+      e.prefix,
+      e.suffix,
+      e.language,
+      contentType,
+    );
+
+    console.log("[LexicalProvider] Sending llm-completion-response:", {
+      requestId: e.requestId,
+      hasCompletion: !!completion,
+      completionLength: completion?.length || 0,
+      contentType,
+    });
+
+    webviewPanel.webview.postMessage({
+      type: "llm-completion-response",
+      requestId: e.requestId,
+      completion,
+      contentType,
+    });
+  }
+
+  /**
+   * Forwards an LSP message to the LSP bridge for processing.
+   * @param e - The LSP message (completion, hover, or document sync).
+   * @param webviewPanel - The webview panel for sending responses.
+   */
+  private async handleLSPMessage(
+    e: import("../services/lsp/types").LSPRequest,
+    webviewPanel: vscode.WebviewPanel,
+  ): Promise<void> {
+    const { getLSPBridge } = await import("../extension");
+    const lspBrdg = getLSPBridge();
+
+    if (lspBrdg) {
+      await lspBrdg.handleMessage(e, webviewPanel.webview);
+    } else {
+      console.warn(
+        "[LexicalProvider] LSP bridge not available, ignoring message",
+      );
+    }
+  }
+
+  /**
    * Requests completion from VS Code's Language Model API.
    * Uses GitHub Copilot if available, falls back to other models.
    * Supports both code and prose completions with appropriate prompts.
@@ -1307,6 +1380,7 @@ export class LexicalProvider extends BaseDocumentProvider<LexicalDocument> {
     try {
       // Check if Language Model API is available (VS Code 1.90+)
       if (!isLanguageModelAPIAvailable()) {
+        // eslint-disable-next-line no-console
         console.log("[LexicalProvider] Language Model API not available");
         return null;
       }
@@ -1326,8 +1400,9 @@ export class LexicalProvider extends BaseDocumentProvider<LexicalDocument> {
         suffix,
       });
 
+      // eslint-disable-next-line no-console
       console.log(
-        `[LexicalProvider] 📤 Sending ${contentType} completion request to model "${model.id}"...`,
+        `[LexicalProvider] Sending ${contentType} completion request to model "${model.id}"...`,
       );
 
       // Send request to LLM
@@ -1341,7 +1416,8 @@ export class LexicalProvider extends BaseDocumentProvider<LexicalDocument> {
         justification,
       });
 
-      console.log("[LexicalProvider] 📥 Receiving response...");
+      // eslint-disable-next-line no-console
+      console.log("[LexicalProvider] Receiving response...");
 
       // Collect streamed response
       let completion = "";
@@ -1349,8 +1425,9 @@ export class LexicalProvider extends BaseDocumentProvider<LexicalDocument> {
         completion += chunk;
       }
 
+      // eslint-disable-next-line no-console
       console.log(
-        `[LexicalProvider] ✅ Got completion (${completion.length} chars)`,
+        `[LexicalProvider] Got completion (${completion.length} chars)`,
       );
 
       // Clean up (remove markdown blocks if present)

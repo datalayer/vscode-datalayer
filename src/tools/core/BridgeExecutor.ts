@@ -68,6 +68,7 @@ export class BridgeExecutor implements ToolExecutor {
   async execute(command: string, args: any): Promise<any> {
     const requestId = `${Date.now()}-${Math.random()}`;
 
+    // eslint-disable-next-line no-console
     console.log(
       `[BridgeExecutor] Sending command to extension: ${command}`,
       "requestId:",

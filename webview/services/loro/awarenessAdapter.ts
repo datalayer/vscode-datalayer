@@ -11,8 +11,8 @@
  * @module services/loro/awarenessAdapter
  */
 
-import { LoroDoc, EphemeralStore } from "loro-crdt";
 import type { AwarenessProvider, UserState } from "@datalayer/lexical-loro";
+import { EphemeralStore, LoroDoc } from "loro-crdt";
 
 /**
  * Adapter that wraps Loro's EphemeralStore to provide awareness functionality.

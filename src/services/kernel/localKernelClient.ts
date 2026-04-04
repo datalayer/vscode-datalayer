@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2021-2025 Datalayer, Inc.
+ *
  * MIT License
  */
 
@@ -10,15 +11,17 @@
  * @module services/kernel/localKernelClient
  */
 
-import { spawn, ChildProcess } from "child_process";
+import { ChildProcess, spawn } from "child_process";
 import * as fs from "fs";
 import * as path from "path";
 // CRITICAL: Use require() for os to ensure it uses the cached version from preload.ts
 // ES6 imports may execute before preload, causing "Cannot read properties of undefined (reading 'platform')"
 const os = require("os");
+import type { Kernel } from "@jupyterlab/services";
 import * as crypto from "crypto";
 import * as vscode from "vscode";
-import type { Kernel } from "@jupyterlab/services";
+
+import { ServiceLoggers } from "../logging/loggers";
 import { NativeKernelInfo } from "./nativeKernelIntegration";
 import { createRawKernel, IKernelConnection } from "./rawSocket";
 
@@ -66,10 +69,9 @@ export class LocalKernelClient {
       throw new Error("LocalKernelClient has been disposed");
     }
 
-    console.log(
-      "[LocalKernelClient] Starting kernel:",
-      this._kernelInfo.displayName,
-    );
+    ServiceLoggers.runtime.info("[LocalKernelClient] Starting kernel:", {
+      detail: this._kernelInfo.displayName,
+    });
 
     // For existing Jupyter servers, we should not be here
     if (this._kernelInfo.type === "jupyter-server") {
@@ -138,7 +140,7 @@ export class LocalKernelClient {
 
     // Monitor kernel process output
     this._kernelProcess.stdout?.on("data", (data) => {
-      console.log(`[Kernel stdout] ${data.toString()}`);
+      ServiceLoggers.runtime.debug(`[Kernel stdout] ${data.toString()}`);
     });
 
     this._kernelProcess.stderr?.on("data", (data) => {
@@ -146,7 +148,7 @@ export class LocalKernelClient {
     });
 
     this._kernelProcess.on("exit", (code, signal) => {
-      console.log(
+      ServiceLoggers.runtime.info(
         `[LocalKernelClient] Kernel process exited: code=${code}, signal=${signal}`,
       );
       // Don't dispose if we're in the middle of a restart
@@ -171,7 +173,7 @@ export class LocalKernelClient {
       clientId,
       username,
     );
-    this._realKernel = realKernel;
+    this._realKernel = realKernel as Kernel.IKernelConnection | undefined;
   }
 
   /**
@@ -300,7 +302,7 @@ export class LocalKernelClient {
       throw new Error("Kernel process not running");
     }
 
-    console.log("[LocalKernelClient] Interrupting kernel...");
+    ServiceLoggers.runtime.info("[LocalKernelClient] Interrupting kernel...");
 
     // Send SIGINT to kernel process
     process.kill(this._kernelProcess.pid, "SIGINT");
@@ -312,14 +314,14 @@ export class LocalKernelClient {
    * communicate via ZMQ rather than through a Jupyter server.
    */
   public async restart(): Promise<void> {
-    console.log("[LocalKernelClient] Restarting kernel...");
+    ServiceLoggers.runtime.info("[LocalKernelClient] Restarting kernel...");
 
     // Set restarting flag to prevent exit handler from calling dispose()
     this._restarting = true;
 
     // If already disposed, we need to un-dispose it for restart
     if (this._disposed) {
-      console.log(
+      ServiceLoggers.runtime.debug(
         "[LocalKernelClient] Client was disposed, re-initializing for restart",
       );
       this._disposed = false;
@@ -367,7 +369,9 @@ export class LocalKernelClient {
     // Reset restarting flag
     this._restarting = false;
 
-    console.log("[LocalKernelClient] Kernel restarted successfully");
+    ServiceLoggers.runtime.info(
+      "[LocalKernelClient] Kernel restarted successfully",
+    );
   }
 
   /**
@@ -379,7 +383,7 @@ export class LocalKernelClient {
       return;
     }
 
-    console.log("[LocalKernelClient] Disposing kernel client");
+    ServiceLoggers.runtime.debug("[LocalKernelClient] Disposing kernel client");
 
     this._disposed = true;
 

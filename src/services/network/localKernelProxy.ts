@@ -11,9 +11,11 @@
  * @module services/network/localKernelProxy
  */
 
-import type * as vscode from "vscode";
 import type { Kernel, KernelMessage } from "@jupyterlab/services";
+import type * as vscode from "vscode";
+
 import type { LocalKernelClient } from "../kernel/localKernelClient";
+import { ServiceLoggers } from "../logging/loggers";
 
 /**
  * Simulates a WebSocket connection for a local ZMQ kernel.
@@ -92,20 +94,21 @@ export class LocalKernelProxy {
     ).onmessage = (event: { data?: KernelMessage.IMessage }) => {
       // Forward to webview with sanitized buffers
       if (event.data) {
-        console.log(
-          `[LocalKernelProxy] RawSocket message:`,
-          event.data.header?.msg_type,
-        );
+        ServiceLoggers.runtime.debug(`[LocalKernelProxy] RawSocket message:`, {
+          detail: event.data.header?.msg_type,
+        });
         this._forwardKernelMessage(event.data);
       }
     };
 
     // Notify webview that connection is open
-    console.log(
+    ServiceLoggers.runtime.debug(
       `[LocalKernelProxy] Sending websocket-open to ${initialClientId}`,
     );
     this._sendToWebview("websocket-open", {}, initialClientId);
-    console.log(`[LocalKernelProxy] WebSocket opened for ${initialClientId}`);
+    ServiceLoggers.runtime.debug(
+      `[LocalKernelProxy] WebSocket opened for ${initialClientId}`,
+    );
   }
 
   /**
@@ -116,7 +119,7 @@ export class LocalKernelProxy {
    */
   public addConnection(clientId: string): Record<string, never> {
     this._clientIds.add(clientId);
-    console.log(
+    ServiceLoggers.runtime.debug(
       `[LocalKernelProxy] Added connection ${clientId}, total connections: ${this._clientIds.size}`,
     );
     return {};
@@ -130,7 +133,7 @@ export class LocalKernelProxy {
    */
   public removeConnection(clientId: string): boolean {
     this._clientIds.delete(clientId);
-    console.log(
+    ServiceLoggers.runtime.debug(
       `[LocalKernelProxy] Removed connection ${clientId}, remaining connections: ${this._clientIds.size}`,
     );
     return this._clientIds.size > 0;
@@ -152,7 +155,9 @@ export class LocalKernelProxy {
 
     // Listen to status changes
     this._kernel.statusChanged.connect((_sender, status) => {
-      console.log(`[LocalKernelProxy] Kernel status changed: ${status}`);
+      ServiceLoggers.runtime.debug(
+        `[LocalKernelProxy] Kernel status changed: ${status}`,
+      );
     });
   }
 
@@ -222,7 +227,7 @@ export class LocalKernelProxy {
         const originalKernelSessionId = sanitizedMsg.header.session;
         sanitizedMsg.header.session = jupyterlabSessionId;
 
-        console.log(
+        ServiceLoggers.runtime.debug(
           `[LocalKernelProxy] Translated session ID: ${originalKernelSessionId} -> ${jupyterlabSessionId} for ${sanitizedMsg.header.msg_type}`,
         );
       }
@@ -239,7 +244,7 @@ export class LocalKernelProxy {
       if (firstJupyterLabSessionId) {
         const originalKernelSessionId = sanitizedMsg.header.session;
         sanitizedMsg.header.session = firstJupyterLabSessionId;
-        console.log(
+        ServiceLoggers.runtime.debug(
           `[LocalKernelProxy] Translated unsolicited message session ID: ${originalKernelSessionId} -> ${firstJupyterLabSessionId} for ${sanitizedMsg.header.msg_type}`,
         );
       }
@@ -264,7 +269,7 @@ export class LocalKernelProxy {
   ): void {
     if (specificClientId) {
       // Send to specific client only
-      console.log(
+      ServiceLoggers.runtime.debug(
         `[LocalKernelProxy] Sending to webview: type=${type}, clientId=${specificClientId}`,
       );
       this._webview.webview.postMessage({
@@ -274,7 +279,7 @@ export class LocalKernelProxy {
       });
     } else {
       // Broadcast to all clients
-      console.log(
+      ServiceLoggers.runtime.debug(
         `[LocalKernelProxy] Broadcasting to webview: type=${type}, clients=${Array.from(this._clientIds).join(", ")}`,
       );
       for (const clientId of this._clientIds) {
@@ -316,11 +321,14 @@ export class LocalKernelProxy {
       return;
     }
 
-    console.log(
+    ServiceLoggers.runtime.debug(
       `[LocalKernelProxy] Received message: ${msg.header?.msg_type}`,
-      msg.header?.msg_type === "execute_request"
-        ? "CODE:" + (msg.content as { code?: string })?.code
-        : "",
+      {
+        detail:
+          msg.header?.msg_type === "execute_request"
+            ? "CODE:" + (msg.content as { code?: string })?.code
+            : "",
+      },
     );
 
     // Check if header is valid
@@ -335,7 +343,7 @@ export class LocalKernelProxy {
     // Store the mapping from request msg_id to JupyterLab's session ID
     // This allows us to translate the kernel's session ID back to JupyterLab's session ID in replies
     this._sessionIdMap.set(msg.header.msg_id, msg.header.session);
-    console.log(
+    ServiceLoggers.runtime.debug(
       `[LocalKernelProxy] Stored session mapping: ${msg.header.msg_id} -> ${msg.header.session}`,
     );
 
@@ -346,9 +354,9 @@ export class LocalKernelProxy {
         this._rawSocket &&
         typeof (this._rawSocket as { send?: unknown }).send === "function"
       ) {
-        console.log(
+        ServiceLoggers.runtime.debug(
           `[LocalKernelProxy] Forwarding message to kernel:`,
-          msg.header.msg_type,
+          { detail: msg.header.msg_type },
         );
         (
           this._rawSocket as { send: (msg: KernelMessage.IMessage) => void }

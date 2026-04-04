@@ -10,21 +10,22 @@
  * @module tools/vscode/VSCodeToolAdapter
  */
 
-import * as vscode from "vscode";
 import type {
   ToolDefinition,
-  ToolOperation,
   ToolExecutionContext,
+  ToolOperation,
 } from "@datalayer/jupyter-react";
 import { formatResponse } from "@datalayer/jupyter-react";
+import * as vscode from "vscode";
+
+import { getServiceContainer } from "../../extension";
+import type { Document } from "../../models/spaceItem";
+import { analyzeOpenDocuments } from "../../utils/documentAnalysis";
+import { getAllOpenedDocuments } from "../../utils/getAllOpenedDocuments";
 import {
   getActiveDatalayerNotebook,
   validateDatalayerNotebook,
 } from "../../utils/notebookValidation";
-import { getServiceContainer } from "../../extension";
-import { analyzeOpenDocuments } from "../../utils/documentAnalysis";
-import { getAllOpenedDocuments } from "../../utils/getAllOpenedDocuments";
-import type { Document } from "../../models/spaceItem";
 
 /**
  * VS Code Tool Adapter
@@ -54,7 +55,7 @@ export class VSCodeToolAdapter<
   async prepareInvocation(
     options: vscode.LanguageModelToolInvocationPrepareOptions<TParams>,
     _token: vscode.CancellationToken,
-  ) {
+  ): Promise<vscode.PreparedToolInvocation> {
     const config = this.definition.config;
 
     // Generate invocation message - call function or use string
@@ -90,7 +91,7 @@ export class VSCodeToolAdapter<
   async invoke(
     options: vscode.LanguageModelToolInvocationOptions<TParams>,
     _token: vscode.CancellationToken,
-  ) {
+  ): Promise<vscode.LanguageModelToolResult> {
     try {
       // Build execution context (includes format from VS Code config)
       const context = await this.buildExecutionContext(options.input);

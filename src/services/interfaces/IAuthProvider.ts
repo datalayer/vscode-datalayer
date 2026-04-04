@@ -11,8 +11,9 @@
  * @module services/interfaces/IAuthProvider
  */
 
-import * as vscode from "vscode";
 import type { UserDTO } from "@datalayer/core/lib/models/UserDTO";
+import * as vscode from "vscode";
+
 import type { AuthMethod } from "../../ui/dialogs/authMethodSelector";
 import type { CredentialsInput } from "../../ui/dialogs/credentialsInput";
 

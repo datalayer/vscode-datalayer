@@ -10,6 +10,7 @@
  */
 
 import * as assert from "assert";
+
 import { getNonce } from "../../utils/webviewSecurity";
 
 suite("Webview Security Utils Tests", () => {

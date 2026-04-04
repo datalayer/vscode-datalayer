@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2023 Datalayer, Inc.
+ * Copyright (c) 2021-2025 Datalayer, Inc.
  *
  * MIT License
  */
@@ -13,14 +13,15 @@
  * @see https://code.visualstudio.com/api/extension-guides/tree-view
  */
 
-import * as vscode from "vscode";
-import { SpaceItem, ItemType } from "../models/spaceItem";
-import { DatalayerAuthProvider } from "../services/core/authProvider";
-import { getServiceContainer } from "../extension";
 import { ItemTypes } from "@datalayer/core/lib/client/constants";
-import type { SpaceDTO } from "@datalayer/core/lib/models/SpaceDTO";
-import type { NotebookDTO } from "@datalayer/core/lib/models/NotebookDTO";
 import type { LexicalDTO } from "@datalayer/core/lib/models/LexicalDTO";
+import type { NotebookDTO } from "@datalayer/core/lib/models/NotebookDTO";
+import type { SpaceDTO } from "@datalayer/core/lib/models/SpaceDTO";
+import * as vscode from "vscode";
+
+import { getServiceContainer } from "../extension";
+import { ItemType, SpaceItem } from "../models/spaceItem";
+import { DatalayerAuthProvider } from "../services/core/authProvider";
 
 /**
  * Tree data provider for the Datalayer Spaces view.

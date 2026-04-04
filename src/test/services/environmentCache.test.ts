@@ -9,13 +9,14 @@
  * Validates caching behavior and singleton pattern.
  */
 
+import type { DatalayerClient } from "@datalayer/core/lib/client";
+import type { UserDTO } from "@datalayer/core/lib/models/UserDTO";
 import * as assert from "assert";
+
 import { EnvironmentCache } from "../../services/cache/environmentCache";
 import { DatalayerAuthProvider } from "../../services/core/authProvider";
 import { LoggerManager } from "../../services/logging/loggerManager";
 import { ServiceLoggers } from "../../services/logging/loggers";
-import type { DatalayerClient } from "@datalayer/core/lib/client";
-import type { UserDTO } from "@datalayer/core/lib/models/UserDTO";
 import {
   createMockDatalayer,
   createMockExtensionContext,

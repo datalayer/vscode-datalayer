@@ -19,11 +19,13 @@
  * @module services/autoConnect/autoConnectService
  */
 
-import * as vscode from "vscode";
 import type { DatalayerClient } from "@datalayer/core/lib/client";
 import type { RuntimeDTO } from "@datalayer/core/lib/models/RuntimeDTO";
-import type { IAuthProvider } from "../interfaces/IAuthProvider";
+import * as vscode from "vscode";
+
 import type { RuntimesTreeProvider } from "../../providers/runtimesTreeProvider";
+import type { IAuthProvider } from "../interfaces/IAuthProvider";
+import { ServiceLoggers } from "../logging/loggers";
 import { ActiveRuntimeStrategy } from "./strategies/activeRuntimeStrategy";
 import { AskUserStrategy } from "./strategies/askUserStrategy";
 import { PyodideStrategy } from "./strategies/pyodideStrategy";
@@ -139,7 +141,7 @@ export class AutoConnectService {
 
         // For Pyodide, runtime will be null but strategy succeeds
         if (strategyName === "Pyodide") {
-          console.log(
+          ServiceLoggers.runtime.debug(
             `[AutoConnect] Success using Pyodide strategy for ${documentUri.fsPath}`,
           );
           return {
@@ -150,7 +152,7 @@ export class AutoConnectService {
 
         // For other strategies, check if runtime was returned
         if (runtime) {
-          console.log(
+          ServiceLoggers.runtime.debug(
             `[AutoConnect] Success using strategy "${strategyName}" for ${documentUri.fsPath}`,
           );
           return {
@@ -158,7 +160,7 @@ export class AutoConnectService {
             strategyName,
           };
         }
-        console.log(
+        ServiceLoggers.runtime.debug(
           `[AutoConnect] Strategy "${strategyName}" returned no runtime, trying next`,
         );
       } catch (error) {
@@ -170,7 +172,7 @@ export class AutoConnectService {
       }
     }
 
-    console.log(
+    ServiceLoggers.runtime.debug(
       `[AutoConnect] All strategies exhausted for ${documentUri.fsPath}, no runtime selected`,
     );
     return null;

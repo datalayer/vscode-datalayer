@@ -12,8 +12,9 @@
  */
 
 import * as vscode from "vscode";
-import type { ILogger } from "../interfaces/ILogger";
+
 import { getNonce } from "../../utils/webviewSecurity";
+import type { ILogger } from "../interfaces/ILogger";
 
 /**
  * Key for storing whether user has been prompted for preload.
@@ -154,7 +155,7 @@ export class PyodidePreloader implements vscode.Disposable {
         e.affectsConfiguration("datalayer.pyodide.preloadBehavior") ||
         e.affectsConfiguration("datalayer.pyodide.version")
       ) {
-        this._onConfigChanged();
+        void this._onConfigChanged();
       }
     });
   }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2023 Datalayer, Inc.
+ * Copyright (c) 2021-2025 Datalayer, Inc.
  *
  * MIT License
  */
@@ -50,7 +50,7 @@ export function saveToBytes(notebook: unknown): Uint8Array {
  * @returns The CSP nonce string or null if no meta tag is found.
  *
  */
-export function getNonce() {
+export function getNonce(): string | null {
   const node = document.querySelector('meta[property="csp-nonce"]');
   if (node) {
     return node.getAttribute("content");

@@ -12,18 +12,19 @@
  */
 
 import * as vscode from "vscode";
+
+import { getConnectedRuntime } from "../../commands";
+import { getServiceContainer } from "../../extension";
 import type { ExtensionMessage } from "../../types/vscode/messages";
-import type { DocumentContext } from "../messaging/types";
+import {
+  CommonConfirmations,
+  showTwoStepConfirmation,
+} from "../../ui/dialogs/confirmationDialog";
+import { showKernelSelector } from "../../ui/dialogs/kernelSelector";
+import { DatalayerAuthProvider } from "../core/authProvider";
 import { BaseService } from "../core/baseService";
 import { ServiceLoggers } from "../logging/loggers";
-import { getServiceContainer } from "../../extension";
-import { DatalayerAuthProvider } from "../core/authProvider";
-import { showKernelSelector } from "../../ui/dialogs/kernelSelector";
-import { getConnectedRuntime } from "../../commands";
-import {
-  showTwoStepConfirmation,
-  CommonConfirmations,
-} from "../../ui/dialogs/confirmationDialog";
+import type { DocumentContext } from "../messaging/types";
 
 /**
  * Callback for handling kernel selection fallback.

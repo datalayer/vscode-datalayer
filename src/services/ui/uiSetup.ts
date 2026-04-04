@@ -11,18 +11,20 @@
  * @module services/uiSetup
  */
 
+import type { DatalayerClient } from "@datalayer/core/lib/client";
 import * as vscode from "vscode";
-import { DatalayerStatusBar } from "./statusBar";
-import { SpacesTreeProvider } from "../../providers/spacesTreeProvider";
-import { SmartDynamicControllerManager } from "../../providers/smartDynamicControllerManager";
-import { NotebookProvider } from "../../providers/notebookProvider";
+
 import { LexicalProvider } from "../../providers/lexicalProvider";
+import { NotebookProvider } from "../../providers/notebookProvider";
 import { OutlineTreeProvider } from "../../providers/outlineTreeProvider";
 import { RuntimesTreeProvider } from "../../providers/runtimesTreeProvider";
 import { SettingsTreeProvider } from "../../providers/settingsTreeProvider";
-import { DatalayerAuthProvider } from "../core/authProvider";
+import { SmartDynamicControllerManager } from "../../providers/smartDynamicControllerManager";
+import { SpacesTreeProvider } from "../../providers/spacesTreeProvider";
 import { EnvironmentCache } from "../cache/environmentCache";
-import type { DatalayerClient } from "@datalayer/core/lib/client";
+import { DatalayerAuthProvider } from "../core/authProvider";
+import { ServiceLoggers } from "../logging/loggers";
+import { DatalayerStatusBar } from "./statusBar";
 
 /**
  * Container for all extension UI components.
@@ -79,7 +81,7 @@ export async function initializeUI(
         authProvider,
       ));
     }
-  } catch (error) {
+  } catch (_error) {
     // Silently handle environment caching errors
   }
 
@@ -111,7 +113,9 @@ export async function initializeUI(
       // When a text editor becomes active (not our custom webview editors),
       // clear the outline since regular files don't have outline support
       if (editor) {
-        console.log("[UISetup] Active text editor changed, clearing outline");
+        ServiceLoggers.main.debug(
+          "[UISetup] Active text editor changed, clearing outline",
+        );
         outlineTreeProvider.setActiveDocument(undefined);
       }
     }),
@@ -134,7 +138,7 @@ export async function initializeUI(
         !(activeTab.input instanceof vscode.TabInputCustom) &&
         !(activeTab.input instanceof vscode.TabInputNotebook)
       ) {
-        console.log(
+        ServiceLoggers.main.debug(
           "[UISetup] Active tab is not custom editor, clearing outline",
         );
         outlineTreeProvider.setActiveDocument(undefined);

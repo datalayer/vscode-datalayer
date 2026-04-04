@@ -11,24 +11,25 @@
  * @module services/core/serviceContainer
  */
 
-import * as vscode from "vscode";
 import type { DatalayerClient } from "@datalayer/core/lib/client";
+import * as vscode from "vscode";
+
+import { DocumentBridge } from "../bridges/documentBridge";
+import { KernelBridge } from "../bridges/kernelBridge";
+import { DocumentRegistry } from "../documents/documentRegistry";
 import type { IAuthProvider } from "../interfaces/IAuthProvider";
 import type { IDocumentBridge } from "../interfaces/IDocumentBridge";
+import type { IErrorHandler } from "../interfaces/IErrorHandler";
 import type { IKernelBridge } from "../interfaces/IKernelBridge";
 import type { ILogger } from "../interfaces/ILogger";
 import type { ILoggerManager } from "../interfaces/ILoggerManager";
-import type { IErrorHandler } from "../interfaces/IErrorHandler";
 import { LoggerManager } from "../logging/loggerManager";
 import { ServiceLoggers } from "../logging/loggers";
-import { createVSCodeDatalayer } from "./datalayerAdapter";
-import { DatalayerAuthProvider } from "./authProvider";
-import { DocumentBridge } from "../bridges/documentBridge";
-import { KernelBridge } from "../bridges/kernelBridge";
 import { NotebookNetworkService } from "../network/networkProxy";
-import { ErrorHandler } from "./errorHandler";
+import { DatalayerAuthProvider } from "./authProvider";
 import { ILifecycle } from "./baseService";
-import { DocumentRegistry } from "../documents/documentRegistry";
+import { createVSCodeDatalayer } from "./datalayerAdapter";
+import { ErrorHandler } from "./errorHandler";
 
 /**
  * Service container interface defining all available services.

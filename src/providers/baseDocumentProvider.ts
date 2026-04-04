@@ -12,14 +12,15 @@
  */
 
 import * as vscode from "vscode";
-import { DocumentMessageRouter } from "../services/messaging/messageRouter";
+
+import type { OutlineUpdateMessage } from "../../webview/types/messages";
+import { getOutlineTreeProvider } from "../extension";
 import { NetworkBridgeService } from "../services/bridges/networkBridge";
 import { RuntimeBridgeService } from "../services/bridges/runtimeBridge";
 import { ServiceLoggers } from "../services/logging/loggers";
+import { DocumentMessageRouter } from "../services/messaging/messageRouter";
+import { createExtensionRunner, Runner } from "../tools/core/runnerSetup";
 import type { ExtensionMessage } from "../types/vscode/messages";
-import { getOutlineTreeProvider } from "../extension";
-import type { OutlineUpdateMessage } from "../../webview/types/messages";
-import { Runner, createExtensionRunner } from "../tools/core/runnerSetup";
 
 /**
  * Abstract base class for document providers.

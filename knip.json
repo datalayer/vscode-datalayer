@@ -1,0 +1,33 @@
+{
+  "$schema": "https://unpkg.com/knip@latest/schema.json",
+  "entry": [
+    "src/preload.ts",
+    "webview/notebook/main.ts",
+    "webview/lexical/main.ts",
+    "webview/datasource/main.tsx",
+    "webview/datasource/editMain.tsx",
+    "webview/showcase/index.tsx"
+  ],
+  "project": ["src/**/*.ts", "webview/**/*.ts", "webview/**/*.tsx"],
+  "ignore": [
+    "**/*.d.ts",
+    "**/*.test.ts",
+    "**/test/**",
+    "scripts/**",
+    "dist/**",
+    "out/**",
+    "docs/**"
+  ],
+  "ignoreDependencies": [
+    "@vscode/zeromq",
+    "@electron/rebuild",
+    "patch-package",
+    "cross-env",
+    "c8",
+    "@vscode/test-cli",
+    "@vscode/test-electron",
+    "@vscode/vsce",
+    "ovsx",
+    "tsx"
+  ]
+}

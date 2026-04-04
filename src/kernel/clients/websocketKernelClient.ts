@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2023 Datalayer, Inc.
+ * Copyright (c) 2021-2025 Datalayer, Inc.
  *
  * MIT License
  */
@@ -11,13 +11,13 @@
  * @module kernel/websocketKernelClient
  */
 
-import { WebSocket } from "ws";
-import { v4 as uuidv4 } from "uuid";
 import type { DatalayerClient } from "@datalayer/core/lib/client";
 import type {
   RuntimeDTO,
   RuntimeJSON,
 } from "@datalayer/core/lib/models/RuntimeDTO";
+import { v4 as uuidv4 } from "uuid";
+import { WebSocket } from "ws";
 
 /**
  * Jupyter message structure according to the wire protocol specification.
@@ -192,13 +192,13 @@ export class WebSocketKernelClient {
           reject(new Error("WebSocket connection timeout"));
         }, 30000);
 
-        const handleOpen = () => {
+        const handleOpen = (): void => {
           clearTimeout(timeout);
           this._ws?.off("error", handleError);
           resolve();
         };
 
-        const handleError = (error: Error) => {
+        const handleError = (error: Error): void => {
           clearTimeout(timeout);
           this._ws?.off("open", handleOpen);
           reject(error);
@@ -356,7 +356,7 @@ export class WebSocketKernelClient {
           pending.resolve({ outputs: pending.outputs, success });
           break;
       }
-    } catch (error) {}
+    } catch (_error) {}
   }
 
   /**
@@ -501,7 +501,7 @@ export class WebSocketKernelClient {
       if (!response.ok) {
         throw new Error(`Failed to interrupt kernel: ${response.statusText}`);
       }
-    } catch (error) {}
+    } catch (_error) {}
   }
 
   /**
@@ -531,7 +531,7 @@ export class WebSocketKernelClient {
       // Reconnect WebSocket
       this.dispose();
       await this.connect();
-    } catch (error) {}
+    } catch (_error) {}
   }
 
   /**

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2023 Datalayer, Inc.
+ * Copyright (c) 2021-2025 Datalayer, Inc.
  *
  * MIT License
  */
@@ -42,7 +42,7 @@ export abstract class Disposable {
   /**
    * Disposes of this instance and all registered disposables.
    */
-  public dispose() {
+  public dispose(): void {
     if (this._isDisposed) {
       return;
     }

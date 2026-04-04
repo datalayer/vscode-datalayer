@@ -12,6 +12,7 @@
  */
 
 import * as vscode from "vscode";
+
 import type { OutlineItem } from "../../webview/types/messages";
 
 /**

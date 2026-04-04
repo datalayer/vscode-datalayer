@@ -10,9 +10,9 @@
  * @module models/runtimesTreeItem
  */
 
-import type { TreeSectionItem } from "./treeSectionItem";
 import type { RuntimeTreeItem } from "./runtimeTreeItem";
 import type { SnapshotTreeItem } from "./snapshotTreeItem";
+import type { TreeSectionItem } from "./treeSectionItem";
 
 /**
  * Union type for all possible items in the Runtimes tree view.

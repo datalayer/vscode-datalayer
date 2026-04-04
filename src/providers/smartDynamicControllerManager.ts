@@ -11,15 +11,16 @@
  * @module providers/smartDynamicControllerManager
  */
 
-import * as vscode from "vscode";
 import type { DatalayerClient } from "@datalayer/core/lib/client";
 import type { RuntimeDTO } from "@datalayer/core/lib/models/RuntimeDTO";
-import { DatalayerAuthProvider } from "../services/core/authProvider";
-import { selectDatalayerRuntime } from "../ui/dialogs/runtimeSelector";
-import { WebSocketKernelClient } from "../kernel/clients/websocketKernelClient";
+import * as vscode from "vscode";
+
 import { PyodideKernelClient } from "../kernel/clients/pyodideKernelClient";
+import { WebSocketKernelClient } from "../kernel/clients/websocketKernelClient";
 import { KernelBridge } from "../services/bridges/kernelBridge";
+import { DatalayerAuthProvider } from "../services/core/authProvider";
 import { promptAndLogin } from "../ui/dialogs/authDialog";
+import { selectDatalayerRuntime } from "../ui/dialogs/runtimeSelector";
 
 /**
  * Manages notebook controllers with a main selector and runtime-specific controllers.
@@ -86,7 +87,7 @@ export class SmartDynamicControllerManager implements vscode.Disposable {
 
     // Refresh on auth changes
     authProvider.onAuthStateChanged(() => {
-      this.refreshControllers();
+      void this.refreshControllers();
     });
   }
 
@@ -360,6 +361,7 @@ export class SmartDynamicControllerManager implements vscode.Disposable {
     // Get or create Pyodide kernel client for this notebook
     let kernelClient = this._pyodideKernels.get(notebookUri);
     if (!kernelClient) {
+      // eslint-disable-next-line no-console
       console.log(`[Pyodide] Creating new kernel for ${notebook.uri.fsPath}`);
       kernelClient = new PyodideKernelClient();
 
@@ -394,6 +396,7 @@ export class SmartDynamicControllerManager implements vscode.Disposable {
         // Error output already displayed by PyodideKernelClient._handleError()
         // Just mark execution as failed and abort remaining cells
         execution.end(false, Date.now());
+        // eslint-disable-next-line no-console
         console.log(
           `[Pyodide] Cell execution failed, aborting remaining cells:`,
           error instanceof Error ? error.message : String(error),
@@ -467,6 +470,50 @@ export class SmartDynamicControllerManager implements vscode.Disposable {
   }
 
   /**
+   * Finds all notebooks using a given runtime UID and removes their mappings.
+   * @param runtimeUid - UID of the runtime to search for.
+   *
+   * @returns Array of affected notebook documents.
+   */
+  private findAndRemoveAffectedNotebooks(
+    runtimeUid: string,
+  ): vscode.NotebookDocument[] {
+    const affectedNotebooks: vscode.NotebookDocument[] = [];
+    for (const [notebookUri, mappedRuntime] of this._notebookRuntimes) {
+      if (mappedRuntime.uid !== runtimeUid) {
+        continue;
+      }
+      const notebook = vscode.workspace.notebookDocuments.find(
+        (nb) => nb.uri.toString() === notebookUri,
+      );
+      if (notebook) {
+        affectedNotebooks.push(notebook);
+      }
+      this._notebookRuntimes.delete(notebookUri);
+    }
+    return affectedNotebooks;
+  }
+
+  /**
+   * Resets affected notebooks to the platform controller for kernel re-selection.
+   * @param affectedNotebooks - Documents that lost their runtime and need a new controller assignment.
+   */
+  private async resetNotebooksToDefaultController(
+    affectedNotebooks: vscode.NotebookDocument[],
+  ): Promise<void> {
+    const platformController = this._controllers.get("datalayer-platform");
+    if (!platformController) {
+      return;
+    }
+    for (const notebook of affectedNotebooks) {
+      await platformController.updateNotebookAffinity(
+        notebook,
+        vscode.NotebookControllerAffinity.Default,
+      );
+    }
+  }
+
+  /**
    * Cleans up resources when a notebook is closed.
    * @param notebook - The notebook document being closed.
    */
@@ -483,6 +530,7 @@ export class SmartDynamicControllerManager implements vscode.Disposable {
     // Dispose Pyodide kernel if exists
     const pyodideClient = this._pyodideKernels.get(notebookUri);
     if (pyodideClient) {
+      // eslint-disable-next-line no-console
       console.log(`[Pyodide] Disposing kernel for ${notebook.uri.fsPath}`);
       pyodideClient.dispose();
       this._pyodideKernels.delete(notebookUri);
@@ -533,40 +581,18 @@ export class SmartDynamicControllerManager implements vscode.Disposable {
 
         const runtime = this._runtimes.get(controllerId);
         if (runtime && !activeRuntimeUids.has(runtime.uid)) {
-          // Runtime no longer exists - find all notebooks using this controller
-          const affectedNotebooks: vscode.NotebookDocument[] = [];
-          for (const [notebookUri, mappedRuntime] of this._notebookRuntimes) {
-            if (mappedRuntime.uid === runtime.uid) {
-              // Find the actual notebook document
-              const notebook = vscode.workspace.notebookDocuments.find(
-                (nb) => nb.uri.toString() === notebookUri,
-              );
-              if (notebook) {
-                affectedNotebooks.push(notebook);
-              }
-              this._notebookRuntimes.delete(notebookUri);
-            }
-          }
+          // Runtime no longer exists - find affected notebooks and clean up
+          const affectedNotebooks = this.findAndRemoveAffectedNotebooks(
+            runtime.uid,
+          );
 
           // Dispose the controller - this removes it from VS Code's kernel picker
           controller.dispose();
           this._controllers.delete(controllerId);
           this._runtimes.delete(controllerId);
 
-          // For each affected notebook, clear the selected kernel
-          // This makes VS Code show "Select Kernel" instead of a dead controller
-          for (const notebook of affectedNotebooks) {
-            // Update affinity to force kernel selection dialog
-            const platformController =
-              this._controllers.get("datalayer-platform");
-            if (platformController) {
-              // Set Platform controller as default so user can select new runtime
-              await platformController.updateNotebookAffinity(
-                notebook,
-                vscode.NotebookControllerAffinity.Default,
-              );
-            }
-          }
+          // Reset affected notebooks to platform controller
+          await this.resetNotebooksToDefaultController(affectedNotebooks);
         }
       }
 
@@ -577,7 +603,7 @@ export class SmartDynamicControllerManager implements vscode.Disposable {
           await this.ensureRuntimeController(runtime);
         }
       }
-    } catch (error) {}
+    } catch (_error) {}
   }
 
   /**
@@ -598,6 +624,7 @@ export class SmartDynamicControllerManager implements vscode.Disposable {
 
     // Clean up Pyodide kernels
     for (const [uri, client] of this._pyodideKernels.entries()) {
+      // eslint-disable-next-line no-console
       console.log(`[Pyodide] Disposing kernel for ${uri}`);
       client.dispose();
     }

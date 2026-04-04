@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2023 Datalayer, Inc.
+ * Copyright (c) 2021-2025 Datalayer, Inc.
  *
  * MIT License
  */
@@ -18,9 +18,10 @@
  * The fake WebSocket is largely copied from mock-server licensed under MIT License.
  */
 
-import { ServiceManager, ServerConnection } from "@jupyterlab/services";
-import { MessageHandler, type ExtensionMessage } from "./messageHandler";
+import { ServerConnection, ServiceManager } from "@jupyterlab/services";
+
 import { isLocalKernelUrl } from "../../src/constants/kernelConstants";
+import { type ExtensionMessage, MessageHandler } from "./messageHandler";
 
 /**
  * Enable verbose debug logging for WebSocket messages.
@@ -149,7 +150,7 @@ interface ICloseEventConfiguration extends IEventConfiguration {
  *
  * @returns A new Event with configurable target properties.
  */
-function createEvent(config: IEventConfiguration) {
+function createEvent(config: IEventConfiguration): Event {
   const { type, target } = config;
   const eventObject = new Event(type);
   if (target) {
@@ -176,7 +177,7 @@ function createEvent(config: IEventConfiguration) {
  *
  * @returns A new CloseEvent with the specified closure details.
  */
-function createCloseEvent(config: ICloseEventConfiguration) {
+function createCloseEvent(config: ICloseEventConfiguration): CloseEvent {
   const { code, reason, type } = config;
   let { wasClean } = config;
   if (!wasClean) {
@@ -211,7 +212,7 @@ function lengthInUtf8Bytes(str: string): number {
  *
  * @returns The normalized data suitable for WebSocket transmission.
  */
-function normalizeSendData(data: unknown) {
+function normalizeSendData(data: unknown): unknown {
   // FIXME this does not work -> JupyterLab fails to serialize the data
   // when the protocol is v1.kernel.websocket.jupyter.org
   if (
@@ -272,7 +273,7 @@ function protocolVerification(protocols?: string | string[]): string[] {
  * @throws TypeError if URL is missing.
  * @throws SyntaxError if URL is invalid, has wrong scheme, or contains fragment.
  */
-function urlVerification(url: string | URL) {
+function urlVerification(url: string | URL): string {
   const urlRecord = new URL(url);
   const { pathname, protocol, hash } = urlRecord;
   if (!url) {
@@ -324,7 +325,7 @@ class EventTarget {
   addEventListener(
     type: string,
     listener: (...args: unknown[]) => void /* , useCapture */,
-  ) {
+  ): void {
     if (typeof listener === "function") {
       if (!this.listeners.has(type)) {
         this.listeners.set(type, new Set());
@@ -344,7 +345,7 @@ class EventTarget {
   removeEventListener(
     type: string,
     listener: (...args: unknown[]) => void /* , useCapture */,
-  ) {
+  ): void {
     this.listeners.get(type)?.delete(listener);
   }
 
@@ -357,7 +358,7 @@ class EventTarget {
    *
    * @returns True if listeners were found and invoked, false otherwise.
    */
-  dispatchEvent(event: Event, ...customArguments: unknown[]) {
+  dispatchEvent(event: Event, ...customArguments: unknown[]): boolean {
     const eventName = event.type;
     const listeners = this.listeners.get(eventName);
     if (!listeners) {
@@ -540,7 +541,7 @@ export class ProxiedWebSocket extends EventTarget {
    * @throws TypeError if the close code is invalid.
    * @throws SyntaxError if the close reason is too long.
    */
-  close(code?: number, reason?: string) {
+  close(code?: number, reason?: string): void {
     if (code !== undefined) {
       if (
         typeof code !== "number" ||
@@ -603,7 +604,7 @@ export class ProxiedWebSocket extends EventTarget {
    *
    * @throws Error if the WebSocket is in CLOSING or CLOSED state.
    */
-  send(data: unknown) {
+  send(data: unknown): void {
     if (
       this.readyState === ProxiedWebSocket.CLOSING ||
       this.readyState === ProxiedWebSocket.CLOSED
@@ -631,6 +632,69 @@ export class ProxiedWebSocket extends EventTarget {
    *
    * @private
    */
+  /**
+   * Processes an incoming websocket-message by converting Buffer data and dispatching a MessageEvent.
+   * @param message - The extension message containing websocket payload data.
+   */
+  private _handleWebSocketMessage(message: ExtensionMessage): void {
+    const body = (message as unknown as { body?: Record<string, unknown> })
+      .body;
+    const bodyData = body as {
+      data?: { type?: string; data?: number[] } | string;
+    };
+    if (
+      typeof bodyData.data === "object" &&
+      bodyData.data?.type === "Buffer" &&
+      bodyData.data?.data
+    ) {
+      (bodyData.data as unknown) = new ArrayBuffer(bodyData.data.data.length);
+    }
+    if (DEBUG_WEBSOCKET) {
+      console.log(
+        `[WebviewWebSocket] Dispatching message event for clientId=${this.clientId}:`,
+        typeof bodyData.data === "string" ? "JSON string" : "object",
+      );
+      this._debugLogWebSocketPayload(bodyData);
+    }
+    this.dispatchEvent(new MessageEvent("message", { data: bodyData.data }));
+  }
+
+  /**
+   * Logs detailed debug info for string websocket payloads.
+   * @param bodyData - The body data containing the websocket payload.
+   * @param bodyData.data - The websocket payload, either a JSON string or binary data array.
+   */
+  private _debugLogWebSocketPayload(bodyData: {
+    data?: { type?: string; data?: number[] } | string;
+  }): void {
+    if (typeof bodyData.data !== "string") {
+      return;
+    }
+    try {
+      const parsed = JSON.parse(bodyData.data);
+      console.log(
+        `[WebviewWebSocket] Message type: ${parsed.header?.msg_type}, channel: ${parsed.channel}`,
+      );
+      if (parsed.header?.msg_type === "kernel_info_reply") {
+        console.log(`[WebviewWebSocket] kernel_info_reply details:`, {
+          msg_id: parsed.header?.msg_id,
+          parent_msg_id: parsed.parent_header?.msg_id,
+          session: parsed.header?.session,
+          status: parsed.content?.status,
+          hasLanguageInfo: !!parsed.content?.language_info,
+        });
+      }
+    } catch (_e) {
+      // Ignore parse errors
+    }
+  }
+
+  /**
+   * Processes extension host messages and dispatches websocket data matching this connection.
+   * @param message - Message received from the VS Code extension host.
+   *
+   * @returns True if the message was handled by this websocket instance.
+   */
   private _onExtensionMessage(message: ExtensionMessage): boolean {
     const { type } = message;
 
@@ -640,81 +704,33 @@ export class ProxiedWebSocket extends EventTarget {
     }
 
     const { id } = message;
-    if (id === this.clientId) {
-      switch (type) {
-        case "websocket-message":
-          // FIXME this does not work -> JupyterLab fails to deserialize the array
-          // when the protocol is v1.kernel.websocket.jupyter.org
-          // A part of the fix probably lies in the need to convert the binaryType
-          // to 'arraybuffer' for kernel websocket (in the extension side!!):
-          // https://github.com/jupyterlab/jupyterlab/blob/85c82eba1caa7e28a0d818c0840e13756c1b1256/packages/services/src/kernel/default.ts#L1468
-          const { body } = message;
-          const bodyData = body as {
-            data?: { type?: string; data?: number[] } | string;
-          };
-          if (
-            typeof bodyData.data === "object" &&
-            bodyData.data?.type === "Buffer" &&
-            bodyData.data?.data
-          ) {
-            (bodyData.data as unknown) = new ArrayBuffer(
-              bodyData.data.data.length,
-            );
-          }
-          // MessageEvent constructor expects { data: ... } not the body directly
-          if (DEBUG_WEBSOCKET) {
-            console.log(
-              `[WebviewWebSocket] Dispatching message event for clientId=${this.clientId}:`,
-              typeof bodyData.data === "string" ? "JSON string" : "object",
-            );
-          }
-          if (DEBUG_WEBSOCKET && typeof bodyData.data === "string") {
-            try {
-              const parsed = JSON.parse(bodyData.data);
-              console.log(
-                `[WebviewWebSocket] Message type: ${parsed.header?.msg_type}, channel: ${parsed.channel}`,
-              );
-
-              // Extra logging for kernel_info_reply
-              if (parsed.header?.msg_type === "kernel_info_reply") {
-                console.log(`[WebviewWebSocket] kernel_info_reply details:`, {
-                  msg_id: parsed.header?.msg_id,
-                  parent_msg_id: parsed.parent_header?.msg_id,
-                  session: parsed.header?.session,
-                  status: parsed.content?.status,
-                  hasLanguageInfo: !!parsed.content?.language_info,
-                });
-              }
-            } catch (e) {
-              // Ignore parse errors
-            }
-          }
-          this.dispatchEvent(
-            new MessageEvent("message", { data: bodyData.data }),
-          );
-          break;
-        case "websocket-open": {
-          if (DEBUG_WEBSOCKET) {
-            console.log(
-              `[WebviewWebSocket] Received websocket-open for clientId=${this.clientId}, url=${this.url}`,
-            );
-          }
-          this._readyState = WebSocket.OPEN;
-          this.dispatchEvent(new Event("open"));
-          if (DEBUG_WEBSOCKET) {
-            console.log(
-              `[WebviewWebSocket] Dispatched 'open' event, readyState=${this._readyState}`,
-            );
-          }
-          break;
-        }
-        case "websocket-close":
-          this.close();
-          break;
-      }
-      return true;
+    if (id !== this.clientId) {
+      return false;
     }
-    return false;
+
+    switch (type) {
+      case "websocket-message":
+        this._handleWebSocketMessage(message);
+        break;
+      case "websocket-open":
+        if (DEBUG_WEBSOCKET) {
+          console.log(
+            `[WebviewWebSocket] Received websocket-open for clientId=${this.clientId}, url=${this.url}`,
+          );
+        }
+        this._readyState = WebSocket.OPEN;
+        this.dispatchEvent(new Event("open"));
+        if (DEBUG_WEBSOCKET) {
+          console.log(
+            `[WebviewWebSocket] Dispatched 'open' event, readyState=${this._readyState}`,
+          );
+        }
+        break;
+      case "websocket-close":
+        this.close();
+        break;
+    }
+    return true;
   }
 
   /**

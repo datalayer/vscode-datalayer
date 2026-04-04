@@ -11,9 +11,9 @@
  * @module services/messaging/messageRouter
  */
 
+import type { ExtensionMessage } from "../../types/vscode/messages";
 import { BaseService } from "../core/baseService";
 import type { ILogger } from "../interfaces/ILogger";
-import type { ExtensionMessage } from "../../types/vscode/messages";
 import type {
   DocumentContext,
   MessageHandler,

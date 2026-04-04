@@ -12,14 +12,15 @@
 
 import type { ToolOperation } from "@datalayer/jupyter-react";
 import { validateWithZod } from "@datalayer/jupyter-react";
+
+import {
+  type CreateNotebookParams,
+  createNotebookParamsSchema,
+} from "../schemas/createNotebook";
 import {
   createDocumentOperation,
   type CreateDocumentResult,
 } from "../utils/createDocument";
-import {
-  createNotebookParamsSchema,
-  type CreateNotebookParams,
-} from "../schemas/createNotebook";
 
 /**
  * Parameters for creating a notebook (aliased from schema type).

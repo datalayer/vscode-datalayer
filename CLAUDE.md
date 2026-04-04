@@ -13,6 +13,8 @@ npm run compile          # Build (includes icon font generation)
 npm run check            # Full suite: format + lint + type-check + README check
 npm run docs             # Generate TypeDoc (0 warnings required)
 npm run docs:coverage    # TypeDoc with strict validation
+npm run check:spelling   # Spell check via cspell
+npm run check:dead-code  # Dead code detection via knip
 npm run vsix             # Create universal .vsix package
 ```
 
@@ -36,9 +38,20 @@ Every directory has a `README.md` documenting its files, exports, and patterns.
 - **NotebookActions** from `@jupyterlab/notebook` for cell manipulation (not commands or store methods).
 - Use Datalayer client directly with handlers pattern (no wrapper services).
 
-## Documentation Strictness
+## Code Quality Enforcement
 
 All enforced at `error` level, blocking CI and pre-commit hooks.
+
+### ESLint Rules (beyond JSDoc)
+
+- **`@typescript-eslint/no-floating-promises`** (error) - Catches unhandled async calls.
+- **`@typescript-eslint/no-unused-vars`** (error) - Dead vars with `_` prefix pattern for intentional ignores.
+- **`@typescript-eslint/explicit-function-return-type`** (warn) - Missing return types on exports.
+- **`simple-import-sort/imports`** + **`exports`** (error) - Auto-sorted imports.
+- **`no-console`** (warn) - Use `ServiceLoggers` instead of `console.log` in `src/`. Webview files use `eslint-disable` where logger is unavailable.
+- **`complexity`** (warn, max 20) - Flags overly complex functions.
+- **`max-depth`** (warn, max 5) - Flags deep nesting.
+- **`header/header`** (error) - MIT license header required on all source files.
 
 ### JSDoc Rules (`eslint-plugin-jsdoc`)
 
@@ -84,14 +97,33 @@ Constructor `@param` for private params uses `checkConstructors: false` to avoid
 
 Runs automatically on `git commit`:
 
-- `*.ts`, `*.tsx`, `*.js`, `*.jsx`: ESLint fix + Prettier
-- `*.json`, `*.css`, `*.md`, `*.yml`: Prettier
+- `src/**/*.{ts,tsx}`, `webview/**/*.{ts,tsx}`: ESLint fix + Prettier
+- `*.{json,css,md,yml}`: Prettier
+
+### Commit Message Convention (commitlint)
+
+Conventional commits encouraged (warns but does not block):
+
+- Format: `type: subject` (e.g., `feat: add kernel selector`, `fix: resolve CORS error`)
+- Types: `feat`, `fix`, `docs`, `style`, `refactor`, `perf`, `test`, `build`, `ci`, `chore`, `revert`, `bump`
+
+### Spell Checking (cspell)
+
+- Config: `cspell.json` with domain-specific dictionary (100+ words)
+- Run: `npm run check:spelling`
+- CI: Runs in Code Quality workflow
+
+### Dead Code Detection (knip)
+
+- Config: `knip.json`
+- Run: `npm run check:dead-code`
+- Finds unused exports, files, dependencies, and types
 
 ## CI/CD Workflows (`.github/workflows/`)
 
-1. **Code Quality**: Format, lint, type-check, README check, TypeDoc validation
+1. **Code Quality**: Format, lint, type-check, README check, TypeDoc validation, spell check
 2. **Extension Build & Test**: Multi-platform .vsix generation
-3. **Documentation**: TypeDoc + Netlify deployment
+3. **Documentation**: TypeDoc generation + coverage validation + Netlify deployment
 
 ## Key Patterns
 

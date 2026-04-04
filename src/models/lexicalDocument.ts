@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2023 Datalayer, Inc.
+ * Copyright (c) 2021-2025 Datalayer, Inc.
  *
  * MIT License
  */
@@ -13,10 +13,11 @@
  * @see https://code.visualstudio.com/api/extension-guides/custom-editors
  */
 
-import * as vscode from "vscode";
 import * as fs from "fs";
-import { Disposable } from "../utils/dispose";
+import * as vscode from "vscode";
+
 import { DocumentBridge } from "../services/bridges/documentBridge";
+import { Disposable } from "../utils/dispose";
 
 /**
  * Delegate interface that provides document persistence capabilities.
@@ -173,7 +174,7 @@ export class LexicalDocument
       // Try reading from virtual filesystem
       try {
         return new Uint8Array(await vscode.workspace.fs.readFile(uri));
-      } catch (error) {
+      } catch (_error) {
         // Fallback to default content if file doesn't exist
         return LexicalDocument.getDefaultContent();
       }
@@ -299,7 +300,7 @@ export class LexicalDocument
    *
    * @returns The VS Code URI identifying this document.
    */
-  public get uri() {
+  public get uri(): vscode.Uri {
     return this._uri;
   }
 
@@ -349,7 +350,7 @@ export class LexicalDocument
    *
    * @param _edit - The edit operation data (currently unused).
    */
-  makeEdit(_edit: unknown) {
+  makeEdit(_edit: unknown): void {
     if (!this._isCollaborative) {
       this._isDirty = true;
     }

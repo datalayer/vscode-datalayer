@@ -14,25 +14,26 @@
  */
 
 import * as vscode from "vscode";
-import { registerAuthCommands } from "./auth";
-import { registerDocumentCommands } from "./documents";
-import { registerRuntimeCommands } from "./runtimes";
-import { registerSnapshotCommands } from "./snapshots";
-import { registerSecretsCommands } from "./secrets";
-import { registerDatasourcesCommands } from "./datasources";
-import { registerInternalCommands, getConnectedRuntime } from "./internal";
-import { registerCreateCommands } from "./create";
-import { registerThemeCommands } from "./theme";
-import { registerOutlineCommands } from "./outline";
-import { registerAgUICommands } from "./agui";
-import { registerPyodideCommands } from "./pyodide";
-import { DatalayerAuthProvider } from "../services/core/authProvider";
-import { DocumentBridge } from "../services/bridges/documentBridge";
-import { SpacesTreeProvider } from "../providers/spacesTreeProvider";
+
+import { OutlineTreeProvider } from "../providers/outlineTreeProvider";
 import { RuntimesTreeProvider } from "../providers/runtimesTreeProvider";
 import { SettingsTreeProvider } from "../providers/settingsTreeProvider";
-import { OutlineTreeProvider } from "../providers/outlineTreeProvider";
 import { SmartDynamicControllerManager } from "../providers/smartDynamicControllerManager";
+import { SpacesTreeProvider } from "../providers/spacesTreeProvider";
+import { DocumentBridge } from "../services/bridges/documentBridge";
+import { DatalayerAuthProvider } from "../services/core/authProvider";
+import { registerAgUICommands } from "./agui";
+import { registerAuthCommands } from "./auth";
+import { registerCreateCommands } from "./create";
+import { registerDatasourcesCommands } from "./datasources";
+import { registerDocumentCommands } from "./documents";
+import { getConnectedRuntime, registerInternalCommands } from "./internal";
+import { registerOutlineCommands } from "./outline";
+import { registerPyodideCommands } from "./pyodide";
+import { registerRuntimeCommands } from "./runtimes";
+import { registerSecretsCommands } from "./secrets";
+import { registerSnapshotCommands } from "./snapshots";
+import { registerThemeCommands } from "./theme";
 
 // Re-export internal command helpers for use by providers
 export { getConnectedRuntime };

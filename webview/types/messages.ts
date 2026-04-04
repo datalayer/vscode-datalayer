@@ -13,6 +13,7 @@
 
 import type { RuntimeJSON } from "@datalayer/core/lib/client";
 import type { InlineCompletionConfig } from "@datalayer/jupyter-lexical";
+
 import type { CollaborationConfig } from "../stores/lexicalStore";
 
 /**

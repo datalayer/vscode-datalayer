@@ -13,10 +13,9 @@
 
 export {
   BaseKernelManager,
-  type KernelManagerType,
   type ITypedKernelManager,
+  type KernelManagerType,
 } from "./baseKernelManager";
-
 export {
   BaseSessionManager,
   type SessionManagerType,

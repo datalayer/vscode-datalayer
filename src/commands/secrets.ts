@@ -12,10 +12,11 @@
  */
 
 import * as vscode from "vscode";
-import { SettingsTreeProvider } from "../providers/settingsTreeProvider";
-import { SecretTreeItem } from "../models/secretTreeItem";
-import { showTwoStepConfirmation } from "../ui/dialogs/confirmationDialog";
+
 import { getServiceContainer } from "../extension";
+import { SecretTreeItem } from "../models/secretTreeItem";
+import { SettingsTreeProvider } from "../providers/settingsTreeProvider";
+import { showTwoStepConfirmation } from "../ui/dialogs/confirmationDialog";
 
 /**
  * Registers all secrets-related commands for CRUD operations with security-first approach.

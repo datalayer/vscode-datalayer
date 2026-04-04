@@ -41,8 +41,8 @@
  *
  */
 
-import { Session, ServerConnection } from "@jupyterlab/services";
-import { Signal, ISignal } from "@lumino/signaling";
+import { ServerConnection, Session } from "@jupyterlab/services";
+import { ISignal, Signal } from "@lumino/signaling";
 
 /**
  * Type discriminator for session manager implementations.

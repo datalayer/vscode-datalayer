@@ -24,21 +24,22 @@
  * - `datalayer.refreshSpaces` - Refreshes spaces tree view to reflect latest state
  */
 
-import * as vscode from "vscode";
+import type { SpaceDTO } from "@datalayer/core/lib/models/SpaceDTO";
 import * as fs from "fs";
+import * as vscode from "vscode";
+
 import { getServiceContainer } from "../extension";
-import { DocumentBridge } from "../services/bridges/documentBridge";
-import { SpacesTreeProvider } from "../providers/spacesTreeProvider";
 import { Document } from "../models/spaceItem";
+import { SpacesTreeProvider } from "../providers/spacesTreeProvider";
+import { DocumentBridge } from "../services/bridges/documentBridge";
+import {
+  CommonConfirmations,
+  showTwoStepConfirmation,
+} from "../ui/dialogs/confirmationDialog";
 import {
   detectDocumentType,
   getDocumentDisplayName,
 } from "../utils/documentUtils";
-import {
-  showTwoStepConfirmation,
-  CommonConfirmations,
-} from "../ui/dialogs/confirmationDialog";
-import type { SpaceDTO } from "@datalayer/core/lib/models/SpaceDTO";
 
 /**
  * Registers all document-related VS Code commands for the Datalayer extension.
@@ -805,7 +806,7 @@ export function registerDocumentCommands(
                   // Validate JSON
                   try {
                     JSON.parse(content);
-                  } catch (error) {
+                  } catch (_error) {
                     throw new Error(`Invalid JSON in ${fileName}`);
                   }
 

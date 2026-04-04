@@ -10,8 +10,8 @@
  * @module models/secretTreeItem
  */
 
-import * as vscode from "vscode";
 import type { SecretDTO } from "@datalayer/core/lib/models/Secret";
+import * as vscode from "vscode";
 
 /**
  * Tree item for displaying a secret with masked value.

@@ -1,5 +1,6 @@
 /*
- * Copyright (c) 2025 Datalayer, Inc.
+ * Copyright (c) 2021-2025 Datalayer, Inc.
+ *
  * MIT License
  */
 
@@ -83,7 +84,7 @@ export class LSPCompletionProvider implements IInlineCompletionProvider<IInlineC
   /**
    * Schema with default configuration for debounce and timeout.
    */
-  get schema() {
+  get schema(): { default: { debouncerDelay: number; timeout: number } } {
     return {
       default: {
         debouncerDelay: 100, // 100ms debounce for LSP (faster than LLM)
@@ -190,7 +191,7 @@ export class LSPCompletionProvider implements IInlineCompletionProvider<IInlineC
         .filter((item) => item.insertText.length > 0); // Filter out empty completions
 
       return { items };
-    } catch (error) {
+    } catch (_error) {
       return { items: [] };
     }
   }

@@ -10,8 +10,9 @@
  */
 
 import * as assert from "assert";
-import { ServiceLoggers } from "../../services/logging/loggers";
+
 import { LoggerManager } from "../../services/logging/loggerManager";
+import { ServiceLoggers } from "../../services/logging/loggers";
 import { createMockExtensionContext } from "../utils/mockFactory";
 
 suite("ServiceLoggers Tests", () => {

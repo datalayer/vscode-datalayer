@@ -11,8 +11,9 @@
  * @module models/snapshotTreeItem
  */
 
-import * as vscode from "vscode";
 import type { RuntimeSnapshotDTO } from "@datalayer/core/lib/models/RuntimeSnapshotDTO";
+import * as vscode from "vscode";
+
 import { formatRelativeTime } from "../utils/dateFormatter";
 
 /**

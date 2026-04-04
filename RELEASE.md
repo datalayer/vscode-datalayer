@@ -4,7 +4,7 @@
 
 ```bash
 # 1. Test locally
-npm run compile && npm run lint && npx tsc --noEmit
+npm run check && npm run docs && npm run compile
 
 # 2. Bump version and create version tag on your local git clone
 # major (X.y.z) | minor (x.Y.z) | patch (x.y.Z)

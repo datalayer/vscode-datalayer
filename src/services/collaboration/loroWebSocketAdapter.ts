@@ -43,12 +43,13 @@ try {
   } else if (wsModule.default) {
     WebSocketCtor = wsModule.default;
   }
-} catch (e) {
+} catch (_e) {
   // Ignore
 }
 
 // Fallback to global WebSocket (Node.js 20+, Electron, etc.)
 if (!WebSocketCtor && typeof global.WebSocket === "function") {
+  // eslint-disable-next-line no-console
   console.log("[LoroAdapter] Using global.WebSocket.");
   WebSocketCtor = global.WebSocket as unknown as WebSocketConstructor;
 }
@@ -60,15 +61,15 @@ if (!WebSocketCtor) {
   );
   WebSocketCtor = class DummyWebSocket {
     /** No-op event listener registration. */
-    on() {}
+    on(): void {}
     /** No-op message send. */
-    send() {}
+    send(): void {}
     /** No-op connection close. */
-    close() {}
+    close(): void {}
     /** No-op event listener registration (DOM-style). */
-    addEventListener() {}
+    addEventListener(): void {}
     /** No-op event listener removal. */
-    removeEventListener() {}
+    removeEventListener(): void {}
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } as any;
 }
@@ -133,7 +134,7 @@ export class LoroWebSocketAdapter {
       const wsInstance = new WebSocketCtor(this.websocketUrl);
       this.ws = wsInstance;
 
-      const onOpen = () => {
+      const onOpen = (): void => {
         this.reconnectDelay = 100; // Reset backoff
         this.sendToWebview({
           type: "status",
@@ -145,7 +146,7 @@ export class LoroWebSocketAdapter {
         this.flushMessageQueue();
       };
 
-      const onClose = () => {
+      const onClose = (): void => {
         this.ws = null;
 
         this.sendToWebview({
@@ -161,7 +162,7 @@ export class LoroWebSocketAdapter {
       };
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const onError = (error: any) => {
+      const onError = (error: any): void => {
         console.error(`[LoroAdapter] WebSocket error:`, error);
         this.sendToWebview({
           type: "error",
@@ -172,7 +173,7 @@ export class LoroWebSocketAdapter {
       };
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const onMessage = (dataOrEvent: any) => {
+      const onMessage = (dataOrEvent: any): void => {
         try {
           // Normalize data
           let data = dataOrEvent;
@@ -188,7 +189,7 @@ export class LoroWebSocketAdapter {
 
           // Handle Blob (Browser/Native)
           if (typeof Blob !== "undefined" && data instanceof Blob) {
-            data.arrayBuffer().then((buf) => {
+            void data.arrayBuffer().then((buf) => {
               this.processMessageData(Buffer.from(buf));
             });
             return;

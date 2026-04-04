@@ -12,12 +12,13 @@
  */
 
 import type * as vscode from "vscode";
+
+import { getServiceContainer } from "../../extension";
 import type { ExtensionMessage } from "../../types/vscode/messages";
-import type { DocumentContext } from "../messaging/types";
 import { BaseService } from "../core/baseService";
 import { ServiceLoggers } from "../logging/loggers";
+import type { DocumentContext } from "../messaging/types";
 import { NotebookNetworkService } from "../network/networkProxy";
-import { getServiceContainer } from "../../extension";
 
 /**
  * Bridges network communication between webviews and the extension.

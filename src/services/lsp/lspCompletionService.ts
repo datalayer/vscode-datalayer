@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2021-2025 Datalayer, Inc.
+ *
  * MIT License
  */
 
@@ -11,6 +12,7 @@
  */
 
 import * as vscode from "vscode";
+
 import { LSPDocumentManager } from "./lspDocumentManager";
 
 /**
@@ -103,7 +105,7 @@ export class LSPCompletionService {
       >("vscode.executeCompletionItemResolveProvider", item);
 
       return resolved || item;
-    } catch (error) {
+    } catch (_error) {
       return item;
     }
   }
@@ -152,7 +154,7 @@ export class LSPCompletionService {
       }
 
       return hovers[0];
-    } catch (error) {
+    } catch (_error) {
       return null;
     }
   }
@@ -192,7 +194,7 @@ export class LSPCompletionService {
       // Get active interpreter for document
       // This configures Pylance with the correct interpreter
       pythonAPI.environments.getActiveEnvironmentPath(documentUri);
-    } catch (error) {
+    } catch (_error) {
       // Silent fail
     }
   }

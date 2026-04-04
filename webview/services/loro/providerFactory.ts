@@ -11,8 +11,9 @@
  * @module services/loro/providerFactory
  */
 
-import { LoroDoc } from "loro-crdt";
 import type { Provider } from "@datalayer/lexical-loro";
+import { LoroDoc } from "loro-crdt";
+
 import { VSCodeLoroProvider } from "./vsCodeLoroProvider";
 
 /**
