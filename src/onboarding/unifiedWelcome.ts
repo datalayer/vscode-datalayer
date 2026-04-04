@@ -16,6 +16,7 @@
 
 import * as vscode from "vscode";
 
+import { getValidatedSettingsGroup } from "../services/config/settingsValidator";
 import type { ILogger } from "../services/interfaces/ILogger";
 
 /**
@@ -139,8 +140,7 @@ export async function showUnifiedWelcomePrompt(
   }
 
   // Check if user disabled onboarding via configuration
-  const config = vscode.workspace.getConfiguration("datalayer.onboarding");
-  const showWelcome = config.get<boolean>("showWelcome", true);
+  const showWelcome = getValidatedSettingsGroup("onboarding").showWelcome;
   if (!showWelcome) {
     logger.info("Onboarding disabled via configuration");
     await context.globalState.update(ONBOARDING_COMPLETE_KEY, true);

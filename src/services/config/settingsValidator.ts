@@ -31,24 +31,42 @@ import { ServiceLoggers } from "../logging/loggers";
  *
  * @returns A Zod string schema with URL validation and a default value.
  */
-function urlSchema(defaultValue: string): z.ZodDefault<z.ZodString> {
-  return z.string().url().default(defaultValue);
+function urlSchema(defaultValue: string): z.ZodType<string> {
+  return z
+    .string()
+    .refine((val) => {
+      try {
+        const parsed = new URL(val);
+        return parsed.protocol === "http:" || parsed.protocol === "https:";
+      } catch {
+        return false;
+      }
+    }, "Must be a valid HTTP or HTTPS URL")
+    .default(defaultValue);
 }
 
 /**
- * WebSocket URL schema that validates strings start with ws:// or wss://.
- * The default is used when the value is missing (undefined). Invalid strings
- * fail validation and are handled by `validateSection()` which drops the
- * invalid field and re-parses so the schema default fills in.
+ * WebSocket URL schema that validates strings as well-formed WebSocket URLs.
+ * Uses `new URL()` for structural validation and enforces the ws:// or wss://
+ * scheme. The default is used when the value is missing (undefined). Invalid
+ * strings fail validation and are handled by `validateSection()` which drops
+ * the invalid field and re-parses so the schema default fills in.
  *
  * @param defaultValue - The default WebSocket URL used when the setting is missing.
  *
- * @returns A Zod string schema with WebSocket URL validation and a default value.
+ * @returns A Zod schema with WebSocket URL validation and a default value.
  */
-function wsUrlSchema(defaultValue: string): z.ZodDefault<z.ZodString> {
+function wsUrlSchema(defaultValue: string): z.ZodType<string> {
   return z
     .string()
-    .regex(/^wss?:\/\//, "Must be a valid WebSocket URL (ws:// or wss://)")
+    .refine((val) => {
+      try {
+        const parsed = new URL(val);
+        return parsed.protocol === "ws:" || parsed.protocol === "wss:";
+      } catch {
+        return false;
+      }
+    }, "Must be a valid WebSocket URL (ws:// or wss://)")
     .default(defaultValue);
 }
 

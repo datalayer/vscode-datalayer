@@ -15,6 +15,7 @@ import type { DatalayerClientConfig } from "@datalayer/core/lib/client";
 import { DatalayerClient } from "@datalayer/core/lib/client";
 import * as vscode from "vscode";
 
+import { getValidatedSettingsGroup } from "../config/settingsValidator";
 import { DatalayerClientOperationTracker } from "../logging/datalayerClientLogger";
 import { ServiceLoggers } from "../logging/loggers";
 
@@ -39,16 +40,12 @@ export function createVSCodeDatalayer(
 ): DatalayerClient {
   const { context, ...datalayerConfig } = config;
 
-  // Get configuration from VS Code settings
-  const vsCodeConfig = vscode.workspace.getConfiguration("datalayer.services");
+  // Get validated configuration from VS Code settings
+  const servicesConfig = getValidatedSettingsGroup("services");
 
-  // Get individual service URLs with fallback to production defaults
-  const defaultUrl = "https://prod1.datalayer.run";
-  const runtimesDefaultUrl = "https://r1.datalayer.run";
-  const iamRunUrl = vsCodeConfig.get<string>("iamUrl") ?? defaultUrl;
-  const runtimesRunUrl =
-    vsCodeConfig.get<string>("runtimesUrl") ?? runtimesDefaultUrl;
-  const spacerRunUrl = vsCodeConfig.get<string>("spacerUrl") ?? defaultUrl;
+  const iamRunUrl = servicesConfig.iamUrl;
+  const runtimesRunUrl = servicesConfig.runtimesUrl;
+  const spacerRunUrl = servicesConfig.spacerUrl;
 
   // Only log if ServiceLoggers is initialized (avoid initialization order issues)
   if (ServiceLoggers.isInitialized()) {
@@ -93,8 +90,7 @@ export function createVSCodeDatalayer(
  * @returns WebSocket URL with fallback to production.
  */
 export function getWebSocketUrl(): string {
-  const config = vscode.workspace.getConfiguration("datalayer.services");
-  return config.get<string>("spacerWsUrl") || "wss://prod1.datalayer.run";
+  return getValidatedSettingsGroup("services").spacerWsUrl;
 }
 
 /**

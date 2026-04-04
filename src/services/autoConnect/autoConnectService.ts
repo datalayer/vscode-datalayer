@@ -24,6 +24,7 @@ import type { RuntimeDTO } from "@datalayer/core/lib/models/RuntimeDTO";
 import * as vscode from "vscode";
 
 import type { RuntimesTreeProvider } from "../../providers/runtimesTreeProvider";
+import { getValidatedSettingsGroup } from "../config/settingsValidator";
 import type { IAuthProvider } from "../interfaces/IAuthProvider";
 import { ServiceLoggers } from "../logging/loggers";
 import { ActiveRuntimeStrategy } from "./strategies/activeRuntimeStrategy";
@@ -105,11 +106,7 @@ export class AutoConnectService {
     runtimesTreeProvider?: RuntimesTreeProvider,
   ): Promise<AutoConnectResult | null> {
     // Get configured strategies
-    const config = vscode.workspace.getConfiguration("datalayer");
-    const strategyNames = config.get<string[]>("autoConnect.strategies", [
-      "Active Runtime",
-      "Ask",
-    ]);
+    const strategyNames = getValidatedSettingsGroup("autoConnect").strategies;
 
     // Empty array means no auto-connect
     if (strategyNames.length === 0) {

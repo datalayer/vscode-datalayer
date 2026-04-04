@@ -14,6 +14,7 @@
 import * as vscode from "vscode";
 
 import { getNonce } from "../../utils/webviewSecurity";
+import { getValidatedSettingsGroup } from "../config/settingsValidator";
 import type { ILogger } from "../interfaces/ILogger";
 
 /**
@@ -48,14 +49,14 @@ export class PyodidePreloader implements vscode.Disposable {
    * if the preload behavior setting allows it.
    */
   public async initialize(): Promise<void> {
-    const config = vscode.workspace.getConfiguration("datalayer.pyodide");
-    const preloadBehavior = config.get<string>("preloadBehavior", "ask-once");
+    const pyodideConfig = getValidatedSettingsGroup("pyodide");
+    const preloadBehavior = pyodideConfig.preloadBehavior;
 
     if (preloadBehavior === "disabled") {
       return;
     }
 
-    const packages = config.get<string[]>("preloadPackages", []);
+    const packages = pyodideConfig.preloadPackages;
     const packagesKey = this._getPackagesKey(packages);
 
     // Check if we've prompted the user before
@@ -105,8 +106,7 @@ export class PyodidePreloader implements vscode.Disposable {
    * @returns Versioned cache key in format "version:pkg1,pkg2,pkg3".
    */
   private _getPackagesKey(packages: string[]): string {
-    const config = vscode.workspace.getConfiguration("datalayer.pyodide");
-    const version = config.get<string>("version", "0.27.3");
+    const version = getValidatedSettingsGroup("pyodide").version;
     // Format: "version:package1,package2,package3"
     return `${version}:${[...packages].sort().join(",")}`;
   }
@@ -115,9 +115,7 @@ export class PyodidePreloader implements vscode.Disposable {
    * Prompt user on first startup if they want to preload packages.
    */
   private async _promptUserForPreload(): Promise<void> {
-    const packages = vscode.workspace
-      .getConfiguration("datalayer.pyodide")
-      .get<string[]>("preloadPackages", []);
+    const packages = getValidatedSettingsGroup("pyodide").preloadPackages;
 
     const message = `Datalayer can preload common Python packages (${packages.join(", ")}) to improve Pyodide kernel startup time. This downloads packages in the background. Download now?`;
 
@@ -164,14 +162,14 @@ export class PyodidePreloader implements vscode.Disposable {
    * Handle configuration changes.
    */
   private async _onConfigChanged(): Promise<void> {
-    const config = vscode.workspace.getConfiguration("datalayer.pyodide");
-    const preloadBehavior = config.get<string>("preloadBehavior", "ask-once");
+    const pyodideConfig = getValidatedSettingsGroup("pyodide");
+    const preloadBehavior = pyodideConfig.preloadBehavior;
 
     if (preloadBehavior === "disabled") {
       return;
     }
 
-    const packages = config.get<string[]>("preloadPackages", []);
+    const packages = pyodideConfig.preloadPackages;
     const packagesKey = this._getPackagesKey(packages);
 
     // Check if these packages are already preloaded
@@ -205,8 +203,8 @@ export class PyodidePreloader implements vscode.Disposable {
       return;
     }
 
-    const config = vscode.workspace.getConfiguration("datalayer.pyodide");
-    const packages = config.get<string[]>("preloadPackages", []);
+    const pyodideConfig = getValidatedSettingsGroup("pyodide");
+    const packages = pyodideConfig.preloadPackages;
 
     if (packages.length === 0) {
       return;
@@ -223,7 +221,7 @@ export class PyodidePreloader implements vscode.Disposable {
       },
       async (progress) => {
         try {
-          const pyodideVersion = config.get<string>("version", "0.27.3");
+          const pyodideVersion = pyodideConfig.version;
 
           // Preload for NATIVE notebooks (filesystem cache)
           progress.report({ message: "Preloading packages..." });
@@ -348,8 +346,7 @@ export class PyodidePreloader implements vscode.Disposable {
     packages: string[],
     progress: vscode.Progress<{ message?: string; increment?: number }>,
   ): Promise<void> {
-    const config = vscode.workspace.getConfiguration("datalayer.pyodide");
-    const pyodideVersion = config.get<string>("version", "0.27.3");
+    const pyodideVersion = getValidatedSettingsGroup("pyodide").version;
 
     return new Promise<void>((resolve, reject) => {
       // Create hidden webview panel for preloading (background, no focus steal)

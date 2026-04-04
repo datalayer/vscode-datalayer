@@ -15,6 +15,7 @@
 import type { PyodideInterface } from "pyodide";
 import * as vscode from "vscode";
 
+import { getValidatedSettingsGroup } from "../config/settingsValidator";
 import type { ILogger } from "../interfaces/ILogger";
 
 /**
@@ -35,10 +36,10 @@ export async function preloadPackagesForNativeNotebooks(
   logger: ILogger,
 ): Promise<void> {
   try {
-    // Get configuration
-    const config = vscode.workspace.getConfiguration("datalayer.pyodide");
-    const preloadBehavior = config.get<string>("preloadBehavior", "auto");
-    const packages = config.get<string[]>("preloadPackages", []);
+    // Get validated configuration
+    const pyodideConfig = getValidatedSettingsGroup("pyodide");
+    const preloadBehavior = pyodideConfig.preloadBehavior;
+    const packages = pyodideConfig.preloadPackages;
 
     if (preloadBehavior === "disabled" || packages.length === 0) {
       return;

@@ -16,6 +16,7 @@ import { validateWithZod } from "@datalayer/jupyter-react";
 import type { PythonExtension } from "@vscode/python-extension";
 import * as vscode from "vscode";
 
+import { getValidatedSettingsGroup } from "../../services/config/settingsValidator";
 import type { IAuthProvider } from "../../services/interfaces/IAuthProvider";
 import type { IKernelBridge } from "../../services/interfaces/IKernelBridge";
 import type { NativeKernelInfo } from "../../services/kernel/nativeKernelIntegration";
@@ -215,9 +216,9 @@ async function handleCreateNewRuntime(
     return notAuthenticatedResult("create new runtime");
   }
 
-  const config = vscode.workspace.getConfiguration("datalayer.runtime");
-  const defaultMinutes = config.get<number>("defaultMinutes", 3);
-  const defaultType = config.get<string>("defaultType", "CPU");
+  const runtimeConfig = getValidatedSettingsGroup("runtime");
+  const defaultMinutes = runtimeConfig.defaultMinutes;
+  const defaultType = runtimeConfig.defaultType;
   const envType = environmentType || defaultType;
   const runtimeMinutes = durationMinutes || defaultMinutes;
 

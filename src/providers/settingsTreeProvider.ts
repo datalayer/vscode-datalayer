@@ -149,11 +149,8 @@ export class SettingsTreeProvider implements vscode.TreeDataProvider<SettingsTre
       // Datalayer returns DatasourceDTO[] directly
       this.datasourcesCache = (await datalayer.listDatasources()) ?? [];
 
-      // Debug: Log datasources to see what we're receiving
-      // eslint-disable-next-line no-console
-      console.log(
-        "[Settings] Loaded datasources:",
-        this.datasourcesCache.length,
+      ServiceLoggers.main.debug(
+        `[Settings] Loaded ${this.datasourcesCache.length} datasource(s)`,
       );
       if (this.datasourcesCache.length > 0) {
         ServiceLoggers.main.debug(

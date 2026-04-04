@@ -18,6 +18,7 @@ import type { RuntimeSnapshotDTO } from "@datalayer/core/lib/models/RuntimeSnaps
 import * as vscode from "vscode";
 
 import { EnvironmentCache } from "../../services/cache/environmentCache";
+import { getValidatedSettingsGroup } from "../../services/config/settingsValidator";
 import type { IAuthProvider } from "../../services/interfaces/IAuthProvider";
 import { formatRelativeTime } from "../../utils/dateFormatter";
 import { generateRuntimeName } from "../../utils/runtimeNameGenerator";
@@ -502,9 +503,7 @@ export async function createRuntime(
   }
 
   // Get default runtime duration from settings (in minutes)
-  const defaultMinutes = vscode.workspace
-    .getConfiguration("datalayer.runtime")
-    .get<number>("defaultMinutes", 3);
+  const defaultMinutes = getValidatedSettingsGroup("runtime").defaultMinutes;
   const suggestedMinutes = maxMinutes
     ? Math.min(defaultMinutes, maxMinutes)
     : defaultMinutes;

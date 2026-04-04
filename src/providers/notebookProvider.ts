@@ -28,6 +28,7 @@ import {
 } from "../extension";
 import { NotebookDocument, NotebookEdit } from "../models/notebookDocument";
 import { AutoConnectService } from "../services/autoConnect/autoConnectService";
+import { getValidatedSettingsGroup } from "../services/config/settingsValidator";
 import { DatalayerAuthProvider } from "../services/core/authProvider";
 import { selectDatalayerRuntime } from "../ui/dialogs/runtimeSelector";
 import { getNotebookHtml } from "../ui/templates/notebookTemplate";
@@ -131,7 +132,7 @@ export class NotebookProvider extends BaseDocumentProvider<NotebookDocument> {
     disposables.push(
       vscode.commands.registerCommand("datalayer.jupyter-notebook-new", () => {
         const workspaceFolders = vscode.workspace.workspaceFolders;
-        if (!workspaceFolders) {
+        if (!workspaceFolders || workspaceFolders.length === 0) {
           vscode.window.showErrorMessage(
             "Creating new Datalayer notebook files currently requires opening a workspace",
           );
@@ -610,11 +611,7 @@ export class NotebookProvider extends BaseDocumentProvider<NotebookDocument> {
     let token: string | undefined;
 
     if (isDatalayerNotebook) {
-      const config = vscode.workspace.getConfiguration("datalayer.services");
-      serverUrl = config.get<string>(
-        "spacerUrl",
-        "https://prod1.datalayer.run",
-      );
+      serverUrl = getValidatedSettingsGroup("services").spacerUrl;
 
       const authService = getServiceContainer().authProvider;
       const authToken = authService.getToken();
@@ -901,10 +898,8 @@ Complete the code at <CURSOR>:`;
    * @returns HTML content string for the webview.
    */
   private getHtmlForWebview(webview: vscode.Webview): string {
-    // Read Pyodide version from configuration
-    const pyodideVersion = vscode.workspace
-      .getConfiguration("datalayer.pyodide")
-      .get<string>("version", "0.27.3");
+    // Read Pyodide version from validated configuration
+    const pyodideVersion = getValidatedSettingsGroup("pyodide").version;
     return getNotebookHtml(webview, this._context.extensionUri, pyodideVersion);
   }
 

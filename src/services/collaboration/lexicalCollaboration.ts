@@ -11,11 +11,10 @@
  * @module services/lexicalCollaboration
  */
 
-import * as vscode from "vscode";
-
 import { getServiceContainer } from "../../extension";
 import { LexicalDocument } from "../../models/lexicalDocument";
 import { DocumentBridge } from "../bridges/documentBridge";
+import { getValidatedSettingsGroup } from "../config/settingsValidator";
 import { ServiceLoggers } from "../logging/loggers";
 
 /**
@@ -121,11 +120,7 @@ export class LexicalCollaborationService {
 
       // Build websocket URL directly using document UID (no session needed)
       // Similar to Desktop app: `${configuration.spacerRunUrl.replace(/^http/, 'ws')}/api/spacer/v1/lexical/ws/${id}`
-      const config = vscode.workspace.getConfiguration("datalayer.services");
-      const spacerUrl = config.get<string>(
-        "spacerUrl",
-        "https://prod1.datalayer.run",
-      );
+      const spacerUrl = getValidatedSettingsGroup("services").spacerUrl;
 
       // Convert http(s) to ws(s)
       const websocketUrl = `${spacerUrl.replace(/^http/, "ws")}/api/spacer/v1/lexical/ws/${documentId}`;

@@ -19,6 +19,7 @@ import * as vscode from "vscode";
 // Import Python kernel code as raw string (webpack asset/source loader)
 // @ts-ignore - Raw string import
 import pyodideKernelCode from "../../../webview/services/pyodide/pyodide_kernel.py";
+import { getValidatedSettingsGroup } from "../../services/config/settingsValidator";
 
 /**
  * Pending execution context for routing Pyodide messages to correct cell.
@@ -267,9 +268,8 @@ pyodide_kernel.ipython_shell.displayhook.publish_execution_result = publishExecu
    */
   private async _preloadPackages(): Promise<void> {
     try {
-      // Get package list from VS Code configuration
-      const config = vscode.workspace.getConfiguration("datalayer.pyodide");
-      const packages = config.get<string[]>("preloadPackages", []);
+      // Get package list from validated VS Code configuration
+      const packages = getValidatedSettingsGroup("pyodide").preloadPackages;
 
       if (packages.length === 0) {
         return;
