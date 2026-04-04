@@ -26,9 +26,10 @@
  *
  */
 
-import { ServiceManager, ServerConnection } from "@jupyterlab/services";
-import { createMockServiceManager } from "./mockServiceManager";
+import { ServerConnection, ServiceManager } from "@jupyterlab/services";
+
 import { createLocalKernelServiceManager } from "./localKernelServiceManager";
+import { createMockServiceManager } from "./mockServiceManager";
 import { createPyodideServiceManager } from "./pyodideServiceManager";
 
 /**

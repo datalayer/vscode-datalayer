@@ -22,7 +22,10 @@ const activeWebviews = new Map<string, vscode.Webview>();
  * @param webview - Webview instance to register for message passing.
  *
  */
-export function registerLexicalWebview(uri: string, webview: vscode.Webview) {
+export function registerLexicalWebview(
+  uri: string,
+  webview: vscode.Webview,
+): void {
   activeWebviews.set(uri, webview);
 }
 
@@ -31,7 +34,7 @@ export function registerLexicalWebview(uri: string, webview: vscode.Webview) {
  * @param uri - Document URI string of the webview to remove.
  *
  */
-export function unregisterLexicalWebview(uri: string) {
+export function unregisterLexicalWebview(uri: string): void {
   activeWebviews.delete(uri);
 }
 
@@ -39,7 +42,7 @@ export function unregisterLexicalWebview(uri: string) {
  * Sends a formatting command to the active Lexical webview via postMessage.
  * @param command - Formatting command name (e.g., 'bold', 'italic', 'heading1').
  */
-function sendLexicalCommand(command: string) {
+function sendLexicalCommand(command: string): void {
   // Get the active text editor
   const activeEditor = vscode.window.activeTextEditor;
 

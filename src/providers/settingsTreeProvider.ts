@@ -13,15 +13,16 @@
  * @see https://code.visualstudio.com/api/extension-guides/tree-view
  */
 
-import * as vscode from "vscode";
-import { SecretTreeItem } from "../models/secretTreeItem";
-import { DatasourceTreeItem } from "../models/datasourceTreeItem";
-import { TreeSectionItem } from "../models/treeSectionItem";
-import type { SettingsTreeItem } from "../models/settingsTreeItem";
-import { DatalayerAuthProvider } from "../services/core/authProvider";
-import { getServiceContainer } from "../extension";
-import type { SecretDTO } from "@datalayer/core/lib/models/Secret";
 import type { DatasourceDTO } from "@datalayer/core/lib/models/Datasource";
+import type { SecretDTO } from "@datalayer/core/lib/models/Secret";
+import * as vscode from "vscode";
+
+import { getServiceContainer } from "../extension";
+import { DatasourceTreeItem } from "../models/datasourceTreeItem";
+import { SecretTreeItem } from "../models/secretTreeItem";
+import type { SettingsTreeItem } from "../models/settingsTreeItem";
+import { TreeSectionItem } from "../models/treeSectionItem";
+import { DatalayerAuthProvider } from "../services/core/authProvider";
 
 /**
  * Tree data provider for the Datalayer Settings view.
@@ -126,7 +127,7 @@ export class SettingsTreeProvider implements vscode.TreeDataProvider<SettingsTre
     try {
       const datalayer = getServiceContainer().datalayer;
       this.secretsCache = (await datalayer.listSecrets()) ?? [];
-    } catch (error) {
+    } catch (_error) {
       // Silently fail - tree will be empty
       this.secretsCache = [];
     }
@@ -148,11 +149,13 @@ export class SettingsTreeProvider implements vscode.TreeDataProvider<SettingsTre
       this.datasourcesCache = (await datalayer.listDatasources()) ?? [];
 
       // Debug: Log datasources to see what we're receiving
+      // eslint-disable-next-line no-console
       console.log(
         "[Settings] Loaded datasources:",
         this.datasourcesCache.length,
       );
       if (this.datasourcesCache.length > 0) {
+        // eslint-disable-next-line no-console
         console.log("[Settings] First datasource:", {
           name: this.datasourcesCache[0].name,
           type: this.datasourcesCache[0].type,

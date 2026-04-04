@@ -11,9 +11,10 @@
  */
 
 import * as vscode from "vscode";
+
 import type {
-  OutlineTreeProvider,
   OutlineTreeItem,
+  OutlineTreeProvider,
 } from "../providers/outlineTreeProvider";
 
 /**

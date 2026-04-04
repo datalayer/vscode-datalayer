@@ -5,6 +5,7 @@
  */
 
 import * as vscode from "vscode";
+
 import { getPrimerVSCodeThemeCSS } from "../styles/primerVSCodeTheme";
 
 /**

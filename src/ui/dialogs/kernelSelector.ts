@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2023 Datalayer, Inc.
+ * Copyright (c) 2021-2025 Datalayer, Inc.
  *
  * MIT License
  */
@@ -11,12 +11,13 @@
  * @module utils/kernelSelector
  */
 
-import * as vscode from "vscode";
-import { selectDatalayerRuntime } from "./runtimeSelector";
 import type { DatalayerClient } from "@datalayer/core/lib/client";
 import type { RuntimeDTO } from "@datalayer/core/lib/models/RuntimeDTO";
+import * as vscode from "vscode";
+
 import { DatalayerAuthProvider } from "../../services/core/authProvider";
 import type { IKernelBridge } from "../../services/interfaces/IKernelBridge";
+import { selectDatalayerRuntime } from "./runtimeSelector";
 
 interface KernelOption {
   label: string;
@@ -54,10 +55,12 @@ export async function showKernelSelector(
       label: "Datalayer Platform",
       action: async () => {
         try {
+          // eslint-disable-next-line no-console
           console.log("[KernelSelector] Datalayer Platform selected");
 
           // Check authentication first
           if (!authProvider.isAuthenticated()) {
+            // eslint-disable-next-line no-console
             console.log(
               "[KernelSelector] User not authenticated, triggering login",
             );
@@ -65,12 +68,14 @@ export async function showKernelSelector(
             // Trigger login directly (same as status bar click)
             await vscode.commands.executeCommand("datalayer.login");
 
+            // eslint-disable-next-line no-console
             console.log(
               "[KernelSelector] Login command executed, checking auth state",
             );
 
             // Check again after login attempt
             if (!authProvider.isAuthenticated()) {
+              // eslint-disable-next-line no-console
               console.log(
                 "[KernelSelector] User still not authenticated after login attempt",
               );
@@ -80,6 +85,7 @@ export async function showKernelSelector(
               return;
             }
 
+            // eslint-disable-next-line no-console
             console.log("[KernelSelector] User successfully authenticated");
           }
 
@@ -92,6 +98,7 @@ export async function showKernelSelector(
               // This callback is called BEFORE QuickPick closes for instant feedback
               onRuntimeSelected: documentUri
                 ? async (selectedRuntime) => {
+                    // eslint-disable-next-line no-console
                     console.log(
                       "[KernelSelector] Runtime selected (instant callback):",
                       selectedRuntime.uid,
@@ -104,11 +111,13 @@ export async function showKernelSelector(
                 : undefined,
             },
           );
+          // eslint-disable-next-line no-console
           console.log("[KernelSelector] Runtime selected:", runtime?.uid);
 
           if (runtime) {
             // If we have a document URI, connect it to the runtime
             if (documentUri) {
+              // eslint-disable-next-line no-console
               console.log("[KernelSelector] Connecting document to runtime");
 
               // Spinner message already sent via onRuntimeSelected callback
@@ -131,6 +140,7 @@ export async function showKernelSelector(
               }
             }
           } else {
+            // eslint-disable-next-line no-console
             console.log(
               "[KernelSelector] No runtime selected (user cancelled)",
             );
@@ -174,11 +184,13 @@ export async function showKernelSelector(
       action: async () => {
         if (documentUri) {
           try {
+            // eslint-disable-next-line no-console
             console.log(
               "[KernelSelector] Pyodide selected, calling kernelBridge",
             );
             // Connect to Pyodide kernel via kernel bridge (same as other kernel types)
             await kernelBridge.connectWebviewDocumentToPyodide(documentUri);
+            // eslint-disable-next-line no-console
             console.log("[KernelSelector] Successfully connected to Pyodide");
             vscode.window.showInformationMessage(
               "Switched to Pyodide (Browser Python). Python code will run in your browser.",

@@ -414,6 +414,7 @@ export function registerInternalCommands(
         const { uri, block, afterBlockId } = params;
         const requestId = `lexical-insert-block-${Date.now()}-${Math.random()}`;
 
+        // eslint-disable-next-line no-console
         console.log(
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           `[internal.ts] insertBlock called: uri=${uri}, afterBlockId=${afterBlockId}, block_type=${(block as any)?.block_type}, requestId=${requestId}`,
@@ -437,6 +438,7 @@ export function registerInternalCommands(
           requestId,
         );
 
+        // eslint-disable-next-line no-console
         console.log(`[internal.ts] insertBlock response:`, response);
         return response;
       },
@@ -457,6 +459,7 @@ export function registerInternalCommands(
         const { uri, blocks, afterBlockId } = params;
         const requestId = `lexical-insert-blocks-${Date.now()}-${Math.random()}`;
 
+        // eslint-disable-next-line no-console
         console.log(
           `[internal.ts] insertBlocks called: uri=${uri}, count=${blocks.length}, afterBlockId=${afterBlockId}, requestId=${requestId}`,
         );
@@ -479,6 +482,7 @@ export function registerInternalCommands(
           requestId,
         );
 
+        // eslint-disable-next-line no-console
         console.log(`[internal.ts] insertBlocks response:`, response);
         return response;
       },

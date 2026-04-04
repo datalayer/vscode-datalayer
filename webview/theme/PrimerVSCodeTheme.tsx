@@ -4,7 +4,7 @@
  * MIT License
  */
 
-// Keep unsued React import for JSX.
+// Keep unused React import for JSX.
 import React, { type ReactNode } from "react";
 import { ThemeProvider } from "@primer/react";
 

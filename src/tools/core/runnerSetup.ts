@@ -13,8 +13,9 @@
  * @module tools/core/runnerSetup
  */
 
-import * as vscode from "vscode";
 import type { ToolOperation } from "@datalayer/jupyter-react";
+import * as vscode from "vscode";
+
 import { getCombinedOperations } from "./registration";
 
 // IMPORTANT: Don't load operations at module level to avoid triggering browser imports
@@ -143,6 +144,7 @@ export async function createExtensionRunner(
           throw new Error(`VS Code operation not found: ${operationName}`);
         }
 
+        // eslint-disable-next-line no-console
         console.log(
           `[SmartExecutor] Executing locally (extension): ${operationName}`,
         );
@@ -185,6 +187,7 @@ export async function createExtensionRunner(
         });
 
         // Send execution request to webview
+        // eslint-disable-next-line no-console
         console.log(`[SmartExecutor] Bridging to webview: ${operationName}`);
 
         webviewPanel.webview
@@ -197,6 +200,7 @@ export async function createExtensionRunner(
           .then(
             () => {
               // Message sent successfully
+              // eslint-disable-next-line no-console
               console.log(
                 `[BridgeExecutor] Sent tool-execution: ${operationName}`,
               );

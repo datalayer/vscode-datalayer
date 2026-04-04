@@ -11,9 +11,10 @@
  */
 
 import * as vscode from "vscode";
-import { getDatasourceDialogHtml } from "../ui/templates/datasourceTemplate";
-import { getDatasourceEditDialogHtml } from "../ui/templates/datasourceEditTemplate";
+
 import { getServiceContainer } from "../extension";
+import { getDatasourceEditDialogHtml } from "../ui/templates/datasourceEditTemplate";
+import { getDatasourceDialogHtml } from "../ui/templates/datasourceTemplate";
 
 /**
  * Registers the command to open the datasource creation dialog.
@@ -50,7 +51,7 @@ async function showDatasourceDialog(
   );
 
   // Set HTML content with current theme colors
-  const updateContent = () => {
+  const updateContent = (): void => {
     panel.webview.html = getDatasourceDialogHtml(
       panel.webview,
       context.extensionUri,
@@ -67,7 +68,7 @@ async function showDatasourceDialog(
   );
 
   // Handle theme changes - CRITICAL pattern from showcase
-  const updateTheme = () => {
+  const updateTheme = (): void => {
     const colorTheme = vscode.window.activeColorTheme.kind;
     const isDark =
       colorTheme === vscode.ColorThemeKind.Dark ||
@@ -192,7 +193,7 @@ export async function showDatasourceEditDialog(
   );
 
   // Set HTML content with current theme colors
-  const updateContent = () => {
+  const updateContent = (): void => {
     panel.webview.html = getDatasourceEditDialogHtml(
       panel.webview,
       context.extensionUri,
@@ -209,7 +210,7 @@ export async function showDatasourceEditDialog(
   );
 
   // Handle theme changes
-  const updateTheme = () => {
+  const updateTheme = (): void => {
     const colorTheme = vscode.window.activeColorTheme.kind;
     const isDark =
       colorTheme === vscode.ColorThemeKind.Dark ||

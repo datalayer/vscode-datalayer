@@ -12,13 +12,14 @@
  */
 
 import * as vscode from "vscode";
-import { DatalayerAuthProvider } from "./authProvider";
-import { SpacesTreeProvider } from "../../providers/spacesTreeProvider";
+
+import { getServiceContainer } from "../../extension";
 import { RuntimesTreeProvider } from "../../providers/runtimesTreeProvider";
 import { SettingsTreeProvider } from "../../providers/settingsTreeProvider";
 import { SmartDynamicControllerManager } from "../../providers/smartDynamicControllerManager";
+import { SpacesTreeProvider } from "../../providers/spacesTreeProvider";
 import { EnvironmentCache } from "../cache/environmentCache";
-import { getServiceContainer } from "../../extension";
+import { DatalayerAuthProvider } from "./authProvider";
 
 /**
  * Sets up authentication state synchronization with UI components.

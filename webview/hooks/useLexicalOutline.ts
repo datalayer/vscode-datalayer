@@ -1,12 +1,13 @@
 /*
- * Copyright (c) 2021-2023 Datalayer, Inc.
+ * Copyright (c) 2021-2025 Datalayer, Inc.
  *
  * MIT License
  */
 
-import { useEffect, useRef, useCallback } from "react";
-import { LexicalEditor, $getRoot } from "lexical";
 import { $isHeadingNode } from "@lexical/rich-text";
+import { $getRoot, LexicalEditor } from "lexical";
+import { useCallback, useEffect, useRef } from "react";
+
 import { OutlineItem } from "../types/messages";
 import type { OutlineMessageSender } from "./useNotebookOutline";
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2023 Datalayer, Inc.
+ * Copyright (c) 2021-2025 Datalayer, Inc.
  *
  * MIT License
  */
@@ -20,7 +20,7 @@
  * @returns A 32-character random string suitable for CSP nonce attribute.
  *
  */
-export function getNonce() {
+export function getNonce(): string {
   let text = "";
   const possible =
     "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";

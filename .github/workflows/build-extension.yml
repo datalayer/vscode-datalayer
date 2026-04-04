@@ -43,6 +43,7 @@ jobs:
         uses: actions/setup-node@v6
         with:
           node-version: "22"
+          cache: "npm"
 
       - name: Install system dependencies for keytar
         run: |
@@ -204,6 +205,7 @@ jobs:
         uses: actions/setup-node@v6
         with:
           node-version: "22"
+          cache: "npm"
 
       - name: Download extension artifact
         uses: actions/download-artifact@v7

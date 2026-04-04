@@ -11,7 +11,8 @@
  * @module notebook/hooks/useNotebookOutline
  */
 
-import { useEffect, useRef, useCallback } from "react";
+import { useCallback, useEffect, useRef } from "react";
+
 import type { OutlineItem, OutlineUpdateMessage } from "../types/messages";
 
 // Use minimal type definitions to avoid JupyterLab peer dependency issues
@@ -75,6 +76,12 @@ export interface UseNotebookOutlineOptions {
   vscode: OutlineMessageSender;
 }
 
+/** Return value from the useNotebookOutline hook. */
+export interface UseNotebookOutlineResult {
+  /** Triggers a manual refresh of the notebook outline sent to the extension host. */
+  refreshOutline: () => void;
+}
+
 /**
  * Extracts and sends a live notebook outline to the extension, monitoring cell changes in real-time.
  * @param props - Hook configuration properties.
@@ -89,7 +96,7 @@ export function useNotebookOutline({
   notebookModel,
   documentUri,
   vscode,
-}: UseNotebookOutlineOptions) {
+}: UseNotebookOutlineOptions): UseNotebookOutlineResult {
   const lastOutlineRef = useRef<string>("");
   const updateTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -269,7 +276,7 @@ export function useNotebookOutline({
     sendOutlineUpdateRef.current();
 
     // Debounced update function
-    const debouncedUpdate = () => {
+    const debouncedUpdate = (): void => {
       // console.log("[useNotebookOutline] debouncedUpdate triggered");
       if (updateTimeoutRef.current) {
         clearTimeout(updateTimeoutRef.current);
@@ -280,7 +287,7 @@ export function useNotebookOutline({
     };
 
     // Listen to cell list changes (add/remove/move cells)
-    const cellsChangedSlot = (_list: unknown, change: unknown) => {
+    const cellsChangedSlot = (_list: unknown, change: unknown): void => {
       // When cells are added, attach listeners to them
       if (
         change &&
@@ -303,14 +310,14 @@ export function useNotebookOutline({
     notebookModel.cells.changed.connect(cellsChangedSlot);
 
     // Listen to changes in the notebook's shared model (this captures ALL cell content changes)
-    const notebookChangedSlot = () => {
+    const notebookChangedSlot = (): void => {
       // console.log("[useNotebookOutline] Notebook content changed");
       debouncedUpdate();
     };
     notebookModel.sharedModel.changed.connect(notebookChangedSlot);
 
     // Also listen to individual cell changes
-    const cellContentChangedSlot = () => {
+    const cellContentChangedSlot = (): void => {
       // console.log("[useNotebookOutline] Cell content changed");
       debouncedUpdate();
     };

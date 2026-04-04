@@ -144,7 +144,7 @@ export function setupToolExecutionListener(
   vscodeAPI: { postMessage: (message: any) => void },
   mutableServiceManager?: { updateToPyodide: (url?: string) => void },
 ): () => void {
-  const messageListener = (event: MessageEvent) => {
+  const messageListener = (event: MessageEvent): void => {
     const message = event.data;
 
     // Handle switch-to-pyodide message

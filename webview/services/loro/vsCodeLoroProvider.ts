@@ -11,10 +11,11 @@
  * @module services/loro/vsCodeLoroProvider
  */
 
-import { LoroDoc, EphemeralStore } from "loro-crdt";
-import type { Provider, AwarenessProvider } from "@datalayer/lexical-loro";
+import type { AwarenessProvider, Provider } from "@datalayer/lexical-loro";
+import { EphemeralStore, LoroDoc } from "loro-crdt";
+
+import { Disposable, MessageHandler, vsCodeAPI } from "../messageHandler";
 import { AwarenessAdapter } from "./awarenessAdapter";
-import { vsCodeAPI, MessageHandler, Disposable } from "../messageHandler";
 
 /**
  * Message types for extension communication.

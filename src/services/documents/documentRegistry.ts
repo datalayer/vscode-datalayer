@@ -20,7 +20,9 @@
  */
 
 import * as vscode from "vscode";
+
 import { getActiveCustomEditorUri } from "../../utils/activeDocument";
+import { ServiceLoggers } from "../logging/loggers";
 
 /** Document type: notebook (.ipynb) or lexical (.lexical). */
 export type DocumentType = "notebook" | "lexical";
@@ -122,7 +124,7 @@ class DocumentRegistry {
       this.idToEntry.delete(documentId);
       this.uriToId.delete(documentUri);
 
-      console.log(
+      ServiceLoggers.main.debug(
         `[DocumentRegistry] Unregistered ${entry?.type || "unknown"}: ${documentUri.substring(0, 50)}...`,
       );
     }
@@ -243,7 +245,7 @@ class DocumentRegistry {
   clear(): void {
     this.idToEntry.clear();
     this.uriToId.clear();
-    console.log("[DocumentRegistry] Cleared all registrations");
+    ServiceLoggers.main.debug("[DocumentRegistry] Cleared all registrations");
   }
 
   /**

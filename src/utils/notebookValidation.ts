@@ -1,9 +1,11 @@
-/**
- * Utility functions for validating Datalayer notebooks.
- * Ensures tools only operate on Datalayer custom editor notebooks, not native VS Code notebooks.
+/*
+ * Copyright (c) 2021-2025 Datalayer, Inc.
+ *
+ * MIT License
  */
 
 import * as vscode from "vscode";
+
 import { getActiveCustomEditorUri } from "./activeDocument";
 
 /**

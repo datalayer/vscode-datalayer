@@ -15,6 +15,7 @@
  */
 
 import * as vscode from "vscode";
+
 import type { ILogger } from "../services/interfaces/ILogger";
 
 /**

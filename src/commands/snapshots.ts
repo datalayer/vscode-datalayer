@@ -12,11 +12,12 @@
  */
 
 import * as vscode from "vscode";
-import { RuntimesTreeProvider } from "../providers/runtimesTreeProvider";
+
+import { getServiceContainer } from "../extension";
 import { SnapshotTreeItem } from "../models/snapshotTreeItem";
+import { RuntimesTreeProvider } from "../providers/runtimesTreeProvider";
 import { showTwoStepConfirmation } from "../ui/dialogs/confirmationDialog";
 import { createRuntime } from "../ui/dialogs/runtimeSelector";
-import { getServiceContainer } from "../extension";
 
 /**
  * Registers all snapshot-related commands for restoration, deletion, and viewing details.

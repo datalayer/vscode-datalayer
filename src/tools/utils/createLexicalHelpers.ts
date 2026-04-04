@@ -16,6 +16,60 @@
 import type { CreateDocumentResult } from "../utils/createDocument";
 
 /**
+ * Resolves a space ID from a space name using the Datalayer client.
+ * @param client - The Datalayer client used to query available spaces.
+ * @param spaceName - The name of the target space to look up.
+ * @param chatMessage - User-facing message included in error results on failure.
+ *
+ * @returns Object with spaceId on success, or a CreateDocumentResult error.
+ */
+async function resolveSpaceId(
+  client: unknown,
+  spaceName: string,
+  chatMessage?: string,
+): Promise<{ spaceId: string } | CreateDocumentResult> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const spaces = await (client as any).getMySpaces();
+
+  if (!spaces || spaces.length === 0) {
+    return {
+      success: false,
+      uri: "",
+      error: "No spaces available. Please create a space first.",
+      chatMessage,
+    };
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let targetSpace: any;
+
+  if (spaceName.toLowerCase().includes("library")) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    targetSpace = spaces.find((s: any) => s.variant === "default");
+  } else {
+    targetSpace = spaces.find(
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (s: any) =>
+        s.name?.toLowerCase() === spaceName.toLowerCase() ||
+        s.name?.toLowerCase().includes(spaceName.toLowerCase()),
+    );
+  }
+
+  if (!targetSpace) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const availableSpaces = spaces.map((s: any) => s.name).join(", ");
+    return {
+      success: false,
+      uri: "",
+      error: `Space "${spaceName}" not found. Available spaces: ${availableSpaces}`,
+      chatMessage,
+    };
+  }
+
+  return { spaceId: targetSpace.uid };
+}
+
+/**
  * Creates a cloud lexical document in a Datalayer space.
  * @param params - Lexical document creation parameters (name, description, space).
  * @param params.name - Display name for the lexical document.
@@ -89,49 +143,15 @@ export async function createCloudLexical(
     let targetSpaceId = spaceId;
 
     if (!targetSpaceId) {
-      const spaces = await client.getMySpaces();
-
-      if (!spaces || spaces.length === 0) {
-        return {
-          success: false,
-          uri: "",
-          error: "No spaces available. Please create a space first.",
-          chatMessage,
-        };
+      const resolveResult = await resolveSpaceId(
+        client,
+        spaceName,
+        chatMessage,
+      );
+      if ("success" in resolveResult) {
+        return resolveResult as CreateDocumentResult;
       }
-
-      // If spaceName is "Library space" (default), find the library space by variant
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      let targetSpace: any;
-
-      if (spaceName.toLowerCase().includes("library")) {
-        // Find the default/library space (variant === "default")
-        targetSpace = spaces.find(
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          (s: any) => s.variant === "default",
-        );
-      } else {
-        // Search by name for non-library spaces
-        targetSpace = spaces.find(
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          (s: any) =>
-            s.name?.toLowerCase() === spaceName.toLowerCase() ||
-            s.name?.toLowerCase().includes(spaceName.toLowerCase()),
-        );
-      }
-
-      if (!targetSpace) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const availableSpaces = spaces.map((s: any) => s.name).join(", ");
-        return {
-          success: false,
-          uri: "",
-          error: `Space "${spaceName}" not found. Available spaces: ${availableSpaces}`,
-          chatMessage,
-        };
-      }
-
-      targetSpaceId = targetSpace.uid;
+      targetSpaceId = resolveResult.spaceId;
     }
 
     const lexical = await client.createLexical(

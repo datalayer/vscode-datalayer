@@ -13,8 +13,8 @@
  * @module kernel/clients/pyodideKernelClient
  */
 
-import * as vscode from "vscode";
 import type { PyodideInterface } from "pyodide";
+import * as vscode from "vscode";
 
 // Import Python kernel code as raw string (webpack asset/source loader)
 // @ts-ignore - Raw string import
@@ -83,6 +83,7 @@ export class PyodideKernelClient {
       return;
     }
 
+    // eslint-disable-next-line no-console
     console.log("[PyodideKernelClient] Initializing...");
 
     try {
@@ -105,6 +106,7 @@ export class PyodideKernelClient {
       // Ensure cache directory exists
       await fs.mkdir(cacheDir, { recursive: true });
 
+      // eslint-disable-next-line no-console
       console.log(`[PyodideKernelClient] Cache: ${cacheDir}`);
 
       // Load Pyodide using npm package (Node.js compatible)
@@ -147,7 +149,8 @@ sys.modules['pyodide_kernel'] = pyodide_kernel
       await this._preloadPackages();
 
       this._isReady = true;
-      console.log("[PyodideKernelClient] ✓ Ready");
+      // eslint-disable-next-line no-console
+      console.log("[PyodideKernelClient] Ready");
     } catch (error) {
       this._pyodide = null;
       console.error("[PyodideKernelClient] Initialization failed:", error);
@@ -171,7 +174,7 @@ sys.modules['pyodide_kernel'] = pyodide_kernel
       _msgId: number, // Python passes msgId, but we use _currentMsgId for routing
       name: string,
       text: string,
-    ) => {
+    ): void => {
       if (name === "stdout") {
         this._handleStdout(text);
       } else if (name === "stderr") {
@@ -184,7 +187,7 @@ sys.modules['pyodide_kernel'] = pyodide_kernel
       ename: string,
       evalue: string,
       traceback: unknown,
-    ) => {
+    ): void => {
       // Convert Python list to JavaScript array if needed
       const tracebackArray = Array.isArray(traceback)
         ? traceback
@@ -200,7 +203,7 @@ sys.modules['pyodide_kernel'] = pyodide_kernel
       data: unknown,
       metadata: unknown,
       _transient: unknown,
-    ) => {
+    ): void => {
       // Convert Python dicts to JavaScript objects
       const dataObj =
         data && typeof data === "object" && "toJs" in data
@@ -220,7 +223,7 @@ sys.modules['pyodide_kernel'] = pyodide_kernel
       _executionCount: number,
       data: unknown,
       metadata: unknown,
-    ) => {
+    ): void => {
       // Convert Python dicts to JavaScript objects
       const dataObj =
         data && typeof data === "object" && "toJs" in data
@@ -294,6 +297,7 @@ pyodide_kernel.ipython_shell.displayhook.publish_execution_result = publishExecu
       ).length;
 
       if (succeeded < packages.length) {
+        // eslint-disable-next-line no-console
         console.log(
           `[PyodideKernelClient] Loaded ${succeeded}/${packages.length} packages`,
         );
@@ -356,7 +360,7 @@ backend_inline.configure_inline_support(pyodide_kernel.ipython_shell, 'inline')
       });
 
       // Start processing queue (won't block - runs asynchronously)
-      this._processQueue();
+      void this._processQueue();
     });
   }
 
@@ -439,7 +443,7 @@ await pyodide_kernel.ipython_shell.run_cell_async('''${escapedCode}''')
       this._currentMsgId = null;
 
       // Process next in queue
-      this._processQueue();
+      void this._processQueue();
     }
   }
 
@@ -450,6 +454,7 @@ await pyodide_kernel.ipython_shell.run_cell_async('''${escapedCode}''')
   private _handleStdout(text: string): void {
     // During initialization (no active execution), log to console for debugging
     if (this._currentMsgId === null) {
+      // eslint-disable-next-line no-console
       console.log("[Pyodide/stdout]", text);
       return;
     }

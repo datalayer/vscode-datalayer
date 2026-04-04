@@ -10,8 +10,9 @@
  * Eliminates props drilling and sessionStorage hacks.
  */
 
-import { create } from "zustand";
 import type { RuntimeJSON } from "@datalayer/core/lib/client";
+import type { StoreApi, UseBoundStore } from "zustand";
+import { create } from "zustand";
 
 /**
  * Extended interface for runtime with credits information
@@ -98,7 +99,7 @@ const initialState = {
  * Creates a new isolated Notebook store instance; each webview should call this to prevent state sharing across editors.
  * @returns A new Zustand store instance for Notebook state management.
  */
-export const createNotebookStore = () =>
+export const createNotebookStore = (): UseBoundStore<StoreApi<NotebookState>> =>
   create<NotebookState>((set) => ({
     ...initialState,
 

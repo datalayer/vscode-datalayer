@@ -20,6 +20,7 @@
  */
 
 import * as vscode from "vscode";
+
 import { DatalayerAuthProvider } from "../services/core/authProvider";
 
 /**
@@ -45,7 +46,7 @@ export function registerAuthCommands(
       try {
         await authProvider.login();
         updateAuthState();
-      } catch (error) {}
+      } catch (_error) {}
     }),
   );
 
@@ -59,7 +60,7 @@ export function registerAuthCommands(
       try {
         await authProvider.logout();
         updateAuthState();
-      } catch (error) {}
+      } catch (_error) {}
     }),
   );
 

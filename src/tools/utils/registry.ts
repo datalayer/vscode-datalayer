@@ -14,6 +14,7 @@
  */
 
 import type { ToolDefinition } from "@datalayer/jupyter-react";
+
 import { allToolDefinitions } from "../definitions";
 
 /**

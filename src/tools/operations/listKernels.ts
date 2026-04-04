@@ -10,15 +10,16 @@
  * @module tools/operations/listKernels
  */
 
-import * as vscode from "vscode";
-import type { PythonExtension } from "@vscode/python-extension";
+import type { DatalayerClient } from "@datalayer/core/lib/client";
 import type { ToolOperation } from "@datalayer/jupyter-react";
 import { validateWithZod } from "@datalayer/jupyter-react";
-import type { DatalayerClient } from "@datalayer/core/lib/client";
+import type { PythonExtension } from "@vscode/python-extension";
+import * as vscode from "vscode";
+
 import type { IAuthProvider } from "../../services/interfaces/IAuthProvider";
 import {
-  listKernelsParamsSchema,
   type ListKernelsParams,
+  listKernelsParamsSchema,
 } from "../schemas/listKernels";
 import { hasIpykernel } from "../utils/ipykernelDetection";
 import { ensurePythonExtensionActive } from "../utils/pythonExtensionActivation";
@@ -51,6 +52,108 @@ export interface ListKernelsResult {
   kernels: KernelInfo[];
   /** Optional informative message for AI chat context about the kernels found. */
   chatMessage?: string;
+}
+
+/**
+ * Discovers local Python/conda environments with ipykernel installed.
+ * @param kernels - Array to append discovered kernels to.
+ */
+async function discoverLocalKernels(kernels: KernelInfo[]): Promise<void> {
+  try {
+    const pythonExt = vscode.extensions.getExtension("ms-python.python");
+    if (pythonExt && !pythonExt.isActive) {
+      await ensurePythonExtensionActive();
+    }
+    if (!pythonExt?.isActive) {
+      return;
+    }
+
+    const pythonApi = pythonExt.exports as PythonExtension;
+    for (const env of pythonApi.environments.known) {
+      const version = env.version
+        ? `${env.version.major}.${env.version.minor}.${env.version.micro}`
+        : "unknown";
+      const envType = env.environment?.type;
+      const envName = env.environment?.name;
+      const hasKernel = hasIpykernel(env.path, envType);
+
+      if (!hasKernel) {
+        continue;
+      }
+
+      const displayPrefix =
+        envType?.toLowerCase() === "conda" ? "\uD83D\uDC0D" : "\uD83D\uDD37";
+      const displayName = envName
+        ? `${displayPrefix} ${envName} (Python ${version})`
+        : `${displayPrefix} Python ${version}`;
+
+      kernels.push({
+        id: `python-env-${env.path}`,
+        name: "python3",
+        displayName,
+        language: "python",
+        type: "local",
+        status: "idle",
+        metadata: { pythonPath: env.path, envType, envName, version },
+      });
+    }
+  } catch (error) {
+    console.error("[listKernels] Error getting local environments:", error);
+  }
+}
+
+/**
+ * Discovers active cloud runtimes and adds a "create new" option.
+ * @param kernels - Array to append discovered kernels to.
+ * @param datalayer - Datalayer client (may be undefined).
+ * @param auth - Auth provider (may be undefined).
+ */
+async function discoverCloudKernels(
+  kernels: KernelInfo[],
+  datalayer: unknown,
+  auth: unknown,
+): Promise<void> {
+  try {
+    const datalayerClient = datalayer as DatalayerClient;
+    const authProvider = auth as IAuthProvider;
+
+    if (datalayerClient && authProvider?.isAuthenticated?.()) {
+      const runtimes = await datalayerClient.listRuntimes();
+      for (const runtime of runtimes) {
+        const expiredAt = new Date(runtime.expiredAt).getTime();
+        const minutesRemaining = Math.floor((expiredAt - Date.now()) / 60000);
+        kernels.push({
+          id: runtime.uid,
+          name: runtime.givenName || runtime.uid,
+          displayName: `\u2601\uFE0F ${runtime.givenName} (${minutesRemaining}min)`,
+          language: "python",
+          type: "cloud",
+          status: "idle",
+          metadata: {
+            environmentName: runtime.environmentName,
+            ingress: runtime.ingress,
+            minutesRemaining,
+            burningRate: runtime.burningRate,
+          },
+        });
+      }
+    }
+
+    kernels.push({
+      id: "CREATE_NEW_RUNTIME",
+      name: "create-new",
+      displayName: "\u26A1 Start New Runtime...",
+      language: "python",
+      type: "cloud",
+      status: "idle",
+      metadata: {
+        isCreateNewOption: true,
+        requiresAuth: !(auth as IAuthProvider)?.isAuthenticated?.(),
+      },
+    });
+  } catch (error) {
+    console.error("[listKernels] Error getting cloud runtimes:", error);
+  }
 }
 
 /**
@@ -103,111 +206,12 @@ export const listKernelsOperation: ToolOperation<
       },
     });
 
-    // Discover local Python/conda environments with ipykernel
     if (includeLocal) {
-      try {
-        const pythonExt = vscode.extensions.getExtension("ms-python.python");
-
-        // If not active yet, trigger activation as fallback (shouldn't normally happen)
-        if (pythonExt && !pythonExt.isActive) {
-          await ensurePythonExtensionActive();
-        }
-
-        if (pythonExt?.isActive) {
-          const pythonApi = pythonExt.exports as PythonExtension;
-          const environments = pythonApi.environments.known;
-
-          environments.forEach((env) => {
-            const version = env.version
-              ? `${env.version.major}.${env.version.minor}.${env.version.micro}`
-              : "unknown";
-
-            const envType = env.environment?.type; // "venv" | "conda" | "pyenv" | "poetry" | "global"
-            const envName = env.environment?.name;
-
-            // Fast filesystem check for ipykernel
-            const hasKernel = hasIpykernel(env.path, envType);
-
-            if (hasKernel) {
-              const displayPrefix =
-                envType?.toLowerCase() === "conda" ? "🐍" : "🔷";
-              const displayName = envName
-                ? `${displayPrefix} ${envName} (Python ${version})`
-                : `${displayPrefix} Python ${version}`;
-
-              kernels.push({
-                id: `python-env-${env.path}`,
-                name: "python3",
-                displayName,
-                language: "python",
-                type: "local",
-                status: "idle",
-                metadata: {
-                  pythonPath: env.path,
-                  envType,
-                  envName,
-                  version,
-                },
-              });
-            }
-          });
-        }
-      } catch (error) {
-        console.error("[listKernels] Error getting local environments:", error);
-      }
+      await discoverLocalKernels(kernels);
     }
 
-    // Discover active cloud runtimes
     if (includeCloud) {
-      try {
-        const datalayerClient = datalayer as DatalayerClient;
-        const authProvider = auth as IAuthProvider;
-
-        if (datalayerClient && authProvider?.isAuthenticated?.()) {
-          const runtimes = await datalayerClient.listRuntimes();
-
-          // Include ALL running runtimes (not just "ready" status)
-          runtimes.forEach((runtime) => {
-            const expiredAt = new Date(runtime.expiredAt).getTime();
-            const minutesRemaining = Math.floor(
-              (expiredAt - Date.now()) / 60000,
-            );
-
-            kernels.push({
-              id: runtime.uid,
-              name: runtime.givenName || runtime.uid,
-              displayName: `☁️ ${runtime.givenName} (${minutesRemaining}min)`,
-              language: "python",
-              type: "cloud",
-              status: "idle",
-              metadata: {
-                environmentName: runtime.environmentName,
-                ingress: runtime.ingress,
-                token: runtime.token,
-                minutesRemaining,
-                burningRate: runtime.burningRate,
-              },
-            });
-          });
-        }
-
-        // Always show "Create New Runtime" option when includeCloud is true
-        // (Authentication will be checked when user selects it)
-        kernels.push({
-          id: "CREATE_NEW_RUNTIME",
-          name: "create-new",
-          displayName: "⚡ Start New Runtime...",
-          language: "python",
-          type: "cloud",
-          status: "idle",
-          metadata: {
-            isCreateNewOption: true,
-            requiresAuth: !authProvider?.isAuthenticated?.(),
-          },
-        });
-      } catch (error) {
-        console.error("[listKernels] Error getting cloud runtimes:", error);
-      }
+      await discoverCloudKernels(kernels, datalayer, auth);
     }
 
     // Apply filter if provided

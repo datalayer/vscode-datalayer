@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2023 Datalayer, Inc.
+ * Copyright (c) 2021-2025 Datalayer, Inc.
  *
  * MIT License
  */
@@ -14,25 +14,26 @@
  * @see https://code.visualstudio.com/api/extension-guides/custom-editors
  */
 
+import type { RuntimeDTO } from "@datalayer/core/lib/models/RuntimeDTO";
 import * as vscode from "vscode";
-import { disposeAll } from "../utils/dispose";
-import { getNotebookHtml } from "../ui/templates/notebookTemplate";
-import { WebviewCollection } from "../utils/webviewCollection";
-import { NotebookDocument, NotebookEdit } from "../models/notebookDocument";
-import { DatalayerAuthProvider } from "../services/core/authProvider";
+
 import {
-  getServiceContainer,
+  isLanguageModelAPIAvailable,
+  selectBestLanguageModel,
+} from "../config/llmModels";
+import {
   getOutlineTreeProvider,
   getRuntimesTreeProvider,
+  getServiceContainer,
 } from "../extension";
-import { selectDatalayerRuntime } from "../ui/dialogs/runtimeSelector";
-import { BaseDocumentProvider } from "./baseDocumentProvider";
+import { NotebookDocument, NotebookEdit } from "../models/notebookDocument";
 import { AutoConnectService } from "../services/autoConnect/autoConnectService";
-import type { RuntimeDTO } from "@datalayer/core/lib/models/RuntimeDTO";
-import {
-  selectBestLanguageModel,
-  isLanguageModelAPIAvailable,
-} from "../config/llmModels";
+import { DatalayerAuthProvider } from "../services/core/authProvider";
+import { selectDatalayerRuntime } from "../ui/dialogs/runtimeSelector";
+import { getNotebookHtml } from "../ui/templates/notebookTemplate";
+import { disposeAll } from "../utils/dispose";
+import { WebviewCollection } from "../utils/webviewCollection";
+import { BaseDocumentProvider } from "./baseDocumentProvider";
 
 /**
  * Custom editor provider for Jupyter notebooks with dual-mode support.
@@ -151,7 +152,7 @@ export class NotebookProvider extends BaseDocumentProvider<NotebookDocument> {
     );
 
     // Register callback for runtime termination notifications
-    import("../commands/internal").then(({ onRuntimeTerminated }) => {
+    void import("../commands/internal").then(({ onRuntimeTerminated }) => {
       onRuntimeTerminated(async (uri: vscode.Uri) => {
         // Send kernel-terminated message to notebook webview
         const panels = provider.webviews.get(uri);
@@ -419,7 +420,7 @@ export class NotebookProvider extends BaseDocumentProvider<NotebookDocument> {
     webviewPanel.webview.html = this.getHtmlForWebview(webviewPanel.webview);
 
     webviewPanel.webview.onDidReceiveMessage((e) => {
-      this.onMessage(webviewPanel, document, e);
+      void this.onMessage(webviewPanel, document, e);
     });
 
     // Listen for theme changes
@@ -443,28 +444,9 @@ export class NotebookProvider extends BaseDocumentProvider<NotebookDocument> {
     // Wait for the webview to be properly ready before we init
     webviewPanel.webview.onDidReceiveMessage(async (e) => {
       if (e.type === "response") {
-        // Handle response messages from webview (for sendToWebviewWithResponse)
-        const { requestId, body } = e;
-        if (requestId) {
-          const callback = this._callbacks.get(requestId);
-          if (callback) {
-            this._callbacks.delete(requestId);
-            callback(body);
-          }
-        }
+        this.handleResponseMessage(e);
       } else if (e.type === "llm-completion-request") {
-        // Handle LLM completion request from webview
-        const completion = await this.getLLMCompletion(
-          e.prefix,
-          e.suffix,
-          e.language,
-        );
-
-        webviewPanel.webview.postMessage({
-          type: "llm-completion-response",
-          requestId: e.requestId,
-          completion,
-        });
+        await this.handleLLMCompletionRequest(e, webviewPanel);
       } else if (
         e.type === "lsp-completion-request" ||
         e.type === "lsp-hover-request" ||
@@ -472,147 +454,200 @@ export class NotebookProvider extends BaseDocumentProvider<NotebookDocument> {
         e.type === "lsp-document-open" ||
         e.type === "lsp-document-close"
       ) {
-        // Handle LSP messages (completions, hover, document sync)
-        // Forward to LSP bridge
-        const { getLSPBridge } = await import("../extension");
-        const lspBridge = getLSPBridge();
-
-        if (lspBridge) {
-          await lspBridge.handleMessage(e, webviewPanel.webview);
-        }
+        await this.handleLSPMessage(e, webviewPanel);
       } else if (e.type === "ready") {
-        // Detect VS Code theme
-        const theme =
-          vscode.window.activeColorTheme.kind === vscode.ColorThemeKind.Dark
-            ? "dark"
-            : "light";
-
-        if (document.uri.scheme === "untitled") {
-          // Use URI as the unique ID for untitled notebooks
-          const notebookId = document.uri.toString();
-
-          // For untitled notebooks, send empty notebook structure if document has no data
-          const value =
-            document.documentData.length > 0
-              ? document.documentData
-              : new TextEncoder().encode(
-                  JSON.stringify({
-                    cells: [],
-                    metadata: {},
-                    nbformat: 4,
-                    nbformat_minor: 5,
-                  }),
-                );
-
-          this.postMessage(webviewPanel, "init", {
-            value,
-            untitled: true,
-            editable: true,
-            theme,
-            notebookId,
-            documentUri: document.uri.toString(), // For logging
-          });
-
-          // 🚀 PROACTIVE LSP: Create virtual documents for untitled notebooks too
-          // Fire-and-forget: Don't block notebook opening
-          this.createProactiveLSPDocuments(notebookId, value);
-        } else {
-          const editable = vscode.workspace.fs.isWritableFileSystem(
-            document.uri.scheme,
-          );
-
-          // Check if this is a Datalayer notebook (from spaces)
-          const isDatalayerNotebook = document.uri.scheme === "datalayer";
-
-          // Get document ID, server URL, and token for Datalayer notebooks
-          let documentId: string | undefined;
-          let serverUrl: string | undefined;
-          let token: string | undefined;
-
-          if (isDatalayerNotebook) {
-            // Get the Datalayer server configuration
-            const config =
-              vscode.workspace.getConfiguration("datalayer.services");
-            serverUrl = config.get<string>(
-              "spacerUrl",
-              "https://prod1.datalayer.run",
-            );
-
-            // Get the authentication token
-            const authService = getServiceContainer().authProvider;
-            const authToken = authService.getToken();
-            if (authToken) {
-              token = authToken;
-            }
-
-            // Extract document ID from URI query parameter (embedded by DocumentBridge)
-            const queryParams = new URLSearchParams(document.uri.query);
-            const docIdFromQuery = queryParams.get("docId");
-
-            if (docIdFromQuery) {
-              documentId = docIdFromQuery;
-            } else {
-              // Try to extract from URI path: datalayer://Space/DOCUMENT_UID/Document.ipynb
-              const pathParts = document.uri.path.split("/").filter((p) => p);
-              if (pathParts.length >= 2) {
-                // Second to last part is the document UID
-                documentId = pathParts[pathParts.length - 2];
-              }
-
-              // If still no document ID, try metadata lookup as last resort
-              if (!documentId) {
-                try {
-                  const { DocumentBridge } =
-                    await import("../services/bridges/documentBridge");
-                  const documentBridge =
-                    await DocumentBridge.getInstanceAsync();
-                  const metadata = documentBridge.getDocumentMetadata(
-                    document.uri,
-                  );
-
-                  if (metadata && metadata.document.uid) {
-                    documentId = metadata.document.uid;
-                  }
-                } catch (error) {
-                  // DocumentBridge not ready or metadata not found
-                }
-              }
-            }
-          }
-
-          // Use actual document ID for Datalayer notebooks, URI for local files
-          const notebookId = documentId || document.uri.toString();
-
-          // Register the notebook in the adapter registry for tool operations
-          getServiceContainer().documentRegistry.register(
-            notebookId,
-            document.uri.toString(),
-            "notebook",
-            webviewPanel, // Register webview panel for tool execution messaging
-          );
-
-          this.postMessage(webviewPanel, "init", {
-            value: document.documentData,
-            editable,
-            isDatalayerNotebook,
-            theme,
-            documentId,
-            serverUrl,
-            token,
-            notebookId,
-            documentUri: document.uri.toString(), // For logging
-          });
-
-          // 🚀 PROACTIVE LSP: Create virtual documents IMMEDIATELY for fast completions
-          // Fire-and-forget: Don't block notebook opening waiting for documents
-          // Pylance will analyze in the background while webview loads
-          this.createProactiveLSPDocuments(notebookId, document.documentData);
-
-          // Try auto-connect after init
-          await this.tryAutoConnect(document.uri);
-        }
+        await this.handleReadyMessage(document, webviewPanel);
       }
     });
+  }
+
+  /**
+   * Handles a "response" message from the webview.
+   * @param e - The response message from the webview.
+   * @param e.requestId - Unique identifier used to match the response to its pending callback.
+   * @param e.body - The response payload returned by the webview.
+   */
+  private handleResponseMessage(e: {
+    requestId?: string;
+    body?: unknown;
+  }): void {
+    const { requestId, body } = e;
+    if (requestId) {
+      const callback = this._callbacks.get(requestId);
+      if (callback) {
+        this._callbacks.delete(requestId);
+        callback(body);
+      }
+    }
+  }
+
+  /**
+   * Handles an LLM completion request from the webview.
+   * @param e - The completion request containing source context.
+   * @param e.requestId - Unique identifier to correlate the response with the request.
+   * @param e.prefix - Source text preceding the cursor position.
+   * @param e.suffix - Source text following the cursor position.
+   * @param e.language - Programming language of the content being completed.
+   * @param webviewPanel - The webview panel to send the completion response to.
+   */
+  private async handleLLMCompletionRequest(
+    e: { requestId: string; prefix: string; suffix: string; language: string },
+    webviewPanel: vscode.WebviewPanel,
+  ): Promise<void> {
+    const completion = await this.getLLMCompletion(
+      e.prefix,
+      e.suffix,
+      e.language,
+    );
+    webviewPanel.webview.postMessage({
+      type: "llm-completion-response",
+      requestId: e.requestId,
+      completion,
+    });
+  }
+
+  /**
+   * Forwards an LSP message to the LSP bridge.
+   * @param e - The LSP request message from the webview.
+   * @param webviewPanel - The webview panel used to send LSP responses back.
+   */
+  private async handleLSPMessage(
+    e: import("../services/lsp/types").LSPRequest,
+    webviewPanel: vscode.WebviewPanel,
+  ): Promise<void> {
+    const { getLSPBridge } = await import("../extension");
+    const lspBrdg = getLSPBridge();
+    if (lspBrdg) {
+      await lspBrdg.handleMessage(e, webviewPanel.webview);
+    }
+  }
+
+  /**
+   * Extracts the Datalayer document ID from a URI using query params, path, or metadata lookup.
+   * @param uri - The document URI to extract the ID from.
+   *
+   * @returns The document ID or undefined if not found.
+   */
+  private async extractDatalayerDocumentId(
+    uri: vscode.Uri,
+  ): Promise<string | undefined> {
+    // Try query parameter first
+    const queryParams = new URLSearchParams(uri.query);
+    const docIdFromQuery = queryParams.get("docId");
+    if (docIdFromQuery) {
+      return docIdFromQuery;
+    }
+
+    // Try URI path: datalayer://Space/DOCUMENT_UID/Document.ipynb
+    const pathParts = uri.path.split("/").filter((p) => p);
+    if (pathParts.length >= 2) {
+      return pathParts[pathParts.length - 2];
+    }
+
+    // Try metadata lookup as last resort
+    try {
+      const { DocumentBridge } =
+        await import("../services/bridges/documentBridge");
+      const documentBridge = await DocumentBridge.getInstanceAsync();
+      const metadata = documentBridge.getDocumentMetadata(uri);
+      if (metadata && metadata.document.uid) {
+        return metadata.document.uid;
+      }
+    } catch (_error) {
+      // DocumentBridge not ready or metadata not found
+    }
+
+    return undefined;
+  }
+
+  /**
+   * Handles the "ready" message from the webview by initializing notebook content.
+   * @param document - The notebook document to initialize.
+   * @param webviewPanel - The webview panel to send init data to.
+   */
+  private async handleReadyMessage(
+    document: NotebookDocument,
+    webviewPanel: vscode.WebviewPanel,
+  ): Promise<void> {
+    const theme =
+      vscode.window.activeColorTheme.kind === vscode.ColorThemeKind.Dark
+        ? "dark"
+        : "light";
+
+    if (document.uri.scheme === "untitled") {
+      const notebookId = document.uri.toString();
+      const value =
+        document.documentData.length > 0
+          ? document.documentData
+          : new TextEncoder().encode(
+              JSON.stringify({
+                cells: [],
+                metadata: {},
+                nbformat: 4,
+                nbformat_minor: 5,
+              }),
+            );
+
+      this.postMessage(webviewPanel, "init", {
+        value,
+        untitled: true,
+        editable: true,
+        theme,
+        notebookId,
+        documentUri: document.uri.toString(),
+      });
+      void this.createProactiveLSPDocuments(notebookId, value);
+      return;
+    }
+
+    const editable = vscode.workspace.fs.isWritableFileSystem(
+      document.uri.scheme,
+    );
+    const isDatalayerNotebook = document.uri.scheme === "datalayer";
+
+    let documentId: string | undefined;
+    let serverUrl: string | undefined;
+    let token: string | undefined;
+
+    if (isDatalayerNotebook) {
+      const config = vscode.workspace.getConfiguration("datalayer.services");
+      serverUrl = config.get<string>(
+        "spacerUrl",
+        "https://prod1.datalayer.run",
+      );
+
+      const authService = getServiceContainer().authProvider;
+      const authToken = authService.getToken();
+      if (authToken) {
+        token = authToken;
+      }
+
+      documentId = await this.extractDatalayerDocumentId(document.uri);
+    }
+
+    const notebookId = documentId || document.uri.toString();
+
+    getServiceContainer().documentRegistry.register(
+      notebookId,
+      document.uri.toString(),
+      "notebook",
+      webviewPanel,
+    );
+
+    this.postMessage(webviewPanel, "init", {
+      value: document.documentData,
+      editable,
+      isDatalayerNotebook,
+      theme,
+      documentId,
+      serverUrl,
+      token,
+      notebookId,
+      documentUri: document.uri.toString(),
+    });
+
+    void this.createProactiveLSPDocuments(notebookId, document.documentData);
+    await this.tryAutoConnect(document.uri);
   }
 
   /**

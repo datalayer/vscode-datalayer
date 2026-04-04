@@ -8,9 +8,9 @@
  * Command handlers for Pyodide-related operations
  */
 
-import * as vscode from "vscode";
 import * as fs from "fs/promises";
 import * as path from "path";
+import * as vscode from "vscode";
 // CRITICAL: Use require() for os to ensure it uses the cached version from preload.ts
 // ES6 imports may execute before preload, causing "Cannot read properties of undefined (reading 'platform')"
 const os = require("os");
@@ -55,6 +55,7 @@ export async function clearPyodideCache(
     const cacheDir = path.join(os.homedir(), ".cache", "datalayer-pyodide");
 
     await fs.rm(cacheDir, { recursive: true, force: true });
+    // eslint-disable-next-line no-console
     console.log(`[Pyodide] Cleared native cache directory: ${cacheDir}`);
   } catch (error) {
     console.warn(
@@ -71,6 +72,7 @@ export async function clearPyodideCache(
     );
 
     await fs.rm(globalStoragePyodideDir, { recursive: true, force: true });
+    // eslint-disable-next-line no-console
     console.log(
       `[Pyodide] Cleared globalStorage Pyodide directory: ${globalStoragePyodideDir}`,
     );

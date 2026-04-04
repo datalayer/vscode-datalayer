@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2023 Datalayer, Inc.
+ * Copyright (c) 2021-2025 Datalayer, Inc.
  *
  * MIT License
  */
@@ -11,11 +11,12 @@
  * @module ui/selectors/runtimeSelector
  */
 
-import * as vscode from "vscode";
 import type { DatalayerClient } from "@datalayer/core/lib/client";
 import type { RuntimeDTO } from "@datalayer/core/lib/models/RuntimeDTO";
-import type { DatalayerAuthProvider } from "../../services/core/authProvider";
+import * as vscode from "vscode";
+
 import type { SmartDynamicControllerManager } from "../../providers/smartDynamicControllerManager";
+import type { DatalayerAuthProvider } from "../../services/core/authProvider";
 
 /**
  * QuickPick item for runtime selection with type discriminator for handling.

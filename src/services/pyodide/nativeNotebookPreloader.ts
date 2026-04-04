@@ -12,9 +12,10 @@
  * @module services/pyodide/nativeNotebookPreloader
  */
 
-import * as vscode from "vscode";
-import type { ILogger } from "../interfaces/ILogger";
 import type { PyodideInterface } from "pyodide";
+import * as vscode from "vscode";
+
+import type { ILogger } from "../interfaces/ILogger";
 
 /**
  * Key for storing whether packages have been preloaded for native notebooks.

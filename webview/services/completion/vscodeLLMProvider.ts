@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024-2025 Datalayer, Inc.
+ * Copyright (c) 2021-2025 Datalayer, Inc.
  *
  * MIT License
  */
@@ -76,7 +76,7 @@ export class VSCodeLLMProvider implements IInlineCompletionProvider<IInlineCompl
 
   constructor() {}
 
-  get schema() {
+  get schema(): { default: { debouncerDelay: number; timeout: number } } {
     return {
       default: {
         debouncerDelay: 200, // 200ms debounce (same as notebook-intelligence)
@@ -261,7 +261,7 @@ export class VSCodeLLMProvider implements IInlineCompletionProvider<IInlineCompl
       const requestId = Math.random().toString(36).substring(7);
 
       // Listen for response
-      const handler = (event: MessageEvent) => {
+      const handler = (event: MessageEvent): void => {
         const message = event.data;
         if (
           message.type === "llm-completion-response" &&

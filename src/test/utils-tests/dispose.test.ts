@@ -10,7 +10,8 @@
  */
 
 import * as assert from "assert";
-import { disposeAll, Disposable } from "../../utils/dispose";
+
+import { Disposable, disposeAll } from "../../utils/dispose";
 
 // Mock disposable for testing
 class MockDisposable {

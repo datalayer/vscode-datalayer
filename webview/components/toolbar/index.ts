@@ -11,17 +11,13 @@
  * @module components/toolbar
  */
 
-export { BaseToolbar } from "./BaseToolbar";
 export type { BaseToolbarProps, ToolbarAction } from "./BaseToolbar";
-
-export { ToolbarButton } from "./ToolbarButton";
-export type { ToolbarButtonProps } from "./ToolbarButton";
-
-export { KernelSelector } from "./KernelSelector";
-export type { KernelSelectorProps } from "./KernelSelector";
-
-export { OverflowMenu } from "./OverflowMenu";
-export type { OverflowMenuProps, OverflowMenuAction } from "./OverflowMenu";
-
+export { BaseToolbar } from "./BaseToolbar";
+export type { DropdownItem, DropdownProps } from "./Dropdown";
 export { Dropdown } from "./Dropdown";
-export type { DropdownProps, DropdownItem } from "./Dropdown";
+export type { KernelSelectorProps } from "./KernelSelector";
+export { KernelSelector } from "./KernelSelector";
+export type { OverflowMenuAction, OverflowMenuProps } from "./OverflowMenu";
+export { OverflowMenu } from "./OverflowMenu";
+export type { ToolbarButtonProps } from "./ToolbarButton";
+export { ToolbarButton } from "./ToolbarButton";

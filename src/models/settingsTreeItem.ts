@@ -10,9 +10,9 @@
  * @module models/settingsTreeItem
  */
 
-import type { TreeSectionItem } from "./treeSectionItem";
-import type { SecretTreeItem } from "./secretTreeItem";
 import type { DatasourceTreeItem } from "./datasourceTreeItem";
+import type { SecretTreeItem } from "./secretTreeItem";
+import type { TreeSectionItem } from "./treeSectionItem";
 
 /**
  * Union type for all possible items in the Settings tree view.

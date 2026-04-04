@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2023 Datalayer, Inc.
+ * Copyright (c) 2021-2025 Datalayer, Inc.
  *
  * MIT License
  */
@@ -11,7 +11,8 @@
  * stable while swapping the internal service manager.
  */
 
-import { ServiceManager, ServerConnection } from "@jupyterlab/services";
+import { ServerConnection, ServiceManager } from "@jupyterlab/services";
+
 import {
   ServiceManagerFactory,
   type ServiceManagerType,
@@ -226,7 +227,7 @@ export class MutableServiceManager {
             typeof sessionManager.shutdownAll === "function"
           ) {
             try {
-              sessionManager.shutdownAll();
+              void sessionManager.shutdownAll();
             } catch (error) {
               console.warn(
                 `[MutableServiceManager] ⚠️ Error shutting down Pyodide sessions:`,
@@ -239,6 +240,7 @@ export class MutableServiceManager {
         // CRITICAL: For remote/Datalayer runtimes that were terminated on the server,
         // we need to force-close without making API calls. The URLs are already dead.
         if (this._forceClose) {
+          // eslint-disable-next-line no-console
           console.log(
             `[MutableServiceManager] Force-closing service manager (type: ${oldType}) without dispose() to avoid CORS errors`,
           );
@@ -246,6 +248,7 @@ export class MutableServiceManager {
           try {
             // Disable kernel reconnection to prevent auto-reconnect attempts
             const disabledCount = disableKernelReconnect(oldSm);
+            // eslint-disable-next-line no-console
             console.log(
               `[MutableServiceManager] Disabled ${disabledCount} kernel reconnections`,
             );
@@ -269,6 +272,7 @@ export class MutableServiceManager {
               sm.events.dispose();
             }
 
+            // eslint-disable-next-line no-console
             console.log(
               "[MutableServiceManager] Stopped all polling and subscriptions",
             );
@@ -284,6 +288,7 @@ export class MutableServiceManager {
         } else {
           // Normal disposal with API calls (for Pyodide, local kernels, etc.)
           const disabledCount = disableKernelReconnect(oldSm);
+          // eslint-disable-next-line no-console
           console.log(
             `[MutableServiceManager] Disposing service manager (type: ${oldType}), disabled ${disabledCount} kernel reconnections`,
           );

@@ -4,5 +4,5 @@
  * MIT License
  */
 
-export * from "./InsertYouTubeDialog";
 export * from "./InsertLinkDialog";
+export * from "./InsertYouTubeDialog";

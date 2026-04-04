@@ -11,13 +11,14 @@
  */
 
 import * as vscode from "vscode";
-import { SettingsTreeProvider } from "../providers/settingsTreeProvider";
+
+import { getServiceContainer } from "../extension";
 import { DatasourceTreeItem } from "../models/datasourceTreeItem";
+import { SettingsTreeProvider } from "../providers/settingsTreeProvider";
 import {
   createDatasourceDialogCommand,
   showDatasourceEditDialog,
 } from "./createDatasourceDialog";
-import { getServiceContainer } from "../extension";
 
 /**
  * Registers all datasource-related commands including create, edit, delete, and refresh.

@@ -11,19 +11,21 @@
  * @module jupyter/serverProvider
  */
 
-import * as vscode from "vscode";
+import type { DatalayerClient } from "@datalayer/core/lib/client";
+import type { RuntimeDTO } from "@datalayer/core/lib/models/RuntimeDTO";
 import type {
   Jupyter,
   JupyterServer,
+  JupyterServerCollection,
   JupyterServerCommand,
   JupyterServerCommandProvider,
   JupyterServerProvider,
-  JupyterServerCollection,
 } from "@vscode/jupyter-extension";
-import type { DatalayerClient } from "@datalayer/core/lib/client";
-import type { RuntimeDTO } from "@datalayer/core/lib/models/RuntimeDTO";
-import type { DatalayerAuthProvider } from "../services/core/authProvider";
+import * as vscode from "vscode";
+
 import type { SmartDynamicControllerManager } from "../providers/smartDynamicControllerManager";
+import type { DatalayerAuthProvider } from "../services/core/authProvider";
+import { ServiceLoggers } from "../services/logging/loggers";
 
 /**
  * Commands that appear in the Datalayer kernel picker
@@ -174,14 +176,14 @@ export class DatalayerJupyterServerProvider
     command: JupyterServerCommand,
     _token: vscode.CancellationToken,
   ): Promise<JupyterServer | undefined> {
-    console.log(
+    ServiceLoggers.runtime.debug(
       "[DatalayerJupyterServerProvider] handleCommand called with:",
-      command.label,
+      { detail: command.label },
     );
 
     // Check authentication first
     if (!this.isAuthenticated) {
-      console.log(
+      ServiceLoggers.runtime.debug(
         "[DatalayerJupyterServerProvider] Not authenticated, triggering login...",
       );
       try {
@@ -189,11 +191,13 @@ export class DatalayerJupyterServerProvider
         await this.authProvider.login();
 
         if (!this.authProvider.isAuthenticated()) {
-          console.log("[DatalayerJupyterServerProvider] User cancelled login");
+          ServiceLoggers.runtime.debug(
+            "[DatalayerJupyterServerProvider] User cancelled login",
+          );
           return undefined; // User cancelled login
         }
 
-        console.log(
+        ServiceLoggers.runtime.debug(
           "[DatalayerJupyterServerProvider] Authentication successful",
         );
         // Update auth state
@@ -208,9 +212,9 @@ export class DatalayerJupyterServerProvider
     }
 
     try {
-      console.log(
+      ServiceLoggers.runtime.debug(
         "[DatalayerJupyterServerProvider] Executing command:",
-        command.label,
+        { detail: command.label },
       );
       switch (command.label) {
         case CREATE_GPU_RUNTIME.label:
@@ -237,7 +241,9 @@ export class DatalayerJupyterServerProvider
    * @returns The created GPU Jupyter server or undefined if creation fails.
    */
   private async createGpuRuntime(): Promise<JupyterServer | undefined> {
-    console.log("[DatalayerJupyterServerProvider] createGpuRuntime started");
+    ServiceLoggers.runtime.debug(
+      "[DatalayerJupyterServerProvider] createGpuRuntime started",
+    );
 
     try {
       const { EnvironmentCache } =
@@ -245,16 +251,16 @@ export class DatalayerJupyterServerProvider
       const { createRuntime } = await import("../ui/dialogs/runtimeSelector");
 
       // Get GPU environment
-      console.log(
+      ServiceLoggers.runtime.debug(
         "[DatalayerJupyterServerProvider] Fetching GPU environment...",
       );
       const environments = await EnvironmentCache.getInstance().getEnvironments(
         this.datalayer,
         this.authProvider,
       );
-      console.log(
+      ServiceLoggers.runtime.debug(
         "[DatalayerJupyterServerProvider] Available environments:",
-        environments.map((e) => e.name),
+        { items: environments.map((e) => e.name) },
       );
 
       const gpuEnv = environments.find((e) => e.name === "ai-env");
@@ -268,18 +274,20 @@ export class DatalayerJupyterServerProvider
       }
 
       // Show creation flow (snapshot, name, duration)
-      console.log("[DatalayerJupyterServerProvider] Showing creation flow...");
+      ServiceLoggers.runtime.debug(
+        "[DatalayerJupyterServerProvider] Showing creation flow...",
+      );
       const runtime = await createRuntime(this.datalayer, gpuEnv);
       if (!runtime) {
-        console.log(
+        ServiceLoggers.runtime.debug(
           "[DatalayerJupyterServerProvider] User cancelled runtime creation",
         );
         return undefined; // User cancelled
       }
 
-      console.log(
+      ServiceLoggers.runtime.debug(
         "[DatalayerJupyterServerProvider] Runtime created:",
-        runtime.uid,
+        { detail: runtime.uid },
       );
 
       // Create controller for new runtime
@@ -307,7 +315,9 @@ export class DatalayerJupyterServerProvider
    * @returns The created CPU Jupyter server or undefined if creation fails.
    */
   private async createCpuRuntime(): Promise<JupyterServer | undefined> {
-    console.log("[DatalayerJupyterServerProvider] createCpuRuntime started");
+    ServiceLoggers.runtime.debug(
+      "[DatalayerJupyterServerProvider] createCpuRuntime started",
+    );
 
     try {
       const { EnvironmentCache } =
@@ -315,16 +325,16 @@ export class DatalayerJupyterServerProvider
       const { createRuntime } = await import("../ui/dialogs/runtimeSelector");
 
       // Get CPU environment
-      console.log(
+      ServiceLoggers.runtime.debug(
         "[DatalayerJupyterServerProvider] Fetching CPU environment...",
       );
       const environments = await EnvironmentCache.getInstance().getEnvironments(
         this.datalayer,
         this.authProvider,
       );
-      console.log(
+      ServiceLoggers.runtime.debug(
         "[DatalayerJupyterServerProvider] Available environments:",
-        environments.map((e) => e.name),
+        { items: environments.map((e) => e.name) },
       );
 
       const cpuEnv = environments.find((e) => e.name === "python-cpu-env");
@@ -338,18 +348,20 @@ export class DatalayerJupyterServerProvider
       }
 
       // Show creation flow
-      console.log("[DatalayerJupyterServerProvider] Showing creation flow...");
+      ServiceLoggers.runtime.debug(
+        "[DatalayerJupyterServerProvider] Showing creation flow...",
+      );
       const runtime = await createRuntime(this.datalayer, cpuEnv);
       if (!runtime) {
-        console.log(
+        ServiceLoggers.runtime.debug(
           "[DatalayerJupyterServerProvider] User cancelled runtime creation",
         );
         return undefined;
       }
 
-      console.log(
+      ServiceLoggers.runtime.debug(
         "[DatalayerJupyterServerProvider] Runtime created:",
-        runtime.uid,
+        { detail: runtime.uid },
       );
 
       // Create controller for new runtime

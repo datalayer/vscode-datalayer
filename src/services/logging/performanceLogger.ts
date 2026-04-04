@@ -11,6 +11,7 @@
  * @module services/performanceLogger
  */
 
+import type { ILogger } from "../interfaces/ILogger";
 import { ServiceLoggers } from "./loggers";
 
 /**
@@ -24,7 +25,7 @@ export class PerformanceLogger {
    *
    * @private
    */
-  private static get logger() {
+  private static get logger(): ILogger {
     // Return no-op logger if ServiceLoggers not initialized yet
     if (!ServiceLoggers.isInitialized()) {
       return {

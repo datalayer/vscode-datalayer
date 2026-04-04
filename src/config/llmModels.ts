@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2021-2025 Datalayer, Inc.
+ *
  * MIT License
  */
 
@@ -63,9 +64,11 @@ export async function selectBestLanguageModel(
   context: string,
   strategies: readonly ModelSelectionStrategy[] = DEFAULT_MODEL_STRATEGIES,
 ): Promise<vscode.LanguageModelChat | undefined> {
-  console.log(`[${context}] 🔍 Selecting language model...`);
+  // eslint-disable-next-line no-console
+  console.log(`[${context}] Selecting language model...`);
 
   for (const strategy of strategies) {
+    // eslint-disable-next-line no-console
     console.log(
       `[${context}] Trying strategy: ${strategy.name}${strategy.vendor ? ` (vendor: ${strategy.vendor})` : ""}${strategy.family ? ` (family: ${strategy.family})` : ""}`,
     );
@@ -87,6 +90,7 @@ export async function selectBestLanguageModel(
     // Try to select models
     const models = await vscode.lm.selectChatModels(selector);
 
+    // eslint-disable-next-line no-console
     console.log(
       `[${context}] Found ${models.length} model(s) for ${strategy.name}`,
     );
@@ -94,6 +98,7 @@ export async function selectBestLanguageModel(
     if (models.length > 0) {
       // Log available models
       models.forEach((m, i) => {
+        // eslint-disable-next-line no-console
         console.log(
           `[${context}]   Model ${i + 1}: ${m.id} (vendor: ${m.vendor}, family: ${m.family})`,
         );
@@ -101,8 +106,9 @@ export async function selectBestLanguageModel(
 
       // Use first model
       const selectedModel = models[0];
+      // eslint-disable-next-line no-console
       console.log(
-        `[${context}] ✅ Selected model: ${selectedModel.id} (vendor: ${selectedModel.vendor}, family: ${selectedModel.family})`,
+        `[${context}] Selected model: ${selectedModel.id} (vendor: ${selectedModel.vendor}, family: ${selectedModel.family})`,
       );
 
       return selectedModel;

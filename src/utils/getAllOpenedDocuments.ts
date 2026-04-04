@@ -74,6 +74,39 @@ export interface AllOpenedDocumentsContext {
   };
 }
 
+/** Set of file extensions classified as text documents. */
+const TEXT_EXTENSIONS = new Set([
+  ".txt",
+  ".md",
+  ".json",
+  ".yaml",
+  ".yml",
+  ".js",
+  ".ts",
+  ".tsx",
+  ".jsx",
+  ".py",
+  ".java",
+  ".c",
+  ".cpp",
+  ".h",
+  ".hpp",
+  ".css",
+  ".html",
+  ".xml",
+]);
+
+/**
+ * Extracts the file extension (including the dot) from a filename.
+ * @param fileName - File name to extract extension from.
+ *
+ * @returns File extension with leading dot, or empty string if none found.
+ */
+function getFileExtension(fileName: string): string {
+  const lastDot = fileName.lastIndexOf(".");
+  return lastDot >= 0 ? fileName.substring(lastDot) : "";
+}
+
 /**
  * Determines document type from URI and filename.
  * @param uri - VS Code URI of the document.
@@ -82,39 +115,17 @@ export interface AllOpenedDocumentsContext {
  * @returns Classified document type based on file extension.
  */
 function classifyDocumentType(uri: vscode.Uri, fileName: string): DocumentType {
-  // Check file extension
-  if (fileName.endsWith(".ipynb")) {
+  const ext = getFileExtension(fileName);
+
+  if (ext === ".ipynb") {
     return "notebook";
   }
-  if (fileName.endsWith(".dlex") || fileName.endsWith(".lexical")) {
+  if (ext === ".dlex" || ext === ".lexical") {
     return "lexical";
   }
-
-  // Check for text files
-  if (
-    fileName.endsWith(".txt") ||
-    fileName.endsWith(".md") ||
-    fileName.endsWith(".json") ||
-    fileName.endsWith(".yaml") ||
-    fileName.endsWith(".yml") ||
-    fileName.endsWith(".js") ||
-    fileName.endsWith(".ts") ||
-    fileName.endsWith(".tsx") ||
-    fileName.endsWith(".jsx") ||
-    fileName.endsWith(".py") ||
-    fileName.endsWith(".java") ||
-    fileName.endsWith(".c") ||
-    fileName.endsWith(".cpp") ||
-    fileName.endsWith(".h") ||
-    fileName.endsWith(".hpp") ||
-    fileName.endsWith(".css") ||
-    fileName.endsWith(".html") ||
-    fileName.endsWith(".xml")
-  ) {
+  if (TEXT_EXTENSIONS.has(ext)) {
     return "text";
   }
-
-  // If it's a file:// scheme with unknown extension
   if (uri.scheme === "file") {
     return "other";
   }

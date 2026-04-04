@@ -160,7 +160,7 @@
 
 Open settings (`Ctrl+,` / `Cmd+,`) and search "Datalayer":
 
-**Service URLs** - Default to `https://prod1.datalayer.run`:
+**Service URLs** - Defaults:
 
 - `datalayer.services.iamUrl`
 - `datalayer.services.runtimesUrl`

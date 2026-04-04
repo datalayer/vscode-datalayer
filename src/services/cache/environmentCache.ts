@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2023 Datalayer, Inc.
+ * Copyright (c) 2021-2025 Datalayer, Inc.
  *
  * MIT License
  */
@@ -13,6 +13,7 @@
 
 import type { DatalayerClient } from "@datalayer/core/lib/client";
 import type { EnvironmentDTO } from "@datalayer/core/lib/models/EnvironmentDTO";
+
 import type { IAuthProvider } from "../interfaces/IAuthProvider";
 
 /**
@@ -108,7 +109,7 @@ export class EnvironmentCache {
       // Datalayer returns Environment model instances, store them directly
       this._environments = environments;
       this._lastFetch = Date.now();
-    } catch (error) {
+    } catch (_error) {
       // On error, keep existing cache but mark as stale
       this._lastFetch = 0;
 
@@ -156,7 +157,7 @@ export class EnvironmentCache {
     this.clear();
     try {
       await this.fetchEnvironments(datalayer);
-    } catch (error) {
+    } catch (_error) {
       // Silently handle errors - environments will be fetched on next request
     }
   }

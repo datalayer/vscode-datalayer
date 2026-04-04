@@ -10,11 +10,12 @@
  * Uses MutableServiceManager to prevent Notebook2 re-renders when switching runtimes.
  */
 
-import { useState, useCallback, useRef } from "react";
-import type { ServiceManager } from "@jupyterlab/services";
 import type { RuntimeJSON } from "@datalayer/core/lib/client";
-import { MutableServiceManager } from "../services/mutableServiceManager";
+import type { ServiceManager } from "@jupyterlab/services";
+import { useCallback, useRef, useState } from "react";
+
 import { isLocalKernelUrl } from "../../src/constants/kernelConstants";
+import { MutableServiceManager } from "../services/mutableServiceManager";
 
 /**
  * Manages runtime selection and service manager lifecycle using MutableServiceManager for stable references that prevent Notebook2 re-renders.
@@ -23,7 +24,27 @@ import { isLocalKernelUrl } from "../../src/constants/kernelConstants";
  * @returns Runtime state and selection function.
  *
  */
-export function useRuntimeManager(initialRuntime?: RuntimeJSON) {
+/** Return value from the useRuntimeManager hook. */
+export interface UseRuntimeManagerResult {
+  /** The currently selected Datalayer runtime, or undefined if none. */
+  selectedRuntime: RuntimeJSON | undefined;
+  /** Stable JupyterLab ServiceManager proxy that survives runtime swaps. */
+  serviceManager: ServiceManager.IManager;
+  /** Switches the active runtime, updating the underlying service manager without re-renders. */
+  selectRuntime: (runtime: RuntimeJSON | undefined) => void;
+  /** Direct access to the MutableServiceManager for advanced operations. */
+  mutableServiceManager: MutableServiceManager;
+}
+
+/**
+ * Manages runtime selection and ServiceManager lifecycle with stable proxy references.
+ * @param initialRuntime - Optional runtime to connect on mount.
+ *
+ * @returns Runtime state and selection controls.
+ */
+export function useRuntimeManager(
+  initialRuntime?: RuntimeJSON,
+): UseRuntimeManagerResult {
   // Create MutableServiceManager once - stable reference throughout component lifecycle
   const mutableManagerRef = useRef<MutableServiceManager | null>(null);
 

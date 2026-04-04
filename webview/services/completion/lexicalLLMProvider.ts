@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024-2025 Datalayer, Inc.
+ * Copyright (c) 2021-2025 Datalayer, Inc.
  *
  * MIT License
  */
@@ -99,7 +99,8 @@ export class LexicalVSCodeLLMProvider implements IInlineCompletionProvider {
 
   constructor() {
     // Provider is ready immediately - no initialization needed
-    console.log("[LexicalVSCodeLLMProvider] ✅ Provider initialized");
+    // eslint-disable-next-line no-console
+    console.log("[LexicalVSCodeLLMProvider] Provider initialized");
   }
 
   /**
@@ -119,7 +120,8 @@ export class LexicalVSCodeLLMProvider implements IInlineCompletionProvider {
     request: CompletionRequest,
     context: CompletionContext,
   ): Promise<CompletionList> {
-    console.log("[LexicalVSCodeLLMProvider] 🚀 fetch() called", {
+    // eslint-disable-next-line no-console
+    console.log("[LexicalVSCodeLLMProvider] fetch() called", {
       requestTextLength: request.text?.length,
       offset: request.offset,
       language: request.language,
@@ -146,7 +148,8 @@ export class LexicalVSCodeLLMProvider implements IInlineCompletionProvider {
       // Get trigger kind (auto or manual)
       const trigger = context.triggerKind || "auto";
 
-      console.log("[LexicalVSCodeLLMProvider] 📊 Context analysis:", {
+      // eslint-disable-next-line no-console
+      console.log("[LexicalVSCodeLLMProvider] Context analysis:", {
         prefixLength: prefix.length,
         suffixLength: suffix.length,
         contentType,
@@ -165,11 +168,13 @@ export class LexicalVSCodeLLMProvider implements IInlineCompletionProvider {
       );
 
       if (!completion) {
-        console.log("[LexicalVSCodeLLMProvider] ❌ No completion received");
+        // eslint-disable-next-line no-console
+        console.log("[LexicalVSCodeLLMProvider] No completion received");
         return { items: [] };
       }
 
-      console.log("[LexicalVSCodeLLMProvider] ✅ Completion received:", {
+      // eslint-disable-next-line no-console
+      console.log("[LexicalVSCodeLLMProvider] Completion received:", {
         completionLength: completion.length,
         completionPreview: completion.substring(0, 100),
       });
@@ -239,8 +244,9 @@ export class LexicalVSCodeLLMProvider implements IInlineCompletionProvider {
       // Generate request ID for matching response
       const requestId = Math.random().toString(36).substring(7);
 
+      // eslint-disable-next-line no-console
       console.log(
-        "[LexicalVSCodeLLMProvider] 📤 Sending llm-completion-request to extension:",
+        "[LexicalVSCodeLLMProvider] Sending llm-completion-request to extension:",
         {
           requestId,
           contentType,
@@ -251,14 +257,15 @@ export class LexicalVSCodeLLMProvider implements IInlineCompletionProvider {
       );
 
       // Listen for response
-      const handler = (event: MessageEvent) => {
+      const handler = (event: MessageEvent): void => {
         const message = event.data;
         if (
           message.type === "llm-completion-response" &&
           message.requestId === requestId
         ) {
+          // eslint-disable-next-line no-console
           console.log(
-            "[LexicalVSCodeLLMProvider] 📥 Received llm-completion-response:",
+            "[LexicalVSCodeLLMProvider] Received llm-completion-response:",
             {
               requestId,
               hasCompletion: !!message.completion,
@@ -285,7 +292,8 @@ export class LexicalVSCodeLLMProvider implements IInlineCompletionProvider {
 
       // Timeout after 15 seconds
       setTimeout(() => {
-        console.log("[LexicalVSCodeLLMProvider] ⏱️ Request timed out:", {
+        // eslint-disable-next-line no-console
+        console.log("[LexicalVSCodeLLMProvider] Request timed out:", {
           requestId,
         });
         window.removeEventListener("message", handler);

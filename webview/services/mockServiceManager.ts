@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2023 Datalayer, Inc.
+ * Copyright (c) 2021-2025 Datalayer, Inc.
  *
  * MIT License
  */
@@ -12,15 +12,16 @@
  */
 
 import type {
-  ServiceManager,
-  ServerConnection,
   Kernel,
+  ServerConnection,
+  ServiceManager,
   Session,
 } from "@jupyterlab/services";
 import {
-  serialize,
   deserialize,
+  serialize,
 } from "@jupyterlab/services/lib/kernel/serialize";
+
 import { BaseKernelManager, BaseSessionManager } from "./base";
 
 /**

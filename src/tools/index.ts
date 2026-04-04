@@ -18,5 +18,5 @@
  * @module tools
  */
 
-export * from "./core/toolAdapter";
 export * from "./core/registration";
+export * from "./core/toolAdapter";

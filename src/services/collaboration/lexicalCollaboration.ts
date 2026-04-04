@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2023 Datalayer, Inc.
+ * Copyright (c) 2021-2025 Datalayer, Inc.
  *
  * MIT License
  */
@@ -12,9 +12,11 @@
  */
 
 import * as vscode from "vscode";
+
+import { getServiceContainer } from "../../extension";
 import { LexicalDocument } from "../../models/lexicalDocument";
 import { DocumentBridge } from "../bridges/documentBridge";
-import { getServiceContainer } from "../../extension";
+import { ServiceLoggers } from "../logging/loggers";
 
 /**
  * Configuration for lexical document collaboration.
@@ -107,7 +109,7 @@ export class LexicalCollaborationService {
             if (metadata?.document?.uid) {
               documentId = metadata.document.uid;
             }
-          } catch (error) {
+          } catch (_error) {
             // DocumentBridge not ready or metadata not found
           }
         }
@@ -133,17 +135,20 @@ export class LexicalCollaborationService {
         user?.displayName || user?.handle || user?.email || "Anonymous";
       const username = `${baseUsername} (VSCode)`;
 
-      console.log("[LexicalCollaboration] Creating config:", {
-        username,
-        baseUsername,
-        user: user
-          ? {
-              displayName: user.displayName,
-              handle: user.handle,
-              email: user.email,
-            }
-          : null,
-      });
+      ServiceLoggers.collaboration.debug(
+        "[LexicalCollaboration] Creating config:",
+        {
+          username,
+          baseUsername,
+          user: user
+            ? {
+                displayName: user.displayName,
+                handle: user.handle,
+                email: user.email,
+              }
+            : null,
+        },
+      );
 
       return {
         enabled: true,
@@ -153,7 +158,7 @@ export class LexicalCollaborationService {
         username,
         userColor: this.generateUserColor(),
       };
-    } catch (error) {
+    } catch (_error) {
       // Failed to setup collaboration - return undefined
       return undefined;
     }

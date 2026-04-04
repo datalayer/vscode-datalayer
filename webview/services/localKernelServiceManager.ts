@@ -15,20 +15,21 @@
  */
 
 import {
+  Kernel,
+  KernelMessage,
+  ServerConnection,
   ServiceManager,
   Session,
-  Kernel,
-  ServerConnection,
-  KernelMessage,
 } from "@jupyterlab/services";
 import {
-  serialize,
   deserialize,
+  serialize,
 } from "@jupyterlab/services/lib/kernel/serialize";
-import { ISignal, Signal } from "@lumino/signaling";
-import { LocalKernelConnection } from "./localKernelConnection";
 import { UUID } from "@lumino/coreutils";
+import { ISignal, Signal } from "@lumino/signaling";
+
 import { BaseKernelManager, BaseSessionManager } from "./base";
+import { LocalKernelConnection } from "./localKernelConnection";
 
 /**
  * Custom KernelManager for local kernels.
@@ -211,18 +212,22 @@ class LocalSessionManager extends BaseSessionManager {
       },
 
       async setPath(_path: string) {
+        // eslint-disable-next-line no-console
         console.log(`[LocalSessionManager] setPath called (no-op)`);
       },
 
       async setName(_name: string) {
+        // eslint-disable-next-line no-console
         console.log(`[LocalSessionManager] setName called (no-op)`);
       },
 
       async setType(_type: string) {
+        // eslint-disable-next-line no-console
         console.log(`[LocalSessionManager] setType called (no-op)`);
       },
 
       async changeKernel(_options: Partial<Kernel.IModel>) {
+        // eslint-disable-next-line no-console
         console.log(
           `[LocalSessionManager] changeKernel called (not implemented for local kernels)`,
         );

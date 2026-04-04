@@ -10,8 +10,8 @@
  * @module models/datasourceTreeItem
  */
 
-import * as vscode from "vscode";
 import type { DatasourceDTO } from "@datalayer/core/lib/models/Datasource";
+import * as vscode from "vscode";
 
 /**
  * Tree item for displaying a datasource.

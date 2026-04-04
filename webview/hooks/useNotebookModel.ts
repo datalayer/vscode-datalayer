@@ -10,6 +10,7 @@
  */
 
 import { useCallback, useRef } from "react";
+
 import type { MessageHandler } from "../services/messageHandler";
 import { saveToBytes } from "../utils";
 
@@ -44,10 +45,30 @@ interface INotebookModel {
  * @returns Notebook model state and handlers.
  *
  */
+/** Return value from the useNotebookModel hook. */
+export interface UseNotebookModelResult {
+  /** The current JupyterLab notebook model reference. */
+  notebookModel: unknown;
+  /** Updates the tracked notebook model when the editor swaps models. */
+  handleNotebookModelChanged: (notebookModel: unknown) => void;
+  /** Serializes the current notebook content to nbformat bytes. */
+  getNotebookData: (fallbackNbformat?: unknown) => Uint8Array;
+  /** Resets the dirty state after a successful save. */
+  markClean: () => void;
+}
+
+/**
+ * Manages notebook model state and change tracking for local notebooks.
+ * @param options - Hook configuration options.
+ * @param options.isDatalayerNotebook - Whether the notebook is a Datalayer platform document.
+ * @param options.messageHandler - Handler for sending model updates to the extension.
+ *
+ * @returns Notebook model state and handlers.
+ */
 export function useNotebookModel({
   isDatalayerNotebook,
   messageHandler,
-}: UseNotebookModelOptions) {
+}: UseNotebookModelOptions): UseNotebookModelResult {
   const currentNotebookModel = useRef<unknown>(null);
   const lastSavedContent = useRef<Uint8Array | null>(null);
   const contentChangeHandler = useRef<
@@ -74,7 +95,7 @@ export function useNotebookModel({
                 contentChangeHandler.current,
               );
             }
-          } catch (e) {
+          } catch (_e) {
             // Ignore if not connected
           }
         }
@@ -83,7 +104,7 @@ export function useNotebookModel({
         let connectedSignal = false;
 
         if (model.contentChanged) {
-          const handleContentChange = () => {
+          const handleContentChange = (): void => {
             try {
               const notebookData = model.toJSON();
               const bytes = saveToBytes(notebookData);
@@ -94,7 +115,7 @@ export function useNotebookModel({
                 body: { content: bytes },
               });
               lastSavedContent.current = bytes;
-            } catch (error) {
+            } catch (_error) {
               // Error handling content change
             }
           };
@@ -106,7 +127,10 @@ export function useNotebookModel({
 
         // Fallback to stateChanged signal
         if (model.stateChanged && !connectedSignal) {
-          const handleStateChange = (_sender: unknown, _args: unknown) => {
+          const handleStateChange = (
+            _sender: unknown,
+            _args: unknown,
+          ): void => {
             try {
               const notebookData = model.toJSON();
               const bytes = saveToBytes(notebookData);
@@ -123,7 +147,7 @@ export function useNotebookModel({
                 });
                 lastSavedContent.current = bytes;
               }
-            } catch (error) {
+            } catch (_error) {
               // Error handling state change
             }
           };
@@ -145,7 +169,7 @@ export function useNotebookModel({
                 body: { content: initialBytes },
               });
             }
-          } catch (error) {
+          } catch (_error) {
             // Error storing initial content
           }
         }
@@ -164,7 +188,7 @@ export function useNotebookModel({
           const model = currentNotebookModel.current as INotebookModel;
           const notebookData = model.toJSON();
           return saveToBytes(notebookData);
-        } catch (error) {
+        } catch (_error) {
           // Fallback to original nbformat
           return saveToBytes(fallbackNbformat || {});
         }

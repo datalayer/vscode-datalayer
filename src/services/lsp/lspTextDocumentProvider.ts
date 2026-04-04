@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2021-2025 Datalayer, Inc.
+ *
  * MIT License
  */
 
@@ -11,6 +12,8 @@
  */
 
 import * as vscode from "vscode";
+
+import { ServiceLoggers } from "../logging/loggers";
 import { LSPDocumentManager } from "./lspDocumentManager";
 
 /**
@@ -48,8 +51,8 @@ export class LSPTextDocumentProvider
    * @returns Document content or empty string if not found.
    */
   public provideTextDocumentContent(uri: vscode.Uri): string {
-    console.log(
-      `🔍🔍🔍 [LSP-DEBUG-ContentProvider] ===  provideTextDocumentContent CALLED for URI: ${uri.toString()}`,
+    ServiceLoggers.main.debug(
+      `[LSP-ContentProvider] provideTextDocumentContent CALLED for URI: ${uri.toString()}`,
     );
 
     // Extract cell ID from URI path
@@ -64,8 +67,8 @@ export class LSPTextDocumentProvider
     }
 
     const cellId = match[1];
-    console.log(
-      `🔍🔍🔍 [LSP-DEBUG-ContentProvider] Extracted cellId: ${cellId}`,
+    ServiceLoggers.main.debug(
+      `[LSP-ContentProvider] Extracted cellId: ${cellId}`,
     );
 
     // Get document from manager
@@ -77,8 +80,8 @@ export class LSPTextDocumentProvider
       return "";
     }
 
-    console.log(
-      `🔍🔍🔍 [LSP-DEBUG-ContentProvider] Providing content for cell ${cellId} (${virtualDoc.content.length} chars): "${virtualDoc.content.substring(0, 50)}..."`,
+    ServiceLoggers.main.debug(
+      `[LSP-ContentProvider] Providing content for cell ${cellId} (${virtualDoc.content.length} chars): "${virtualDoc.content.substring(0, 50)}..."`,
     );
 
     return virtualDoc.content;

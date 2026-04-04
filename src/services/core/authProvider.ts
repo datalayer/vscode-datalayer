@@ -11,19 +11,20 @@
  * @module services/authProvider
  */
 
-import * as vscode from "vscode";
 import type { DatalayerClient } from "@datalayer/core/lib/client";
 import type { UserDTO } from "@datalayer/core/lib/models/UserDTO";
-import type { ILogger } from "../interfaces/ILogger";
-import type {
-  IAuthProvider,
-  VSCodeAuthState,
-  AuthMethod,
-} from "../interfaces/IAuthProvider";
-import { BaseService } from "./baseService";
-import { OAuthFlowManager } from "./oauthFlowManager";
+import * as vscode from "vscode";
+
 import { showAuthMethodPicker } from "../../ui/dialogs/authMethodSelector";
 import { promptForCredentials } from "../../ui/dialogs/credentialsInput";
+import type {
+  AuthMethod,
+  IAuthProvider,
+  VSCodeAuthState,
+} from "../interfaces/IAuthProvider";
+import type { ILogger } from "../interfaces/ILogger";
+import { BaseService } from "./baseService";
+import { OAuthFlowManager } from "./oauthFlowManager";
 
 /**
  * Datalayer-based authentication provider for VS Code.

@@ -12,6 +12,7 @@
  */
 
 import * as vscode from "vscode";
+
 import type {
   ILoggerManager,
   LoggerConfig,

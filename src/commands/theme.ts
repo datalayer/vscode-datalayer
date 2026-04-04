@@ -10,8 +10,9 @@
  * @module commands/theme
  */
 
-import * as vscode from "vscode";
 import * as path from "path";
+import * as vscode from "vscode";
+
 import { getPrimerVSCodeThemeCSS } from "../ui/styles/primerVSCodeTheme";
 
 /**
@@ -52,14 +53,14 @@ function showPrimerThemeShowcase(context: vscode.ExtensionContext): void {
   );
 
   // Set the HTML content with current theme colors
-  const updateContent = () => {
+  const updateContent = (): void => {
     panel.webview.html = getWebviewContent(panel.webview, webviewUri);
   };
 
   updateContent();
 
   // Handle theme changes
-  const updateTheme = () => {
+  const updateTheme = (): void => {
     const colorTheme = vscode.window.activeColorTheme.kind;
     const isDark =
       colorTheme === vscode.ColorThemeKind.Dark ||

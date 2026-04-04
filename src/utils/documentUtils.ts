@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2023 Datalayer, Inc.
+ * Copyright (c) 2021-2025 Datalayer, Inc.
  *
  * MIT License
  */
@@ -10,8 +10,9 @@
  * @module utils/documentUtils
  */
 
-import type { Document } from "../models/spaceItem";
 import { ItemTypes } from "@datalayer/core/lib/client/constants";
+
+import type { Document } from "../models/spaceItem";
 
 /**
  * Document type detection results.

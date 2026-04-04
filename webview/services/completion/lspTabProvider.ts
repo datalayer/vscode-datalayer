@@ -1,5 +1,6 @@
 /*
- * Copyright (c) 2025 Datalayer, Inc.
+ * Copyright (c) 2021-2025 Datalayer, Inc.
+ *
  * MIT License
  */
 
@@ -14,12 +15,45 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { CompletionHandler } from "@jupyterlab/completer";
-import { vsCodeAPI, MessageHandler, Disposable } from "../messageHandler";
+
+import { Disposable, MessageHandler, vsCodeAPI } from "../messageHandler";
 
 /**
  * Cell language type.
  */
 type CellLanguage = "python" | "markdown" | "unknown";
+
+/**
+ * Mapping from VS Code CompletionItemKind enum values to JupyterLab completion type strings.
+ * @see https://code.visualstudio.com/api/references/vscode-api#CompletionItemKind
+ */
+const COMPLETION_KIND_MAP: Record<number, string> = {
+  0: "text",
+  1: "method",
+  2: "function",
+  3: "constructor",
+  4: "field",
+  5: "variable",
+  6: "class",
+  7: "interface",
+  8: "module",
+  9: "property",
+  10: "unit",
+  11: "value",
+  12: "enum",
+  13: "keyword",
+  14: "snippet",
+  15: "color",
+  16: "file",
+  17: "reference",
+  18: "folder",
+  19: "enum-member",
+  20: "constant",
+  21: "struct",
+  22: "event",
+  23: "operator",
+  24: "type-parameter",
+};
 
 /**
  * LSP Tab completion provider for notebook cells.
@@ -281,60 +315,7 @@ export class LSPTabCompletionProvider {
 
     // VS Code CompletionItemKind enum values
     // https://code.visualstudio.com/api/references/vscode-api#CompletionItemKind
-    switch (kind) {
-      case 0: // Text
-        return "text";
-      case 1: // Method
-        return "method";
-      case 2: // Function
-        return "function";
-      case 3: // Constructor
-        return "constructor";
-      case 4: // Field
-        return "field";
-      case 5: // Variable
-        return "variable";
-      case 6: // Class
-        return "class";
-      case 7: // Interface
-        return "interface";
-      case 8: // Module
-        return "module";
-      case 9: // Property
-        return "property";
-      case 10: // Unit
-        return "unit";
-      case 11: // Value
-        return "value";
-      case 12: // Enum
-        return "enum";
-      case 13: // Keyword
-        return "keyword";
-      case 14: // Snippet
-        return "snippet";
-      case 15: // Color
-        return "color";
-      case 16: // File
-        return "file";
-      case 17: // Reference
-        return "reference";
-      case 18: // Folder
-        return "folder";
-      case 19: // EnumMember
-        return "enum-member";
-      case 20: // Constant
-        return "constant";
-      case 21: // Struct
-        return "struct";
-      case 22: // Event
-        return "event";
-      case 23: // Operator
-        return "operator";
-      case 24: // TypeParameter
-        return "type-parameter";
-      default:
-        return "text";
-    }
+    return COMPLETION_KIND_MAP[kind] ?? "text";
   }
 
   /**

@@ -14,9 +14,9 @@
  * @module tools/utils/runtimeExecutor
  */
 
-import { ServerConnection, KernelManager, Kernel } from "@jupyterlab/services";
 import type { RuntimeDTO } from "@datalayer/core/lib/models/RuntimeDTO";
 import type { IOutput } from "@jupyterlab/nbformat";
+import { Kernel, KernelManager, ServerConnection } from "@jupyterlab/services";
 
 // KernelExecutor will be dynamically imported to avoid loading React at extension startup
 
@@ -58,9 +58,11 @@ export async function executeOnRuntime(
   let kernelManager: KernelManager | undefined;
 
   try {
+    // eslint-disable-next-line no-console
     console.log(
       `[runtimeExecutor] Executing code on runtime: ${runtime.givenName}`,
     );
+    // eslint-disable-next-line no-console
     console.log(`[runtimeExecutor] Runtime ingress: ${runtime.ingress}`);
 
     // Step 1: Create kernel connection
@@ -68,6 +70,7 @@ export async function executeOnRuntime(
     kernelConnection = connection;
     kernelManager = manager;
 
+    // eslint-disable-next-line no-console
     console.log(`[runtimeExecutor] Kernel connected: ${kernelConnection.id}`);
 
     // Step 2: Dynamically import KernelExecutor to avoid loading React at extension startup
@@ -79,6 +82,7 @@ export async function executeOnRuntime(
       suppressCodeExecutionErrors: true, // Don't throw on execution errors
     });
 
+    // eslint-disable-next-line no-console
     console.log(`[runtimeExecutor] Executing code...`);
 
     // Start execution with 30 second timeout
@@ -98,6 +102,7 @@ export async function executeOnRuntime(
     // Wait for execution to complete
     await executor.done;
 
+    // eslint-disable-next-line no-console
     console.log(
       `[runtimeExecutor] Execution complete, ${executor.outputs.length} outputs`,
     );
@@ -124,6 +129,7 @@ export async function executeOnRuntime(
     // Clean up: dispose kernel connection and manager
     if (kernelConnection) {
       try {
+        // eslint-disable-next-line no-console
         console.log(
           `[runtimeExecutor] Disposing kernel connection: ${kernelConnection.id}`,
         );
@@ -171,6 +177,7 @@ async function createKernelConnection(runtime: RuntimeDTO): Promise<{
   connection: Kernel.IKernelConnection;
   manager: KernelManager;
 }> {
+  // eslint-disable-next-line no-console
   console.log(
     `[runtimeExecutor] Creating kernel connection to runtime: ${runtime.givenName}`,
   );
@@ -180,7 +187,9 @@ async function createKernelConnection(runtime: RuntimeDTO): Promise<{
   const wsUrl = runtime.ingress.replace(/^http/, "ws");
   const token = runtime.token;
 
+  // eslint-disable-next-line no-console
   console.log(`[runtimeExecutor] Base URL: ${baseUrl}`);
+  // eslint-disable-next-line no-console
   console.log(`[runtimeExecutor] WebSocket URL: ${wsUrl}`);
 
   const serverSettings = ServerConnection.makeSettings({
@@ -195,11 +204,13 @@ async function createKernelConnection(runtime: RuntimeDTO): Promise<{
 
   try {
     // Step 3: Refresh kernel list
+    // eslint-disable-next-line no-console
     console.log("[runtimeExecutor] Refreshing kernel list...");
     await kernelManager.refreshRunning();
 
     // Step 4: Try to connect to existing default kernel
     const runningKernels = Array.from(kernelManager.running());
+    // eslint-disable-next-line no-console
     console.log(
       `[runtimeExecutor] Found ${runningKernels.length} running kernel(s)`,
     );
@@ -207,6 +218,7 @@ async function createKernelConnection(runtime: RuntimeDTO): Promise<{
     if (runningKernels.length > 0) {
       // Use the first available kernel (typically the default Python kernel)
       const kernelModel = runningKernels[0];
+      // eslint-disable-next-line no-console
       console.log(
         `[runtimeExecutor] Connecting to existing kernel: ${kernelModel.id} (${kernelModel.name})`,
       );
@@ -216,11 +228,13 @@ async function createKernelConnection(runtime: RuntimeDTO): Promise<{
     }
 
     // Step 5: No kernel exists, start a new Python kernel
+    // eslint-disable-next-line no-console
     console.log(
       "[runtimeExecutor] No running kernels, starting new Python kernel...",
     );
 
     const connection = await kernelManager.startNew({ name: "python3" });
+    // eslint-disable-next-line no-console
     console.log(`[runtimeExecutor] Started new kernel: ${connection.id}`);
 
     return { connection, manager: kernelManager };

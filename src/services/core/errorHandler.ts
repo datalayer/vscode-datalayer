@@ -12,12 +12,13 @@
  */
 
 import * as vscode from "vscode";
-import type { ILogger } from "../interfaces/ILogger";
+
+import { type ErrorInfo, extractErrorInfo } from "../../types/errors";
 import type {
-  IErrorHandler,
   ErrorHandlerOptions,
+  IErrorHandler,
 } from "../interfaces/IErrorHandler";
-import { extractErrorInfo, type ErrorInfo } from "../../types/errors";
+import type { ILogger } from "../interfaces/ILogger";
 
 /**
  * Centralized error handler service.

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2023 Datalayer, Inc.
+ * Copyright (c) 2021-2025 Datalayer, Inc.
  *
  * MIT License
  */
@@ -14,8 +14,9 @@
  */
 
 import * as vscode from "vscode";
-import { Disposable } from "../utils/dispose";
+
 import { DocumentBridge } from "../services/bridges/documentBridge";
+import { Disposable } from "../utils/dispose";
 
 /**
  * Represents an edit operation performed on a notebook document.
@@ -121,12 +122,12 @@ export class NotebookDocument
         // Try reading from cached file
         try {
           return new Uint8Array(await vscode.workspace.fs.readFile(uri));
-        } catch (readError) {
+        } catch (_readError) {
           // Cache miss - this is expected after VS Code restart if temp files were cleaned
           // Return empty notebook structure - collaboration will sync the real content
           return NotebookDocument.getEmptyNotebook();
         }
-      } catch (error) {
+      } catch (_error) {
         // Extension not ready or other error
         return NotebookDocument.getEmptyNotebook();
       }
@@ -247,7 +248,7 @@ export class NotebookDocument
    *
    * @returns The VS Code URI for this notebook document.
    */
-  public get uri() {
+  public get uri(): vscode.Uri {
     return this._uri;
   }
 
@@ -277,7 +278,7 @@ export class NotebookDocument
    * @param edit - The edit operation to apply.
    *
    */
-  makeEdit(edit: NotebookEdit) {
+  makeEdit(edit: NotebookEdit): void {
     // Skip dirty state tracking for collaborative Datalayer notebooks
     if (this.uri.scheme === "datalayer") {
       return;

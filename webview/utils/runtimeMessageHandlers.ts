@@ -12,6 +12,7 @@
  */
 
 import type { RuntimeJSON } from "@datalayer/core/lib/client";
+
 import type {
   KernelSelectedMessage,
   KernelStartingMessage,
@@ -172,11 +173,35 @@ export function handleSetRuntime(
  * @returns Object with handler methods for each runtime message type.
  *
  */
+/** Handler methods returned by createRuntimeMessageHandlers. */
+export interface RuntimeMessageHandlers {
+  /** Handles kernel-starting messages by setting the initialization flag. */
+  onKernelStarting: (message: KernelStartingMessage) => void;
+  /** Handles kernel-selected and runtime-selected messages to connect a runtime. */
+  onRuntimeSelected: (
+    message: KernelSelectedMessage | RuntimeSelectedMessage,
+  ) => void;
+  /** Clears the active runtime when it is terminated. */
+  onRuntimeTerminated: () => void;
+  /** Clears the active runtime when it expires. */
+  onRuntimeExpired: () => void;
+  /** Sets the active runtime from an explicit set-runtime message. */
+  onSetRuntime: (message: SetRuntimeMessage) => void;
+}
+
+/**
+ * Creates a set of message handlers for runtime lifecycle events shared by notebook and lexical editors.
+ * @param selectRuntime - Callback to update the selected runtime in the component.
+ * @param setKernelInitializing - Callback to toggle the kernel initialization spinner.
+ * @param updateStore - Optional callback to update the Zustand store with runtime changes.
+ *
+ * @returns Handler methods for each runtime message type.
+ */
 export function createRuntimeMessageHandlers(
   selectRuntime: RuntimeSelectCallback,
   setKernelInitializing: KernelInitializingCallback,
   updateStore?: RuntimeSelectCallback,
-) {
+): RuntimeMessageHandlers {
   return {
     /**
      * Delegates kernel-starting messages to set the initialization flag.

@@ -26,7 +26,7 @@ require("os");
 // It has os.platform() calls that will fail if os isn't loaded
 try {
   require("prebuild-install");
-} catch (e) {
+} catch (_e) {
   // Optional dependency, ignore if not found
 }
 
@@ -34,7 +34,7 @@ try {
 // Imported by websocketKernelClient.ts and loroWebSocketAdapter.ts
 try {
   require("ws");
-} catch (e) {
+} catch (_e) {
   // Will fail later if actually needed
 }
 

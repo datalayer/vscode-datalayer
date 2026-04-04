@@ -11,8 +11,9 @@
  * @module commands/agui
  */
 
-import * as vscode from "vscode";
 import * as path from "path";
+import * as vscode from "vscode";
+
 import { ServiceLoggers } from "../services/logging/loggers";
 
 /**

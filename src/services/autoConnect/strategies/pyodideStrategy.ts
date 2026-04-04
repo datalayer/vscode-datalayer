@@ -14,9 +14,11 @@
  */
 
 import type { RuntimeDTO } from "@datalayer/core/lib/models/RuntimeDTO";
+
+import { ServiceLoggers } from "../../logging/loggers";
 import type {
-  AutoConnectStrategy,
   AutoConnectContext,
+  AutoConnectStrategy,
 } from "../autoConnectService";
 
 /**
@@ -39,7 +41,9 @@ export class PyodideStrategy implements AutoConnectStrategy {
    * @returns Always null since Pyodide is not a cloud runtime.
    */
   async tryConnect(_context: AutoConnectContext): Promise<RuntimeDTO | null> {
-    console.log("[PyodideStrategy] Pyodide selected as auto-connect strategy");
+    ServiceLoggers.runtime.debug(
+      "[PyodideStrategy] Pyodide selected as auto-connect strategy",
+    );
 
     // Pyodide is not a cloud runtime, so we return null
     // The providers will detect this strategy and handle Pyodide specially

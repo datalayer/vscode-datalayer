@@ -34,7 +34,7 @@
  */
 
 import { Kernel, ServerConnection } from "@jupyterlab/services";
-import { Signal, ISignal } from "@lumino/signaling";
+import { ISignal, Signal } from "@lumino/signaling";
 
 /**
  * Type discriminator for kernel manager implementations.

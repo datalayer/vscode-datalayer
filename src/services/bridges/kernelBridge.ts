@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2023 Datalayer, Inc.
+ * Copyright (c) 2021-2025 Datalayer, Inc.
  *
  * MIT License
  */
@@ -11,13 +11,15 @@
  * @module services/kernelBridge
  */
 
-import * as vscode from "vscode";
 import type { DatalayerClient } from "@datalayer/core/lib/client";
 import type { RuntimeDTO } from "@datalayer/core/lib/models/RuntimeDTO";
 import type { RuntimeJSON } from "@datalayer/core/lib/models/RuntimeDTO";
+import * as vscode from "vscode";
+
 import { DatalayerAuthProvider } from "../core/authProvider";
 import { LocalKernelClient } from "../kernel/localKernelClient";
 import type { NativeKernelInfo } from "../kernel/nativeKernelIntegration";
+import { ServiceLoggers } from "../logging/loggers";
 
 /**
  * Extended runtime interface for webview communication.
@@ -317,7 +319,7 @@ export class KernelBridge implements vscode.Disposable {
     // Check if a kernel client already exists for this kernel ID
     const existingClient = this._localKernels.get(kernelInfo.id);
     if (existingClient) {
-      console.log(
+      ServiceLoggers.runtime.debug(
         `[KernelBridge] Disposing existing kernel client for ${kernelInfo.id}`,
       );
       existingClient.dispose();
@@ -605,7 +607,7 @@ export class KernelBridge implements vscode.Disposable {
       return;
     }
 
-    console.log(
+    ServiceLoggers.runtime.debug(
       `[KernelBridge] Kernel ready for ${key}, sending kernel-selected message`,
     );
 

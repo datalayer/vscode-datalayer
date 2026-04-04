@@ -1,5 +1,11 @@
-import * as vscode from "vscode";
+/*
+ * Copyright (c) 2021-2025 Datalayer, Inc.
+ *
+ * MIT License
+ */
 import * as path from "path";
+import * as vscode from "vscode";
+
 import { getActiveCustomEditorUri } from "../../utils/activeDocument";
 
 /**

@@ -12,16 +12,16 @@
  */
 
 import {
+  Kernel,
   ServerConnection,
   ServiceManager,
-  Kernel,
   Session,
 } from "@jupyterlab/services";
-import { Signal, ISignal } from "@lumino/signaling";
+import { ISignal, Signal } from "@lumino/signaling";
 
+import { BaseKernelManager, BaseSessionManager } from "./base";
 // Import inline Pyodide kernel that uses Blob URL for Web Worker
 import { PyodideInlineKernel } from "./pyodideInlineKernel";
-import { BaseKernelManager, BaseSessionManager } from "./base";
 
 /**
  * Minimal KernelManager that only supports starting Pyodide kernels.

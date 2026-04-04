@@ -11,6 +11,7 @@
  * @module lexical/lexicalWebview
  */
 
+import { ErrorBoundary } from "../components/ErrorBoundary";
 import "../styles/collapsible-vscode.css";
 import "../styles/vscode-primer-overrides.css";
 
@@ -577,7 +578,11 @@ const container = document.getElementById("root");
 if (container) {
   try {
     const root = ReactDOM.createRoot(container);
-    root.render(<LexicalWebview />);
+    root.render(
+      <ErrorBoundary editorName="Lexical Editor">
+        <LexicalWebview />
+      </ErrorBoundary>,
+    );
   } catch (error) {
     console.error(
       "[LexicalWebview] Failed to create/render React root:",

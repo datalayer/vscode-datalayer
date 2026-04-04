@@ -11,10 +11,12 @@
  * @module services/datalayerClientLogger
  */
 
-import * as vscode from "vscode";
 import type { ClientHandlers } from "@datalayer/core/lib/client";
-import { ServiceLoggers } from "./loggers";
+import * as vscode from "vscode";
+
 import { promptAndLogin } from "../../ui/dialogs/authDialog";
+import type { ILogger } from "../interfaces/ILogger";
+import { ServiceLoggers } from "./loggers";
 
 /**
  * Context information for a single Datalayer operation.
@@ -177,7 +179,52 @@ export class DatalayerClientOperationTracker {
    *
    * @returns Appropriate category-specific logging handler.
    */
-  private static getLoggerForMethod(methodName: string) {
+  /**
+   * Keyword-to-logger-category mapping for routing Datalayer methods.
+   * Each entry maps a keyword (checked via String.includes) to the logger category name.
+   */
+  private static readonly METHOD_CATEGORY_RULES: Array<{
+    keywords: string[];
+    category: "auth" | "runtime" | "spacer" | "network";
+  }> = [
+    {
+      keywords: ["whoami", "login", "logout", "getCredits"],
+      category: "auth",
+    },
+    {
+      keywords: [
+        "Runtime",
+        "Environment",
+        "Snapshot",
+        "ensureRuntime",
+        "createRuntime",
+      ],
+      category: "runtime",
+    },
+    {
+      keywords: [
+        "Space",
+        "Notebook",
+        "Lexical",
+        "Item",
+        "getSpaces",
+        "createNotebook",
+      ],
+      category: "spacer",
+    },
+    {
+      keywords: ["Health", "fetch", "request", "check"],
+      category: "network",
+    },
+  ];
+
+  /**
+   * Selects the appropriate category-specific logger based on the Datalayer method name.
+   * @param methodName - Name of the Datalayer client method to find a logger for.
+   *
+   * @returns The logger instance matching the method's category, or the default Datalayer logger.
+   */
+  private static getLoggerForMethod(methodName: string): ILogger {
     // If ServiceLoggers not initialized, return no-op logger
     if (!ServiceLoggers.isInitialized()) {
       return {
@@ -190,47 +237,16 @@ export class DatalayerClientOperationTracker {
       };
     }
 
-    // Authentication methods
-    if (
-      methodName.includes("whoami") ||
-      methodName.includes("login") ||
-      methodName.includes("logout") ||
-      methodName.includes("getCredits")
-    ) {
-      return ServiceLoggers.datalayerClientAuth;
-    }
-
-    // Runtime management methods
-    if (
-      methodName.includes("Runtime") ||
-      methodName.includes("Environment") ||
-      methodName.includes("Snapshot") ||
-      methodName.includes("ensureRuntime") ||
-      methodName.includes("createRuntime")
-    ) {
-      return ServiceLoggers.datalayerClientRuntime;
-    }
-
-    // Spacer/document methods
-    if (
-      methodName.includes("Space") ||
-      methodName.includes("Notebook") ||
-      methodName.includes("Lexical") ||
-      methodName.includes("Item") ||
-      methodName.includes("getSpaces") ||
-      methodName.includes("createNotebook")
-    ) {
-      return ServiceLoggers.datalayerClientSpacer;
-    }
-
-    // Network/health methods
-    if (
-      methodName.includes("Health") ||
-      methodName.includes("fetch") ||
-      methodName.includes("request") ||
-      methodName.includes("check")
-    ) {
-      return ServiceLoggers.datalayerClientNetwork;
+    for (const rule of DatalayerClientOperationTracker.METHOD_CATEGORY_RULES) {
+      if (rule.keywords.some((kw) => methodName.includes(kw))) {
+        const loggerMap = {
+          auth: ServiceLoggers.datalayerClientAuth,
+          runtime: ServiceLoggers.datalayerClientRuntime,
+          spacer: ServiceLoggers.datalayerClientSpacer,
+          network: ServiceLoggers.datalayerClientNetwork,
+        };
+        return loggerMap[rule.category];
+      }
     }
 
     // Default to main DatalayerClient logger
@@ -330,14 +346,69 @@ export class DatalayerClientOperationTracker {
   }
 
   /**
-   * Handle Datalayer errors with smart categorization and user-friendly responses.
-   * @param methodName - Name of the Datalayer method that failed.
-   * @param error - Error object thrown by the method.
-   * @param logger - Logger instance for error reporting.
-   * @param logger.info - Log informational messages.
-   * @param logger.warn - Log warning messages.
-   * @param logger.error - Log error messages.
-   * @param logger.debug - Log debug messages.
+   * Checks whether the error message indicates an authentication failure.
+   * @param errorMessage - Lowercased error message string to inspect.
+   *
+   * @returns True if the message matches known authentication error patterns.
+   */
+  private static isAuthError(errorMessage: string): boolean {
+    return (
+      errorMessage.includes("not authenticated") ||
+      errorMessage.includes("401") ||
+      errorMessage.includes("unauthorized") ||
+      errorMessage.includes("invalid token")
+    );
+  }
+
+  /**
+   * Checks whether the error indicates rate limiting.
+   * @param errorObj - The structured error object from the failed request.
+   * @param errorObj.message - Error description from the server response.
+   * @param errorObj.status - HTTP status code from the server response.
+   * @param errorMessage - Lowercased error message string to inspect.
+   *
+   * @returns True if the error matches rate-limit patterns such as HTTP 429.
+   */
+  private static isRateLimitError(
+    errorObj: { message?: string; status?: number },
+    errorMessage: string,
+  ): boolean {
+    return (
+      errorObj?.status === 429 ||
+      errorMessage.includes("rate limit") ||
+      errorMessage.includes("too many requests")
+    );
+  }
+
+  /**
+   * Checks whether the error indicates a server-side failure (5xx).
+   * @param errorObj - The structured error object from the failed request.
+   * @param errorObj.message - Error description from the server response.
+   * @param errorObj.status - HTTP status code from the server response.
+   * @param errorMessage - Lowercased error message string to inspect.
+   *
+   * @returns True if the error matches server-side failure patterns such as 5xx status codes.
+   */
+  private static isServerError(
+    errorObj: { message?: string; status?: number },
+    errorMessage: string,
+  ): boolean {
+    return (
+      (errorObj?.status !== undefined && errorObj.status >= 500) ||
+      errorMessage.includes("service unavailable") ||
+      errorMessage.includes("internal server error")
+    );
+  }
+
+  /**
+   * Handles Datalayer errors with smart categorization and user-friendly responses.
+   * @param methodName - Name of the Datalayer client method that failed.
+   * @param error - The error thrown during method execution.
+   * @param logger - Logger with level-specific methods for reporting the categorized error.
+   * @param logger.info - Logs informational messages.
+   * @param logger.warn - Logs warning-level messages with optional context.
+   * @param logger.error - Logs error-level messages.
+   * @param logger.debug - Logs debug-level messages with optional context.
    */
   private static async handleDatalayerError(
     methodName: string,
@@ -350,21 +421,14 @@ export class DatalayerClientOperationTracker {
     },
   ): Promise<void> {
     const errorObj = error as { message?: string; status?: number };
-    const errorMessage = errorObj?.message || "Unknown error";
+    const errorMessage = (errorObj?.message || "Unknown error").toLowerCase();
 
-    // Authentication errors - don't show error immediately, let auth system handle
-    if (
-      errorMessage.includes("Not authenticated") ||
-      errorMessage.includes("401") ||
-      errorMessage.includes("Unauthorized") ||
-      errorMessage.includes("Invalid token")
-    ) {
+    if (DatalayerClientOperationTracker.isAuthError(errorMessage)) {
       logger.info("Authentication required, will be handled by auth system");
       await promptAndLogin("DatalayerClient Operation");
       return;
     }
 
-    // Network errors - show user-friendly message with retry option
     if (DatalayerClientOperationTracker.isNetworkError(error)) {
       logger.warn("Network connectivity issue detected");
       vscode.window
@@ -375,17 +439,13 @@ export class DatalayerClientOperationTracker {
         .then((selection) => {
           if (selection === "Retry") {
             logger.info("User requested retry after network error");
-            // Could trigger retry logic here if implemented
           }
         });
       return;
     }
 
-    // Rate limiting
     if (
-      errorObj?.status === 429 ||
-      errorMessage.includes("rate limit") ||
-      errorMessage.includes("Too Many Requests")
+      DatalayerClientOperationTracker.isRateLimitError(errorObj, errorMessage)
     ) {
       logger.warn("Rate limit encountered");
       vscode.window.showWarningMessage(
@@ -394,12 +454,7 @@ export class DatalayerClientOperationTracker {
       return;
     }
 
-    // Service unavailable - show informative message
-    if (
-      (errorObj?.status !== undefined && errorObj.status >= 500) ||
-      errorMessage.includes("Service Unavailable") ||
-      errorMessage.includes("Internal Server Error")
-    ) {
+    if (DatalayerClientOperationTracker.isServerError(errorObj, errorMessage)) {
       logger.error("Service appears to be down");
       vscode.window.showErrorMessage(
         "Datalayer service is temporarily unavailable. Please try again later.",
@@ -407,18 +462,15 @@ export class DatalayerClientOperationTracker {
       return;
     }
 
-    // Client errors (4xx) - usually configuration or request issues
     if (
       errorObj?.status !== undefined &&
       errorObj.status >= 400 &&
       errorObj.status < 500
     ) {
       logger.warn(`Client error encountered: ${errorObj.status}`);
-      // Don't show to user unless it's a user-initiated action
       return;
     }
 
-    // Generic error - only log, don't show to user unless it's critical
     logger.debug("Generic Datalayer error handled", {
       method: methodName,
       error: errorMessage,

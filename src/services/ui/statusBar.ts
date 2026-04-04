@@ -15,6 +15,7 @@
  */
 
 import * as vscode from "vscode";
+
 import { DatalayerAuthProvider } from "../core/authProvider";
 
 /**

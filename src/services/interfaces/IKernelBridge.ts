@@ -11,10 +11,11 @@
  * @module services/interfaces/IKernelBridge
  */
 
-import * as vscode from "vscode";
 import type { RuntimeDTO } from "@datalayer/core/lib/models/RuntimeDTO";
-import type { NativeKernelInfo } from "../kernel/nativeKernelIntegration";
+import * as vscode from "vscode";
+
 import type { LocalKernelClient } from "../kernel/localKernelClient";
+import type { NativeKernelInfo } from "../kernel/nativeKernelIntegration";
 
 /**
  * Kernel bridge interface for managing kernel connections.

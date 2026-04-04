@@ -11,6 +11,7 @@
  * @module notebook/NotebookEditor
  */
 
+import { ErrorBoundary } from "../components/ErrorBoundary";
 import React, {
   useContext,
   useEffect,
@@ -1253,5 +1254,9 @@ document.addEventListener("DOMContentLoaded", () => {
   const root = createRoot(
     document.getElementById("notebook-editor") ?? document.body,
   );
-  root.render(<NotebookEditor />);
+  root.render(
+    <ErrorBoundary editorName="Notebook Editor">
+      <NotebookEditor />
+    </ErrorBoundary>,
+  );
 });

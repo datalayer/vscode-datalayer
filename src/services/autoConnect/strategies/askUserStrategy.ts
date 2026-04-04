@@ -14,11 +14,13 @@
  */
 
 import type { RuntimeDTO } from "@datalayer/core/lib/models/RuntimeDTO";
-import type {
-  AutoConnectStrategy,
-  AutoConnectContext,
-} from "../autoConnectService";
+
 import { selectDatalayerRuntime } from "../../../ui/dialogs/runtimeSelector";
+import { ServiceLoggers } from "../../logging/loggers";
+import type {
+  AutoConnectContext,
+  AutoConnectStrategy,
+} from "../autoConnectService";
 
 /**
  * Strategy that asks the user to select a runtime via Quick Pick.
@@ -34,7 +36,7 @@ export class AskUserStrategy implements AutoConnectStrategy {
    * @returns The user-selected runtime, or null if cancelled.
    */
   async tryConnect(context: AutoConnectContext): Promise<RuntimeDTO | null> {
-    console.log(
+    ServiceLoggers.runtime.debug(
       `[AskUserStrategy] Showing runtime selector for ${context.documentUri.fsPath}`,
     );
 
@@ -45,11 +47,15 @@ export class AskUserStrategy implements AutoConnectStrategy {
     );
 
     if (runtime) {
-      console.log(`[AskUserStrategy] User selected runtime: ${runtime.uid}`);
+      ServiceLoggers.runtime.debug(
+        `[AskUserStrategy] User selected runtime: ${runtime.uid}`,
+      );
       return runtime;
     }
 
-    console.log("[AskUserStrategy] User cancelled runtime selection");
+    ServiceLoggers.runtime.debug(
+      "[AskUserStrategy] User cancelled runtime selection",
+    );
     return null;
   }
 }

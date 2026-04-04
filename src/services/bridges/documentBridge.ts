@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2023 Datalayer, Inc.
+ * Copyright (c) 2021-2025 Datalayer, Inc.
  *
  * MIT License
  */
@@ -11,16 +11,17 @@
  * @module services/documentBridge
  */
 
-import * as vscode from "vscode";
 import * as fs from "fs";
 import * as path from "path";
+import * as vscode from "vscode";
 // CRITICAL: Use require() for os to ensure it uses the cached version from preload.ts
 // ES6 imports may execute before preload, causing "Cannot read properties of undefined (reading 'platform')"
 const os = require("os");
-import { Document } from "../../models/spaceItem";
-import { getServiceContainer } from "../../extension";
 import type { DatalayerClient } from "@datalayer/core/lib/client";
 import type { RuntimeDTO } from "@datalayer/core/lib/models/RuntimeDTO";
+
+import { getServiceContainer } from "../../extension";
+import { Document } from "../../models/spaceItem";
 import { DatalayerFileSystemProvider } from "../../providers/documentsFileSystemProvider";
 import { detectDocumentType } from "../../utils/documentUtils";
 
@@ -105,6 +106,102 @@ async function waitForExtensionReady(timeout = 30000): Promise<void> {
         ),
       ]);
     },
+  );
+}
+
+/**
+ * Writes document content to a local file. Notebooks and lexical docs get empty scaffolds
+ * (content arrives via collaboration). Other types fetch and write actual content.
+ * @param document - The Datalayer document model.
+ * @param localPath - Local filesystem path to write to.
+ * @param isNotebook - Whether the document is a Jupyter notebook.
+ * @param isLexical - Whether the document is a Lexical document.
+ */
+async function writeDocumentContent(
+  document: Document,
+  localPath: string,
+  isNotebook: boolean,
+  isLexical: boolean,
+): Promise<void> {
+  if (isNotebook) {
+    const emptyNotebook = {
+      cells: [],
+      metadata: {},
+      nbformat: 4,
+      nbformat_minor: 5,
+    };
+    fs.writeFileSync(localPath, JSON.stringify(emptyNotebook, null, 2));
+    return;
+  }
+
+  if (isLexical) {
+    const emptyLexical = {
+      root: {
+        children: [
+          {
+            children: [],
+            direction: null,
+            format: "",
+            indent: 0,
+            type: "paragraph",
+            version: 1,
+          },
+        ],
+        direction: null,
+        format: "",
+        indent: 0,
+        type: "root",
+        version: 1,
+      },
+    };
+    fs.writeFileSync(localPath, JSON.stringify(emptyLexical, null, 2));
+    return;
+  }
+
+  // Other document types - fetch content with retries
+  const content = await fetchDocumentContentWithRetries(document);
+  if (typeof content === "string") {
+    fs.writeFileSync(localPath, content);
+  } else {
+    fs.writeFileSync(localPath, JSON.stringify(content, null, 2));
+  }
+}
+
+/**
+ * Fetches document content with up to 3 retries.
+ * @param document - The Datalayer document model.
+ *
+ * @returns The fetched document content as a string or parsed JSON object.
+ *
+ * @throws Error if content cannot be fetched after retries.
+ */
+async function fetchDocumentContentWithRetries(
+  document: Document,
+): Promise<unknown> {
+  let content;
+  let retries = 3;
+  let lastError;
+
+  while (retries > 0) {
+    try {
+      content = await document.getContent();
+      if (content !== undefined && content !== null) {
+        return content;
+      }
+    } catch (error) {
+      lastError = error;
+    }
+    retries--;
+    if (retries > 0) {
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+    }
+  }
+
+  throw (
+    lastError ||
+    new Error(
+      `Failed to fetch content for document ${document.uid}: content is ${content}`,
+    )
   );
 }
 
@@ -209,7 +306,7 @@ export class DocumentBridge {
         } catch {
           // Service container not ready yet, will retry
         }
-      } catch (error) {
+      } catch (_error) {
         throw new Error(
           "Extension failed to initialize in time. Please try reopening the document.",
         );
@@ -339,81 +436,8 @@ export class DocumentBridge {
         }
       }
 
-      // For Datalayer notebooks and lexical documents, create an empty file - content will come via collaboration
-      // For local documents, we need to fetch the content
-      if (isNotebook) {
-        // Datalayer notebook - create empty notebook structure
-        // Content will be synced via Y.js collaboration provider
-        const emptyNotebook = {
-          cells: [],
-          metadata: {},
-          nbformat: 4,
-          nbformat_minor: 5,
-        };
-        fs.writeFileSync(localPath, JSON.stringify(emptyNotebook, null, 2));
-      } else if (isLexical) {
-        // Datalayer lexical document - create empty lexical structure
-        // Content will be synced via Loro collaboration provider
-        const emptyLexical = {
-          root: {
-            children: [
-              {
-                children: [],
-                direction: null,
-                format: "",
-                indent: 0,
-                type: "paragraph",
-                version: 1,
-              },
-            ],
-            direction: null,
-            format: "",
-            indent: 0,
-            type: "root",
-            version: 1,
-          },
-        };
-        fs.writeFileSync(localPath, JSON.stringify(emptyLexical, null, 2));
-      } else {
-        // Other document types - fetch content
-        let content;
-        let retries = 3;
-        let lastError;
-
-        while (retries > 0) {
-          try {
-            content = await document.getContent();
-            if (content !== undefined && content !== null) {
-              break; // Success, exit retry loop
-            }
-          } catch (error) {
-            lastError = error;
-          }
-
-          retries--;
-          if (retries > 0) {
-            // Wait 1 second before retrying
-            await new Promise((resolve) => setTimeout(resolve, 1000));
-          }
-        }
-
-        // Process the fetched content
-        if (content === undefined || content === null) {
-          throw (
-            lastError ||
-            new Error(
-              `Failed to fetch content for document ${document.uid}: content is ${content}`,
-            )
-          );
-        }
-
-        // Write to local file
-        if (typeof content === "string") {
-          fs.writeFileSync(localPath, content);
-        } else {
-          fs.writeFileSync(localPath, JSON.stringify(content, null, 2));
-        }
-      }
+      // Write document content to local file
+      await writeDocumentContent(document, localPath, isNotebook, isLexical);
 
       // Verify the file was written successfully and wait a bit for filesystem
       if (!fs.existsSync(localPath)) {
@@ -473,7 +497,7 @@ export class DocumentBridge {
       this.documentMetadata.set(virtualUri.toString(), metadata);
 
       // Persist metadata to storage (fire and forget)
-      this.saveMetadata();
+      void this.saveMetadata();
 
       // Virtual URI created successfully (UID is embedded in path, no query params needed)
       return virtualUri;
@@ -547,7 +571,7 @@ export class DocumentBridge {
       try {
         fs.unlinkSync(metadata.localPath);
         this.documentMetadata.delete(documentId);
-      } catch (error) {}
+      } catch (_error) {}
     }
   }
 
@@ -582,7 +606,7 @@ export class DocumentBridge {
           metadata.runtime = undefined;
           this.documentMetadata.set(documentId, metadata);
         }
-      } catch (error) {
+      } catch (_error) {
         // Clear the invalid cached runtime
         if (metadata) {
           metadata.runtime = undefined;
@@ -634,7 +658,7 @@ export class DocumentBridge {
           if (files.length === 0) {
             fs.rmdirSync(dirPath);
           }
-        } catch (error) {}
+        } catch (_error) {}
       }
     }
 

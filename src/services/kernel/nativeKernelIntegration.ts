@@ -11,8 +11,8 @@
  * @module services/kernel/nativeKernelIntegration
  */
 
+import { Environment, PythonExtension } from "@vscode/python-extension";
 import * as vscode from "vscode";
-import { PythonExtension, Environment } from "@vscode/python-extension";
 
 /**
  * Kernel connection information returned from native pickers.

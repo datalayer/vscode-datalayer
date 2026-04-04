@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2023 Datalayer, Inc.
+ * Copyright (c) 2021-2025 Datalayer, Inc.
  *
  * MIT License
  */
@@ -11,16 +11,17 @@
  * @module utils/runtimeSelector
  */
 
-import * as vscode from "vscode";
 import type { DatalayerClient } from "@datalayer/core/lib/client";
-import type { RuntimeDTO } from "@datalayer/core/lib/models/RuntimeDTO";
 import type { EnvironmentDTO } from "@datalayer/core/lib/models/EnvironmentDTO";
+import type { RuntimeDTO } from "@datalayer/core/lib/models/RuntimeDTO";
 import type { RuntimeSnapshotDTO } from "@datalayer/core/lib/models/RuntimeSnapshotDTO";
-import type { IAuthProvider } from "../../services/interfaces/IAuthProvider";
+import * as vscode from "vscode";
+
 import { EnvironmentCache } from "../../services/cache/environmentCache";
-import { promptAndLogin } from "./authDialog";
-import { generateRuntimeName } from "../../utils/runtimeNameGenerator";
+import type { IAuthProvider } from "../../services/interfaces/IAuthProvider";
 import { formatRelativeTime } from "../../utils/dateFormatter";
+import { generateRuntimeName } from "../../utils/runtimeNameGenerator";
+import { promptAndLogin } from "./authDialog";
 
 /**
  * QuickPick item for runtime selection with optional runtime or environment data.
@@ -51,6 +52,135 @@ export interface RuntimeSelectorOptions {
 }
 
 /**
+ * Formats the start time of a runtime as a relative time string.
+ * @param runtime - Runtime DTO with startedAt getter.
+ *
+ * @returns Formatted string like " - Started 5 minutes ago", or empty string on failure.
+ */
+function formatRuntimeTimeInfo(runtime: RuntimeDTO): string {
+  try {
+    const startTime = runtime.startedAt;
+    if (!startTime) {
+      return "";
+    }
+    const diffMs = Date.now() - startTime.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMins / 60);
+    const diffDays = Math.floor(diffHours / 24);
+
+    if (diffDays > 0) {
+      return ` • Started ${diffDays} day${diffDays > 1 ? "s" : ""} ago`;
+    }
+    if (diffHours > 0) {
+      return ` • Started ${diffHours} hour${diffHours > 1 ? "s" : ""} ago`;
+    }
+    if (diffMins > 0) {
+      return ` • Started ${diffMins} minute${diffMins > 1 ? "s" : ""} ago`;
+    }
+    return ` • Just started`;
+  } catch (_error) {
+    return "";
+  }
+}
+
+/**
+ * Builds QuickPick items from sorted runtimes and environments.
+ * @param runtimes - Available runtimes sorted by start time.
+ * @param environments - Available environments for creating new runtimes.
+ *
+ * @returns Array of QuickPick items for the runtime selector.
+ */
+function buildRuntimeQuickPickItems(
+  runtimes: RuntimeDTO[],
+  environments: EnvironmentDTO[],
+): RuntimeQuickPickItem[] {
+  const items: RuntimeQuickPickItem[] = [];
+
+  if (runtimes.length > 0) {
+    for (const runtime of runtimes) {
+      const runtimeData = runtime.toJSON();
+      const displayName =
+        runtimeData.givenName ??
+        runtimeData.podName ??
+        `Runtime ${runtimeData.uid.slice(0, 8)}`;
+      const env =
+        runtimeData.environmentTitle ??
+        runtimeData.environmentName ??
+        "unknown";
+      const timeInfo = formatRuntimeTimeInfo(runtime);
+
+      items.push({
+        label: `$(play) ${displayName}`,
+        description: env,
+        detail: `Status: ready${timeInfo}`,
+        runtime: runtime,
+      });
+    }
+
+    items.push({
+      label: "Create New Runtime",
+      kind: vscode.QuickPickItemKind.Separator,
+    });
+  }
+
+  for (const env of environments) {
+    const envTitle = env.title ?? env.name ?? "Unknown";
+    items.push({
+      label: `$(add) Create new ${envTitle} Runtime`,
+      description: env.name,
+      detail: env.description ?? `Create a new ${envTitle} runtime`,
+      action: "create",
+      environment: env,
+    });
+  }
+
+  return items;
+}
+
+/**
+ * Loads runtimes and environments from the Datalayer platform with progress indicator.
+ * @param datalayer - Datalayer client instance.
+ * @param authProvider - Authentication provider.
+ * @param hideExistingRuntimes - Whether to skip loading existing runtimes.
+ *
+ * @returns Loaded data or null if cancelled/failed.
+ */
+async function loadRuntimeData(
+  datalayer: DatalayerClient,
+  authProvider: IAuthProvider,
+  hideExistingRuntimes: boolean,
+): Promise<{ runtimes: RuntimeDTO[]; environments: EnvironmentDTO[] } | null> {
+  return vscode.window.withProgress(
+    {
+      location: vscode.ProgressLocation.Notification,
+      title: hideExistingRuntimes
+        ? "Loading Datalayer environments..."
+        : "Loading Datalayer runtimes...",
+      cancellable: true,
+    },
+    async (_progress, token) => {
+      if (token.isCancellationRequested) {
+        return null;
+      }
+      try {
+        const runtimes = hideExistingRuntimes
+          ? []
+          : await datalayer.listRuntimes();
+        const environments =
+          await EnvironmentCache.getInstance().getEnvironments(
+            datalayer,
+            authProvider,
+          );
+        return { runtimes, environments };
+      } catch (error) {
+        vscode.window.showErrorMessage(`Failed to load runtimes: ${error}`);
+        return null;
+      }
+    },
+  );
+}
+
+/**
  * Shows a QuickPick dialog for selecting or creating a Datalayer runtime.
  *
  * @param datalayer - Datalayer instance for API access.
@@ -75,150 +205,31 @@ export async function selectDatalayerRuntime(
     }
   }
 
-  // Load runtimes and environments with progress
-  const loadedData = await vscode.window.withProgress(
-    {
-      location: vscode.ProgressLocation.Notification,
-      title: hideExistingRuntimes
-        ? "Loading Datalayer environments..."
-        : "Loading Datalayer runtimes...",
-      cancellable: true,
-    },
-    async (_progress, token) => {
-      // Check for cancellation
-      if (token.isCancellationRequested) {
-        return null;
-      }
-      try {
-        // Fetch existing runtimes only if we need to show them
-        const runtimes = hideExistingRuntimes
-          ? []
-          : await datalayer.listRuntimes();
-
-        // Get cached environments
-        const environments =
-          await EnvironmentCache.getInstance().getEnvironments(
-            datalayer,
-            authProvider,
-          );
-
-        // Return the loaded data
-        return { runtimes, environments };
-      } catch (error) {
-        vscode.window.showErrorMessage(`Failed to load runtimes: ${error}`);
-        return null;
-      }
-    },
+  const loadedData = await loadRuntimeData(
+    datalayer,
+    authProvider,
+    hideExistingRuntimes,
   );
-
-  // Check if loading was cancelled or failed
   if (!loadedData) {
     return undefined;
   }
 
   const { runtimes, environments } = loadedData;
 
-  // Now build QuickPick items outside of the progress dialog
-  const items: RuntimeQuickPickItem[] = [];
-
-  // Add existing runtimes (include all runtimes, not just "running" or "ready")
-  // The Datalayer returns Runtime models now, not plain objects
-  // Sort runtimes by most recent first using Datalayer getter
+  // Sort runtimes by most recent first
   const validRuntimes = runtimes.sort((a: RuntimeDTO, b: RuntimeDTO) => {
-    const getStartTime = (runtime: RuntimeDTO) => {
+    const getStartTime = (runtime: RuntimeDTO): number => {
       try {
         return runtime.startedAt ? runtime.startedAt.getTime() : 0;
-      } catch (error) {
+      } catch (_error) {
         return 0;
       }
     };
-
-    return getStartTime(b) - getStartTime(a); // Most recent first
+    return getStartTime(b) - getStartTime(a);
   });
 
-  if (validRuntimes.length > 0) {
-    for (const runtime of validRuntimes) {
-      // Use the stable Datalayer interface instead of manual field extraction
-      const runtimeData = runtime.toJSON();
+  const items = buildRuntimeQuickPickItems(validRuntimes, environments);
 
-      // Use Datalayer interface fields directly
-      const displayName =
-        runtimeData.givenName ??
-        runtimeData.podName ??
-        `Runtime ${runtimeData.uid.slice(0, 8)}`;
-      const env =
-        runtimeData.environmentTitle ??
-        runtimeData.environmentName ??
-        "unknown";
-      const status = "ready";
-
-      // Format start time using Runtime model getter
-      let timeInfo = "";
-      try {
-        const startTime = runtime.startedAt;
-        if (startTime) {
-          const now = new Date();
-          const diffMs = now.getTime() - startTime.getTime();
-          const diffMins = Math.floor(diffMs / 60000);
-          const diffHours = Math.floor(diffMins / 60);
-          const diffDays = Math.floor(diffHours / 24);
-
-          if (diffDays > 0) {
-            timeInfo = ` • Started ${diffDays} day${
-              diffDays > 1 ? "s" : ""
-            } ago`;
-          } else if (diffHours > 0) {
-            timeInfo = ` • Started ${diffHours} hour${
-              diffHours > 1 ? "s" : ""
-            } ago`;
-          } else if (diffMins > 0) {
-            timeInfo = ` • Started ${diffMins} minute${
-              diffMins > 1 ? "s" : ""
-            } ago`;
-          } else {
-            timeInfo = ` • Just started`;
-          }
-        }
-      } catch (error) {
-        // Silently handle time formatting errors
-      }
-
-      // Add status indicator icon - all listed runtimes are assumed to be ready/running
-      const statusIcon = "$(play)";
-
-      items.push({
-        label: `${statusIcon} ${displayName}`,
-        description: env,
-        detail: `Status: ${status}${timeInfo}`,
-        runtime: runtime,
-      });
-    }
-
-    // Add separator
-    items.push({
-      label: "Create New Runtime",
-      kind: vscode.QuickPickItemKind.Separator,
-    });
-  }
-
-  // Add create options for each environment
-  for (const env of environments) {
-    // Use the title from the environment to create a descriptive label
-    // e.g., "AI Environment" -> "Create new AI Environment Runtime"
-    // e.g., "Python CPU" -> "Create new Python CPU Runtime"
-    const envTitle = env.title ?? env.name ?? "Unknown";
-    const createLabel = `$(add) Create new ${envTitle} Runtime`;
-
-    items.push({
-      label: createLabel,
-      description: env.name,
-      detail: env.description ?? `Create a new ${envTitle} runtime`,
-      action: "create",
-      environment: env,
-    });
-  }
-
-  // If no items available, show message
   if (
     items.length === 0 ||
     (items.length === 1 && items[0].kind === vscode.QuickPickItemKind.Separator)
@@ -246,7 +257,7 @@ export async function selectDatalayerRuntime(
     quickPick.onDidChangeSelection((selected) => {
       if (selected.length > 0 && selected[0].runtime) {
         // Existing runtime selected - call callback immediately for instant feedback
-        onRuntimeSelected(selected[0].runtime);
+        void onRuntimeSelected(selected[0].runtime);
       }
       // Note: For create actions, callback is called AFTER user accepts all creation options
       // (see below where createRuntime is called)
@@ -273,20 +284,17 @@ export async function selectDatalayerRuntime(
     return undefined;
   }
 
-  // Handle selection
   if (selected.runtime) {
-    // Use the Runtime object directly - no need for manual field extraction
-    const runtime = selected.runtime;
-    return runtime;
-  } else if (selected.action === "create" && selected.environment) {
-    // Create new runtime - spinner callback will be triggered AFTER all dialogs are accepted
-    const result = await createRuntime(
+    return selected.runtime;
+  }
+
+  if (selected.action === "create" && selected.environment) {
+    return createRuntime(
       datalayer,
       selected.environment,
       undefined,
       onRuntimeSelected,
     );
-    return result;
   }
 
   return undefined;
@@ -356,7 +364,7 @@ async function selectSnapshot(
             detail: snapshotData.description || "Saved runtime state",
             snapshotId: snapshotData.uid,
           });
-        } catch (error) {
+        } catch (_error) {
           // Skip malformed snapshots
           continue;
         }
@@ -385,7 +393,7 @@ async function selectSnapshot(
 
     // Return the selected snapshot ID
     return selected.snapshotId;
-  } catch (error) {
+  } catch (_error) {
     // If there's an error building the picker, skip snapshots
     return undefined;
   }
@@ -430,7 +438,7 @@ export async function createRuntime(
         snapshotId = selectedSnapshotId;
       }
       // If no snapshots available, continue with undefined (fresh start)
-    } catch (error) {
+    } catch (_error) {
       // If snapshot fetching fails, continue without snapshots (silent failure)
     }
   }
@@ -487,7 +495,7 @@ export async function createRuntime(
     } else {
       maxMinutes = 1440;
     }
-  } catch (error) {
+  } catch (_error) {
     // If credits API fails, still enforce 24-hour maximum
     maxMinutes = 1440;
   }
@@ -702,7 +710,7 @@ export async function setRuntime(): Promise<string | undefined> {
         url.pathname = url.pathname.replace(/\/?$/, "") + "/api/";
         await fetch(url);
         return null;
-      } catch (reason) {
+      } catch (_reason) {
         return {
           message: "Invalid Jupyter Server URL",
           severity: vscode.InputBoxValidationSeverity.Error,

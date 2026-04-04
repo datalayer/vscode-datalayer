@@ -11,9 +11,10 @@
  * @module services/interfaces/IDocumentBridge
  */
 
-import * as vscode from "vscode";
-import type { Document } from "../../models/spaceItem";
 import type { RuntimeDTO } from "@datalayer/core/lib/models/RuntimeDTO";
+import * as vscode from "vscode";
+
+import type { Document } from "../../models/spaceItem";
 
 /**
  * Metadata for a downloaded document.

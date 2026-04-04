@@ -10,8 +10,9 @@
  * Mirrors the pattern used by notebookStore for consistency.
  */
 
-import { create } from "zustand";
 import type { InlineCompletionConfig } from "@datalayer/jupyter-lexical";
+import type { StoreApi, UseBoundStore } from "zustand";
+import { create } from "zustand";
 
 /**
  * Collaboration configuration from extension
@@ -167,7 +168,7 @@ const initialState = {
  * Creates a new isolated Lexical store instance; each webview should call this to prevent state sharing across editors.
  * @returns A new Zustand store instance for Lexical state management.
  */
-export const createLexicalStore = () =>
+export const createLexicalStore = (): UseBoundStore<StoreApi<LexicalState>> =>
   create<LexicalState>((set) => ({
     ...initialState,
     setContent: (content) => set({ content }),

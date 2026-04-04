@@ -2,257 +2,124 @@
 
 ## Overview
 
-This project uses TypeDoc for generating comprehensive API documentation with coverage reporting. TypeDoc automatically extracts documentation from TypeScript code and JSDoc comments.
-
-## Tools
-
-### TypeDoc with Coverage Plugin
-
-We use `typedoc-plugin-coverage` to track documentation completeness. This provides:
-
-- Coverage percentage metrics
-- SVG badge generation
-- JSON reports for CI integration
-- Validation of missing documentation
-
-### TypeDoc Version
-
-- TypeDoc 0.26.x with TypeScript 5.x support
+This project enforces strict documentation at multiple levels: JSDoc via ESLint, TypeDoc for API docs, README.md per directory, and spell checking. All checks run in CI and pre-commit hooks.
 
 ## Commands
 
 ```bash
-# Generate HTML documentation with coverage
-npm run doc
+# Generate HTML documentation (0 warnings required)
+npm run docs
+
+# Validate documentation coverage
+npm run docs:coverage
+
+# Check README.md exists in every directory
+npm run docs:check-readmes
+
+# Combined check (READMEs + TypeDoc validation)
+npm run docs:check
 
 # Generate Markdown documentation
-npm run doc:markdown
-
-# Check documentation coverage only (validation mode)
-npm run doc:coverage
+npm run docs:markdown
 
 # Watch mode for development
-npm run doc:watch
+npm run docs:watch
+
+# Spell check source files
+npm run check:spelling
 ```
 
-## Coverage Reports
+## JSDoc Requirements
 
-When you run `npm run doc`, the following files are generated:
+All enforced at `error` level via `eslint-plugin-jsdoc`. See `eslint.config.mjs` for full config.
 
-- `docs/coverage.json` - Machine-readable coverage data
-- `docs/coverage.svg` - Coverage badge for README files
+### What Must Be Documented
 
-## Configuration
+- Exported functions, classes, methods, interfaces, and type aliases
+- Every function parameter (`@param`)
+- Every non-void return value (`@returns`)
+- Every `throw` statement (`@throws`)
 
-Documentation settings are in `typedoc.json`:
+### Required Format
 
-- Coverage plugin enabled
-- Validation for missing documentation
-- All public APIs required to be documented
+```typescript
+/**
+ * Connects the webview document to a remote Datalayer runtime kernel.
+ *
+ * @param uri - The document URI identifying which webview to target.
+ * @param runtime - The runtime configuration with ingress URL and auth token.
+ * @returns The kernel connection ID for tracking.
+ * @throws When no webview is registered for the given URI.
+ */
+export function connectWebviewDocument(
+  uri: string,
+  runtime: RuntimeDTO,
+): string {
+```
 
-## CI/CD Integration
+### Rules
 
-The GitHub Actions workflow automatically:
+- Descriptions start with uppercase, end with period
+- `@param` uses hyphen separator: `@param name - Description.`
+- No `{type}` annotations (TypeScript handles types)
+- Don't restate the name: `@param uri - The URI.` is rejected
+- Tags ordered: `@param` -> `@returns` -> `@throws` -> `@see`/`@since`
+- No `@example` tags (internal extension, not public API)
+- No empty `/** */` blocks
+- Constructor `@param` for private params exempt (TypeDoc conflict)
 
-1. Checks documentation coverage on every push
-2. Generates HTML and Markdown documentation
-3. Creates coverage reports
-4. Uploads documentation artifacts
+### Exemptions
 
-## TypeDoc Supported Tags
+Test files (`*.test.ts`, `test/**`) are exempt from: `require-jsdoc`, `require-param`, `require-returns`, `require-throws`, `informative-docs`, `match-description`.
 
-### ✅ Supported Block Tags
+## TypeDoc Configuration
 
-- `@author` - Author information
-- `@category` - Organize documentation into categories
-- `@defaultValue` - Document default values
-- `@deprecated` - Mark deprecated items
-- `@example` - Code examples
-- `@group` - Group related items
-- `@license` - License information
-- `@param` - Parameter documentation
-- `@remarks` - Additional remarks
-- `@returns` - Return value documentation
-- `@see` - Cross-references
-- `@since` - Version information
-- `@summary` - Brief summary
-- `@throws` - Exception documentation
+Settings in `typedoc.json`:
 
-### ✅ Supported Modifier Tags
+- `treatWarningsAsErrors: true` - Warnings fail the build
+- `notDocumented: true` - Undocumented exports flagged
+- `invalidLink: true` - Broken `{@link}` references flagged
+- `excludePrivate: true` - Private members excluded
+- `requiredToBeDocumented`: Class, Function, Enum, Interface, TypeAlias, Variable, Method
 
-- `@abstract` - Mark abstract members
-- `@hidden` - Hide from documentation
-- `@internal` - Mark internal APIs
-- `@private` - Private members
-- `@public` - Public members
-- `@readonly` - Read-only properties
+### Supported Tags
 
-### ✅ Supported Inline Tags
+Use only these tags (others will cause warnings):
 
-- `{@inheritDoc}` - Inherit documentation
-- `{@link}` - Link to other items
-- `{@include}` - Include external content
+- `@param`, `@returns`, `@throws` - Function documentation
+- `@see`, `@since`, `@deprecated` - Cross-references and versioning
+- `@module` - Module-level documentation
+- `@internal` - Exclude from documentation
+- `@remarks` - Additional implementation details
 
-### ❌ Unsupported Tags (Will Cause Warnings)
+Do NOT use: `@class`, `@static`, `@async`, `@extends`, `@constructor`, `@export`, `@description`, `@typedef` - TypeDoc infers these from TypeScript.
 
-- `@class` - TypeDoc infers from TypeScript
-- `@static` - TypeDoc infers from TypeScript
-- `@async` - TypeDoc infers from TypeScript
-- `@implements` - TypeDoc infers from TypeScript
-- `@extends` - TypeDoc infers from TypeScript
-- `@constructor` - TypeDoc infers from TypeScript
-- `@export` - TypeDoc infers from TypeScript
-- `@description` - Write description directly (no tag needed)
-- `@namespace` - TypeDoc uses `@module` instead
-- `@typedef` - Use TypeScript types instead
+## README.md per Directory
 
-## Best Practices
+Every directory under `src/`, `webview/`, and `scripts/` must have a `README.md` documenting:
 
-1. **Function/Method Documentation**:
+- What the directory contains and its purpose
+- Every file with a description of exports, patterns, and key details
+- Subdirectories with brief descriptions
 
-   ````typescript
-   /**
-    * Brief description of the function.
-    * Additional details can go here.
-    *
-    * @param param1 Description of first parameter
-    * @param param2 Description of second parameter
-    * @returns Description of return value
-    * @throws {Error} When something goes wrong
-    * @example
-    * ```typescript
-    * const result = example('test', 42);
-    * ```
-    */
-   export function example(param1: string, param2: number): string {
-     // implementation
-   }
-   ````
+Enforced by `scripts/check-readmes.sh` and included in `npm run check`. Currently 69 directories covered.
 
-2. **Module Documentation**:
+## Spell Checking
 
-   ```typescript
-   /**
-    * @module moduleName
-    * Module description goes here directly.
-    * Can span multiple lines.
-    */
-   ```
+Uses `cspell` with a domain-specific dictionary in `cspell.json`. Run `npm run check:spelling` to check. Add new domain words to the `words` array in `cspell.json`.
 
-3. **Class/Interface Documentation**:
+## CI Integration
 
-   ````typescript
-   /**
-    * Description of the class or interface.
-    * TypeDoc automatically knows this is a class.
-    *
-    * @remarks
-    * Additional implementation details
-    *
-    * @example
-    * ```typescript
-    * const instance = new Example();
-    * ```
-    */
-   export class Example {
-     /**
-      * Property description
-      */
-     public property: string;
-   }
-   ````
+The GitHub Actions Code Quality workflow runs on every PR:
 
-4. **Property Documentation**:
+1. Format check (Prettier)
+2. Lint (ESLint with 17+ JSDoc rules)
+3. Type check (TypeScript strict mode)
+4. README check (every directory)
+5. TypeDoc generation and validation (0 warnings)
+6. Spell check (cspell)
 
-   ```typescript
-   interface Config {
-     /** Host name for the server */
-     host: string;
-     /** Port number (default: 3000) */
-     port?: number;
-     /** Enable debug mode */
-     debug?: boolean;
-   }
-   ```
+## API Documentation
 
-5. **Enum Documentation**:
-   ```typescript
-   /**
-    * Represents different states of the application
-    */
-   enum State {
-     /** Initial state */
-     Idle = "idle",
-     /** Processing state */
-     Running = "running",
-     /** Error state */
-     Error = "error",
-   }
-   ```
-
-## Current Status (Updated January 2025)
-
-### Coverage
-
-✅ **100% Documentation Coverage** - All 466 items are fully documented with TypeDoc JSDoc comments!
-
-### Test Infrastructure Quality
-
-✅ **Complete Type Safety** - All test mocks properly typed with interfaces
-✅ **Zero Lint Warnings** - Eliminated 77 warnings by replacing `any` with `unknown` in test code
-✅ **Zero Type Errors** - Fixed 67 type-check errors in test files
-
-### Validation Results
-
-- **Type Check**: 0 errors (strict TypeScript compilation)
-- **Lint**: 0 errors, 0 warnings (ESLint with @typescript-eslint)
-- **Tests**: 41/41 passing (100% success rate)
-- **Documentation**: 100% coverage of public APIs (466/466 items documented)
-
-### Metrics
-
-- **HTML Documentation**: `docs/index.html`
-- **TypeDoc Warnings**: 462 warnings for undocumented private/internal members (expected and acceptable)
-
-### Key Achievements
-
-- ✅ **100% documentation coverage achieved!**
-- ✅ All public APIs fully documented
-- ✅ All interfaces with property-level documentation
-- ✅ All classes with constructor documentation
-- ✅ Module-level documentation for all files
-- ✅ Removed all unsupported JSDoc tags
-- ✅ Fixed incorrect parameter documentation
-- ✅ Comprehensive inline documentation for complex types
-- ✅ Fixed FileSystemError references (removed 16 warnings)
-- ✅ Added proper JSDoc overrides for FileSystemProvider methods
-- ✅ Configured external symbol mappings for VS Code API types
-- ✅ Reduced warnings from 100+ to just 10 intentional hidden class warnings
-- ✅ Used `@hidden` tag for internal classes to exclude them from documentation
-- ✅ **Complete type safety in test infrastructure** (January 2025)
-- ✅ **Zero tolerance quality standards** - All validation commands pass
-
-### Implementation Notes
-
-1. TypeDoc automatically infers type information from TypeScript
-2. Only use supported JSDoc tags (see list above)
-3. Internal items can be hidden with `@internal` tag
-4. React components document themselves through TypeScript props
-
-### Remaining Warnings Explanation
-
-The 10 remaining warnings are all intentional and expected:
-
-- **Hidden Classes** (10 warnings): Classes and interfaces marked with `@hidden` tag are referenced but intentionally excluded from documentation
-  - `LexicalDocument` - Hidden document type for lexical editor
-  - `NotebookDocument` - Hidden document type for notebook editor
-  - `NotebookToolbarProps` - Hidden React component props
-  - `LexicalEditorProps` - Hidden React component props
-  - `LexicalToolbarProps` - Hidden React component props
-  - `VSCodeColors` - Hidden theme colors interface
-  - `CodeMirrorThemeInjectorProps` - Hidden React component props
-  - `IEnhancedJupyterReactThemeProps` - Hidden React component props
-  - `ThemedLoaderProps` - Hidden React component props
-  - `IColorMapping` - Hidden color mapping interface
-
-These warnings don't affect the documentation quality or coverage. The hidden classes are implementation details not meant for public API documentation. Using `@hidden` instead of `@internal` ensures they are completely excluded from the documentation output.
+- **Generated docs**: `docs/` directory (git-ignored)
+- **Live site**: [vscode-datalayer.netlify.app](https://vscode-datalayer.netlify.app) (auto-deployed)

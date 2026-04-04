@@ -10,8 +10,8 @@
  * Uses notebookStore2 to trigger Lumino widget updates.
  */
 
-import { useEffect } from "react";
 import { notebookStore } from "@datalayer/jupyter-react";
+import { useEffect } from "react";
 
 /**
  * Sets up a ResizeObserver on the notebook container and calls notebook.adapter.panel.update() on resize.
@@ -22,9 +22,9 @@ import { notebookStore } from "@datalayer/jupyter-react";
 export function useNotebookResize(
   notebookId: string,
   containerRef: React.RefObject<HTMLDivElement>,
-) {
+): void {
   useEffect(() => {
-    const updateHeight = () => {
+    const updateHeight = (): void => {
       if (containerRef.current) {
         const rect = containerRef.current.getBoundingClientRect();
         const newHeight = rect.height;

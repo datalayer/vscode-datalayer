@@ -16,8 +16,8 @@
 import type { ToolDefinition } from "@datalayer/jupyter-react";
 
 // Document creation tools
-export * from "./createNotebook";
 export * from "./createLexical";
+export * from "./createNotebook";
 
 // Document access tools
 export * from "./getActiveDocument";
@@ -30,12 +30,12 @@ export * from "./selectKernel";
 export * from "./executeCode";
 
 // Import all definitions for registry
-import { createNotebookTool } from "./createNotebook";
 import { createLexicalTool } from "./createLexical";
+import { createNotebookTool } from "./createNotebook";
+import { executeCodeTool } from "./executeCode";
 import { getActiveDocumentTool } from "./getActiveDocument";
 import { listKernelsTool } from "./listKernels";
 import { selectKernelTool } from "./selectKernel";
-import { executeCodeTool } from "./executeCode";
 
 /**
  * Loads all tool definitions from VS Code-specific and package sources asynchronously.
@@ -44,7 +44,7 @@ import { executeCodeTool } from "./executeCode";
  *
  * @internal
  */
-async function getAllToolDefinitionsAsync() {
+async function getAllToolDefinitionsAsync(): Promise<ToolDefinition[]> {
   // CRITICAL: Preload os module before loading package dependencies
   // Some dependencies (or their transitive dependencies) call os.platform() during module initialization
   // This ensures os is in the require cache before any code tries to use it

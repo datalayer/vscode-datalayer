@@ -14,15 +14,16 @@
  * @see https://code.visualstudio.com/api/extension-guides/tree-view
  */
 
+import type { RuntimeDTO } from "@datalayer/core/lib/models/RuntimeDTO";
+import type { RuntimeSnapshotDTO } from "@datalayer/core/lib/models/RuntimeSnapshotDTO";
 import * as vscode from "vscode";
+
+import { getServiceContainer } from "../extension";
+import type { RuntimesTreeItem } from "../models/runtimesTreeItem";
 import { RuntimeTreeItem } from "../models/runtimeTreeItem";
 import { SnapshotTreeItem } from "../models/snapshotTreeItem";
 import { TreeSectionItem } from "../models/treeSectionItem";
-import type { RuntimesTreeItem } from "../models/runtimesTreeItem";
 import { DatalayerAuthProvider } from "../services/core/authProvider";
-import { getServiceContainer } from "../extension";
-import type { RuntimeDTO } from "@datalayer/core/lib/models/RuntimeDTO";
-import type { RuntimeSnapshotDTO } from "@datalayer/core/lib/models/RuntimeSnapshotDTO";
 
 /**
  * Tree data provider for the Datalayer Runtimes view.
@@ -134,7 +135,7 @@ export class RuntimesTreeProvider implements vscode.TreeDataProvider<RuntimesTre
     try {
       const datalayer = getServiceContainer().datalayer;
       this.runtimesCache = (await datalayer.listRuntimes()) ?? [];
-    } catch (error) {
+    } catch (_error) {
       // Silently fail - tree will be empty
       this.runtimesCache = [];
     }
@@ -166,7 +167,7 @@ export class RuntimesTreeProvider implements vscode.TreeDataProvider<RuntimesTre
         }
         return true;
       });
-    } catch (error) {
+    } catch (_error) {
       // Silently fail - tree will be empty
       this.snapshotsCache = [];
     }

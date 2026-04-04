@@ -19,18 +19,18 @@
  * - `datalayer.showRuntimeStatus` - Displays current runtime status
  */
 
-import * as vscode from "vscode";
-import { getServiceContainer } from "../extension";
-import { SmartDynamicControllerManager } from "../providers/smartDynamicControllerManager";
-import { RuntimesTreeProvider } from "../providers/runtimesTreeProvider";
-import { RuntimeTreeItem } from "../models/runtimeTreeItem";
-import {
-  showTwoStepConfirmation,
-  CommonConfirmations,
-} from "../ui/dialogs/confirmationDialog";
-
-import type { RuntimeDTO } from "@datalayer/core/lib/models/RuntimeDTO";
 import type { DatalayerClient } from "@datalayer/core/lib/client";
+import type { RuntimeDTO } from "@datalayer/core/lib/models/RuntimeDTO";
+import * as vscode from "vscode";
+
+import { getServiceContainer } from "../extension";
+import { RuntimeTreeItem } from "../models/runtimeTreeItem";
+import { RuntimesTreeProvider } from "../providers/runtimesTreeProvider";
+import { SmartDynamicControllerManager } from "../providers/smartDynamicControllerManager";
+import {
+  CommonConfirmations,
+  showTwoStepConfirmation,
+} from "../ui/dialogs/confirmationDialog";
 import { formatDateForName } from "../utils/dateFormatter";
 
 interface RuntimeQuickPickItem extends vscode.QuickPickItem {
@@ -424,11 +424,6 @@ export function registerRuntimeCommands(
           ingress?: string;
         };
 
-        console.log(
-          "[RuntimeTerminate] Terminating runtime object:",
-          JSON.stringify(runtimeObj, null, 2),
-        );
-
         try {
           // Check if this is a Datalayer runtime or a local kernel
           // Local kernels have ingress URLs like "http://local-kernel-*.localhost" or "http://pyodide-local"
@@ -436,20 +431,9 @@ export function registerRuntimeCommands(
             runtimeObj.ingress?.startsWith("http://local-kernel-") ||
             runtimeObj.ingress === "http://pyodide-local";
           const isDatalayerRuntime = !isLocalKernel && !!runtimeObj.podName;
-          console.log(
-            "[RuntimeTerminate] isLocalKernel:",
-            isLocalKernel,
-            "isDatalayerRuntime:",
-            isDatalayerRuntime,
-            "ingress:",
-            runtimeObj.ingress,
-          );
 
           if (isDatalayerRuntime) {
             // Datalayer runtime - call API to terminate
-            console.log(
-              "[RuntimeTerminate] Terminating Datalayer runtime via API",
-            );
 
             // Check authentication before calling API
             if (!authProvider.isAuthenticated()) {
@@ -470,9 +454,6 @@ export function registerRuntimeCommands(
           } else {
             // Local kernel (Python environment, Jupyter server, or Pyodide)
             // Just disconnect - no API call needed
-            console.log(
-              "[RuntimeTerminate] Disconnecting local kernel (no API call)",
-            );
             const kernelName =
               runtimeObj.displayName ||
               runtimeObj.givenName ||
@@ -658,28 +639,19 @@ export function registerRuntimeCommands(
     vscode.commands.registerCommand(
       "datalayer.runtimes.terminate",
       async (item: RuntimeTreeItem) => {
-        console.log("[DEBUG] terminate command triggered with item:", item);
         if (!item || !item.runtime) {
-          console.log("[DEBUG] No item or runtime provided, exiting");
           return;
         }
 
         const runtimeName = item.runtime.givenName || item.runtime.podName;
-        console.log("[DEBUG] Terminating runtime:", runtimeName);
-        console.log("[DEBUG] About to show confirmation dialog...");
 
         const confirmed = await showTwoStepConfirmation(
           CommonConfirmations.terminateRuntime(runtimeName),
         );
 
-        console.log("[DEBUG] Confirmation dialog result:", confirmed);
-
         if (!confirmed) {
-          console.log("[DEBUG] User cancelled termination");
           return;
         }
-
-        console.log("[DEBUG] User confirmed, proceeding with termination...");
 
         try {
           await datalayer.deleteRuntime(item.runtime.podName);
@@ -711,12 +683,10 @@ export function registerRuntimeCommands(
     vscode.commands.registerCommand(
       "datalayer.runtimes.terminateAll",
       async () => {
-        console.log("[DEBUG] terminateAll command triggered");
         try {
           // Check authentication
           const authState = authProvider.getAuthState();
           if (!authState.isAuthenticated) {
-            console.log("[DEBUG] Not authenticated");
             vscode.window.showErrorMessage(
               "Please login first to manage runtimes",
             );
@@ -725,7 +695,6 @@ export function registerRuntimeCommands(
 
           // Fetch all runtimes
           const runtimes = await datalayer.listRuntimes();
-          console.log("[DEBUG] Found runtimes:", runtimes?.length);
 
           if (!runtimes || runtimes.length === 0) {
             vscode.window.showInformationMessage("No running runtimes found");

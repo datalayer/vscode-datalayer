@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2023 Datalayer, Inc.
+ * Copyright (c) 2021-2025 Datalayer, Inc.
  *
  * MIT License
  */
@@ -7,24 +7,49 @@
 import typescriptEslint from "@typescript-eslint/eslint-plugin";
 import tsParser from "@typescript-eslint/parser";
 import jsdoc from "eslint-plugin-jsdoc";
+import simpleImportSort from "eslint-plugin-simple-import-sort";
+import header from "eslint-plugin-header";
+
+// eslint-plugin-header requires this workaround for flat config
+header.rules.header.meta.schema = false;
 
 export default [
   {
     files: ["**/*.ts"],
   },
   {
+    // Ignore JS files that can't be parsed with TypeScript parser
+    ignores: [
+      "**/*.worker.js",
+      "commitlint.config.js",
+      "webpack.config.js",
+      "*.config.js",
+      "*.config.mjs",
+    ],
+  },
+  {
     plugins: {
       "@typescript-eslint": typescriptEslint,
       jsdoc,
+      "simple-import-sort": simpleImportSort,
+      header,
     },
 
     languageOptions: {
       parser: tsParser,
       ecmaVersion: 2022,
       sourceType: "module",
+      parserOptions: {
+        project: ["./tsconfig.json", "./tsconfig.webview.json"],
+        tsconfigRootDir: import.meta.dirname,
+      },
     },
 
     rules: {
+      // =============================================
+      // TypeScript rules
+      // =============================================
+
       "@typescript-eslint/naming-convention": [
         "warn",
         {
@@ -51,10 +76,76 @@ export default [
         },
       ],
 
+      // Catch unhandled async calls - silent failure prevention
+      "@typescript-eslint/no-floating-promises": "error",
+
+      // Stricter unused vars - catch dead code
+      "@typescript-eslint/no-unused-vars": [
+        "error",
+        {
+          argsIgnorePattern: "^_",
+          varsIgnorePattern: "^_",
+          caughtErrorsIgnorePattern: "^_",
+          ignoreRestSiblings: true,
+        },
+      ],
+
+      // Force return types on exported functions - catches accidental any returns
+      "@typescript-eslint/explicit-function-return-type": [
+        "warn",
+        {
+          allowExpressions: true,
+          allowTypedFunctionExpressions: true,
+          allowHigherOrderFunctions: true,
+          allowDirectConstAssertionInArrowFunctions: true,
+          allowConciseArrowFunctionExpressionsStartingWithVoid: true,
+          allowedNames: [],
+        },
+      ],
+
+      // =============================================
+      // General rules
+      // =============================================
+
       curly: "warn",
       eqeqeq: "warn",
       "no-throw-literal": "warn",
       semi: "warn",
+
+      // Ban console.log in production code - use the logger infrastructure
+      "no-console": [
+        "warn",
+        {
+          allow: ["warn", "error"],
+        },
+      ],
+
+      // Complexity limits - flag overly complex functions
+      complexity: ["warn", 20],
+      "max-depth": ["warn", 5],
+
+      // =============================================
+      // Import sorting (auto-fixable)
+      // =============================================
+
+      "simple-import-sort/imports": "error",
+      "simple-import-sort/exports": "error",
+
+      // =============================================
+      // License header enforcement
+      // =============================================
+
+      "header/header": [
+        "error",
+        "block",
+        [
+          "",
+          " * Copyright (c) 2021-2025 Datalayer, Inc.",
+          " *",
+          " * MIT License",
+          " ",
+        ],
+      ],
 
       // =============================================
       // JSDoc enforcement (strict)
@@ -95,7 +186,7 @@ export default [
         },
       ],
 
-      // Require @param for every function parameter (constructors exempt - TypeDoc conflicts with private/destructured params)
+      // Require @param for every function parameter (constructors exempt - TypeDoc conflicts)
       "jsdoc/require-param": [
         "error",
         {
@@ -122,25 +213,14 @@ export default [
 
       // --- Validation rules ---
 
-      // Ensure @param names match actual parameter names
       "jsdoc/check-param-names": "error",
-
-      // Reject invalid/unknown JSDoc tags
       "jsdoc/check-tag-names": "error",
-
-      // Disallow {type} annotations in JSDoc - TypeScript handles types
       "jsdoc/no-types": "error",
-
-      // Reject empty /** */ blocks (leftover from auto-fix)
       "jsdoc/no-blank-blocks": "error",
-
-      // Reject descriptions that just restate the name
-      // e.g., "@param name - The name" or "/** Gets value. */ getValue()"
       "jsdoc/informative-docs": "error",
 
       // --- Formatting rules ---
 
-      // Enforce consistent tag order: @param -> @returns -> @throws -> @example
       "jsdoc/sort-tags": [
         "error",
         {
@@ -156,10 +236,8 @@ export default [
         },
       ],
 
-      // Enforce @param name - Description (with hyphen separator)
       "jsdoc/require-hyphen-before-param-description": ["error", "always"],
 
-      // Enforce descriptions start with uppercase, end with period
       "jsdoc/match-description": [
         "error",
         {
@@ -184,7 +262,6 @@ export default [
         },
       ],
 
-      // @example tags not enforced - internal extension, not a public library API
       "jsdoc/require-example": "off",
     },
   },
@@ -193,12 +270,41 @@ export default [
     files: ["**/*.test.ts", "**/__tests__/**/*.ts", "**/test/**/*.ts"],
     rules: {
       "@typescript-eslint/no-explicit-any": "warn",
+      "@typescript-eslint/no-floating-promises": "off",
+      "@typescript-eslint/no-unused-vars": "warn",
+      "@typescript-eslint/explicit-function-return-type": "off",
+      "no-console": "off",
       "jsdoc/require-jsdoc": "off",
       "jsdoc/require-param": "off",
       "jsdoc/require-returns": "off",
       "jsdoc/require-throws": "off",
       "jsdoc/informative-docs": "off",
       "jsdoc/match-description": "off",
+      "header/header": "off",
+    },
+  },
+  // Relax rules in scripts (JS files, not TS)
+  {
+    files: ["scripts/**/*.js", "scripts/**/*.ts"],
+    rules: {
+      "no-console": "off",
+      "@typescript-eslint/explicit-function-return-type": "off",
+      "header/header": "off",
+    },
+  },
+  // Relax rules in declaration files
+  {
+    files: ["**/*.d.ts"],
+    rules: {
+      "header/header": "off",
+    },
+  },
+  // Relax rules in webview worker files
+  {
+    files: ["**/*.worker.js"],
+    rules: {
+      "no-console": "off",
+      "header/header": "off",
     },
   },
 ];

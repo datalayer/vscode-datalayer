@@ -10,16 +10,17 @@
  * @module tools/vscode/registration
  */
 
-import * as vscode from "vscode";
 import type { ToolDefinition, ToolOperation } from "@datalayer/jupyter-react";
-import { VSCodeToolAdapter } from "./toolAdapter";
-import { createNotebookOperation } from "../operations/createNotebook";
-import { createLexicalOperation } from "../operations/createLexical";
+import * as vscode from "vscode";
+
 import { getAllToolDefinitionsAsync } from "../definitions";
+import { createLexicalOperation } from "../operations/createLexical";
+import { createNotebookOperation } from "../operations/createNotebook";
+import { executeCodeOperation } from "../operations/executeCode";
 import { getActiveDocumentOperation } from "../operations/getActiveDocument";
 import { listKernelsOperation } from "../operations/listKernels";
 import { selectKernelOperation } from "../operations/selectKernel";
-import { executeCodeOperation } from "../operations/executeCode";
+import { VSCodeToolAdapter } from "./toolAdapter";
 
 /**
  * Combined operations registry type.
