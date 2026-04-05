@@ -18,6 +18,7 @@ import type { RuntimeSnapshotDTO } from "@datalayer/core/lib/models/RuntimeSnaps
 import * as vscode from "vscode";
 
 import { EnvironmentCache } from "../../services/cache/environmentCache";
+import { getValidatedSettingsGroup } from "../../services/config/settingsValidator";
 import type { IAuthProvider } from "../../services/interfaces/IAuthProvider";
 import { formatRelativeTime } from "../../utils/dateFormatter";
 import { generateRuntimeName } from "../../utils/runtimeNameGenerator";
@@ -232,7 +233,8 @@ export async function selectDatalayerRuntime(
 
   if (
     items.length === 0 ||
-    (items.length === 1 && items[0].kind === vscode.QuickPickItemKind.Separator)
+    (items.length === 1 &&
+      items[0]!.kind === vscode.QuickPickItemKind.Separator)
   ) {
     vscode.window.showInformationMessage(
       "No runtimes or environments available",
@@ -255,9 +257,9 @@ export async function selectDatalayerRuntime(
   // This enables instant visual feedback like showing a spinner
   if (onRuntimeSelected) {
     quickPick.onDidChangeSelection((selected) => {
-      if (selected.length > 0 && selected[0].runtime) {
+      if (selected.length > 0 && selected[0]!.runtime) {
         // Existing runtime selected - call callback immediately for instant feedback
-        void onRuntimeSelected(selected[0].runtime);
+        void onRuntimeSelected(selected[0]!.runtime);
       }
       // Note: For create actions, callback is called AFTER user accepts all creation options
       // (see below where createRuntime is called)
@@ -501,9 +503,7 @@ export async function createRuntime(
   }
 
   // Get default runtime duration from settings (in minutes)
-  const defaultMinutes = vscode.workspace
-    .getConfiguration("datalayer.runtime")
-    .get<number>("defaultMinutes", 3);
+  const defaultMinutes = getValidatedSettingsGroup("runtime").defaultMinutes;
   const suggestedMinutes = maxMinutes
     ? Math.min(defaultMinutes, maxMinutes)
     : defaultMinutes;

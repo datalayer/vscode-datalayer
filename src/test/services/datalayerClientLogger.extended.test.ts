@@ -18,10 +18,14 @@ import { ServiceLoggers } from "../../services/logging/loggers";
 import { createMockExtensionContext } from "../utils/mockFactory";
 
 suite("DatalayerClientOperationTracker Extended Tests", () => {
-  const Tracker = DatalayerClientOperationTracker as unknown as Record<
-    string,
-    Function
-  >;
+  interface TrackerMethods {
+    sanitizeArgs: (args: unknown[]) => unknown[];
+    summarizeResult: (result: unknown) => string;
+    isNetworkError: (error: unknown) => boolean;
+    isAuthError: (error: unknown) => boolean;
+  }
+
+  const Tracker = DatalayerClientOperationTracker as unknown as TrackerMethods;
 
   suiteSetup(() => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any

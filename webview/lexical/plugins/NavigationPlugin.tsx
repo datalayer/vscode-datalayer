@@ -51,7 +51,7 @@ export function NavigationPlugin({
       return;
     }
 
-    const itemIndex = parseInt(match[2], 10);
+    const itemIndex = parseInt(match[2]!, 10);
 
     editor.update(() => {
       const root = $getRoot();

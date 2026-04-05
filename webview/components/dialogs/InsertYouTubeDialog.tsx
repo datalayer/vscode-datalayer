@@ -49,7 +49,7 @@ export const InsertYouTubeDialog: React.FC<InsertYouTubeDialogProps> = ({
       }
       // Embed format: youtube.com/embed/VIDEO_ID
       else if (urlObj.pathname.startsWith("/embed/")) {
-        return urlObj.pathname.split("/embed/")[1];
+        return urlObj.pathname.split("/embed/")[1] ?? null;
       }
     } catch (e) {
       // If URL parsing fails, check if it's just a video ID

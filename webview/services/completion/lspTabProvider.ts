@@ -190,7 +190,7 @@ export class LSPTabCompletionProvider {
           let wordStart = request.offset;
 
           // Find the start of the current word (alphanumeric + underscore)
-          while (wordStart > 0 && /[a-zA-Z0-9_]/.test(text[wordStart - 1])) {
+          while (wordStart > 0 && /[a-zA-Z0-9_]/.test(text[wordStart - 1]!)) {
             wordStart--;
           }
 
@@ -237,7 +237,7 @@ export class LSPTabCompletionProvider {
         const beforeCompletion = text.substring(0, minStart);
         const afterCompletion = text.substring(maxEnd);
         const expectedText =
-          beforeCompletion + items[0].insertText + afterCompletion;
+          beforeCompletion + items[0]!.insertText + afterCompletion;
 
         try {
           const cursorPos = editor.getCursorPosition();
@@ -255,7 +255,7 @@ export class LSPTabCompletionProvider {
 
           // Set cursor position after the inserted text
           // Calculate new column position on the same line
-          const charsAdded = items[0].insertText.length;
+          const charsAdded = items[0]!.insertText.length;
 
           // Find the column offset of minStart on the current line
           const lineStartOffset = text.lastIndexOf("\n", minStart) + 1;
@@ -286,7 +286,7 @@ export class LSPTabCompletionProvider {
           // Check if text was updated anyway (race condition)
           const currentText = model.sharedModel.getSource();
           const expectedText =
-            beforeCompletion + items[0].insertText + afterCompletion;
+            beforeCompletion + items[0]!.insertText + afterCompletion;
           if (currentText === expectedText) {
             // Text was updated despite error, return empty to prevent dropdown
             return { start: request.offset, end: request.offset, items: [] };

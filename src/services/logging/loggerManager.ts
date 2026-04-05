@@ -13,6 +13,7 @@
 
 import * as vscode from "vscode";
 
+import { getValidatedSettingsGroup } from "../config/settingsValidator";
 import type {
   ILoggerManager,
   LoggerConfig,
@@ -31,12 +32,12 @@ export class LoggerManager implements ILoggerManager {
   private config: LoggerConfig;
 
   private constructor(private context: vscode.ExtensionContext) {
-    // Get logging configuration from VS Code settings
-    const vsConfig = vscode.workspace.getConfiguration("datalayer.logging");
+    // Get validated logging configuration from VS Code settings
+    const loggingConfig = getValidatedSettingsGroup("logging");
     this.config = {
-      level: this.parseLogLevel(vsConfig.get<string>("level") || "info"),
-      enableTimestamps: vsConfig.get<boolean>("enableTimestamps") ?? true,
-      enableContext: vsConfig.get<boolean>("enableContext") ?? true,
+      level: this.parseLogLevel(loggingConfig.level),
+      enableTimestamps: loggingConfig.includeTimestamps,
+      enableContext: loggingConfig.includeContext,
     };
 
     // Listen for configuration changes
@@ -177,11 +178,11 @@ export class LoggerManager implements ILoggerManager {
    * Update configuration from VS Code settings.
    */
   private updateConfig(): void {
-    const vsConfig = vscode.workspace.getConfiguration("datalayer.logging");
+    const loggingConfig = getValidatedSettingsGroup("logging");
     this.config = {
-      level: this.parseLogLevel(vsConfig.get<string>("level") || "info"),
-      enableTimestamps: vsConfig.get<boolean>("enableTimestamps") ?? true,
-      enableContext: vsConfig.get<boolean>("enableContext") ?? true,
+      level: this.parseLogLevel(loggingConfig.level),
+      enableTimestamps: loggingConfig.includeTimestamps,
+      enableContext: loggingConfig.includeContext,
     };
   }
 }

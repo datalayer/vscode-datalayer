@@ -20,6 +20,7 @@ import * as vscode from "vscode";
 
 import { getServiceContainer } from "../../extension";
 import type { Document } from "../../models/spaceItem";
+import { getValidatedSettingsGroup } from "../../services/config/settingsValidator";
 import { analyzeOpenDocuments } from "../../utils/documentAnalysis";
 import { getAllOpenedDocuments } from "../../utils/getAllOpenedDocuments";
 import {
@@ -151,10 +152,10 @@ export class VSCodeToolAdapter<
   ): Promise<ToolExecutionContext> {
     const services = getServiceContainer();
 
-    // Read response format from VS Code configuration
-    const responseFormat = vscode.workspace
-      .getConfiguration("datalayer.tools")
-      .get<string>("responseFormat", "toon") as "json" | "toon";
+    // Read response format from validated VS Code configuration
+    const responseFormat = getValidatedSettingsGroup("tools").responseFormat as
+      | "json"
+      | "toon";
 
     // ALWAYS get all opened documents - provides complete context to ALL tools
     const documentsContext = getAllOpenedDocuments();
@@ -326,14 +327,11 @@ export class VSCodeToolAdapter<
       },
 
       // Default runtime duration from settings
-      defaultRuntimeDuration: vscode.workspace
-        .getConfiguration("datalayer.runtime")
-        .get<number>("defaultMinutes", 3),
+      defaultRuntimeDuration:
+        getValidatedSettingsGroup("runtime").defaultMinutes,
 
       // Default runtime type from settings
-      defaultRuntimeType: vscode.workspace
-        .getConfiguration("datalayer.runtime")
-        .get<string>("defaultType", "CPU"),
+      defaultRuntimeType: getValidatedSettingsGroup("runtime").defaultType,
     };
   }
 
@@ -381,7 +379,7 @@ export class VSCodeToolAdapter<
     }
 
     if (choices.length === 1) {
-      return choices[0].location;
+      return choices[0]!.location;
     }
 
     const selected = await vscode.window.showQuickPick(choices, {

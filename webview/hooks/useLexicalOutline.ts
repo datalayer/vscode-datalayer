@@ -124,7 +124,7 @@ export function useLexicalOutline({
       for (const item of flatItems) {
         // Find the correct parent for this item
         while (stack.length > 0) {
-          const parent = stack[stack.length - 1];
+          const parent = stack[stack.length - 1]!;
           const parentLevel = parent.level || 1;
           const itemLevel = item.level || 1;
 

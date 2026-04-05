@@ -230,8 +230,8 @@ suite("Logger Tests", () => {
       logger.error("error message");
 
       assert.strictEqual(mockChannel.logged.length, 2);
-      assert.strictEqual(mockChannel.logged[0].level, "warn");
-      assert.strictEqual(mockChannel.logged[1].level, "error");
+      assert.strictEqual(mockChannel.logged[0]!.level, "warn");
+      assert.strictEqual(mockChannel.logged[1]!.level, "error");
     });
 
     test("TRACE level allows all messages", () => {
@@ -264,7 +264,7 @@ suite("Logger Tests", () => {
       logger.error("e");
 
       assert.strictEqual(mockChannel.logged.length, 1);
-      assert.strictEqual(mockChannel.logged[0].level, "error");
+      assert.strictEqual(mockChannel.logged[0]!.level, "error");
     });
   });
 
@@ -279,9 +279,9 @@ suite("Logger Tests", () => {
       logger.info("message", { key: "value" });
 
       assert.strictEqual(mockChannel.logged.length, 1);
-      assert.ok(mockChannel.logged[0].message.includes("Context:"));
-      assert.ok(mockChannel.logged[0].message.includes('"key"'));
-      assert.ok(mockChannel.logged[0].message.includes('"value"'));
+      assert.ok(mockChannel.logged[0]!.message.includes("Context:"));
+      assert.ok(mockChannel.logged[0]!.message.includes('"key"'));
+      assert.ok(mockChannel.logged[0]!.message.includes('"value"'));
     });
 
     test("does not append context when disabled", () => {
@@ -294,7 +294,7 @@ suite("Logger Tests", () => {
       logger.info("message", { key: "value" });
 
       assert.strictEqual(mockChannel.logged.length, 1);
-      assert.ok(!mockChannel.logged[0].message.includes("Context:"));
+      assert.ok(!mockChannel.logged[0]!.message.includes("Context:"));
     });
 
     test("does not append empty context", () => {
@@ -307,7 +307,7 @@ suite("Logger Tests", () => {
       logger.info("message", {});
 
       assert.strictEqual(mockChannel.logged.length, 1);
-      assert.ok(!mockChannel.logged[0].message.includes("Context:"));
+      assert.ok(!mockChannel.logged[0]!.message.includes("Context:"));
     });
 
     test("does not append undefined context", () => {
@@ -320,7 +320,7 @@ suite("Logger Tests", () => {
       logger.info("message");
 
       assert.strictEqual(mockChannel.logged.length, 1);
-      assert.ok(!mockChannel.logged[0].message.includes("Context:"));
+      assert.ok(!mockChannel.logged[0]!.message.includes("Context:"));
     });
   });
 
@@ -336,7 +336,7 @@ suite("Logger Tests", () => {
       logger.error("something failed", err);
 
       assert.strictEqual(mockChannel.logged.length, 1);
-      assert.ok(mockChannel.logged[0].message.includes("test error"));
+      assert.ok(mockChannel.logged[0]!.message.includes("test error"));
     });
 
     test("includes error name and stack", () => {
@@ -350,8 +350,8 @@ suite("Logger Tests", () => {
       logger.error("type error occurred", err);
 
       assert.strictEqual(mockChannel.logged.length, 1);
-      assert.ok(mockChannel.logged[0].message.includes("TypeError"));
-      assert.ok(mockChannel.logged[0].message.includes("type mismatch"));
+      assert.ok(mockChannel.logged[0]!.message.includes("TypeError"));
+      assert.ok(mockChannel.logged[0]!.message.includes("type mismatch"));
     });
 
     test("merges error and extra context", () => {
@@ -365,8 +365,8 @@ suite("Logger Tests", () => {
       logger.error("failed", err, { operation: "save" });
 
       assert.strictEqual(mockChannel.logged.length, 1);
-      assert.ok(mockChannel.logged[0].message.includes("oops"));
-      assert.ok(mockChannel.logged[0].message.includes("save"));
+      assert.ok(mockChannel.logged[0]!.message.includes("oops"));
+      assert.ok(mockChannel.logged[0]!.message.includes("save"));
     });
 
     test("error without Error object logs normally", () => {
@@ -379,7 +379,7 @@ suite("Logger Tests", () => {
       logger.error("plain error message");
 
       assert.strictEqual(mockChannel.logged.length, 1);
-      assert.strictEqual(mockChannel.logged[0].message, "plain error message");
+      assert.strictEqual(mockChannel.logged[0]!.message, "plain error message");
     });
   });
 
@@ -460,8 +460,8 @@ suite("Logger Tests", () => {
       });
 
       logger.trace("trace msg");
-      assert.strictEqual(mockChannel.logged[0].level, "trace");
-      assert.strictEqual(mockChannel.logged[0].message, "trace msg");
+      assert.strictEqual(mockChannel.logged[0]!.level, "trace");
+      assert.strictEqual(mockChannel.logged[0]!.message, "trace msg");
     });
 
     test("debug calls channel.debug", () => {
@@ -472,7 +472,7 @@ suite("Logger Tests", () => {
       });
 
       logger.debug("debug msg");
-      assert.strictEqual(mockChannel.logged[0].level, "debug");
+      assert.strictEqual(mockChannel.logged[0]!.level, "debug");
     });
 
     test("info calls channel.info", () => {
@@ -483,7 +483,7 @@ suite("Logger Tests", () => {
       });
 
       logger.info("info msg");
-      assert.strictEqual(mockChannel.logged[0].level, "info");
+      assert.strictEqual(mockChannel.logged[0]!.level, "info");
     });
 
     test("warn calls channel.warn", () => {
@@ -494,7 +494,7 @@ suite("Logger Tests", () => {
       });
 
       logger.warn("warn msg");
-      assert.strictEqual(mockChannel.logged[0].level, "warn");
+      assert.strictEqual(mockChannel.logged[0]!.level, "warn");
     });
 
     test("error calls channel.error", () => {
@@ -505,7 +505,7 @@ suite("Logger Tests", () => {
       });
 
       logger.error("error msg");
-      assert.strictEqual(mockChannel.logged[0].level, "error");
+      assert.strictEqual(mockChannel.logged[0]!.level, "error");
     });
   });
 });

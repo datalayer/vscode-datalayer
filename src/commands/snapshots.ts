@@ -75,7 +75,7 @@ export function registerSnapshotCommands(
           const snapshotEnv = environments.find(
             (env) => env.name === snapshot.environment,
           );
-          const defaultEnv = snapshotEnv || environments[0];
+          const defaultEnv = snapshotEnv ?? environments[0];
 
           // Show environment selection
           const envItems = environments.map((env) => ({
@@ -86,7 +86,7 @@ export function registerSnapshotCommands(
                 ? `✓ Original environment from snapshot "${snapshotName}"`
                 : undefined,
             environment: env,
-            picked: env.name === defaultEnv.name,
+            picked: defaultEnv !== undefined && env.name === defaultEnv.name,
           }));
 
           const selectedEnv = await vscode.window.showQuickPick(envItems, {

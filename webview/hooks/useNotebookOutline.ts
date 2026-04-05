@@ -117,7 +117,7 @@ export function useNotebookOutline({
 
     // First pass: extract all items with their levels
     for (let i = 0; i < cellCount; i++) {
-      const cell: CellModel = notebookModel.cells.get(i);
+      const cell: CellModel = notebookModel.cells.get(i)!;
       const cellType = cell.type;
 
       if (cellType === "code") {
@@ -126,7 +126,7 @@ export function useNotebookOutline({
         const lines = source.split("\n");
         const preview =
           (lines[0]?.slice(0, 40) || "Empty").trim() +
-          (lines[0]?.length > 40 ? "..." : "");
+          ((lines[0]?.length ?? 0) > 40 ? "..." : "");
 
         flatItems.push({
           id: `cell-${i}`,
@@ -166,7 +166,7 @@ export function useNotebookOutline({
       for (const item of flatItems) {
         // Find the correct parent for this item
         while (stack.length > 0) {
-          const parent = stack[stack.length - 1];
+          const parent = stack[stack.length - 1]!;
           const parentLevel = parent.level || 1;
           const itemLevel = item.level || 1;
 
@@ -208,8 +208,8 @@ export function useNotebookOutline({
         // Match markdown headings: # Title, ## Subtitle, etc.
         const match = line.match(/^(#{1,6})\s+(.+)$/);
         if (match) {
-          const level = match[1].length;
-          const text = match[2].trim();
+          const level = match[1]!.length;
+          const text = match[2]!.trim();
 
           headings.push({
             id: `cell-${cellIndex}-h${level}-${lineIdx}`,

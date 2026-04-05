@@ -38,6 +38,20 @@ Every directory has a `README.md` documenting its files, exports, and patterns.
 - **NotebookActions** from `@jupyterlab/notebook` for cell manipulation (not commands or store methods).
 - Use Datalayer client directly with handlers pattern (no wrapper services).
 
+## TypeScript Strictness
+
+- **`noUncheckedIndexedAccess: true`** - Array/object index access returns `T | undefined`. Use `!` assertion only when bounds are guaranteed (e.g., inside length-checked blocks or bounded loops). Prefer `?? defaultValue` or `if (x !== undefined)` checks.
+
+## Settings Validation
+
+- **`src/services/config/settingsValidator.ts`** - Centralized Zod validation for all VS Code settings. Validates URLs, numbers, enums with safe defaults on invalid input.
+- Individual field errors are logged as warnings; valid fields in the same group are preserved.
+
+## Bundle Analysis
+
+- Run `npm run analyze` to generate interactive treemap reports in `dist/bundle-report-*.html`.
+- Uses `webpack-bundle-analyzer` (only when `ANALYZE=true` env var is set).
+
 ## Code Quality Enforcement
 
 All enforced at `error` level, blocking CI and pre-commit hooks.
@@ -126,7 +140,7 @@ Conventional commits encouraged (warns but does not block):
 - **1,300+ total tests**: extension tests + webview tests
 - **Extension tests**: Mocha TDD UI via `@vscode/test-cli`, running in VS Code Extension Host
 - **Webview tests**: Vitest with jsdom environment
-- **ESLint**: 0 errors, 28 warnings (all `no-console`)
+- **ESLint**: 0 errors, warnings are `no-console` only
 
 ### Commands
 

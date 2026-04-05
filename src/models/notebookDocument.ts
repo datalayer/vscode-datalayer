@@ -296,7 +296,7 @@ export class NotebookDocument
         this._edits.pop();
         if (this._edits.length > 0) {
           const lastEdit = this._edits[this._edits.length - 1];
-          if (lastEdit.type === "content-update") {
+          if (lastEdit !== undefined && lastEdit.type === "content-update") {
             this._documentData = lastEdit.content;
           }
         }

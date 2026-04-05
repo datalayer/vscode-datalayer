@@ -77,7 +77,7 @@ export class PyodideCacheManager {
 
     const totalFiles = requiredFiles.length;
     for (let i = 0; i < totalFiles; i++) {
-      const file = requiredFiles[i];
+      const file = requiredFiles[i]!;
       progress?.report({
         message: `Downloading ${file} (${i + 1}/${totalFiles})`,
         increment: 20 / totalFiles,
@@ -160,7 +160,7 @@ export class PyodideCacheManager {
     const totalPackages = packages.length;
 
     for (let i = 0; i < totalPackages; i++) {
-      const pkg = packages[i];
+      const pkg = packages[i]!;
       progress?.report({
         message: `Downloading ${pkg} (${i + 1}/${totalPackages})`,
         increment: 70 / totalPackages,

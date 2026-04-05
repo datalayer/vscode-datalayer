@@ -34,7 +34,7 @@ export async function _createLocalNotebook(
 ): Promise<vscode.Uri> {
   // Check if workspace is open
   const workspaceFolders = vscode.workspace.workspaceFolders;
-  if (!workspaceFolders) {
+  if (!workspaceFolders || workspaceFolders.length === 0) {
     throw new Error(
       "Creating local notebooks requires an open workspace. Please open a folder first.",
     );
@@ -52,7 +52,7 @@ export async function _createLocalNotebook(
   }
 
   const notebookUri = vscode.Uri.joinPath(
-    workspaceFolders[0].uri,
+    workspaceFolders[0]!.uri,
     finalFilename,
   );
 

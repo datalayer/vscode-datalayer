@@ -39,8 +39,8 @@ suite("Runtime Name Generator Tests", () => {
           `Part should not be empty in name "${name}"`,
         );
         assert.strictEqual(
-          part[0],
-          part[0].toUpperCase(),
+          part[0]!,
+          part[0]!.toUpperCase(),
           `Expected first character of "${part}" to be uppercase in name "${name}"`,
         );
       }

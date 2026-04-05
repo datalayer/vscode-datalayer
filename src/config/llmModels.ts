@@ -13,6 +13,8 @@
 
 import * as vscode from "vscode";
 
+import { ServiceLoggers } from "../services/logging/loggers";
+
 /**
  * Model selection strategy for inline completions.
  * Tries models in order of preference until one is available.
@@ -64,12 +66,10 @@ export async function selectBestLanguageModel(
   context: string,
   strategies: readonly ModelSelectionStrategy[] = DEFAULT_MODEL_STRATEGIES,
 ): Promise<vscode.LanguageModelChat | undefined> {
-  // eslint-disable-next-line no-console
-  console.log(`[${context}] Selecting language model...`);
+  ServiceLoggers.main.debug(`[${context}] Selecting language model...`);
 
   for (const strategy of strategies) {
-    // eslint-disable-next-line no-console
-    console.log(
+    ServiceLoggers.main.debug(
       `[${context}] Trying strategy: ${strategy.name}${strategy.vendor ? ` (vendor: ${strategy.vendor})` : ""}${strategy.family ? ` (family: ${strategy.family})` : ""}`,
     );
 
@@ -90,33 +90,32 @@ export async function selectBestLanguageModel(
     // Try to select models
     const models = await vscode.lm.selectChatModels(selector);
 
-    // eslint-disable-next-line no-console
-    console.log(
+    ServiceLoggers.main.debug(
       `[${context}] Found ${models.length} model(s) for ${strategy.name}`,
     );
 
     if (models.length > 0) {
       // Log available models
       models.forEach((m, i) => {
-        // eslint-disable-next-line no-console
-        console.log(
+        ServiceLoggers.main.debug(
           `[${context}]   Model ${i + 1}: ${m.id} (vendor: ${m.vendor}, family: ${m.family})`,
         );
       });
 
       // Use first model
       const selectedModel = models[0];
-      // eslint-disable-next-line no-console
-      console.log(
-        `[${context}] Selected model: ${selectedModel.id} (vendor: ${selectedModel.vendor}, family: ${selectedModel.family})`,
-      );
+      if (selectedModel) {
+        ServiceLoggers.main.debug(
+          `[${context}] Selected model: ${selectedModel.id} (vendor: ${selectedModel.vendor}, family: ${selectedModel.family})`,
+        );
 
-      return selectedModel;
+        return selectedModel;
+      }
     }
   }
 
   // No models found
-  console.warn(`[${context}] ❌ No language models available!`);
+  ServiceLoggers.main.warn(`[${context}] No language models available`);
   return undefined;
 }
 

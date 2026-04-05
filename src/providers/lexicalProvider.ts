@@ -39,6 +39,7 @@ import {
   LexicalCollaborationService,
 } from "../services/collaboration/lexicalCollaboration";
 import { LoroWebSocketAdapter } from "../services/collaboration/loroWebSocketAdapter";
+import { getValidatedSettingsGroup } from "../services/config/settingsValidator";
 import { DatalayerAuthProvider } from "../services/core/authProvider";
 import { disposeAll } from "../utils/dispose";
 import { getNonce } from "../utils/webviewSecurity";
@@ -135,7 +136,7 @@ export class LexicalProvider extends BaseDocumentProvider<LexicalDocument> {
   public static register(context: vscode.ExtensionContext): vscode.Disposable {
     vscode.commands.registerCommand("datalayer.lexical-editor-new", () => {
       const workspaceFolders = vscode.workspace.workspaceFolders;
-      if (!workspaceFolders) {
+      if (!workspaceFolders || workspaceFolders.length === 0) {
         vscode.window.showErrorMessage(
           "Creating new Datalayer Lexical documents currently requires opening a workspace",
         );
@@ -143,7 +144,7 @@ export class LexicalProvider extends BaseDocumentProvider<LexicalDocument> {
       }
 
       const uri = vscode.Uri.joinPath(
-        workspaceFolders[0].uri,
+        workspaceFolders[0]!.uri,
         `new-${Date.now()}.dlex`,
       ).with({ scheme: "untitled" });
 
@@ -532,7 +533,7 @@ export class LexicalProvider extends BaseDocumentProvider<LexicalDocument> {
           if (webviewsForDocument.length !== 1) {
             throw new Error("Expected exactly one webview for document");
           }
-          const panel = webviewsForDocument[0].webviewPanel;
+          const panel = webviewsForDocument[0]!.webviewPanel;
           const response = await this.postMessageWithResponse<
             number[] | undefined
           >(panel, "getFileData", {});
@@ -984,10 +985,8 @@ export class LexicalProvider extends BaseDocumentProvider<LexicalDocument> {
     );
     const nonce = getNonce();
 
-    // Read Pyodide version from configuration
-    const pyodideVersion = vscode.workspace
-      .getConfiguration("datalayer.pyodide")
-      .get<string>("version", "0.27.3");
+    // Read Pyodide version from validated configuration
+    const pyodideVersion = getValidatedSettingsGroup("pyodide").version;
 
     // Add cache busting to force fresh load
     const cacheBust = `?v=${Date.now()}`;
@@ -1042,26 +1041,27 @@ export class LexicalProvider extends BaseDocumentProvider<LexicalDocument> {
    * @returns Inline completion config with user settings or defaults.
    */
   private getCompletionConfig(): InlineCompletionConfig {
-    const config = vscode.workspace.getConfiguration("datalayer.completion");
+    const inlineConfig = getValidatedSettingsGroup("inlineLlmCompletion");
+    const proseConfig = getValidatedSettingsGroup("proseLlmCompletion");
 
     const completionConfig: InlineCompletionConfig = {
       code: {
-        triggerMode: (config.get("inlinellm.enabled", true)
-          ? config.get("inlinellm.triggerMode", "auto")
+        triggerMode: (inlineConfig.enabled
+          ? inlineConfig.triggerMode
           : "disabled") as TriggerMode,
-        contextBefore: config.get("inlinellm.contextBlocks", -1),
-        contextAfter: config.get("inlinellm.contextBlocks", -1),
+        contextBefore: inlineConfig.contextBlocks,
+        contextAfter: inlineConfig.contextBlocks,
         language: "python",
       },
       prose: {
-        triggerMode: (config.get("prosellm.enabled", true)
-          ? config.get("prosellm.triggerMode", "manual")
+        triggerMode: (proseConfig.enabled
+          ? proseConfig.triggerMode
           : "disabled") as TriggerMode,
-        contextBefore: config.get("prosellm.contextBlocks", -1),
-        contextAfter: config.get("prosellm.contextBlocks", -1),
+        contextBefore: proseConfig.contextBlocks,
+        contextAfter: proseConfig.contextBlocks,
       },
-      debounceMs: config.get("prosellm.debounceMs", 500),
-      manualTriggerKey: config.get("prosellm.triggerKey", "Cmd+Shift+,"),
+      debounceMs: proseConfig.debounceMs,
+      manualTriggerKey: proseConfig.triggerKey,
     };
 
     // eslint-disable-next-line no-console
@@ -1459,7 +1459,7 @@ export class LexicalProvider extends BaseDocumentProvider<LexicalDocument> {
     const match = completion.match(codeBlockRegex);
     if (match) {
       // Extract code and trim trailing newlines only (preserve meaningful spaces)
-      return match[1].replace(/\n+$/, "");
+      return match[1]!.replace(/\n+$/, "");
     }
 
     // Remove trailing newlines from direct completions
