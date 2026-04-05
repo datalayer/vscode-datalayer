@@ -167,8 +167,11 @@ export class LoroWebSocketAdapter {
         this.sendToWebview({
           type: "error",
           adapterId: this.adapterId,
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          data: { message: (error as any)?.message || "WebSocket error" },
+          data: {
+            message:
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              (error as any)?.message || vscode.l10n.t("WebSocket error"),
+          },
         });
       };
 
@@ -232,7 +235,10 @@ export class LoroWebSocketAdapter {
         type: "error",
         adapterId: this.adapterId,
         data: {
-          message: error instanceof Error ? error.message : "Unknown error",
+          message:
+            error instanceof Error
+              ? error.message
+              : vscode.l10n.t("Unknown error"),
         },
       });
     }

@@ -4,6 +4,7 @@
  * MIT License
  */
 
+import * as l10n from "@vscode/l10n";
 import React, { useState, useEffect } from "react";
 import {
   Box,
@@ -16,6 +17,7 @@ import {
   Label,
 } from "@primer/react";
 import { EyeIcon, EyeClosedIcon } from "@primer/octicons-react";
+
 import { PrimerVSCodeTheme } from "../theme/PrimerVSCodeTheme";
 
 // VS Code API - declare and acquire
@@ -99,11 +101,13 @@ export function DatasourceEditDialog({ colorMode }: DatasourceEditDialogProps) {
     const newErrors: Record<string, string> = {};
 
     if (!formData.name || formData.name.length < 3) {
-      newErrors.name = "Name must be at least 3 characters";
+      newErrors.name = l10n.t("Name must be at least 3 characters");
     }
 
     if (!formData.description || formData.description.length < 3) {
-      newErrors.description = "Description must be at least 3 characters";
+      newErrors.description = l10n.t(
+        "Description must be at least 3 characters",
+      );
     }
 
     setErrors(newErrors);
@@ -133,7 +137,7 @@ export function DatasourceEditDialog({ colorMode }: DatasourceEditDialogProps) {
     return (
       <PrimerVSCodeTheme colorMode={colorMode}>
         <Box sx={{ p: 3, textAlign: "center" }}>
-          <Text>Loading...</Text>
+          <Text>{l10n.t("Loading...")}</Text>
         </Box>
       </PrimerVSCodeTheme>
     );
@@ -143,7 +147,7 @@ export function DatasourceEditDialog({ colorMode }: DatasourceEditDialogProps) {
     <PrimerVSCodeTheme colorMode={colorMode}>
       <Box sx={{ p: 3 }}>
         <Heading as="h1" sx={{ mb: 3 }}>
-          Edit Datasource
+          {l10n.t("Edit Datasource")}
         </Heading>
 
         {errors.submit && (
@@ -193,7 +197,7 @@ export function DatasourceEditDialog({ colorMode }: DatasourceEditDialogProps) {
           {/* Right column - Form */}
           <Box sx={{ flex: 1 }}>
             <FormControl required disabled={isSubmitting} sx={{ mb: 3 }}>
-              <FormControl.Label>Name</FormControl.Label>
+              <FormControl.Label>{l10n.t("Name")}</FormControl.Label>
               <TextInput
                 value={formData.name}
                 onChange={(e) =>
@@ -210,7 +214,7 @@ export function DatasourceEditDialog({ colorMode }: DatasourceEditDialogProps) {
             </FormControl>
 
             <FormControl required disabled={isSubmitting} sx={{ mb: 3 }}>
-              <FormControl.Label>Description</FormControl.Label>
+              <FormControl.Label>{l10n.t("Description")}</FormControl.Label>
               <Textarea
                 value={formData.description}
                 onChange={(e) =>
@@ -229,9 +233,9 @@ export function DatasourceEditDialog({ colorMode }: DatasourceEditDialogProps) {
 
             {datasource.database && (
               <FormControl disabled sx={{ mb: 3 }}>
-                <FormControl.Label>Database</FormControl.Label>
+                <FormControl.Label>{l10n.t("Database")}</FormControl.Label>
                 <TextInput
-                  placeholder="Database"
+                  placeholder={l10n.t("Database")}
                   contrast
                   size="large"
                   type={passwordVisibility ? "text" : "password"}
@@ -241,7 +245,9 @@ export function DatasourceEditDialog({ colorMode }: DatasourceEditDialogProps) {
                       onClick={() => setPasswordVisibility(!passwordVisibility)}
                       icon={passwordVisibility ? EyeClosedIcon : EyeIcon}
                       aria-label={
-                        passwordVisibility ? "Hide database" : "Reveal database"
+                        passwordVisibility
+                          ? l10n.t("Hide database")
+                          : l10n.t("Reveal database")
                       }
                     />
                   }
@@ -252,9 +258,9 @@ export function DatasourceEditDialog({ colorMode }: DatasourceEditDialogProps) {
 
             {datasource.outputBucket && (
               <FormControl disabled sx={{ mb: 3 }}>
-                <FormControl.Label>Output Bucket</FormControl.Label>
+                <FormControl.Label>{l10n.t("Output Bucket")}</FormControl.Label>
                 <TextInput
-                  placeholder="Output bucket"
+                  placeholder={l10n.t("Output bucket")}
                   contrast
                   size="large"
                   type={passwordVisibility ? "text" : "password"}
@@ -265,8 +271,8 @@ export function DatasourceEditDialog({ colorMode }: DatasourceEditDialogProps) {
                       icon={passwordVisibility ? EyeClosedIcon : EyeIcon}
                       aria-label={
                         passwordVisibility
-                          ? "Hide output bucket"
-                          : "Reveal output bucket"
+                          ? l10n.t("Hide output bucket")
+                          : l10n.t("Reveal output bucket")
                       }
                     />
                   }
@@ -281,13 +287,13 @@ export function DatasourceEditDialog({ colorMode }: DatasourceEditDialogProps) {
                 variant="primary"
                 disabled={isSubmitting}
               >
-                {isSubmitting ? "Updating..." : "Update"}
+                {isSubmitting ? l10n.t("Updating...") : l10n.t("Update")}
               </Button>
               <Button
                 onClick={() => vscode.postMessage({ type: "cancel" })}
                 disabled={isSubmitting}
               >
-                Cancel
+                {l10n.t("Cancel")}
               </Button>
             </Box>
           </Box>

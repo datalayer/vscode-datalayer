@@ -184,7 +184,7 @@ export class RuntimeBridgeService extends BaseService {
       runtimeObj.environmentTitle ||
       runtimeObj.environmentName ||
       runtimeObj.uid ||
-      "Unknown";
+      vscode.l10n.t("Unknown");
 
     // Show confirmation dialog
     const confirmed = await showTwoStepConfirmation(
@@ -205,7 +205,7 @@ export class RuntimeBridgeService extends BaseService {
 
       // Notify user of success
       vscode.window.showInformationMessage(
-        `Runtime "${runtimeName}" terminated successfully.`,
+        vscode.l10n.t('Runtime "{0}" terminated successfully.', runtimeName),
       );
 
       // Clear the kernel selection in the webview
@@ -220,7 +220,7 @@ export class RuntimeBridgeService extends BaseService {
       const errorMessage =
         error instanceof Error ? error.message : String(error);
       vscode.window.showErrorMessage(
-        `Failed to terminate runtime: ${errorMessage}`,
+        vscode.l10n.t("Failed to terminate runtime: {0}", errorMessage),
       );
     }
   }
@@ -247,11 +247,14 @@ export class RuntimeBridgeService extends BaseService {
     }
 
     const runtimeName =
-      runtimeObj.name || runtimeObj.givenName || runtimeObj.uid || "Unknown";
+      runtimeObj.name ||
+      runtimeObj.givenName ||
+      runtimeObj.uid ||
+      vscode.l10n.t("Unknown");
 
     // Show notification that runtime expired
     const notificationPromise = vscode.window.showWarningMessage(
-      `Runtime "${runtimeName}" has expired.`,
+      vscode.l10n.t('Runtime "{0}" has expired.', runtimeName),
     );
 
     // Clear the kernel selection in the webview
@@ -302,7 +305,7 @@ export class RuntimeBridgeService extends BaseService {
         error instanceof Error ? error : new Error(errorMessage),
       );
       vscode.window.showErrorMessage(
-        `Failed to interrupt kernel: ${errorMessage}`,
+        vscode.l10n.t("Failed to interrupt kernel: {0}", errorMessage),
       );
     }
   }
@@ -319,7 +322,9 @@ export class RuntimeBridgeService extends BaseService {
     );
 
     vscode.window.showWarningMessage(
-      "Kernel restart is not yet implemented. Please terminate and manually select a kernel to restart.",
+      vscode.l10n.t(
+        "Kernel restart is not yet implemented. Please terminate and manually select a kernel to restart.",
+      ),
     );
   }
 }

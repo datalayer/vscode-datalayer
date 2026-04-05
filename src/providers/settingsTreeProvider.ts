@@ -93,8 +93,12 @@ export class SettingsTreeProvider implements vscode.TreeDataProvider<SettingsTre
     // Root level - return two section headers
     if (!element) {
       return [
-        new TreeSectionItem("Secrets", "secrets-section", "key"),
-        new TreeSectionItem("Datasources", "datasources-section", "database"),
+        new TreeSectionItem(vscode.l10n.t("Secrets"), "secrets-section", "key"),
+        new TreeSectionItem(
+          vscode.l10n.t("Datasources"),
+          "datasources-section",
+          "database",
+        ),
       ];
     }
 

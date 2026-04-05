@@ -139,7 +139,9 @@ export class OutlineTreeProvider implements vscode.TreeDataProvider<OutlineTreeI
 
     const panel = this.webviewPanels.get(this.activeDocumentUri);
     if (!panel) {
-      vscode.window.showWarningMessage("Document webview not found");
+      vscode.window.showWarningMessage(
+        vscode.l10n.t("Document webview not found"),
+      );
       return;
     }
 
@@ -233,7 +235,7 @@ export class OutlineTreeItem extends vscode.TreeItem {
 
     // Set description for active item
     if (isActive) {
-      this.description = "← current";
+      this.description = `\u2190 ${vscode.l10n.t("current")}`;
     }
 
     // Set icon only for code cells
@@ -247,7 +249,7 @@ export class OutlineTreeItem extends vscode.TreeItem {
     // Make clickable
     this.command = {
       command: "datalayer.outline.navigate",
-      title: "Navigate to",
+      title: vscode.l10n.t("Navigate to"),
       arguments: [this],
     };
 
@@ -270,22 +272,22 @@ export class OutlineTreeItem extends vscode.TreeItem {
       this.item.type === "h5" ||
       this.item.type === "h6"
     ) {
-      type = `Heading ${this.item.type.substring(1)}`;
+      type = vscode.l10n.t("Heading {0}", this.item.type.substring(1));
     } else if (this.item.type === "heading") {
-      type = `Heading ${this.item.level || ""}`;
+      type = vscode.l10n.t("Heading {0}", this.item.level || "");
     } else if (this.item.type === "code" || this.item.type === "code-cell") {
-      type = "Code";
+      type = vscode.l10n.t("Code");
     } else if (this.item.type === "markdown-cell") {
-      type = "Markdown Cell";
+      type = vscode.l10n.t("Markdown Cell");
     } else {
       type = this.item.type;
     }
 
     const location =
       this.item.cellIndex !== undefined
-        ? ` (Cell ${this.item.cellIndex + 1})`
+        ? ` (${vscode.l10n.t("Cell {0}", this.item.cellIndex + 1)})`
         : this.item.line !== undefined
-          ? ` (Line ${this.item.line + 1})`
+          ? ` (${vscode.l10n.t("Line {0}", this.item.line + 1)})`
           : "";
 
     return `${type}${location}: ${this.item.label}`;

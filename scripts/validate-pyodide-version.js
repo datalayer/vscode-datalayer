@@ -46,14 +46,14 @@ const filesToSync = [
     description: 'PyodidePreloader (native)'
   },
   {
-    path: 'package.json',
+    path: 'package.nls.json',
     pattern: /Native VS Code notebooks use a fixed version \(v([\d.]+) from npm package\)/,
     replace: (content, version) =>
       content.replace(
         /Native VS Code notebooks use a fixed version \(v[\d.]+ from npm package\)/,
         `Native VS Code notebooks use a fixed version (v${version} from npm package)`
       ),
-    description: 'package.json config'
+    description: 'package.nls.json config'
   }
 ];
 

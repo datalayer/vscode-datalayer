@@ -32,26 +32,32 @@ export class DatasourceTreeItem extends vscode.TreeItem {
     // Tooltip with datasource details
     this.tooltip = new vscode.MarkdownString();
     this.tooltip.appendMarkdown(`**${datasource.name}**\n\n`);
-    this.tooltip.appendMarkdown(`- **Type:** ${datasource.type}\n`);
+    this.tooltip.appendMarkdown(
+      `- **${vscode.l10n.t("Type")}:** ${datasource.type}\n`,
+    );
     if (datasource.description) {
       this.tooltip.appendMarkdown(
-        `- **Description:** ${datasource.description}\n`,
+        `- **${vscode.l10n.t("Description")}:** ${datasource.description}\n`,
       );
     }
     if (datasource.database) {
-      this.tooltip.appendMarkdown(`- **Database:** ${datasource.database}\n`);
+      this.tooltip.appendMarkdown(
+        `- **${vscode.l10n.t("Database")}:** ${datasource.database}\n`,
+      );
     }
     if (datasource.outputBucket) {
       this.tooltip.appendMarkdown(
-        `- **Output Bucket:** ${datasource.outputBucket}\n`,
+        `- **${vscode.l10n.t("Output Bucket")}:** ${datasource.outputBucket}\n`,
       );
     }
     if (datasource.createdAt) {
       this.tooltip.appendMarkdown(
-        `- **Created:** ${new Date(datasource.createdAt).toLocaleString()}\n`,
+        `- **${vscode.l10n.t("Created")}:** ${new Date(datasource.createdAt).toLocaleString()}\n`,
       );
     }
-    this.tooltip.appendMarkdown(`- **ID:** ${datasource.uid}\n`);
+    this.tooltip.appendMarkdown(
+      `- **${vscode.l10n.t("ID")}:** ${datasource.uid}\n`,
+    );
 
     // Use database icon
     this.iconPath = new vscode.ThemeIcon("database");
@@ -62,7 +68,7 @@ export class DatasourceTreeItem extends vscode.TreeItem {
     // Click command - opens edit dialog
     this.command = {
       command: "datalayer.editDatasource",
-      title: "Edit Datasource",
+      title: vscode.l10n.t("Edit Datasource"),
       arguments: [this],
     };
   }

@@ -11,6 +11,7 @@
  * @module LexicalToolbar
  */
 
+import * as l10n from "@vscode/l10n";
 import React, { useCallback, useEffect, useState, useContext } from "react";
 import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext";
 import { $isCodeNode } from "@lexical/code";
@@ -820,49 +821,49 @@ export function LexicalToolbar({
   const blockTypeItems: DropdownItem[] = [
     {
       id: "paragraph",
-      label: "Normal",
+      label: l10n.t("Normal"),
       onClick: formatParagraph,
       active: blockType === "paragraph",
     },
     {
       id: "h1",
-      label: "Heading 1",
+      label: l10n.t("Heading 1"),
       onClick: () => formatHeading("h1"),
       active: blockType === "h1",
     },
     {
       id: "h2",
-      label: "Heading 2",
+      label: l10n.t("Heading 2"),
       onClick: () => formatHeading("h2"),
       active: blockType === "h2",
     },
     {
       id: "h3",
-      label: "Heading 3",
+      label: l10n.t("Heading 3"),
       onClick: () => formatHeading("h3"),
       active: blockType === "h3",
     },
     {
       id: "bullet",
-      label: "Bullet List",
+      label: l10n.t("Bullet List"),
       onClick: formatBulletList,
       active: blockType === "bullet",
     },
     {
       id: "number",
-      label: "Numbered List",
+      label: l10n.t("Numbered List"),
       onClick: formatNumberedList,
       active: blockType === "number",
     },
     {
       id: "check",
-      label: "Check List",
+      label: l10n.t("Check List"),
       onClick: formatCheckList,
       active: blockType === "check",
     },
     {
       id: "quote",
-      label: "Quote",
+      label: l10n.t("Quote"),
       onClick: formatQuote,
       active: blockType === "quote",
     },
@@ -890,37 +891,37 @@ export function LexicalToolbar({
   const alignmentItems: DropdownItem[] = [
     {
       id: "left",
-      label: "Left Align",
+      label: l10n.t("Left Align"),
       onClick: alignLeft,
       active: elementFormat === "left",
     },
     {
       id: "center",
-      label: "Center Align",
+      label: l10n.t("Center Align"),
       onClick: alignCenter,
       active: elementFormat === "center",
     },
     {
       id: "right",
-      label: "Right Align",
+      label: l10n.t("Right Align"),
       onClick: alignRight,
       active: elementFormat === "right",
     },
     {
       id: "justify",
-      label: "Justify",
+      label: l10n.t("Justify"),
       onClick: alignJustify,
       active: elementFormat === "justify",
     },
     {
       id: "outdent",
-      label: "Outdent",
+      label: l10n.t("Outdent"),
       onClick: outdent,
       dividerBefore: true,
     },
     {
       id: "indent",
-      label: "Indent",
+      label: l10n.t("Indent"),
       onClick: indent,
     },
   ];
@@ -929,43 +930,43 @@ export function LexicalToolbar({
   const insertMenuItems: DropdownItem[] = [
     {
       id: "insert-jupyter-cell",
-      label: "Jupyter Cell",
+      label: l10n.t("Jupyter Cell"),
       onClick: insertJupyterCell,
     },
     {
       id: "insert-equation",
-      label: "Equation",
+      label: l10n.t("Equation"),
       onClick: insertEquation,
     },
     {
       id: "insert-hr",
-      label: "Horizontal Rule",
+      label: l10n.t("Horizontal Rule"),
       onClick: insertHorizontalRule,
       dividerBefore: true,
     },
     {
       id: "insert-image",
-      label: "Image",
+      label: l10n.t("Image"),
       onClick: insertImage,
     },
     {
       id: "insert-gif",
-      label: "GIF",
+      label: l10n.t("GIF"),
       onClick: insertGif,
     },
     {
       id: "insert-youtube",
-      label: "YouTube Video",
+      label: l10n.t("YouTube Video"),
       onClick: insertYouTube,
     },
     {
       id: "insert-table",
-      label: "Table",
+      label: l10n.t("Table"),
       onClick: insertTable,
     },
     {
       id: "insert-collapsible",
-      label: "Collapsible Container",
+      label: l10n.t("Collapsible Container"),
       onClick: insertCollapsible,
     },
     {
@@ -982,7 +983,7 @@ export function LexicalToolbar({
   const textFormattingItems: DropdownItem[] = [
     {
       id: "uppercase",
-      label: "Uppercase",
+      label: l10n.t("Uppercase"),
       onClick: () => {
         editor.update(() => {
           const selection = $getSelection();
@@ -995,7 +996,7 @@ export function LexicalToolbar({
     },
     {
       id: "lowercase",
-      label: "Lowercase",
+      label: l10n.t("Lowercase"),
       onClick: () => {
         editor.update(() => {
           const selection = $getSelection();
@@ -1008,7 +1009,7 @@ export function LexicalToolbar({
     },
     {
       id: "capitalize",
-      label: "Capitalize",
+      label: l10n.t("Capitalize"),
       onClick: () => {
         editor.update(() => {
           const selection = $getSelection();
@@ -1024,33 +1025,33 @@ export function LexicalToolbar({
     },
     {
       id: "strikethrough2",
-      label: "Strikethrough",
+      label: l10n.t("Strikethrough"),
       onClick: formatStrikethrough,
       active: isStrikethrough,
       dividerBefore: true,
     },
     {
       id: "subscript2",
-      label: "Subscript",
+      label: l10n.t("Subscript"),
       onClick: formatSubscript,
       active: isSubscript,
     },
     {
       id: "superscript2",
-      label: "Superscript",
+      label: l10n.t("Superscript"),
       onClick: formatSuperscript,
       active: isSuperscript,
     },
     {
       id: "highlight2",
-      label: "Highlight",
+      label: l10n.t("Highlight"),
       onClick: formatHighlight,
       active: isHighlight,
       dividerBefore: true,
     },
     {
       id: "clear-format2",
-      label: "Clear Formatting",
+      label: l10n.t("Clear Formatting"),
       onClick: clearFormatting,
       dividerBefore: true,
     },
@@ -1065,8 +1066,8 @@ export function LexicalToolbar({
     {
       id: "runCell",
       icon: "codicon codicon-play",
-      label: "Run Cell",
-      title: "Run Current Cell (Shift+Enter)",
+      label: l10n.t("Run Cell"),
+      title: l10n.t("Run Current Cell (Shift+Enter)"),
       onClick: handleRunCell,
       priority: 1,
       disabled: !hasKernel,
@@ -1074,8 +1075,8 @@ export function LexicalToolbar({
     {
       id: "runAll",
       icon: "codicon codicon-run-all",
-      label: "Run All",
-      title: "Run All Cells",
+      label: l10n.t("Run All"),
+      title: l10n.t("Run All Cells"),
       onClick: handleRunAll,
       priority: 2,
       disabled: !hasKernel,
@@ -1083,8 +1084,8 @@ export function LexicalToolbar({
     {
       id: "clearAllOutputs",
       icon: "codicon codicon-clear-all",
-      label: "Clear All Outputs",
-      title: "Clear All Cell Outputs",
+      label: l10n.t("Clear All Outputs"),
+      title: l10n.t("Clear All Cell Outputs"),
       onClick: handleClearAllOutputs,
       priority: 4,
       disabled: false,
@@ -1092,8 +1093,8 @@ export function LexicalToolbar({
     {
       id: "restartKernel",
       icon: "codicon codicon-debug-restart",
-      label: "Restart",
-      title: "Restart Kernel",
+      label: l10n.t("Restart"),
+      title: l10n.t("Restart Kernel"),
       onClick: handleRestartKernel,
       priority: 5,
       disabled: !hasKernelSession,
@@ -1102,7 +1103,7 @@ export function LexicalToolbar({
 
   const getBlockTypeLabel = () => {
     const item = blockTypeItems.find((i) => i.active);
-    return item?.label || "Normal";
+    return item?.label || l10n.t("Normal");
   };
 
   // Reserved width for right content (kernel selector + collaborative label)
@@ -1156,13 +1157,13 @@ export function LexicalToolbar({
               icon="codicon codicon-discard"
               onClick={undo}
               disabled={!canUndo || disabled}
-              title="Undo"
+              title={l10n.t("Undo")}
             />
             <ToolbarButton
               icon="codicon codicon-redo"
               onClick={redo}
               disabled={!canRedo || disabled}
-              title="Redo"
+              title={l10n.t("Redo")}
             />
 
             <div
@@ -1215,7 +1216,7 @@ export function LexicalToolbar({
                 icon="codicon codicon-remove"
                 onClick={decreaseFontSize}
                 disabled={disabled || FONT_SIZE_OPTIONS.indexOf(fontSize) === 0}
-                title="Decrease font size"
+                title={l10n.t("Decrease font size")}
                 style={{
                   padding: "2px",
                   minWidth: "20px",
@@ -1238,7 +1239,7 @@ export function LexicalToolbar({
                   FONT_SIZE_OPTIONS.indexOf(fontSize) ===
                     FONT_SIZE_OPTIONS.length - 1
                 }
-                title="Increase font size"
+                title={l10n.t("Increase font size")}
                 style={{
                   padding: "2px",
                   minWidth: "20px",
@@ -1257,7 +1258,7 @@ export function LexicalToolbar({
             />
 
             {/* Bold, Italic, Underline, Code, Link buttons (icon only with tooltips) */}
-            <div title="Bold">
+            <div title={l10n.t("Bold")}>
               <ToolbarButton
                 icon="codicon codicon-bold"
                 onClick={formatBold}
@@ -1270,7 +1271,7 @@ export function LexicalToolbar({
                 }}
               />
             </div>
-            <div title="Italic">
+            <div title={l10n.t("Italic")}>
               <ToolbarButton
                 icon="codicon codicon-italic"
                 onClick={formatItalic}
@@ -1283,7 +1284,7 @@ export function LexicalToolbar({
                 }}
               />
             </div>
-            <div title="Underline">
+            <div title={l10n.t("Underline")}>
               <ToolbarButton
                 label="U"
                 onClick={formatUnderline}
@@ -1298,7 +1299,7 @@ export function LexicalToolbar({
                 }}
               />
             </div>
-            <div title="Code">
+            <div title={l10n.t("Code")}>
               <ToolbarButton
                 icon="codicon codicon-code"
                 onClick={formatCode}
@@ -1311,7 +1312,7 @@ export function LexicalToolbar({
                 }}
               />
             </div>
-            <div title="Link">
+            <div title={l10n.t("Link")}>
               <ToolbarButton
                 icon="codicon codicon-link"
                 onClick={insertLink}
@@ -1335,7 +1336,7 @@ export function LexicalToolbar({
             />
 
             {/* Text Color Picker */}
-            <div title="Text color" style={{ position: "relative" }}>
+            <div title={l10n.t("Text color")} style={{ position: "relative" }}>
               <input
                 type="color"
                 value={textColor}
@@ -1354,7 +1355,10 @@ export function LexicalToolbar({
             </div>
 
             {/* Highlight Color Picker */}
-            <div title="Highlight color" style={{ position: "relative" }}>
+            <div
+              title={l10n.t("Highlight color")}
+              style={{ position: "relative" }}
+            >
               <input
                 type="color"
                 value={highlightColor}
@@ -1373,7 +1377,7 @@ export function LexicalToolbar({
             </div>
 
             {/* Text Transform dropdown (Aa) - compact */}
-            <div title="Text transform">
+            <div title={l10n.t("Text transform")}>
               <Dropdown
                 buttonLabel="Aa"
                 items={textFormattingItems}
@@ -1394,7 +1398,7 @@ export function LexicalToolbar({
             />
 
             {/* Insert dropdown (+ only, no text) */}
-            <div title="Insert">
+            <div title={l10n.t("Insert")}>
               <Dropdown
                 buttonLabel=""
                 buttonIcon="codicon codicon-add"
@@ -1416,7 +1420,7 @@ export function LexicalToolbar({
             />
 
             {/* Alignment dropdown at the end */}
-            <div title="Alignment">
+            <div title={l10n.t("Alignment")}>
               <Dropdown
                 buttonLabel=""
                 buttonIcon="codicon codicon-editor-layout"
@@ -1429,7 +1433,7 @@ export function LexicalToolbar({
             </div>
 
             {/* Add Comment Button */}
-            <div title="Add Comment (select text first)">
+            <div title={l10n.t("Add Comment (select text first)")}>
               <button
                 type="button"
                 className="toolbar-button"
@@ -1457,7 +1461,7 @@ export function LexicalToolbar({
             </div>
 
             {/* Comments Panel Toggle */}
-            <div title="Toggle Comments Panel">
+            <div title={l10n.t("Toggle Comments Panel")}>
               <button
                 type="button"
                 className="toolbar-button"
@@ -1538,7 +1542,7 @@ export function LexicalToolbar({
                     animation: "pulse 2s infinite",
                   }}
                 />
-                <span>Collaborative • Auto-saved</span>
+                <span>{l10n.t("Collaborative \u2022 Auto-saved")}</span>
               </div>
             )}
             {showRuntimeSelector && (

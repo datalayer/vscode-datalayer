@@ -97,11 +97,11 @@ export class SpacesTreeProvider implements vscode.TreeDataProvider<SpaceItem> {
       if (!authState.isAuthenticated) {
         return [
           new SpaceItem(
-            "Not logged in - Click to login",
+            vscode.l10n.t("Not logged in - Click to login"),
             vscode.TreeItemCollapsibleState.None,
             {
               type: ItemType.ERROR,
-              error: "Click to login to Datalayer",
+              error: vscode.l10n.t("Click to login to Datalayer"),
             },
           ),
         ];
@@ -112,11 +112,11 @@ export class SpacesTreeProvider implements vscode.TreeDataProvider<SpaceItem> {
       if (!user) {
         return [
           new SpaceItem(
-            "Authentication error - please try again",
+            vscode.l10n.t("Authentication error - please try again"),
             vscode.TreeItemCollapsibleState.None,
             {
               type: ItemType.ERROR,
-              error: "User information not available",
+              error: vscode.l10n.t("User information not available"),
             },
           ),
         ];
@@ -192,11 +192,11 @@ export class SpacesTreeProvider implements vscode.TreeDataProvider<SpaceItem> {
       if (spaces.length === 0) {
         return [
           new SpaceItem(
-            "No spaces found",
+            vscode.l10n.t("No spaces found"),
             vscode.TreeItemCollapsibleState.None,
             {
               type: ItemType.ERROR,
-              error: "No spaces available",
+              error: vscode.l10n.t("No spaces available"),
             },
           ),
         ];
@@ -217,7 +217,10 @@ export class SpacesTreeProvider implements vscode.TreeDataProvider<SpaceItem> {
       return spaces.map((space) => {
         const name = space.name;
         const variant = space.variant;
-        const label = variant === "default" ? `${name} (Default)` : name;
+        const label =
+          variant === "default"
+            ? `${name} (${vscode.l10n.t("Default")})`
+            : name;
         return new SpaceItem(label, vscode.TreeItemCollapsibleState.Expanded, {
           type: ItemType.SPACE,
           space: space,
@@ -226,11 +229,14 @@ export class SpacesTreeProvider implements vscode.TreeDataProvider<SpaceItem> {
     } catch (error) {
       return [
         new SpaceItem(
-          "Failed to load spaces",
+          vscode.l10n.t("Failed to load spaces"),
           vscode.TreeItemCollapsibleState.None,
           {
             type: ItemType.ERROR,
-            error: error instanceof Error ? error.message : "Unknown error",
+            error:
+              error instanceof Error
+                ? error.message
+                : vscode.l10n.t("Unknown error"),
           },
         ),
       ];
@@ -252,11 +258,11 @@ export class SpacesTreeProvider implements vscode.TreeDataProvider<SpaceItem> {
       if (!spaceId) {
         return [
           new SpaceItem(
-            "Unable to load items - invalid space ID",
+            vscode.l10n.t("Unable to load items - invalid space ID"),
             vscode.TreeItemCollapsibleState.None,
             {
               type: ItemType.ERROR,
-              error: "Space ID is missing",
+              error: vscode.l10n.t("Space ID is missing"),
             },
           ),
         ];
@@ -292,11 +298,11 @@ export class SpacesTreeProvider implements vscode.TreeDataProvider<SpaceItem> {
       if (items.length === 0) {
         return [
           new SpaceItem(
-            "No items found",
+            vscode.l10n.t("No items found"),
             vscode.TreeItemCollapsibleState.None,
             {
               type: ItemType.ERROR,
-              error: "This space is empty",
+              error: vscode.l10n.t("This space is empty"),
             },
           ),
         ];
@@ -343,11 +349,13 @@ export class SpacesTreeProvider implements vscode.TreeDataProvider<SpaceItem> {
       if (result.length === 0 && items.length > 0) {
         return [
           new SpaceItem(
-            "No notebooks or .dlex documents found",
+            vscode.l10n.t("No notebooks or .dlex documents found"),
             vscode.TreeItemCollapsibleState.None,
             {
               type: ItemType.ERROR,
-              error: "This space may contain other document types",
+              error: vscode.l10n.t(
+                "This space may contain other document types",
+              ),
             },
           ),
         ];
@@ -357,11 +365,14 @@ export class SpacesTreeProvider implements vscode.TreeDataProvider<SpaceItem> {
     } catch (error) {
       return [
         new SpaceItem(
-          "Failed to load documents",
+          vscode.l10n.t("Failed to load documents"),
           vscode.TreeItemCollapsibleState.None,
           {
             type: ItemType.ERROR,
-            error: error instanceof Error ? error.message : "Unknown error",
+            error:
+              error instanceof Error
+                ? error.message
+                : vscode.l10n.t("Unknown error"),
           },
         ),
       ];

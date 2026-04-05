@@ -183,9 +183,9 @@ export class LexicalDocument
       const message =
         error instanceof Error
           ? error.message
-          : "Failed to load remote document";
+          : vscode.l10n.t("Failed to load remote document");
       vscode.window.showWarningMessage(
-        `${message}. Loading with default content.`,
+        vscode.l10n.t("{0}. Loading with default content.", message),
       );
       return LexicalDocument.getDefaultContent();
     }

@@ -142,7 +142,7 @@ async function discoverCloudKernels(
     kernels.push({
       id: "CREATE_NEW_RUNTIME",
       name: "create-new",
-      displayName: "\u26A1 Start New Runtime...",
+      displayName: "\u26A1 " + vscode.l10n.t("Start New Runtime..."),
       language: "python",
       type: "cloud",
       status: "idle",
@@ -195,14 +195,15 @@ export const listKernelsOperation: ToolOperation<
     kernels.push({
       id: "pyodide-local",
       name: "pyodide",
-      displayName: "🌐 Pyodide (Browser Python)",
+      displayName: "\uD83C\uDF10 " + vscode.l10n.t("Pyodide (Browser Python)"),
       language: "python",
       type: "local",
       status: "idle",
       metadata: {
         isPyodide: true,
-        description:
+        description: vscode.l10n.t(
           "Browser-based Python kernel powered by WebAssembly. No server required.",
+        ),
       },
     });
 
@@ -238,18 +239,29 @@ export const listKernelsOperation: ToolOperation<
       (k) => k.id === "CREATE_NEW_RUNTIME",
     );
 
-    let chatMessage = `Found ${filteredKernels.length} kernel(s)`;
+    let chatMessage = vscode.l10n.t(
+      "Found {0} kernel(s)",
+      filteredKernels.length,
+    );
     if (pyodideCount > 0) {
-      chatMessage += ` (Pyodide browser Python)`;
+      chatMessage += " " + vscode.l10n.t("(Pyodide browser Python)");
     }
     if (cloudCount > 0) {
-      chatMessage += ` (${cloudCount} cloud runtime${cloudCount > 1 ? "s" : ""})`;
+      chatMessage +=
+        " " +
+        (cloudCount === 1
+          ? vscode.l10n.t("({0} cloud runtime)", cloudCount)
+          : vscode.l10n.t("({0} cloud runtimes)", cloudCount));
     }
     if (localCount > 0) {
-      chatMessage += ` (${localCount} local environment${localCount > 1 ? "s" : ""})`;
+      chatMessage +=
+        " " +
+        (localCount === 1
+          ? vscode.l10n.t("({0} local environment)", localCount)
+          : vscode.l10n.t("({0} local environments)", localCount));
     }
     if (hasCreateNew) {
-      chatMessage += ` + option to start new runtime`;
+      chatMessage += " + " + vscode.l10n.t("option to start new runtime");
     }
 
     return {

@@ -15,6 +15,7 @@ import { ErrorBoundary } from "../components/ErrorBoundary";
 import "../styles/collapsible-vscode.css";
 import "../styles/vscode-primer-overrides.css";
 
+import * as l10n from "@vscode/l10n";
 import React, { useEffect, useState, useCallback, useRef } from "react";
 import ReactDOM from "react-dom/client";
 import { ServiceManager } from "@jupyterlab/services";
@@ -588,21 +589,26 @@ if (container) {
       "[LexicalWebview] Failed to create/render React root:",
       error,
     );
+    const safeError = String(error)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;");
     container.innerHTML = `
       <div style="padding: 20px; background-color: var(--vscode-editor-background); color: var(--vscode-errorForeground); font-family: var(--vscode-editor-font-family); min-height: 100vh;">
-        <h3>Failed to load Lexical Editor</h3>
-        <p>Error: ${error}</p>
-        <p>Please try reloading the editor.</p>
+        <h3>${l10n.t("Failed to load Lexical Editor")}</h3>
+        <p>${l10n.t("Error: {0}", safeError)}</p>
+        <p>${l10n.t("Please try reloading the editor.")}</p>
       </div>
     `;
   }
 } else {
   console.error("[LexicalWebview] Root element not found!");
+  // eslint-disable-next-line no-unsanitized/property -- Static l10n strings in VS Code webview, no user input
   document.body.innerHTML = `
     <div style="padding: 20px; background-color: var(--vscode-editor-background); color: var(--vscode-errorForeground); font-family: var(--vscode-editor-font-family); min-height: 100vh;">
-      <h3>Failed to load Lexical Editor</h3>
-      <p>Error: Root element not found</p>
-      <p>Please try reloading the editor.</p>
+      <h3>${l10n.t("Failed to load Lexical Editor")}</h3>
+      <p>${l10n.t("Error: Root element not found")}</p>
+      <p>${l10n.t("Please try reloading the editor.")}</p>
     </div>
   `;
 }

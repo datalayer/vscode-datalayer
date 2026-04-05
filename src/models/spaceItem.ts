@@ -212,19 +212,19 @@ export class SpaceItem extends vscode.TreeItem {
     if (this.data.type === ItemType.NOTEBOOK && this.data.document) {
       return {
         command: "datalayer.openDocument",
-        title: "Open Notebook",
+        title: vscode.l10n.t("Open Notebook"),
         arguments: [this.data.document, this.data.spaceName],
       };
     } else if (this.data.type === ItemType.DOCUMENT && this.data.document) {
       return {
         command: "datalayer.openDocument",
-        title: "Open",
+        title: vscode.l10n.t("Open"),
         arguments: [this.data.document, this.data.spaceName],
       };
     } else if (this.data.type === ItemType.CELL && this.data.document) {
       return {
         command: "datalayer.openDocument",
-        title: "Open Cell",
+        title: vscode.l10n.t("Open Cell"),
         arguments: [this.data.document, this.data.spaceName],
       };
     } else if (this.data.type === ItemType.ERROR) {
@@ -232,13 +232,13 @@ export class SpaceItem extends vscode.TreeItem {
       if (this.data.error?.includes("login") || this.label.includes("login")) {
         return {
           command: "datalayer.login",
-          title: "Login",
+          title: vscode.l10n.t("Login"),
         };
       }
       // Otherwise show refresh command
       return {
         command: "datalayer.refreshSpaces",
-        title: "Retry",
+        title: vscode.l10n.t("Retry"),
       };
     }
     return undefined;

@@ -13,6 +13,8 @@
  * @module tools/internal/createLexical
  */
 
+import * as vscode from "vscode";
+
 import type { CreateDocumentResult } from "../utils/createDocument";
 
 /**
@@ -173,7 +175,7 @@ export async function createCloudLexical(
     const spaces = await client.getMySpaces();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const space = spaces.find((s: any) => s.uid === targetSpaceId);
-    const spaceDisplayName = space?.name || "Unknown Space";
+    const spaceDisplayName = space?.name || vscode.l10n.t("Unknown Space");
 
     // URI format: datalayer://{spaceName}/{documentId}/{filename}
     // Encode path components to handle spaces and special characters

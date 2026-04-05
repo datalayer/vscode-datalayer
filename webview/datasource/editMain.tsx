@@ -8,9 +8,16 @@
  * Entry point for Datasource Edit Dialog webview
  */
 
+import * as l10n from "@vscode/l10n";
 import React from "react";
 import { createRoot } from "react-dom/client";
+
 import { DatasourceEditDialog } from "./DatasourceEditDialog";
+
+// Initialize l10n with the bundle injected by the extension host.
+// The bundle is an empty object when running with the default English locale.
+declare const window: Window & { __l10nBundle__?: Record<string, string> };
+l10n.config({ contents: window.__l10nBundle__ ?? {} });
 
 // Get initial theme from VS Code
 const getInitialTheme = (): "light" | "dark" => {

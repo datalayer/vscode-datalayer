@@ -124,13 +124,16 @@ export class DatalayerStatusBar implements vscode.Disposable {
       const user = authState.user;
       const displayName = user.displayName || user.email;
       this.statusBarItem.text = `$(datalayer-logo) Datalayer`;
-      this.statusBarItem.tooltip = `Connected as ${displayName}`;
+      this.statusBarItem.tooltip = vscode.l10n.t(
+        "Connected as {0}",
+        displayName,
+      );
       this.statusBarItem.command = "datalayer.showAuthStatus";
       this.statusBarItem.color = undefined;
       this.statusBarItem.backgroundColor = undefined;
     } else {
-      this.statusBarItem.text = "$(datalayer-logo) Datalayer: Not Connected";
-      this.statusBarItem.tooltip = "Click to login";
+      this.statusBarItem.text = `$(datalayer-logo) Datalayer: ${vscode.l10n.t("Not Connected")}`;
+      this.statusBarItem.tooltip = vscode.l10n.t("Click to login");
       this.statusBarItem.command = "datalayer.login";
       // Keep colors consistent - no special warning colors
       this.statusBarItem.color = undefined;

@@ -52,7 +52,7 @@ export class PyodideCacheManager {
         { detail: pyodideCacheDir },
       );
       progress?.report({
-        message: "Pyodide core files already cached",
+        message: vscode.l10n.t("Pyodide core files already cached"),
         increment: 20,
       });
       return pyodideCacheDir;
@@ -79,7 +79,12 @@ export class PyodideCacheManager {
     for (let i = 0; i < totalFiles; i++) {
       const file = requiredFiles[i]!;
       progress?.report({
-        message: `Downloading ${file} (${i + 1}/${totalFiles})`,
+        message: vscode.l10n.t(
+          "Downloading {0} ({1}/{2})",
+          file,
+          i + 1,
+          totalFiles,
+        ),
         increment: 20 / totalFiles,
       });
 
@@ -123,7 +128,7 @@ export class PyodideCacheManager {
     }
 
     progress?.report({
-      message: "Initializing Pyodide for package download...",
+      message: vscode.l10n.t("Initializing Pyodide for package download..."),
       increment: 5,
     });
 
@@ -146,7 +151,7 @@ export class PyodideCacheManager {
     } as Parameters<typeof loadPyodide>[0]);
 
     progress?.report({
-      message: "Loading micropip...",
+      message: vscode.l10n.t("Loading micropip..."),
       increment: 5,
     });
 
@@ -162,7 +167,12 @@ export class PyodideCacheManager {
     for (let i = 0; i < totalPackages; i++) {
       const pkg = packages[i]!;
       progress?.report({
-        message: `Downloading ${pkg} (${i + 1}/${totalPackages})`,
+        message: vscode.l10n.t(
+          "Downloading {0} ({1}/{2})",
+          pkg,
+          i + 1,
+          totalPackages,
+        ),
         increment: 70 / totalPackages,
       });
 

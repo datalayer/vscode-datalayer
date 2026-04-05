@@ -37,11 +37,11 @@ export class SnapshotTreeItem extends vscode.TreeItem {
     // Tooltip with full details
     const snapshotData = snapshot.toJSON();
     this.tooltip = new vscode.MarkdownString(
-      `**Snapshot:** ${snapshot.name}\n\n` +
-        `**Environment:** ${snapshot.environment}\n\n` +
-        `**Description:** ${snapshot.description || "No description"}\n\n` +
-        `**Created:** ${new Date(snapshotData.updatedAt).toLocaleString()}\n\n` +
-        `**ID:** ${snapshotData.uid.slice(0, 8)}...`,
+      `**${vscode.l10n.t("Snapshot")}:** ${snapshot.name}\n\n` +
+        `**${vscode.l10n.t("Environment")}:** ${snapshot.environment}\n\n` +
+        `**${vscode.l10n.t("Description")}:** ${snapshot.description || vscode.l10n.t("No description")}\n\n` +
+        `**${vscode.l10n.t("Created")}:** ${new Date(snapshotData.updatedAt).toLocaleString()}\n\n` +
+        `**${vscode.l10n.t("ID")}:** ${snapshotData.uid.slice(0, 8)}...`,
     );
 
     // Context for menu items

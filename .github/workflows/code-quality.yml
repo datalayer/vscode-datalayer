@@ -7,6 +7,7 @@ on:
       - "src/**"
       - "webview/**"
       - "scripts/**"
+      - "l10n/**"
       - "*.json"
       - "*.js"
       - "*.ts"
@@ -18,6 +19,7 @@ on:
       - "src/**"
       - "webview/**"
       - "scripts/**"
+      - "l10n/**"
       - "*.json"
       - "*.js"
       - "*.ts"
@@ -131,6 +133,31 @@ jobs:
 
       - name: Generate and validate TypeDoc (0 warnings required)
         run: npm run docs
+
+  l10n:
+    name: Localization Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: "22"
+          cache: "npm"
+
+      - name: Install system dependencies for keytar
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libsecret-1-dev
+
+      - name: Install dependencies
+        run: npm install --ignore-engines
+
+      - name: Validate l10n consistency
+        run: npm run check:l10n
 
   spelling:
     name: Spell Check

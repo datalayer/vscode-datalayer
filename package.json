@@ -2,7 +2,7 @@
   "name": "datalayer-jupyter-vscode",
   "publisher": "Datalayer",
   "displayName": "Datalayer",
-  "description": "✨ 🤖 Autonomous Agents for Data Analysis. LLM are bad at data — we fix that.",
+  "description": "%description%",
   "version": "0.0.14",
   "cache_version": "2",
   "icon": "images/datalayer-logo.png",
@@ -25,10 +25,11 @@
   "scripts": {
     "apply:patches": "bash scripts/apply-patches.sh",
     "build:icons": "node scripts/build-icons.js",
-    "check": "npm run format:check && npm run lint && npm run type-check && npm run docs:check-readmes",
+    "check": "npm run format:check && npm run lint && npm run type-check && npm run docs:check-readmes && npm run check:l10n",
     "check:fix": "npm run format && npm run lint:fix && npm run type-check",
     "check:spelling": "cspell \"src/**/*.ts\" \"webview/**/*.ts\" \"webview/**/*.tsx\" --no-progress",
     "check:dead-code": "knip",
+    "check:l10n": "node scripts/validate-l10n.js",
     "clean": "rm -rf dist out *.vsix",
     "clean:dist": "rm -rf dist",
     "clean:out": "rm -rf out",
@@ -118,6 +119,7 @@
     "@toon-format/toon": "^2.1.0",
     "@vscode/codicons": "^0.0.45",
     "@vscode/jupyter-extension": "^1.1.1",
+    "@vscode/l10n": "^0.0.18",
     "@vscode/python-extension": "^1.0.6",
     "ansi-to-html": "^0.7.2",
     "buffer": "^6.0.3",
@@ -219,7 +221,7 @@
   "contributes": {
     "icons": {
       "datalayer-logo": {
-        "description": "Datalayer logo",
+        "description": "%icons.datalayer-logo.description%",
         "default": {
           "fontPath": "./resources/datalayer-icons.woff",
           "fontCharacter": "\\e900"
@@ -230,260 +232,260 @@
       {
         "name": "Datalayer",
         "path": "./resources/agents/datalayer.agent.md",
-        "description": "Data science assistant for Jupyter notebooks and Lexical documents"
+        "description": "%chatAgents.Datalayer.description%"
       }
     ],
     "commands": [
       {
         "command": "datalayer.login",
-        "title": "Login to Datalayer",
-        "category": "Datalayer"
+        "title": "%commands.login.title%",
+        "category": "%commands.category%"
       },
       {
         "command": "datalayer.logout",
-        "title": "Logout from Datalayer",
-        "category": "Datalayer"
+        "title": "%commands.logout.title%",
+        "category": "%commands.category%"
       },
       {
         "command": "datalayer.showAuthStatus",
-        "title": "Datalayer",
-        "category": "Datalayer",
+        "title": "%commands.showAuthStatus.title%",
+        "category": "%commands.category%",
         "icon": "$(datalayer-logo)"
       },
       {
         "command": "datalayer.showPrimerThemeShowcase",
-        "title": "Show Primer Theme Showcase",
-        "category": "Datalayer"
+        "title": "%commands.showPrimerThemeShowcase.title%",
+        "category": "%commands.category%"
       },
       {
         "command": "datalayer.showAgUIExample",
-        "title": "Show ag-ui Notebook Example (with CopilotKit)",
-        "category": "Datalayer"
+        "title": "%commands.showAgUIExample.title%",
+        "category": "%commands.category%"
       },
       {
         "command": "datalayer.help",
-        "title": "Help and Feedback",
-        "category": "Datalayer"
+        "title": "%commands.help.title%",
+        "category": "%commands.category%"
       },
       {
         "command": "datalayer.internal.resetOnboarding",
-        "title": "Reset Onboarding (Dev)",
-        "category": "Datalayer"
+        "title": "%commands.internal.resetOnboarding.title%",
+        "category": "%commands.category%"
       },
       {
         "command": "datalayer.internal.testCompletion",
-        "title": "Test Prose Completion (Debug)",
-        "category": "Datalayer"
+        "title": "%commands.internal.testCompletion.title%",
+        "category": "%commands.category%"
       },
       {
         "command": "datalayer.selectRuntime",
-        "title": "Select/Switch Runtime",
-        "category": "Datalayer"
+        "title": "%commands.selectRuntime.title%",
+        "category": "%commands.category%"
       },
       {
         "command": "datalayer.terminateRuntime",
-        "title": "Terminate Runtime",
-        "category": "Datalayer"
+        "title": "%commands.terminateRuntime.title%",
+        "category": "%commands.category%"
       },
       {
         "command": "datalayer.newLocalDatalayerNotebook",
-        "title": "New Notebook...",
-        "category": "Datalayer",
+        "title": "%commands.newLocalDatalayerNotebook.title%",
+        "category": "%commands.category%",
         "icon": "$(notebook)"
       },
       {
         "command": "datalayer.newLocalLexicalDocument",
-        "title": "New Datalayer Document...",
-        "category": "Datalayer",
+        "title": "%commands.newLocalLexicalDocument.title%",
+        "category": "%commands.category%",
         "icon": "$(file-text)"
       },
       {
         "command": "datalayer.newRemoteDatalayerNotebookPrompt",
-        "title": "New Notebook in Space...",
-        "category": "Datalayer",
+        "title": "%commands.newRemoteDatalayerNotebookPrompt.title%",
+        "category": "%commands.category%",
         "icon": "$(notebook)"
       },
       {
         "command": "datalayer.newRemoteLexicalDocumentPrompt",
-        "title": "New Datalayer Document in Space...",
-        "category": "Datalayer",
+        "title": "%commands.newRemoteLexicalDocumentPrompt.title%",
+        "category": "%commands.category%",
         "icon": "$(file-text)"
       },
       {
         "command": "datalayer.showNotebookControllerStatus",
-        "title": "Show Runtime Controllers Status",
-        "category": "Datalayer"
+        "title": "%commands.showNotebookControllerStatus.title%",
+        "category": "%commands.category%"
       },
       {
         "command": "datalayer.terminateRuntimes",
-        "title": "Terminate Runtimes",
-        "category": "Datalayer"
+        "title": "%commands.terminateRuntimes.title%",
+        "category": "%commands.category%"
       },
       {
         "command": "datalayer.createSecret",
-        "title": "Create Secret",
-        "category": "Datalayer",
+        "title": "%commands.createSecret.title%",
+        "category": "%commands.category%",
         "icon": "$(add)"
       },
       {
         "command": "datalayer.viewSecret",
-        "title": "View Secret Value",
-        "category": "Datalayer"
+        "title": "%commands.viewSecret.title%",
+        "category": "%commands.category%"
       },
       {
         "command": "datalayer.copySecretValue",
-        "title": "Copy Secret Value",
-        "category": "Datalayer",
+        "title": "%commands.copySecretValue.title%",
+        "category": "%commands.category%",
         "icon": "$(copy)"
       },
       {
         "command": "datalayer.renameSecret",
-        "title": "Rename Secret",
-        "category": "Datalayer"
+        "title": "%commands.renameSecret.title%",
+        "category": "%commands.category%"
       },
       {
         "command": "datalayer.deleteSecret",
-        "title": "Delete Secret",
-        "category": "Datalayer",
+        "title": "%commands.deleteSecret.title%",
+        "category": "%commands.category%",
         "icon": "$(trash)"
       },
       {
         "command": "datalayer.refreshSecrets",
-        "title": "Refresh Secrets",
-        "category": "Datalayer",
+        "title": "%commands.refreshSecrets.title%",
+        "category": "%commands.category%",
         "icon": "$(refresh)"
       },
       {
         "command": "datalayer.createDatasource",
-        "title": "Create Datasource",
-        "category": "Datalayer",
+        "title": "%commands.createDatasource.title%",
+        "category": "%commands.category%",
         "icon": "$(add)"
       },
       {
         "command": "datalayer.editDatasource",
-        "title": "Edit Datasource",
-        "category": "Datalayer"
+        "title": "%commands.editDatasource.title%",
+        "category": "%commands.category%"
       },
       {
         "command": "datalayer.deleteDatasource",
-        "title": "Delete Datasource",
-        "category": "Datalayer",
+        "title": "%commands.deleteDatasource.title%",
+        "category": "%commands.category%",
         "icon": "$(trash)"
       },
       {
         "command": "datalayer.refreshDatasources",
-        "title": "Refresh Datasources",
-        "category": "Datalayer",
+        "title": "%commands.refreshDatasources.title%",
+        "category": "%commands.category%",
         "icon": "$(refresh)"
       },
       {
         "command": "datalayer.refreshSpaces",
-        "title": "Refresh Spaces",
+        "title": "%commands.refreshSpaces.title%",
         "icon": "$(refresh)"
       },
       {
         "command": "datalayer.openDocument",
-        "title": "Open"
+        "title": "%commands.openDocument.title%"
       },
       {
         "command": "datalayer.renameItem",
-        "title": "Rename..."
+        "title": "%commands.renameItem.title%"
       },
       {
         "command": "datalayer.deleteItem",
-        "title": "Delete"
+        "title": "%commands.deleteItem.title%"
       },
       {
         "command": "datalayer.downloadDocument",
-        "title": "Download",
+        "title": "%commands.downloadDocument.title%",
         "icon": "$(cloud-download)"
       },
       {
         "command": "datalayer.copyLocalFileToSpace",
-        "title": "Copy to Datalayer Space",
-        "category": "Datalayer",
+        "title": "%commands.copyLocalFileToSpace.title%",
+        "category": "%commands.category%",
         "icon": "$(cloud-upload)"
       },
       {
         "command": "datalayer.runtimes.refresh",
-        "title": "Refresh Runtimes",
+        "title": "%commands.runtimes.refresh.title%",
         "icon": "$(refresh)"
       },
       {
         "command": "datalayer.runtimes.create",
-        "title": "Create Runtime",
+        "title": "%commands.runtimes.create.title%",
         "icon": "$(add)"
       },
       {
         "command": "datalayer.runtimes.terminate",
-        "title": "Terminate Runtime",
+        "title": "%commands.runtimes.terminate.title%",
         "icon": "$(trash)"
       },
       {
         "command": "datalayer.runtimes.terminateAll",
-        "title": "Terminate All Runtimes",
+        "title": "%commands.runtimes.terminateAll.title%",
         "icon": "$(trash)"
       },
       {
         "command": "datalayer.runtimes.createSnapshot",
-        "title": "Create Snapshot"
+        "title": "%commands.runtimes.createSnapshot.title%"
       },
       {
         "command": "datalayer.runtimes.delete",
-        "title": "Delete"
+        "title": "%commands.runtimes.delete.title%"
       },
       {
         "command": "datalayer.snapshots.refresh",
-        "title": "Refresh Snapshots",
+        "title": "%commands.snapshots.refresh.title%",
         "icon": "$(refresh)"
       },
       {
         "command": "datalayer.snapshots.restore",
-        "title": "Restore from Snapshot",
+        "title": "%commands.snapshots.restore.title%",
         "icon": "$(debug-restart)"
       },
       {
         "command": "datalayer.snapshots.delete",
-        "title": "Delete Snapshot",
+        "title": "%commands.snapshots.delete.title%",
         "icon": "$(trash)"
       },
       {
         "command": "datalayer.snapshots.viewDetails",
-        "title": "View Snapshot Details",
+        "title": "%commands.snapshots.viewDetails.title%",
         "icon": "$(info)"
       },
       {
         "command": "datalayer.outline.navigate",
-        "title": "Navigate to Outline Item",
+        "title": "%commands.outline.navigate.title%",
         "icon": "$(go-to-file)"
       },
       {
         "command": "datalayer.outline.refresh",
-        "title": "Refresh Outline",
+        "title": "%commands.outline.refresh.title%",
         "icon": "$(refresh)"
       },
       {
         "command": "datalayer.outline.collapseAll",
-        "title": "Collapse All",
+        "title": "%commands.outline.collapseAll.title%",
         "icon": "$(collapse-all)"
       },
       {
         "command": "datalayer.attachCurrentDocumentToChat",
-        "title": "Attach Current Document to Copilot Chat",
-        "category": "Datalayer",
+        "title": "%commands.attachCurrentDocumentToChat.title%",
+        "category": "%commands.category%",
         "icon": "$(link)"
       },
       {
         "command": "datalayer.pyodide.clearCache",
-        "title": "Clear Pyodide Package Cache",
-        "category": "Datalayer"
+        "title": "%commands.pyodide.clearCache.title%",
+        "category": "%commands.category%"
       }
     ],
     "viewsContainers": {
       "activitybar": [
         {
           "id": "datalayer",
-          "title": "Datalayer",
+          "title": "%viewContainers.datalayer.title%",
           "icon": "images/datalayer-sidebar-icon.svg"
         }
       ]
@@ -492,34 +494,34 @@
       "datalayer": [
         {
           "id": "datalayerOutline",
-          "name": "Outline",
+          "name": "%views.datalayerOutline.name%",
           "icon": "$(list-tree)",
-          "contextualTitle": "Document Outline"
+          "contextualTitle": "%views.datalayerOutline.contextualTitle%"
         },
         {
           "id": "datalayerSpaces",
-          "name": "Spaces",
+          "name": "%views.datalayerSpaces.name%",
           "icon": "$(cloud)",
-          "contextualTitle": "Datalayer Spaces"
+          "contextualTitle": "%views.datalayerSpaces.contextualTitle%"
         },
         {
           "id": "datalayerRuntimes",
-          "name": "Runtimes",
+          "name": "%views.datalayerRuntimes.name%",
           "icon": "$(vm)",
-          "contextualTitle": "Datalayer Runtimes"
+          "contextualTitle": "%views.datalayerRuntimes.contextualTitle%"
         },
         {
           "id": "datalayerSettings",
-          "name": "Settings",
+          "name": "%views.datalayerSettings.name%",
           "icon": "$(settings-gear)",
-          "contextualTitle": "Datalayer Settings"
+          "contextualTitle": "%views.datalayerSettings.contextualTitle%"
         }
       ]
     },
     "viewsWelcome": [
       {
         "view": "datalayerSpaces",
-        "contents": "Welcome to Datalayer Spaces.\n[Login to Datalayer](command:datalayer.login) to view your spaces and documents.",
+        "contents": "%viewsWelcome.datalayerSpaces.contents%",
         "when": "!datalayer.authenticated"
       }
     ],
@@ -850,7 +852,7 @@
     "languageModelTools": [
       {
         "name": "datalayer_getActiveDocument",
-        "displayName": "Get Active Document",
+        "displayName": "%languageModelTools.getActiveDocument.displayName%",
         "tags": [
           "document",
           "active",
@@ -860,7 +862,7 @@
           "lexical"
         ],
         "toolReferenceName": "getActiveDocument",
-        "modelDescription": "**CRITICAL: Always call this tool FIRST before running ANY operation on Jupyter Notebooks (.ipynb) or Lexical documents (.lexical).** Returns the URI and filename of the currently active document in VS Code. This tool identifies which document is active so subsequent operations know which document to act on. Returns: document URI (required for all operations), filename, and type (notebook/lexical/other). WORKFLOW for Lexical documents: 1) Call getActiveDocument to identify the document, 2) Call listAvailableBlocks to see what block types and metadata formats are supported, 3) Then call insertBlock/readAllBlocks/etc with proper metadata. Use this whenever the user asks to perform an action on 'this notebook', 'this file', 'current document', or before executing any document operations like readAllCells, readAllBlocks, executeCode, etc.",
+        "modelDescription": "%languageModelTools.getActiveDocument.modelDescription%",
         "canBeReferencedInPrompt": true,
         "inputSchema": {
           "type": "object",
@@ -870,7 +872,7 @@
       },
       {
         "name": "datalayer_createNotebook",
-        "displayName": "Create Notebook",
+        "displayName": "%languageModelTools.createNotebook.displayName%",
         "tags": [
           "notebook",
           "create",
@@ -878,7 +880,7 @@
           "unified"
         ],
         "toolReferenceName": "createNotebook",
-        "modelDescription": "Creates a new Jupyter notebook with smart location detection. Automatically determines whether to create locally or in cloud based on context (keywords, open notebooks, space mentions, auth state). Use keywords like 'cloud', 'remote', 'space' for cloud notebooks, or 'local', 'workspace' for local notebooks.",
+        "modelDescription": "%languageModelTools.createNotebook.modelDescription%",
         "canBeReferencedInPrompt": true,
         "inputSchema": {
           "type": "object",
@@ -911,7 +913,7 @@
       },
       {
         "name": "datalayer_createLexical",
-        "displayName": "Create Lexical Document",
+        "displayName": "%languageModelTools.createLexical.displayName%",
         "tags": [
           "lexical",
           "create",
@@ -919,7 +921,7 @@
           "unified"
         ],
         "toolReferenceName": "createLexical",
-        "modelDescription": "Creates a new Lexical document with smart location detection. Automatically determines whether to create locally or in cloud based on context (keywords, open documents, space mentions, auth state). Use keywords like 'cloud', 'remote', 'space' for cloud documents, or 'local', 'workspace' for local documents.",
+        "modelDescription": "%languageModelTools.createLexical.modelDescription%",
         "canBeReferencedInPrompt": true,
         "inputSchema": {
           "type": "object",
@@ -952,7 +954,7 @@
       },
       {
         "name": "datalayer_listKernels",
-        "displayName": "List Kernels",
+        "displayName": "%languageModelTools.listKernels.displayName%",
         "tags": [
           "kernel",
           "runtime",
@@ -963,7 +965,7 @@
           "lexical"
         ],
         "toolReferenceName": "listKernels",
-        "modelDescription": "Lists all available kernels for executing notebook code. Returns local Jupyter kernels (Python environments), cloud Datalayer runtimes, and Pyodide (browser-based Python, always available). Use this to discover available compute environments before selecting one with selectKernel.",
+        "modelDescription": "%languageModelTools.listKernels.modelDescription%",
         "canBeReferencedInPrompt": true,
         "inputSchema": {
           "type": "object",
@@ -986,7 +988,7 @@
       },
       {
         "name": "datalayer_selectKernel",
-        "displayName": "Select Kernel",
+        "displayName": "%languageModelTools.selectKernel.displayName%",
         "tags": [
           "kernel",
           "runtime",
@@ -1002,7 +1004,7 @@
           "lexical"
         ],
         "toolReferenceName": "selectKernel",
-        "modelDescription": "Selects and connects a kernel to the active document (notebook or lexical), enabling code execution. Always connects to the currently active document. IMPORTANT: Call listKernels first to see all available kernels if unsure which kernel to use. EXAMPLES OF NATURAL LANGUAGE TO PARAMETER MAPPING: User says 'connect to pyodide' → use kernelId: 'pyodide'. User says 'connect to new runtime' → use kernelId: 'new'. User says 'connect to active runtime' → use kernelId: 'active'. User says 'connect to local ipykernel' → use kernelId: 'local'. User says 'connect to gpu runtime for 10 minutes' → use kernelId: 'new', environmentType: 'GPU', durationMinutes: 10. The kernelId parameter is REQUIRED and must be specified for every invocation. **IMPORTANT: Always ensure you call getActiveDocument before running this operation.**",
+        "modelDescription": "%languageModelTools.selectKernel.modelDescription%",
         "canBeReferencedInPrompt": true,
         "inputSchema": {
           "type": "object",
@@ -1035,7 +1037,7 @@
       },
       {
         "name": "datalayer_executeCode",
-        "displayName": "Execute Code",
+        "displayName": "%languageModelTools.executeCode.displayName%",
         "tags": [
           "execute",
           "code",
@@ -1046,7 +1048,7 @@
           "lexical"
         ],
         "toolReferenceName": "executeCode",
-        "modelDescription": "Execute Python code. If a notebook or lexical document is open, uses that document's kernel. If no document is open but a Datalayer runtime is active, executes on that runtime. Returns execution result including output, errors, and display data.",
+        "modelDescription": "%languageModelTools.executeCode.modelDescription%",
         "canBeReferencedInPrompt": true,
         "inputSchema": {
           "type": "object",
@@ -1063,7 +1065,7 @@
       },
       {
         "name": "datalayer_insertCell",
-        "displayName": "Insert Notebook Cell",
+        "displayName": "%languageModelTools.insertCell.displayName%",
         "tags": [
           "cell",
           "notebook",
@@ -1071,7 +1073,7 @@
           "insert"
         ],
         "toolReferenceName": "insertCell",
-        "modelDescription": "Insert cells into Jupyter notebooks (.ipynb files ONLY). For Lexical documents (.dlex), use insertBlock with type=\"jupyter-cell\" instead. IMPORTANT: Call readAllCells first to see the current notebook structure and determine the correct insertion point. Then, insert a code or markdown cell into a Jupyter notebook at a specified position or at the end **IMPORTANT: Always ensure you call getActiveDocument before running this operation.**",
+        "modelDescription": "%languageModelTools.insertCell.modelDescription%",
         "canBeReferencedInPrompt": true,
         "inputSchema": {
           "type": "object",
@@ -1102,7 +1104,7 @@
       },
       {
         "name": "datalayer_deleteCells",
-        "displayName": "Delete Notebook Cell(s)",
+        "displayName": "%languageModelTools.deleteCells.displayName%",
         "tags": [
           "cell",
           "notebook",
@@ -1110,7 +1112,7 @@
           "delete"
         ],
         "toolReferenceName": "deleteCells",
-        "modelDescription": "Deletes one or more cells from a Jupyter notebook at the specified indices. Cells are deleted in reverse order to prevent index shifting. **IMPORTANT: Always ensure you call getActiveDocument before running this operation.**",
+        "modelDescription": "%languageModelTools.deleteCells.modelDescription%",
         "canBeReferencedInPrompt": true,
         "inputSchema": {
           "type": "object",
@@ -1130,7 +1132,7 @@
       },
       {
         "name": "datalayer_updateCell",
-        "displayName": "Update Notebook Cell",
+        "displayName": "%languageModelTools.updateCell.displayName%",
         "tags": [
           "cell",
           "notebook",
@@ -1138,7 +1140,7 @@
           "update"
         ],
         "toolReferenceName": "updateCell",
-        "modelDescription": "Updates (overwrites) a cell's source code at the specified index and executes it. For code cells this runs the code; for markdown cells this renders them. **IMPORTANT: Always ensure you call getActiveDocument before running this operation.**",
+        "modelDescription": "%languageModelTools.updateCell.modelDescription%",
         "canBeReferencedInPrompt": true,
         "inputSchema": {
           "type": "object",
@@ -1159,7 +1161,7 @@
       },
       {
         "name": "datalayer_readCell",
-        "displayName": "Read Notebook Cell",
+        "displayName": "%languageModelTools.readCell.displayName%",
         "tags": [
           "cell",
           "notebook",
@@ -1167,7 +1169,7 @@
           "inspect"
         ],
         "toolReferenceName": "readCell",
-        "modelDescription": "Reads a specific cell from a Jupyter notebook by index, including source code and outputs **IMPORTANT: Always ensure you call getActiveDocument before running this operation.**",
+        "modelDescription": "%languageModelTools.readCell.modelDescription%",
         "canBeReferencedInPrompt": true,
         "inputSchema": {
           "type": "object",
@@ -1187,7 +1189,7 @@
       },
       {
         "name": "datalayer_readAllCells",
-        "displayName": "Read All Notebook Cells",
+        "displayName": "%languageModelTools.readAllCells.displayName%",
         "tags": [
           "cell",
           "notebook",
@@ -1196,7 +1198,7 @@
           "all"
         ],
         "toolReferenceName": "readAllCells",
-        "modelDescription": "Read all cells from the Jupyter notebook. Supports two response formats: 'brief' (default) returns index, type, and 40-char content preview for structure queries and counting cells; 'detailed' returns full content with source, execution_count, and outputs. Use brief when you need to see notebook structure, count cells, or quickly scan content. Use detailed when you need to read full cell content or outputs. Brief format preview shows first 40 characters of cell source. Returns array of cells with: index (cell position), type (code, markdown, raw), preview (brief only), and optionally source/execution_count/outputs (detailed only). Works on active notebook. **IMPORTANT: Always ensure you call getActiveDocument before running this operation.**",
+        "modelDescription": "%languageModelTools.readAllCells.modelDescription%",
         "canBeReferencedInPrompt": true,
         "inputSchema": {
           "type": "object",
@@ -1214,7 +1216,7 @@
       },
       {
         "name": "datalayer_runCell",
-        "displayName": "Run Notebook Cell",
+        "displayName": "%languageModelTools.runCell.displayName%",
         "tags": [
           "cell",
           "notebook",
@@ -1223,7 +1225,7 @@
           "outputs"
         ],
         "toolReferenceName": "runCell",
-        "modelDescription": "Runs a code cell in a Jupyter notebook and returns its outputs with execution metadata. Supports timeout and streaming progress updates. Returns execution_count, outputs, and elapsed_time. If no index is provided, runs the currently active cell. **IMPORTANT: Always ensure you call getActiveDocument before running this operation.**",
+        "modelDescription": "%languageModelTools.runCell.modelDescription%",
         "canBeReferencedInPrompt": true,
         "inputSchema": {
           "type": "object",
@@ -1250,7 +1252,7 @@
       },
       {
         "name": "datalayer_insertBlock",
-        "displayName": "Insert Lexical Block",
+        "displayName": "%languageModelTools.insertBlock.displayName%",
         "tags": [
           "lexical",
           "insert",
@@ -1258,7 +1260,7 @@
           "edit"
         ],
         "toolReferenceName": "insertBlock",
-        "modelDescription": "Insert blocks into Lexical documents (.dlex files). IMPORTANT: Lexical documents support EXECUTABLE JUPYTER CELLS - use type='jupyter-cell' to insert Python/R/Julia code cells that can be executed via kernel (just like .ipynb notebooks). Other block types: paragraph, heading, code (non-executable syntax highlighting), quote, list, table, collapsible, equation, image, youtube, horizontalrule. CRITICAL: DO NOT use markdown syntax in source field. Heading blocks use PLAIN TEXT (no # symbols) - specify tag metadata (h1-h6) instead. Inline formatting like **bold** or *italic* is automatically converted. ALWAYS call listAvailableBlocks FIRST to see block types and required metadata format. When inserting MULTIPLE blocks sequentially (e.g., creating a document outline with heading + paragraph + code), ALWAYS use afterId: 'BOTTOM' for each insertion to append blocks in order. For single insertions, call readAllBlocks first to see document structure. Position blocks using afterId: 'TOP' (beginning), 'BOTTOM' (end - REQUIRED for sequential inserts), or a specific block_id value from readAllBlocks. To insert blocks INSIDE a collapsible: 1) First insert collapsible (type='collapsible'), which returns a blockId, 2) Then insert nested blocks with metadata.collapsible set to that RETURNED BLOCK ID (NOT 'TOP' or 'BOTTOM'). Example: result = insertBlock({type: 'collapsible', source: 'Section', afterId: 'BOTTOM'}); insertBlock({type: 'paragraph', source: 'text', metadata: {collapsible: result.blockId}, afterId: 'BOTTOM'}). DO NOT use position markers (TOP/BOTTOM) as collapsible IDs - they are only for afterId positioning. Works on active .lexical/.dlex file. **IMPORTANT: Always ensure you call getActiveDocument before running this operation.**",
+        "modelDescription": "%languageModelTools.insertBlock.modelDescription%",
         "canBeReferencedInPrompt": true,
         "inputSchema": {
           "type": "object",
@@ -1288,7 +1290,7 @@
       },
       {
         "name": "datalayer_updateBlock",
-        "displayName": "Update Lexical Block",
+        "displayName": "%languageModelTools.updateBlock.displayName%",
         "tags": [
           "lexical",
           "update",
@@ -1297,7 +1299,7 @@
           "modify"
         ],
         "toolReferenceName": "updateBlock",
-        "modelDescription": "Update an existing block in the currently open Lexical document. CRITICAL: DO NOT use markdown syntax (like # for headings) in source field - use plain text and specify block type/metadata instead. Inline formatting like **bold** or *italic* is automatically converted. Use listAvailableBlocks to get available block types. Can modify block type, source content, and/or metadata. Requires id from readAllBlocks. At least one of type, source, or metadata must be provided. Metadata is merged with existing metadata. Works on active .lexical file. **IMPORTANT: Always ensure you call getActiveDocument before running this operation.**",
+        "modelDescription": "%languageModelTools.updateBlock.modelDescription%",
         "canBeReferencedInPrompt": true,
         "inputSchema": {
           "type": "object",
@@ -1325,7 +1327,7 @@
       },
       {
         "name": "datalayer_deleteBlocks",
-        "displayName": "Delete Lexical Block(s)",
+        "displayName": "%languageModelTools.deleteBlocks.displayName%",
         "tags": [
           "lexical",
           "delete",
@@ -1333,7 +1335,7 @@
           "edit"
         ],
         "toolReferenceName": "deleteBlocks",
-        "modelDescription": "Delete one or more blocks from the currently open Lexical document by block_id. Pass array of block IDs to delete. WORKFLOW: 1) Call readAllBlocks to get block_id values, 2) Pass block_id array to delete. Validates all IDs exist before deletion. This permanently removes blocks and changes appear immediately. Works on active .lexical file. **IMPORTANT: Always ensure you call getActiveDocument before running this operation.**",
+        "modelDescription": "%languageModelTools.deleteBlocks.modelDescription%",
         "canBeReferencedInPrompt": true,
         "inputSchema": {
           "type": "object",
@@ -1353,7 +1355,7 @@
       },
       {
         "name": "datalayer_readBlock",
-        "displayName": "Read Lexical Block",
+        "displayName": "%languageModelTools.readBlock.displayName%",
         "tags": [
           "lexical",
           "read",
@@ -1361,7 +1363,7 @@
           "single"
         ],
         "toolReferenceName": "readBlock",
-        "modelDescription": "Read a single block from the currently open Lexical document by its block_id. Use listAvailableBlocks to get available block types. Returns the block with: block_id, block_type (e.g. 'heading', 'paragraph', 'jupyter-cell'), source (content as string), metadata (properties like level, language). Use block_id values from readAllBlocks. Works on active .lexical file. **IMPORTANT: Always ensure you call getActiveDocument before running this operation.**",
+        "modelDescription": "%languageModelTools.readBlock.modelDescription%",
         "canBeReferencedInPrompt": true,
         "inputSchema": {
           "type": "object",
@@ -1378,7 +1380,7 @@
       },
       {
         "name": "datalayer_readAllBlocks",
-        "displayName": "Read All Lexical Blocks",
+        "displayName": "%languageModelTools.readAllBlocks.displayName%",
         "tags": [
           "lexical",
           "read",
@@ -1386,7 +1388,7 @@
           "all"
         ],
         "toolReferenceName": "readAllBlocks",
-        "modelDescription": "Read all blocks from the currently open Lexical document. Use listAvailableBlocks to get available block types. Supports two response formats: 'brief' (default, ~1,100 tokens) returns block_id, block_type, and 40-char content preview for structure queries; 'detailed' (~20,000 tokens) returns full content with source, metadata, and properties. Use brief when you need to see document structure, count blocks, or quickly scan content. Use detailed when you need to read full content. Brief format preview shows: lists as comma-separated items, code/jupyter-cell as first line, horizontalrule as empty string. Returns array of blocks with: block_id (stable identifier for insertion), block_type (e.g. 'heading', 'paragraph', 'jupyter-cell'), preview (brief only), and optionally source/metadata (detailed only). CRITICAL: Use the block_id values from this result for insertBlock's afterId parameter. Works on active .lexical file. **IMPORTANT: Always ensure you call getActiveDocument before running this operation.**",
+        "modelDescription": "%languageModelTools.readAllBlocks.modelDescription%",
         "canBeReferencedInPrompt": true,
         "inputSchema": {
           "type": "object",
@@ -1404,7 +1406,7 @@
       },
       {
         "name": "datalayer_runBlock",
-        "displayName": "Run Lexical Block",
+        "displayName": "%languageModelTools.runBlock.displayName%",
         "tags": [
           "lexical",
           "run",
@@ -1413,7 +1415,7 @@
           "jupyter"
         ],
         "toolReferenceName": "runBlock",
-        "modelDescription": "Execute a single block in the currently open Lexical document by block_id. WORKFLOW: 1) Call readAllBlocks to get block_id values, 2) Pass block_id to execute. Validates block exists before execution. Only works on executable blocks (jupyter-cell or code blocks with executable: true). Optional timeout (timeoutSeconds) and streaming (stream, progressInterval) parameters available. Triggers execution and returns immediately. Use readBlock after execution to check results. Works on active .lexical file. **IMPORTANT: Always ensure you call getActiveDocument before running this operation.**",
+        "modelDescription": "%languageModelTools.runBlock.modelDescription%",
         "canBeReferencedInPrompt": true,
         "inputSchema": {
           "type": "object",
@@ -1442,7 +1444,7 @@
       },
       {
         "name": "datalayer_runAllBlocks",
-        "displayName": "Run All Lexical Blocks",
+        "displayName": "%languageModelTools.runAllBlocks.displayName%",
         "tags": [
           "lexical",
           "run",
@@ -1452,7 +1454,7 @@
           "jupyter"
         ],
         "toolReferenceName": "runAllBlocks",
-        "modelDescription": "Execute all executable blocks in the currently open Lexical document in sequence. Only runs executable blocks (jupyter-cell or code blocks with executable: true). Non-executable blocks are skipped. Triggers execution and returns immediately with count of blocks executed. Use readAllBlocks after execution to check results. Works on active .lexical file. **IMPORTANT: Always ensure you call getActiveDocument before running this operation.**",
+        "modelDescription": "%languageModelTools.runAllBlocks.modelDescription%",
         "canBeReferencedInPrompt": true,
         "inputSchema": {
           "type": "object",
@@ -1462,7 +1464,7 @@
       },
       {
         "name": "datalayer_listAvailableBlocks",
-        "displayName": "List Available Lexical Blocks",
+        "displayName": "%languageModelTools.listAvailableBlocks.displayName%",
         "tags": [
           "lexical",
           "schema",
@@ -1470,7 +1472,7 @@
           "blocks"
         ],
         "toolReferenceName": "listAvailableBlocks",
-        "modelDescription": "Discover available block types for the currently open Lexical document. Available blocks: paragraph, heading, quote, code, list, horizontalrule, jupyter-cell (executable), equation, image, youtube (video embed), table (data table), collapsible (expandable section). Returns detailed schema including required/optional metadata for each block type. Set type parameter to specific block type (e.g., 'youtube', 'table') or 'all' (default) for all blocks. Use this BEFORE calling insertBlock to see exact type names and required metadata format. **IMPORTANT: Always ensure you call getActiveDocument before running this operation.**",
+        "modelDescription": "%languageModelTools.listAvailableBlocks.modelDescription%",
         "canBeReferencedInPrompt": true,
         "inputSchema": {
           "type": "object",
@@ -1486,34 +1488,34 @@
       }
     ],
     "configuration": {
-      "title": "Datalayer",
+      "title": "%configuration.title%",
       "properties": {
         "datalayer.services.iamUrl": {
           "type": "string",
           "default": "https://prod1.datalayer.run",
-          "description": "IAM (Identity and Access Management) service URL"
+          "description": "%configuration.datalayer.services.iamUrl.description%"
         },
         "datalayer.services.runtimesUrl": {
           "type": "string",
           "default": "https://r1.datalayer.run",
-          "description": "Runtimes service URL for computational environments"
+          "description": "%configuration.datalayer.services.runtimesUrl.description%"
         },
         "datalayer.services.spacerUrl": {
           "type": "string",
           "default": "https://prod1.datalayer.run",
-          "description": "Spacer service URL for workspaces and collaboration"
+          "description": "%configuration.datalayer.services.spacerUrl.description%"
         },
         "datalayer.services.spacerWsUrl": {
           "type": "string",
           "default": "wss://prod1.datalayer.run",
-          "description": "WebSocket URL for Spacer real-time collaboration"
+          "description": "%configuration.datalayer.services.spacerWsUrl.description%"
         },
         "datalayer.runtime.defaultMinutes": {
           "type": "number",
           "default": 3,
           "minimum": 1,
           "maximum": 1440,
-          "description": "Default runtime duration in minutes (max 24 hours)"
+          "description": "%configuration.datalayer.runtime.defaultMinutes.description%"
         },
         "datalayer.runtime.defaultType": {
           "type": "string",
@@ -1522,7 +1524,7 @@
             "GPU"
           ],
           "default": "CPU",
-          "description": "Default runtime type for new runtimes"
+          "description": "%configuration.datalayer.runtime.defaultType.description%"
         },
         "datalayer.autoConnect.strategies": {
           "type": "array",
@@ -1537,7 +1539,7 @@
           "default": [
             "Pyodide"
           ],
-          "markdownDescription": "Auto-connect strategies for opening notebooks and lexical documents. Strategies are tried in order until one succeeds:\n\n- **Pyodide**: Connect to browser-based Python kernel (offline, no setup required)\n- **Active Runtime**: Select the runtime with the most time remaining from available runtimes\n- **Ask**: Show a Quick Pick to select from available runtimes\n- **Empty array `[]`**: Disable auto-connect (manual selection required)\n\n**Examples:**\n- `[\"Pyodide\"]` - Always use Pyodide (default, works offline)\n- `[\"Active Runtime\", \"Pyodide\"]` - Try cloud runtime first, fallback to Pyodide\n- `[\"Pyodide\", \"Active Runtime\", \"Ask\"]` - Try Pyodide, then cloud runtime, then ask\n- `[\"Ask\"]` - Always ask user to select runtime\n- `[]` - No auto-connect, user must manually select kernel"
+          "markdownDescription": "%configuration.datalayer.autoConnect.strategies.markdownDescription%"
         },
         "datalayer.logging.level": {
           "type": "string",
@@ -1549,39 +1551,39 @@
             "error"
           ],
           "enumDescriptions": [
-            "Most verbose - includes all debug information and operation traces",
-            "Verbose - includes detailed debugging information for troubleshooting",
-            "Standard - includes important events and status updates",
-            "Important - includes warnings and potential issues",
-            "Critical - includes only errors and critical failures"
+            "%configuration.datalayer.logging.level.enumDescriptions.trace%",
+            "%configuration.datalayer.logging.level.enumDescriptions.debug%",
+            "%configuration.datalayer.logging.level.enumDescriptions.info%",
+            "%configuration.datalayer.logging.level.enumDescriptions.warn%",
+            "%configuration.datalayer.logging.level.enumDescriptions.error%"
           ],
           "default": "info",
-          "description": "Controls the minimum log level for extension logging output"
+          "description": "%configuration.datalayer.logging.level.description%"
         },
         "datalayer.logging.includeTimestamps": {
           "type": "boolean",
           "default": true,
-          "description": "Include timestamps in log messages for better debugging"
+          "description": "%configuration.datalayer.logging.includeTimestamps.description%"
         },
         "datalayer.logging.includeContext": {
           "type": "boolean",
           "default": true,
-          "description": "Include additional context information (operation IDs, request details) in logs"
+          "description": "%configuration.datalayer.logging.includeContext.description%"
         },
         "datalayer.logging.enableDatalayerLogging": {
           "type": "boolean",
           "default": true,
-          "description": "Enable comprehensive logging for DatalayerClient Datalayer operations and API calls"
+          "description": "%configuration.datalayer.logging.enableDatalayerLogging.description%"
         },
         "datalayer.logging.enablePerformanceMonitoring": {
           "type": "boolean",
           "default": false,
-          "description": "Enable performance monitoring with timing and memory usage tracking (may impact performance)"
+          "description": "%configuration.datalayer.logging.enablePerformanceMonitoring.description%"
         },
         "datalayer.onboarding.showWelcome": {
           "type": "boolean",
           "default": true,
-          "markdownDescription": "Show unified welcome prompt on first activation with recommended configuration (default editor + Jupyter tools optimization)"
+          "markdownDescription": "%configuration.datalayer.onboarding.showWelcome.markdownDescription%"
         },
         "datalayer.tools.responseFormat": {
           "type": "string",
@@ -1590,11 +1592,11 @@
             "toon"
           ],
           "enumDescriptions": [
-            "Standard JSON format - structured data optimized for programmatic parsing",
-            "TOON format - human/LLM-readable format with compact, intuitive syntax"
+            "%configuration.datalayer.tools.responseFormat.enumDescriptions.json%",
+            "%configuration.datalayer.tools.responseFormat.enumDescriptions.toon%"
           ],
           "default": "toon",
-          "markdownDescription": "Format for MCP tool responses. **TOON** provides more readable output for LLMs, while **JSON** maintains traditional structured format."
+          "markdownDescription": "%configuration.datalayer.tools.responseFormat.markdownDescription%"
         },
         "datalayer.pyodide.preloadBehavior": {
           "type": "string",
@@ -1605,18 +1607,18 @@
             "disabled"
           ],
           "enumDescriptions": [
-            "Automatically download packages without asking",
-            "Prompt once on first use, then remember choice",
-            "Always prompt on extension startup",
-            "Never preload packages"
+            "%configuration.datalayer.pyodide.preloadBehavior.enumDescriptions.auto%",
+            "%configuration.datalayer.pyodide.preloadBehavior.enumDescriptions.ask-once%",
+            "%configuration.datalayer.pyodide.preloadBehavior.enumDescriptions.ask-always%",
+            "%configuration.datalayer.pyodide.preloadBehavior.enumDescriptions.disabled%"
           ],
           "default": "auto",
-          "markdownDescription": "Controls how Pyodide packages are preloaded on extension startup. Applies to **both** Datalayer webview notebooks and native VS Code notebooks."
+          "markdownDescription": "%configuration.datalayer.pyodide.preloadBehavior.markdownDescription%"
         },
         "datalayer.pyodide.version": {
           "type": "string",
           "default": "0.27.3",
-          "markdownDescription": "Pyodide version for **Datalayer webview notebooks only**. Native VS Code notebooks use a fixed version (v0.29.3 from npm package). Changes require closing and reopening notebooks."
+          "markdownDescription": "%configuration.datalayer.pyodide.version.markdownDescription%"
         },
         "datalayer.pyodide.preloadPackages": {
           "type": "array",
@@ -1630,12 +1632,12 @@
             "matplotlib-inline",
             "ipython"
           ],
-          "markdownDescription": "Python packages to preload when extension starts. Applies to **both** Datalayer webview notebooks (configurable version) and native VS Code notebooks (v0.29.0). Start with a small list, add more as needed."
+          "markdownDescription": "%configuration.datalayer.pyodide.preloadPackages.markdownDescription%"
         },
         "datalayer.completion.inlinellm.enabled": {
           "type": "boolean",
           "default": true,
-          "description": "Enable LLM-powered inline completions for code in Jupyter cells"
+          "description": "%configuration.datalayer.completion.inlinellm.enabled.description%"
         },
         "datalayer.completion.inlinellm.triggerMode": {
           "type": "string",
@@ -1644,28 +1646,28 @@
             "manual"
           ],
           "enumDescriptions": [
-            "Automatically trigger completions while typing",
-            "Only trigger completions with keyboard shortcut (Ctrl+Space)"
+            "%configuration.datalayer.completion.inlinellm.triggerMode.enumDescriptions.auto%",
+            "%configuration.datalayer.completion.inlinellm.triggerMode.enumDescriptions.manual%"
           ],
           "default": "auto",
-          "description": "How code completions are triggered"
+          "description": "%configuration.datalayer.completion.inlinellm.triggerMode.description%"
         },
         "datalayer.completion.inlinellm.debounceMs": {
           "type": "number",
           "default": 200,
           "minimum": 0,
           "maximum": 2000,
-          "description": "Delay in milliseconds before triggering code completion"
+          "description": "%configuration.datalayer.completion.inlinellm.debounceMs.description%"
         },
         "datalayer.completion.inlinellm.contextBlocks": {
           "type": "number",
           "default": -1,
-          "markdownDescription": "Number of blocks to include as context when generating code completions. Use `-1` for entire document (recommended), or specify a positive number to limit context scope."
+          "markdownDescription": "%configuration.datalayer.completion.inlinellm.contextBlocks.markdownDescription%"
         },
         "datalayer.completion.prosellm.enabled": {
           "type": "boolean",
           "default": true,
-          "description": "Enable LLM-powered inline completions for prose/markdown content"
+          "description": "%configuration.datalayer.completion.prosellm.enabled.description%"
         },
         "datalayer.completion.prosellm.triggerMode": {
           "type": "string",
@@ -1674,35 +1676,35 @@
             "manual"
           ],
           "enumDescriptions": [
-            "Automatically trigger completions while typing (may be intrusive)",
-            "Only trigger completions with keyboard shortcut (recommended)"
+            "%configuration.datalayer.completion.prosellm.triggerMode.enumDescriptions.auto%",
+            "%configuration.datalayer.completion.prosellm.triggerMode.enumDescriptions.manual%"
           ],
           "default": "manual",
-          "markdownDescription": "How prose completions are triggered. **Manual mode is recommended** to avoid intrusive suggestions while writing."
+          "markdownDescription": "%configuration.datalayer.completion.prosellm.triggerMode.markdownDescription%"
         },
         "datalayer.completion.prosellm.triggerKey": {
           "type": "string",
           "default": "Cmd+Shift+,",
-          "markdownDescription": "Keyboard shortcut for manual prose completion trigger. Format: `Modifier+Key` (e.g., `Cmd+Shift+,`, `Cmd+I`). Default uses Command+Shift+Comma which is unlikely to conflict with VS Code built-in commands."
+          "markdownDescription": "%configuration.datalayer.completion.prosellm.triggerKey.markdownDescription%"
         },
         "datalayer.completion.prosellm.debounceMs": {
           "type": "number",
           "default": 500,
           "minimum": 0,
           "maximum": 2000,
-          "description": "Delay in milliseconds before triggering prose completion (higher values reduce interruptions)"
+          "description": "%configuration.datalayer.completion.prosellm.debounceMs.description%"
         },
         "datalayer.completion.prosellm.contextBlocks": {
           "type": "number",
           "default": -1,
-          "markdownDescription": "Number of blocks to include as context when generating prose completions. Use `-1` for entire document (recommended for better context awareness), or specify a positive number to limit context scope."
+          "markdownDescription": "%configuration.datalayer.completion.prosellm.contextBlocks.markdownDescription%"
         }
       }
     },
     "customEditors": [
       {
         "viewType": "datalayer.jupyter-notebook",
-        "displayName": "Datalayer Notebook...",
+        "displayName": "%customEditors.jupyter-notebook.displayName%",
         "selector": [
           {
             "filenamePattern": "*.ipynb"
@@ -1711,7 +1713,7 @@
       },
       {
         "viewType": "datalayer.lexical-editor",
-        "displayName": "Datalayer Lexical Editor",
+        "displayName": "%customEditors.lexical-editor.displayName%",
         "selector": [
           {
             "filenamePattern": "*.dlex"
@@ -1727,13 +1729,13 @@
       {
         "id": "datalayer",
         "name": "datalayer",
-        "fullName": "Datalayer Assistant",
-        "description": "AI assistant specialized in Datalayer notebooks and lexical documents. Type @datalayer or @d to invoke. Automatically understands .ipynb and .dlex files.",
+        "fullName": "%chatParticipants.datalayer.fullName%",
+        "description": "%chatParticipants.datalayer.description%",
         "isSticky": true,
         "disambiguation": [
           {
             "category": "datalayer",
-            "description": "Datalayer AI assistant for notebooks and lexical documents",
+            "description": "%chatParticipants.datalayer.disambiguation.description%",
             "examples": [
               "@datalayer what is this notebook about?",
               "@d explain this document"
@@ -1743,15 +1745,15 @@
         "commands": [
           {
             "name": "explain",
-            "description": "Explain the structure and content of the current document"
+            "description": "%chatParticipants.datalayer.commands.explain.description%"
           },
           {
             "name": "summarize",
-            "description": "Provide a summary of the document content"
+            "description": "%chatParticipants.datalayer.commands.summarize.description%"
           },
           {
             "name": "sections",
-            "description": "Show the main sections or cells in the document"
+            "description": "%chatParticipants.datalayer.commands.sections.description%"
           }
         ]
       }
@@ -1759,34 +1761,34 @@
     "walkthroughs": [
       {
         "id": "datalayer.gettingStarted",
-        "title": "Getting Started with Datalayer",
-        "description": "Learn how to use Datalayer to create cloud-powered Jupyter notebooks and collaborative documents in VS Code.",
+        "title": "%walkthroughs.gettingStarted.title%",
+        "description": "%walkthroughs.gettingStarted.description%",
         "steps": [
           {
             "id": "loginApp",
-            "title": "Login to Datalayer App",
-            "description": "Create your Datalayer account to access cloud-powered Jupyter notebooks with GPU support and real-time collaboration.\n\nVisit [datalayer.app](https://datalayer.app/) and login with **GitHub** to get started.",
+            "title": "%walkthroughs.gettingStarted.steps.loginApp.title%",
+            "description": "%walkthroughs.gettingStarted.steps.loginApp.description%",
             "media": {
               "svg": "walkthroughs/getting-started/media/datalayer-app-login.svg",
-              "altText": "Login to Datalayer App with GitHub"
+              "altText": "%walkthroughs.gettingStarted.steps.loginApp.media.altText%"
             }
           },
           {
             "id": "generateApiKey",
-            "title": "Generate Your API Key",
-            "description": "Your API Key is required to securely connect VS Code to your Datalayer account.\n\nAfter logging in, go to [Settings > IAM > Tokens](https://datalayer.app/settings/iam/tokens) to create your **API Key**. Keep it secure as you'll use it to authenticate VS Code.",
+            "title": "%walkthroughs.gettingStarted.steps.generateApiKey.title%",
+            "description": "%walkthroughs.gettingStarted.steps.generateApiKey.description%",
             "media": {
               "svg": "walkthroughs/getting-started/media/datalayer-iam-tokens.svg",
-              "altText": "Generate API Key in Datalayer Settings"
+              "altText": "%walkthroughs.gettingStarted.steps.generateApiKey.media.altText%"
             }
           },
           {
             "id": "loginVSCode",
-            "title": "Connect VS Code to Datalayer",
-            "description": "Connect VS Code to your Datalayer account to access cloud runtimes, shared workspaces, and collaboration features.\n\nClick the button below and paste your **API Key** when prompted.\n\n[Login to Datalayer](command:datalayer.login)",
+            "title": "%walkthroughs.gettingStarted.steps.loginVSCode.title%",
+            "description": "%walkthroughs.gettingStarted.steps.loginVSCode.description%",
             "media": {
               "svg": "walkthroughs/getting-started/media/datalayer-vscode-login.svg",
-              "altText": "Connect VS Code to Datalayer - API Key Input Dialog"
+              "altText": "%walkthroughs.gettingStarted.steps.loginVSCode.media.altText%"
             },
             "completionEvents": [
               "onCommand:datalayer.login"
@@ -1794,11 +1796,11 @@
           },
           {
             "id": "createNotebook",
-            "title": "Create Your First Notebook",
-            "description": "Jupyter notebooks combine code, visualizations, and documentation in one interactive document. Perfect for data analysis, machine learning, and scientific computing.\n\n[Create Local Notebook](command:datalayer.newLocalDatalayerNotebook)\n\n[Create Notebook in Space](command:datalayer.newRemoteDatalayerNotebookPrompt)",
+            "title": "%walkthroughs.gettingStarted.steps.createNotebook.title%",
+            "description": "%walkthroughs.gettingStarted.steps.createNotebook.description%",
             "media": {
               "svg": "walkthroughs/getting-started/media/datalayer-notebook-editor.svg",
-              "altText": "Jupyter notebook editor with code cells and outputs"
+              "altText": "%walkthroughs.gettingStarted.steps.createNotebook.media.altText%"
             },
             "completionEvents": [
               "onCommand:datalayer.newLocalDatalayerNotebook",
@@ -1807,11 +1809,11 @@
           },
           {
             "id": "selectRuntime",
-            "title": "Select a Cloud Runtime",
-            "description": "Cloud runtimes provide powerful computational environments with CPU and GPU support. Execute your notebooks on scalable infrastructure without local setup.\n\n[Select Runtime](command:datalayer.selectRuntime)",
+            "title": "%walkthroughs.gettingStarted.steps.selectRuntime.title%",
+            "description": "%walkthroughs.gettingStarted.steps.selectRuntime.description%",
             "media": {
               "svg": "walkthroughs/getting-started/media/datalayer-runtime-selector.svg",
-              "altText": "Kernel source selection dialog with Datalayer Platform option"
+              "altText": "%walkthroughs.gettingStarted.steps.selectRuntime.media.altText%"
             },
             "completionEvents": [
               "onCommand:datalayer.selectRuntime"
@@ -1819,11 +1821,11 @@
           },
           {
             "id": "exploreSpaces",
-            "title": "Explore Datalayer Spaces",
-            "description": "Datalayer Spaces are collaborative workspaces where teams can share notebooks, documents, and data. Access your spaces from the Explorer sidebar.\n\n[Refresh Spaces](command:datalayer.refreshSpaces)",
+            "title": "%walkthroughs.gettingStarted.steps.exploreSpaces.title%",
+            "description": "%walkthroughs.gettingStarted.steps.exploreSpaces.description%",
             "media": {
               "svg": "walkthroughs/getting-started/media/datalayer-spaces-explorer.svg",
-              "altText": "Datalayer Spaces tree view showing notebooks and lexical documents"
+              "altText": "%walkthroughs.gettingStarted.steps.exploreSpaces.media.altText%"
             },
             "completionEvents": [
               "onView:datalayerSpaces"
@@ -1831,11 +1833,11 @@
           },
           {
             "id": "createLexical",
-            "title": "Create a Collaborative Document",
-            "description": "Lexical documents are Notion-like rich text editors with real-time collaboration. Perfect for reports, documentation, and team knowledge sharing.\n\n[Create Local Lexical Document](command:datalayer.newLocalLexicalDocument)\n\n[Create Lexical Document in Space](command:datalayer.newRemoteLexicalDocumentPrompt)",
+            "title": "%walkthroughs.gettingStarted.steps.createLexical.title%",
+            "description": "%walkthroughs.gettingStarted.steps.createLexical.description%",
             "media": {
               "svg": "walkthroughs/getting-started/media/datalayer-lexical-editor.svg",
-              "altText": "Lexical rich text editor with formatting toolbar and document content"
+              "altText": "%walkthroughs.gettingStarted.steps.createLexical.media.altText%"
             },
             "completionEvents": [
               "onCommand:datalayer.newLocalLexicalDocument",
@@ -1845,5 +1847,6 @@
         ]
       }
     ]
-  }
+  },
+  "l10n": "./l10n"
 }

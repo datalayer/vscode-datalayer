@@ -358,16 +358,19 @@ export class VSCodeToolAdapter<
 
     if (hasWorkspace) {
       choices.push({
-        label: "$(folder) Local Notebook",
-        description: "Create in workspace",
+        label: `$(folder) ${vscode.l10n.t("Local Notebook")}`,
+        description: vscode.l10n.t("Create in workspace"),
         location: "local",
       });
     }
 
     if (isAuthenticated) {
       choices.push({
-        label: "$(cloud) Cloud Notebook",
-        description: `Create in Datalayer space "${spaceName || "Library space"}"`,
+        label: `$(cloud) ${vscode.l10n.t("Cloud Notebook")}`,
+        description: vscode.l10n.t(
+          'Create in Datalayer space "{0}"',
+          spaceName || vscode.l10n.t("Library space"),
+        ),
         location: "cloud",
       });
     }
@@ -383,8 +386,8 @@ export class VSCodeToolAdapter<
     }
 
     const selected = await vscode.window.showQuickPick(choices, {
-      title: "Where should I create the notebook?",
-      placeHolder: "Choose location",
+      title: vscode.l10n.t("Where should I create the notebook?"),
+      placeHolder: vscode.l10n.t("Choose location"),
     });
 
     return selected?.location;

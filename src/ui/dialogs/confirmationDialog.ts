@@ -19,14 +19,10 @@ import * as vscode from "vscode";
 export interface TwoStepConfirmationConfig {
   /** The item/resource name being acted upon. */
   itemName: string;
-  /** The action being performed (e.g., "delete", "terminate"). */
-  action: string;
   /** The consequences of the action (array of bullet points). */
   consequences: string[];
   /** The action button text for step 1 (e.g., "Delete", "Terminate"). */
   actionButton: string;
-  /** The final confirmation button text (e.g., "Yes, Delete", "Yes, Terminate"). */
-  finalActionButton: string;
 }
 
 /**
@@ -41,9 +37,8 @@ export interface TwoStepConfirmationConfig {
 export async function showTwoStepConfirmation(
   config: TwoStepConfirmationConfig,
 ): Promise<boolean> {
-  const { itemName, action, consequences, actionButton } = config;
+  const { itemName, consequences, actionButton } = config;
 
-  const capitalizedAction = action.charAt(0).toUpperCase() + action.slice(1);
   const consequencesList = consequences.map((c) => `  ${c}`).join("\n");
 
   // Use QuickPick for reliable UI interaction (VS Code notifications are broken)
@@ -51,21 +46,21 @@ export async function showTwoStepConfirmation(
     [
       {
         label: `$(warning) ${actionButton}`,
-        description: `${capitalizedAction} ${itemName}`,
-        detail: `This will:\n${consequencesList}`,
+        description: vscode.l10n.t("{0} {1}", actionButton, itemName),
+        detail: vscode.l10n.t("This will:\n{0}", consequencesList),
         action: "confirm",
       },
       {
-        label: "$(x) Cancel",
-        description: "Do not proceed",
-        detail: "No changes will be made",
+        label: `$(x) ${vscode.l10n.t("Cancel")}`,
+        description: vscode.l10n.t("Do not proceed"),
+        detail: vscode.l10n.t("No changes will be made"),
         action: "cancel",
       },
     ],
     {
-      placeHolder: `${capitalizedAction} "${itemName}"?`,
+      placeHolder: vscode.l10n.t('Confirm {0} "{1}"?', actionButton, itemName),
       ignoreFocusOut: false,
-      title: `Confirm ${capitalizedAction}`,
+      title: vscode.l10n.t("Confirm {0}", actionButton),
     },
   );
 
@@ -90,14 +85,12 @@ export const CommonConfirmations = {
    */
   terminateRuntime: (runtimeName: string): TwoStepConfirmationConfig => ({
     itemName: runtimeName,
-    action: "terminate",
     consequences: [
-      "Stop all running notebooks",
-      "Clear runtime state",
-      "Potentially lose unsaved work",
+      vscode.l10n.t("Stop all running notebooks"),
+      vscode.l10n.t("Clear runtime state"),
+      vscode.l10n.t("Potentially lose unsaved work"),
     ],
-    actionButton: "Terminate",
-    finalActionButton: "Yes, Terminate",
+    actionButton: vscode.l10n.t("Terminate"),
   }),
 
   /**
@@ -107,16 +100,19 @@ export const CommonConfirmations = {
    * @returns Configuration for the bulk termination confirmation dialog.
    */
   terminateAllRuntimes: (count: number): TwoStepConfirmationConfig => ({
-    itemName: `all ${count} runtime${count !== 1 ? "s" : ""}`,
-    action: "terminate",
+    itemName:
+      count === 1
+        ? vscode.l10n.t("1 runtime")
+        : vscode.l10n.t("{0} runtimes", count),
     consequences: [
-      `Stop ${count} running runtime${count !== 1 ? "s" : ""}`,
-      "Stop all notebooks using these runtimes",
-      "Clear all runtime states",
-      "Potentially lose unsaved work across all notebooks",
+      count === 1
+        ? vscode.l10n.t("Stop {0} running runtime", count)
+        : vscode.l10n.t("Stop {0} running runtimes", count),
+      vscode.l10n.t("Stop all notebooks using these runtimes"),
+      vscode.l10n.t("Clear all runtime states"),
+      vscode.l10n.t("Potentially lose unsaved work across all notebooks"),
     ],
-    actionButton: "Terminate All",
-    finalActionButton: "Yes, Terminate All",
+    actionButton: vscode.l10n.t("Terminate All"),
   }),
 
   /**
@@ -127,13 +123,11 @@ export const CommonConfirmations = {
    */
   deleteDocument: (documentName: string): TwoStepConfirmationConfig => ({
     itemName: documentName,
-    action: "delete",
     consequences: [
-      "Permanently remove the document",
-      "Cannot be recovered",
-      "Any unsaved work will be lost",
+      vscode.l10n.t("Permanently remove the document"),
+      vscode.l10n.t("Cannot be recovered"),
+      vscode.l10n.t("Any unsaved work will be lost"),
     ],
-    actionButton: "Delete",
-    finalActionButton: "Yes, Delete",
+    actionButton: vscode.l10n.t("Delete"),
   }),
 };

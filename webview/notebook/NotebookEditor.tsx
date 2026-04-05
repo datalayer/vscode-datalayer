@@ -12,6 +12,7 @@
  */
 
 import { ErrorBoundary } from "../components/ErrorBoundary";
+import * as l10n from "@vscode/l10n";
 import React, {
   useContext,
   useEffect,
@@ -1148,7 +1149,7 @@ function NotebookEditorCore({
           color: "var(--vscode-editor-foreground)",
         }}
       >
-        <div>Loading notebook...</div>
+        <div>{l10n.t("Loading notebook...")}</div>
       </Box>
     );
   }

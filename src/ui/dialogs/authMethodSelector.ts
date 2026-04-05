@@ -40,27 +40,27 @@ export async function showAuthMethodPicker(): Promise<AuthMethod | undefined> {
   const items: AuthMethodQuickPickItem[] = [
     {
       label: "GitHub",
-      description: "OAuth authentication via GitHub",
-      detail: "Opens browser for GitHub authentication",
+      description: vscode.l10n.t("OAuth authentication via GitHub"),
+      detail: vscode.l10n.t("Opens browser for GitHub authentication"),
       method: "github",
     },
     // {
     //   label: "LinkedIn",
-    //   description: "OAuth authentication via LinkedIn",
-    //   detail: "Opens browser for LinkedIn authentication",
+    //   description: vscode.l10n.t("OAuth authentication via LinkedIn"),
+    //   detail: vscode.l10n.t("Opens browser for LinkedIn authentication"),
     //   method: "linkedin",
     // },
     {
-      label: "Handle / Password",
-      description: "Login with handle and password",
-      detail: "Use your Datalayer credentials",
+      label: vscode.l10n.t("Handle / Password"),
+      description: vscode.l10n.t("Login with handle and password"),
+      detail: vscode.l10n.t("Use your Datalayer credentials"),
       method: "email-password",
     },
   ];
 
   const selected = await vscode.window.showQuickPick(items, {
-    title: "Datalayer Authentication",
-    placeHolder: "Select authentication method",
+    title: vscode.l10n.t("Datalayer Authentication"),
+    placeHolder: vscode.l10n.t("Select authentication method"),
     ignoreFocusOut: true,
   });
 

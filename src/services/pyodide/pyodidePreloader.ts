@@ -117,21 +117,28 @@ export class PyodidePreloader implements vscode.Disposable {
   private async _promptUserForPreload(): Promise<void> {
     const packages = getValidatedSettingsGroup("pyodide").preloadPackages;
 
-    const message = `Datalayer can preload common Python packages (${packages.join(", ")}) to improve Pyodide kernel startup time. This downloads packages in the background. Download now?`;
+    const message = vscode.l10n.t(
+      "Datalayer can preload common Python packages ({0}) to improve Pyodide kernel startup time. This downloads packages in the background. Download now?",
+      packages.join(", "),
+    );
+
+    const downloadNowLabel = vscode.l10n.t("Download Now");
+    const skipLabel = vscode.l10n.t("Skip");
+    const disablePreloadLabel = vscode.l10n.t("Disable Preload");
 
     const choice = await vscode.window.showInformationMessage(
       message,
-      "Download Now",
-      "Skip",
-      "Disable Preload",
+      downloadNowLabel,
+      skipLabel,
+      disablePreloadLabel,
     );
 
     // Mark as prompted
     await this._context.globalState.update(PRELOAD_PROMPTED_KEY, true);
 
-    if (choice === "Download Now") {
+    if (choice === downloadNowLabel) {
       await this._startPreload();
-    } else if (choice === "Disable Preload") {
+    } else if (choice === disablePreloadLabel) {
       // Disable preload in settings
       await vscode.workspace
         .getConfiguration("datalayer.pyodide")
@@ -183,14 +190,19 @@ export class PyodidePreloader implements vscode.Disposable {
     }
 
     // Ask user if they want to download new packages
-    const message = `Pyodide package configuration changed. Download packages (${packages.join(", ")}) now?`;
+    const message = vscode.l10n.t(
+      "Pyodide package configuration changed. Download packages ({0}) now?",
+      packages.join(", "),
+    );
+    const downloadNowLabel = vscode.l10n.t("Download Now");
+    const skipLabel = vscode.l10n.t("Skip");
     const choice = await vscode.window.showInformationMessage(
       message,
-      "Download Now",
-      "Skip",
+      downloadNowLabel,
+      skipLabel,
     );
 
-    if (choice === "Download Now") {
+    if (choice === downloadNowLabel) {
       await this._startPreload();
     }
   }
@@ -216,7 +228,7 @@ export class PyodidePreloader implements vscode.Disposable {
     await vscode.window.withProgress(
       {
         location: vscode.ProgressLocation.Notification,
-        title: "Datalayer: Preloading Pyodide packages",
+        title: vscode.l10n.t("Datalayer: Preloading Pyodide packages"),
         cancellable: false,
       },
       async (progress) => {
@@ -224,7 +236,7 @@ export class PyodidePreloader implements vscode.Disposable {
           const pyodideVersion = pyodideConfig.version;
 
           // Preload for NATIVE notebooks (filesystem cache)
-          progress.report({ message: "Preloading packages..." });
+          progress.report({ message: vscode.l10n.t("Preloading packages...") });
           await this._executeNativePreload(pyodideVersion, packages, progress);
 
           // Mark packages as successfully preloaded
@@ -235,7 +247,7 @@ export class PyodidePreloader implements vscode.Disposable {
           );
 
           vscode.window.showInformationMessage(
-            "Pyodide packages preloaded successfully",
+            vscode.l10n.t("Pyodide packages preloaded successfully"),
           );
         } catch (error) {
           this._logger.error(
@@ -243,7 +255,10 @@ export class PyodidePreloader implements vscode.Disposable {
             error instanceof Error ? error : undefined,
           );
           vscode.window.showErrorMessage(
-            `Failed to preload Pyodide packages: ${error instanceof Error ? error.message : String(error)}`,
+            vscode.l10n.t(
+              "Failed to preload Pyodide packages: {0}",
+              error instanceof Error ? error.message : String(error),
+            ),
           );
         } finally {
           this._isPreloading = false;
@@ -302,7 +317,7 @@ export class PyodidePreloader implements vscode.Disposable {
     const results = await Promise.allSettled(
       packages.map(async (pkg) => {
         try {
-          progress.report({ message: `Loading ${pkg}...` });
+          progress.report({ message: vscode.l10n.t("Loading {0}...", pkg) });
           await pyodide.loadPackage(pkg);
           return { pkg, success: true };
         } catch (error) {
@@ -319,7 +334,11 @@ export class PyodidePreloader implements vscode.Disposable {
     ).length;
 
     progress.report({
-      message: `Loaded ${succeeded}/${packages.length} packages`,
+      message: vscode.l10n.t(
+        "Loaded {0}/{1} packages",
+        succeeded,
+        packages.length,
+      ),
     });
 
     // Clean up Pyodide instance (free memory)
@@ -352,7 +371,7 @@ export class PyodidePreloader implements vscode.Disposable {
       // Create hidden webview panel for preloading (background, no focus steal)
       const panel = vscode.window.createWebviewPanel(
         "datalayer.pyodide.preload",
-        "Pyodide Preload",
+        vscode.l10n.t("Pyodide Preload"),
         { viewColumn: vscode.ViewColumn.Beside, preserveFocus: true },
         {
           enableScripts: true,

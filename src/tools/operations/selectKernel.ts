@@ -60,8 +60,13 @@ function notAuthenticatedResult(action: string): SelectKernelResult {
   return {
     success: false,
     error: "Not authenticated",
-    message: `Cannot ${action} - not authenticated to Datalayer`,
-    chatMessage: "Not authenticated. Please sign in to access cloud runtimes.",
+    message: vscode.l10n.t(
+      "Cannot {0} - not authenticated to Datalayer",
+      action,
+    ),
+    chatMessage: vscode.l10n.t(
+      "Not authenticated. Please sign in to access cloud runtimes.",
+    ),
   };
 }
 
@@ -85,10 +90,12 @@ async function handleActiveRuntime(
     return {
       success: false,
       error: "No running runtimes found",
-      message:
+      message: vscode.l10n.t(
         "No active runtimes found. Use listKernels to see available options or create a new runtime.",
-      chatMessage:
+      ),
+      chatMessage: vscode.l10n.t(
         "No running runtimes found. Create a new runtime with 'new' or use a specific runtime ID.",
+      ),
     };
   }
 
@@ -99,20 +106,28 @@ async function handleActiveRuntime(
     return {
       success: false,
       error: "Multiple runtimes found",
-      message: `Found ${runningRuntimes.length} running runtimes: ${runtimeNames}. Please specify which one to connect to.`,
-      chatMessage: `Multiple runtimes running (${runningRuntimes.length}). Please specify which runtime to use.`,
+      message: vscode.l10n.t(
+        "Found {0} running runtimes: {1}. Please specify which one to connect to.",
+        runningRuntimes.length,
+        runtimeNames,
+      ),
+      chatMessage: vscode.l10n.t(
+        "Multiple runtimes running ({0}). Please specify which runtime to use.",
+        runningRuntimes.length,
+      ),
     };
   }
 
   const runtime = runningRuntimes[0]!;
   await ctx.kernelBridge.connectWebviewDocument(ctx.documentUri, runtime);
 
+  const runtimeDisplayName = runtime.givenName || runtime.podName;
   return {
     success: true,
     kernelId: runtime.uid,
     documentUri: ctx.documentUri.toString(),
-    message: `Connected to runtime "${runtime.givenName || runtime.podName}"`,
-    chatMessage: `Connected to ${runtime.givenName || runtime.podName}`,
+    message: vscode.l10n.t('Connected to runtime "{0}"', runtimeDisplayName),
+    chatMessage: vscode.l10n.t("Connected to {0}", runtimeDisplayName),
   };
 }
 
@@ -132,10 +147,12 @@ async function handleLocalDefault(
     return {
       success: false,
       error: "Python extension not active",
-      message:
+      message: vscode.l10n.t(
         "Python extension is not installed or active. Install ms-python.python to use local kernels.",
-      chatMessage:
+      ),
+      chatMessage: vscode.l10n.t(
         "Python extension not found. Install it to use local kernels.",
+      ),
     };
   }
 
@@ -145,10 +162,12 @@ async function handleLocalDefault(
     return {
       success: false,
       error: "No active Python environment found",
-      message:
+      message: vscode.l10n.t(
         "No active Python environment found. Please select a Python interpreter in VS Code.",
-      chatMessage:
+      ),
+      chatMessage: vscode.l10n.t(
         "No active Python environment. Select a Python interpreter first.",
+      ),
     };
   }
 
@@ -158,8 +177,10 @@ async function handleLocalDefault(
     return {
       success: false,
       error: "Failed to resolve Python environment",
-      message: "Failed to resolve the active Python environment.",
-      chatMessage: "Failed to resolve Python environment.",
+      message: vscode.l10n.t(
+        "Failed to resolve the active Python environment.",
+      ),
+      chatMessage: vscode.l10n.t("Failed to resolve Python environment."),
     };
   }
 
@@ -168,9 +189,10 @@ async function handleLocalDefault(
     return {
       success: false,
       error: "Failed to get Python executable path",
-      message:
+      message: vscode.l10n.t(
         "Could not determine Python executable path for the active environment.",
-      chatMessage: "Failed to resolve Python executable path.",
+      ),
+      chatMessage: vscode.l10n.t("Failed to resolve Python executable path."),
     };
   }
 
@@ -194,8 +216,11 @@ async function handleLocalDefault(
     success: true,
     kernelId: kernelInfo.id,
     documentUri: ctx.documentUri.toString(),
-    message: `Connected to local Python environment "${envName}"`,
-    chatMessage: `Connected to local IPykernel: ${envName}`,
+    message: vscode.l10n.t(
+      'Connected to local Python environment "{0}"',
+      envName,
+    ),
+    chatMessage: vscode.l10n.t("Connected to local IPykernel: {0}", envName),
   };
 }
 
@@ -232,8 +257,11 @@ async function handleCreateNewRuntime(
     return {
       success: false,
       error: `Invalid environment type: ${envType}`,
-      message: `Invalid environment type "${envType}". Must be "CPU" or "GPU".`,
-      chatMessage: `Invalid environment type: ${envType}`,
+      message: vscode.l10n.t(
+        'Invalid environment type "{0}". Must be "CPU" or "GPU".',
+        envType,
+      ),
+      chatMessage: vscode.l10n.t("Invalid environment type: {0}", envType),
     };
   }
 
@@ -242,9 +270,10 @@ async function handleCreateNewRuntime(
     return {
       success: false,
       error: "No environments available",
-      message:
+      message: vscode.l10n.t(
         "No environments available on the Datalayer platform. Contact support.",
-      chatMessage: "No environments available on platform.",
+      ),
+      chatMessage: vscode.l10n.t("No environments available on platform."),
     };
   }
 
@@ -256,8 +285,15 @@ async function handleCreateNewRuntime(
     return {
       success: false,
       error: `Environment "${targetEnvironmentName}" not found`,
-      message: `Environment "${targetEnvironmentName}" not found. Available: ${availableEnvs}`,
-      chatMessage: `Environment "${targetEnvironmentName}" not available.`,
+      message: vscode.l10n.t(
+        'Environment "{0}" not found. Available: {1}',
+        targetEnvironmentName,
+        availableEnvs,
+      ),
+      chatMessage: vscode.l10n.t(
+        'Environment "{0}" not available.',
+        targetEnvironmentName,
+      ),
     };
   }
 
@@ -286,8 +322,13 @@ async function handleCreateNewRuntime(
     return {
       success: false,
       error: "Runtime creation timed out",
-      message: `Runtime "${generatedName}" was created but didn't become ready in time. Check the Datalayer dashboard.`,
-      chatMessage: "Runtime creation timed out. Check Datalayer dashboard.",
+      message: vscode.l10n.t(
+        'Runtime "{0}" was created but did not become ready in time. Check the Datalayer dashboard.',
+        generatedName,
+      ),
+      chatMessage: vscode.l10n.t(
+        "Runtime creation timed out. Check Datalayer dashboard.",
+      ),
     };
   }
 
@@ -297,8 +338,18 @@ async function handleCreateNewRuntime(
     success: true,
     kernelId: runtime.uid,
     documentUri: ctx.documentUri.toString(),
-    message: `Created and connected to ${envType} runtime "${generatedName}" (${runtimeMinutes} min)`,
-    chatMessage: `Started new ${envType} runtime "${generatedName}" (${runtimeMinutes} minutes)`,
+    message: vscode.l10n.t(
+      'Created and connected to {0} runtime "{1}" ({2} min)',
+      envType,
+      generatedName,
+      runtimeMinutes,
+    ),
+    chatMessage: vscode.l10n.t(
+      'Started new {0} runtime "{1}" ({2} minutes)',
+      envType,
+      generatedName,
+      runtimeMinutes,
+    ),
   };
 }
 
@@ -326,28 +377,36 @@ async function handleCloudRuntime(
     return {
       success: false,
       error: `Runtime ${runtimeUid} not found`,
-      message: `Runtime "${runtimeUid}" not found. Use listKernels to see available runtimes.`,
-      chatMessage: `Runtime not found: ${runtimeUid}`,
+      message: vscode.l10n.t(
+        'Runtime "{0}" not found. Use listKernels to see available runtimes.',
+        runtimeUid,
+      ),
+      chatMessage: vscode.l10n.t("Runtime not found: {0}", runtimeUid),
     };
   }
 
   if (!runtime.ingress) {
+    const cloudRuntimeName = runtime.givenName || runtime.podName;
     return {
       success: false,
       error: `Runtime ${runtimeUid} is not ready`,
-      message: `Runtime "${runtime.givenName || runtime.podName}" is not ready. It may still be starting.`,
-      chatMessage: `Runtime not ready: ${runtime.givenName || runtime.podName}`,
+      message: vscode.l10n.t(
+        'Runtime "{0}" is not ready. It may still be starting.',
+        cloudRuntimeName,
+      ),
+      chatMessage: vscode.l10n.t("Runtime not ready: {0}", cloudRuntimeName),
     };
   }
 
   await ctx.kernelBridge.connectWebviewDocument(ctx.documentUri, runtime);
 
+  const cloudDisplayName = runtime.givenName || runtime.podName;
   return {
     success: true,
     kernelId: runtime.uid,
     documentUri: ctx.documentUri.toString(),
-    message: `Connected to runtime "${runtime.givenName || runtime.podName}"`,
-    chatMessage: `Connected to ${runtime.givenName || runtime.podName}`,
+    message: vscode.l10n.t('Connected to runtime "{0}"', cloudDisplayName),
+    chatMessage: vscode.l10n.t("Connected to {0}", cloudDisplayName),
   };
 }
 
@@ -371,10 +430,12 @@ async function handleLocalPython(
     return {
       success: false,
       error: "Python extension not active",
-      message:
+      message: vscode.l10n.t(
         "Python extension is not installed or active. Install ms-python.python to use local kernels.",
-      chatMessage:
+      ),
+      chatMessage: vscode.l10n.t(
         "Python extension not found. Install it to use local kernels.",
+      ),
     };
   }
 
@@ -389,8 +450,11 @@ async function handleLocalPython(
     return {
       success: false,
       error: `Python environment not found: ${pythonPath}`,
-      message: `Python environment not found at path: ${pythonPath}`,
-      chatMessage: "Python environment not found",
+      message: vscode.l10n.t(
+        "Python environment not found at path: {0}",
+        pythonPath,
+      ),
+      chatMessage: vscode.l10n.t("Python environment not found."),
     };
   }
 
@@ -399,8 +463,11 @@ async function handleLocalPython(
     return {
       success: false,
       error: "Failed to get Python executable path",
-      message: `Could not determine Python executable path for environment at ${pythonPath}`,
-      chatMessage: "Failed to resolve Python executable path.",
+      message: vscode.l10n.t(
+        "Could not determine Python executable path for environment at {0}",
+        pythonPath,
+      ),
+      chatMessage: vscode.l10n.t("Failed to resolve Python executable path."),
     };
   }
 
@@ -424,8 +491,11 @@ async function handleLocalPython(
     success: true,
     kernelId,
     documentUri: ctx.documentUri.toString(),
-    message: `Connected to local Python environment "${envName}"`,
-    chatMessage: `Connected to ${envName}`,
+    message: vscode.l10n.t(
+      'Connected to local Python environment "{0}"',
+      envName,
+    ),
+    chatMessage: vscode.l10n.t("Connected to {0}", envName),
   };
 }
 
@@ -481,10 +551,12 @@ export const selectKernelOperation: ToolOperation<
         return {
           success: false,
           error: "No active document",
-          message:
+          message: vscode.l10n.t(
             "No notebook or lexical document is currently active. Open a document first.",
-          chatMessage:
+          ),
+          chatMessage: vscode.l10n.t(
             "No active document. Please open a notebook or lexical document first.",
+          ),
         };
       }
 
@@ -511,9 +583,12 @@ export const selectKernelOperation: ToolOperation<
           success: true,
           kernelId: "pyodide-local",
           documentUri: documentUri.toString(),
-          message: "Connected to Pyodide (browser-based Python kernel)",
-          chatMessage:
+          message: vscode.l10n.t(
+            "Connected to Pyodide (browser-based Python kernel)",
+          ),
+          chatMessage: vscode.l10n.t(
             "Connected to Pyodide - browser Python (no server required!)",
+          ),
         };
       }
       if (normalizedKernelId === "CREATE_NEW_RUNTIME") {
@@ -534,8 +609,11 @@ export const selectKernelOperation: ToolOperation<
       return {
         success: false,
         error: `Unknown kernel type: ${kernelId}`,
-        message: `Could not recognize kernel ID "${kernelId}". Use listKernels to see available options.`,
-        chatMessage: `Unknown kernel type: ${kernelId}`,
+        message: vscode.l10n.t(
+          'Could not recognize kernel ID "{0}". Use listKernels to see available options.',
+          kernelId,
+        ),
+        chatMessage: vscode.l10n.t("Unknown kernel type: {0}", kernelId),
       };
     } catch (error) {
       const errorMessage =
@@ -544,8 +622,11 @@ export const selectKernelOperation: ToolOperation<
       return {
         success: false,
         error: `Failed to select kernel: ${errorMessage}`,
-        message: `Failed to select kernel: ${errorMessage}`,
-        chatMessage: `Could not connect to kernel: ${errorMessage}`,
+        message: vscode.l10n.t("Failed to select kernel: {0}", errorMessage),
+        chatMessage: vscode.l10n.t(
+          "Could not connect to kernel: {0}",
+          errorMessage,
+        ),
       };
     }
   },

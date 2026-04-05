@@ -49,7 +49,7 @@ suite("Datasource Edit Template Tests", () => {
     const html = getDatasourceEditDialogHtml(webview, extensionUri);
 
     assert.ok(html.includes("<!DOCTYPE html>"));
-    assert.ok(html.includes('<html lang="en">'));
+    assert.ok(html.includes("<html lang="));
     assert.ok(html.includes("</html>"));
   });
 

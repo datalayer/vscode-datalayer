@@ -434,9 +434,10 @@ export async function activate(
     }
 
     vscode.window.showErrorMessage(
-      `Failed to activate Datalayer extension: ${
-        error instanceof Error ? error.message : "Unknown error"
-      }`,
+      vscode.l10n.t(
+        "Failed to activate Datalayer extension: {0}",
+        error instanceof Error ? error.message : vscode.l10n.t("Unknown error"),
+      ),
     );
   }
 }

@@ -104,7 +104,10 @@ export class ErrorHandler implements IErrorHandler {
             // If action fails, show simple error without recursion
             this.logger.error("Action failed", actionError as Error);
             await vscode.window.showErrorMessage(
-              `Action failed: ${(actionError as Error).message}`,
+              vscode.l10n.t(
+                "Action failed: {0}",
+                (actionError as Error).message,
+              ),
             );
           }
         }
@@ -133,28 +136,41 @@ export class ErrorHandler implements IErrorHandler {
   private getUserFriendlyMessage(errorInfo: ErrorInfo): string {
     switch (errorInfo.code) {
       case "AUTH_ERROR":
-        return "You need to log in to Datalayer to perform this action.";
+        return vscode.l10n.t(
+          "You need to log in to Datalayer to perform this action.",
+        );
 
       case "NETWORK_ERROR":
-        return "Unable to connect to Datalayer. Please check your internet connection.";
+        return vscode.l10n.t(
+          "Unable to connect to Datalayer. Please check your internet connection.",
+        );
 
       case "NOTEBOOK_ERROR":
-        return `Notebook operation failed: ${errorInfo.message}`;
+        return vscode.l10n.t(
+          "Notebook operation failed: {0}",
+          errorInfo.message,
+        );
 
       case "RUNTIME_ERROR":
-        return `Runtime operation failed: ${errorInfo.message}`;
+        return vscode.l10n.t(
+          "Runtime operation failed: {0}",
+          errorInfo.message,
+        );
 
       case "DOCUMENT_ERROR":
-        return `Document operation failed: ${errorInfo.message}`;
+        return vscode.l10n.t(
+          "Document operation failed: {0}",
+          errorInfo.message,
+        );
 
       case "NOT_FOUND":
-        return "The requested resource was not found.";
+        return vscode.l10n.t("The requested resource was not found.");
 
       case "TIMEOUT_ERROR":
-        return "The operation timed out. Please try again.";
+        return vscode.l10n.t("The operation timed out. Please try again.");
 
       default:
-        return `An error occurred: ${errorInfo.message}`;
+        return vscode.l10n.t("An error occurred: {0}", errorInfo.message);
     }
   }
 

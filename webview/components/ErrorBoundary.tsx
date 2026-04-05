@@ -4,6 +4,7 @@
  * MIT License
  */
 
+import * as l10n from "@vscode/l10n";
 import React, { Component, type ErrorInfo, type ReactNode } from "react";
 
 /** Props for the ErrorBoundary component. */
@@ -74,7 +75,9 @@ export class ErrorBoundary extends Component<
             height: "100%",
           }}
         >
-          <h2>Something went wrong in the {this.props.editorName}.</h2>
+          <h2>
+            {l10n.t("Something went wrong in the {0}.", this.props.editorName)}
+          </h2>
           <p style={{ color: "var(--vscode-foreground, #ccc)" }}>
             {this.state.error?.message}
           </p>
@@ -91,7 +94,7 @@ export class ErrorBoundary extends Component<
               borderRadius: "2px",
             }}
           >
-            Try Again
+            {l10n.t("Try Again")}
           </button>
         </div>
       );
