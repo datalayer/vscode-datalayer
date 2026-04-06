@@ -105,7 +105,7 @@
     "@lexical/markdown": "^0.35.0",
     "@lexical/react": "^0.35.0",
     "@lexical/rich-text": "^0.35.0",
-    "@lexical/selection": "^0.35.0",
+    "@lexical/selection": "^0.42.0",
     "@lexical/table": "^0.35.0",
     "@lexical/utils": "^0.35.0",
     "@lezer/highlight": "^1.2.1",
