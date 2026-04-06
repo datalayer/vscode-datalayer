@@ -161,7 +161,7 @@
     "@vscode/vsce": "^3.7.1",
     "@vscode/zeromq": "^0.2.3",
     "autoprefixer": "^10.4.27",
-    "c8": "^10.1.3",
+    "c8": "^11.0.0",
     "copy-webpack-plugin": "^13.0.1",
     "cross-env": "^7.0.3",
     "cspell": "^9.7.0",
