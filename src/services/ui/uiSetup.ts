@@ -17,6 +17,7 @@ import * as vscode from "vscode";
 import { LexicalProvider } from "../../providers/lexicalProvider";
 import { NotebookProvider } from "../../providers/notebookProvider";
 import { OutlineTreeProvider } from "../../providers/outlineTreeProvider";
+import { ProjectsTreeProvider } from "../../providers/projectsTreeProvider";
 import { RuntimesTreeProvider } from "../../providers/runtimesTreeProvider";
 import { SettingsTreeProvider } from "../../providers/settingsTreeProvider";
 import { SmartDynamicControllerManager } from "../../providers/smartDynamicControllerManager";
@@ -39,6 +40,8 @@ export interface ExtensionUI {
   spacesTreeProvider: SpacesTreeProvider;
   /** Tree view provider for runtimes */
   runtimesTreeProvider: RuntimesTreeProvider;
+  /** Tree view provider for projects */
+  projectsTreeProvider: ProjectsTreeProvider;
   /** Tree view provider for settings (secrets + datasources) */
   settingsTreeProvider: SettingsTreeProvider;
   /** Smart dynamic controller manager for runtime selection and switching */
@@ -164,7 +167,17 @@ export async function initializeUI(
     }),
   );
 
-  // 4. Settings tree provider (FOURTH) - includes Secrets + Datasources sections
+  // 4. Projects tree provider (FOURTH)
+  const projectsTreeProvider = new ProjectsTreeProvider(authProvider);
+  context.subscriptions.push(
+    projectsTreeProvider,
+    vscode.window.createTreeView("datalayerProjects", {
+      treeDataProvider: projectsTreeProvider,
+      showCollapseAll: true,
+    }),
+  );
+
+  // 5. Settings tree provider (FIFTH) - includes Secrets + Datasources sections
   const settingsTreeProvider = new SettingsTreeProvider(authProvider);
   context.subscriptions.push(
     vscode.window.createTreeView("datalayerSettings", {
@@ -178,6 +191,7 @@ export async function initializeUI(
     outlineTreeProvider,
     spacesTreeProvider,
     runtimesTreeProvider,
+    projectsTreeProvider,
     settingsTreeProvider,
     controllerManager,
   };

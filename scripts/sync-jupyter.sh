@@ -1,6 +1,6 @@
 #!/bin/bash
-# Sync local Datalayer packages (@datalayer/core, jupyter-lexical, jupyter-react)
-# to vscode-datalayer node_modules.
+# Sync local Datalayer packages (@datalayer/core, jupyter-lexical, jupyter-react,
+# agent-runtimes) to vscode-datalayer node_modules.
 #
 # This script builds all local packages and copies their lib/ outputs
 # into the extension's node_modules for quick testing during development.
@@ -27,6 +27,12 @@ JUPYTER_UI_ROOT="$( cd "$VSCODE_ROOT/../jupyter-ui" && pwd )"
 LEXICAL_LORO_ROOT=""
 if [ -d "$VSCODE_ROOT/../lexical-loro" ]; then
   LEXICAL_LORO_ROOT="$( cd "$VSCODE_ROOT/../lexical-loro" && pwd )"
+fi
+
+# Check if agent-runtimes exists (optional)
+AGENT_RUNTIMES_ROOT=""
+if [ -d "$VSCODE_ROOT/../agent-runtimes" ]; then
+  AGENT_RUNTIMES_ROOT="$( cd "$VSCODE_ROOT/../agent-runtimes" && pwd )"
 fi
 
 # Function to perform the sync
@@ -56,6 +62,15 @@ sync_packages() {
     echo -e "${BLUE}📦 Skipping @datalayer/lexical-loro build (using existing lib/)...${NC}"
   else
     echo -e "${YELLOW}⏭️  Skipping @datalayer/lexical-loro (directory not found, using npm version)${NC}"
+  fi
+
+  # Build agent-runtimes (if directory exists)
+  if [ -n "$AGENT_RUNTIMES_ROOT" ]; then
+    echo -e "${BLUE}📦 Building @datalayer/agent-runtimes...${NC}"
+    cd "$AGENT_RUNTIMES_ROOT"
+    npm run build:lib
+  else
+    echo -e "${YELLOW}⏭️  Skipping @datalayer/agent-runtimes (directory not found, using npm version)${NC}"
   fi
 
   # Copy all necessary files to vscode-datalayer node_modules
@@ -95,6 +110,15 @@ sync_packages() {
     cp "$LEXICAL_LORO_ROOT/package.json" node_modules/@datalayer/lexical-loro/
   fi
 
+  # Copy agent-runtimes: lib/, style/, package.json (if directory exists)
+  if [ -n "$AGENT_RUNTIMES_ROOT" ]; then
+    echo -e "${BLUE}📋 Copying agent-runtimes to node_modules...${NC}"
+    mkdir -p node_modules/@datalayer/agent-runtimes
+    cp -r "$AGENT_RUNTIMES_ROOT/lib" node_modules/@datalayer/agent-runtimes/
+    cp -r "$AGENT_RUNTIMES_ROOT/style" node_modules/@datalayer/agent-runtimes/
+    cp "$AGENT_RUNTIMES_ROOT/package.json" node_modules/@datalayer/agent-runtimes/
+  fi
+
   echo -e "${GREEN}✅ Successfully synced at $(date +"%H:%M:%S")${NC}"
 }
 
@@ -121,6 +145,9 @@ if [[ "$1" == "--watch" ]]; then
   if [ -n "$LEXICAL_LORO_ROOT" ]; then
     echo -e "${YELLOW}   - $LEXICAL_LORO_ROOT/src${NC}"
   fi
+  if [ -n "$AGENT_RUNTIMES_ROOT" ]; then
+    echo -e "${YELLOW}   - $AGENT_RUNTIMES_ROOT/src${NC}"
+  fi
   echo -e "${YELLOW}Press Ctrl+C to stop${NC}"
   echo ""
 
@@ -135,6 +162,9 @@ if [[ "$1" == "--watch" ]]; then
   )
   if [ -n "$LEXICAL_LORO_ROOT" ]; then
     WATCH_PATHS+=("$LEXICAL_LORO_ROOT/src")
+  fi
+  if [ -n "$AGENT_RUNTIMES_ROOT" ]; then
+    WATCH_PATHS+=("$AGENT_RUNTIMES_ROOT/src")
   fi
 
   # Watch for changes in src directories and trigger sync

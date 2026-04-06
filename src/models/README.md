@@ -14,3 +14,5 @@ Data models for tree views, documents, and UI elements.
 - **settingsTreeItem.ts** - Union type for all possible items in the Settings tree view (section headers, secrets, datasources).
 - **secretTreeItem.ts** - Tree item for secrets in the Settings tree view with masked value display for security.
 - **datasourceTreeItem.ts** - Tree item for datasources in the Settings tree view with type, description, and database information. Includes edit command.
+- **projectTreeItem.ts** - Tree item for projects in the Projects tree view with visibility status, agent info, and dynamic context value for conditional menus.
+- **projectsTreeItem.ts** - Union type for all possible items in the Projects tree view.

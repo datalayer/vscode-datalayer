@@ -88,6 +88,7 @@ The extension depends on local packages from sibling directories:
 - `@datalayer/jupyter-lexical` - Lexical editor with Jupyter integration (../jupyter-ui/packages/lexical)
 - `@datalayer/jupyter-react` - React components for Jupyter notebooks (../jupyter-ui/packages/react)
 - `@datalayer/lexical-loro` - Loro CRDT collaboration provider for Lexical (../lexical-loro)
+- `@datalayer/agent-runtimes` - Agent runtimes UI components (../agent-runtimes)
 
 ### Package Dependencies
 
@@ -98,7 +99,8 @@ vscode-datalayer
 ├── @datalayer/core (UI components, SDK client)
 ├── @datalayer/jupyter-lexical (Lexical editor with Jupyter blocks)
 │   └── @datalayer/lexical-loro (CRDT collaboration provider)
-└── @datalayer/jupyter-react (React notebook components)
+├── @datalayer/jupyter-react (React notebook components)
+└── @datalayer/agent-runtimes (Agent runtimes UI components)
 ```
 
 ### Development Workflow with Local Packages
@@ -129,6 +131,7 @@ Edit code in any of these locations:
 - `../jupyter-ui/packages/lexical/src/`
 - `../jupyter-ui/packages/react/src/`
 - `../lexical-loro/src/`
+- `../agent-runtimes/src/`
 
 #### 2. Sync Changes to Extension
 
@@ -141,7 +144,7 @@ npm run sync:jupyter
 This script will:
 
 1. Run `npx gulp resources-to-lib` for core and jupyter-lexical (copies images, examples)
-2. Build TypeScript (`npm run build:lib`) for core, jupyter-lexical, and jupyter-react
+2. Build TypeScript (`npm run build:lib`) for core, jupyter-lexical, jupyter-react, and agent-runtimes
 3. Copy `lib/`, `style/`, and `package.json` files to `node_modules/@datalayer/`
 4. Skip lexical-loro build (uses existing lib/ due to TypeScript issues with Yjs)
 
@@ -174,7 +177,7 @@ This will:
 
 1. Run a final sync to ensure latest changes
 2. Generate patches in the `patches/` directory using `patch-package`
-3. Patches are for: `@datalayer/core`, `@datalayer/jupyter-lexical`, `@datalayer/jupyter-react`, `cmake-ts`
+3. Patches are for: `@datalayer/core`, `@datalayer/jupyter-lexical`, `@datalayer/jupyter-react`, `@datalayer/agent-runtimes`, `cmake-ts`
 
 **Important**: Commit the `patches/` directory to git. These patches are automatically applied during `npm install` via the postinstall hook.
 

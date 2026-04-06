@@ -25,6 +25,7 @@ npm run vsix             # Create universal .vsix package
 - **Message Passing**: Structured messages via `postMessage` between extension and webview
 - **Two Custom Editors**: `.ipynb` (Jupyter notebooks) and `.dlex` (Lexical rich text)
 - **Three Kernel Types**: Remote (Datalayer platform), Local (ZMQ via Python extension), Pyodide (WebAssembly)
+- **Sidebar Views** (registered in this order): Outline, Projects, Spaces, Runtimes, Settings
 
 Every directory has a `README.md` documenting its files, exports, and patterns.
 
@@ -189,6 +190,27 @@ Discriminated union factory: `mock` | `local` | `remote` | `pyodide`. Type-safe 
 ### BaseKernelManager / BaseSessionManager
 
 Template Method pattern eliminating duplicate code across mock/local/remote/pyodide implementations. Subclasses only implement `startNew()`.
+
+## Projects Feature
+
+### Sidebar View
+
+- `ProjectsTreeProvider` (`src/providers/projectsTreeProvider.ts`) - Tree data provider for the `datalayerProjects` view
+- `ProjectTreeItem` (`src/models/projectTreeItem.ts`) - Tree item representing a project with nested notebooks/documents
+- `ProjectsTreeItem` (`src/models/projectsTreeItem.ts`) - Root-level tree item
+
+### Commands (`src/commands/projects.ts`)
+
+- `datalayer.projects.refresh` - Refresh the projects tree
+- `datalayer.projects.create` - Create a new project
+- `datalayer.projects.rename` - Rename a project
+- `datalayer.projects.assignAgent` / `unassignAgent` - Manage AI agent assignments
+- `datalayer.projects.viewDetails` - View project details
+
+### Context Values
+
+- `project-{id}-noAgent` / `project-{id}-withAgent` - Controls context menu visibility for agent assign/unassign
+- `notebook` / `document` - Child items within projects (open/rename actions)
 
 ## API Endpoints
 

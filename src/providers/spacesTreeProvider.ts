@@ -166,9 +166,10 @@ export class SpacesTreeProvider implements vscode.TreeDataProvider<SpaceItem> {
       if (this.spacesCache.has("user")) {
         spaces = this.spacesCache.get("user")!;
       } else {
-        // Fetch spaces from Datalayer
+        // Fetch spaces from Datalayer, excluding projects (shown in Projects view)
         const datalayer = getServiceContainer().datalayer;
-        spaces = (await datalayer.getMySpaces()) ?? [];
+        const allSpaces = (await datalayer.getMySpaces()) ?? [];
+        spaces = allSpaces.filter((s) => s.variant !== "project");
         this.spacesCache.set("user", spaces);
 
         // Pre-fetch items for all spaces so they appear immediately

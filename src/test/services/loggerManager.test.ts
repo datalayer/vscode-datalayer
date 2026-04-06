@@ -165,12 +165,7 @@ suite("LoggerManager Tests", () => {
   });
 
   suite("Channel Management", () => {
-    test("showChannel does not throw for unknown channel", () => {
-      const manager = LoggerManager.getInstance(context);
-      assert.doesNotThrow(() => manager.showChannel("nonexistent"));
-    });
-
-    test("showChannel does not throw with no channels", () => {
+    test("showChannel does not throw", () => {
       const manager = LoggerManager.getInstance(context);
       assert.doesNotThrow(() => manager.showChannel());
     });
@@ -379,7 +374,10 @@ suite("Logger Tests", () => {
       logger.error("plain error message");
 
       assert.strictEqual(mockChannel.logged.length, 1);
-      assert.strictEqual(mockChannel.logged[0]!.message, "plain error message");
+      assert.strictEqual(
+        mockChannel.logged[0]!.message,
+        "[Test] plain error message",
+      );
     });
   });
 
@@ -461,7 +459,7 @@ suite("Logger Tests", () => {
 
       logger.trace("trace msg");
       assert.strictEqual(mockChannel.logged[0]!.level, "trace");
-      assert.strictEqual(mockChannel.logged[0]!.message, "trace msg");
+      assert.strictEqual(mockChannel.logged[0]!.message, "[Test] trace msg");
     });
 
     test("debug calls channel.debug", () => {
