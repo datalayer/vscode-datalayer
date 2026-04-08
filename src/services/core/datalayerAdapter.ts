@@ -11,6 +11,7 @@
  * @module services/datalayerAdapter
  */
 
+import { AgentsMixin } from "@datalayer/agent-runtimes/lib/client/AgentsMixin";
 import type { DatalayerClientConfig } from "@datalayer/core/lib/client";
 import { DatalayerClient } from "@datalayer/core/lib/client";
 import * as vscode from "vscode";
@@ -35,9 +36,25 @@ export interface VSCodeDatalayerConfig extends Partial<DatalayerClientConfig> {
  * @returns Configured DatalayerClient instance.
  *
  */
+/** DatalayerClient class extended with AgentsMixin methods for agent management. */
+export const DatalayerClientWithAgents = AgentsMixin(DatalayerClient);
+
+/** Extended client type combining DatalayerClient with AgentsMixin methods. */
+export type ExtendedDatalayerClient = InstanceType<
+  typeof DatalayerClientWithAgents
+>;
+
+/**
+ * Create a DatalayerClient instance configured for VS Code.
+ *
+ * @param config - Configuration options including VS Code context.
+ *
+ * @returns Configured DatalayerClient instance with agents support.
+ *
+ */
 export function createVSCodeDatalayer(
   config: VSCodeDatalayerConfig,
-): DatalayerClient {
+): ExtendedDatalayerClient {
   const { context, ...datalayerConfig } = config;
 
   // Get validated configuration from VS Code settings
@@ -59,7 +76,7 @@ export function createVSCodeDatalayer(
     });
   }
 
-  const datalayer = new DatalayerClient({
+  const datalayer = new DatalayerClientWithAgents({
     // Service URLs - now using the configured URLs
     iamRunUrl,
     runtimesRunUrl,

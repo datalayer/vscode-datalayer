@@ -18,4 +18,5 @@ VS Code command registration and handlers. Each file registers commands for a sp
 - **outline.ts** - Document outline navigation commands: navigating to items, refreshing, and collapsing the outline tree.
 - **theme.ts** - Primer theme showcase webview for demonstrating themed Primer React components.
 - **pyodide.ts** - Pyodide cache clearing for both native and webview notebooks.
+- **projects.ts** - Projects management: refreshing, creation, renaming, agent assignment/removal (with agent spec picker and secret creation), and detail viewing. Also provides a standalone "Create Agent" command.
 - **agui.ts** - Opens ag-ui demo webview with CopilotKit integration.

@@ -42,9 +42,7 @@ netlify.toml
 **/*.ts
 !**/*.d.ts
 
-# === Showcase bundle (dev-only) ===
-dist/showcase.js
-dist/showcase.js.LICENSE.txt
+# === Bundle artifacts (not needed at runtime) ===
 dist/*.LICENSE.txt
 dist/bundle-report-*.html
 dist/bundle-stats-*.json

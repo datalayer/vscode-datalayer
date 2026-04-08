@@ -68,9 +68,8 @@ export interface ILoggerManager {
   /**
    * Shows the log output channel in VS Code.
    *
-   * @param channelName - Optional specific channel to show
    */
-  showChannel(channelName?: string): void;
+  showChannel(): void;
 
   /**
    * Clears all log output channels.

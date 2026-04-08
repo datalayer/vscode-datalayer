@@ -11,7 +11,6 @@
  * @module services/core/serviceContainer
  */
 
-import type { DatalayerClient } from "@datalayer/core/lib/client";
 import * as vscode from "vscode";
 
 import { DocumentBridge } from "../bridges/documentBridge";
@@ -28,6 +27,7 @@ import { ServiceLoggers } from "../logging/loggers";
 import { NotebookNetworkService } from "../network/networkProxy";
 import { DatalayerAuthProvider } from "./authProvider";
 import { ILifecycle } from "./baseService";
+import type { ExtendedDatalayerClient } from "./datalayerAdapter";
 import { createVSCodeDatalayer } from "./datalayerAdapter";
 import { ErrorHandler } from "./errorHandler";
 
@@ -37,7 +37,7 @@ import { ErrorHandler } from "./errorHandler";
 export interface IServiceContainer extends ILifecycle {
   // Core services
   readonly context: vscode.ExtensionContext;
-  readonly datalayer: DatalayerClient;
+  readonly datalayer: ExtendedDatalayerClient;
   readonly authProvider: IAuthProvider;
   readonly errorHandler: IErrorHandler;
 
@@ -64,7 +64,7 @@ export class ServiceContainer implements IServiceContainer {
    * Lazily initialized Datalayer client for Datalayer platform.
    * @private
    */
-  private _datalayer?: DatalayerClient;
+  private _datalayer?: ExtendedDatalayerClient;
 
   /**
    * Lazily initialized authentication provider for managing user auth state.
@@ -125,9 +125,9 @@ export class ServiceContainer implements IServiceContainer {
    * Gets or lazily initializes the Datalayer client.
    * Creates a new Datalayer instance with VS Code context on first access.
    *
-   * @returns The initialized DatalayerClient instance.
+   * @returns The initialized ExtendedDatalayerClient instance.
    */
-  get datalayer(): DatalayerClient {
+  get datalayer(): ExtendedDatalayerClient {
     if (!this._datalayer) {
       this._datalayer = createVSCodeDatalayer({ context: this.context });
     }

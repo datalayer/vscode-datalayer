@@ -1,6 +1,7 @@
 #!/bin/bash
 # Create patch-package patches for locally modified Datalayer packages
-# (@datalayer/core, @datalayer/jupyter-lexical, @datalayer/jupyter-react)
+# (@datalayer/core, @datalayer/jupyter-lexical, @datalayer/jupyter-react,
+# @datalayer/agent-runtimes)
 #
 # This script generates patches that can be committed to the repo and
 # applied automatically during npm install via the postinstall hook.
@@ -30,7 +31,7 @@ fi
 
 # Create patches
 echo -e "${BLUE}📦 Generating patches with patch-package...${NC}"
-npx patch-package @datalayer/core @datalayer/jupyter-lexical @datalayer/jupyter-react
+npx patch-package @datalayer/core @datalayer/jupyter-lexical @datalayer/jupyter-react @datalayer/agent-runtimes
 
 echo -e "${GREEN}✅ Patches created successfully${NC}"
 echo -e "${YELLOW}⚠️  Remember: Commit the patches/ directory to git for CI/users${NC}"

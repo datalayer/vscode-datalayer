@@ -19,6 +19,7 @@ const Module = require("module");
 
 const INTERCEPTED_PREFIXES = [
   "@datalayer/core",
+  "@datalayer/agent-runtimes",
   "@datalayer/icons-react",
   "@datalayer/primer-addons",
   "@datalayer/jupyter-react",
@@ -58,11 +59,19 @@ function zodToToolParameters(schema) {
   return { type: "object", properties: {} };
 }
 
+// AgentsMixin stub: identity function that returns the base class unchanged
+function AgentsMixinStub(Base) {
+  return Base;
+}
+
 const STUBS = {
   "@datalayer/core/lib/client": CLIENT_STUB,
   "@datalayer/core/lib/client/constants": { ItemTypes },
   "@datalayer/core/lib/api/iam/oauth2": { getOAuth2AuthzUrl: () => "" },
   "@datalayer/jupyter-react": { zodToToolParameters },
+  "@datalayer/agent-runtimes/lib/client/AgentsMixin": {
+    AgentsMixin: AgentsMixinStub,
+  },
 };
 
 const originalLoad = Module._load;

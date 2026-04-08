@@ -66,6 +66,19 @@
 
 ### 🗂️ **Integrated Workspace Management**
 
+**Document Outline** (Explorer Sidebar)
+
+- View the structure of the currently open document
+- Navigate headings and sections at a glance
+
+**Datalayer Projects** (Explorer Sidebar)
+
+- Browse and manage your Datalayer projects
+- Create and rename projects
+- Assign or unassign AI agents to projects
+- View project details including associated notebooks and documents
+- Open project files directly from the tree
+
 **Datalayer Spaces** (Explorer Sidebar)
 
 - Browse and manage your cloud documents and notebooks
@@ -141,6 +154,13 @@
 
 - Login/Logout
 - Show Authentication Status
+
+**Projects:**
+
+- Create/Rename Projects
+- Assign/Unassign AI Agents
+- View Project Details
+- Refresh Projects
 
 **Documents:**
 

@@ -261,6 +261,7 @@ export async function activate(
           spacesTreeProvider: ui!.spacesTreeProvider,
           controllerManager: ui!.controllerManager,
           runtimesTreeProvider: ui!.runtimesTreeProvider,
+          projectsTreeProvider: ui!.projectsTreeProvider,
           settingsTreeProvider: ui!.settingsTreeProvider,
           outlineTreeProvider: ui!.outlineTreeProvider,
         },

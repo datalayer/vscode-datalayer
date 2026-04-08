@@ -28,10 +28,10 @@ export { LogLevel } from "../interfaces/ILoggerManager";
  * Manages multiple log channels with different purposes. */
 export class LoggerManager implements ILoggerManager {
   private static instance: LoggerManager;
-  private channels = new Map<string, vscode.LogOutputChannel>();
+  private channel: vscode.LogOutputChannel;
   private config: LoggerConfig;
 
-  private constructor(private context: vscode.ExtensionContext) {
+  private constructor(context: vscode.ExtensionContext) {
     // Get validated logging configuration from VS Code settings
     const loggingConfig = getValidatedSettingsGroup("logging");
     this.config = {
@@ -39,6 +39,12 @@ export class LoggerManager implements ILoggerManager {
       enableTimestamps: loggingConfig.includeTimestamps,
       enableContext: loggingConfig.includeContext,
     };
+
+    // Single output channel for all loggers
+    this.channel = vscode.window.createOutputChannel("Datalayer", {
+      log: true,
+    });
+    context.subscriptions.push(this.channel);
 
     // Listen for configuration changes
     context.subscriptions.push(
@@ -77,20 +83,7 @@ export class LoggerManager implements ILoggerManager {
    * @returns Logger instance for the specified channel.
    */
   createLogger(channelName: string): Logger {
-    if (!this.channels.has(channelName)) {
-      const channel = vscode.window.createOutputChannel(
-        `Datalayer ${channelName}`,
-        { log: true },
-      );
-      this.channels.set(channelName, channel);
-      this.context.subscriptions.push(channel);
-    }
-
-    return new Logger(
-      this.channels.get(channelName)!,
-      channelName,
-      this.config,
-    );
+    return new Logger(this.channel, channelName, this.config);
   }
 
   /**
@@ -117,38 +110,23 @@ export class LoggerManager implements ILoggerManager {
 
   /**
    * Shows the log output channel in VS Code.
-   *
-   * @param channelName - Optional specific channel to show. If not provided, shows main channel.
    */
-  showChannel(channelName?: string): void {
-    if (channelName && this.channels.has(channelName)) {
-      this.channels.get(channelName)!.show();
-    } else {
-      // Show the first available channel or the main one
-      const firstChannel = this.channels.values().next().value;
-      if (firstChannel) {
-        firstChannel.show();
-      }
-    }
+  showChannel(): void {
+    this.channel.show();
   }
 
   /**
-   * Clears all log output channels.
+   * Clears the log output channel.
    */
   clearAll(): void {
-    for (const channel of this.channels.values()) {
-      channel.clear();
-    }
+    this.channel.clear();
   }
 
   /**
-   * Disposes all loggers and cleans up resources.
+   * Disposes the logger and cleans up resources.
    */
   dispose(): void {
-    for (const channel of this.channels.values()) {
-      channel.dispose();
-    }
-    this.channels.clear();
+    this.channel.dispose();
   }
 
   /**
@@ -192,9 +170,7 @@ export class LoggerManager implements ILoggerManager {
 export class Logger {
   constructor(
     private channel: vscode.LogOutputChannel,
-    /** @internal - Reserved for future log formatting features */
-    // @ts-ignore - TS6138
-    private _channelName: string,
+    private channelName: string,
     private config: LoggerConfig,
   ) {}
 
@@ -307,7 +283,7 @@ export class Logger {
       return;
     }
 
-    let formattedMessage = message;
+    let formattedMessage = `[${this.channelName}] ${message}`;
 
     // Add context if enabled and provided
     if (

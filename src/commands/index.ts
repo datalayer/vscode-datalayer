@@ -16,6 +16,7 @@
 import * as vscode from "vscode";
 
 import { OutlineTreeProvider } from "../providers/outlineTreeProvider";
+import { ProjectsTreeProvider } from "../providers/projectsTreeProvider";
 import { RuntimesTreeProvider } from "../providers/runtimesTreeProvider";
 import { SettingsTreeProvider } from "../providers/settingsTreeProvider";
 import { SmartDynamicControllerManager } from "../providers/smartDynamicControllerManager";
@@ -29,6 +30,7 @@ import { registerDatasourcesCommands } from "./datasources";
 import { registerDocumentCommands } from "./documents";
 import { getConnectedRuntime, registerInternalCommands } from "./internal";
 import { registerOutlineCommands } from "./outline";
+import { registerProjectsCommands } from "./projects";
 import { registerPyodideCommands } from "./pyodide";
 import { registerRuntimeCommands } from "./runtimes";
 import { registerSecretsCommands } from "./secrets";
@@ -49,6 +51,7 @@ export interface CommandServices {
   /** Controller manager for native notebook controller integration */
   controllerManager: SmartDynamicControllerManager;
   runtimesTreeProvider: RuntimesTreeProvider;
+  projectsTreeProvider: ProjectsTreeProvider;
   settingsTreeProvider: SettingsTreeProvider;
   outlineTreeProvider: OutlineTreeProvider;
 }
@@ -94,6 +97,14 @@ export function registerAllCommands(
 
   // Register datasources management commands (placeholder)
   registerDatasourcesCommands(context, services.settingsTreeProvider);
+
+  // Register projects management commands
+  registerProjectsCommands(
+    context,
+    services.projectsTreeProvider,
+    services.runtimesTreeProvider,
+    services.settingsTreeProvider,
+  );
 
   // Register smart create commands (context-aware notebook/lexical creation)
   registerCreateCommands(context);

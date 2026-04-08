@@ -19,6 +19,8 @@ Custom editor providers, tree data providers, and other VS Code API implementati
 
 - **runtimesTreeProvider.ts** - Tree data provider for the "Datalayer Runtimes" sidebar view. Shows running runtimes and snapshots in separate collapsible sections. Auto-refreshes every 30 seconds to update time remaining display. Provides cached runtime data for auto-connect and kernel selection.
 
+- **projectsTreeProvider.ts** - Tree data provider for the "Datalayer Projects" sidebar view. Displays projects with agent status indicators and child documents (notebooks, lexical). Auto-refreshes every 30 seconds and cross-checks assigned agents against existing runtimes, auto-unassigning stale agents whose runtimes no longer exist.
+
 - **settingsTreeProvider.ts** - Tree data provider for the "Datalayer Settings" sidebar view. Displays secrets and datasources in collapsible sections. Lazy-loads data from Datalayer API on expansion to minimize startup overhead.
 
 - **outlineTreeProvider.ts** - Tree data provider for document outline/table of contents. Receives outline data from webviews (headings, code cells) and displays hierarchical structure with navigation support. Tracks the active item as user scrolls.
