@@ -70,7 +70,14 @@ suite("RuntimeTreeItem Tests", () => {
       desc.includes("Python GPU"),
       `Expected "Python GPU" in "${desc}"`,
     );
-    assert.ok(desc.includes("2h 30m"), `Expected "2h 30m" in "${desc}"`);
+    // The formatter floors minutes, so the moment of `Date.now()` inside
+    // the formatter may be a few ms past the moment of `Date.now()` in
+    // the fixture above, flipping "2h 30m" → "2h 29m". Accept either.
+    // Same tolerance pattern as the "shows minutes only" test below.
+    assert.ok(
+      /2h (29|30)m/.test(desc),
+      `Expected "2h 29m" or "2h 30m" in "${desc}"`,
+    );
   });
 
   test("description uses environmentName when environmentTitle is empty", () => {

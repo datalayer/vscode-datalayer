@@ -5,6 +5,7 @@ This directory contains source SVG files for the Datalayer custom icon font used
 ## Icon Font System
 
 The extension uses a custom WOFF icon font to display Datalayer-branded icons in the VS Code UI. This provides:
+
 - Consistent branding across toolbar, sidebars, and menus
 - Theme-adaptive icons (automatically work with light/dark themes)
 - Scalable vector graphics that look sharp at any size
@@ -14,7 +15,24 @@ The extension uses a custom WOFF icon font to display Datalayer-branded icons in
 
 - **datalayer-logo** (`datalayer-logo.svg`) - Main Datalayer logo
   - Used in: Notebook toolbar button (`datalayer.showAuthStatus` command)
-  - Unicode: `\ue900`
+  - `package.json` `fontCharacter`: `\e901`
+- **google-logo** (`google-logo.svg`) - Google logo for OAuth
+  - Used in: Auth method picker (`$(google-logo) Sign in with Google`)
+  - `package.json` `fontCharacter`: `\e902`
+
+> **Format note**: VS Code's product-icon `fontCharacter` field is parsed
+> by stripping the leading `\` and running `parseInt(rest, 16)`. The
+> `\e###` form works (`parseInt("e901", 16) === 0xE901`); the `\u####`
+> form does NOT (`parseInt("ue902", 16) === NaN`), so the literal text
+> `ue902` ends up in the UI. Use the `\<hex>` form in `package.json` even
+> though `resources/datalayer-icons.json` records the same codepoint as
+> `\u<hex>` for documentation purposes.
+>
+> `resources/datalayer-icons.json` is regenerated alphabetically every
+> time `scripts/build-icons.js` runs. If you add a new SVG that sorts
+> earlier than an existing icon, every codepoint after it shifts \u2014
+> remember to update `package.json` AND verify the WOFF was rebuilt
+> (`npm run build:icons`) so the file's actual character map matches.
 
 ## File Structure
 
@@ -55,6 +73,7 @@ npm run build:icons
 ```
 
 This will:
+
 - Read all `.svg` files from `resources/icons/`
 - Generate `resources/datalayer-icons.woff` (WOFF font file)
 - Generate `resources/datalayer-icons.json` (Unicode mapping)
@@ -72,7 +91,7 @@ Add the new icon to the `contributes.icons` section:
         "description": "Description of my icon",
         "default": {
           "fontPath": "./resources/datalayer-icons.woff",
-          "fontCharacter": "\\ue901"  // Check datalayer-icons.json for assigned unicode
+          "fontCharacter": "\\e901" // Check datalayer-icons.json for the codepoint, then drop the leading "u" — VS Code parses `\<hex>` only.
         }
       }
     }
@@ -98,7 +117,7 @@ The icon font is generated automatically:
 
 - **During development:** `npm run build:icons`
 - **Before packaging:** Runs via `vscode:prepublish` hook
-- **Watch mode:** *(optional)* Add a watch script if needed
+- **Watch mode:** _(optional)_ Add a watch script if needed
 
 ## Technical Details
 
@@ -109,6 +128,7 @@ SVG files → svgicons2svgfont → svg2ttf → ttf2woff → WOFF font
 ```
 
 **Dependencies:**
+
 - `svgicons2svgfont` - SVG to SVG font conversion
 - `svg2ttf` - SVG font to TrueType conversion
 - `ttf2woff` - TrueType to WOFF conversion
@@ -172,6 +192,7 @@ For consistent, professional icons:
 ## Examples from Other Extensions
 
 The Colab VS Code extension uses a similar approach:
+
 - Single WOFF font at `resources/colab-font.woff`
 - Icon registered as `colab-logo` with unicode `\ue900`
 - Referenced in notebook toolbar with `$(colab-logo)`

@@ -28,6 +28,13 @@
     "invalidLink": true,
     "notDocumented": true
   },
+  "externalSymbolLinkMappings": {
+    "@datalayer/agent-runtimes": {
+      "IAgentRuntimesClient": "https://github.com/datalayer/agent-runtimes",
+      "SdkAgentRuntimesClient": "https://github.com/datalayer/agent-runtimes",
+      "AgentsMixin": "https://github.com/datalayer/agent-runtimes"
+    }
+  },
   "requiredToBeDocumented": [
     "Class",
     "Function",

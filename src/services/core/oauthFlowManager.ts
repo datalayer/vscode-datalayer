@@ -19,8 +19,12 @@ import { BaseService } from "./baseService";
 
 /**
  * OAuth provider type supported by the platform.
+ *
+ * Currently supported providers: GitHub, Google, and LinkedIn. Keep
+ * provider-related comments and log messages in this file aligned with
+ * this set when adding or removing providers.
  */
-export type OAuthProvider = "github" | "linkedin";
+export type OAuthProvider = "github" | "google" | "linkedin";
 
 /**
  * Result of a successful OAuth flow.
@@ -162,7 +166,7 @@ export class OAuthFlowManager extends BaseService {
    * opening the browser to the authorization URL, waiting for the callback,
    * and returning the authentication token.
    *
-   * @param provider - OAuth provider (github or linkedin).
+   * @param provider - OAuth provider (`github`, `google`, or `linkedin`).
    *
    * @returns Promise that resolves with authentication token.
    *
@@ -233,7 +237,8 @@ export class OAuthFlowManager extends BaseService {
         urlStart: loginUrl.substring(0, 50) + "...",
       });
 
-      // Extract server's state from the GitHub OAuth URL
+      // Extract server's state from the OAuth URL (applies to every
+      // supported provider — GitHub, Google, LinkedIn).
       // The server generates its own state and appends the callback URI to it
       // Format: serverState:callbackUri
       // We need to extract and store the serverState (before the colon)

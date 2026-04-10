@@ -20,6 +20,7 @@ const path = require('path');
 // - package.json (for Node.js module resolution via "exports" field)
 // - lib/tools/ (the actual runtime code)
 const externalDeps = [
+  '@github/keytar', // OS keyring access (ships prebuilt binaries for all platforms in tarball). Required for credential persistence and to share login state with the Datalayer CLI, which writes to the same OS keyring.
   'ws', // WebSocket library for Node.js - used by LoroAdapter for collaboration
   'zod', // Schema validation library - used by @datalayer/jupyter-react/tools
   'zod-to-json-schema', // Zod to JSON Schema converter - used by @datalayer/jupyter-react/tools

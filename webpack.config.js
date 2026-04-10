@@ -62,6 +62,18 @@ const extensionConfig = {
   target: "node", // VS Code extensions run in a Node.js-context 📖 -> https://webpack.js.org/configuration/node/
   mode: "none", // this leaves the source code as close as possible to the original (when packaging we set this to 'production')
   entry: "./src/preload.ts", // CHANGED: Use preload.ts to force os module loading BEFORE any other code, 📖 -> https://webpack.js.org/configuration/entry-context/
+  // Disable webpack's default polyfilling of __filename / __dirname.
+  // For target: "node", webpack's default replaces both with fake `/index.js`
+  // and `/` paths. That breaks @datalayer/core's NodeStorage, which uses
+  // `module.createRequire(__filename)` to load `keytar` at runtime — the
+  // fake path makes createRequire root the require at the filesystem root,
+  // where there is no `node_modules/keytar`. Setting these to `false`
+  // tells webpack to leave them alone, so Node fills in the real bundle
+  // path at runtime and createRequire resolves real node_modules. 📖 https://webpack.js.org/configuration/node/
+  node: {
+    __filename: false,
+    __dirname: false,
+  },
   output: {
     // the bundle is stored in the 'dist' folder (check package.json), 📖 -> https://webpack.js.org/configuration/output/
     path: path.resolve(__dirname, "dist"),
@@ -78,7 +90,7 @@ const extensionConfig = {
     bufferutil: "commonjs bufferutil", // Optional native module for ws
     "utf-8-validate": "commonjs utf-8-validate", // Optional native module for ws
     pyodide: "commonjs pyodide", // pyodide package is HUGE (~10MB+ WASM), must be external to avoid heap overflow during webpack bundling
-    keytar: "commonjs keytar", // keytar has native bindings for OS keyring access - rebuilt for Electron
+    "@github/keytar": "commonjs @github/keytar", // GitHub's keytar fork: ships prebuilt binaries for all platforms in a single multi-platform VSIX (no per-OS rebuild needed). Loaded first by @datalayer/core's NodeStorage.
     // React packages must be EXTERNAL - they should NOT run in Node.js extension context
     // React code with hooks causes "Invalid hook call" warnings when bundled into extension.js
     react: "commonjs react",
@@ -161,6 +173,15 @@ const extensionConfig = {
   },
 };
 
+// Webpack's `performance` hints assume a network round-trip and warn for
+// any asset over 244 KiB. VS Code webviews instead load bundles from local
+// disk via `vscode-webview-resource://`, so the network heuristic doesn't
+// apply: a 5 MiB lazy chunk costs the same as a 200 KiB one. Disabling
+// these hints removes noise from `npm run compile` without hiding real
+// regressions — bundle-size tracking already happens through
+// `npm run analyze` (treemap reports), which is the right tool for it.
+const WEBVIEW_PERFORMANCE_HINTS = { hints: false };
+
 const webviewConfig = {
   target: "web",
   // Use development mode when WEBVIEW_DEBUG=1 to preserve console.log and avoid minification
@@ -177,6 +198,7 @@ const webviewConfig = {
     path: path.resolve(__dirname, "dist"),
     filename: "webview.js",
   },
+  performance: WEBVIEW_PERFORMANCE_HINTS,
   optimization: {
     // Disable code splitting to avoid RuntimeIdRuntimeModule conflicts with WASM
     splitChunks: false,
@@ -562,6 +584,50 @@ const showcaseWebviewConfig = {
   ],
 };
 
+// Config for Datalayer Agent Chat sidebar webview.
+// Inherits from webviewConfig for full CSS/asset/polyfill support.
+// Code splitting is ENABLED (no LimitChunkCountPlugin) so React.lazy()
+// can async-load the heavy Chat component into a separate chunk, keeping
+// the entry bundle lightweight enough for the webview to evaluate.
+const agentChatWebviewConfig = {
+  ...webviewConfig,
+  entry: "./webview/agentChat/index.tsx",
+  output: {
+    path: path.resolve(__dirname, "dist"),
+    filename: "agentChat.js",
+    chunkFilename: "agentChat.[name].chunk.js",
+    // "auto" derives the public path from the <script src="..."> URI,
+    // which in a VS Code webview is a vscode-webview-resource: URI.
+    // Async chunks loaded by webpack will resolve relative to that.
+    publicPath: "auto",
+  },
+  optimization: {
+    // Allow code splitting — the Chat component is loaded via React.lazy.
+    // Do NOT set `splitChunks: false` here: it causes webpack to stop
+    // emitting the main `agentChat.js` entry bundle while still producing
+    // all the async chunks, leaving the webview to 404 on load.
+    splitChunks: {
+      chunks: "async",
+    },
+    runtimeChunk: false,
+  },
+  plugins: webviewConfig.plugins.filter((plugin) => {
+    // Inherit every webviewConfig plugin so future additions (e.g. extra
+    // ProvidePlugin entries) propagate automatically and don't drift, but
+    // drop the two that don't belong here:
+    //
+    // - `LimitChunkCountPlugin` is what disables code splitting; we MUST
+    //   keep splitting on so `React.lazy(() => import('Chat'))` works.
+    // - `CopyPlugin` emits codicon assets to `dist/`. The main webview
+    //   build already does this (same `dist/` target), so re-running it
+    //   here would just rewrite the same files twice per build.
+    const ctorName = plugin?.constructor?.name;
+    return ctorName !== "LimitChunkCountPlugin" && ctorName !== "CopyPlugin";
+  }),
+  // `performance` is inherited from `webviewConfig` (hints disabled —
+  // see comment on `WEBVIEW_PERFORMANCE_HINTS`).
+};
+
 // Config for ag-ui example webview
 const aguiExampleConfig = {
   target: "web",
@@ -673,6 +739,7 @@ const datasourceDialogConfig = {
     path: path.resolve(__dirname, "dist"),
     filename: "datasourceDialog.js",
   },
+  performance: WEBVIEW_PERFORMANCE_HINTS,
   resolve: {
     extensions: [".ts", ".tsx", ".js", ".jsx", ".json", ".svg"],
     symlinks: true,
@@ -742,6 +809,7 @@ const datasourceEditDialogConfig = {
     path: path.resolve(__dirname, "dist"),
     filename: "datasourceEditDialog.js",
   },
+  performance: WEBVIEW_PERFORMANCE_HINTS,
   resolve: {
     extensions: [".ts", ".tsx", ".js", ".jsx", ".json", ".svg"],
     symlinks: true,
@@ -808,6 +876,7 @@ const configs = [
   showcaseWebviewConfig,
   datasourceDialogConfig,
   datasourceEditDialogConfig,
+  agentChatWebviewConfig,
   // aguiExampleConfig, // Commented out - file doesn't exist
 ];
 
@@ -819,6 +888,7 @@ if (process.env.ANALYZE === "true") {
     "showcase",
     "datasource",
     "datasource-edit",
+    "agentChat",
   ];
   configs.forEach((config, index) => {
     const name = configNames[index] || `config-${index}`;

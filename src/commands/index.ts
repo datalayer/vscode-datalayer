@@ -23,6 +23,7 @@ import { SmartDynamicControllerManager } from "../providers/smartDynamicControll
 import { SpacesTreeProvider } from "../providers/spacesTreeProvider";
 import { DocumentBridge } from "../services/bridges/documentBridge";
 import { DatalayerAuthProvider } from "../services/core/authProvider";
+import { registerAgentChatCommands } from "./agentChat";
 import { registerAgUICommands } from "./agui";
 import { registerAuthCommands } from "./auth";
 import { registerCreateCommands } from "./create";
@@ -120,4 +121,7 @@ export function registerAllCommands(
 
   // Register Pyodide commands (browser-based Python)
   registerPyodideCommands(context);
+
+  // Register Agent Chat commands (focus webview)
+  registerAgentChatCommands(context);
 }

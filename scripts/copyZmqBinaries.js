@@ -66,16 +66,12 @@ async function main() {
       buildFiles: ['loader.js', 'loader.mjs']  // Only runtime loaders needed, not build tools
     },
     {
-      name: 'keytar',
-      include: ['lib', 'build', 'package.json']  // Includes rebuilt native binding for Electron
-    },
-    {
       name: 'ws',
       include: ['lib', 'package.json']  // WebSocket library used by kernel clients and Loro collaboration
     },
     {
       name: 'prebuild-install',
-      include: ['lib', 'bin', 'rc.js', 'asset.js', 'index.js', 'download.js', 'util.js', 'error.js', 'proxy.js', 'package.json']  // Used by native modules like keytar
+      include: ['lib', 'bin', 'rc.js', 'asset.js', 'index.js', 'download.js', 'util.js', 'error.js', 'proxy.js', 'package.json']  // Used by native modules
     },
     {
       name: 'bufferutil',

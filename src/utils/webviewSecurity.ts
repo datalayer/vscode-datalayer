@@ -13,19 +13,26 @@
  * @see https://code.visualstudio.com/api/extension-guides/webview#content-security-policy
  */
 
+import * as crypto from "crypto";
+
 /**
- * Generates a cryptographically random nonce string for Content Security Policy headers.
- * Used to allow specific inline scripts in webviews while maintaining security.
+ * Generates a cryptographically random nonce string for Content Security
+ * Policy headers. Used to allow specific inline scripts in webviews while
+ * maintaining security.
+ *
+ * Uses `crypto.randomBytes` so the nonce is unpredictable to an attacker.
+ * `Math.random` is NOT safe for security-sensitive values.
  *
  * @returns A 32-character random string suitable for CSP nonce attribute.
  *
  */
 export function getNonce(): string {
-  let text = "";
   const possible =
     "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+  const bytes = crypto.randomBytes(32);
+  let text = "";
   for (let i = 0; i < 32; i++) {
-    text += possible.charAt(Math.floor(Math.random() * possible.length));
+    text += possible.charAt(bytes[i]! % possible.length);
   }
   return text;
 }

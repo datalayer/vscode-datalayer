@@ -20,3 +20,4 @@ VS Code command registration and handlers. Each file registers commands for a sp
 - **pyodide.ts** - Pyodide cache clearing for both native and webview notebooks.
 - **projects.ts** - Projects management: refreshing, creation, renaming, agent assignment/removal (with agent spec picker and secret creation), and detail viewing. Also provides a standalone "Create Agent" command.
 - **agui.ts** - Opens ag-ui demo webview with CopilotKit integration.
+- **agentChat.ts** - Registers `datalayer.agentChat.focus`, which reveals the Datalayer Chat sidebar (`datalayerAgentChatView`). Wired into `editor/title` with the AI agent icon so the chat is reachable from any editor, mirroring how Claude Code and Codex surface their own chat panels.

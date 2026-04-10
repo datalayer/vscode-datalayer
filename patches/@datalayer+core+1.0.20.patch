@@ -1025,6 +1025,162 @@ index 0000000..23ced72
 +---
 +
 +Built with ❤️ using React, TypeScript, and modern web technologies.
+diff --git a/node_modules/@datalayer/core/lib/api/iam/oauth2.d.ts b/node_modules/@datalayer/core/lib/api/iam/oauth2.d.ts
+index dd421fb..82d3730 100644
+--- a/node_modules/@datalayer/core/lib/api/iam/oauth2.d.ts
++++ b/node_modules/@datalayer/core/lib/api/iam/oauth2.d.ts
+@@ -1,7 +1,7 @@
+ /**
+  * OAuth2 provider types supported by the platform
+  */
+-export type OAuth2Provider = 'github' | 'linkedin' | 'okta';
++export type OAuth2Provider = 'github' | 'google' | 'linkedin' | 'okta';
+ /**
+  * Response from the OAuth2 authorization URL endpoint
+  */
+@@ -26,7 +26,7 @@ export interface OAuth2CallbackParams {
+ export type OAuth2CallbackResponse = string;
+ /**
+  * Get the OAuth2 authorization URL for a specific provider
+- * @param provider - OAuth2 provider (bluesky, github, linkedin, okta)
++ * @param provider - OAuth2 provider (github, google, linkedin, okta)
+  * @param callbackUri - Server endpoint to call with the authz token
+  * @param nonce - Optional nonce for security
+  * @param baseUrl - Base URL for the API (defaults to production IAM URL)
+@@ -45,7 +45,7 @@ export type OAuth2CallbackResponse = string;
+ export declare const getOAuth2AuthzUrl: (provider: OAuth2Provider, callbackUri: string, nonce?: string, baseUrl?: string) => Promise<OAuth2AuthzUrlResponse>;
+ /**
+  * Get the OAuth2 authorization URL for linking a provider to an existing account
+- * @param provider - OAuth2 provider (bluesky, github, linkedin, okta)
++ * @param provider - OAuth2 provider (github, google, linkedin, okta)
+  * @param callbackUri - Server endpoint to call with the authz token
+  * @param baseUrl - Base URL for the API (defaults to production IAM URL)
+  * @returns OAuth2 authorization URL response
+diff --git a/node_modules/@datalayer/core/lib/api/iam/oauth2.js b/node_modules/@datalayer/core/lib/api/iam/oauth2.js
+index b17074c..73f3076 100644
+--- a/node_modules/@datalayer/core/lib/api/iam/oauth2.js
++++ b/node_modules/@datalayer/core/lib/api/iam/oauth2.js
+@@ -13,7 +13,7 @@ import { requestDatalayerAPI } from '../DatalayerApi.js';
+ import { API_BASE_PATHS, DEFAULT_SERVICE_URLS } from '../constants.js';
+ /**
+  * Get the OAuth2 authorization URL for a specific provider
+- * @param provider - OAuth2 provider (bluesky, github, linkedin, okta)
++ * @param provider - OAuth2 provider (github, google, linkedin, okta)
+  * @param callbackUri - Server endpoint to call with the authz token
+  * @param nonce - Optional nonce for security
+  * @param baseUrl - Base URL for the API (defaults to production IAM URL)
+@@ -71,7 +71,7 @@ export const getOAuth2AuthzUrl = async (provider, callbackUri, nonce, baseUrl =
+ };
+ /**
+  * Get the OAuth2 authorization URL for linking a provider to an existing account
+- * @param provider - OAuth2 provider (bluesky, github, linkedin, okta)
++ * @param provider - OAuth2 provider (github, google, linkedin, okta)
+  * @param callbackUri - Server endpoint to call with the authz token
+  * @param baseUrl - Base URL for the API (defaults to production IAM URL)
+  * @returns OAuth2 authorization URL response
+diff --git a/node_modules/@datalayer/core/lib/client/auth/storage.js b/node_modules/@datalayer/core/lib/client/auth/storage.js
+index 8838b64..bbcffce 100644
+--- a/node_modules/@datalayer/core/lib/client/auth/storage.js
++++ b/node_modules/@datalayer/core/lib/client/auth/storage.js
+@@ -11,6 +11,42 @@
+  * Token storage backend implementations
+  */
+ import { DATALAYER_IAM_TOKEN_KEY, DATALAYER_IAM_USER_KEY, } from '../../state/storage/IAMStorage.js';
++/**
++ * Resolve a real Node `require` function that survives bundling.
++ *
++ * Webpack/Vite/Rollup all rewrite a string-evaluated require expression
++ * to their own loader, which has no entry for runtime-only modules like
++ * `keytar`. `module.createRequire()` is the documented Node API for
++ * obtaining the actual require, and bundlers forward it unchanged when
++ * the host targets Node. Returns `null` in non-Node environments and
++ * `undefined` if neither approach is available.
++ */
++function resolveNodeRequire() {
++    if (typeof process === 'undefined' || !process.versions?.node) {
++        return null;
++    }
++    try {
++        // `require('module')` is left intact by webpack when target: 'node'.
++        // We use a plain require here rather than ESM `import` because this
++        // file is consumed by both CJS and ESM tooling.
++        // eslint-disable-next-line @typescript-eslint/no-var-requires, global-require
++        const mod = require('module');
++        if (typeof mod?.createRequire === 'function') {
++            const fname = typeof __filename !== 'undefined'
++                ? __filename
++                : process.cwd() + '/__datalayer_keytar_loader__.js';
++            return mod.createRequire(fname);
++        }
++    }
++    catch {
++        // Fall through to globalThis.require.
++    }
++    const g = globalThis;
++    if (typeof g.require === 'function') {
++        return g.require;
++    }
++    return undefined;
++}
+ /**
+  * Browser localStorage-based token storage
+  */
+@@ -136,17 +172,44 @@ export class NodeStorage {
+             typeof process !== 'undefined' &&
+             process.versions?.node) {
+             try {
+-                // Use eval to hide require from bundlers (Vite/Rollup/webpack)
+-                const nodeRequire = eval('require');
+-                try {
+-                    this.keytar = nodeRequire('keytar');
+-                }
+-                catch {
+-                    try {
+-                        this.keytar = nodeRequire('@vscode/keytar');
+-                    }
+-                    catch {
+-                        // Keyring not available
++                // Resolve a real Node `require` even when this module ends up
++                // inside a webpack bundle.
++                //
++                // Why not the previous `string-evaluated require` pattern? Webpack
++                // rewrites that pattern to its own loader (`__webpack_require__`),
++                // which has no entry for `keytar` because the require call is
++                // hidden behind a string and is therefore invisible to webpack's
++                // static analysis — even when consumers declare keytar as a
++                // commonjs external. The result was that `this.keytar` silently
++                // stayed `null` in any webpacked host (e.g. the VS Code
++                // extension), so tokens written via `setAsync()` only landed in
++                // the in-memory `Map` and never made it to the OS keyring. They
++                // appeared to "save" within a session, but vanished on reload.
++                //
++                // `module.createRequire(...)` is the documented Node API for
++                // obtaining the real require, and webpack/Vite/Rollup all leave
++                // it intact when the host targets Node.
++                const nodeRequire = resolveNodeRequire();
++                if (nodeRequire) {
++                    // Try variants in order of preference:
++                    //   1. @github/keytar — actively maintained, ships prebuilt
++                    //      binaries for every platform in the npm tarball, so a
++                    //      single multi-platform VSIX / Electron build can ship
++                    //      it without per-OS rebuilds.
++                    //   2. @vscode/keytar — historically bundled with VS Code,
++                    //      no longer published to npm but still resolvable in
++                    //      some host environments.
++                    //   3. keytar — the original, deprecated upstream. Kept as a
++                    //      fallback so existing CLI installs that still depend
++                    //      on it keep working.
++                    for (const id of ['@github/keytar', '@vscode/keytar', 'keytar']) {
++                        try {
++                            this.keytar = nodeRequire(id);
++                            break;
++                        }
++                        catch {
++                            // Try next variant.
++                        }
+                     }
+                 }
+             }
 diff --git a/node_modules/@datalayer/core/lib/components/display/VisuallyHidden.d.ts b/node_modules/@datalayer/core/lib/components/display/VisuallyHidden.d.ts
 index 9814d57..23d68bc 100644
 --- a/node_modules/@datalayer/core/lib/components/display/VisuallyHidden.d.ts
@@ -1277,6 +1433,21 @@ index 8d06781..48e70ad 100644
 -export declare const PAGE_TAGS_BY_COLOR_MAP: Map<"blue" | "coral" | "gray" | "green" | "indigo" | "lime" | "orange" | "pink" | "purple" | "red" | "teal" | "yellow" | "default" | "lemon", PageTag>;
 +export declare const PAGE_TAGS_BY_COLOR_MAP: Map<"default" | "yellow" | "blue" | "coral" | "green" | "gray" | "indigo" | "lemon" | "lime" | "orange" | "pink" | "purple" | "red" | "teal", PageTag>;
  export {};
+diff --git a/node_modules/@datalayer/core/lib/otel/auth.js b/node_modules/@datalayer/core/lib/otel/auth.js
+index 4788e61..862ce46 100644
+--- a/node_modules/@datalayer/core/lib/otel/auth.js
++++ b/node_modules/@datalayer/core/lib/otel/auth.js
+@@ -2,10 +2,6 @@
+  * Copyright (c) 2023-2025 Datalayer, Inc.
+  * Distributed under the terms of the Modified BSD License.
+  */
+-/*
+- * Copyright (c) 2023-2026 Datalayer, Inc.
+- * Distributed under the terms of the Modified BSD License.
+- */
+ import { getDatalayerJwtUser, parseJwtPayload } from '../utils/Jwt.js';
+ function normalizeBaseUrl(baseUrl) {
+     const normalized = baseUrl.startsWith('ws://') || baseUrl.startsWith('wss://')
 diff --git a/node_modules/@datalayer/core/lib/stories/Configure.mdx b/node_modules/@datalayer/core/lib/stories/Configure.mdx
 new file mode 100644
 index 0000000..d1da834
@@ -1651,3 +1822,31 @@ diff --git a/node_modules/@datalayer/core/lib/stories/assets/avif-test-image.avi
 new file mode 100644
 index 0000000..530709b
 Binary files /dev/null and b/node_modules/@datalayer/core/lib/stories/assets/avif-test-image.avif differ
+diff --git a/node_modules/@datalayer/core/lib/views/profile/UserBadge.d.ts b/node_modules/@datalayer/core/lib/views/profile/UserBadge.d.ts
+index 8e66629..aa4544f 100644
+--- a/node_modules/@datalayer/core/lib/views/profile/UserBadge.d.ts
++++ b/node_modules/@datalayer/core/lib/views/profile/UserBadge.d.ts
+@@ -27,8 +27,8 @@ export interface UserBadgeProps {
+      * Threshold (in milliseconds) below which the expiration timestamp is
+      * rendered in ``attention.fg`` (yellow) to warn that the token is about
+      * to expire.  Tokens already past ``exp`` render in ``danger.fg`` (red);
+-     * tokens further out than this threshold render in ``success.fg``
+-     * (green).  Defaults to ``3_600_000`` (1 hour).
++     * tokens further out than this threshold render in ``success.fg`` (green).
++     * Defaults to ``10_800_000`` (3 hours).
+      */
+     expirationWarningMs?: number;
+ }
+diff --git a/node_modules/@datalayer/core/lib/views/profile/UserBadge.js b/node_modules/@datalayer/core/lib/views/profile/UserBadge.js
+index a51d3a1..9d44bf3 100644
+--- a/node_modules/@datalayer/core/lib/views/profile/UserBadge.js
++++ b/node_modules/@datalayer/core/lib/views/profile/UserBadge.js
+@@ -19,7 +19,7 @@ import { Box, Text } from '@primer/react';
+ import { parseJwtPayload, getDatalayerJwtUser, getDatalayerDisplayName, } from '../../utils/Jwt.js';
+ import { getRelativeTime } from '../../utils/Date.js';
+ // ── Component ─────────────────────────────────────────────────────
+-export const UserBadge = ({ token, variant = 'full', showExpandToggle = true, expirationWarningMs = 60 * 60 * 1000, }) => {
++export const UserBadge = ({ token, variant = 'full', showExpandToggle = true, expirationWarningMs = 3 * 60 * 60 * 1000, }) => {
+     const [open, setOpen] = useState(false);
+     const [expanded, setExpanded] = useState(false);
+     const closeTimer = useRef(null);

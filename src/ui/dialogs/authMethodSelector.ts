@@ -16,7 +16,7 @@ import * as vscode from "vscode";
 /**
  * Available authentication methods
  */
-export type AuthMethod = "email-password" | "github" | "linkedin";
+export type AuthMethod = "email-password" | "github" | "google" | "linkedin";
 
 /**
  * Quick pick item for authentication method selection
@@ -28,10 +28,13 @@ interface AuthMethodQuickPickItem extends vscode.QuickPickItem {
 /**
  * Shows the authentication method selection dialog.
  *
- * Presents user with three authentication options:
- * - Handle/Password credentials.
+ * Presents user with three authentication options (in display order):
  * - GitHub OAuth.
- * - LinkedIn OAuth.
+ * - Google OAuth.
+ * - Handle/Password credentials.
+ *
+ * `AuthMethod` also includes `"linkedin"` for backwards compatibility,
+ * but the LinkedIn OAuth option is currently disabled in the picker.
  *
  * @returns Selected authentication method, or undefined if cancelled.
  *
@@ -39,19 +42,25 @@ interface AuthMethodQuickPickItem extends vscode.QuickPickItem {
 export async function showAuthMethodPicker(): Promise<AuthMethod | undefined> {
   const items: AuthMethodQuickPickItem[] = [
     {
-      label: "GitHub",
+      label: "$(mark-github) Sign in with GitHub",
       description: "OAuth authentication via GitHub",
       detail: "Opens browser for GitHub authentication",
       method: "github",
     },
+    {
+      label: "$(google-logo) Sign in with Google",
+      description: "OAuth authentication via Google",
+      detail: "Opens browser for Google authentication",
+      method: "google",
+    },
     // {
-    //   label: "LinkedIn",
+    //   label: "$(link-external) Sign in with LinkedIn",
     //   description: "OAuth authentication via LinkedIn",
     //   detail: "Opens browser for LinkedIn authentication",
     //   method: "linkedin",
     // },
     {
-      label: "Handle / Password",
+      label: "$(key) Sign in with a password",
       description: "Login with handle and password",
       detail: "Use your Datalayer credentials",
       method: "email-password",

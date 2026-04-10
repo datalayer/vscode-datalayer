@@ -482,6 +482,12 @@ export function registerRuntimeCommands(
           "datalayer.internal.runtime.notifyTerminated",
           uri,
         );
+
+        // Refresh the chat sidebar dropdown so terminated runtimes drop out
+        // of the picker. Fire-and-forget — no-op if sidebar isn't resolved.
+        void vscode.commands.executeCommand(
+          "datalayer.internal.agentChat.refresh",
+        );
       },
     ),
   );
@@ -931,6 +937,11 @@ async function notifyAllDocuments(): Promise<void> {
       }
     }
   }
+
+  // Refresh the agent chat sidebar dropdown so terminated runtimes drop
+  // out of the picker. Fire-and-forget — the command is a no-op if the
+  // sidebar has not been resolved yet.
+  void vscode.commands.executeCommand("datalayer.internal.agentChat.refresh");
 }
 
 /**

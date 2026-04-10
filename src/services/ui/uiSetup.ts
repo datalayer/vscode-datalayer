@@ -11,9 +11,9 @@
  * @module services/uiSetup
  */
 
-import type { DatalayerClient } from "@datalayer/core/lib/client";
 import * as vscode from "vscode";
 
+import { AgentChatViewProvider } from "../../providers/agentChatViewProvider";
 import { LexicalProvider } from "../../providers/lexicalProvider";
 import { NotebookProvider } from "../../providers/notebookProvider";
 import { OutlineTreeProvider } from "../../providers/outlineTreeProvider";
@@ -24,6 +24,7 @@ import { SmartDynamicControllerManager } from "../../providers/smartDynamicContr
 import { SpacesTreeProvider } from "../../providers/spacesTreeProvider";
 import { EnvironmentCache } from "../cache/environmentCache";
 import { DatalayerAuthProvider } from "../core/authProvider";
+import type { ExtendedDatalayerClient } from "../core/datalayerAdapter";
 import { ServiceLoggers } from "../logging/loggers";
 import { DatalayerStatusBar } from "./statusBar";
 
@@ -62,7 +63,7 @@ export interface ExtensionUI {
 export async function initializeUI(
   context: vscode.ExtensionContext,
   authProvider: DatalayerAuthProvider,
-  datalayer: DatalayerClient,
+  datalayer: ExtendedDatalayerClient,
 ): Promise<ExtensionUI> {
   const statusBar = DatalayerStatusBar.getInstance(authProvider);
   context.subscriptions.push(statusBar);
@@ -184,6 +185,35 @@ export async function initializeUI(
       treeDataProvider: settingsTreeProvider,
       showCollapseAll: true,
     }),
+  );
+
+  // 6. Agent Chat webview view (separate `datalayerChat` view container with
+  //    its own activity-bar icon). Hosts a React webview that talks to the
+  //    extension host via the AgentChatBridgeHandler, which answers
+  //    IAgentRuntimesClient calls using the shared DatalayerClient +
+  //    AgentsMixin so the webview never sees the auth token.
+  const agentChatViewProvider = new AgentChatViewProvider(
+    context,
+    authProvider,
+    datalayer,
+  );
+  context.subscriptions.push(
+    vscode.window.registerWebviewViewProvider(
+      AgentChatViewProvider.viewType,
+      agentChatViewProvider,
+      { webviewOptions: { retainContextWhenHidden: true } },
+    ),
+  );
+
+  // Internal command so any code path (agent creation, termination,
+  // timeouts) can request a sidebar refresh without holding a direct
+  // reference to the provider. The webview's dropdown stays in sync with
+  // platform state regardless of who triggered the change.
+  context.subscriptions.push(
+    vscode.commands.registerCommand(
+      "datalayer.internal.agentChat.refresh",
+      () => agentChatViewProvider.refresh(),
+    ),
   );
 
   return {

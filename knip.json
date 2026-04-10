@@ -48,7 +48,7 @@
     "buffer",
     "cmake-ts",
     "codemirror",
-    "keytar",
+    "@github/keytar",
     "y-websocket",
     "yjs",
     "@jupyterlab/theme-light-extension",
