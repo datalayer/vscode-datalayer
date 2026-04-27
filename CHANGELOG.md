@@ -4,6 +4,26 @@ All notable changes to the Datalayer VS Code extension are documented here.
 
 ## [Unreleased]
 
+## [0.0.17-alpha.adp1] - 2026-04-29
+
+### Added (April 2025)
+
+- **Windsurf / Cascade MCP Integration**: All 22 Datalayer tools are now accessible to Windsurf/Cascade via a local HTTP MCP (Model Context Protocol) server
+  - New file: `src/mcp/mcpServer.ts` — starts a stateless `StreamableHTTPServerTransport` server on `http://localhost:3333/mcp` (auto-scans 3333–3340 for a free port)
+  - Reuses the same `getCombinedOperations()` and `getAllToolDefinitionsAsync()` registry as the existing GitHub Copilot integration — no duplication
+  - `createNotebook` / `createLexical` default to cloud when authenticated, local otherwise (no VS Code Quick Pick prompts)
+  - Server startup failure is non-fatal: logged as a warning so extension activation is never blocked
+  - Configure Windsurf via `~/.codeium/windsurf/mcp_config.json` — see `src/mcp/README.md`
+  - New npm dependency: `@modelcontextprotocol/sdk@1.29.0` (externalized in webpack, whitelisted in `.vscodeignore`)
+
+### Fixed (April 2025)
+
+- **MCP tool execution when Cascade panel is focused**: `DocumentRegistry.getBestWebviewPanel()` added as a fallback to `getActiveWebviewPanel()`. Previously, notebook/lexical tool operations failed when VS Code focus was on the Cascade chat panel because the active-tab check returned nothing. The new method walks all registered webview panels and returns the first available one.
+- `resolveNotebookId` and `resolveLexicalId` in the MCP path similarly fall back to the document registry when the active-tab check returns no result.
+
+### Fixed (January 2025)
+
+
 ## [0.0.16] - 2026-04-29
 
 ### Added

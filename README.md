@@ -117,7 +117,9 @@
 - **Native local execution** - Direct ZMQ kernel communication without Jupyter server
 - **Rich status indicators** - Connection status and runtime info in status bar
 - **Command palette integration** - All features accessible via `Ctrl+Shift+P`
-- **GitHub Copilot integration** - Use natural language to create notebooks and insert cells (e.g., "Create a local notebook and add a plot")
+- **AI assistant integration** - Use natural language to create notebooks, insert cells, execute code, and manage documents:
+  - **GitHub Copilot** — 22 tools registered via VS Code's Language Model Tools API
+  - **Windsurf / Cascade** — same 22 tools exposed over a local MCP HTTP server at `http://localhost:3333/mcp`
 
 ## 💡 Common Questions
 
@@ -204,6 +206,24 @@ Open settings (`Ctrl+,` / `Cmd+,`) and search "Datalayer":
 - `datalayer.logging.enablePerformanceMonitoring` - Track performance (default: false)
 
 ## Recent Updates
+
+### Windsurf / Cascade MCP Integration (April 2025)
+
+All 22 Datalayer tools are now available to [Windsurf](https://windsurf.com) / Cascade via a local MCP HTTP server that starts automatically with the extension.
+
+Add to `~/.codeium/windsurf/mcp_config.json`:
+
+```json
+{
+  "mcpServers": {
+    "datalayer": {
+      "serverUrl": "http://localhost:3333/mcp"
+    }
+  }
+}
+```
+
+The actual port is logged to the Datalayer output channel on activation (`MCP HTTP server listening on http://127.0.0.1:<port>/mcp`).
 
 ### Runtime Controller Improvements
 

@@ -109,6 +109,7 @@ const extensionConfig = {
     "@jupyterlab/completer": "commonjs @jupyterlab/completer",
     "@lexical/react": "commonjs @lexical/react",
     lexical: "commonjs lexical",
+    "@modelcontextprotocol/sdk": "commonjs @modelcontextprotocol/sdk", // MCP SDK uses Node.js built-ins (http, crypto); must not be bundled
     // modules added here also need to be added in the .vscodeignore file
   },
   resolve: {

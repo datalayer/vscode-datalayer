@@ -113,6 +113,39 @@ class DocumentRegistry {
   }
 
   /**
+   * Get the best available webview panel for tool execution.
+   *
+   * Prefers the currently active Datalayer editor tab (same as
+   * {@link getActiveWebviewPanel}), but when VS Code focus is elsewhere
+   * (e.g. the Cascade/Windsurf MCP chat panel is active), falls back to
+   * the first registered webview panel that is still visible.
+   *
+   * This is required for the MCP path where the user is interacting with
+   * Cascade in a side panel while the notebook tab is open but not focused.
+   *
+   * @returns Best available webview panel, or undefined if none registered.
+   */
+  getBestWebviewPanel(): vscode.WebviewPanel | undefined {
+    // Prefer active tab first (handles the focused-tab case)
+    const active = this.getActiveWebviewPanel();
+    if (active) {
+      return active;
+    }
+
+    // Fall back to any registered panel that is still visible (not disposed).
+    // Prefer notebook panels over lexical ones to match most common MCP use case.
+    for (const type of ["notebook", "lexical"] as const) {
+      for (const entry of this.getByType(type)) {
+        if (entry.webviewPanel) {
+          return entry.webviewPanel;
+        }
+      }
+    }
+
+    return undefined;
+  }
+
+  /**
    * Unregister a document by its URI (called when webview is closed).
    *
    * @param documentUri - VS Code document URI.
