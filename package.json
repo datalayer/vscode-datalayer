@@ -130,7 +130,7 @@
     "react-dom": "18.3.1",
     "typestyle": "^2.0.4",
     "unique-names-generator": "^4.7.1",
-    "uuid": "^8.3.2",
+    "uuid": "^14.0.0",
     "ws": "^8.20.0",
     "y-websocket": "3.0.0",
     "yjs": "^13.6.30",
