@@ -320,8 +320,9 @@ async function buildMcpExecutionContext(
 
   const documentsContext = getAllOpenedDocuments();
 
-  const needsCellDocument = definition.tags?.includes("cell");
-  const needsBlockDocument = definition.tags?.includes("lexical");
+  const isPrerequisiteTool = definition.tags?.includes("prerequisite");
+  const needsCellDocument = !isPrerequisiteTool && definition.tags?.includes("cell");
+  const needsBlockDocument = !isPrerequisiteTool && definition.tags?.includes("lexical");
   const isCreateOperation = definition.tags?.includes("create");
 
   // Build the webview executor — same postMessage bridge as Copilot path.

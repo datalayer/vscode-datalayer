@@ -27,6 +27,10 @@ All notable changes to the Datalayer VS Code extension are documented here.
   - Configure Windsurf via `~/.codeium/windsurf/mcp_config.json` — see `src/mcp/README.md`
   - New npm dependency: `@modelcontextprotocol/sdk@1.29.0` (externalized in webpack, whitelisted in `.vscodeignore`)
 
+### Fixed (April 2025) — `0.0.16-alpha.3`
+
+- **`datalayer_getActiveDocument` required a lexical document**: The tool has `"lexical"` in its tags (correctly describing that it supports lexical documents), but `buildMcpExecutionContext` was reading that as "this tool needs a lexical document ID resolved" — calling `resolveLexicalId()` on every invocation and failing with `"No Lexical document is open"` when working on a plain `.ipynb` notebook. Fixed by adding an `isPrerequisiteTool` guard: tools tagged `"prerequisite"` now skip document ID resolution entirely, since they are orientation/discovery tools that should work regardless of what document type is open.
+
 ### Fixed (April 2025) — `0.0.16-alpha.2`
 
 - **Multi-notebook ambiguity**: Previously, when no Datalayer editor tab was focused (e.g. Cascade panel was active) and multiple notebooks were open, the MCP path always picked the first registered notebook regardless of what the user was working on. The new `lastUsed`-sorted `getByType()` and `startTabWatcher()` ensure the most recently focused or most recently used notebook is selected by default.
