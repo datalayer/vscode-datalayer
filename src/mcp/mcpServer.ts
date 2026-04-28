@@ -297,6 +297,36 @@ async function resolveLexicalId(
 }
 
 /**
+ * Returns URIs of .ipynb files currently open in the native VS Code notebook
+ * viewer (i.e. NOT in the Datalayer custom editor). Used to produce actionable
+ * error messages and offer a one-click reopen when MCP tools can't find a
+ * Datalayer webview.
+ *
+ * @returns Array of URIs for notebooks open in native VS Code viewer.
+ */
+function detectNativeNotebookTabs(): vscode.Uri[] {
+  const datalayerViewType = "datalayer.jupyter-notebook";
+  const found: vscode.Uri[] = [];
+  for (const group of vscode.window.tabGroups.all) {
+    for (const tab of group.tabs) {
+      // TabInputNotebook → native VS Code notebook viewer
+      if (tab.input instanceof vscode.TabInputNotebook) {
+        found.push((tab.input as vscode.TabInputNotebook).uri);
+      }
+      // TabInputCustom with a non-Datalayer viewType and .ipynb extension
+      if (
+        tab.input instanceof vscode.TabInputCustom &&
+        (tab.input as vscode.TabInputCustom).viewType !== datalayerViewType &&
+        (tab.input as vscode.TabInputCustom).uri.path.endsWith(".ipynb")
+      ) {
+        found.push((tab.input as vscode.TabInputCustom).uri);
+      }
+    }
+  }
+  return found;
+}
+
+/**
  * Builds a ToolExecutionContext for use in the MCP handler.
  *
  * Mirrors VSCodeToolAdapter.buildExecutionContext but without VS Code Quick Pick
@@ -322,7 +352,13 @@ async function buildMcpExecutionContext(
 
   const isPrerequisiteTool = definition.tags?.includes("prerequisite");
   const needsCellDocument = !isPrerequisiteTool && definition.tags?.includes("cell");
-  const needsBlockDocument = !isPrerequisiteTool && definition.tags?.includes("lexical");
+  // Use "block"/"blocks" as the discriminator, NOT "lexical". The "lexical" tag is a
+  // domain descriptor shared by cross-domain tools (listKernels, selectKernel,
+  // executeCode) that don't need a lexical document ID. Every actual block operation
+  // tool carries "block" or "blocks" in its tags; none of the cross-domain tools do.
+  const needsBlockDocument =
+    !isPrerequisiteTool &&
+    (definition.tags?.includes("block") || definition.tags?.includes("blocks"));
   const isCreateOperation = definition.tags?.includes("create");
 
   // Build the webview executor — same postMessage bridge as Copilot path.
@@ -331,13 +367,48 @@ async function buildMcpExecutionContext(
       // Use getBestWebviewPanel() rather than getActiveWebviewPanel() so that
       // operations succeed even when VS Code focus is on the Cascade chat panel
       // instead of the notebook tab.
-      const webviewPanel = services.documentRegistry.getBestWebviewPanel();
-      if (!webviewPanel) {
+      const panelStatus = services.documentRegistry.getBestWebviewPanelWithStatus();
+      if (!panelStatus) {
+        // Detect .ipynb files open in the native VS Code notebook viewer.
+        // When found, offer a one-click path to reopen in the Datalayer editor.
+        const nativeNotebooks = detectNativeNotebookTabs();
+        if (nativeNotebooks.length > 0) {
+          const names = nativeNotebooks.map((u) => u.path.split("/").pop()).join(", ");
+          // Fire-and-forget notification with an action button — don't block the error.
+          vscode.window
+            .showWarningMessage(
+              `"${names}" is open in the native VS Code viewer. Reopen it in the Datalayer Notebook Editor for MCP tools to work.`,
+              "Reopen in Datalayer Editor",
+            )
+            .then((choice) => {
+              if (choice === "Reopen in Datalayer Editor") {
+                for (const uri of nativeNotebooks) {
+                  vscode.commands.executeCommand(
+                    "vscode.openWith",
+                    uri,
+                    "datalayer.jupyter-notebook",
+                  );
+                }
+              }
+            });
+          throw new Error(
+            `"${names}" is open in the native VS Code notebook viewer, not the Datalayer editor. ` +
+              `Right-click the file in the Explorer → "Open With…" → "Datalayer Notebook Editor", ` +
+              `then retry. (A notification with a one-click button has also appeared in VS Code.)`,
+          );
+        }
         throw new Error(
-          `No Datalayer notebook or lexical document is open. ` +
-            `Please open a Datalayer notebook or .dlex file, then retry.`,
+          `No notebook is open in the Datalayer editor. ` +
+            `Right-click an .ipynb file in the Explorer → "Open With…" → "Datalayer Notebook Editor", then retry.`,
         );
       }
+      if (!panelStatus.isReady) {
+        throw new Error(
+          `The Datalayer notebook is still loading (webview not ready yet). ` +
+            `Please wait a few seconds for the notebook to fully open, then retry.`,
+        );
+      }
+      const webviewPanel = panelStatus.panel;
 
       const requestId = `${Date.now()}-${Math.random()}`;
 
@@ -543,6 +614,94 @@ function buildOpenDocumentsContext(services: ServiceContainer): string {
 }
 
 /**
+ * Updates the Windsurf global MCP config (`~/.codeium/windsurf/mcp_config.json`)
+ * with the port claimed by this extension instance, then writes a workspace-level
+ * `.windsurf/mcp.json` for transparency/future compatibility.
+ *
+ * **Why global config:** Windsurf only reads `~/.codeium/windsurf/mcp_config.json`
+ * — there is no workspace-level override. Windsurf also hot-reloads that file
+ * when it changes, so no manual refresh is needed after this write.
+ *
+ * **Multi-window behaviour:** each VS Code window claims a different port
+ * (3333-3340). The most-recently-started/reloaded window wins: its port overwrites
+ * the `datalayer` entry in the global config and Windsurf reconnects immediately.
+ * All other entries in `mcp_config.json` are preserved unchanged.
+ *
+ * @param port - The port this MCP server instance is listening on.
+ * @param services - Service container used for logging.
+ */
+async function writeMcpConfig(
+  port: number,
+  services: ServiceContainer,
+): Promise<void> {
+  const os = await import("os");
+  const fs = await import("fs/promises");
+  const path = await import("path");
+
+  const globalConfigPath = path.join(
+    os.homedir(),
+    ".codeium",
+    "windsurf",
+    "mcp_config.json",
+  );
+
+  // ── 1. Update ~/.codeium/windsurf/mcp_config.json ──────────────────────────
+  // Read existing config first so we don't clobber other MCP servers.
+  let existingConfig: { mcpServers?: Record<string, unknown> } = {};
+  try {
+    const raw = await fs.readFile(globalConfigPath, "utf-8");
+    existingConfig = JSON.parse(raw) as typeof existingConfig;
+  } catch {
+    // File doesn't exist yet or is malformed — start with empty object.
+  }
+
+  existingConfig.mcpServers ??= {};
+  existingConfig.mcpServers["datalayer"] = {
+    serverUrl: `http://localhost:${port}/mcp`,
+  };
+
+  try {
+    await fs.writeFile(
+      globalConfigPath,
+      JSON.stringify(existingConfig, null, 2),
+      "utf-8",
+    );
+    services.logger.info(
+      `[MCP] Global Windsurf config updated → ${globalConfigPath} (port ${port})`,
+    );
+  } catch (err) {
+    services.logger.warn(
+      `[MCP] Could not update global Windsurf config: ${
+        err instanceof Error ? err.message : String(err)
+      }`,
+    );
+  }
+
+  // ── 2. Write workspace .windsurf/mcp.json (transparency / future compat) ──
+  const workspaceFolders = vscode.workspace.workspaceFolders;
+  if (!workspaceFolders?.length) {
+    return;
+  }
+  const windSurfDir = vscode.Uri.joinPath(
+    workspaceFolders[0]!.uri,
+    ".windsurf",
+  );
+  const workspaceConfigPath = vscode.Uri.joinPath(windSurfDir, "mcp.json");
+  const workspaceConfig = {
+    mcpServers: { datalayer: { serverUrl: `http://localhost:${port}/mcp` } },
+  };
+  try {
+    try { await vscode.workspace.fs.createDirectory(windSurfDir); } catch { /**/ }
+    await vscode.workspace.fs.writeFile(
+      workspaceConfigPath,
+      Buffer.from(JSON.stringify(workspaceConfig, null, 2)),
+    );
+  } catch {
+    // Workspace write is best-effort; global config is what matters.
+  }
+}
+
+/**
  * Constructs and returns a configured McpServer with all Datalayer tools registered.
  *
  * A new McpServer instance is created for each HTTP request to ensure stateless
@@ -719,6 +878,11 @@ export async function startMcpServer(
   services.logger.info(
     `Datalayer MCP HTTP server listening on http://127.0.0.1:${port}/mcp (${definitions.length} tools)`,
   );
+
+  // Update ~/.codeium/windsurf/mcp_config.json (and workspace .windsurf/mcp.json)
+  // with this window's port. Windsurf hot-reloads the global config on change,
+  // so no manual refresh is needed after this write.
+  await writeMcpConfig(port, services);
 
   return httpServer;
 }

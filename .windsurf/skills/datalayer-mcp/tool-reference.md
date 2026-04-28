@@ -6,7 +6,8 @@
 
 | Tool | Description |
 |---|---|
-| `datalayer_getActiveDocument` | **Always call first.** Returns URI, type (`notebook`/`lexical`), and kernel connection state. |
+| `datalayer_getActiveDocument` | **Always call first.** Returns URI, type (`notebook`/`lexical`), and kernel connection state. Also appends a ranked list of all open documents. |
+| `datalayer_listOpenDocuments` | Returns all open notebooks and lexical docs sorted by most-recently-used. Use when you need to target a specific notebook by URI. |
 | `datalayer_createNotebook` | Create a new `.ipynb`. Defaults to cloud when authenticated, local otherwise. |
 | `datalayer_createLexical` | Create a new `.dlex` document. Same location logic. |
 
@@ -22,12 +23,12 @@
 
 | Tool | Description |
 |---|---|
-| `datalayer_readAllCells` | All cells with source + outputs. Always call before editing. |
-| `datalayer_readCell` | Single cell by 0-based index. |
-| `datalayer_insertCell` | Add a code or markdown cell at a specific index. |
-| `datalayer_updateCell` | Overwrite a cell's source at a given index. |
-| `datalayer_deleteCells` | Remove one or more cells by index. |
-| `datalayer_runCell` | Execute a single cell and return its outputs. |
+| `datalayer_readAllCells` | All cells with source + outputs. Always call before editing. Accepts optional `notebook_uri`. |
+| `datalayer_readCell` | Single cell by 0-based index. Accepts optional `notebook_uri`. |
+| `datalayer_insertCell` | Add a code or markdown cell at a specific index. Accepts optional `notebook_uri`. |
+| `datalayer_updateCell` | Overwrite a cell's source at a given index. Accepts optional `notebook_uri`. |
+| `datalayer_deleteCells` | Remove one or more cells by index. Accepts optional `notebook_uri`. |
+| `datalayer_runCell` | Execute a single cell and return its outputs. Accepts optional `notebook_uri`. |
 
 ### Lexical Document Operations (`.dlex`)
 
@@ -118,12 +119,15 @@ datalayer_runAllBlocks               → execute all cells in the report
 
 | Error message | Root cause | Resolution |
 |---|---|---|
-| `No Datalayer notebook is open` | File opened in native VS Code viewer, not Datalayer editor | Ask user: right-click file → "Open With…" → "Datalayer Notebook Editor" |
+| `"filename.ipynb" is open in the native VS Code notebook viewer, not the Datalayer editor` | File opened via native viewer, not Datalayer custom editor | A VS Code notification will appear with a one-click "Reopen in Datalayer Editor" button. Tell the user to click it, or: right-click file in Explorer → "Open With…" → "Datalayer Notebook Editor" |
+| `No notebook is open in the Datalayer editor` | No `.ipynb` files open at all in Datalayer | Tell user to open the notebook via right-click → "Open With…" → "Datalayer Notebook Editor" |
+| `The Datalayer notebook is still loading (webview not ready yet)` | Notebook is open in Datalayer editor but the React app hasn't finished initialising | Wait 3–5 seconds, then retry the tool call. This is transient and resolves on its own. |
 | `Tool execution timeout (30s)` | Kernel busy, crashed, or disconnected | Call `datalayer_listKernels`; suggest `selectKernel(type="new")` |
-| `Document ID not registered` | Same cause as above — native editor was used | Same fix as above |
+| `Document ID not registered` | Native editor used instead of Datalayer | Same fix as native viewer error above |
 | `No Datalayer notebook is open` (after valid `getActiveDocument`) | Notebook was closed between calls | Re-call `getActiveDocument`; confirm notebook still open |
 | `Invalid response: 404 Not Found` on cloud ops | Not authenticated or token expired | Ask user: Command Palette → "Datalayer: Login" |
 | `MCP server not reachable` | Extension not running or port conflict | Reload window; check Datalayer output channel for port number |
+| Tools succeed but operate on the wrong notebook (different VS Code window) | MCP connected to another window's server (port collision) | On each activation the extension patches `~/.codeium/windsurf/mcp_config.json` with its port (Windsurf hot-reloads automatically). Reload the window you want Windsurf to target, then check the Datalayer output channel to confirm the port. |
 
 ---
 
@@ -132,6 +136,7 @@ datalayer_runAllBlocks               → execute all cells in the report
 - **Cell indices are 0-based.**
 - **Block IDs are opaque strings** returned by `readAllBlocks` — always read first before any insert/update/delete.
 - **One active document at a time** — tools target the best-available registered document. Pass `notebook_uri` / `documentUri` explicitly when multiple documents are open.
+- **`notebook_uri` targets a specific notebook** — all cell tools accept an optional `notebook_uri` parameter. Get the URI from `datalayer_listOpenDocuments` or from the open-documents list in the `datalayer_getActiveDocument` response. When multiple notebooks are open, always pass this explicitly rather than relying on focus detection.
 - **`executeCode` does not modify the notebook** — it runs code in the live kernel without inserting a cell. Use it for inspection and ad-hoc queries; use `insertCell` + `runCell` when the code should persist in the notebook.
 - **Notebook ops require the Datalayer custom editor** — native VS Code `.ipynb` tabs are not supported.
 - **Lexical ops require a `.dlex` file** open in the Datalayer Lexical editor.

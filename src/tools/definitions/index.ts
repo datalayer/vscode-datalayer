@@ -21,6 +21,7 @@ export * from "./createNotebook";
 
 // Document access tools
 export * from "./getActiveDocument";
+export * from "./listOpenDocuments";
 
 // Kernel management tools
 export * from "./listKernels";
@@ -35,6 +36,7 @@ import { createNotebookTool } from "./createNotebook";
 import { executeCodeTool } from "./executeCode";
 import { getActiveDocumentTool } from "./getActiveDocument";
 import { listKernelsTool } from "./listKernels";
+import { listOpenDocumentsTool } from "./listOpenDocuments";
 import { selectKernelTool } from "./selectKernel";
 
 /**
@@ -58,18 +60,46 @@ async function getAllToolDefinitionsAsync(): Promise<ToolDefinition[]> {
 
   // Filter out executeCode from package tools to avoid duplication
   // Also filter out tools that have missing operations
-  const notebookToolsFiltered = notebookToolDefinitions.filter(
-    (tool: ToolDefinition) =>
-      tool.name !== "datalayer_executeCode" &&
-      tool.name !== "datalayer_insertCells", // Operation doesn't exist
-  );
+  const notebookToolsFiltered = notebookToolDefinitions
+    .filter(
+      (tool: ToolDefinition) =>
+        tool.name !== "datalayer_executeCode" &&
+        tool.name !== "datalayer_insertCells", // Operation doesn't exist
+    )
+    .map((tool: ToolDefinition) => {
+      // Inject notebook_uri into every cell tool's parameter schema.
+      // This optional parameter lets the caller (e.g. Cascade) target a
+      // specific open notebook by URI rather than relying on whichever
+      // notebook happens to be focused in VS Code.
+      // The URI values can be discovered via datalayer_listOpenDocuments.
+      const params = tool.parameters as {
+        type: string;
+        properties?: Record<string, unknown>;
+        required?: string[];
+      };
+      return {
+        ...tool,
+        parameters: {
+          ...params,
+          properties: {
+            notebook_uri: {
+              type: "string",
+              description:
+                "Optional URI of the target notebook. Obtain from datalayer_listOpenDocuments or datalayer_getActiveDocument. Required when multiple notebooks are open and you need to target a specific one.",
+            },
+            ...(params.properties ?? {}),
+          },
+        },
+      };
+    });
   const lexicalToolsFiltered = lexicalToolDefinitions.filter(
     (tool: ToolDefinition) => tool.name !== "datalayer_executeCode_lexical",
   );
 
   return [
-    // Document access (1 tool)
+    // Document access (2 tools)
     getActiveDocumentTool,
+    listOpenDocumentsTool,
 
     // Document creation (2 unified smart tools)
     createNotebookTool,
@@ -112,8 +142,9 @@ async function getAllToolDefinitionsAsync(): Promise<ToolDefinition[]> {
  * Note: insertCells is filtered out because its operation doesn't exist in the package.
  */
 export const allToolDefinitions = [
-  // Document access (1 tool)
+  // Document access (2 tools)
   getActiveDocumentTool,
+  listOpenDocumentsTool,
 
   // Document creation (2 unified smart tools)
   createNotebookTool,

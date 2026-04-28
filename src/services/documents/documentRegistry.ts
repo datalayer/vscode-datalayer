@@ -38,6 +38,13 @@ export interface DocumentRegistryEntry {
   /** Webview panel for tool execution messaging */
   webviewPanel?: vscode.WebviewPanel;
   /**
+   * Whether the webview has sent its "ready" message, meaning the React app is
+   * fully loaded and the tool-execution message handler is live. Set to false
+   * by the early registration in resolveCustomEditor; set to true by
+   * markWebviewReady() when the "ready" message arrives.
+   */
+  isWebviewReady: boolean;
+  /**
    * Unix timestamp (ms) of the last time this entry was accessed via the MCP
    * executor or explicitly touched. Used to prefer the most-recently-used
    * document when multiple documents of the same type are registered.
@@ -110,12 +117,14 @@ class DocumentRegistry {
     documentUri: string,
     type: DocumentType,
     webviewPanel?: vscode.WebviewPanel,
+    isWebviewReady = false,
   ): void {
     const entry: DocumentRegistryEntry = {
       documentId,
       documentUri,
       type,
       webviewPanel,
+      isWebviewReady,
       lastUsed: Date.now(),
     };
     this.idToEntry.set(documentId, entry);
@@ -150,6 +159,27 @@ class DocumentRegistry {
     const entry = this.idToEntry.get(documentId);
     if (entry) {
       entry.lastUsed = Date.now();
+    }
+  }
+
+  /**
+   * Mark a document's webview as ready to receive tool-execution messages.
+   *
+   * Call this from the provider's handleReadyMessage when the webview React app
+   * has finished loading and sent its "ready" handshake.
+   *
+   * @param documentUri - VS Code document URI string.
+   */
+  markWebviewReady(documentUri: string): void {
+    const documentId = this.uriToId.get(documentUri);
+    if (documentId) {
+      const entry = this.idToEntry.get(documentId);
+      if (entry) {
+        entry.isWebviewReady = true;
+        ServiceLoggers.main.debug(
+          `[DocumentRegistry] Webview ready: ${documentUri.substring(0, 60)}`,
+        );
+      }
     }
   }
 
@@ -190,15 +220,45 @@ class DocumentRegistry {
 
     // Fall back to any registered panel, sorted by most recently used.
     // Prefer notebook panels over lexical ones to match the most common MCP use case.
+    // Within each type, prefer panels where the webview is already ready.
     for (const type of ["notebook", "lexical"] as const) {
       const entries = this.getByType(type);
-      for (const entry of entries) {
-        if (entry.webviewPanel) {
-          return entry.webviewPanel;
-        }
+      const ready = entries.find((e) => e.webviewPanel && e.isWebviewReady);
+      if (ready) {
+        return ready.webviewPanel;
+      }
+      // Fall back to any panel with a webviewPanel, even if not yet ready.
+      const anyPanel = entries.find((e) => e.webviewPanel);
+      if (anyPanel) {
+        return anyPanel.webviewPanel;
       }
     }
 
+    return undefined;
+  }
+
+  /**
+   * Returns the best webview panel AND whether its webview is ready.
+   * Used by the MCP executor to give a precise "still loading" error
+   * instead of a 30-second timeout when the panel exists but the React
+   * app hasn't finished initializing.
+   *
+   * @returns Object with panel and isReady flag, or undefined if no panel found.
+   */
+  getBestWebviewPanelWithStatus():
+    | { panel: vscode.WebviewPanel; isReady: boolean }
+    | undefined {
+    for (const type of ["notebook", "lexical"] as const) {
+      const entries = this.getByType(type);
+      const ready = entries.find((e) => e.webviewPanel && e.isWebviewReady);
+      if (ready) {
+        return { panel: ready.webviewPanel!, isReady: true };
+      }
+      const anyPanel = entries.find((e) => e.webviewPanel);
+      if (anyPanel) {
+        return { panel: anyPanel.webviewPanel!, isReady: false };
+      }
+    }
     return undefined;
   }
 

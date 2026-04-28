@@ -19,6 +19,7 @@ import { createNotebookOperation } from "../operations/createNotebook";
 import { executeCodeOperation } from "../operations/executeCode";
 import { getActiveDocumentOperation } from "../operations/getActiveDocument";
 import { listKernelsOperation } from "../operations/listKernels";
+import { listOpenDocumentsOperation } from "../operations/listOpenDocuments";
 import { selectKernelOperation } from "../operations/selectKernel";
 import { VSCodeToolAdapter } from "./toolAdapter";
 
@@ -34,6 +35,8 @@ export interface CombinedOperations {
   selectKernel: ToolOperation<unknown, unknown>;
   /** Gets the currently active document in VS Code. */
   getActiveDocument: ToolOperation<unknown, unknown>;
+  /** Lists all open Datalayer documents sorted by most-recently-used. */
+  listOpenDocuments: ToolOperation<unknown, unknown>;
   /** Creates a new notebook (local or remote). */
   createNotebook: ToolOperation<unknown, unknown>;
   /** Creates a new Lexical document. */
@@ -73,6 +76,7 @@ export async function getCombinedOperations(): Promise<CombinedOperations> {
 
     // VS Code-specific operations (all use standard ToolOperation pattern)
     getActiveDocument: getActiveDocumentOperation,
+    listOpenDocuments: listOpenDocumentsOperation,
     createNotebook: createNotebookOperation,
     createLexical: createLexicalOperation,
 
