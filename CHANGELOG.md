@@ -4,9 +4,20 @@ All notable changes to the Datalayer VS Code extension are documented here.
 
 ## [Unreleased]
 
-## [0.0.17-alpha.adp1] - 2026-04-29
+### Added (April 2025) — `0.0.17-alpha.adp2`
 
-### Added (April 2025)
+- **Intelligent multi-notebook selection for MCP**: When multiple Datalayer notebooks are open, MCP tool calls now target the correct notebook intelligently rather than defaulting to insertion order.
+  - `DocumentRegistryEntry` gains a `lastUsed: number` timestamp (set on registration, updated on every MCP tool call and on VS Code tab focus).
+  - `DocumentRegistry.touch(documentId)` — new method that refreshes `lastUsed` for a given entry.
+  - `DocumentRegistry.getByType()` — now returns entries sorted by `lastUsed` descending so all callers automatically prefer the most-recently-used document.
+  - `DocumentRegistry.startTabWatcher()` — new method that subscribes to `vscode.window.tabGroups.onDidChangeTabs`. Manually clicking a Datalayer notebook or lexical tab in VS Code now updates `lastUsed` for that document, keeping selection intent consistent whether the user interacts through the editor or through Cascade.
+  - Wired up in `extension.ts` alongside the MCP server startup so the watcher's lifecycle is tied to the extension.
+  - `resolveNotebookId` / `resolveLexicalId` in the MCP path call `touch()` after resolving the target document.
+  - `buildOpenDocumentsContext()` — appended to `datalayer_getActiveDocument` responses only. Returns a ranked list of all open documents (URI, type, recency order) so Cascade can make an informed document choice based on the user's request without polluting every other tool's output.
+
+- **Windsurf Skill**: Added `.windsurf/skills/datalayer-mcp/` to the repository with `SKILL.md` and `tool-reference.md`. These teach Cascade how to use the MCP server as the authoritative, required interface for all Jupyter notebook and Datalayer document work — replacing any direct file-system access to `.ipynb` / `.dlex` files.
+
+### Added (April 2025) — `0.0.17-alpha.adp1`
 
 - **Windsurf / Cascade MCP Integration**: All 22 Datalayer tools are now accessible to Windsurf/Cascade via a local HTTP MCP (Model Context Protocol) server
   - New file: `src/mcp/mcpServer.ts` — starts a stateless `StreamableHTTPServerTransport` server on `http://localhost:3333/mcp` (auto-scans 3333–3340 for a free port)
@@ -16,7 +27,11 @@ All notable changes to the Datalayer VS Code extension are documented here.
   - Configure Windsurf via `~/.codeium/windsurf/mcp_config.json` — see `src/mcp/README.md`
   - New npm dependency: `@modelcontextprotocol/sdk@1.29.0` (externalized in webpack, whitelisted in `.vscodeignore`)
 
-### Fixed (April 2025)
+### Fixed (April 2025) — `0.0.16-alpha.2`
+
+- **Multi-notebook ambiguity**: Previously, when no Datalayer editor tab was focused (e.g. Cascade panel was active) and multiple notebooks were open, the MCP path always picked the first registered notebook regardless of what the user was working on. The new `lastUsed`-sorted `getByType()` and `startTabWatcher()` ensure the most recently focused or most recently used notebook is selected by default.
+
+### Fixed (April 2025) — `0.0.16-alpha.1`
 
 - **MCP tool execution when Cascade panel is focused**: `DocumentRegistry.getBestWebviewPanel()` added as a fallback to `getActiveWebviewPanel()`. Previously, notebook/lexical tool operations failed when VS Code focus was on the Cascade chat panel because the active-tab check returned nothing. The new method walks all registered webview panels and returns the first available one.
 - `resolveNotebookId` and `resolveLexicalId` in the MCP path similarly fall back to the document registry when the active-tab check returns no result.

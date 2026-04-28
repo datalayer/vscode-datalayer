@@ -215,16 +215,21 @@ async function resolveNotebookId(
   if (activeUri) {
     const uriStr = activeUri.toString();
     try {
-      return services.documentRegistry.getIdFromUri(uriStr);
+      const id = services.documentRegistry.getIdFromUri(uriStr);
+      services.documentRegistry.touch(id);
+      return id;
     } catch {
       return uriStr;
     }
   }
 
-  // Fall back to registry — covers the case where Cascade panel has focus
+  // Fall back to registry sorted by most-recently-used — covers the case
+  // where Cascade panel has focus or multiple notebooks are open.
   const notebookEntries = services.documentRegistry.getByType("notebook");
   if (notebookEntries.length > 0) {
-    return notebookEntries[0]!.documentId;
+    const entry = notebookEntries[0]!;
+    services.documentRegistry.touch(entry.documentId);
+    return entry.documentId;
   }
 
   throw new Error(
@@ -378,12 +383,18 @@ async function buildMcpExecutionContext(
     },
   };
 
-  // Resolve documentId based on tool tags.
+  // Resolve documentId based on tool tags, then touch it to update recency.
   let documentId: string | undefined;
   if (!isCreateOperation && needsCellDocument) {
     documentId = await resolveNotebookId(params, services);
+    if (documentId) {
+      services.documentRegistry.touch(documentId);
+    }
   } else if (!isCreateOperation && needsBlockDocument) {
     documentId = await resolveLexicalId(params, services);
+    if (documentId) {
+      services.documentRegistry.touch(documentId);
+    }
   }
 
   // Build extras — create operations get a different extras set.
@@ -487,6 +498,50 @@ async function buildMcpExecutionContext(
 }
 
 /**
+ * Builds a compact open-documents context string appended to every MCP tool
+ * response. This lets the LLM (Cascade) see all registered notebooks and
+ * lexical documents — with their URIs and recency rank — so it can
+ * intelligently select the correct target document based on the user's request
+ * rather than relying solely on extension-side heuristics.
+ *
+ * @param services - Service container providing the document registry.
+ *
+ * @returns A markdown-formatted context block, or an empty string if no
+ *   documents are registered.
+ */
+function buildOpenDocumentsContext(services: ServiceContainer): string {
+  const notebooks = services.documentRegistry.getByType("notebook");
+  const lexicals = services.documentRegistry.getByType("lexical");
+  const allDocs = [...notebooks, ...lexicals];
+
+  if (allDocs.length === 0) {
+    return "";
+  }
+
+  // Sort all docs by lastUsed descending (most recent first).
+  allDocs.sort((a, b) => b.lastUsed - a.lastUsed);
+
+  const lines: string[] = [
+    "",
+    "---",
+    "## Open Datalayer Documents",
+    "Pass `notebook_uri` (for notebooks) or `documentUri` (for lexical docs) from this list to target a specific document.",
+    "",
+  ];
+
+  allDocs.forEach((entry, idx) => {
+    const filename = entry.documentUri.split("/").pop() ?? entry.documentUri;
+    const recency = idx === 0 ? " ← most recent" : "";
+    lines.push(
+      `${idx + 1}. **${filename}** (${entry.type})${recency}`,
+      `   URI: \`${entry.documentUri}\``,
+    );
+  });
+
+  return lines.join("\n");
+}
+
+/**
  * Constructs and returns a configured McpServer with all Datalayer tools registered.
  *
  * A new McpServer instance is created for each HTTP request to ensure stateless
@@ -535,10 +590,21 @@ function buildMcpServer(
           );
           const result = await operation.execute(params, context);
           const formatted = formatResponse(result, context.format ?? "toon");
-          const text =
+          const resultText =
             typeof formatted === "string"
               ? formatted
               : JSON.stringify(formatted, null, 2);
+          // Append the open-documents list only to getActiveDocument responses.
+          // This is the mandatory orientation call, so Cascade gets the full
+          // document context exactly once per session without polluting every
+          // other tool's output.
+          const openDocsContext =
+            definition.name === "datalayer_getActiveDocument"
+              ? buildOpenDocumentsContext(services)
+              : "";
+          const text = openDocsContext
+            ? `${resultText}${openDocsContext}`
+            : resultText;
           return { content: [{ type: "text" as const, text }] };
         } catch (error) {
           const msg =

@@ -37,6 +37,12 @@ export interface DocumentRegistryEntry {
   type: DocumentType;
   /** Webview panel for tool execution messaging */
   webviewPanel?: vscode.WebviewPanel;
+  /**
+   * Unix timestamp (ms) of the last time this entry was accessed via the MCP
+   * executor or explicitly touched. Used to prefer the most-recently-used
+   * document when multiple documents of the same type are registered.
+   */
+  lastUsed: number;
 }
 
 /**
@@ -58,6 +64,40 @@ class DocumentRegistry {
   private uriToId = new Map<string, string>();
 
   /**
+   * Subscribe to VS Code tab-change events so that manually focusing a
+   * Datalayer custom editor tab also updates `lastUsed`, making it the
+   * preferred target for subsequent MCP tool calls.
+   *
+   * Call once during extension activation and push the returned disposable
+   * onto `context.subscriptions`.
+   *
+   * @returns A VS Code disposable that tears down the listener.
+   */
+  startTabWatcher(): vscode.Disposable {
+    return vscode.window.tabGroups.onDidChangeTabs(() => {
+      const activeTab = vscode.window.tabGroups.activeTabGroup.activeTab;
+      if (!activeTab?.input || typeof activeTab.input !== "object") {
+        return;
+      }
+      const tabInput = activeTab.input as { uri?: vscode.Uri; viewType?: string };
+      if (
+        tabInput.uri &&
+        (tabInput.viewType === "datalayer.jupyter-notebook" ||
+          tabInput.viewType === "datalayer.lexical-editor")
+      ) {
+        const uriStr = tabInput.uri.toString();
+        const documentId = this.uriToId.get(uriStr);
+        if (documentId) {
+          this.touch(documentId);
+          ServiceLoggers.main.debug(
+            `[DocumentRegistry] Tab focus updated lastUsed for: ${uriStr}`,
+          );
+        }
+      }
+    });
+  }
+
+  /**
    * Register a document with its ID, URI, and type.
    *
    * @param documentId - Document identifier (UID for remote, URI for local).
@@ -76,6 +116,7 @@ class DocumentRegistry {
       documentUri,
       type,
       webviewPanel,
+      lastUsed: Date.now(),
     };
     this.idToEntry.set(documentId, entry);
     this.uriToId.set(documentUri, documentId);
@@ -95,6 +136,21 @@ class DocumentRegistry {
     }
     const entry = this.idToEntry.get(documentId);
     return entry?.webviewPanel;
+  }
+
+  /**
+   * Update the last-used timestamp for a document.
+   *
+   * Call this whenever a document is targeted by an MCP tool call so that
+   * recency-based selection prefers the correct document on the next call.
+   *
+   * @param documentId - Document identifier to touch.
+   */
+  touch(documentId: string): void {
+    const entry = this.idToEntry.get(documentId);
+    if (entry) {
+      entry.lastUsed = Date.now();
+    }
   }
 
   /**
@@ -132,10 +188,11 @@ class DocumentRegistry {
       return active;
     }
 
-    // Fall back to any registered panel that is still visible (not disposed).
-    // Prefer notebook panels over lexical ones to match most common MCP use case.
+    // Fall back to any registered panel, sorted by most recently used.
+    // Prefer notebook panels over lexical ones to match the most common MCP use case.
     for (const type of ["notebook", "lexical"] as const) {
-      for (const entry of this.getByType(type)) {
+      const entries = this.getByType(type);
+      for (const entry of entries) {
         if (entry.webviewPanel) {
           return entry.webviewPanel;
         }
@@ -267,9 +324,9 @@ class DocumentRegistry {
    * @returns Array of registry entries.
    */
   getByType(type: DocumentType): DocumentRegistryEntry[] {
-    return Array.from(this.idToEntry.values()).filter(
-      (entry) => entry.type === type,
-    );
+    return Array.from(this.idToEntry.values())
+      .filter((entry) => entry.type === type)
+      .sort((a, b) => b.lastUsed - a.lastUsed);
   }
 
   /**

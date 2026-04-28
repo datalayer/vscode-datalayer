@@ -319,6 +319,11 @@ export async function activate(
             mcpHttpServer.close();
           },
         });
+        // Keep lastUsed current when the user manually switches notebook tabs,
+        // so MCP tool calls without an explicit notebook_uri prefer the focused one.
+        context.subscriptions.push(
+          services!.documentRegistry.startTabWatcher(),
+        );
         activationTimer.checkpoint("mcp_http_server_started");
       },
       (err) => {

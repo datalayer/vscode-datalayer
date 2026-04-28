@@ -119,7 +119,7 @@
 - **Command palette integration** - All features accessible via `Ctrl+Shift+P`
 - **AI assistant integration** - Use natural language to create notebooks, insert cells, execute code, and manage documents:
   - **GitHub Copilot** — 22 tools registered via VS Code's Language Model Tools API
-  - **Windsurf / Cascade** — same 22 tools exposed over a local MCP HTTP server at `http://localhost:3333/mcp`
+  - **Windsurf / Cascade** — same 22 tools exposed over a local MCP HTTP server at `http://localhost:3333/mcp`; intelligent multi-notebook selection automatically targets the most recently focused document
 
 ## 💡 Common Questions
 
@@ -207,7 +207,19 @@ Open settings (`Ctrl+,` / `Cmd+,`) and search "Datalayer":
 
 ## Recent Updates
 
-### Windsurf / Cascade MCP Integration (April 2025)
+### Intelligent Notebook Selection for Cascade (`0.0.16-alpha.2`)
+
+When multiple Datalayer notebooks are open, MCP tool calls now target the correct one automatically:
+
+- **Tab focus tracking** — clicking a notebook tab in VS Code updates its recency so Cascade targets it by default
+- **MCP call tracking** — each tool call reinforces the last-used document
+- **LLM-assisted disambiguation** — `datalayer_getActiveDocument` now returns a ranked list of all open documents so Cascade can match by filename or topic from the user's request, and ask when genuinely ambiguous
+
+### Windsurf Skill (`0.0.16-alpha.2`)
+
+A Windsurf skill (`SKILL.md` + `tool-reference.md`) is bundled in `.windsurf/skills/datalayer-mcp/`. It establishes the Datalayer MCP server as the **required** interface for all Jupyter notebook work — prohibiting direct `.ipynb` file manipulation — and provides Cascade with tool reference, workflow recipes, error patterns, and notebook selection guidance.
+
+### Windsurf / Cascade MCP Integration (`0.0.16-alpha.1`)
 
 All 22 Datalayer tools are now available to [Windsurf](https://windsurf.com) / Cascade via a local MCP HTTP server that starts automatically with the extension.
 
