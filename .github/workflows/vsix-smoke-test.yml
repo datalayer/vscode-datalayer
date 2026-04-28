@@ -94,14 +94,20 @@ jobs:
       - name: Build VSIX package
         run: npm run vsix
 
+      # Step "Build VSIX package" already produced the .vsix. The
+      # `npm run test:vsix` script chains `npm run vsix` first, which
+      # would run the entire webpack production build a second time on
+      # the same runner — cheap on Linux (~3 min) but catastrophic on
+      # macOS (the redundant rebuild was hanging the job past 30 min).
+      # Call the activation script directly so each runner builds once.
       - name: Run VSIX activation test (Ubuntu with xvfb)
         if: matrix.os == 'ubuntu-latest'
-        run: xvfb-run -a npm run test:vsix
+        run: xvfb-run -a node scripts/test-vsix-activation.js
         shell: bash
 
       - name: Run VSIX activation test (macOS/Windows)
         if: matrix.os != 'ubuntu-latest'
-        run: npm run test:vsix
+        run: node scripts/test-vsix-activation.js
         shell: bash
 
       - name: Upload VSIX artifact on failure

@@ -438,46 +438,32 @@ npm run vsix
 
 ### Keytar for Credential Storage
 
-The extension uses **keytar** for secure OS keyring access (macOS Keychain, Windows Credential Manager, Linux Secret Service). This enables credential sharing between the VS Code extension and the Datalayer CLI.
+The extension uses **`@github/keytar`** for secure OS keyring access (macOS Keychain, Windows Credential Manager, Linux Secret Service). This is GitHub's actively maintained fork of the original `keytar` module. We use it (instead of upstream `keytar`) because its npm tarball ships **prebuilt native bindings for every supported platform** — darwin-arm64/x64, linux-{arm,arm64,armv7l,ia32,x64}, linuxmusl-{arm,arm64,x64}, and win32-{arm64,ia32,x64}. That lets a single multi-platform VSIX work everywhere without per-OS native rebuilds.
 
-**Keytar Dependencies**:
+**Dependency**:
 
-- `keytar@^7.9.0` - Native Node.js module for OS keyring access
-- `@electron/rebuild@^4.0.2` - Rebuilds native modules for Electron (devDependency)
+- `@github/keytar@^7.10.6` - Multi-platform prebuilt native module for OS keyring access
 
-**Automatic Rebuild**:
+**No rebuild step required**:
 
-Keytar is automatically rebuilt for Electron during `npm install` via the `postinstall` hook:
+The prebuilds shipped in the npm tarball are loaded automatically based on the host platform/arch. There is no `postinstall` rebuild and no `@electron/rebuild` dependency.
 
-```bash
-# Postinstall workflow (runs automatically)
-npm run rebuild:keytar           # Rebuild keytar for Electron 33.2.0
-node scripts/downloadZmqBinaries.js  # Download ZMQ binaries
-```
+**How it's wired up**:
 
-**Manual Rebuild** (if needed):
-
-```bash
-# Rebuild keytar manually for Electron 33.2.0 (VS Code 1.107.0)
-npm run rebuild:keytar
-```
-
-**How it works**:
-
-1. During `npm install`, the `postinstall` script runs `npm run rebuild:keytar`
-2. This rebuilds keytar's native bindings for Electron 33.2.0 (VS Code's Electron version)
-3. The rebuilt module is compatible with VS Code's Node.js runtime
-4. Credentials stored by the CLI are accessible to the extension and vice versa
+1. `webpack.config.js` declares `@github/keytar` as a `commonjs` external so it is not bundled.
+2. `scripts/copy-external-deps.js` copies `node_modules/@github/keytar/` (including all `prebuilds/`) into `dist/node_modules/` for VSIX packaging.
+3. `.vscodeignore` allow-lists `!node_modules/@github/keytar/**` so vsce includes it in the package.
+4. `webpack.config.js` sets `node: { __filename: false, __dirname: false }` so the bundled `@datalayer/core` `NodeStorage` can use `module.createRequire(__filename)` to resolve real `node_modules/@github/keytar` at runtime. Without that, webpack's default replaces `__filename` with a fake path and the require fails.
+5. `@datalayer/core`'s `NodeStorage` tries `@github/keytar` first, then `@vscode/keytar`, then upstream `keytar` for backwards compatibility.
 
 **Benefits**:
 
-- ✅ **Secure credential storage** - Uses OS-native keyring APIs
-- ✅ **Cross-tool credential sharing** - CLI and VS Code share the same credentials
-- ✅ **No duplicate logins** - Login once, works everywhere
-- ✅ **Automatic rebuild** - No manual intervention needed
-- ✅ **Cross-platform** - Works on macOS, Windows, and Linux
+- Secure credential storage via OS-native keyring APIs
+- Cross-tool credential sharing — the CLI and the extension write to the same keyring entry under the IAM service URL, so logging in via `dla` makes the extension see the session and vice versa
+- No per-OS native rebuild — the same VSIX works on every platform
+- Cross-platform: macOS Intel/ARM, Windows x64/arm64/ia32, Linux x64/arm/arm64/armv7l (glibc and musl)
 
-**Important**: The extension uses `NodeStorage` from `@datalayer/core` which automatically detects and uses keytar for credential storage. This ensures credentials are stored securely in the OS keyring and shared between the CLI and VS Code extension.
+**Important**: `NodeStorage` from `@datalayer/core` is the credential backend. It is selected by default by the extension; do not pass a custom `storage` option to `DatalayerClient` in extension code, because anything other than `NodeStorage` (e.g. VS Code's `SecretStorage`) is scoped to the extension and would break credential sharing with the CLI.
 
 ## Code Quality & Validation
 

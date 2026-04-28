@@ -139,6 +139,21 @@ export const pyodideSettingsSchema = z.object({
     .default(["numpy", "pandas", "matplotlib", "matplotlib-inline", "ipython"]),
 });
 
+/** Schema for the `datalayer.agentChat` settings group. */
+export const agentChatSettingsSchema = z.object({
+  /**
+   * Chat transport protocol. Default kept in sync with the
+   * `datalayer.agentChat.protocol` contribution in `package.json` so the
+   * Zod fallback matches what VS Code reports when the user has not
+   * explicitly set the value.
+   */
+  protocol: z
+    .enum(["ag-ui", "acp", "a2a", "vercel-ai", "vercel-ai-jupyter"])
+    .default("vercel-ai"),
+  /** Agent specification ID used when the sidebar provisions a fresh runtime. */
+  agentSpecId: z.string().default("codeai/simple"),
+});
+
 /** Schema for the `datalayer.completion.inlinellm` settings group. */
 export const inlineLlmCompletionSettingsSchema = z.object({
   /** Toggle LLM-powered inline code completions in Jupyter cells. */
@@ -200,6 +215,9 @@ export type ProseLlmCompletionSettings = z.infer<
   typeof proseLlmCompletionSettingsSchema
 >;
 
+/** Validated agent chat settings. */
+export type AgentChatSettings = z.infer<typeof agentChatSettingsSchema>;
+
 /** All validated Datalayer extension settings. */
 export interface DatalayerSettings {
   /** Service endpoint URLs. */
@@ -220,6 +238,8 @@ export interface DatalayerSettings {
   inlineLlmCompletion: InlineLlmCompletionSettings;
   /** Prose LLM completion configuration. */
   proseLlmCompletion: ProseLlmCompletionSettings;
+  /** Agent chat sidebar configuration. */
+  agentChat: AgentChatSettings;
 }
 
 // ---------------------------------------------------------------------------
@@ -357,6 +377,11 @@ export function getValidatedSettings(): DatalayerSettings {
       proseLlmCompletionSettingsSchema,
       "completion.prosellm",
     ),
+    agentChat: validateSection(
+      "datalayer.agentChat",
+      agentChatSettingsSchema,
+      "agentChat",
+    ),
   };
 }
 
@@ -408,6 +433,12 @@ export function getValidatedSettingsGroup<K extends keyof DatalayerSettings>(
         "datalayer.completion.prosellm",
         proseLlmCompletionSettingsSchema,
         "completion.prosellm",
+      ),
+    agentChat: () =>
+      validateSection(
+        "datalayer.agentChat",
+        agentChatSettingsSchema,
+        "agentChat",
       ),
   };
 

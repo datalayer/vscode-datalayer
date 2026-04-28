@@ -151,7 +151,7 @@ jobs:
 
             > ✅ **Universal build**: This extension includes native modules (zeromq) with pre-built binaries for all platforms via `@vscode/zeromq`.
             >
-            > Build successful • [View workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+            > Build successful • Commit [`${{ github.event.pull_request.head.sha }}`](${{ github.server_url }}/${{ github.repository }}/commit/${{ github.event.pull_request.head.sha }}) • [View workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
 
   test-installation:
     name: Test Extension Installation

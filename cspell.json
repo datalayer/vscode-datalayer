@@ -129,6 +129,9 @@
     "unsub",
     "Jtoken",
     "mytoken",
-    "numpy"
+    "numpy",
+    "codeai",
+    "evals",
+    "toolsets"
   ]
 }

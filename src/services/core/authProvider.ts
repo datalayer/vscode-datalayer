@@ -192,6 +192,7 @@ export class DatalayerAuthProvider
           await this.loginWithCredentials();
           break;
         case "github":
+        case "google":
         case "linkedin":
           await this.loginWithOAuth(method);
           break;
@@ -287,7 +288,9 @@ export class DatalayerAuthProvider
    * Opens browser for OAuth flow and handles callback.
    * @param provider - OAuth provider to authenticate with.
    */
-  async loginWithOAuth(provider: "github" | "linkedin"): Promise<void> {
+  async loginWithOAuth(
+    provider: "github" | "google" | "linkedin",
+  ): Promise<void> {
     this.logger.info("Starting OAuth login", {
       provider,
       extensionId: this.context.extension.id,

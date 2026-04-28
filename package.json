@@ -25,7 +25,7 @@
   "scripts": {
     "apply:patches": "bash scripts/apply-patches.sh",
     "build:icons": "node scripts/build-icons.js",
-    "check": "npm run format:check && npm run lint && npm run type-check && npm run docs:check-readmes",
+    "check": "npm run format:check && npm run lint && npm run type-check && npm run docs:check && npm run check:spelling",
     "check:fix": "npm run format && npm run lint:fix && npm run type-check",
     "check:spelling": "cspell \"src/**/*.ts\" \"webview/**/*.ts\" \"webview/**/*.tsx\" --no-progress",
     "check:dead-code": "knip",
@@ -70,7 +70,7 @@
     "vscode:prepublish": "npm run build:icons && npm run sync:tools",
     "vsix": "npm run clean:vsix && npm run package && node scripts/copyZmqBinaries.js && node scripts/copy-external-deps.js && node scripts/optimize-primer.js && npx @vscode/vsce package --no-yarn --no-dependencies",
     "vsix:install": "code --install-extension ./datalayer-jupyter-vscode-*.vsix --force",
-    "watch": "npm run clean:dist && webpack --watch",
+    "watch": "webpack --watch",
     "watch-tests": "tsc -p . -w --outDir out",
     "watch:debug": "npm run clean:dist && cross-env WEBVIEW_DEBUG=1 webpack --watch",
     "watch:lib": "tsc --project tsconfig.json --rootDir src --outDir lib --declaration --declarationDir lib --watch --preserveWatchOutput",
@@ -89,12 +89,13 @@
     "@codemirror/state": "^6.5.2",
     "@codemirror/view": "^6.38.3",
     "@datalayer/agent-runtimes": "^1.0.4",
-    "@datalayer/core": "^1.0.15",
+    "@datalayer/core": "^1.0.20",
     "@datalayer/jupyter-lexical": "^1.0.16",
     "@datalayer/jupyter-react": "^2.0.7",
     "@datalayer/lexical-loro": "^1.0.3",
-    "@datalayer/primer-addons": "^1.0.12",
+    "@datalayer/primer-addons": "^1.0.15",
     "@excalidraw/excalidraw": "^0.18.0",
+    "@github/keytar": "^7.10.6",
     "@jupyter/ydoc": "^3.4.0",
     "@jupyterlab/services": "^7.0.0",
     "@lexical/code": "^0.35.0",
@@ -123,7 +124,6 @@
     "buffer": "^6.0.3",
     "cmake-ts": "^1.0.2",
     "codemirror": "^6.0.2",
-    "keytar": "^7.9.0",
     "lexical": "^0.35.0",
     "pyodide": "^0.29.0",
     "react": "18.3.1",
@@ -222,7 +222,14 @@
         "description": "Datalayer logo",
         "default": {
           "fontPath": "./resources/datalayer-icons.woff",
-          "fontCharacter": "\\e900"
+          "fontCharacter": "\\e901"
+        }
+      },
+      "google-logo": {
+        "description": "Google logo",
+        "default": {
+          "fontPath": "./resources/datalayer-icons.woff",
+          "fontCharacter": "\\e902"
         }
       }
     },
@@ -513,6 +520,15 @@
         "command": "datalayer.projects.viewDetails",
         "title": "View Project Details",
         "category": "Datalayer"
+      },
+      {
+        "command": "datalayer.agentChat.focus",
+        "title": "Open Datalayer Chat Sidebar",
+        "category": "Datalayer",
+        "icon": {
+          "light": "resources/datalayer-chat-color.svg",
+          "dark": "resources/datalayer-chat-color.svg"
+        }
       }
     ],
     "viewsContainers": {
@@ -521,6 +537,11 @@
           "id": "datalayer",
           "title": "Datalayer",
           "icon": "images/datalayer-sidebar-icon.svg"
+        },
+        {
+          "id": "datalayerChat",
+          "title": "Datalayer Chat",
+          "icon": "resources/icons/ai-agent.svg"
         }
       ]
     },
@@ -555,6 +576,14 @@
           "name": "Settings",
           "icon": "$(settings-gear)",
           "contextualTitle": "Datalayer Settings"
+        }
+      ],
+      "datalayerChat": [
+        {
+          "type": "webview",
+          "id": "datalayerAgentChatView",
+          "name": "Datalayer Chat",
+          "contextualTitle": "Datalayer Chat"
         }
       ]
     },
@@ -944,6 +973,10 @@
           "command": "datalayer.newLocalLexicalDocument",
           "when": "resourceExtname == .ipynb || resourceExtname == .dlex || resourceExtname == .lexical",
           "group": "navigation@2"
+        },
+        {
+          "command": "datalayer.agentChat.focus",
+          "group": "navigation"
         }
       ],
       "notebook/toolbar": [
@@ -1630,6 +1663,23 @@
           ],
           "default": "CPU",
           "description": "Default runtime type for new runtimes"
+        },
+        "datalayer.agentChat.protocol": {
+          "type": "string",
+          "enum": [
+            "ag-ui",
+            "acp",
+            "a2a",
+            "vercel-ai",
+            "vercel-ai-jupyter"
+          ],
+          "default": "vercel-ai",
+          "description": "Transport protocol used by the Datalayer Agent Chat sidebar. `vercel-ai` (default) targets the Datalayer SAAS agent-runtimes endpoint (`/api/v1/vercel-ai/<agentId>`); `vercel-ai-jupyter` is the Jupyter-hosted variant."
+        },
+        "datalayer.agentChat.agentSpecId": {
+          "type": "string",
+          "default": "codeai/simple",
+          "description": "Agent specification ID used when creating a new agent runtime from the Agent Chat sidebar (e.g. `codeai/simple`, `datalayer/notebook-assistant`)."
         },
         "datalayer.autoConnect.strategies": {
           "type": "array",

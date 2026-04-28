@@ -361,6 +361,9 @@ export function registerProjectsCommands(
 
               projectsTreeProvider?.refresh();
               runtimesTreeProvider?.refresh();
+              await vscode.commands.executeCommand(
+                "datalayer.internal.agentChat.refresh",
+              );
             },
           );
         } catch (error) {
@@ -374,46 +377,60 @@ export function registerProjectsCommands(
 
   /**
    * Command: datalayer.createAgent
-   * Creates a new agent via agent spec picker (standalone, no project context).
+   * Creates a new agent. When called with an explicit `presetSpecId`
+   * argument the picker is skipped and the runtime is provisioned
+   * directly with that spec — the Agent Chat sidebar uses this path so
+   * the user-configured `datalayer.agentChat.agentSpecId` setting
+   * actually drives sidebar creation. When invoked with no argument
+   * (e.g. from the command palette) the spec picker still runs.
    */
   context.subscriptions.push(
-    vscode.commands.registerCommand("datalayer.createAgent", async () => {
-      const specId = await showAgentSpecPicker(
-        "Create New Agent",
-        settingsTreeProvider,
-      );
+    vscode.commands.registerCommand(
+      "datalayer.createAgent",
+      async (presetSpecId?: string) => {
+        const specId =
+          typeof presetSpecId === "string" && presetSpecId.length > 0
+            ? presetSpecId
+            : await showAgentSpecPicker(
+                "Create New Agent",
+                settingsTreeProvider,
+              );
 
-      if (!specId) {
-        return;
-      }
+        if (!specId) {
+          return;
+        }
 
-      try {
-        await vscode.window.withProgress(
-          {
-            location: vscode.ProgressLocation.Notification,
-            title: `Creating agent runtime "${specId}"...`,
-            cancellable: false,
-          },
-          async () => {
-            const datalayer = getServiceContainer().datalayer;
-            await datalayer.createAgentRuntime({
-              agentSpecId: specId,
-              givenName: specId,
-            });
+        try {
+          await vscode.window.withProgress(
+            {
+              location: vscode.ProgressLocation.Notification,
+              title: `Creating agent runtime "${specId}"...`,
+              cancellable: false,
+            },
+            async () => {
+              const datalayer = getServiceContainer().datalayer;
+              await datalayer.createAgentRuntime({
+                agentSpecId: specId,
+                givenName: specId,
+              });
 
-            vscode.window.showInformationMessage(
-              `Agent runtime "${specId}" created successfully`,
-            );
+              vscode.window.showInformationMessage(
+                `Agent runtime "${specId}" created successfully`,
+              );
 
-            runtimesTreeProvider?.refresh();
-          },
-        );
-      } catch (error) {
-        vscode.window.showErrorMessage(
-          `Failed to create agent: ${error instanceof Error ? error.message : error}`,
-        );
-      }
-    }),
+              runtimesTreeProvider?.refresh();
+              await vscode.commands.executeCommand(
+                "datalayer.internal.agentChat.refresh",
+              );
+            },
+          );
+        } catch (error) {
+          vscode.window.showErrorMessage(
+            `Failed to create agent: ${error instanceof Error ? error.message : error}`,
+          );
+        }
+      },
+    ),
   );
 
   /**

@@ -82,9 +82,14 @@ export function createVSCodeDatalayer(
     runtimesRunUrl,
     spacerRunUrl,
 
-    // Use default NodeStorage (keytar) - automatically rebuilt for Electron via postinstall
-    // Shares credentials with CLI - login once, works everywhere
-    // No custom storage needed - core package uses keytar by default
+    // Use default NodeStorage (keytar) — credentials land in the OS
+    // keyring under the IAM service URL, the same place the Datalayer
+    // CLI writes them. Logging in via `dla` should make VS Code see the
+    // session, and vice versa.
+    //
+    // VS Code SecretStorage is intentionally NOT used here even though
+    // it would be simpler to wire up: secrets stored in `context.secrets`
+    // are scoped to this extension and would not be readable by the CLI.
 
     // Enhanced handlers with comprehensive logging
     handlers: DatalayerClientOperationTracker.createEnhancedClientHandlers(),

@@ -10,11 +10,8 @@ npm run watch            # Watch mode for development
 # Press F5 in VS Code to launch Extension Development Host
 
 npm run compile          # Build (includes icon font generation)
-npm run check            # Full suite: format + lint + type-check + README check
-npm run docs             # Generate TypeDoc (0 warnings required)
-npm run docs:coverage    # TypeDoc with strict validation
-npm run check:spelling   # Spell check via cspell
-npm run check:dead-code  # Dead code detection via knip
+npm run check            # Full suite: format + lint + type-check + docs (READMEs + TypeDoc) + spelling
+npm run check:dead-code  # Dead code detection via knip (not in check due to pre-existing issues)
 npm run vsix             # Create universal .vsix package
 ```
 
@@ -190,6 +187,48 @@ Discriminated union factory: `mock` | `local` | `remote` | `pyodide`. Type-safe 
 ### BaseKernelManager / BaseSessionManager
 
 Template Method pattern eliminating duplicate code across mock/local/remote/pyodide implementations. Subclasses only implement `startNew()`.
+
+## Authentication & Credential Storage
+
+Credentials live in the OS keyring (macOS Keychain / Windows Credential Vault / Linux libsecret), keyed by the IAM service URL. This is the same place the Datalayer CLI writes them, so `dla login` and an in-extension login share state.
+
+- Implementation: `@datalayer/core`'s `NodeStorage` loads `@github/keytar` via `module.createRequire(__filename)` and writes `access_token` under `serviceUrl`.
+- Why `@github/keytar` (not upstream `keytar`): its npm tarball ships **prebuilt native bindings for every platform**, so a single multi-platform VSIX works everywhere with no per-OS rebuild step.
+- Webpack must keep `__filename` real: `webpack.config.js` sets `node: { __filename: false, __dirname: false }`. Without that, `createRequire(__filename)` would resolve relative to webpack's mock `/index.js` and fail to find `node_modules/@github/keytar`.
+- Distribution: `scripts/copy-external-deps.js` copies the package (with all `prebuilds/`) into `dist/node_modules/`, and `.vscodeignore` allow-lists `!node_modules/@github/keytar/**`.
+- **Do not** pass a custom `storage` option to `DatalayerClient` in extension code (e.g. `vscode.SecretStorage`). It would scope credentials to the extension and break CLI/extension credential sharing.
+
+## Agent Chat Sidebar
+
+The Agent Chat webview (`webview/agentChat/`) is a sidebar `WebviewView` that renders `@datalayer/agent-runtimes`'s `<Chat>` component against a Datalayer SAAS runtime.
+
+### Editor-title focus icon
+
+The `editor/title` toolbar icon (`datalayer.agentChat.focus` in [src/commands/agentChat.ts](src/commands/agentChat.ts)) reveals the chat panel using the same two-step pattern as the OpenAI Codex extension: first execute `workbench.view.extension.<containerId>` to open the activity-bar container, then `<viewId>.focus` to reveal the inner view. Calling only the container command "succeeds" but does not visibly focus a webview when the inner view is collapsed. The package.json menu entry uses bare `"group": "navigation"` (no order suffix, no `when`) so the icon clusters next to other AI-chat icons (Codex, Claude).
+
+### Two-layer bridge architecture
+
+The webview cannot reach `r1.datalayer.run` directly (CORS from `vscode-webview://`) and does not hold the user's auth token. Two separate bridges route traffic through the extension host:
+
+1. **Typed SDK bridge** ([src/bridges/agentChatBridge.ts](src/bridges/agentChatBridge.ts)) - `BridgeAgentRuntimesClient` in the webview implements the 22-method `IAgentRuntimesClient` interface by posting typed `request` envelopes. `AgentChatBridgeHandler` in the extension host dispatches them to `SdkAgentRuntimesClient` using the shared `DatalayerClient` + `AgentsMixin` (keyring auth). Used for control-plane operations: `listRunningAgents`, `createAgentRuntime`, `listNotifications`, `listEvents`, `getAgentOutputs`, `runEvals`, `getContextUsage`, `getCostUsage`, etc. Chat/runtime endpoints (config, sandbox status, context snapshot, skills, MCP status, history, tool approvals) are intentionally NOT on the typed bridge — they are tunneled through the raw network bridge instead.
+2. **Raw network bridge** ([src/bridges/agentChatNetworkBridge.ts](src/bridges/agentChatNetworkBridge.ts)) - [webview/agentChat/networkBridge.ts](webview/agentChat/networkBridge.ts) installs global `window.fetch` and `window.WebSocket` overrides BEFORE any other webview code loads. Every direct HTTP/WS call made by `agent-runtimes` internals (VercelAIAdapter chat streaming, protocol adapters, hooks) is transparently tunneled through `postMessage`. The extension host (Node 22 `fetch` + `ws`) opens the real connection and relays SSE chunks / WebSocket frames back to the webview. Supports streaming (Response body is a live `ReadableStream`).
+
+### Runtime ingress rewriting
+
+The platform's `listRuntimes()` returns an ingress URL like `https://r1.datalayer.run/jupyter/server/ai-agents-pool/{pod}` that points at the Jupyter server on that pod. The agent-runtimes REST API and vercel-ai streaming endpoints actually live on a sibling path: `https://r1.datalayer.run/agent-runtimes/ai-agents-pool/{pod}`. `AgentChatViewProvider.refreshAgents()` rewrites `/jupyter/server/` → `/agent-runtimes/` before handing the handle to the webview. Without this rewrite every API call returns the Jupyter server's 404 HTML page and the SDK fails to parse it as JSON.
+
+### Agent ID vs pod name
+
+For the `vercel-ai` protocol, `<Chat>` builds `POST {ingress}/api/v1/vercel-ai/{agentId}`. The correct `agentId` is the agent name within the pod (typically `"default"`), not the Kubernetes pod name. `App.tsx` passes `agentId="default"` and routes the pod name through `runtimeId` for tracking. Default `datalayer.agentChat.protocol` setting is `vercel-ai`.
+
+### Primer `ThemeProvider` is required
+
+`<Chat>` includes `ActionMenu` dropdowns that render into portals and read theme tokens from React context. The webview must wrap the tree with `<ThemeProvider colorMode={...}>` + `<BaseStyles>` or clicking the Model/Tools buttons throws "Cannot read properties of undefined (reading 'theme')". See `App` → `AppInner` split in [webview/agentChat/App.tsx](webview/agentChat/App.tsx).
+
+### Build gotchas
+
+- `webpack.config.js` for `agentChatWebviewConfig` MUST keep `splitChunks: { chunks: "async" }` so the main `agentChat.js` entry bundle is emitted. Setting `splitChunks: false` makes webpack emit only the async chunks, which looks OK on `ls` but leaves the entry bundle missing → VS Code 404s on webview load.
+- `npm run watch` intentionally does not run `clean:dist` first — clean-then-watch produces a several-second window where `dist/agentChat.js` does not exist, during which F5 fails with ENOENT in the webview.
 
 ## Projects Feature
 

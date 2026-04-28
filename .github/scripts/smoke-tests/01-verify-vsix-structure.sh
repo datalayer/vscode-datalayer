@@ -99,7 +99,7 @@ echo ""
 
 # Verify native modules (ZeroMQ and other native dependencies)
 echo "🔍 Verifying native modules..."
-NATIVE_MODULES=("zeromq" "cmake-ts" "keytar" "ws" "prebuild-install" "bufferutil" "utf-8-validate")
+NATIVE_MODULES=("zeromq" "cmake-ts" "@github/keytar" "ws" "prebuild-install" "bufferutil" "utf-8-validate")
 MISSING_MODULES=()
 
 for module in "${NATIVE_MODULES[@]}"; do
@@ -116,6 +116,34 @@ done
 if [ ${#MISSING_MODULES[@]} -gt 0 ]; then
   echo ""
   echo "❌ ERROR: Missing ${#MISSING_MODULES[@]} native module(s)"
+  exit 1
+fi
+
+# @github/keytar must ship its multi-platform prebuilds, otherwise the
+# VSIX is not actually multi-platform and credential persistence will
+# fail at runtime on platforms whose native binding wasn't bundled.
+echo ""
+echo "🔍 Verifying @github/keytar prebuilds…"
+KEYTAR_PREBUILDS="$TEMP_DIR/extension/dist/node_modules/@github/keytar/prebuilds"
+if [ ! -d "$KEYTAR_PREBUILDS" ]; then
+  echo "❌ ERROR: @github/keytar/prebuilds/ directory is missing — VSIX will not have keyring access on any platform."
+  exit 1
+fi
+
+REQUIRED_PREBUILDS=("darwin-arm64" "darwin-x64" "linux-x64" "linux-arm64" "win32-x64" "win32-arm64")
+MISSING_PREBUILDS=()
+for plat in "${REQUIRED_PREBUILDS[@]}"; do
+  if [ -f "$KEYTAR_PREBUILDS/$plat/keytar.node" ] || [ -f "$KEYTAR_PREBUILDS/$plat/node.napi.node" ]; then
+    echo "  ✓ $plat"
+  else
+    echo "  ✗ $plat (missing)"
+    MISSING_PREBUILDS+=("$plat")
+  fi
+done
+
+if [ ${#MISSING_PREBUILDS[@]} -gt 0 ]; then
+  echo ""
+  echo "❌ ERROR: Missing ${#MISSING_PREBUILDS[@]} @github/keytar prebuild(s) — VSIX is not multi-platform."
   exit 1
 fi
 

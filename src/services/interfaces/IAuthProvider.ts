@@ -70,9 +70,9 @@ export interface IAuthProvider {
   /**
    * Login using OAuth provider.
    * Opens browser for OAuth flow and handles callback.
-   * @param provider - OAuth provider (github or linkedin)
+   * @param provider - OAuth provider (github, google, or linkedin)
    */
-  loginWithOAuth(provider: "github" | "linkedin"): Promise<void>;
+  loginWithOAuth(provider: "github" | "google" | "linkedin"): Promise<void>;
 
   /**
    * Logs out the current user and clears authentication state.

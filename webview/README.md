@@ -20,6 +20,7 @@ Both editors share common infrastructure: theme integration, service managers, s
 
 ## Subdirectories
 
+- **agentChat/** - Datalayer Agent Chat sidebar webview with theme + auth state wiring, a typed bridge client and a raw network bridge for extension-host communication, and the integrated `<Chat>` UI from `@datalayer/agent-runtimes`.
 - **components/** - Shared React components (toolbar, progress bar, dialogs)
 - **contexts/** - React context providers (theme)
 - **datasource/** - Datasource creation/edit dialog webviews
