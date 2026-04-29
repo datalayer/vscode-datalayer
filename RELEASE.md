@@ -6,17 +6,22 @@
 # 1. Test locally
 npm run check && npm run docs && npm run compile
 
-# 2. Bump version and create version tag on your local git clone
+# 2. Update CHANGELOG.md
+#    - Move items from [Unreleased] into a new [x.y.z] section
+#    - Add the release date: ## [x.y.z] - YYYY-MM-DD
+#    - Commit the changelog update
+
+# 3. Bump version and create version tag on your local git clone
 # major (X.y.z) | minor (x.Y.z) | patch (x.y.Z)
 npm version patch
 
-# 3a. Push main branch and tags to trigger release workflow
+# 4a. Push main branch and tags to trigger release workflow
 git push origin main --follow-tags
 
-# 3b. (Optional) Push all the tags
+# 4b. (Optional) Push all the tags
 git push origin --tags
 
-# 3c. (Optional) Push the specific tag
+# 4c. (Optional) Push the specific tag
 # where x, y, x represent the actual numeric values of the version
 git push origin vx.y.z
 ```

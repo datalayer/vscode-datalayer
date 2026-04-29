@@ -4,101 +4,122 @@ All notable changes to the Datalayer VS Code extension are documented here.
 
 ## [Unreleased]
 
-### Fixed (January 2025)
+## [0.0.16] - 2026-04-29
 
-- **Runtime Tree View Refresh**: Tree view now properly refreshes after "terminate all runtimes" command
-  - Added 500ms delay before refresh to allow server-side processing
-  - Affects both single runtime termination and bulk termination
-  - Files: `src/commands/runtimes.ts:601, 686`
+### Added
 
-### Changed (January 2025)
+- **Agent Chat Sidebar**: AI chat sidebar with agent-runtimes integration ([#349](https://github.com/datalayer/vscode-datalayer/pull/349))
 
-- **BREAKING: Lexical File Extension**: Changed from `.lexical` to `.dlex` ([#133](https://github.com/datalayer/vscode-datalayer/issues/133))
-  - Existing `.lexical` files will continue to work (backward compatible)
-  - New lexical documents created with `.dlex` extension
-  - UI and documentation updated to reflect new extension
-  - Shorter, clearer brand association ("Datalayer Lexical")
+### Fixed
 
-- **Smart Controller**: Disabled `SmartDynamicControllerManager` for native notebook integration
-  - Needs improvement before re-enabling
-  - All code handles null controller safely with optional chaining
-  - File: `src/services/ui/uiSetup.ts:85`
+- **OAuth Windsurf/Cursor Compatibility**: Use `vscode.env.uriScheme` for OAuth callback URIs instead of hardcoded `vscode://`, enabling OAuth login in Windsurf, Cursor, and other VS Code forks ([#369](https://github.com/datalayer/vscode-datalayer/pull/369))
 
-## [0.0.10] - Unreleased
+## [0.0.15] - 2026-04-08
 
-### Major Features
+### Added
 
-#### Two Custom Editors
+- **Projects View**: Projects tree view in sidebar with nested notebooks/documents ([#337](https://github.com/datalayer/vscode-datalayer/pull/337))
+- **TypeScript Strictness**: Enabled `noUncheckedIndexedAccess` for safer array/object access ([#335](https://github.com/datalayer/vscode-datalayer/pull/335))
+- **Webpack Bundle Analyzer**: `npm run analyze` for interactive bundle size reports ([#335](https://github.com/datalayer/vscode-datalayer/pull/335))
+- **Settings Validation**: Centralized Zod validation for all VS Code settings ([#335](https://github.com/datalayer/vscode-datalayer/pull/335))
+- **Code Quality Tooling**: Strict JSDoc enforcement, pre-commit hooks (Husky + lint-staged), commitlint, cspell, README-per-directory checks ([#332](https://github.com/datalayer/vscode-datalayer/pull/332), [#333](https://github.com/datalayer/vscode-datalayer/pull/333))
+- **Extended Test Coverage**: 1,300+ tests across extension and webview suites ([#334](https://github.com/datalayer/vscode-datalayer/pull/334))
 
-- **Jupyter Notebooks** (`.ipynb`): Full notebook editing with cloud runtime execution
-- **Lexical Documents** (`.dlex`): Rich text editing with formatting support
+### Changed
 
-#### Two Tree Views
+- **Dependencies**: Updated all dependencies ([#331](https://github.com/datalayer/vscode-datalayer/pull/331))
 
-- **Datalayer Spaces**: Browse and manage cloud documents (notebooks and lexical docs)
-  - Create, rename, delete documents
-  - Hierarchical space display with default space indicator
-  - Context menu actions
-  - Virtual file system (`datalayer://` URIs)
-- **Datalayer Runtimes**: Manage cloud computational environments
-  - Create new runtimes with environment selection
-  - Terminate single or all runtimes
-  - Monitor runtime status and details
-  - Create snapshots (UI ready, implementation pending)
+### Fixed
 
-#### Runtime Management
+- **Keytar Rebuild**: Removed unnecessary keytar native rebuild step ([#325](https://github.com/datalayer/vscode-datalayer/pull/325))
+- **Bundle Size**: Optimized bundle size and renamed SDK to datalayer ([#313](https://github.com/datalayer/vscode-datalayer/pull/313))
 
-- Automatic runtime creation and reuse
-- Health verification before reuse
-- Dynamic environment loading from API with caching (`EnvironmentCache`)
-- Credits calculation based on duration and environment burning rate
-- Default runtime duration configurable (1-1440 minutes)
+## [0.0.13] - 2026-02-05
 
-#### Authentication System
+### Fixed
 
-- Token-based login with Datalayer platform
-- GitHub profile enrichment for OAuth users
-- Secure storage via VS Code SecretStorage API
-- Status bar integration showing connection state
-- Auth state synchronization across components
+- **Release Workflow**: Updated release workflow and cleaned up formatting
 
-#### Logging Infrastructure
+## [0.0.12] - 2026-02-05
 
-- Three-tier logging system (LoggerManager → ServiceLoggers → Individual Loggers)
-- Configurable log levels: trace, debug, info, warn, error
-- Optional timestamps and context information
-- Datalayer logging integration via adapter
-- Performance monitoring (optional)
+### Added
 
-### Added - Test Infrastructure & Type Safety
+- **Excalidraw, Collapsibles, Tables**: Rich block support in lexical editor ([#250](https://github.com/datalayer/vscode-datalayer/pull/250))
+- **Commenting**: Commenting capabilities in lexical editor ([#213](https://github.com/datalayer/vscode-datalayer/pull/213))
+- **Copy/Download from Space**: Context menu actions for space items ([#239](https://github.com/datalayer/vscode-datalayer/pull/239))
+- **Datasource Management**: Secret handling and datasource CRUD ([#238](https://github.com/datalayer/vscode-datalayer/pull/238))
+- **Autoindent**: Automatic indentation support ([#194](https://github.com/datalayer/vscode-datalayer/pull/194))
 
-- Complete type safety for test infrastructure with strongly-typed interfaces
-- `MockDatalayer` interface with 24+ typed spy methods for Datalayer mocking
-- `MockSpyFunction` interface for type-safe spy functions with call tracking
-- `MockLogger` interface extending `ILogger` for type-safe logger mocks
-- `createMockLogger()` factory function returning properly typed ILogger instances
-- Comprehensive test helpers for async operations, error handling, and event capture
-- Type-safe mock factories for VS Code APIs (ExtensionContext, OutputChannel, StatusBarItem)
+### Changed
 
-### Fixed - Code Quality
+- **Lexical File Extension**: Changed from `.lexical` to `.dlex` ([#174](https://github.com/datalayer/vscode-datalayer/pull/174))
+- **VSIX Bundle**: Audited and optimized bundle size ([#257](https://github.com/datalayer/vscode-datalayer/pull/257))
 
-- 77 ESLint `@typescript-eslint/no-explicit-any` warnings by replacing `any` with `unknown` types
-- 67 TypeScript type-check errors in test files through proper type assertions
-- All test mock types now properly extend VS Code and Datalayer interfaces
-- Type safety in test helpers with proper error handling (`instanceof Error` checks)
-- Mock spy function return type binding for proper type inference
+### Fixed
 
-### Testing
+- **Toolbar Actions**: Fixed toolbar actions for lexicals ([#270](https://github.com/datalayer/vscode-datalayer/pull/270))
+- **Running Kernels**: Fixed kernel execution issues ([#212](https://github.com/datalayer/vscode-datalayer/pull/212))
+- **Pyodide**: Fixed pyodide and datalayer runtimes for native notebooks ([#201](https://github.com/datalayer/vscode-datalayer/pull/201))
+- **Run Cell Block**: Fixed toolbar action for running cell blocks ([#200](https://github.com/datalayer/vscode-datalayer/pull/200))
+- **Tab Completions**: Fixed tab for inline completions ([#199](https://github.com/datalayer/vscode-datalayer/pull/199))
+- **Cell/Document Actions**: Fixed run/cell and other actions on documents ([#192](https://github.com/datalayer/vscode-datalayer/pull/192))
+- **Notebook Sidebar**: Updated docs and fixed notebook sidebar ([#289](https://github.com/datalayer/vscode-datalayer/pull/289))
 
-- ✅ All 41 tests passing (100% success rate)
-- ✅ Zero TypeScript type-check errors
-- ✅ Zero ESLint warnings
-- ✅ Zero TypeDoc documentation errors
-- ✅ 100% documentation coverage maintained (466/466 items)
+## [0.0.9] - 2025-12
 
-### Technical Improvements
+### Added
 
-- Replaced all `as any` type assertions with safer `unknown` types in test code
-- Used targeted `eslint-disable-next-line` only for intentional singleton/private member access
-- Improved type narrowing with proper guards and assertions
-- Enhanced test infrastructure maintainability with strong typing
+- **Pyodide Package Cache**: Fixed pyodide package caching for native notebooks ([#145](https://github.com/datalayer/vscode-datalayer/pull/145))
+- **Icon Font**: Datalayer icon font and native notebook datalayer button ([#155](https://github.com/datalayer/vscode-datalayer/pull/155))
+
+### Fixed
+
+- **Kernel Switching**: Fixed kernel switching and selection ([#166](https://github.com/datalayer/vscode-datalayer/pull/166))
+- **Pyodide on Lexicals**: Fixed pyodide execution on lexical documents ([#175](https://github.com/datalayer/vscode-datalayer/pull/175))
+
+## [0.0.8] - 2025-11
+
+### Added
+
+- **Unified Login**: Unified login handling with TypeScript SDK ([#140](https://github.com/datalayer/vscode-datalayer/pull/140))
+- **Pyodide Kernel**: Pyodide (WebAssembly) kernel integration ([#139](https://github.com/datalayer/vscode-datalayer/pull/139))
+- **Embed Tools**: VS Code embed tools and generalized tool operations for notebooks and lexicals ([#41](https://github.com/datalayer/vscode-datalayer/pull/41))
+
+## [0.0.7] - 2025-10
+
+### Added
+
+- **Autoconnect Strategies**: Configurable autoconnect strategies ([#116](https://github.com/datalayer/vscode-datalayer/pull/116))
+- **Sidebar**: Unified sidebar to group all datalayer views, with outline plugin ([#113](https://github.com/datalayer/vscode-datalayer/pull/113))
+- **Local Kernels**: Local kernel handling for datalayer documents ([#82](https://github.com/datalayer/vscode-datalayer/pull/82))
+- **Snapshots**: Snapshot support ([#104](https://github.com/datalayer/vscode-datalayer/pull/104))
+- **LLM Completions**: Inline LLM completions for lexical ([#103](https://github.com/datalayer/vscode-datalayer/pull/103)) and notebooks ([#100](https://github.com/datalayer/vscode-datalayer/pull/100))
+- **Undo/Redo**: Undo/redo support for notebooks ([#45](https://github.com/datalayer/vscode-datalayer/pull/45)) and lexical ([#102](https://github.com/datalayer/vscode-datalayer/pull/102))
+- **Walkthrough**: Datalayer starter walkthrough ([#85](https://github.com/datalayer/vscode-datalayer/pull/85))
+- **Prefilled Runtime Names**: Default names for runtimes ([#84](https://github.com/datalayer/vscode-datalayer/pull/84))
+- **Document Icons**: Icons for creation of datalayer documents ([#71](https://github.com/datalayer/vscode-datalayer/pull/71))
+- **Kernel Management Menu**: Kernel management options in lexical toolbar ([#64](https://github.com/datalayer/vscode-datalayer/pull/64))
+
+### Fixed
+
+- **Primer Theme**: Created primer VS Code theme ([#106](https://github.com/datalayer/vscode-datalayer/pull/106))
+- **Remote Document Reload**: Correctly support reloading remote documents on restart ([#105](https://github.com/datalayer/vscode-datalayer/pull/105))
+- **Completion Theming**: Fixed completion theming when connected to kernel ([#108](https://github.com/datalayer/vscode-datalayer/pull/108))
+- **Cell Selection**: Fixed VS Code selection inside cells ([#98](https://github.com/datalayer/vscode-datalayer/pull/98))
+- **Styles**: Fixed checkbox styles ([#97](https://github.com/datalayer/vscode-datalayer/pull/97)), sidepanel background ([#95](https://github.com/datalayer/vscode-datalayer/pull/95)), font changes ([#63](https://github.com/datalayer/vscode-datalayer/pull/63)), error messages ([#67](https://github.com/datalayer/vscode-datalayer/pull/67)), theme handling ([#66](https://github.com/datalayer/vscode-datalayer/pull/66))
+- **Race Conditions**: Fixed race conditions and document uniqueness ([#68](https://github.com/datalayer/vscode-datalayer/pull/68))
+- **Empty Files**: Graceful handling of empty files ([#48](https://github.com/datalayer/vscode-datalayer/pull/48))
+- **Lexical Rich Blocks**: Fixed missing rich blocks and toolbar ([#49](https://github.com/datalayer/vscode-datalayer/pull/49))
+
+## [0.0.4] - 2025-10-07
+
+### Added
+
+- Initial public release
+- Jupyter notebook custom editor (`.ipynb`)
+- Lexical document custom editor
+- Datalayer Spaces tree view
+- Datalayer Runtimes tree view
+- Token-based authentication
+- Status bar integration
+- Three-tier logging system
