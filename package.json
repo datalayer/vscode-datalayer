@@ -3,7 +3,7 @@
   "publisher": "Datalayer",
   "displayName": "Datalayer",
   "description": "✨ 🤖 Autonomous Agents for Data Analysis. LLM are bad at data — we fix that.",
-  "version": "0.0.15",
+  "version": "0.0.16",
   "cache_version": "2",
   "icon": "images/datalayer-logo.png",
   "categories": [
