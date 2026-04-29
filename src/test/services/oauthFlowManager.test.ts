@@ -48,6 +48,30 @@ suite("OAuthFlowManager Tests", () => {
     });
   });
 
+  suite("callbackUri", () => {
+    test("uses vscode.env.uriScheme instead of hardcoded scheme", () => {
+      const logger = createMockLogger();
+      const manager = new OAuthFlowManager(context, logger);
+      const uri = manager.callbackUri;
+      assert.ok(
+        uri.startsWith(`${vscode.env.uriScheme}://`),
+        `Expected callbackUri to start with "${vscode.env.uriScheme}://" but got "${uri}"`,
+      );
+      assert.ok(
+        !uri.startsWith("vscode://") || vscode.env.uriScheme === "vscode",
+        'callbackUri must not hardcode "vscode://" scheme',
+      );
+    });
+
+    test("includes extension id and auth path", () => {
+      const logger = createMockLogger();
+      const manager = new OAuthFlowManager(context, logger);
+      const uri = manager.callbackUri;
+      assert.ok(uri.includes("datalayer.datalayer-jupyter-vscode"));
+      assert.ok(uri.endsWith("/auth"));
+    });
+  });
+
   suite("getPendingFlowCount", () => {
     test("returns 0 when no flows pending", () => {
       const logger = createMockLogger();

@@ -93,6 +93,15 @@ export class OAuthFlowManager extends BaseService {
    */
   private uriHandlerDisposable?: vscode.Disposable;
 
+  /**
+   * Callback URI for OAuth flows, using the host editor's URI scheme.
+   *
+   * @returns Callback URI (e.g. `vscode://extensionId/auth` or `windsurf://extensionId/auth`).
+   */
+  get callbackUri(): string {
+    return `${vscode.env.uriScheme}://${this.extensionId}/auth`;
+  }
+
   constructor(context: vscode.ExtensionContext, logger: ILogger) {
     super("OAuthFlowManager", logger);
     this.extensionId = context.extension.id;
@@ -107,7 +116,7 @@ export class OAuthFlowManager extends BaseService {
   protected async onInitialize(): Promise<void> {
     this.logger.info("Initializing OAuth flow manager", {
       extensionId: this.extensionId,
-      expectedCallbackUri: `vscode://${this.extensionId}/auth`,
+      expectedCallbackUri: this.callbackUri,
     });
 
     // Register URI handler for OAuth callbacks
@@ -137,7 +146,7 @@ export class OAuthFlowManager extends BaseService {
     });
 
     this.logger.info("OAuth URI handler registered successfully", {
-      callbackUri: `vscode://${this.extensionId}/auth`,
+      callbackUri: this.callbackUri,
       extensionId: this.extensionId,
     });
   }
@@ -183,9 +192,7 @@ export class OAuthFlowManager extends BaseService {
       nonceLength: state.length,
     });
 
-    // Build callback URI
-    const callbackUri = `vscode://${this.extensionId}/auth`;
-    this.logger.debug("OAuth callback URI", { callbackUri });
+    this.logger.debug("OAuth callback URI", { callbackUri: this.callbackUri });
 
     // Server's state (extracted from OAuth URL)
     let serverState: string | undefined;
@@ -198,7 +205,7 @@ export class OAuthFlowManager extends BaseService {
         async () => {
           const { getOAuth2AuthzUrl } =
             await import("@datalayer/core/lib/api/iam/oauth2");
-          return getOAuth2AuthzUrl(provider, callbackUri, state);
+          return getOAuth2AuthzUrl(provider, this.callbackUri, state);
         },
         {
           provider,
