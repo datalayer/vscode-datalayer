@@ -207,6 +207,14 @@ Open settings (`Ctrl+,` / `Cmd+,`) and search "Datalayer":
 
 ## Recent Updates
 
+### MathJax Stretchy Brackets Fixed (`0.0.16-alpha.11`)
+
+LaTeX commands like `\underbrace`, `\overbrace`, and `\underbracket` now render correctly in notebook markdown cells. Previously these stretchy delimiters appeared blank because the MathJax Size fonts were never loaded. Fixed by importing the MathJax extension's font CSS in the webview entry point.
+
+### Cross-Window Notebook Registry (`0.0.16-alpha.11`)
+
+When an MCP tool call fails to find a notebook locally, it now checks for other active VS Code windows and returns an informative error listing which notebooks are open in other windows and on which port, guiding you to switch to the correct Cascade session or reopen the notebook in the current window.
+
 ### Intelligent Notebook Selection for Cascade (`0.0.16-alpha.2`)
 
 When multiple Datalayer notebooks are open, MCP tool calls now target the correct one automatically:

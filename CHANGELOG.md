@@ -4,6 +4,14 @@ All notable changes to the Datalayer VS Code extension are documented here.
 
 ## [Unreleased]
 
+### Added (April 2025) — `0.0.17-alpha.adp11`
+
+- **Cross-window notebook registry via `globalState`**: New `CrossWindowRegistry` class (`src/mcp/crossWindowRegistry.ts`) uses VS Code's `ExtensionContext.globalState` (shared across all windows) to broadcast each window's open notebooks and MCP port. Every 15 seconds the registry writes a heartbeat + current notebook list; entries older than 45 seconds are treated as stale (window closed). When an MCP tool call fails to find a notebook locally, it now checks `globalState` for other active windows and returns an informative error listing exactly which notebooks are open in other windows and on which port, guiding the user to switch to the correct Cascade session or reopen the notebook in the current window.
+
+### Fixed (April 2025) — `0.0.17-alpha.adp11`
+
+- **MathJax stretchy brackets now render in markdown**: LaTeX commands like `\underbrace`, `\overbrace`, and `\underbracket` now render correctly in notebook markdown cells. Previously these stretchy delimiters appeared blank because the MathJax Size fonts (`MJXTEX-S1..S4`) were never loaded. Fixed by importing `@jupyterlab/mathjax-extension/style/base.css` in the webview entry point, which webpack processes to emit the 22 MathJax WOFF font files and inject the required `@font-face` declarations at runtime.
+
 ### Fixed (April 2025) — `0.0.17-alpha.adp10`
 
 - **Multi-window MCP config now writes to the correct file**: `0.0.16-alpha.9` wrote a workspace-level `.windsurf/mcp.json`, but Windsurf **only** reads `~/.codeium/windsurf/mcp_config.json` — there is no workspace-level config override. The extension now updates the global `mcp_config.json` directly: it reads the existing file, patches only the `datalayer` entry with the claimed port, and writes it back, preserving all other servers. Windsurf hot-reloads the affected server automatically when the file changes (no manual refresh required). The workspace-level `.windsurf/mcp.json` is still written as a transparency artifact.

@@ -36,6 +36,13 @@ import {
   getActiveDatalayerNotebook,
   validateDatalayerNotebook,
 } from "../utils/notebookValidation";
+import { CrossWindowRegistry } from "./crossWindowRegistry";
+
+/**
+ * Cross-window registry instance for this window.
+ * Set once in startMcpServer(); read from the error path in the MCP executor.
+ */
+let crossWindowRegistry: CrossWindowRegistry | undefined;
 
 /** Default MCP HTTP server port. */
 const MCP_DEFAULT_PORT = 3333;
@@ -395,6 +402,21 @@ async function buildMcpExecutionContext(
             `"${names}" is open in the native VS Code notebook viewer, not the Datalayer editor. ` +
               `Right-click the file in the Explorer → "Open With…" → "Datalayer Notebook Editor", ` +
               `then retry. (A notification with a one-click button has also appeared in VS Code.)`,
+          );
+        }
+        // Check whether the notebook is open in another VS Code window.
+        const otherWindows = crossWindowRegistry?.getOtherWindowsSummary() ?? [];
+        if (otherWindows.length > 0) {
+          const lines = otherWindows.map(
+            (w) =>
+              `  • Port ${w.port}: ${w.documents.map((d) => d.filename).join(", ") || "(no documents open)"}`,
+          );
+          throw new Error(
+            `No Datalayer notebook is open in THIS window's editor, but notebooks are open in other VS Code windows:\n` +
+              lines.join("\n") +
+              `\n\nTo fix: switch to the VS Code window with the notebook you want to use — ` +
+              `Cascade there will connect to that window's MCP server automatically. ` +
+              `Or open the notebook in this window via right-click → "Open With…" → "Datalayer Notebook Editor".`,
           );
         }
         throw new Error(
@@ -789,7 +811,7 @@ function buildMcpServer(
  * Each POST to /mcp spins up a fresh McpServer+transport pair so no session
  * state leaks between Cascade requests.
  *
- * @param _context - VS Code extension context (reserved for future use).
+ * @param context - VS Code extension context (used for globalState cross-window registry).
  * @param services - Initialized service container providing auth and VS Code APIs.
  * @param _ui - Extension UI components (reserved for future use).
  *
@@ -798,7 +820,7 @@ function buildMcpServer(
  * @throws Error when no port in the default range is available.
  */
 export async function startMcpServer(
-  _context: import("vscode").ExtensionContext,
+  context: import("vscode").ExtensionContext,
   services: ServiceContainer,
   _ui: ExtensionUI,
 ): Promise<http.Server> {
@@ -883,6 +905,20 @@ export async function startMcpServer(
   // with this window's port. Windsurf hot-reloads the global config on change,
   // so no manual refresh is needed after this write.
   await writeMcpConfig(port, services);
+
+  // Start cross-window registry so other windows (and their Cascade sessions)
+  // can see which notebooks are open here and receive helpful error messages
+  // when they reference a document that lives in a different window.
+  crossWindowRegistry = new CrossWindowRegistry(
+    context,
+    port,
+    services.documentRegistry,
+  );
+  crossWindowRegistry.start();
+  httpServer.on("close", () => {
+    crossWindowRegistry?.dispose();
+    crossWindowRegistry = undefined;
+  });
 
   return httpServer;
 }

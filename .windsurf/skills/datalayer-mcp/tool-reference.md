@@ -127,6 +127,7 @@ datalayer_runAllBlocks               → execute all cells in the report
 | `No Datalayer notebook is open` (after valid `getActiveDocument`) | Notebook was closed between calls | Re-call `getActiveDocument`; confirm notebook still open |
 | `Invalid response: 404 Not Found` on cloud ops | Not authenticated or token expired | Ask user: Command Palette → "Datalayer: Login" |
 | `MCP server not reachable` | Extension not running or port conflict | Reload window; check Datalayer output channel for port number |
+| `No Datalayer notebook is open in THIS window's editor, but notebooks are open in other VS Code windows: • Port XXXX: filename.ipynb` | The requested notebook is in a different VS Code window's MCP server | Switch to the VS Code window that has the notebook open — Cascade there will connect to that window's MCP server automatically. Or reopen the notebook in this window. |
 | Tools succeed but operate on the wrong notebook (different VS Code window) | MCP connected to another window's server (port collision) | On each activation the extension patches `~/.codeium/windsurf/mcp_config.json` with its port (Windsurf hot-reloads automatically). Reload the window you want Windsurf to target, then check the Datalayer output channel to confirm the port. |
 
 ---
