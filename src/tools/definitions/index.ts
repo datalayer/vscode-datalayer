@@ -30,7 +30,11 @@ export * from "./selectKernel";
 // Code execution tools
 export * from "./executeCode";
 
+// Batch execution tool (Code Mode)
+export * from "./batch";
+
 // Import all definitions for registry
+import { batchTool } from "./batch";
 import { createLexicalTool } from "./createLexical";
 import { createNotebookTool } from "./createNotebook";
 import { executeCodeTool } from "./executeCode";
@@ -112,6 +116,9 @@ async function getAllToolDefinitionsAsync(): Promise<ToolDefinition[]> {
     // Code execution (1 unified tool)
     executeCodeTool,
 
+    // Batch execution (Code Mode — 1 meta-tool)
+    batchTool,
+
     // Notebook tools from package (7 tools, excluding executeCode and insertCells)
     ...notebookToolsFiltered,
 
@@ -126,7 +133,7 @@ async function getAllToolDefinitionsAsync(): Promise<ToolDefinition[]> {
  * DEPRECATED: Use getAllToolDefinitionsAsync() instead to avoid loading React at startup.
  * This export is kept for backwards compatibility but will be removed.
  *
- * This includes 22 tools total (after unifying executeCode and filtering broken tools):
+ * This includes 23 tools total (after unifying executeCode and filtering broken tools):
  * - 6 VS Code-specific tools:
  *   - 2 unified smart document creation tools (createNotebook + createLexical)
  *   - 1 VS Code document access tool (getActiveDocument)

@@ -14,6 +14,7 @@ import type { ToolDefinition, ToolOperation } from "@datalayer/jupyter-react";
 import * as vscode from "vscode";
 
 import { getAllToolDefinitionsAsync } from "../definitions";
+import { batchOperation } from "../operations/batch";
 import { createLexicalOperation } from "../operations/createLexical";
 import { createNotebookOperation } from "../operations/createNotebook";
 import { executeCodeOperation } from "../operations/executeCode";
@@ -43,6 +44,8 @@ export interface CombinedOperations {
   createLexical: ToolOperation<unknown, unknown>;
   /** Executes code in a notebook or runtime. */
   executeCode: ToolOperation<unknown, unknown>;
+  /** Executes a batch of operations in one MCP call (Code Mode). */
+  batch: ToolOperation<unknown, unknown>;
   /** Additional operations from notebook and lexical packages. */
   [key: string]: ToolOperation<unknown, unknown>;
 }
@@ -82,6 +85,9 @@ export async function getCombinedOperations(): Promise<CombinedOperations> {
 
     // Unified code execution (overrides package executeCode operations)
     executeCode: executeCodeOperation,
+
+    // Batch execution (Code Mode — runs multiple ops in one MCP call)
+    batch: batchOperation,
   };
 }
 

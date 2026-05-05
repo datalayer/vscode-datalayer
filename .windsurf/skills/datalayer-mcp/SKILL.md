@@ -1,6 +1,6 @@
 ---
 name: datalayer-mcp
-description: This skill is used for working with Jupyter notebooks and Datalayer documents using the Datalayer MCP tools. This is the only correct way to interact with a jupyter notebook.
+description: Use this skill for working with Jupyter notebooks and Datalayer documents using the Datalayer MCP tools. This is the ONLY correct way to interact with a jupyter notebook.
 ---
 
 # Datalayer MCP — The Required Method for Jupyter Notebook Work

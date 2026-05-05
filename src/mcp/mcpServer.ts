@@ -745,6 +745,12 @@ function buildMcpServer(
   const server = new McpServer({ name: "datalayer", version });
 
   for (const definition of definitions) {
+    // datalayer_batch is registered separately below with full closure access
+    // to definitions, operations, and services — skip it in the standard loop.
+    if (definition.name === "datalayer_batch") {
+      continue;
+    }
+
     const operation = operations[definition.operation];
     if (!operation) {
       continue;
@@ -799,6 +805,163 @@ function buildMcpServer(
       },
     );
   }
+
+  // ── Batch tool (Code Mode) ────────────────────────────────────────────────
+  // Registered here rather than through the standard definition→operation loop
+  // so it has closure access to `definitions`, `operations`, and `services`
+  // needed for per-sub-op document resolution via buildMcpExecutionContext.
+  server.registerTool(
+    "datalayer_batch",
+    {
+      title: "Batch Execute Operations",
+      description:
+        "Execute a sequence of Datalayer operations in one call without LLM round-trips between steps. " +
+        "Use this when you have already planned several mechanical steps (e.g. readAllCells → insertCell → runCell → readCell). " +
+        "Each operation runs in order; results are returned as an array. " +
+        "Pass `notebook_uri` or `documentUri` at the top level to target a specific document — these are forwarded to every sub-operation that supports them. " +
+        "Set `stopOnError` to false to continue executing remaining steps after a failure.",
+      inputSchema: {
+        operations: z
+          .array(
+            z.object({
+              tool: z
+                .string()
+                .describe(
+                  "Full tool name, e.g. 'datalayer_insertCell', 'datalayer_runCell'.",
+                ),
+              params: z
+                .record(z.string(), z.unknown())
+                .optional()
+                .describe("Parameters for this tool, identical to calling it directly."),
+            }),
+          )
+          .describe(
+            "Ordered list of operations to execute. Results from earlier steps are not automatically forwarded to later steps — if you need a value (e.g. cell count), retrieve it first with a single tool call, then batch the remaining steps.",
+          ),
+        notebook_uri: z
+          .string()
+          .optional()
+          .describe(
+            "Optional URI of the target notebook. Forwarded to every cell sub-operation. Obtain from datalayer_listOpenDocuments or datalayer_getActiveDocument.",
+          ),
+        documentUri: z
+          .string()
+          .optional()
+          .describe(
+            "Optional URI of the target Lexical document. Forwarded to every block sub-operation. Obtain from datalayer_listOpenDocuments or datalayer_getActiveDocument.",
+          ),
+        stopOnError: z
+          .boolean()
+          .optional()
+          .describe(
+            "If true (default), stop executing remaining steps when one fails. If false, continue and report all errors in results.",
+          ),
+      },
+    },
+    async (args) => {
+      const {
+        operations: subOps,
+        notebook_uri: batchNotebookUri,
+        documentUri: batchDocumentUri,
+        stopOnError = true,
+      } = args as {
+        operations: Array<{ tool: string; params?: Record<string, unknown> }>;
+        notebook_uri?: string;
+        documentUri?: string;
+        stopOnError?: boolean;
+      };
+
+      // Build a name→definition lookup for fast access.
+      const defByName = new Map(definitions.map((d) => [d.name, d]));
+
+      // Validate all tool names upfront — fail fast before executing anything.
+      const unknownTools = subOps
+        .map((op) => op.tool)
+        .filter((name) => !defByName.has(name));
+      if (unknownTools.length > 0) {
+        const validNames = [...defByName.keys()].sort().join(", ");
+        return {
+          isError: true,
+          content: [
+            {
+              type: "text" as const,
+              text:
+                `Error: Unknown tool(s) in batch: ${unknownTools.join(", ")}.\n` +
+                `Valid tool names: ${validNames}`,
+            },
+          ],
+        };
+      }
+
+      const results: Array<{
+        tool: string;
+        index: number;
+        success: boolean;
+        result?: unknown;
+        error?: string;
+      }> = [];
+
+      for (let i = 0; i < subOps.length; i++) {
+        const subOp = subOps[i]!;
+        const definition = defByName.get(subOp.tool)!;
+        const operation = operations[definition.operation];
+
+        if (!operation) {
+          const errMsg = `No operation registered for tool '${subOp.tool}' (operation: '${definition.operation}')`;
+          results.push({ tool: subOp.tool, index: i, success: false, error: errMsg });
+          if (stopOnError) {
+            break;
+          }
+          continue;
+        }
+
+        // Merge batch-level document URIs into sub-op params.
+        // This enables the fast direct-URI path in resolveNotebookId /
+        // resolveLexicalId (one lookup rather than a full tab/registry scan).
+        const mergedParams: Record<string, unknown> = { ...(subOp.params ?? {}) };
+        if (batchNotebookUri && !mergedParams["notebook_uri"]) {
+          mergedParams["notebook_uri"] = batchNotebookUri;
+        }
+        if (batchDocumentUri && !mergedParams["documentUri"]) {
+          mergedParams["documentUri"] = batchDocumentUri;
+        }
+
+        try {
+          const context = await buildMcpExecutionContext(
+            definition,
+            mergedParams,
+            services,
+          );
+          const result = await operation.execute(mergedParams, context);
+          const formatted = formatResponse(result, context.format ?? "toon");
+          results.push({ tool: subOp.tool, index: i, success: true, result: formatted });
+        } catch (error) {
+          const msg = error instanceof Error ? error.message : String(error);
+          results.push({ tool: subOp.tool, index: i, success: false, error: msg });
+          if (stopOnError) {
+            break;
+          }
+        }
+      }
+
+      const succeeded = results.filter((r) => r.success).length;
+      const total = subOps.length;
+      const executed = results.length;
+      const summaryLine =
+        executed < total
+          ? `${succeeded}/${total} succeeded (stopped after step ${executed} due to error)`
+          : `${succeeded}/${total} succeeded`;
+
+      return {
+        content: [
+          {
+            type: "text" as const,
+            text: JSON.stringify({ summary: summaryLine, results }, null, 2),
+          },
+        ],
+      };
+    },
+  );
 
   return server;
 }

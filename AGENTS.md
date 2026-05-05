@@ -54,7 +54,7 @@ Cascade calls tool via MCP  →  same handler → same BridgeExecutor/direct pat
 
 ---
 
-## The 21 Tools
+## The 22 Tools
 
 ### Document Management
 | Tool | Description |
@@ -63,6 +63,7 @@ Cascade calls tool via MCP  →  same handler → same BridgeExecutor/direct pat
 | `datalayer_listOpenDocuments` | List all open notebooks and lexical docs sorted by most-recently-used. Returns URIs for targeting specific docs via `notebook_uri`/`documentUri`. |
 | `datalayer_createNotebook` | Create a local or cloud `.ipynb` notebook |
 | `datalayer_createLexical` | Create a local or cloud `.lexical` document |
+| `datalayer_batch` | **Code Mode meta-tool.** Executes a JSON pipeline of `[{tool, params}]` operations in one MCP call. Eliminates LLM round-trips between mechanical steps. Pass `notebook_uri`/`documentUri` at the top level to forward to all sub-ops. |
 
 ### Kernel & Runtime
 | Tool | Description |
@@ -109,6 +110,8 @@ Cascade calls tool via MCP  →  same handler → same BridgeExecutor/direct pat
 | `src/tools/definitions/` | Tool definition objects (name, description, inputSchema). Local VS Code-specific tools only; notebook/lexical tools come from upstream packages. |
 | `src/tools/definitions/listOpenDocuments.ts` | New: lists all open documents sorted by recency |
 | `src/tools/operations/listOpenDocuments.ts` | New: implementation using `DocumentRegistry.getByType()` |
+| `src/tools/definitions/batch.ts` | `datalayer_batch` tool definition (Code Mode meta-tool) |
+| `src/tools/operations/batch.ts` | Stub operation for VS Code/Copilot path; real logic lives in `mcpServer.ts` |
 | `src/tools/schemas/` | Zod validation schemas per tool |
 | `src/tools/operations/` | Business logic implementations |
 | `src/mcp/mcpServer.ts` | MCP HTTP server — `buildMcpExecutionContext()` contains the tag-based routing logic |
@@ -205,6 +208,8 @@ The actual port is logged to the Datalayer output channel on activation.
 3. **`AGENTS.md`** (this file) — update tool tables, caveats, architecture notes, and key files as needed
 4. **Windsurf skills** — if tool behaviour or schemas change, update **only** `.windsurf/skills/datalayer-mcp/` (the local workspace copy). Do **not** modify `~/.codeium/windsurf/skills/datalayer-mcp/` (the user's global skill, maintained separately outside this repo).
 5. **`package.json`** — bump the version for every releasable change
+6. **`.windsurf/skills/datalayer-mcp/tool-reference.md`** — update the tool reference documentation to reflect the current state of the tools
+7. **`.windsurf/skills/datalayer-mcp/SKILL.md`** — update the skill documentation to reflect the current state of the tools and approach if anything has substantially changed in how the MCP server is meant to be used.
 
 Failing to update these files leaves Cascade and future contributors with stale context, which directly causes the class of bugs seen during this development cycle.
 

@@ -4,6 +4,20 @@ All notable changes to the Datalayer VS Code extension are documented here.
 
 ## [Unreleased]
 
+### Added (May 2025) — `0.0.17-alpha.adp12`
+
+- **`datalayer_batch` tool (Code Mode)**: New meta-tool that executes a sequence of Datalayer operations in a single MCP call, eliminating LLM round-trips between mechanical steps. Inspired by Cloudflare's Code Mode pattern.
+  - Accepts `operations: [{tool, params}]` — a JSON pipeline of any Datalayer tools.
+  - The LLM plans a complete multi-step workflow upfront (e.g. `readAllCells → insertCell → runCell → readCell`) and sends it once; the server executes all steps sequentially and returns an array of results.
+  - Top-level `notebook_uri` / `documentUri` are forwarded to every cell / block sub-operation, enabling the fast direct-URI resolution path.
+  - Upfront validation of all tool names before any execution; immediate error with list of valid names if any are unknown.
+  - `stopOnError` flag (default `true`) — set to `false` to run all steps and collect partial results even when a step fails.
+  - Registered directly in `buildMcpServer()` via closure (not through the standard definition→operation loop) so it has full access to `definitions`, `operations`, and `services` for per-sub-op `buildMcpExecutionContext` calls.
+  - `datalayer_batch` is skipped in the standard MCP registration loop to prevent double-registration.
+  - A lightweight stub `batchOperation` in `src/tools/operations/batch.ts` satisfies `validateToolDefinitions` and the VS Code Copilot tool path (returns a clear error directing callers to the MCP path).
+  - New files: `src/tools/definitions/batch.ts`, `src/tools/operations/batch.ts`.
+
+
 ### Added (April 2025) — `0.0.17-alpha.adp11`
 
 - **Cross-window notebook registry via `globalState`**: New `CrossWindowRegistry` class (`src/mcp/crossWindowRegistry.ts`) uses VS Code's `ExtensionContext.globalState` (shared across all windows) to broadcast each window's open notebooks and MCP port. Every 15 seconds the registry writes a heartbeat + current notebook list; entries older than 45 seconds are treated as stale (window closed). When an MCP tool call fails to find a notebook locally, it now checks `globalState` for other active windows and returns an informative error listing exactly which notebooks are open in other windows and on which port, guiding the user to switch to the correct Cascade session or reopen the notebook in the current window.

@@ -1,6 +1,6 @@
 # Datalayer MCP — Tool Reference
 
-## Tool Catalogue (20 tools)
+## Tool Catalogue (21 tools)
 
 ### Document Management
 
@@ -10,6 +10,7 @@
 | `datalayer_listOpenDocuments` | Returns all open notebooks and lexical docs sorted by most-recently-used. Use when you need to target a specific notebook by URI. |
 | `datalayer_createNotebook` | Create a new `.ipynb`. Defaults to cloud when authenticated, local otherwise. |
 | `datalayer_createLexical` | Create a new `.dlex` document. Same location logic. |
+| `datalayer_batch` | **Code Mode meta-tool.** Execute a JSON pipeline of `[{tool, params}]` operations in one MCP call — no LLM round-trips between steps. Pass `notebook_uri`/`documentUri` at top level to forward to all sub-ops. Set `stopOnError: false` to collect partial results. |
 
 ### Kernel & Runtime
 
@@ -61,7 +62,28 @@ import json
 print(json.dumps({"value": repr(my_var), "type": type(my_var).__name__, "shape": getattr(my_var, "shape", None)}))
 ```
 
-### Add new analysis cells to an existing notebook
+### Add new analysis cells to an existing notebook (single-step batch)
+
+Once you know the cell count, batch the mutations in one call:
+```
+datalayer_getActiveDocument          → get URI
+datalayer_readAllCells               → learn current cell count (N)
+datalayer_batch({
+  notebook_uri: "...",
+  operations: [
+    { tool: "datalayer_insertCell", params: { type: "code", source: "...", index: N } },
+    { tool: "datalayer_runCell",    params: { index: N } },
+    { tool: "datalayer_readCell",   params: { index: N } }
+  ]
+})                                   → insert + run + verify in one round-trip
+```
+
+**When to use `datalayer_batch`:**
+- You've already read the document state and are ready to mutate + verify
+- You have ≥ 2 sequential steps whose params don't depend on intermediate results
+- Keep reads that inform subsequent params (e.g. cell count) as separate upfront calls
+
+### Add new analysis cells to an existing notebook (multi-step, no batch)
 
 ```
 datalayer_getActiveDocument          → get URI, confirm kernel

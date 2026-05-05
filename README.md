@@ -207,6 +207,30 @@ Open settings (`Ctrl+,` / `Cmd+,`) and search "Datalayer":
 
 ## Recent Updates
 
+### `datalayer_batch` Tool — Code Mode (`0.0.16-alpha.12`)
+
+New meta-tool that executes a sequence of Datalayer operations in a single MCP call, eliminating LLM round-trips between mechanical steps. Inspired by Cloudflare's Code Mode pattern.
+
+Instead of:
+```
+LLM → readAllCells → LLM → insertCell → LLM → runCell → LLM → readCell
+```
+
+Cascade can now plan the whole workflow upfront and send it once:
+```json
+datalayer_batch({
+  "operations": [
+    { "tool": "datalayer_readAllCells", "params": {} },
+    { "tool": "datalayer_insertCell",   "params": { "type": "code", "source": "print(42)", "index": 5 } },
+    { "tool": "datalayer_runCell",      "params": { "index": 5 } },
+    { "tool": "datalayer_readCell",     "params": { "index": 5 } }
+  ],
+  "notebook_uri": "..."
+})
+```
+
+The server executes all steps in order and returns an array of results. `stopOnError` (default `true`) halts on the first failure; set to `false` to collect partial results across all steps.
+
 ### MathJax Stretchy Brackets Fixed (`0.0.16-alpha.11`)
 
 LaTeX commands like `\underbrace`, `\overbrace`, and `\underbracket` now render correctly in notebook markdown cells. Previously these stretchy delimiters appeared blank because the MathJax Size fonts were never loaded. Fixed by importing the MathJax extension's font CSS in the webview entry point.
