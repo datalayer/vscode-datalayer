@@ -1025,6 +1025,44 @@ index 0000000..23ced72
 +---
 +
 +Built with ❤️ using React, TypeScript, and modern web technologies.
+diff --git a/node_modules/@datalayer/core/lib/api/DatalayerApi.js b/node_modules/@datalayer/core/lib/api/DatalayerApi.js
+index c43d540..aa837ec 100644
+--- a/node_modules/@datalayer/core/lib/api/DatalayerApi.js
++++ b/node_modules/@datalayer/core/lib/api/DatalayerApi.js
+@@ -11,6 +11,24 @@
+ import { URLExt } from '@jupyterlab/coreutils';
+ import axios from 'axios';
+ import { sleep } from '../utils/Sleep.js';
++function isFormDataBody(body) {
++    if (!body || typeof body !== 'object') {
++        return false;
++    }
++    // `instanceof FormData` is not reliable across realms (e.g. jsdom/undici).
++    if (typeof FormData !== 'undefined' && body instanceof FormData) {
++        return true;
++    }
++    const formDataTag = Object.prototype.toString.call(body);
++    if (formDataTag === '[object FormData]') {
++        return true;
++    }
++    const candidate = body;
++    return (typeof candidate.append === 'function' &&
++        typeof candidate.get === 'function' &&
++        typeof candidate.has === 'function' &&
++        typeof candidate.entries === 'function');
++}
+ /**
+  * Error wrapper for failed HTTP responses.
+  * Includes response details, warnings, errors, and tracebacks.
+@@ -110,7 +128,7 @@ export class NetworkError extends TypeError {
+  */
+ export async function requestDatalayerAPI({ url, method, body, token, signal, headers = {}, }) {
+     // Handle FormData differently from JSON
+-    const isFormData = body instanceof FormData;
++    const isFormData = isFormDataBody(body);
+     // Prepare axios config
+     const axiosConfig = {
+         url,
 diff --git a/node_modules/@datalayer/core/lib/api/iam/oauth2.d.ts b/node_modules/@datalayer/core/lib/api/iam/oauth2.d.ts
 index dd421fb..82d3730 100644
 --- a/node_modules/@datalayer/core/lib/api/iam/oauth2.d.ts
@@ -1079,43 +1117,69 @@ index b17074c..73f3076 100644
   * @param baseUrl - Base URL for the API (defaults to production IAM URL)
   * @returns OAuth2 authorization URL response
 diff --git a/node_modules/@datalayer/core/lib/client/auth/storage.js b/node_modules/@datalayer/core/lib/client/auth/storage.js
-index 8838b64..bbcffce 100644
+index 8838b64..1d20d1c 100644
 --- a/node_modules/@datalayer/core/lib/client/auth/storage.js
 +++ b/node_modules/@datalayer/core/lib/client/auth/storage.js
-@@ -11,6 +11,42 @@
+@@ -11,6 +11,68 @@
   * Token storage backend implementations
   */
  import { DATALAYER_IAM_TOKEN_KEY, DATALAYER_IAM_USER_KEY, } from '../../state/storage/IAMStorage.js';
 +/**
 + * Resolve a real Node `require` function that survives bundling.
 + *
-+ * Webpack/Vite/Rollup all rewrite a string-evaluated require expression
-+ * to their own loader, which has no entry for runtime-only modules like
-+ * `keytar`. `module.createRequire()` is the documented Node API for
-+ * obtaining the actual require, and bundlers forward it unchanged when
-+ * the host targets Node. Returns `null` in non-Node environments and
-+ * `undefined` if neither approach is available.
++ * `module.createRequire()` is the documented Node API for obtaining a
++ * require function that resolves modules against `node_modules`. Three
++ * runtimes need to be supported:
++ *
++ *   1. **Native Node ESM** (this package is `"type": "module"`). The
++ *      global `require` is undefined here, so we resolve `module` via
++ *      `process.getBuiltinModule('module')` (added in Node 22.3 / 20.16).
++ *   2. **Native Node CommonJS** and **bundler-injected CJS shims**
++ *      (e.g. webpack with `target: 'node'`). These expose a working
++ *      global `require`, and `require('module')` resolves to the real
++ *      Node builtin even after bundling.
++ *   3. **Native browser**. None of the above is available; we return
++ *      `null`.
++ *
++ * @returns A real Node `require`, or `null` outside Node, or
++ *   `undefined` if Node is detected but no `createRequire` source is
++ *   reachable (extremely old Node, or a hostile sandbox).
 + */
 +function resolveNodeRequire() {
 +    if (typeof process === 'undefined' || !process.versions?.node) {
 +        return null;
 +    }
++    const fname = typeof __filename !== 'undefined'
++        ? __filename
++        : process.cwd() + '/__datalayer_keytar_loader__.js';
++    // 1. ESM-safe path: process.getBuiltinModule (Node 22.3+ / 20.16+).
++    //    Lets a `"type": "module"` package reach into `module` without a
++    //    CommonJS-only `require`.
++    const nodeProcess = process;
 +    try {
-+        // `require('module')` is left intact by webpack when target: 'node'.
-+        // We use a plain require here rather than ESM `import` because this
-+        // file is consumed by both CJS and ESM tooling.
-+        // eslint-disable-next-line @typescript-eslint/no-var-requires, global-require
-+        const mod = require('module');
++        const mod = nodeProcess.getBuiltinModule?.('module');
 +        if (typeof mod?.createRequire === 'function') {
-+            const fname = typeof __filename !== 'undefined'
-+                ? __filename
-+                : process.cwd() + '/__datalayer_keytar_loader__.js';
 +            return mod.createRequire(fname);
++        }
++    }
++    catch {
++        // Fall through to the CommonJS / bundler path.
++    }
++    // 2. CommonJS path: `require('module')` is left intact by webpack
++    //    when target: 'node'. Also covers older Node CJS where
++    //    getBuiltinModule does not exist.
++    try {
++        if (typeof require === 'function') {
++            const mod = require('module');
++            if (typeof mod?.createRequire === 'function') {
++                return mod.createRequire(fname);
++            }
 +        }
 +    }
 +    catch {
 +        // Fall through to globalThis.require.
 +    }
++    // 3. Last-ditch: a globalThis.require shim from some host environments.
 +    const g = globalThis;
 +    if (typeof g.require === 'function') {
 +        return g.require;
@@ -1125,7 +1189,7 @@ index 8838b64..bbcffce 100644
  /**
   * Browser localStorage-based token storage
   */
-@@ -136,17 +172,44 @@ export class NodeStorage {
+@@ -136,21 +198,50 @@ export class NodeStorage {
              typeof process !== 'undefined' &&
              process.versions?.node) {
              try {
@@ -1145,14 +1209,16 @@ index 8838b64..bbcffce 100644
 +                //
 +                // Why not the previous `string-evaluated require` pattern? Webpack
 +                // rewrites that pattern to its own loader (`__webpack_require__`),
-+                // which has no entry for `keytar` because the require call is
-+                // hidden behind a string and is therefore invisible to webpack's
-+                // static analysis — even when consumers declare keytar as a
-+                // commonjs external. The result was that `this.keytar` silently
-+                // stayed `null` in any webpacked host (e.g. the VS Code
-+                // extension), so tokens written via `setAsync()` only landed in
-+                // the in-memory `Map` and never made it to the OS keyring. They
-+                // appeared to "save" within a session, but vanished on reload.
++                // which has no entry for these runtime-only keyring modules
++                // (`@github/keytar`, `@vscode/keytar`, or legacy `keytar`)
++                // because the require call is hidden behind a string and is
++                // therefore invisible to webpack's static analysis — even when
++                // consumers declare those package IDs as commonjs/runtime
++                // externals. The result was that `this.keytar` silently stayed
++                // `null` in any webpacked host (e.g. the VS Code extension), so
++                // tokens written via `setAsync()` only landed in the in-memory
++                // `Map` and never made it to the OS keyring. They appeared to
++                // "save" within a session, but vanished on reload.
 +                //
 +                // `module.createRequire(...)` is the documented Node API for
 +                // obtaining the real require, and webpack/Vite/Rollup all leave
@@ -1181,30 +1247,943 @@ index 8838b64..bbcffce 100644
                      }
                  }
              }
-diff --git a/node_modules/@datalayer/core/lib/components/display/VisuallyHidden.d.ts b/node_modules/@datalayer/core/lib/components/display/VisuallyHidden.d.ts
-index 9814d57..23d68bc 100644
---- a/node_modules/@datalayer/core/lib/components/display/VisuallyHidden.d.ts
-+++ b/node_modules/@datalayer/core/lib/components/display/VisuallyHidden.d.ts
-@@ -1,5 +1,4 @@
--import { SxProp } from '@primer/react';
- export interface IVisuallyHiddenProps {
-     isVisible?: boolean;
+-            catch (e) {
++            catch {
+                 // Keyring not available, tokens will not persist across sessions
+                 console.warn('keytar not available, tokens will not persist');
+             }
+diff --git a/node_modules/@datalayer/core/lib/client/mixins/SpacerMixin.js b/node_modules/@datalayer/core/lib/client/mixins/SpacerMixin.js
+index 20e21e3..57b2633 100644
+--- a/node_modules/@datalayer/core/lib/client/mixins/SpacerMixin.js
++++ b/node_modules/@datalayer/core/lib/client/mixins/SpacerMixin.js
+@@ -473,8 +473,29 @@ export function SpacerMixin(Base) {
+             // Use getMySpaces and filter by variant, because the
+             // /spaces/types/project endpoint returns empty results.
+             const allSpaces = await this.getMySpaces();
++            const isProjectSpace = (space) => {
++                const raw = space.rawData();
++                const variant = raw?.variant_s ?? space.variant;
++                if (variant !== 'project') {
++                    return false;
++                }
++                const items = Array.isArray(raw?.items)
++                    ? raw.items
++                    : raw?.items && typeof raw.items === 'object'
++                        ? [raw.items]
++                        : [];
++                if (items.length === 0) {
++                    return true;
++                }
++                const hasNotebook = items.some((item) => (item?.type_s ?? item?.type) === 'notebook');
++                const hasDocument = items.some((item) => {
++                    const type = item?.type_s ?? item?.type;
++                    return type === 'document' || type === 'lexical';
++                });
++                return hasNotebook && hasDocument;
++            };
+             return allSpaces
+-                .filter(s => s.variant === 'project')
++                .filter(s => isProjectSpace(s))
+                 .map(s => new ProjectDTO(s.rawData()));
+         }
+         /**
+diff --git a/node_modules/@datalayer/core/lib/collaboration/DatalayerCollaborationProvider.d.ts b/node_modules/@datalayer/core/lib/collaboration/DatalayerCollaborationProvider.d.ts
+index 80c9bcb..bb44d24 100644
+--- a/node_modules/@datalayer/core/lib/collaboration/DatalayerCollaborationProvider.d.ts
++++ b/node_modules/@datalayer/core/lib/collaboration/DatalayerCollaborationProvider.d.ts
+@@ -1,4 +1,3 @@
+-import { YNotebook } from '@jupyter/ydoc';
+ import { WebsocketProvider } from 'y-websocket';
+ import type { ICollaborationProvider, ICollaborationProviderEvents } from '@datalayer/jupyter-react';
+ export declare enum CollaborationStatus {
+@@ -7,6 +6,8 @@ export declare enum CollaborationStatus {
+     Connected = "connected",
+     Error = "error"
  }
--export declare const VisuallyHidden: import("styled-components").StyledComponent<"span", any, IVisuallyHiddenProps & SxProp, never>;
-+export declare const VisuallyHidden: any;
-diff --git a/node_modules/@datalayer/core/lib/components/subnav/SubNav.d.ts b/node_modules/@datalayer/core/lib/components/subnav/SubNav.d.ts
-index c21cad7..9e3947b 100644
---- a/node_modules/@datalayer/core/lib/components/subnav/SubNav.d.ts
-+++ b/node_modules/@datalayer/core/lib/components/subnav/SubNav.d.ts
-@@ -68,7 +68,7 @@ export declare const SubNav: React.NamedExoticComponent<{
-     readonly type: ({ id, children, className, "data-testid": testId, fullWidth, hasShadow, }: SubNavProps) => import("react/jsx-runtime").JSX.Element;
- } & {
-     Heading: ({ href, children, className, "data-testid": testID, ...props }: SubNavHeadingProps) => import("react/jsx-runtime").JSX.Element;
--    Link: React.ForwardRefExoticComponent<Omit<SubNavLinkProps, "ref"> & React.RefAttributes<HTMLDivElement | HTMLAnchorElement>>;
-+    Link: React.ForwardRefExoticComponent<Omit<SubNavLinkProps, "ref"> & React.RefAttributes<HTMLAnchorElement | HTMLDivElement>>;
-     Action: typeof _SubNavAction;
-     SubMenu: typeof SubMenu;
-     testIds: {
++type SharedModel = Parameters<ICollaborationProvider['connect']>[0];
++type ConnectOptions = Parameters<ICollaborationProvider['connect']>[2];
+ /**
+  * Configuration for Datalayer collaboration provider
+  */
+@@ -48,10 +49,10 @@ export declare class DatalayerCollaborationProvider implements ICollaborationPro
+     get isDisposed(): boolean;
+     get events(): ICollaborationProviderEvents;
+     private setStatus;
+-    connect(sharedModel: YNotebook, documentId: string, options?: Record<string, any>): Promise<void>;
++    connect(sharedModel: SharedModel, documentId: string, options?: ConnectOptions): Promise<void>;
+     disconnect(): void;
+     getProvider(): WebsocketProvider | null;
+-    getSharedModel(): YNotebook | null;
++    getSharedModel(): SharedModel | null;
+     handleConnectionClose(event: CloseEvent): void;
+     handleSync(isSynced: boolean): void;
+     dispose(): void;
+diff --git a/node_modules/@datalayer/core/lib/components/checkout/StripeCheckout.d.ts b/node_modules/@datalayer/core/lib/components/checkout/StripeCheckout.d.ts
+index 24a3c62..d5b5d71 100644
+--- a/node_modules/@datalayer/core/lib/components/checkout/StripeCheckout.d.ts
++++ b/node_modules/@datalayer/core/lib/components/checkout/StripeCheckout.d.ts
+@@ -1,3 +1,4 @@
++import type { StripeElementsOptions } from '@stripe/stripe-js';
+ import type { ICheckoutPortal } from '../../models';
+ /**
+  * Price item interface
+@@ -24,9 +25,19 @@ export interface IPrice {
+      */
+     credits: number;
+ }
++export interface ISubscriptionPlan {
++    id: string;
++    name: string;
++    amount: number;
++    currency: string;
++    interval?: string;
++    included_runs?: number;
++}
++export type StripeCheckoutProps = {
++    checkoutPortal: ICheckoutPortal | null;
++    appearance?: StripeElementsOptions['appearance'];
++};
+ /**
+  * Stripe checkout.
+  */
+-export declare function StripeCheckout({ checkoutPortal, }: {
+-    checkoutPortal: ICheckoutPortal | null;
+-}): import("react/jsx-runtime").JSX.Element;
++export declare function StripeCheckout({ checkoutPortal, appearance, }: StripeCheckoutProps): import("react/jsx-runtime").JSX.Element;
+diff --git a/node_modules/@datalayer/core/lib/components/checkout/StripeCheckout.js b/node_modules/@datalayer/core/lib/components/checkout/StripeCheckout.js
+index 8a9a6d5..01d23fb 100644
+--- a/node_modules/@datalayer/core/lib/components/checkout/StripeCheckout.js
++++ b/node_modules/@datalayer/core/lib/components/checkout/StripeCheckout.js
+@@ -1,38 +1,89 @@
+-import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
++import { jsx as _jsx, jsxs as _jsxs, Fragment as _Fragment } from "react/jsx-runtime";
+ /*
+  * Copyright (c) 2023-2025 Datalayer, Inc.
+  * Distributed under the terms of the Modified BSD License.
+  */
+-import { createElement, useCallback, useEffect, useState } from 'react';
++import { createElement, useCallback, useEffect, useMemo, useState, } from 'react';
++import { CardElement, Elements, useElements, useStripe, } from '@stripe/react-stripe-js';
+ import { Button, Flash, FormControl, Spinner, Text } from '@primer/react';
+ import { Box } from '@datalayer/primer-addons';
+ import { useCache } from '../../hooks/index.js';
++const PLAN_INCLUDED_RUNS_DEFAULTS = {
++    starter: 1000,
++    free: 1000,
++    team: 5000,
++    pro: 5000,
++    enterprise: 50000,
++};
++const asNumber = (value) => {
++    const parsed = Number(value);
++    return Number.isFinite(parsed) ? parsed : null;
++};
++const asPositiveNumber = (value) => {
++    const parsed = asNumber(value);
++    return parsed !== null && parsed > 0 ? parsed : null;
++};
++const asNonNegativeNumber = (value) => {
++    const parsed = asNumber(value);
++    return parsed !== null && parsed >= 0 ? parsed : null;
++};
++function StripePaymentForm({ clientSecret, onPaymentSucceeded, }) {
++    const stripe = useStripe();
++    const elements = useElements();
++    const [isSubmitting, setIsSubmitting] = useState(false);
++    const [errorMessage, setErrorMessage] = useState(null);
++    const handleSubmit = useCallback(async (event) => {
++        event.preventDefault();
++        if (!stripe || !elements) {
++            return;
++        }
++        const card = elements.getElement(CardElement);
++        if (!card) {
++            setErrorMessage('Payment form is not ready yet. Please try again.');
++            return;
++        }
++        setIsSubmitting(true);
++        setErrorMessage(null);
++        const result = await stripe.confirmCardPayment(clientSecret, {
++            payment_method: {
++                card,
++            },
++        });
++        if (result.error) {
++            setErrorMessage(result.error.message || 'Payment failed. Please try again.');
++            setIsSubmitting(false);
++            return;
++        }
++        if (result.paymentIntent?.status === 'succeeded') {
++            onPaymentSucceeded();
++        }
++        setIsSubmitting(false);
++    }, [clientSecret, elements, onPaymentSucceeded, stripe]);
++    return (_jsxs(Box, { as: "form", onSubmit: handleSubmit, sx: { display: 'grid', gap: 3 }, children: [_jsx(CardElement, {}), errorMessage && _jsx(Flash, { variant: "danger", children: errorMessage }), _jsx(Button, { variant: "primary", type: "submit", disabled: !stripe || isSubmitting, children: isSubmitting ? 'Processing payment...' : 'Pay now' })] }));
++}
+ /**
+  * Stripe checkout.
+  */
+-export function StripeCheckout({ checkoutPortal, }) {
+-    const { useCreateCheckoutSession, useStripePrices } = useCache();
++export function StripeCheckout({ checkoutPortal, appearance, }) {
++    const { useCreateTopUpPaymentIntent, useCreateSubscriptionPaymentIntent, useSubscriptionPlans, useTopUpPrices, useSubscriptionStatus, useCancelSubscription, } = useCache();
+     const [stripe, setStripe] = useState(null);
+-    const [components, setComponents] = useState(null);
+-    const [items, setItems] = useState(null);
++    const [paymentClientSecret, setPaymentClientSecret] = useState(null);
+     const [product, setProduct] = useState(null);
++    const [subscriptionPlan, setSubscriptionPlan] = useState(null);
+     const [checkout, setCheckout] = useState(false);
++    const [checkoutType, setCheckoutType] = useState('topup');
++    const [cancelViewOpen, setCancelViewOpen] = useState(false);
++    const [paymentMessage, setPaymentMessage] = useState(null);
+     // Get Stripe prices using TanStack Query hook
+-    const { data: pricesData } = useStripePrices();
+-    // Update items when prices data changes
+-    useEffect(() => {
+-        if (pricesData) {
+-            setItems(pricesData);
+-        }
+-    }, [pricesData]);
++    const { data: pricesData } = useTopUpPrices();
++    const items = pricesData ?? null;
++    const { data: plansData } = useSubscriptionPlans();
++    const plans = useMemo(() => plansData ?? [], [plansData]);
++    const { data: subscriptionResp } = useSubscriptionStatus();
++    const cancelSubscriptionMutation = useCancelSubscription();
+     // Get checkout session mutation
+-    const checkoutSessionMutation = useCreateCheckoutSession();
+-    // Load stripe components.
+-    useEffect(() => {
+-        import('@stripe/react-stripe-js').then(module => {
+-            setComponents(module);
+-        });
+-    }, []);
++    const topUpPaymentIntentMutation = useCreateTopUpPaymentIntent();
++    const subscriptionPaymentIntentMutation = useCreateSubscriptionPaymentIntent();
+     // Load stripe API
+     useEffect(() => {
+         if (checkoutPortal?.metadata?.stripe_key) {
+@@ -41,34 +92,388 @@ export function StripeCheckout({ checkoutPortal, }) {
+             });
+         }
+     }, [checkoutPortal?.metadata?.stripe_key]);
+-    const fetchClientSecret = useCallback(async () => {
+-        const location = document.location;
+-        // Create a Checkout Session using TanStack Query mutation
+-        const result = await checkoutSessionMutation.mutateAsync({
+-            product,
+-            location,
+-        });
+-        return result;
+-    }, [checkoutSessionMutation, product]);
+-    const options = { fetchClientSecret };
++    const paymentOptions = useMemo(() => {
++        if (!paymentClientSecret) {
++            return null;
++        }
++        return {
++            clientSecret: paymentClientSecret,
++            ...(appearance ? { appearance } : {}),
++        };
++    }, [appearance, paymentClientSecret]);
++    const elementsAppearanceKey = useMemo(() => {
++        if (!appearance) {
++            return 'default';
++        }
++        try {
++            return JSON.stringify(appearance);
++        }
++        catch {
++            return String(appearance?.theme ?? 'default');
++        }
++    }, [appearance]);
++    const onPaymentSucceeded = useCallback(() => {
++        setCheckout(false);
++        setPaymentClientSecret(null);
++        setProduct(null);
++        setSubscriptionPlan(null);
++        if (checkoutType === 'subscription') {
++            setPaymentMessage('Subscription payment confirmed. Your plan status may take a few seconds to refresh.');
++        }
++        else {
++            setPaymentMessage('Payment confirmed. Credits update may take a few seconds.');
++        }
++    }, [checkoutType]);
++    const subscription = subscriptionResp?.subscription || null;
++    const availablePlans = useMemo(() => {
++        const byId = new Map();
++        const add = (plan) => {
++            const id = plan?.id;
++            if (!id || typeof id !== 'string') {
++                return;
++            }
++            byId.set(id, {
++                id,
++                name: String(plan?.name || id),
++                amount: Number(plan?.amount || 0),
++                currency: String(plan?.currency || 'usd'),
++                interval: plan?.interval,
++                included_runs: typeof plan?.included_runs === 'number'
++                    ? plan.included_runs
++                    : undefined,
++            });
++        };
++        plans.forEach(add);
++        (subscriptionResp?.available_subscriptions || []).forEach(add);
++        return Array.from(byId.values());
++    }, [plans, subscriptionResp?.available_subscriptions]);
++    const rawCurrentSubscriptionPlan = subscription?.plan_name ||
++        subscription?.plan?.name ||
++        subscription?.plan ||
++        'Free';
++    const currentSubscriptionPlan = useMemo(() => {
++        const raw = String(rawCurrentSubscriptionPlan || 'Free');
++        const byId = availablePlans.find(plan => plan.id === raw);
++        if (byId?.name) {
++            return byId.name;
++        }
++        return raw;
++    }, [availablePlans, rawCurrentSubscriptionPlan]);
++    const subscriptionPortalUrl = subscriptionResp?.portal?.url || checkoutPortal?.url;
++    const subscriptionStatus = subscription?.status || subscription?.subscription_status || 'unknown';
++    const normalizedSubscriptionStatus = String(subscriptionStatus).toLowerCase();
++    const displaySubscriptionStatus = normalizedSubscriptionStatus && normalizedSubscriptionStatus !== 'unknown'
++        ? String(subscriptionStatus).replaceAll('_', ' ')
++        : null;
++    const isIncompleteSubscription = normalizedSubscriptionStatus.includes('incomplete');
++    const normalizedPlanName = String(currentSubscriptionPlan).toLowerCase();
++    const planIncludedRuns = asPositiveNumber(plans.find(plan => plan.name && normalizedPlanName.includes(plan.name.toLowerCase()))?.included_runs);
++    const defaultIncludedRuns = planIncludedRuns ||
++        Object.entries(PLAN_INCLUDED_RUNS_DEFAULTS).find(([planKey]) => normalizedPlanName.includes(planKey))?.[1] ||
++        null;
++    const resolvedIncludedRuns = asPositiveNumber(subscription?.included_runs) ||
++        asPositiveNumber(subscription?.plan?.included_runs) ||
++        asPositiveNumber(subscription?.metadata?.included_runs) ||
++        defaultIncludedRuns;
++    const usedRuns = asNonNegativeNumber(subscription?.used_runs) ||
++        asNonNegativeNumber(subscription?.usage?.used_runs) ||
++        asNonNegativeNumber(subscription?.metadata?.used_runs) ||
++        0;
++    const remainingRuns = resolvedIncludedRuns === null
++        ? null
++        : Math.max(0, (resolvedIncludedRuns ?? 0) - usedRuns);
++    const hasBillablePlan = useMemo(() => {
++        const normalizedPlan = String(currentSubscriptionPlan).toLowerCase();
++        const freeLike = normalizedPlan.includes('free') ||
++            normalizedPlan.includes('trial') ||
++            normalizedPlan === 'unknown' ||
++            normalizedPlan === 'none';
++        return !freeLike;
++    }, [currentSubscriptionPlan]);
++    const isPaidSubscription = useMemo(() => {
++        const normalizedStatus = String(subscriptionStatus).toLowerCase();
++        if (!hasBillablePlan) {
++            return false;
++        }
++        if (normalizedStatus.includes('incomplete') ||
++            normalizedStatus.includes('canceled') ||
++            normalizedStatus.includes('cancelled') ||
++            normalizedStatus.includes('free') ||
++            normalizedStatus === 'unknown') {
++            return false;
++        }
++        return ['active', 'trialing', 'past_due', 'paid'].includes(normalizedStatus);
++    }, [hasBillablePlan, subscriptionStatus]);
++    const canCancelSubscription = useMemo(() => {
++        if (!hasBillablePlan) {
++            return false;
++        }
++        const status = String(subscriptionStatus).toLowerCase();
++        const nonCancelable = status.includes('canceled') ||
++            status.includes('cancelled') ||
++            status.includes('free') ||
++            status === 'unknown';
++        return !nonCancelable;
++    }, [hasBillablePlan, subscriptionStatus]);
++    const hasTopUpAccess = useMemo(() => {
++        const normalizedPlan = String(currentSubscriptionPlan).toLowerCase();
++        const normalizedStatus = String(subscriptionStatus).toLowerCase();
++        const freeLike = normalizedPlan.includes('free') ||
++            normalizedPlan.includes('trial') ||
++            normalizedStatus.includes('free') ||
++            normalizedStatus.includes('canceled') ||
++            normalizedStatus.includes('cancelled');
++        if (freeLike) {
++            return false;
++        }
++        return ['active', 'trialing', 'paid', 'past_due'].includes(normalizedStatus);
++    }, [currentSubscriptionPlan, subscriptionStatus]);
++    // Temporary business override: allow top-up even when monthly subscription
++    // is not active, while still encouraging an upgrade path.
++    const isTemporaryFreeTopUpAllowed = true;
++    const canBuyTopUp = hasTopUpAccess || (!isPaidSubscription && isTemporaryFreeTopUpAllowed);
++    useEffect(() => {
++        if (!isPaidSubscription && !subscriptionPlan && plans.length > 0) {
++            setSubscriptionPlan(plans[0]);
++        }
++    }, [isPaidSubscription, plans, subscriptionPlan]);
++    const startCheckout = useCallback(async () => {
++        if (!product || !canBuyTopUp) {
++            if (!canBuyTopUp) {
++                setPaymentMessage('Monthly subscription required before buying top-up credits.');
++            }
++            return;
++        }
++        setPaymentMessage(null);
++        setCheckoutType('topup');
++        setCheckout(true);
++        try {
++            const clientSecret = await topUpPaymentIntentMutation.mutateAsync({
++                product,
++            });
++            if (!clientSecret) {
++                setPaymentClientSecret(null);
++                setCheckout(false);
++                setPaymentMessage('Unable to initialize Stripe checkout. Please try again.');
++                return;
++            }
++            setPaymentClientSecret(clientSecret);
++        }
++        catch (error) {
++            const detail = error instanceof Error
++                ? error.message
++                : 'Unable to initialize Stripe checkout. Please try again.';
++            setPaymentClientSecret(null);
++            setCheckout(false);
++            setPaymentMessage(detail);
++        }
++    }, [topUpPaymentIntentMutation, canBuyTopUp, product]);
++    const startSubscriptionCheckout = useCallback(async () => {
++        if (!subscriptionPlan) {
++            setPaymentMessage('Select a monthly subscription plan first.');
++            return;
++        }
++        setPaymentMessage(null);
++        try {
++            const clientSecret = await subscriptionPaymentIntentMutation.mutateAsync({
++                plan: subscriptionPlan,
++            });
++            if (!clientSecret) {
++                setPaymentClientSecret(null);
++                setCheckout(false);
++                setPaymentMessage('Unable to initialize Stripe checkout. Please try again.');
++                return;
++            }
++            setPaymentClientSecret(clientSecret);
++            setCheckoutType('subscription');
++            setCheckout(true);
++        }
++        catch (error) {
++            const detail = error instanceof Error
++                ? error.message
++                : 'Unable to initialize Stripe checkout. Please try again.';
++            setPaymentClientSecret(null);
++            setCheckout(false);
++            setPaymentMessage(detail);
++        }
++    }, [subscriptionPaymentIntentMutation, subscriptionPlan]);
++    const openPortal = useCallback((url) => {
++        if (!url) {
++            return;
++        }
++        window.open(url, '_blank', 'noreferrer');
++    }, []);
++    const cancelStripeCheckout = useCallback(() => {
++        setCheckout(false);
++        setPaymentClientSecret(null);
++        setPaymentMessage(null);
++    }, []);
++    const onCancelSubscription = useCallback(() => {
++        setPaymentMessage(null);
++        setCancelViewOpen(true);
++    }, []);
++    const onAbortCancelView = useCallback(() => {
++        setCancelViewOpen(false);
++    }, []);
++    const onConfirmCancelSubscription = useCallback(async () => {
++        setPaymentMessage(null);
++        try {
++            const resp = await cancelSubscriptionMutation.mutateAsync();
++            setPaymentMessage(resp?.message || 'Subscription cancellation requested successfully.');
++            setCancelViewOpen(false);
++        }
++        catch (error) {
++            setPaymentMessage(error instanceof Error
++                ? error.message
++                : 'Unable to cancel subscription right now.');
++        }
++    }, [cancelSubscriptionMutation]);
++    const selectedCheckoutLabel = useMemo(() => {
++        if (checkoutType === 'subscription' && subscriptionPlan) {
++            const amount = new Intl.NumberFormat(undefined, {
++                style: 'currency',
++                currency: subscriptionPlan.currency,
++            }).format((subscriptionPlan.amount || 0) / 100);
++            return `${subscriptionPlan.name} (${amount}${subscriptionPlan.interval ? ` / ${subscriptionPlan.interval}` : ''})`;
++        }
++        if (checkoutType === 'topup' && product) {
++            const amount = new Intl.NumberFormat(undefined, {
++                style: 'currency',
++                currency: product.currency,
++            }).format((product.amount || 0) / 100);
++            return `${product.name} (${amount}, ${product.credits} credits)`;
++        }
++        return null;
++    }, [checkoutType, product, subscriptionPlan]);
++    const topCards = (_jsxs(Box, { sx: {
++            display: 'grid',
++            gap: 'var(--stack-gap-normal)',
++            gridTemplateColumns: ['1fr', 'minmax(0, 1fr) minmax(0, 1fr)'],
++            marginBottom: 'var(--stack-gap-normal)',
++        }, children: [_jsxs(Box, { sx: {
++                    order: [2, 1],
++                    border: '1px solid',
++                    borderColor: 'border.default',
++                    borderRadius: 'var(--borderRadius-medium)',
++                    backgroundColor: 'canvas.default',
++                    padding: 'var(--stack-padding-normal)',
++                }, children: [_jsx(Text, { as: "h3", sx: {
++                            fontWeight: 'bold',
++                            marginBottom: 'var(--stack-gap-condensed)',
++                        }, children: "Subscription status" }), _jsxs(Text, { as: "p", children: ["Plan: ", String(currentSubscriptionPlan)] }), displaySubscriptionStatus && (_jsxs(Text, { as: "p", sx: { marginBottom: 'var(--stack-gap-condensed)' }, children: ["Status: ", displaySubscriptionStatus] })), remainingRuns !== null && (_jsx(Text, { as: "p", sx: { marginBottom: 'var(--stack-gap-normal)' }, children: `Included runs remaining this period: ${remainingRuns.toLocaleString()}` })), _jsxs(Box, { sx: {
++                            display: 'flex',
++                            gap: 'var(--stack-gap-condensed)',
++                            flexWrap: 'wrap',
++                        }, children: [subscriptionPortalUrl && (_jsx(Button, { variant: "default", onClick: () => openPortal(subscriptionPortalUrl), children: "Open Stripe billing portal" })), canCancelSubscription && (_jsx(Button, { variant: "danger", onClick: onCancelSubscription, children: "Cancel subscription" }))] }), _jsxs(Text, { as: "p", sx: { color: 'fg.muted', marginTop: 'var(--stack-gap-normal)' }, children: ["Next step:", ' ', isIncompleteSubscription
++                                ? 'Your payment is pending. Open the in-app cancel view below to cancel this subscription or continue with payment.'
++                                : isPaidSubscription
++                                    ? 'Keep your subscription active. Top-up credits are available for active monthly subscribers.'
++                                    : 'Choose a monthly subscription, then buy top-up credits as needed.'] }), cancelViewOpen && (_jsxs(Box, { sx: {
++                            marginTop: 'var(--stack-gap-normal)',
++                            border: '1px solid',
++                            borderColor: 'border.default',
++                            borderRadius: 'var(--borderRadius-medium)',
++                            backgroundColor: 'canvas.subtle',
++                            padding: 'var(--stack-padding-normal)',
++                            display: 'grid',
++                            gap: 'var(--stack-gap-condensed)',
++                        }, children: [_jsx(Text, { as: "h4", sx: { fontWeight: 'bold' }, children: "Cancel Subscription In App" }), _jsx(Text, { as: "p", sx: { color: 'fg.muted' }, children: isIncompleteSubscription
++                                    ? 'This pending subscription will be canceled immediately.'
++                                    : 'Your subscription will be canceled at the end of the current billing period.' }), _jsxs(Box, { sx: {
++                                    display: 'flex',
++                                    gap: 'var(--stack-gap-condensed)',
++                                    flexWrap: 'wrap',
++                                }, children: [_jsx(Button, { variant: "danger", onClick: () => void onConfirmCancelSubscription(), disabled: cancelSubscriptionMutation.isPending, children: cancelSubscriptionMutation.isPending
++                                            ? 'Cancelling...'
++                                            : 'Confirm cancellation' }), _jsx(Button, { variant: "default", onClick: onAbortCancelView, disabled: cancelSubscriptionMutation.isPending, children: "Keep subscription" })] })] }))] }), _jsxs(Box, { sx: {
++                    order: [1, 2],
++                    border: '1px solid',
++                    borderColor: 'border.default',
++                    borderRadius: 'var(--borderRadius-medium)',
++                    backgroundColor: 'canvas.default',
++                    padding: 'var(--stack-padding-normal)',
++                }, children: [_jsx(Text, { as: "h3", sx: {
++                            fontWeight: 'bold',
++                            marginBottom: 'var(--stack-gap-condensed)',
++                        }, children: "Choose a monthly subscription" }), isIncompleteSubscription ? (_jsx(Text, { as: "p", sx: { color: 'fg.muted' }, children: "A pending subscription already exists. Complete payment or cancel it from the billing portal before creating a new one." })) : !isPaidSubscription ? (_jsxs(_Fragment, { children: [_jsxs(Box, { role: "radiogroup", sx: {
++                                    display: 'grid',
++                                    gap: 'var(--stack-gap-condensed)',
++                                    maxHeight: '260px',
++                                    overflowY: 'auto',
++                                    marginBottom: 'var(--stack-gap-normal)',
++                                }, children: [plans.map(plan => (_jsx(Box, { role: "radio", "aria-labelledby": `subscription-plan-${plan.id}`, "aria-checked": subscriptionPlan?.id === plan.id, onClick: () => setSubscriptionPlan(plan), sx: {
++                                            borderStyle: 'solid',
++                                            borderRadius: 'var(--borderRadius-medium)',
++                                            borderWidth: 'var(--borderWidth-thick)',
++                                            borderColor: subscriptionPlan?.id === plan.id
++                                                ? 'var(--borderColor-accent-emphasis)'
++                                                : 'var(--borderColor-default)',
++                                            padding: 'var(--stack-padding-condensed)',
++                                            cursor: 'pointer',
++                                        }, children: _jsxs(FormControl, { sx: { alignItems: 'center' }, children: [_jsx(FormControl.Label, { id: `subscription-plan-${plan.id}`, sx: { alignSelf: 'center' }, children: plan.name }), _jsxs(Text, { as: "p", children: [new Intl.NumberFormat(undefined, {
++                                                            style: 'currency',
++                                                            currency: plan.currency,
++                                                        }).format((plan.amount || 0) / 100), plan.interval ? ` / ${plan.interval}` : ''] }), typeof plan.included_runs === 'number' && (_jsxs(Text, { as: "p", children: [plan.included_runs, " included runs"] }))] }) }, plan.id))), plans.length === 0 && (_jsx(Text, { as: "p", sx: { color: 'fg.muted' }, children: "No monthly subscription plans available right now." }))] }), _jsx(Button, { variant: "primary", onClick: () => void startSubscriptionCheckout(), disabled: !subscriptionPlan ||
++                                    subscriptionPaymentIntentMutation.isPending ||
++                                    checkout, children: subscriptionPaymentIntentMutation.isPending
++                                    ? 'Preparing Team plan checkout...'
++                                    : 'Update to Team Plan' })] })) : (_jsx(Text, { as: "p", sx: { color: 'fg.muted' }, children: "Your monthly subscription is active. You can manage plan details from subscription controls." }))] })] }));
+     let view = (_jsx(Box, { sx: { minHeight: '40px' }, children: _jsx(Spinner, {}) }));
+     if (checkout) {
+-        if (stripe && components) {
+-            view = createElement(Box, { id: 'checkout', sx: { flex: '1 1 auto' } }, createElement(components.EmbeddedCheckoutProvider, { stripe, options }, createElement(components.EmbeddedCheckout)));
++        if (stripe && paymentOptions && paymentClientSecret) {
++            view = createElement(Box, { id: 'checkout', sx: { flex: '1 1 auto', display: 'grid', gap: 3 } }, topCards, createElement(Box, {
++                sx: {
++                    border: '1px solid',
++                    borderColor: 'border.default',
++                    borderRadius: 'var(--borderRadius-medium)',
++                    backgroundColor: 'canvas.default',
++                    padding: 'var(--stack-padding-normal)',
++                    display: 'flex',
++                    gap: 'var(--stack-gap-normal)',
++                    alignItems: 'center',
++                    justifyContent: 'space-between',
++                    flexWrap: 'wrap',
++                },
++            }, createElement(Text, { as: 'p' }, selectedCheckoutLabel
++                ? `Selected for checkout: ${selectedCheckoutLabel}`
++                : 'Selected for checkout'), createElement(Button, { variant: 'default', onClick: cancelStripeCheckout }, 'Cancel')), createElement(Elements, {
++                key: `${checkoutType}-${paymentClientSecret ?? 'none'}-${elementsAppearanceKey}`,
++                stripe,
++                options: paymentOptions,
++            }, createElement(StripePaymentForm, {
++                clientSecret: paymentClientSecret,
++                onPaymentSucceeded,
++            })));
++        }
++        else {
++            view = (_jsxs(Box, { sx: { flex: '1 1 auto', display: 'grid', gap: 3 }, children: [topCards, _jsxs(Box, { sx: {
++                            border: '1px solid',
++                            borderColor: 'border.default',
++                            borderRadius: 'var(--borderRadius-medium)',
++                            backgroundColor: 'canvas.default',
++                            padding: 'var(--stack-padding-normal)',
++                            display: 'flex',
++                            gap: 'var(--stack-gap-normal)',
++                            alignItems: 'center',
++                            justifyContent: 'space-between',
++                            flexWrap: 'wrap',
++                        }, children: [_jsx(Text, { as: "p", children: "Preparing Stripe checkout\u2026" }), _jsx(Button, { variant: "default", onClick: cancelStripeCheckout, children: "Cancel" })] })] }));
+         }
+     }
+     else if (items) {
+         view = items.length ? (_jsxs(Box, { sx: { flex: '1 1 auto' }, onKeyDown: event => {
+                 if (product && event.key === 'Enter') {
+-                    setCheckout(true);
++                    void startCheckout();
+                 }
+-            }, children: [_jsx(Text, { as: "h3", children: "Choose a credits package" }), _jsx(Box, { role: "radiogroup", sx: {
++            }, children: [topCards, paymentMessage && (_jsx(Flash, { variant: canBuyTopUp ? 'success' : 'warning', sx: { mt: 3 }, children: paymentMessage })), !hasTopUpAccess && canBuyTopUp && (_jsx(Flash, { variant: "warning", sx: { mt: 3, mb: 3 }, children: "Monthly subscription is normally required. Temporary allowance is enabled: you can buy top-up credits now. Update to Team Plan for included monthly runs." })), !canBuyTopUp && (_jsx(Flash, { variant: "warning", sx: { mt: 3, mb: 3 }, children: "Monthly subscription required. Activate a monthly plan first, then top-up credits will be available." })), _jsx(Text, { as: "h3", children: "Choose a credits package" }), _jsx(Box, { role: "radiogroup", sx: {
+                         display: 'grid',
+                         gap: 'var(--stack-gap-normal)',
+                         gridTemplateColumns: Array(items.length).fill('1fr').join(' '),
+                         padding: 'var(--stack-padding-normal) 0',
+                     }, children: items.map(item => (_jsx(Box, { role: "radio", "aria-labelledby": `checkout-price-${item.id}`, "aria-checked": product?.id === item.id, onClick: () => {
+-                            setProduct(item);
++                            if (canBuyTopUp) {
++                                setProduct(item);
++                            }
+                         }, sx: {
+                             borderStyle: 'solid',
+                             borderRadius: 'var(--borderRadius-medium)',
+@@ -77,15 +482,21 @@ export function StripeCheckout({ checkoutPortal, }) {
+                                 ? 'var(--borderColor-accent-emphasis)'
+                                 : 'var(--borderColor-default)',
+                             padding: 'var(--stack-padding-condensed)',
+-                            cursor: 'pointer',
++                            cursor: canBuyTopUp ? 'pointer' : 'not-allowed',
++                            opacity: canBuyTopUp ? 1 : 0.6,
+                         }, children: _jsxs(FormControl, { sx: {
+                                 alignItems: 'center',
+                             }, children: [_jsx(FormControl.Label, { id: `checkout-price-${item.id}`, sx: { alignSelf: 'center' }, children: item.name }), _jsx(Text, { as: "p", children: new Intl.NumberFormat(undefined, {
+                                         style: 'currency',
+                                         currency: item.currency,
+-                                    }).format(item.amount / 100) }), _jsxs(Text, { as: "p", children: [item.credits, " credits"] })] }, item.id) }))) }), _jsx(Button, { variant: "primary", onClick: () => {
+-                        setCheckout(true);
+-                    }, disabled: product === null, sx: { float: 'right' }, children: "Checkout" })] })) : (_jsx(Box, { children: _jsx(Flash, { variant: "danger", children: "Unable to fetch the available products. Please try again later." }) }));
++                                    }).format(item.amount / 100) }), _jsxs(Text, { as: "p", children: [item.credits, " credits"] })] }) }, item.id))) }), _jsx(Button, { variant: "primary", onClick: () => {
++                        void startCheckout();
++                    }, disabled: product === null ||
++                        !canBuyTopUp ||
++                        topUpPaymentIntentMutation.isPending ||
++                        checkout, sx: { float: 'right' }, children: topUpPaymentIntentMutation.isPending
++                        ? 'Preparing top-up checkout...'
++                        : 'Checkout' })] })) : (_jsxs(Box, { children: [topCards, _jsx(Flash, { variant: "danger", children: "Unable to fetch the available products. Please try again later." })] }));
+     }
+     return view;
+ }
+diff --git a/node_modules/@datalayer/core/lib/components/checkout/ThemedStripeCheckout.d.ts b/node_modules/@datalayer/core/lib/components/checkout/ThemedStripeCheckout.d.ts
+new file mode 100644
+index 0000000..40a53ff
+--- /dev/null
++++ b/node_modules/@datalayer/core/lib/components/checkout/ThemedStripeCheckout.d.ts
+@@ -0,0 +1,17 @@
++import type { ICheckoutPortal } from '../../models';
++export type ThemedStripeCheckoutProps = {
++    checkoutPortal: ICheckoutPortal | null;
++    /**
++     * Primer color mode. Accepts 'light' | 'dark' | 'auto' | 'day' | 'night'.
++     * If omitted, falls back to Primer's `useTheme()` context, then to DOM.
++     */
++    colorMode?: 'light' | 'dark' | 'auto' | 'day' | 'night' | string;
++    /**
++     * Primer theme object (e.g. from `useTheme().theme`). Used to derive
++     * Stripe appearance tokens. If omitted, falls back to Primer context, then
++     * to CSS variables on `:root`.
++     */
++    theme?: unknown;
++};
++export declare function ThemedStripeCheckout({ checkoutPortal, colorMode, theme, }: ThemedStripeCheckoutProps): import("react/jsx-runtime").JSX.Element;
++export default ThemedStripeCheckout;
+diff --git a/node_modules/@datalayer/core/lib/components/checkout/ThemedStripeCheckout.js b/node_modules/@datalayer/core/lib/components/checkout/ThemedStripeCheckout.js
+new file mode 100644
+index 0000000..7c8545d
+--- /dev/null
++++ b/node_modules/@datalayer/core/lib/components/checkout/ThemedStripeCheckout.js
+@@ -0,0 +1,203 @@
++import { jsx as _jsx } from "react/jsx-runtime";
++/*
++ * Copyright (c) 2023-2025 Datalayer, Inc.
++ * Distributed under the terms of the Modified BSD License.
++ */
++import { useEffect, useMemo, useState } from 'react';
++import { useTheme } from '@primer/react';
++import { StripeCheckout } from './StripeCheckout.js';
++const readColorModeFromDom = () => {
++    if (typeof window === 'undefined') {
++        return 'light';
++    }
++    const rootMode = document.documentElement
++        .getAttribute('data-color-mode')
++        ?.toLowerCase();
++    if (rootMode === 'dark' || rootMode === 'light') {
++        return rootMode;
++    }
++    if (rootMode === 'auto') {
++        const darkTheme = document.documentElement
++            .getAttribute('data-dark-theme')
++            ?.toLowerCase();
++        if (darkTheme && darkTheme !== 'light') {
++            return 'dark';
++        }
++    }
++    const bodyMode = document.body
++        ?.getAttribute('data-color-mode')
++        ?.toLowerCase();
++    if (bodyMode === 'dark' || bodyMode === 'light') {
++        return bodyMode;
++    }
++    if (bodyMode === 'auto') {
++        const darkTheme = document.body
++            ?.getAttribute('data-dark-theme')
++            ?.toLowerCase();
++        if (darkTheme && darkTheme !== 'light') {
++            return 'dark';
++        }
++    }
++    const cssMode = readCssVar('--base-color-mode', '').toLowerCase();
++    if (cssMode === 'dark' || cssMode === 'light') {
++        return cssMode;
++    }
++    return window.matchMedia?.('(prefers-color-scheme: dark)').matches
++        ? 'dark'
++        : 'light';
++};
++const readCssVar = (name, fallback) => {
++    if (typeof window === 'undefined') {
++        return fallback;
++    }
++    const value = getComputedStyle(document.documentElement)
++        .getPropertyValue(name)
++        .trim();
++    return value || fallback;
++};
++const readThemeColor = (names, fallback) => {
++    for (const name of names) {
++        const value = readCssVar(name, '').trim();
++        if (value) {
++            return value;
++        }
++    }
++    return fallback;
++};
++const themeColorFromPrimer = (theme, path) => {
++    let cursor = theme;
++    for (const key of path) {
++        if (cursor && typeof cursor === 'object' && key in cursor) {
++            cursor = cursor[key];
++        }
++        else {
++            return null;
++        }
++    }
++    return typeof cursor === 'string' && cursor.trim() ? cursor.trim() : null;
++};
++const resolveAppearance = (mode, primerTheme) => {
++    const isDark = mode === 'dark';
++    const pick = (primerPath, cssNames, fallback) => {
++        const fromPrimer = primerTheme
++            ? themeColorFromPrimer(primerTheme, primerPath)
++            : null;
++        if (fromPrimer) {
++            return fromPrimer;
++        }
++        return readThemeColor(cssNames, fallback);
++    };
++    const colorPrimary = pick(['colors', 'accent', 'fg'], ['--fgColor-accent', '--color-accent-fg', '--color-accent-emphasis'], isDark ? '#58a6ff' : '#0969da');
++    const colorText = pick(['colors', 'fg', 'default'], ['--fgColor-default', '--color-fg-default'], isDark ? '#e6edf3' : '#1f2328');
++    const colorTextSecondary = pick(['colors', 'fg', 'muted'], ['--fgColor-muted', '--color-fg-muted'], isDark ? '#8b949e' : '#59636e');
++    const colorBackground = pick(['colors', 'canvas', 'default'], ['--bgColor-default', '--color-canvas-default'], isDark ? '#0d1117' : '#ffffff');
++    const colorSurface = pick(['colors', 'canvas', 'subtle'], ['--bgColor-muted', '--color-canvas-subtle'], isDark ? '#161b22' : '#f6f8fa');
++    const colorBorder = pick(['colors', 'border', 'default'], ['--borderColor-default', '--color-border-default'], isDark ? '#30363d' : '#d0d7de');
++    const colorDanger = pick(['colors', 'danger', 'fg'], ['--fgColor-danger', '--color-danger-fg'], isDark ? '#ff7b72' : '#d1242f');
++    const colorSuccess = pick(['colors', 'success', 'fg'], ['--fgColor-success', '--color-success-fg'], isDark ? '#3fb950' : '#1a7f37');
++    return {
++        theme: isDark ? 'night' : 'stripe',
++        variables: {
++            colorPrimary,
++            colorText,
++            colorTextSecondary,
++            colorBackground,
++            colorDanger,
++            colorSuccess,
++            colorIcon: colorTextSecondary,
++            colorIconHover: colorText,
++            colorPrimaryText: colorBackground,
++            colorTextPlaceholder: colorTextSecondary,
++            borderRadius: '8px',
++            spacingUnit: '4px',
++            fontFamily: readThemeColor(['--base-text-font-family', '--fontStack-sansSerif'], 'system-ui, -apple-system, Segoe UI, sans-serif'),
++        },
++        rules: {
++            '.Input': {
++                backgroundColor: colorBackground,
++                border: `1px solid ${colorBorder}`,
++                boxShadow: 'none',
++            },
++            '.Input:focus': {
++                border: `1px solid ${colorPrimary}`,
++                boxShadow: `0 0 0 1px ${colorPrimary}`,
++            },
++            '.Label': {
++                color: colorText,
++            },
++            '.Tab': {
++                backgroundColor: colorSurface,
++                color: colorTextSecondary,
++            },
++            '.Tab:hover': {
++                color: colorText,
++            },
++            '.Tab--selected': {
++                backgroundColor: colorPrimary,
++                color: colorBackground,
++            },
++            '.Error': {
++                color: colorDanger,
++            },
++            '.Text': {
++                color: colorText,
++            },
++            '.Footer': {
++                display: 'none',
++            },
++            '.TermsText': {
++                display: 'none',
++            },
++            '.PoweredByStripe': {
++                display: 'none',
++            },
++            '.p-PoweredByStripe': {
++                display: 'none',
++            },
++        },
++    };
++};
++export function ThemedStripeCheckout({ checkoutPortal, colorMode, theme, }) {
++    // Fallback source: Primer's theme context (only if props are not provided).
++    const primer = useTheme();
++    const effectiveTheme = theme ?? primer?.theme;
++    const effectiveColorMode = useMemo(() => {
++        const value = String(colorMode ?? primer?.resolvedColorMode ?? primer?.colorMode ?? '').toLowerCase();
++        if (value === 'night' || value === 'dark')
++            return 'dark';
++        if (value === 'day' || value === 'light')
++            return 'light';
++        return readColorModeFromDom();
++    }, [colorMode, primer?.resolvedColorMode, primer?.colorMode]);
++    const [appearance, setAppearance] = useState(() => resolveAppearance(effectiveColorMode, effectiveTheme));
++    useEffect(() => {
++        setAppearance(resolveAppearance(effectiveColorMode, effectiveTheme));
++    }, [effectiveColorMode, effectiveTheme]);
++    // Safety net: react to DOM attribute changes if no explicit prop driving updates.
++    useEffect(() => {
++        if (typeof window === 'undefined') {
++            return;
++        }
++        const recompute = () => setAppearance(resolveAppearance(effectiveColorMode, effectiveTheme));
++        const observer = new MutationObserver(recompute);
++        observer.observe(document.documentElement, {
++            attributes: true,
++            attributeFilter: [
++                'data-color-mode',
++                'data-light-theme',
++                'data-dark-theme',
++                'style',
++                'class',
++            ],
++        });
++        if (document.body) {
++            observer.observe(document.body, {
++                attributes: true,
++                attributeFilter: ['data-color-mode', 'style', 'class'],
++            });
++        }
++        return () => observer.disconnect();
++    }, [effectiveColorMode, effectiveTheme]);
++    return (_jsx(StripeCheckout, { checkoutPortal: checkoutPortal, appearance: appearance }));
++}
++export default ThemedStripeCheckout;
+diff --git a/node_modules/@datalayer/core/lib/components/checkout/index.d.ts b/node_modules/@datalayer/core/lib/components/checkout/index.d.ts
+index 6a72006..e68e7ef 100644
+--- a/node_modules/@datalayer/core/lib/components/checkout/index.d.ts
++++ b/node_modules/@datalayer/core/lib/components/checkout/index.d.ts
+@@ -1 +1,2 @@
+ export * from './StripeCheckout';
++export * from './ThemedStripeCheckout';
+diff --git a/node_modules/@datalayer/core/lib/components/checkout/index.js b/node_modules/@datalayer/core/lib/components/checkout/index.js
+index 25d1bc3..e70b3c0 100644
+--- a/node_modules/@datalayer/core/lib/components/checkout/index.js
++++ b/node_modules/@datalayer/core/lib/components/checkout/index.js
+@@ -3,3 +3,4 @@
+  * Distributed under the terms of the Modified BSD License.
+  */
+ export * from './StripeCheckout.js';
++export * from './ThemedStripeCheckout.js';
+diff --git a/node_modules/@datalayer/core/lib/components/tokens/SpaceVariantToken.d.ts b/node_modules/@datalayer/core/lib/components/tokens/SpaceVariantToken.d.ts
+index 16b6ea8..bcd828a 100644
+--- a/node_modules/@datalayer/core/lib/components/tokens/SpaceVariantToken.d.ts
++++ b/node_modules/@datalayer/core/lib/components/tokens/SpaceVariantToken.d.ts
+@@ -1,5 +1,5 @@
+ import { ISpaceVariant } from '../../models';
+ export declare const SpaceVariantToken: (props: {
+-    variant: ISpaceVariant;
++    variant: ISpaceVariant | string;
+ }) => import("react/jsx-runtime").JSX.Element;
+ export default SpaceVariantToken;
+diff --git a/node_modules/@datalayer/core/lib/components/tokens/SpaceVariantToken.js b/node_modules/@datalayer/core/lib/components/tokens/SpaceVariantToken.js
+index aa6d0fa..c031833 100644
+--- a/node_modules/@datalayer/core/lib/components/tokens/SpaceVariantToken.js
++++ b/node_modules/@datalayer/core/lib/components/tokens/SpaceVariantToken.js
+@@ -1,4 +1,4 @@
+-import { jsx as _jsx, Fragment as _Fragment } from "react/jsx-runtime";
++import { jsx as _jsx } from "react/jsx-runtime";
+ /*
+  * Copyright (c) 2023-2025 Datalayer, Inc.
+  * Distributed under the terms of the Modified BSD License.
+@@ -7,14 +7,17 @@ import { Token } from '@primer/react';
+ import { ProjectIcon } from '@primer/octicons-react';
+ import { StudentIcon } from '@datalayer/icons-react';
+ export const SpaceVariantToken = (props) => {
+-    const { variant } = props;
++    const variant = String(props.variant || 'default').toLowerCase();
++    if (variant.includes('project')) {
++        return _jsx(Token, { text: "project", leadingVisual: ProjectIcon });
++    }
+     switch (variant) {
+         case 'default':
+-            return _jsx(Token, { text: "default", leadingVisual: ProjectIcon });
++            return _jsx(Token, { text: "default" });
+         case 'course':
+             return _jsx(Token, { text: "course", leadingVisual: StudentIcon });
+         default:
+-            return _jsx(_Fragment, {});
++            return _jsx(Token, { text: String(variant || 'default') });
+     }
+ };
+ export default SpaceVariantToken;
 diff --git a/node_modules/@datalayer/core/lib/examples/README.md b/node_modules/@datalayer/core/lib/examples/README.md
 new file mode 100644
 index 0000000..c79268c
@@ -1422,17 +2401,553 @@ index 0000000..c79268c
 +- [Jupyter React Components](https://jupyter-react.datalayer.tech/)
 +- [TypeScript API Reference](https://core.datalayer.tech/typescript/)
 +- [Platform API Reference](https://prod1.datalayer.run/api/runtimes/v1/ui/)
-diff --git a/node_modules/@datalayer/core/lib/models/PageTag.d.ts b/node_modules/@datalayer/core/lib/models/PageTag.d.ts
-index 8d06781..48e70ad 100644
---- a/node_modules/@datalayer/core/lib/models/PageTag.d.ts
-+++ b/node_modules/@datalayer/core/lib/models/PageTag.d.ts
-@@ -15,5 +15,5 @@ export type PageTag = {
- export declare const PAGE_TAGE_NONE: PageTag;
- export declare const PAGE_TAGS: PageTag[];
- export declare const PAGE_TAGS_BY_NAME_MAP: Map<PageTagName | undefined, PageTag>;
--export declare const PAGE_TAGS_BY_COLOR_MAP: Map<"blue" | "coral" | "gray" | "green" | "indigo" | "lime" | "orange" | "pink" | "purple" | "red" | "teal" | "yellow" | "default" | "lemon", PageTag>;
-+export declare const PAGE_TAGS_BY_COLOR_MAP: Map<"default" | "yellow" | "blue" | "coral" | "green" | "gray" | "indigo" | "lemon" | "lime" | "orange" | "pink" | "purple" | "red" | "teal", PageTag>;
- export {};
+diff --git a/node_modules/@datalayer/core/lib/hooks/useCache.d.ts b/node_modules/@datalayer/core/lib/hooks/useCache.d.ts
+index f0681e9..324febc 100644
+--- a/node_modules/@datalayer/core/lib/hooks/useCache.d.ts
++++ b/node_modules/@datalayer/core/lib/hooks/useCache.d.ts
+@@ -220,6 +220,12 @@ export declare const queryKeys: {
+         readonly userById: (userId: string) => readonly ["usages", "user", string];
+         readonly platform: () => readonly ["usages", "platform"];
+     };
++    readonly credits: {
++        readonly organizationOverview: (organizationUid: string) => readonly ["credits", "allocations", "organization", string];
++        readonly organizationHistory: (organizationUid: string) => readonly ["credits", "allocations", "organization", string, "history"];
++        readonly teamOverview: (teamUid: string) => readonly ["credits", "allocations", "team", string];
++        readonly teamHistory: (teamUid: string) => readonly ["credits", "allocations", "team", string, "history"];
++    };
+     readonly prices: {
+         readonly stripe: () => readonly ["prices", "stripe"];
+     };
+@@ -363,6 +369,30 @@ export declare const useCache: ({ loginRoute }?: CacheProps) => {
+         userId: string;
+         roleName: string;
+     }, unknown>;
++    useOrganizationAllocationOverview: (organizationUid: string) => import("@tanstack/react-query").UseQueryResult<any, Error>;
++    useOrganizationAllocationHistory: (organizationUid: string) => import("@tanstack/react-query").UseQueryResult<any, Error>;
++    useTeamAllocationOverview: (teamUid: string) => import("@tanstack/react-query").UseQueryResult<any, Error>;
++    useTeamAllocationHistory: (teamUid: string) => import("@tanstack/react-query").UseQueryResult<any, Error>;
++    useAllocateOrganizationCreditsToTeam: () => import("@tanstack/react-query").UseMutationResult<any, Error, {
++        organizationUid: string;
++        teamUid: string;
++        amount: number;
++    }, unknown>;
++    useAllocateTeamCreditsToMember: () => import("@tanstack/react-query").UseMutationResult<any, Error, {
++        teamUid: string;
++        memberUid: string;
++        amount: number;
++    }, unknown>;
++    useRevokeOrganizationCreditsFromTeam: () => import("@tanstack/react-query").UseMutationResult<any, Error, {
++        organizationUid: string;
++        teamUid: string;
++        amount: number;
++    }, unknown>;
++    useRevokeTeamCreditsFromMember: () => import("@tanstack/react-query").UseMutationResult<any, Error, {
++        teamUid: string;
++        memberUid: string;
++        amount: number;
++    }, unknown>;
+     useUpdateUserCreditsQuota: () => import("@tanstack/react-query").UseMutationResult<any, Error, {
+         userId: string;
+         quota?: number;
+@@ -780,12 +810,17 @@ export declare const useCache: ({ loginRoute }?: CacheProps) => {
+         userUid: string;
+         code: string;
+     }, unknown>;
+-    useCreateCheckoutSession: () => import("@tanstack/react-query").UseMutationResult<any, Error, {
++    useCreateTopUpPaymentIntent: () => import("@tanstack/react-query").UseMutationResult<any, Error, {
+         product: any;
+-        location: Location;
+     }, unknown>;
++    useCreateSubscriptionPaymentIntent: () => import("@tanstack/react-query").UseMutationResult<any, Error, {
++        plan: any;
++    }, unknown>;
++    useSubscriptionStatus: (options?: Omit<UseQueryOptions<any>, "queryKey" | "queryFn">) => import("@tanstack/react-query").UseQueryResult<any, Error>;
++    useSubscriptionPlans: (options?: Omit<UseQueryOptions<unknown[]>, "queryKey" | "queryFn">) => import("@tanstack/react-query").UseQueryResult<unknown[], Error>;
++    useCancelSubscription: () => import("@tanstack/react-query").UseMutationResult<any, Error, void, unknown>;
+     useBurnCredit: () => import("@tanstack/react-query").UseMutationResult<any, Error, number, unknown>;
+-    useStripePrices: (options?: Omit<UseQueryOptions<unknown[]>, "queryKey" | "queryFn">) => import("@tanstack/react-query").UseQueryResult<unknown[], Error>;
++    useTopUpPrices: (options?: Omit<UseQueryOptions<unknown[]>, "queryKey" | "queryFn">) => import("@tanstack/react-query").UseQueryResult<unknown[], Error>;
+     useRequestPlatformSupport: () => import("@tanstack/react-query").UseMutationResult<any, Error, {
+         subject: string;
+         message: string;
+@@ -971,6 +1006,12 @@ export declare const useCache: ({ loginRoute }?: CacheProps) => {
+             readonly userById: (userId: string) => readonly ["usages", "user", string];
+             readonly platform: () => readonly ["usages", "platform"];
+         };
++        readonly credits: {
++            readonly organizationOverview: (organizationUid: string) => readonly ["credits", "allocations", "organization", string];
++            readonly organizationHistory: (organizationUid: string) => readonly ["credits", "allocations", "organization", string, "history"];
++            readonly teamOverview: (teamUid: string) => readonly ["credits", "allocations", "team", string];
++            readonly teamHistory: (teamUid: string) => readonly ["credits", "allocations", "team", string, "history"];
++        };
+         readonly prices: {
+             readonly stripe: () => readonly ["prices", "stripe"];
+         };
+diff --git a/node_modules/@datalayer/core/lib/hooks/useCache.js b/node_modules/@datalayer/core/lib/hooks/useCache.js
+index ec1bcbc..b9836bb 100644
+--- a/node_modules/@datalayer/core/lib/hooks/useCache.js
++++ b/node_modules/@datalayer/core/lib/hooks/useCache.js
+@@ -284,6 +284,19 @@ export const queryKeys = {
+         userById: (userId) => ['usages', 'user', userId],
+         platform: () => ['usages', 'platform'],
+     },
++    // Credits allocations
++    credits: {
++        organizationOverview: (organizationUid) => ['credits', 'allocations', 'organization', organizationUid],
++        organizationHistory: (organizationUid) => [
++            'credits',
++            'allocations',
++            'organization',
++            organizationUid,
++            'history',
++        ],
++        teamOverview: (teamUid) => ['credits', 'allocations', 'team', teamUid],
++        teamHistory: (teamUid) => ['credits', 'allocations', 'team', teamUid, 'history'],
++    },
+     // Prices
+     prices: {
+         stripe: () => ['prices', 'stripe'],
+@@ -1314,7 +1327,9 @@ export const useCache = ({ loginRoute = '/login' } = {}) => {
+             mutationFn: async (space) => {
+                 const { id, name, description, ...extraFields } = space;
+                 return requestDatalayer({
+-                    url: `${configuration.spacerRunUrl}/api/spacer/v1/spaces/${id}/users/${user?.id}`,
++                    // Use the canonical space update route. This keeps project runtime
++                    // assignment cleanup resilient when stale runtime links must be cleared.
++                    url: `${configuration.spacerRunUrl}/api/spacer/v1/spaces/${id}`,
+                     method: 'PUT',
+                     body: {
+                         name,
+@@ -4311,14 +4326,14 @@ export const useCache = ({ loginRoute = '/login' } = {}) => {
+     // Checkout & Credits
+     // ============================================================================
+     /**
+-     * Get Stripe pricing information
++     * Get Stripe top-up pricing information
+      */
+-    const useStripePrices = (options) => {
++    const useTopUpPrices = (options) => {
+         return useQuery({
+-            queryKey: ['stripe', 'prices'],
++            queryKey: ['stripe', 'topup', 'prices'],
+             queryFn: async () => {
+                 const resp = await requestDatalayer({
+-                    url: `${configuration.iamRunUrl}/api/iam/stripe/v1/prices`,
++                    url: `${configuration.iamRunUrl}/api/iam/stripe/v1/topup/prices`,
+                     method: 'GET',
+                 });
+                 return resp.prices || [];
+@@ -4327,23 +4342,87 @@ export const useCache = ({ loginRoute = '/login' } = {}) => {
+         });
+     };
+     /**
+-     * Create Stripe checkout session
++     * Create Stripe top-up payment intent client secret
+      */
+-    const useCreateCheckoutSession = () => {
++    const useCreateTopUpPaymentIntent = () => {
+         return useMutation({
+-            mutationFn: async ({ product, location, }) => {
++            mutationFn: async ({ product, }) => {
+                 const resp = await requestDatalayer({
+-                    url: `${configuration.iamRunUrl}/api/iam/stripe/v1/checkout/session`,
++                    url: `${configuration.iamRunUrl}/api/iam/stripe/v1/topup/payment-intent`,
+                     method: 'POST',
+                     body: {
+                         price_id: product?.id,
+-                        return_url: `${location.protocol}//${location.host}${location.pathname.split('/').slice(0, -1).join('/')}`,
+                     },
+                 });
+                 return resp.client_secret;
+             },
+         });
+     };
++    /**
++     * Get available monthly subscription plans.
++     */
++    const useSubscriptionPlans = (options) => {
++        return useQuery({
++            queryKey: ['subscription', 'plans'],
++            queryFn: async () => {
++                const resp = await requestDatalayer({
++                    url: `${configuration.iamRunUrl}/api/iam/v1/subscription/plans`,
++                    method: 'GET',
++                });
++                return resp.plans || [];
++            },
++            ...options,
++        });
++    };
++    /**
++     * Create Stripe monthly subscription payment intent client secret.
++     */
++    const useCreateSubscriptionPaymentIntent = () => {
++        return useMutation({
++            mutationFn: async ({ plan, }) => {
++                const resp = await requestDatalayer({
++                    url: `${configuration.iamRunUrl}/api/iam/stripe/v1/subscription/payment-intent`,
++                    method: 'POST',
++                    body: {
++                        price_id: plan?.id,
++                    },
++                });
++                return resp.client_secret;
++            },
++        });
++    };
++    /**
++     * Get authenticated user subscription details.
++     */
++    const useSubscriptionStatus = (options) => {
++        return useQuery({
++            queryKey: ['subscription', 'status'],
++            queryFn: async () => {
++                return requestDatalayer({
++                    url: `${configuration.iamRunUrl}/api/iam/v1/subscription`,
++                    method: 'GET',
++                });
++            },
++            ...options,
++        });
++    };
++    /**
++     * Request cancellation portal for the current subscription.
++     */
++    const useCancelSubscription = () => {
++        const queryClient = useQueryClient();
++        return useMutation({
++            mutationFn: async () => {
++                return requestDatalayer({
++                    url: `${configuration.iamRunUrl}/api/iam/v1/subscription/cancel`,
++                    method: 'POST',
++                });
++            },
++            onSuccess: () => {
++                queryClient.invalidateQueries({ queryKey: ['subscription', 'status'] });
++            },
++        });
++    };
+     /**
+      * Burn user credits (deduct from balance)
+      */
+@@ -4733,6 +4812,174 @@ export const useCache = ({ loginRoute = '/login' } = {}) => {
+     // ============================================================================
+     // Credits Quota & Usage
+     // ============================================================================
++    /**
++     * Get organization/team balances for allocation workflows
++     */
++    const useOrganizationAllocationOverview = (organizationUid) => {
++        return useQuery({
++            queryKey: queryKeys.credits.organizationOverview(organizationUid),
++            queryFn: async () => {
++                const resp = await requestDatalayer({
++                    url: `${configuration.iamRunUrl}/api/iam/v1/usage/credits/allocations/organizations/${organizationUid}/overview`,
++                    method: 'GET',
++                });
++                return resp.overview ?? { organization: null, teams: [] };
++            },
++            ...DEFAULT_QUERY_OPTIONS,
++            enabled: !!organizationUid,
++        });
++    };
++    /**
++     * Get team/member balances for allocation workflows
++     */
++    const useTeamAllocationOverview = (teamUid) => {
++        return useQuery({
++            queryKey: queryKeys.credits.teamOverview(teamUid),
++            queryFn: async () => {
++                const resp = await requestDatalayer({
++                    url: `${configuration.iamRunUrl}/api/iam/v1/usage/credits/allocations/teams/${teamUid}/overview`,
++                    method: 'GET',
++                });
++                return resp.overview ?? { team: null, members: [] };
++            },
++            ...DEFAULT_QUERY_OPTIONS,
++            enabled: !!teamUid,
++        });
++    };
++    /**
++     * Get organization allocation history
++     */
++    const useOrganizationAllocationHistory = (organizationUid) => {
++        return useQuery({
++            queryKey: queryKeys.credits.organizationHistory(organizationUid),
++            queryFn: async () => {
++                const resp = await requestDatalayer({
++                    url: `${configuration.iamRunUrl}/api/iam/v1/usage/credits/allocations/organizations/${organizationUid}/history`,
++                    method: 'GET',
++                });
++                return (resp.history ?? { organization_uid: organizationUid, events: [] });
++            },
++            ...DEFAULT_QUERY_OPTIONS,
++            enabled: !!organizationUid,
++        });
++    };
++    /**
++     * Get team allocation history
++     */
++    const useTeamAllocationHistory = (teamUid) => {
++        return useQuery({
++            queryKey: queryKeys.credits.teamHistory(teamUid),
++            queryFn: async () => {
++                const resp = await requestDatalayer({
++                    url: `${configuration.iamRunUrl}/api/iam/v1/usage/credits/allocations/teams/${teamUid}/history`,
++                    method: 'GET',
++                });
++                return resp.history ?? { team_uid: teamUid, events: [] };
++            },
++            ...DEFAULT_QUERY_OPTIONS,
++            enabled: !!teamUid,
++        });
++    };
++    /**
++     * Allocate credits from organization to team
++     */
++    const useAllocateOrganizationCreditsToTeam = () => {
++        return useMutation({
++            mutationFn: async ({ organizationUid, teamUid, amount, }) => {
++                return requestDatalayer({
++                    url: `${configuration.iamRunUrl}/api/iam/v1/usage/credits/allocations/organizations/${organizationUid}/teams/${teamUid}`,
++                    method: 'POST',
++                    body: { amount },
++                });
++            },
++            onSuccess: (_, { organizationUid, teamUid }) => {
++                queryClient.invalidateQueries({
++                    queryKey: queryKeys.credits.organizationOverview(organizationUid),
++                });
++                queryClient.invalidateQueries({
++                    queryKey: queryKeys.credits.organizationHistory(organizationUid),
++                });
++                queryClient.invalidateQueries({
++                    queryKey: queryKeys.credits.teamOverview(teamUid),
++                });
++                queryClient.invalidateQueries({
++                    queryKey: queryKeys.credits.teamHistory(teamUid),
++                });
++            },
++        });
++    };
++    /**
++     * Allocate credits from team to member
++     */
++    const useAllocateTeamCreditsToMember = () => {
++        return useMutation({
++            mutationFn: async ({ teamUid, memberUid, amount, }) => {
++                return requestDatalayer({
++                    url: `${configuration.iamRunUrl}/api/iam/v1/usage/credits/allocations/teams/${teamUid}/members/${memberUid}`,
++                    method: 'POST',
++                    body: { amount },
++                });
++            },
++            onSuccess: (_, { teamUid }) => {
++                queryClient.invalidateQueries({
++                    queryKey: queryKeys.credits.teamOverview(teamUid),
++                });
++                queryClient.invalidateQueries({
++                    queryKey: queryKeys.credits.teamHistory(teamUid),
++                });
++            },
++        });
++    };
++    /**
++     * Revoke credits from team back to organization
++     */
++    const useRevokeOrganizationCreditsFromTeam = () => {
++        return useMutation({
++            mutationFn: async ({ organizationUid, teamUid, amount, }) => {
++                return requestDatalayer({
++                    url: `${configuration.iamRunUrl}/api/iam/v1/usage/credits/allocations/organizations/${organizationUid}/teams/${teamUid}/revoke`,
++                    method: 'POST',
++                    body: { amount },
++                });
++            },
++            onSuccess: (_, { organizationUid, teamUid }) => {
++                queryClient.invalidateQueries({
++                    queryKey: queryKeys.credits.organizationOverview(organizationUid),
++                });
++                queryClient.invalidateQueries({
++                    queryKey: queryKeys.credits.organizationHistory(organizationUid),
++                });
++                queryClient.invalidateQueries({
++                    queryKey: queryKeys.credits.teamOverview(teamUid),
++                });
++                queryClient.invalidateQueries({
++                    queryKey: queryKeys.credits.teamHistory(teamUid),
++                });
++            },
++        });
++    };
++    /**
++     * Revoke credits from member back to team
++     */
++    const useRevokeTeamCreditsFromMember = () => {
++        return useMutation({
++            mutationFn: async ({ teamUid, memberUid, amount, }) => {
++                return requestDatalayer({
++                    url: `${configuration.iamRunUrl}/api/iam/v1/usage/credits/allocations/teams/${teamUid}/members/${memberUid}/revoke`,
++                    method: 'POST',
++                    body: { amount },
++                });
++            },
++            onSuccess: (_, { teamUid }) => {
++                queryClient.invalidateQueries({
++                    queryKey: queryKeys.credits.teamOverview(teamUid),
++                });
++                queryClient.invalidateQueries({
++                    queryKey: queryKeys.credits.teamHistory(teamUid),
++                });
++            },
++        });
++    };
+     /**
+      * Update user credits quota
+      */
+@@ -6096,6 +6343,14 @@ export const useCache = ({ loginRoute = '/login' } = {}) => {
+         useUpdateUserCredits,
+         useAssignRoleToUser,
+         useUnassignRoleFromUser,
++        useOrganizationAllocationOverview,
++        useOrganizationAllocationHistory,
++        useTeamAllocationOverview,
++        useTeamAllocationHistory,
++        useAllocateOrganizationCreditsToTeam,
++        useAllocateTeamCreditsToMember,
++        useRevokeOrganizationCreditsFromTeam,
++        useRevokeTeamCreditsFromMember,
+         useUpdateUserCreditsQuota,
+         useUsages,
+         useUsagesForUser,
+@@ -6312,9 +6567,13 @@ export const useCache = ({ loginRoute = '/login' } = {}) => {
+         useDisableUserMFA,
+         useValidateUserMFACode,
+         // Checkout & Credits
+-        useCreateCheckoutSession,
++        useCreateTopUpPaymentIntent,
++        useCreateSubscriptionPaymentIntent,
++        useSubscriptionStatus,
++        useSubscriptionPlans,
++        useCancelSubscription,
+         useBurnCredit,
+-        useStripePrices,
++        useTopUpPrices,
+         // Support & Growth
+         useRequestPlatformSupport,
+         useRequestPlatformSupport2,
+diff --git a/node_modules/@datalayer/core/lib/hooks/useDatalayer.js b/node_modules/@datalayer/core/lib/hooks/useDatalayer.js
+index 2d1ccb8..c1a1816 100644
+--- a/node_modules/@datalayer/core/lib/hooks/useDatalayer.js
++++ b/node_modules/@datalayer/core/lib/hooks/useDatalayer.js
+@@ -11,6 +11,23 @@ import { requestDatalayerAPI } from '../api/DatalayerApi.js';
+ export function useDatalayer(props = {}) {
+     const { loginRoute = '/login', notifyOnError = true } = props;
+     const location = useLocation();
++    const resolveLoginRoute = (candidateRoute) => {
++        if (candidateRoute !== '/login') {
++            return candidateRoute;
++        }
++        const pathname = location.pathname || '';
++        const kernelsPrefix = '/jupyter/kernels';
++        const iamPrefix = '/jupyter/iam';
++        if (pathname.includes(kernelsPrefix)) {
++            const [base] = pathname.split(kernelsPrefix);
++            return `${base}${kernelsPrefix}/login`;
++        }
++        if (pathname.includes(iamPrefix)) {
++            const [base] = pathname.split(iamPrefix);
++            return `${base}${iamPrefix}/login`;
++        }
++        return candidateRoute;
++    };
+     /*
+     // TODO Fix the conditional hook call.
+     const coreStore = useCoreStore();
+@@ -37,9 +54,12 @@ export function useDatalayer(props = {}) {
+                 const responseError = error;
+                 if (responseError.response.status === 401) {
+                     console.log('Datalayer sent a 401 return code.');
+-                    if (location.pathname !== loginRoute_) {
++                    const resolvedLoginRoute = resolveLoginRoute(loginRoute_);
++                    const alreadyOnLoginRoute = location.pathname === resolvedLoginRoute ||
++                        location.pathname.endsWith('/login');
++                    if (!alreadyOnLoginRoute) {
+                         iamStore.logout();
+-                        navigate(loginRoute_);
++                        navigate(resolvedLoginRoute);
+                     }
+                 }
+                 else {
+diff --git a/node_modules/@datalayer/core/lib/hooks/useProjects.js b/node_modules/@datalayer/core/lib/hooks/useProjects.js
+index 3389c4f..7dae2fe 100644
+--- a/node_modules/@datalayer/core/lib/hooks/useProjects.js
++++ b/node_modules/@datalayer/core/lib/hooks/useProjects.js
+@@ -16,6 +16,31 @@ import { useMemo, useCallback } from 'react';
+ import { useCache } from './useCache.js';
+ /** The space type value used to identify project spaces in Solr */
+ export const PROJECT_SPACE_VARIANT = 'project';
++const normalizeProjectItems = (items) => {
++    if (Array.isArray(items)) {
++        return items;
++    }
++    if (items && typeof items === 'object') {
++        return [items];
++    }
++    return [];
++};
++const isProjectSpace = (space) => {
++    const variant = space?.variant ?? space?.variant_s;
++    if (variant !== PROJECT_SPACE_VARIANT) {
++        return false;
++    }
++    const items = normalizeProjectItems(space?.items);
++    if (items.length === 0) {
++        return true;
++    }
++    const hasNotebook = items.some(item => (item?.type_s ?? item?.type) === 'notebook');
++    const hasDocument = items.some(item => {
++        const type = item?.type_s ?? item?.type;
++        return type === 'document' || type === 'lexical';
++    });
++    return hasNotebook && hasDocument;
++};
+ /**
+  * Hook to fetch user's projects (spaces with type "project").
+  *
+@@ -29,8 +54,7 @@ export function useProjects() {
+         if (!allSpaces)
+             return [];
+         return allSpaces
+-            .filter((space) => space.variant === PROJECT_SPACE_VARIANT ||
+-            space.type_s === PROJECT_SPACE_VARIANT)
++            .filter((space) => isProjectSpace(space))
+             .map((space) => ({
+             uid: space.uid,
+             id: space.id ?? space.uid,
+diff --git a/node_modules/@datalayer/core/lib/mocks/components/FlashMock.js b/node_modules/@datalayer/core/lib/mocks/components/FlashMock.js
+index 2abc4d8..8abf796 100644
+--- a/node_modules/@datalayer/core/lib/mocks/components/FlashMock.js
++++ b/node_modules/@datalayer/core/lib/mocks/components/FlashMock.js
+@@ -4,10 +4,16 @@ import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
+  * Distributed under the terms of the Modified BSD License.
+  */
+ import { AlertIcon } from '@primer/octicons-react';
+-import { Flash, Link } from '@primer/react';
++import { Box, Button, Flash } from '@primer/react';
+ import { useNavigate } from '../../hooks/index.js';
+ export const FlashMock = () => {
+     const navigate = useNavigate();
+-    return (_jsxs(Flash, { variant: "warning", style: { marginBottom: 10 }, children: [_jsx(AlertIcon, {}), " This is a mock content.", ' ', _jsx(Link, { href: "#", onClick: e => navigate('/contact', e), children: "Contact us" }), ' ', "if you'd like to know more about this feature."] }));
++    return (_jsx(Flash, { variant: "warning", style: { marginBottom: 10 }, children: _jsxs(Box, { sx: {
++                display: 'flex',
++                alignItems: 'center',
++                justifyContent: 'space-between',
++                gap: 3,
++                width: '100%',
++            }, children: [_jsxs(Box, { sx: { display: 'flex', alignItems: 'center', gap: 2 }, children: [_jsx(AlertIcon, {}), _jsx("span", { children: "This is placeholder content. Contact us to learn more about this feature." })] }), _jsx(Button, { size: "small", onClick: () => navigate('/contact'), children: "Contact Us" })] }) }));
+ };
+ export default FlashMock;
 diff --git a/node_modules/@datalayer/core/lib/otel/auth.js b/node_modules/@datalayer/core/lib/otel/auth.js
 index 4788e61..862ce46 100644
 --- a/node_modules/@datalayer/core/lib/otel/auth.js
@@ -1822,6 +3337,209 @@ diff --git a/node_modules/@datalayer/core/lib/stories/assets/avif-test-image.avi
 new file mode 100644
 index 0000000..530709b
 Binary files /dev/null and b/node_modules/@datalayer/core/lib/stories/assets/avif-test-image.avif differ
+diff --git a/node_modules/@datalayer/core/lib/views/datasources/DatasourceDetail.js b/node_modules/@datalayer/core/lib/views/datasources/DatasourceDetail.js
+index 4e38956..c35ad43 100644
+--- a/node_modules/@datalayer/core/lib/views/datasources/DatasourceDetail.js
++++ b/node_modules/@datalayer/core/lib/views/datasources/DatasourceDetail.js
+@@ -1,11 +1,12 @@
+-import { jsx as _jsx, jsxs as _jsxs, Fragment as _Fragment } from "react/jsx-runtime";
++import { Fragment as _Fragment, jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
+ /*
+  * Copyright (c) 2023-2025 Datalayer, Inc.
+  * Distributed under the terms of the Modified BSD License.
+  */
+ import { useState, useEffect } from 'react';
+ import { useParams } from 'react-router-dom';
+-import { PageHeader, Heading, Text, Button, TextInput, FormControl, Textarea, Label, } from '@primer/react';
++import { PageLayout, Text, Button, TextInput, FormControl, Textarea, Label, Spinner, } from '@primer/react';
++import { PageHeader } from '@primer/react/experimental';
+ import { Box } from '@datalayer/primer-addons';
+ import { EyeIcon, EyeClosedIcon } from '@primer/octicons-react';
+ import { BoringAvatar } from '../../components/avatars/index.js';
+@@ -17,11 +18,11 @@ export const DatasourceDetail = () => {
+     const { enqueueToast } = useToast();
+     const { useUpdateDatasource, useDatasource } = useCache();
+     const updateDatasourceMutation = useUpdateDatasource();
+-    const datasourceQuery = useDatasource(datasourceId);
++    const datasourceQuery = useDatasource(datasourceId ?? '');
+     const [datasource, setDatasource] = useState();
+     const [formValues, setFormValues] = useState({
+-        name: datasource?.name,
+-        description: datasource?.description,
++        name: '',
++        description: '',
+     });
+     const [validationResult, setValidationResult] = useState({
+         name: undefined,
+@@ -32,7 +33,10 @@ export const DatasourceDetail = () => {
+         if (datasourceQuery.data) {
+             const datasource = datasourceQuery.data;
+             setDatasource(datasource);
+-            setFormValues({ ...datasource });
++            setFormValues({
++                name: datasource.name || '',
++                description: datasource.description || '',
++            });
+         }
+     }, [datasourceQuery.data]);
+     const nameNameChange = (event) => {
+@@ -48,8 +52,8 @@ export const DatasourceDetail = () => {
+         }));
+     };
+     useEffect(() => {
+-        setValidationResult({
+-            ...validationResult,
++        setValidationResult(prev => ({
++            ...prev,
+             name: formValues.name === undefined
+                 ? undefined
+                 : formValues.name.length > 2
+@@ -60,19 +64,28 @@ export const DatasourceDetail = () => {
+                 : formValues.description.length > 2
+                     ? true
+                     : false,
+-        });
++        }));
+     }, [formValues]);
+     const nameSubmit = async () => {
++        if (!datasource) {
++            return;
++        }
+         runStore.layout().showBackdrop();
+-        datasource.name = formValues.name;
+-        datasource.description = formValues.description;
+-        updateDatasourceMutation.mutate(datasource, {
++        const updatedDatasource = {
++            ...datasource,
++            name: formValues.name,
++            description: formValues.description,
++        };
++        updateDatasourceMutation.mutate(updatedDatasource, {
+             onSuccess: (resp) => {
+-                if (resp.success) {
++                if (typeof resp === 'object' &&
++                    resp !== null &&
++                    'success' in resp &&
++                    resp.success) {
+                     enqueueToast('The datasource is successfully updated.', {
+                         variant: 'success',
+                     });
+-                    setDatasource(datasource);
++                    setDatasource(updatedDatasource);
+                 }
+             },
+             onSettled: () => {
+@@ -80,12 +93,26 @@ export const DatasourceDetail = () => {
+             },
+         });
+     };
+-    return (_jsxs(_Fragment, { children: [_jsx(PageHeader, { children: _jsx(Heading, { sx: { fontSize: 3 }, children: "Datasource" }) }), _jsxs(Box, { display: "flex", children: [_jsxs(Box, { children: [_jsx(BoringAvatar, { displayName: datasource?.name, size: 100, style: { paddingRight: 10 } }), _jsx(Text, { as: "h2", sx: { paddingTop: 3 }, children: datasource?.name }), _jsx(Box, { mt: 3, children: _jsx(Label, { size: "large", children: datasource?.variant }) })] }), _jsx(Box, { ml: 10, children: _jsxs(Box, { sx: { label: { marginTop: 2 } }, children: [_jsxs(FormControl, { children: [_jsx(FormControl.Label, { children: "Name" }), _jsx(TextInput, { block: true, value: formValues.name, onChange: nameNameChange }), validationResult.name === false && (_jsx(FormControl.Validation, { variant: "error", children: "Name must have more than 2 characters." }))] }), _jsxs(FormControl, { children: [_jsx(FormControl.Label, { children: "Description" }), _jsx(Textarea, { block: true, value: formValues.description, onChange: nameDescriptionChange, rows: 5 }), validationResult.description === false && (_jsx(FormControl.Validation, { variant: "error", children: "Description must have more than 2 characters." }))] }), _jsxs(FormControl, { children: [_jsx(FormControl.Label, { children: "Database" }), _jsx(TextInput, { placeholder: "Database", monospace: true, contrast: true, size: "large", type: passwordVisibility ? 'text' : 'password', value: datasource?.database, trailingAction: _jsx(TextInput.Action, { onClick: () => {
+-                                                    setPasswordVisibility(!passwordVisibility);
+-                                                }, icon: passwordVisibility ? EyeClosedIcon : EyeIcon, "aria-label": passwordVisibility ? 'Hide database' : 'Reveal database', sx: { color: 'var(--fgColor-muted)' } }), sx: { overflow: 'visible' } })] }), _jsxs(FormControl, { children: [_jsx(FormControl.Label, { children: "Output bucket" }), _jsx(TextInput, { placeholder: "Output bucket", monospace: true, contrast: true, size: "large", type: passwordVisibility ? 'text' : 'password', value: datasource?.outputBucket, trailingAction: _jsx(TextInput.Action, { onClick: () => {
+-                                                    setPasswordVisibility(!passwordVisibility);
+-                                                }, icon: passwordVisibility ? EyeClosedIcon : EyeIcon, "aria-label": passwordVisibility
+-                                                    ? 'Hide output bucket'
+-                                                    : 'Reveal output bucket', sx: { color: 'var(--fgColor-muted)' } }), sx: { overflow: 'visible' } })] }), _jsx(Button, { variant: "primary", disabled: !validationResult.name || !validationResult.description, sx: { marginTop: 3 }, onClick: nameSubmit, children: "Update datasource" })] }) })] })] }));
++    if (!datasourceId) {
++        return _jsx(_Fragment, {});
++    }
++    if (datasourceQuery.isLoading) {
++        return (_jsx(PageLayout, { containerWidth: "full", padding: "normal", style: { overflow: 'visible', minHeight: 'calc(100vh - 45px)' }, children: _jsx(PageLayout.Content, { children: _jsx(Box, { sx: {
++                        display: 'flex',
++                        justifyContent: 'center',
++                        alignItems: 'center',
++                        py: 6,
++                    }, children: _jsx(Spinner, { size: "large" }) }) }) }));
++    }
++    if (datasourceQuery.isError || (!datasourceQuery.isLoading && !datasource)) {
++        return (_jsx(PageLayout, { containerWidth: "full", padding: "normal", style: { overflow: 'visible', minHeight: 'calc(100vh - 45px)' }, children: _jsx(PageLayout.Content, { children: _jsx(Box, { sx: { p: 4 }, children: _jsx(Text, { sx: { color: 'danger.fg' }, children: "Datasource not found or failed to load." }) }) }) }));
++    }
++    return (_jsxs(PageLayout, { containerWidth: "full", padding: "normal", style: { overflow: 'visible', minHeight: 'calc(100vh - 45px)' }, children: [_jsx(PageLayout.Header, { children: _jsx(PageHeader, { children: _jsx(PageHeader.TitleArea, { variant: "large", children: _jsx(PageHeader.Title, { children: "Datasource" }) }) }) }), _jsx(PageLayout.Content, { children: _jsxs(Box, { display: "flex", children: [_jsxs(Box, { children: [_jsx(BoringAvatar, { displayName: datasource?.name, size: 100, style: { paddingRight: 10 } }), _jsx(Box, { mt: 3, children: _jsx(Label, { size: "large", children: datasource?.variant }) })] }), _jsx(Box, { ml: 10, children: _jsxs(Box, { sx: { label: { marginTop: 2 } }, children: [_jsxs(FormControl, { children: [_jsx(FormControl.Label, { children: "Name" }), _jsx(TextInput, { block: true, value: formValues.name, onChange: nameNameChange }), validationResult.name === false && (_jsx(FormControl.Validation, { variant: "error", children: "Name must have more than 2 characters." }))] }), _jsxs(FormControl, { children: [_jsx(FormControl.Label, { children: "Description" }), _jsx(Textarea, { block: true, value: formValues.description, onChange: nameDescriptionChange, rows: 5 }), validationResult.description === false && (_jsx(FormControl.Validation, { variant: "error", children: "Description must have more than 2 characters." }))] }), _jsxs(FormControl, { children: [_jsx(FormControl.Label, { children: "Database" }), _jsx(TextInput, { placeholder: "Database", monospace: true, size: "large", contrast: !passwordVisibility, disabled: !passwordVisibility, type: passwordVisibility ? 'text' : 'password', value: datasource?.database || '', readOnly: true, trailingAction: _jsx(TextInput.Action, { onClick: () => {
++                                                        setPasswordVisibility(!passwordVisibility);
++                                                    }, icon: passwordVisibility ? EyeClosedIcon : EyeIcon, "aria-label": passwordVisibility ? 'Hide database' : 'Reveal database', sx: { color: 'var(--fgColor-muted)' } }), sx: { overflow: 'visible' } })] }), _jsxs(FormControl, { children: [_jsx(FormControl.Label, { children: "Output bucket" }), _jsx(TextInput, { placeholder: "Output bucket", monospace: true, size: "large", contrast: !passwordVisibility, disabled: !passwordVisibility, type: passwordVisibility ? 'text' : 'password', value: datasource?.outputBucket || '', readOnly: true, trailingAction: _jsx(TextInput.Action, { onClick: () => {
++                                                        setPasswordVisibility(!passwordVisibility);
++                                                    }, icon: passwordVisibility ? EyeClosedIcon : EyeIcon, "aria-label": passwordVisibility
++                                                        ? 'Hide output bucket'
++                                                        : 'Reveal output bucket', sx: { color: 'var(--fgColor-muted)' } }), sx: { overflow: 'visible' } })] }), _jsx(Box, { sx: { marginTop: 3 }, children: _jsx(Button, { variant: "primary", disabled: !validationResult.name || !validationResult.description, onClick: nameSubmit, children: "Update datasource" }) })] }) })] }) })] }));
+ };
+ export default DatasourceDetail;
+diff --git a/node_modules/@datalayer/core/lib/views/datasources/DatasourceNew.js b/node_modules/@datalayer/core/lib/views/datasources/DatasourceNew.js
+index a28c1b4..f5feb98 100644
+--- a/node_modules/@datalayer/core/lib/views/datasources/DatasourceNew.js
++++ b/node_modules/@datalayer/core/lib/views/datasources/DatasourceNew.js
+@@ -4,7 +4,8 @@ import { jsx as _jsx, jsxs as _jsxs, Fragment as _Fragment } from "react/jsx-run
+  * Distributed under the terms of the Modified BSD License.
+  */
+ import { useEffect, useState } from 'react';
+-import { PageHeader, FormControl, Button, TextInput, Text, Textarea, Select, Flash, Link, } from '@primer/react';
++import { PageLayout, FormControl, Button, TextInput, Text, Textarea, Select, Flash, Link, } from '@primer/react';
++import { PageHeader } from '@primer/react/experimental';
+ import { Box } from '@datalayer/primer-addons';
+ import { useCache, useNavigate, useToast } from '../../hooks/index.js';
+ import { useRunStore } from '../../state/index.js';
+@@ -59,8 +60,8 @@ export const DatasourceNew = ({ datasourcesListRoute = '/settings/integrations/d
+         }));
+     };
+     useEffect(() => {
+-        setValidationResult({
+-            ...validationResult,
++        setValidationResult(prev => ({
++            ...prev,
+             name: formValues.name === undefined
+                 ? undefined
+                 : formValues.name.length > 2
+@@ -85,9 +86,12 @@ export const DatasourceNew = ({ datasourcesListRoute = '/settings/integrations/d
+                     : formValues.outputBucket.length > 0
+                         ? true
+                         : false,
+-        });
++        }));
+     }, [formValues]);
+     const submitCreate = () => {
++        if (!formValues.name || !formValues.description) {
++            return;
++        }
+         runStore.layout().showBackdrop('Creating an datasource...');
+         createDatasourceMutation.mutate({
+             name: formValues.name,
+@@ -97,8 +101,15 @@ export const DatasourceNew = ({ datasourcesListRoute = '/settings/integrations/d
+             description: formValues.description,
+         }, {
+             onSuccess: (resp) => {
+-                if (resp.success) {
+-                    enqueueToast(resp.message, { variant: 'success' });
++                if (typeof resp === 'object' &&
++                    resp !== null &&
++                    'success' in resp &&
++                    resp.success) {
++                    const message = 'message' in resp &&
++                        typeof resp.message === 'string'
++                        ? resp.message
++                        : 'Datasource created.';
++                    enqueueToast(message, { variant: 'success' });
+                     navigate(datasourcesListRoute);
+                 }
+             },
+@@ -107,12 +118,12 @@ export const DatasourceNew = ({ datasourcesListRoute = '/settings/integrations/d
+             },
+         });
+     };
+-    return (_jsxs(Box, { children: [_jsx(PageHeader, { children: _jsx(PageHeader.TitleArea, { variant: "large", children: _jsx(PageHeader.Title, { children: "New Datasource" }) }) }), _jsxs(Flash, { variant: "warning", children: [formValues.variant === 'athena' && (_jsxs(Text, { children: ["For ", _jsx(Link, { href: "https://aws.amazon.com/athena", children: "Amazon Athena" }), ", ensure the following", ' ', _jsx(Link, { href: "javascript: return false;", onClick: e => navigate(secretsRoute, e), children: "Secrets" }), ' ', "are available:", '  ', _jsx(Text, { as: "code", children: "AWS_SECRET_ACCESS_KEY" }), '  ', _jsx(Text, { as: "code", children: "AWS_ACCESS_KEY_ID" }), '  ', _jsx(Text, { as: "code", children: "AWS_DEFAULT_REGION" })] })), formValues.variant === 'bigquery' && (_jsxs(Text, { children: ["For", ' ', _jsx(Link, { href: "https://cloud.google.com/bigquery", children: "Google Big Query" }), ", ensure the following", ' ', _jsx(Link, { href: "javascript: return false;", onClick: e => navigate(secretsRoute, e), children: "Secret" }), ' ', "is available:", '  ', _jsx(Text, { as: "code", children: "GOOGLE_APPLICATION_CREDENTIALS" })] })), formValues.variant === 'mssentinel' && (_jsxs(Text, { children: ["For", ' ', _jsx(Link, { href: "https://learn.microsoft.com/en-us/azure/sentinel/overview?tabs=defender-portaly", children: "Microsoft Sentinel" }), ", ensure the following", ' ', _jsx(Link, { href: "javascript: return false;", onClick: e => navigate(secretsRoute, e), children: "Secret" }), ' ', "is available:", '  ', _jsx(Text, { as: "code", children: "AZURE_TENANT_ID" }), ` `, _jsx(Text, { as: "code", children: "AZURE_CLIENT_ID" }), ` `, _jsx(Text, { as: "code", children: "AZURE_CLIENT_SECRET" }), ` `, _jsx(Text, { as: "code", children: "AZURE_SUBSCRIPTION_ID" }), ` `, _jsx(Text, { as: "code", children: "AZURE_RESOURCE_GROUP" }), ` `, _jsx(Text, { as: "code", children: "MSSENTINEL_WORKSPACE_ID" }), ` `, _jsx(Text, { as: "code", children: "MSSENTINEL_WORKSPACE_NAME" })] })), formValues.variant === 'splunk' && (_jsxs(Text, { children: ["For ", _jsx(Link, { href: "https://www.splunk.com/", children: "Splunk" }), ", ensure the following", ' ', _jsx(Link, { href: "javascript: return false;", onClick: e => navigate(secretsRoute, e), children: "Secret" }), ' ', "is available:", '  ', _jsx(Text, { as: "code", children: "SPLUNK_HOST" }), ` `, _jsx(Text, { as: "code", children: "SPLUNK_PORT" }), ` `, _jsx(Text, { as: "code", children: "SPLUNK_USERNAME" }), ` `, _jsx(Text, { as: "code", children: "SPLUNK_PASSWORD" })] }))] }), _jsx(Box, { display: "grid", gridTemplateColumns: "1fr 1fr", sx: { gap: 3 }, children: _jsx(Box, { children: _jsxs(Box, { sx: { label: { marginTop: 2 } }, children: [_jsxs(FormControl, { required: true, children: [_jsx(FormControl.Label, { children: "Datasource type" }), _jsxs(Select, { name: "type", value: formValues.variant, onChange: valueVariantChange, children: [_jsx(Select.Option, { value: "athena", children: "Amazon Athena" }), _jsx(Select.Option, { value: "bigquery", children: "Google BigQuery" }), _jsx(Select.Option, { value: "mssentinel", children: "Microsoft Sentinel" }), _jsx(Select.Option, { value: "splunk", children: "Splunk" })] }), _jsx(FormControl.Caption, { children: "Pick the most appropriate datasource type." })] }), _jsxs(FormControl, { required: true, children: [_jsx(FormControl.Label, { children: "Name" }), _jsx(TextInput, { block: true, value: formValues.name, onChange: valueNameChange, autoFocus: true }), _jsx(FormControl.Caption, { children: "Hint: The datasource name is a short name that identifies in a unique way your datasource." }), validationResult.name === false && (_jsx(FormControl.Validation, { variant: "error", children: "Name length must be between 2 and 32 characters." }))] }), formValues.variant === 'athena' && (_jsxs(_Fragment, { children: [_jsxs(FormControl, { required: true, children: [_jsx(FormControl.Label, { children: "Database" }), _jsx(TextInput, { block: true, value: formValues.database, onChange: valueDatabaseChange }), validationResult.database === false && (_jsx(FormControl.Validation, { variant: "error", children: "Database must have more than 1." }))] }), _jsxs(FormControl, { required: true, children: [_jsx(FormControl.Label, { children: "Output Bucket" }), _jsx(TextInput, { block: true, value: formValues.outputBucket, onChange: valueOutputBucketChange }), validationResult.database === false && (_jsx(FormControl.Validation, { variant: "error", children: "Output bucket must have more than 1." }))] })] })), _jsxs(FormControl, { required: true, children: [_jsx(FormControl.Label, { children: "Description" }), _jsx(Textarea, { block: true, value: formValues.description, onChange: valueDescriptionChange }), validationResult.description === false && (_jsx(FormControl.Validation, { variant: "error", children: "Description must have more than 2 characters." }))] }), _jsx(Button, { variant: "primary", disabled: !validationResult.database ||
+-                                    !validationResult.outputBucket ||
+-                                    !validationResult.name ||
+-                                    !validationResult.description, sx: { marginTop: 2 }, onClick: e => {
+-                                    e.preventDefault();
+-                                    submitCreate();
+-                                }, children: "Create a datasource" })] }) }) })] }));
++    return (_jsxs(PageLayout, { containerWidth: "full", padding: "normal", style: { overflow: 'visible', minHeight: 'calc(100vh - 45px)' }, children: [_jsx(PageLayout.Header, { children: _jsx(PageHeader, { children: _jsx(PageHeader.TitleArea, { variant: "large", children: _jsx(PageHeader.Title, { children: "New Datasource" }) }) }) }), _jsx(PageLayout.Content, { children: _jsxs(Box, { sx: { maxWidth: '860px' }, children: [_jsxs(Flash, { variant: "warning", sx: { mb: 3 }, children: [formValues.variant === 'athena' && (_jsxs(Text, { children: ["For", ' ', _jsx(Link, { href: "https://aws.amazon.com/athena", children: "Amazon Athena" }), ",", ' ', "ensure the following", ' ', _jsx(Link, { href: "javascript: return false;", onClick: e => navigate(secretsRoute, e), children: "Secrets" }), ' ', "are available:", '  ', _jsx(Text, { as: "code", children: "AWS_SECRET_ACCESS_KEY" }), '  ', _jsx(Text, { as: "code", children: "AWS_ACCESS_KEY_ID" }), '  ', _jsx(Text, { as: "code", children: "AWS_DEFAULT_REGION" })] })), formValues.variant === 'bigquery' && (_jsxs(Text, { children: ["For", ' ', _jsx(Link, { href: "https://cloud.google.com/bigquery", children: "Google Big Query" }), ", ensure the following", ' ', _jsx(Link, { href: "javascript: return false;", onClick: e => navigate(secretsRoute, e), children: "Secret" }), ' ', "is available:", '  ', _jsx(Text, { as: "code", children: "GOOGLE_APPLICATION_CREDENTIALS" })] })), formValues.variant === 'mssentinel' && (_jsxs(Text, { children: ["For", ' ', _jsx(Link, { href: "https://learn.microsoft.com/en-us/azure/sentinel/overview?tabs=defender-portaly", children: "Microsoft Sentinel" }), ", ensure the following", ' ', _jsx(Link, { href: "javascript: return false;", onClick: e => navigate(secretsRoute, e), children: "Secret" }), ' ', "is available:", '  ', _jsx(Text, { as: "code", children: "AZURE_TENANT_ID" }), ` `, _jsx(Text, { as: "code", children: "AZURE_CLIENT_ID" }), ` `, _jsx(Text, { as: "code", children: "AZURE_CLIENT_SECRET" }), ` `, _jsx(Text, { as: "code", children: "AZURE_SUBSCRIPTION_ID" }), ` `, _jsx(Text, { as: "code", children: "AZURE_RESOURCE_GROUP" }), ` `, _jsx(Text, { as: "code", children: "MSSENTINEL_WORKSPACE_ID" }), ` `, _jsx(Text, { as: "code", children: "MSSENTINEL_WORKSPACE_NAME" })] })), formValues.variant === 'splunk' && (_jsxs(Text, { children: ["For ", _jsx(Link, { href: "https://www.splunk.com/", children: "Splunk" }), ", ensure the following", ' ', _jsx(Link, { href: "javascript: return false;", onClick: e => navigate(secretsRoute, e), children: "Secret" }), ' ', "is available:", '  ', _jsx(Text, { as: "code", children: "SPLUNK_HOST" }), ` `, _jsx(Text, { as: "code", children: "SPLUNK_PORT" }), ` `, _jsx(Text, { as: "code", children: "SPLUNK_USERNAME" }), ` `, _jsx(Text, { as: "code", children: "SPLUNK_PASSWORD" })] }))] }), _jsxs(Box, { sx: { label: { marginTop: 2 } }, children: [_jsxs(FormControl, { required: true, children: [_jsx(FormControl.Label, { children: "Datasource type" }), _jsxs(Select, { name: "type", value: formValues.variant, onChange: valueVariantChange, children: [_jsx(Select.Option, { value: "athena", children: "Amazon Athena" }), _jsx(Select.Option, { value: "bigquery", children: "Google BigQuery" }), _jsx(Select.Option, { value: "mssentinel", children: "Microsoft Sentinel" }), _jsx(Select.Option, { value: "splunk", children: "Splunk" })] }), _jsx(FormControl.Caption, { children: "Pick the most appropriate datasource type." })] }), _jsxs(FormControl, { required: true, children: [_jsx(FormControl.Label, { children: "Name" }), _jsx(TextInput, { block: true, value: formValues.name, onChange: valueNameChange, autoFocus: true }), _jsx(FormControl.Caption, { children: "Hint: The datasource name is a short name that identifies in a unique way your datasource." }), validationResult.name === false && (_jsx(FormControl.Validation, { variant: "error", children: "Name length must be between 2 and 32 characters." }))] }), formValues.variant === 'athena' && (_jsxs(_Fragment, { children: [_jsxs(FormControl, { required: true, children: [_jsx(FormControl.Label, { children: "Database" }), _jsx(TextInput, { block: true, value: formValues.database, onChange: valueDatabaseChange }), validationResult.database === false && (_jsx(FormControl.Validation, { variant: "error", children: "Database must have more than 1." }))] }), _jsxs(FormControl, { required: true, children: [_jsx(FormControl.Label, { children: "Output Bucket" }), _jsx(TextInput, { block: true, value: formValues.outputBucket, onChange: valueOutputBucketChange }), validationResult.database === false && (_jsx(FormControl.Validation, { variant: "error", children: "Output bucket must have more than 1." }))] })] })), _jsxs(FormControl, { required: true, children: [_jsx(FormControl.Label, { children: "Description" }), _jsx(Textarea, { block: true, value: formValues.description, onChange: valueDescriptionChange }), validationResult.description === false && (_jsx(FormControl.Validation, { variant: "error", children: "Description must have more than 2 characters." }))] }), _jsx(Button, { variant: "primary", disabled: !validationResult.database ||
++                                        !validationResult.outputBucket ||
++                                        !validationResult.name ||
++                                        !validationResult.description, sx: { marginTop: 2 }, onClick: e => {
++                                        e.preventDefault();
++                                        submitCreate();
++                                    }, children: "Create a datasource" })] })] }) })] }));
+ };
+ export default DatasourceNew;
 diff --git a/node_modules/@datalayer/core/lib/views/profile/UserBadge.d.ts b/node_modules/@datalayer/core/lib/views/profile/UserBadge.d.ts
 index 8e66629..aa4544f 100644
 --- a/node_modules/@datalayer/core/lib/views/profile/UserBadge.d.ts

@@ -1,262 +1,255 @@
-diff --git a/node_modules/@datalayer/jupyter-lexical/lib/examples/ManualKernelControl.d.ts b/node_modules/@datalayer/jupyter-lexical/lib/examples/ManualKernelControl.d.ts
+diff --git a/node_modules/@datalayer/jupyter-lexical/lib/context/LexicalPrimerThemeProvider.d.ts b/node_modules/@datalayer/jupyter-lexical/lib/context/LexicalPrimerThemeProvider.d.ts
 new file mode 100644
-index 0000000..cf26b4a
+index 0000000..aa13608
 --- /dev/null
-+++ b/node_modules/@datalayer/jupyter-lexical/lib/examples/ManualKernelControl.d.ts
-@@ -0,0 +1,18 @@
++++ b/node_modules/@datalayer/jupyter-lexical/lib/context/LexicalPrimerThemeProvider.d.ts
+@@ -0,0 +1,11 @@
++import type { PropsWithChildren } from 'react';
++import { type PrimerThemeStoreLike } from '@datalayer/jupyter-react';
++export interface LexicalPrimerThemeProviderProps {
++    useStore: PrimerThemeStoreLike;
++}
 +/**
-+ * Example: Manual Kernel Control from External Component
-+ *
-+ * This example demonstrates how to programmatically control the Jupyter component's
-+ * kernel state from an external component, such as a VSCode extension.
-+ *
-+ * Use cases:
-+ * - VSCode extension detecting runtime termination
-+ * - User manually disconnecting from a server
-+ * - Switching between different Jupyter servers
-+ * - Implementing custom kernel lifecycle management
++ * Bridge provider to apply primer-addons themes consistently to both
++ * jupyter-react surfaces and lexical editor styling context.
 + */
-+import React from 'react';
-+/**
-+ * Main component demonstrating manual kernel control
-+ */
-+export declare const ManualKernelControlExample: React.FC;
-+export default ManualKernelControlExample;
-diff --git a/node_modules/@datalayer/jupyter-lexical/lib/examples/ManualKernelControl.js b/node_modules/@datalayer/jupyter-lexical/lib/examples/ManualKernelControl.js
++export declare function LexicalPrimerThemeProvider(props: PropsWithChildren<LexicalPrimerThemeProviderProps>): JSX.Element;
++export default LexicalPrimerThemeProvider;
+diff --git a/node_modules/@datalayer/jupyter-lexical/lib/context/LexicalPrimerThemeProvider.js b/node_modules/@datalayer/jupyter-lexical/lib/context/LexicalPrimerThemeProvider.js
 new file mode 100644
-index 0000000..464eb9d
+index 0000000..8c3c4ac
 --- /dev/null
-+++ b/node_modules/@datalayer/jupyter-lexical/lib/examples/ManualKernelControl.js
-@@ -0,0 +1,221 @@
-+import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
-+/*
-+ * Copyright (c) 2021-2023 Datalayer, Inc.
-+ *
-+ * MIT License
-+ */
++++ b/node_modules/@datalayer/jupyter-lexical/lib/context/LexicalPrimerThemeProvider.js
+@@ -0,0 +1,32 @@
++import { jsx as _jsx } from "react/jsx-runtime";
++import { Box, DatalayerThemeProvider } from '@datalayer/primer-addons';
++import { JupyterReactTheme, usePrimerThemeBridge, } from '@datalayer/jupyter-react';
++import { ThemeContext } from './ThemeContext.js';
 +/**
-+ * Example: Manual Kernel Control from External Component
-+ *
-+ * This example demonstrates how to programmatically control the Jupyter component's
-+ * kernel state from an external component, such as a VSCode extension.
-+ *
-+ * Use cases:
-+ * - VSCode extension detecting runtime termination
-+ * - User manually disconnecting from a server
-+ * - Switching between different Jupyter servers
-+ * - Implementing custom kernel lifecycle management
++ * Bridge provider to apply primer-addons themes consistently to both
++ * jupyter-react surfaces and lexical editor styling context.
 + */
-+import { useState, useCallback, useEffect } from 'react';
-+import { JupyterReactTheme } from '@datalayer/jupyter-react';
-+import { ServerConnection, ServiceManager } from '@jupyterlab/services';
-+import { Button, ButtonGroup } from '@primer/react';
-+/**
-+ * Simulates an external system (like VSCode extension) that monitors runtime state
-+ */
-+class RuntimeMonitor {
-+    listeners = new Set();
-+    _isConnected = true;
-+    /**
-+     * Subscribe to runtime state changes
-+     */
-+    onStateChange(callback) {
-+        this.listeners.add(callback);
-+        // Return unsubscribe function
-+        return () => this.listeners.delete(callback);
-+    }
-+    /**
-+     * Simulate runtime termination (e.g., kernel crash, server disconnect)
-+     */
-+    simulateRuntimeTermination() {
-+        console.log('🔴 Runtime terminated!');
-+        this._isConnected = false;
-+        this.notifyListeners();
-+    }
-+    /**
-+     * Simulate runtime reconnection
-+     */
-+    simulateRuntimeReconnection() {
-+        console.log('🟢 Runtime reconnected!');
-+        this._isConnected = true;
-+        this.notifyListeners();
-+    }
-+    /**
-+     * Get current runtime state
-+     */
-+    get isConnected() {
-+        return this._isConnected;
-+    }
-+    notifyListeners() {
-+        this.listeners.forEach(callback => callback(this._isConnected));
-+    }
++export function LexicalPrimerThemeProvider(props) {
++    const { useStore, children } = props;
++    const { colorMode, resolvedMode, themeConfig, themeBackground, lexicalTheme, } = usePrimerThemeBridge(useStore);
++    return (_jsx(DatalayerThemeProvider, { colorMode: colorMode, theme: themeConfig.primerTheme, themeStyles: themeConfig.themeStyles, children: _jsx(JupyterReactTheme, { colormode: resolvedMode, backgroundColor: themeBackground, children: _jsx(Box, { sx: {
++                    '& .editor-shell': {
++                        backgroundColor: themeBackground,
++                        borderRadius: 2,
++                    },
++                    '& .editor-container': {
++                        backgroundColor: themeBackground,
++                    },
++                    '& .editor-inner': {
++                        backgroundColor: themeBackground,
++                    },
++                    '& .editor-input': {
++                        backgroundColor: themeBackground,
++                    },
++                    '& [role="toolbar"][aria-label="Editor toolbar"]': {
++                        backgroundColor: themeBackground,
++                    },
++                }, children: _jsx(ThemeContext.Provider, { value: { theme: lexicalTheme }, children: children }) }) }) }));
 +}
-+// Global runtime monitor instance (simulates VSCode extension global state)
-+const runtimeMonitor = new RuntimeMonitor();
-+/**
-+ * Main component demonstrating manual kernel control
-+ */
-+export const ManualKernelControlExample = () => {
-+    const [serviceManager, setServiceManager] = useState(undefined);
-+    const [startDefaultKernel, setStartDefaultKernel] = useState(true);
-+    const [runtimeConnected, setRuntimeConnected] = useState(true);
-+    const [statusMessage, setStatusMessage] = useState('Runtime connected');
-+    /**
-+     * Initialize ServiceManager when runtime is connected
-+     */
-+    useEffect(() => {
-+        if (runtimeConnected) {
-+            const initServiceManager = async () => {
-+                try {
-+                    // Create ServerConnection settings
-+                    const serverSettings = ServerConnection.makeSettings({
-+                        baseUrl: 'https://oss.datalayer.run/api/jupyter-server',
-+                        token: 'YOUR_TOKEN_HERE',
-+                        appendToken: true,
-+                    });
-+                    // Create new ServiceManager instance
-+                    const sm = new ServiceManager({
-+                        serverSettings,
-+                    });
-+                    // Wait for ServiceManager to be ready
-+                    await sm.ready;
-+                    console.log('✅ ServiceManager initialized:', sm);
-+                    setServiceManager(sm);
-+                    setStatusMessage('Runtime connected - ServiceManager ready');
-+                }
-+                catch (error) {
-+                    console.error('Failed to initialize ServiceManager:', error);
-+                    setStatusMessage('Failed to connect to runtime');
-+                }
-+            };
-+            initServiceManager();
-+        }
-+        else {
-+            // Runtime disconnected - clear ServiceManager
-+            if (serviceManager) {
-+                console.log('🔌 Disposing ServiceManager...');
-+                serviceManager.dispose();
-+            }
-+            setServiceManager(undefined);
-+            setStatusMessage('Runtime disconnected - No kernel available');
-+        }
-+        // Cleanup on unmount
-+        return () => {
-+            if (serviceManager && !serviceManager.isDisposed) {
-+                serviceManager.dispose();
-+            }
-+        };
-+    }, [runtimeConnected]); // Re-run when runtime connection state changes
-+    /**
-+     * Subscribe to runtime state changes from external monitor
-+     */
-+    useEffect(() => {
-+        const unsubscribe = runtimeMonitor.onStateChange(isConnected => {
-+            console.log(`📡 Runtime state changed: ${isConnected ? 'connected' : 'disconnected'}`);
-+            setRuntimeConnected(isConnected);
-+        });
-+        // Cleanup subscription on unmount
-+        return unsubscribe;
-+    }, []);
-+    /**
-+     * Manual control: Disconnect from runtime
-+     */
-+    const handleDisconnect = useCallback(() => {
-+        console.log('👤 User requested disconnect');
-+        setStartDefaultKernel(false);
-+        setRuntimeConnected(false);
-+    }, []);
-+    /**
-+     * Manual control: Connect to runtime
-+     */
-+    const handleConnect = useCallback(() => {
-+        console.log('👤 User requested connect');
-+        setStartDefaultKernel(true);
-+        setRuntimeConnected(true);
-+    }, []);
-+    /**
-+     * Simulate external event: Runtime termination
-+     */
-+    const handleSimulateTermination = useCallback(() => {
-+        runtimeMonitor.simulateRuntimeTermination();
-+    }, []);
-+    /**
-+     * Simulate external event: Runtime reconnection
-+     */
-+    const handleSimulateReconnection = useCallback(() => {
-+        runtimeMonitor.simulateRuntimeReconnection();
-+    }, []);
-+    return (_jsxs("div", { style: { padding: '20px' }, children: [_jsx("h1", { children: "Manual Kernel Control Example" }), _jsxs("div", { style: {
-+                    padding: '10px',
-+                    marginBottom: '20px',
-+                    backgroundColor: runtimeConnected ? '#d4edda' : '#f8d7da',
-+                    border: `1px solid ${runtimeConnected ? '#c3e6cb' : '#f5c6cb'}`,
-+                    borderRadius: '4px',
-+                }, children: [_jsx("strong", { children: "Status:" }), " ", statusMessage, _jsx("br", {}), _jsx("strong", { children: "Runtime Connected:" }), ' ', runtimeConnected ? 'Yes ✅' : 'No ❌', _jsx("br", {}), _jsx("strong", { children: "ServiceManager:" }), ' ', serviceManager ? 'Available ✅' : 'Not Available ❌', _jsx("br", {}), _jsx("strong", { children: "Start Default Kernel:" }), ' ', startDefaultKernel ? 'Yes' : 'No'] }), _jsxs("div", { style: { marginBottom: '20px' }, children: [_jsx("h3", { children: "Manual Control (User Actions)" }), _jsxs(ButtonGroup, { children: [_jsx(Button, { variant: runtimeConnected ? 'default' : 'primary', onClick: handleConnect, disabled: runtimeConnected, children: "Connect to Runtime" }), _jsx(Button, { variant: runtimeConnected ? 'primary' : 'default', onClick: handleDisconnect, disabled: !runtimeConnected, children: "Disconnect from Runtime" })] })] }), _jsxs("div", { style: { marginBottom: '20px' }, children: [_jsx("h3", { children: "Simulate External Events (VSCode Extension)" }), _jsx("p", { style: { fontSize: '12px', color: '#666' }, children: "These simulate events from an external system like a VSCode extension detecting runtime changes." }), _jsxs(ButtonGroup, { children: [_jsx(Button, { variant: "danger", onClick: handleSimulateTermination, disabled: !runtimeConnected, children: "\uD83D\uDD34 Simulate Runtime Termination" }), _jsx(Button, { variant: "primary", onClick: handleSimulateReconnection, disabled: runtimeConnected, children: "\uD83D\uDFE2 Simulate Runtime Reconnection" })] })] }), _jsxs("div", { style: { border: '1px solid #ccc', padding: '10px', marginTop: '20px' }, children: [_jsx("h3", { children: "Jupyter Component" }), _jsx(JupyterReactTheme
-+                    //          serviceManager={serviceManager}
-+                    //          startDefaultKernel={startDefaultKernel}
-+                    //          lite={false}
-+                    //          collaborative={false}
-+                    , { children: _jsx("div", { style: { padding: '20px' }, children: runtimeConnected ? (_jsxs("div", { children: [_jsx("p", { children: "\u2705 Jupyter is connected to runtime. You can execute code." }), _jsxs("code", { children: ["print(\"Hello from Jupyter!\")", _jsx("br", {}), "1 + 1"] })] })) : (_jsx("div", { children: _jsx("p", { children: "\u274C Jupyter is disconnected. Connect to runtime to execute code." }) })) }) })] }), _jsxs("div", { style: {
-+                    marginTop: '40px',
-+                    padding: '20px',
-+                    backgroundColor: '#f6f8fa',
-+                    borderRadius: '6px',
-+                }, children: [_jsx("h3", { children: "VSCode Extension Integration Pattern" }), _jsx("pre", { style: { fontSize: '12px', overflow: 'auto' }, children: `// In your VSCode extension:
-+
-+// 1. Monitor runtime state
-+class RuntimeManager {
-+  private _onDidChangeState = new vscode.EventEmitter<boolean>();
-+  public readonly onDidChangeState = this._onDidChangeState.event;
-+
-+  // Detect kernel termination
-+  public handleKernelTerminated(): void {
-+    this._onDidChangeState.fire(false);
-+  }
-+
-+  // Detect kernel started
-+  public handleKernelStarted(): void {
-+    this._onDidChangeState.fire(true);
-+  }
-+}
-+
-+// 2. Pass state to React component
-+const runtimeManager = new RuntimeManager();
-+
-+// 3. In webview React code:
-+const [hasRuntime, setHasRuntime] = useState(true);
-+
-+useEffect(() => {
-+  // Listen to messages from extension
-+  window.addEventListener('message', (event) => {
-+    const message = event.data;
-+    if (message.type === 'runtime-state-changed') {
-+      setHasRuntime(message.connected);
-+    }
-+  });
-+}, []);
-+
-+// 4. Control Jupyter component
-+<Jupyter
-+  serviceManager={hasRuntime ? serviceManager : undefined}
-+  startDefaultKernel={hasRuntime}
-+/>
-+` })] }), _jsxs("div", { style: {
-+                    marginTop: '20px',
-+                    padding: '20px',
-+                    backgroundColor: '#fff3cd',
-+                    borderRadius: '6px',
-+                }, children: [_jsx("h3", { children: "\uD83D\uDCDA Jupyter Component Props for Manual Control" }), _jsxs("table", { style: { width: '100%', fontSize: '12px' }, children: [_jsx("thead", { children: _jsxs("tr", { style: { textAlign: 'left', borderBottom: '2px solid #ddd' }, children: [_jsx("th", { style: { padding: '8px' }, children: "Prop" }), _jsx("th", { style: { padding: '8px' }, children: "Type" }), _jsx("th", { style: { padding: '8px' }, children: "Description" })] }) }), _jsxs("tbody", { children: [_jsxs("tr", { style: { borderBottom: '1px solid #ddd' }, children: [_jsx("td", { style: { padding: '8px' }, children: _jsx("code", { children: "serviceManager" }) }), _jsx("td", { style: { padding: '8px' }, children: _jsx("code", { children: "ServiceManager | undefined" }) }), _jsxs("td", { style: { padding: '8px' }, children: ["Pass a custom ServiceManager instance for full manual control. Set to ", _jsx("code", { children: "undefined" }), " to disable kernel connection. This is the main way to programmatically control runtime from external code (e.g., VSCode extension)."] })] }), _jsxs("tr", { style: { borderBottom: '1px solid #ddd' }, children: [_jsx("td", { style: { padding: '8px' }, children: _jsx("code", { children: "startDefaultKernel" }) }), _jsx("td", { style: { padding: '8px' }, children: _jsx("code", { children: "boolean" }) }), _jsxs("td", { style: { padding: '8px' }, children: ["Set to ", _jsx("code", { children: "false" }), " to prevent automatic kernel start. Set to ", _jsx("code", { children: "true" }), " to allow automatic kernel start. Use with", ' ', _jsx("code", { children: "serviceManager" }), " for full control."] })] }), _jsxs("tr", { children: [_jsx("td", { style: { padding: '8px' }, children: _jsx("code", { children: "lite" }) }), _jsx("td", { style: { padding: '8px' }, children: _jsx("code", { children: "boolean" }) }), _jsxs("td", { style: { padding: '8px' }, children: ["Use JupyterLite (in-browser runtime) instead of server. Set to", ' ', _jsx("code", { children: "true" }), " for serverless mode."] })] })] })] })] })] }));
-+};
-+export default ManualKernelControlExample;
-+//# sourceMappingURL=ManualKernelControl.js.map
++export default LexicalPrimerThemeProvider;
++//# sourceMappingURL=LexicalPrimerThemeProvider.js.map
 \ No newline at end of file
-diff --git a/node_modules/@datalayer/jupyter-lexical/lib/examples/ManualKernelControl.js.map b/node_modules/@datalayer/jupyter-lexical/lib/examples/ManualKernelControl.js.map
+diff --git a/node_modules/@datalayer/jupyter-lexical/lib/context/LexicalPrimerThemeProvider.js.map b/node_modules/@datalayer/jupyter-lexical/lib/context/LexicalPrimerThemeProvider.js.map
 new file mode 100644
-index 0000000..c8771a9
+index 0000000..435897c
 --- /dev/null
-+++ b/node_modules/@datalayer/jupyter-lexical/lib/examples/ManualKernelControl.js.map
++++ b/node_modules/@datalayer/jupyter-lexical/lib/context/LexicalPrimerThemeProvider.js.map
 @@ -0,0 +1 @@
-+{"version":3,"file":"ManualKernelControl.js","sourceRoot":"","sources":["../../src/examples/ManualKernelControl.tsx"],"names":[],"mappings":"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"}
++{"version":3,"file":"LexicalPrimerThemeProvider.js","sourceRoot":"","sources":["../../src/context/LexicalPrimerThemeProvider.tsx"],"names":[],"mappings":";AAaA,OAAO,EAAE,GAAG,EAAE,sBAAsB,EAAE,MAAM,0BAA0B,CAAC;AACvE,OAAO,EACL,iBAAiB,EAEjB,oBAAoB,GACrB,MAAM,0BAA0B,CAAC;AAClC,OAAO,EAAE,YAAY,EAAE,MAAM,gBAAgB,CAAC;AAM9C;;;GAGG;AACH,MAAM,UAAU,0BAA0B,CACxC,KAAyD;IAEzD,MAAM,EAAE,QAAQ,EAAE,QAAQ,EAAE,GAAG,KAAK,CAAC;IACrC,MAAM,EACJ,SAAS,EACT,YAAY,EACZ,WAAW,EACX,eAAe,EACf,YAAY,GACb,GAAG,oBAAoB,CAAC,QAAQ,CAAC,CAAC;IAEnC,OAAO,CACL,KAAC,sBAAsB,IACrB,SAAS,EAAE,SAAS,EACpB,KAAK,EAAE,WAAW,CAAC,WAAW,EAC9B,WAAW,EAAE,WAAW,CAAC,WAAW,YAEpC,KAAC,iBAAiB,IAChB,SAAS,EAAE,YAAY,EACvB,eAAe,EAAE,eAAe,YAEhC,KAAC,GAAG,IACF,EAAE,EAAE;oBACF,iBAAiB,EAAE;wBACjB,eAAe,EAAE,eAAe;wBAChC,YAAY,EAAE,CAAC;qBAChB;oBACD,qBAAqB,EAAE;wBACrB,eAAe,EAAE,eAAe;qBACjC;oBACD,iBAAiB,EAAE;wBACjB,eAAe,EAAE,eAAe;qBACjC;oBACD,iBAAiB,EAAE;wBACjB,eAAe,EAAE,eAAe;qBACjC;oBACD,iDAAiD,EAAE;wBACjD,eAAe,EAAE,eAAe;qBACjC;iBACF,YAED,KAAC,YAAY,CAAC,QAAQ,IAAC,KAAK,EAAE,EAAE,KAAK,EAAE,YAAY,EAAE,YAClD,QAAQ,GACa,GACpB,GACY,GACG,CAC1B,CAAC;AACJ,CAAC;AAED,eAAe,0BAA0B,CAAC"}
+\ No newline at end of file
+diff --git a/node_modules/@datalayer/jupyter-lexical/lib/context/index.d.ts b/node_modules/@datalayer/jupyter-lexical/lib/context/index.d.ts
+index 8b99cb2..b2d3d4d 100644
+--- a/node_modules/@datalayer/jupyter-lexical/lib/context/index.d.ts
++++ b/node_modules/@datalayer/jupyter-lexical/lib/context/index.d.ts
+@@ -5,3 +5,4 @@ export * from './LexicalContext';
+ export * from './SettingsContext';
+ export * from './ThemeContext';
+ export * from './ToolbarContext';
++export * from './LexicalPrimerThemeProvider';
+diff --git a/node_modules/@datalayer/jupyter-lexical/lib/context/index.js b/node_modules/@datalayer/jupyter-lexical/lib/context/index.js
+index c4170d9..0169267 100644
+--- a/node_modules/@datalayer/jupyter-lexical/lib/context/index.js
++++ b/node_modules/@datalayer/jupyter-lexical/lib/context/index.js
+@@ -10,4 +10,5 @@ export * from './LexicalContext.js';
+ export * from './SettingsContext.js';
+ export * from './ThemeContext.js';
+ export * from './ToolbarContext.js';
++export * from './LexicalPrimerThemeProvider.js';
+ //# sourceMappingURL=index.js.map
+\ No newline at end of file
+diff --git a/node_modules/@datalayer/jupyter-lexical/lib/context/index.js.map b/node_modules/@datalayer/jupyter-lexical/lib/context/index.js.map
+index 99e481c..03766ad 100644
+--- a/node_modules/@datalayer/jupyter-lexical/lib/context/index.js.map
++++ b/node_modules/@datalayer/jupyter-lexical/lib/context/index.js.map
+@@ -1 +1 @@
+-{"version":3,"file":"index.js","sourceRoot":"","sources":["../../src/context/index.ts"],"names":[],"mappings":"AAAA;;;;GAIG;AAEH,cAAc,mBAAmB,CAAC;AAClC,cAAc,wBAAwB,CAAC;AACvC,cAAc,wBAAwB,CAAC;AACvC,cAAc,kBAAkB,CAAC;AACjC,cAAc,mBAAmB,CAAC;AAClC,cAAc,gBAAgB,CAAC;AAC/B,cAAc,kBAAkB,CAAC"}
+\ No newline at end of file
++{"version":3,"file":"index.js","sourceRoot":"","sources":["../../src/context/index.ts"],"names":[],"mappings":"AAAA;;;;GAIG;AAEH,cAAc,mBAAmB,CAAC;AAClC,cAAc,wBAAwB,CAAC;AACvC,cAAc,wBAAwB,CAAC;AACvC,cAAc,kBAAkB,CAAC;AACjC,cAAc,mBAAmB,CAAC;AAClC,cAAc,gBAAgB,CAAC;AAC/B,cAAc,kBAAkB,CAAC;AACjC,cAAc,8BAA8B,CAAC"}
+\ No newline at end of file
+diff --git a/node_modules/@datalayer/jupyter-lexical/lib/examples/AppNbformat.js b/node_modules/@datalayer/jupyter-lexical/lib/examples/AppNbformat.js
+index ba4718e..2a4c4f7 100644
+--- a/node_modules/@datalayer/jupyter-lexical/lib/examples/AppNbformat.js
++++ b/node_modules/@datalayer/jupyter-lexical/lib/examples/AppNbformat.js
+@@ -7,16 +7,20 @@ import { jsx as _jsx, jsxs as _jsxs, Fragment as _Fragment } from "react/jsx-run
+ import { useState, useMemo } from 'react';
+ import { $getRoot } from 'lexical';
+ import styled from 'styled-components';
+-import { useNotebookStore, useJupyter, JupyterReactTheme, Notebook, CellSidebar, CellSidebarExtension, } from '@datalayer/jupyter-react';
+-import { Box } from '@datalayer/primer-addons';
++import { useNotebookStore, useJupyter, Notebook, CellSidebar, CellSidebarExtension, } from '@datalayer/jupyter-react';
++import { AppearanceControlsWithStore, Box, createThemeStore, } from '@datalayer/primer-addons';
+ import { UnderlineNav, Button } from '@primer/react';
+ import { ThreeBarsIcon } from '@primer/octicons-react';
+ import { JSONTree } from 'react-json-tree';
+ import { lexicalToNbformat } from './../index.js';
+-import { useLexical, LexicalProvider, Editor } from './../index.js';
++import { useLexical, LexicalProvider, Editor, LexicalPrimerThemeProvider, } from './../index.js';
+ import INITIAL_LEXICAL_MODEL from './content/Example.lexical.json';
+ import INITIAL_NBFORMAT_MODEL from './content/Example.ipynb.json';
+ const NOTEBOOK_UID = 'notebook-uid-lexical';
++const useNbformatPrimerThemeStore = createThemeStore('jupyter-lexical-nbformat-primer-theme-example', {
++    colorMode: 'auto',
++    theme: 'matrix',
++});
+ const StyledNotebook = styled.div `
+   &[style] {
+     height: 100vh !important;
+@@ -68,7 +72,7 @@ const Tabs = () => {
+                             }, children: "Reset Nbformat" })] }) })), tab === 'nbformat' && (_jsxs(Box, { children: [_jsx(JSONTree, { data: nbformat }), ";"] }))] }));
+ };
+ export function App() {
+-    return (_jsxs(_Fragment, { children: [_jsx("div", { className: "App", children: _jsx("h1", { children: "Jupyter UI \u2764\uFE0F Lexical" }) }), _jsx(JupyterReactTheme, { children: _jsx(LexicalProvider, { children: _jsx(Tabs, {}) }) }), _jsxs("div", { className: "other App", children: [_jsxs("div", { className: "flex flex-col items-center gap-4 my-8", children: [_jsx("button", { className: "bg-blue-600 hover:bg-blue-800 text-white font-bold py-3 px-8 rounded-lg shadow-lg hover:shadow-xl transform hover:scale-105 transition duration-300 ease-in-out", onClick: () => alert('Tailwind CSS v4 is working correctly!'), children: "Tailwind v4 Button" }), _jsx("div", { className: "mt-4 text-center", children: _jsx("span", { className: "tailwind-demo-badge", children: "Tailwind v4 Custom Component" }) })] }), _jsx("div", { className: "other App", children: _jsxs("div", { style: {
++    return (_jsxs(_Fragment, { children: [_jsx("div", { className: "App", children: _jsx("h1", { children: "Jupyter UI \u2764\uFE0F Lexical" }) }), _jsx(Box, { sx: { px: 3, py: 2 }, children: _jsx(AppearanceControlsWithStore, { useStore: useNbformatPrimerThemeStore }) }), _jsx(LexicalPrimerThemeProvider, { useStore: useNbformatPrimerThemeStore, children: _jsx(LexicalProvider, { children: _jsx(Tabs, {}) }) }), _jsxs("div", { className: "other App", children: [_jsxs("div", { className: "flex flex-col items-center gap-4 my-8", children: [_jsx("button", { className: "bg-blue-600 hover:bg-blue-800 text-white font-bold py-3 px-8 rounded-lg shadow-lg hover:shadow-xl transform hover:scale-105 transition duration-300 ease-in-out", onClick: () => alert('Tailwind CSS v4 is working correctly!'), children: "Tailwind v4 Button" }), _jsx("div", { className: "mt-4 text-center", children: _jsx("span", { className: "tailwind-demo-badge", children: "Tailwind v4 Custom Component" }) })] }), _jsx("div", { className: "other App", children: _jsxs("div", { style: {
+                                 display: 'flex',
+                                 alignItems: 'center',
+                                 justifyContent: 'center',
+diff --git a/node_modules/@datalayer/jupyter-lexical/lib/examples/AppNbformat.js.map b/node_modules/@datalayer/jupyter-lexical/lib/examples/AppNbformat.js.map
+index a1c3114..a65b7d4 100644
+--- a/node_modules/@datalayer/jupyter-lexical/lib/examples/AppNbformat.js.map
++++ b/node_modules/@datalayer/jupyter-lexical/lib/examples/AppNbformat.js.map
+@@ -1 +1 @@
+-{"version":3,"file":"AppNbformat.js","sourceRoot":"","sources":["../../src/examples/AppNbformat.tsx"],"names":[],"mappings":";AAAA;;;;GAIG;AAEH,OAAO,EAAE,QAAQ,EAAE,OAAO,EAAE,MAAM,OAAO,CAAC;AAC1C,OAAO,EAAE,QAAQ,EAAE,MAAM,SAAS,CAAC;AACnC,OAAO,MAAM,MAAM,mBAAmB,CAAC;AACvC,OAAO,EACL,gBAAgB,EAChB,UAAU,EACV,iBAAiB,EACjB,QAAQ,EACR,WAAW,EACX,oBAAoB,GACrB,MAAM,0BAA0B,CAAC;AAClC,OAAO,EAAE,GAAG,EAAE,MAAM,0BAA0B,CAAC;AAC/C,OAAO,EAAE,YAAY,EAAE,MAAM,EAAE,MAAM,eAAe,CAAC;AACrD,OAAO,EAAE,aAAa,EAAE,MAAM,wBAAwB,CAAC;AACvD,OAAO,EAAE,QAAQ,EAAE,MAAM,iBAAiB,CAAC;AAG3C,OAAO,EAAE,iBAAiB,EAAE,MAAM,MAAM,CAAC;AACzC,OAAO,EAAE,UAAU,EAAE,eAAe,EAAE,MAAM,EAAE,MAAM,MAAM,CAAC;AAE3D,OAAO,qBAAqB,MAAM,gCAAgC,CAAC;AAEnE,OAAO,sBAAsB,MAAM,8BAA8B,CAAC;AAElE,MAAM,YAAY,GAAG,sBAAsB,CAAC;AAI5C,MAAM,cAAc,GAAG,MAAM,CAAC,GAAG,CAAA;;;;CAIhC,CAAC;AAEF,MAAM,IAAI,GAAG,GAAG,EAAE;IAChB,MAAM,EAAE,MAAM,EAAE,GAAG,UAAU,EAAE,CAAC;IAChC,MAAM,EAAE,cAAc,EAAE,aAAa,EAAE,GAAG,UAAU,CAAC;QACnD,kBAAkB,EAAE,IAAI;KACzB,CAAC,CAAC;IACH,MAAM,aAAa,GAAG,gBAAgB,EAAE,CAAC;IACzC,MAAM,CAAC,GAAG,EAAE,MAAM,CAAC,GAAG,QAAQ,CAAU,QAAQ,CAAC,CAAC;IAClD,MAAM,CAAC,QAAQ,EAAE,WAAW,CAAC,GAAG,QAAQ,CACtC,sBAAsB,CACvB,CAAC;IACF,MAAM,UAAU,GAAG,OAAO,CACxB,GAAG,EAAE,CAAC,CAAC,IAAI,oBAAoB,CAAC,EAAE,OAAO,EAAE,WAAW,EAAE,CAAC,CAAC,EAC1D,EAAE,CACH,CAAC;IACF,MAAM,QAAQ,GAAG,aAAa,CAAC,cAAc,CAAC,YAAY,CAAC,CAAC;IAC5D,MAAM,OAAO,GAAG,CACd,CAAM,EACN,KAAc,EACd,aAAyC,EACzC,EAAE;QACF,CAAC,CAAC,cAAc,EAAE,CAAC;QACnB,IAAI,GAAG,KAAK,UAAU,IAAI,KAAK,KAAK,QAAQ,EAAE,CAAC;YAC7C,IAAI,aAAa,IAAI,MAAM,EAAE,CAAC;gBAC5B,WAAW,CAAC,aAAa,CAAC,MAAM,EAAsB,CAAC,CAAC;YAC1D,CAAC;QACH,CAAC;QACD,IAAI,GAAG,KAAK,QAAQ,IAAI,KAAK,KAAK,UAAU,EAAE,CAAC;YAC7C,MAAM,EAAE,MAAM,CAAC,GAAG,EAAE;gBAClB,MAAM,IAAI,GAAG,QAAQ,EAAE,CAAC;gBACxB,MAAM,QAAQ,GAAG,IAAI,CAAC,WAAW,EAAE,CAAC;gBACpC,MAAM,QAAQ,GAAG,iBAAiB,CAAC,QAAQ,CAAC,CAAC;gBAC7C,WAAW,CAAC,QAAQ,CAAC,CAAC;YACxB,CAAC,CAAC,CAAC;QACL,CAAC;QACD,IAAI,GAAG,KAAK,UAAU,IAAI,KAAK,KAAK,UAAU,EAAE,CAAC;YAC/C,IAAI,aAAa,IAAI,MAAM,EAAE,CAAC;gBAC5B,WAAW,CAAC,aAAa,CAAC,MAAM,EAAsB,CAAC,CAAC;YAC1D,CAAC;QACH,CAAC;QACD,MAAM,CAAC,KAAK,CAAC,CAAC;IAChB,CAAC,CAAC;IACF,OAAO,CACL,MAAC,GAAG,IAAC,SAAS,EAAC,QAAQ,aACrB,MAAC,YAAY,kBAAY,sBAAsB,aAC7C,KAAC,YAAY,CAAC,IAAI,IAChB,IAAI,EAAC,EAAE,kBACO,GAAG,KAAK,QAAQ,CAAC,CAAC,CAAC,MAAM,CAAC,CAAC,CAAC,SAAS,EACnD,OAAO,EAAE,CAAC,CAAC,EAAE,CAAC,OAAO,CAAC,CAAC,EAAE,QAAQ,EAAE,QAAQ,EAAE,KAAK,CAAC,uBAGjC,EACpB,KAAC,YAAY,CAAC,IAAI,IAChB,IAAI,EAAC,EAAE,kBACO,GAAG,KAAK,UAAU,CAAC,CAAC,CAAC,MAAM,CAAC,CAAC,CAAC,SAAS,EACrD,OAAO,EAAE,CAAC,CAAC,EAAE,CAAC,OAAO,CAAC,CAAC,EAAE,UAAU,EAAE,QAAQ,EAAE,KAAK,CAAC,yBAGnC,EACpB,KAAC,YAAY,CAAC,IAAI,IAChB,IAAI,EAAC,EAAE,kBACO,GAAG,KAAK,UAAU,CAAC,CAAC,CAAC,MAAM,CAAC,CAAC,CAAC,SAAS,EACrD,OAAO,EAAE,CAAC,CAAC,EAAE,CAAC,OAAO,CAAC,CAAC,EAAE,UAAU,EAAE,QAAQ,EAAE,KAAK,CAAC,yBAGnC,IACP,EACd,GAAG,KAAK,QAAQ,IAAI,CACnB,MAAC,GAAG,eACF,KAAC,MAAM,IACL,QAAQ,EAAE,QAAQ,EAClB,mBAAmB,EAAE,OAAO,CAAC,EAAE;4BAC7B,OAAO,CAAC,GAAG,CAAC,kBAAkB,EAAE,OAAO,CAAC,CAAC;wBAC3C,CAAC,GACD,EACF,KAAC,MAAM,IACL,OAAO,EAAE,CAAC,CAAmB,EAAE,EAAE;4BAC/B,CAAC,CAAC,cAAc,EAAE,CAAC;4BACnB,IAAI,MAAM,EAAE,CAAC;gCACX,MAAM,WAAW,GAAG,MAAM,CAAC,gBAAgB,CACzC,qBAA4B,CAC7B,CAAC;gCACF,MAAM,CAAC,cAAc,CAAC,WAAW,CAAC,CAAC;4BACrC,CAAC;wBACH,CAAC,mCAGM,IACL,CACP,EACA,GAAG,KAAK,UAAU,IAAI,CACrB,KAAC,cAAc,cACb,MAAC,GAAG,IAAC,EAAE,EAAE,CAAC,aACP,cAAc,IAAI,aAAa,IAAI,CAClC,KAAC,QAAQ,IACP,EAAE,EAAE,YAAY,EAChB,MAAM,EAAE,aAAa,EACrB,cAAc,EAAE,cAAc,EAC9B,QAAQ,EAAE,sBAAsB,EAChC,UAAU,EAAE,UAAU,GACtB,CACH,EACD,KAAC,MAAM,IACL,OAAO,EAAE,CAAC,CAAmB,EAAE,EAAE;gCAC/B,CAAC,CAAC,cAAc,EAAE,CAAC;gCACnB,WAAW,CAAC,sBAAsB,CAAC,CAAC;4BACtC,CAAC,+BAGM,IACL,GACS,CAClB,EACA,GAAG,KAAK,UAAU,IAAI,CACrB,MAAC,GAAG,eACF,KAAC,QAAQ,IAAC,IAAI,EAAE,QAAQ,GAAI,SACxB,CACP,IACG,CACP,CAAC;AACJ,CAAC,CAAC;AAEF,MAAM,UAAU,GAAG;IACjB,OAAO,CACL,8BACE,cAAK,SAAS,EAAC,KAAK,YAClB,2DAA8B,GAC1B,EACN,KAAC,iBAAiB,cAChB,KAAC,eAAe,cACd,KAAC,IAAI,KAAG,GACQ,GACA,EACpB,eAAK,SAAS,EAAC,WAAW,aAExB,eAAK,SAAS,EAAC,uCAAuC,aACpD,iBACE,SAAS,EAAC,iKAAiK,EAC3K,OAAO,EAAE,GAAG,EAAE,CAAC,KAAK,CAAC,uCAAuC,CAAC,mCAGtD,EAET,cAAK,SAAS,EAAC,kBAAkB,YAC/B,eAAM,SAAS,EAAC,qBAAqB,6CAE9B,GACH,IACF,EACN,cAAK,SAAS,EAAC,WAAW,YACxB,eACE,KAAK,EAAE;gCACL,OAAO,EAAE,MAAM;gCACf,UAAU,EAAE,QAAQ;gCACpB,cAAc,EAAE,QAAQ;gCACxB,SAAS,EAAE,QAAQ;6BACpB,aAED,YACE,IAAI,EAAC,sBAAsB,EAC3B,MAAM,EAAC,QAAQ,EACf,GAAG,EAAC,YAAY,EAChB,KAAK,EAAE,EAAE,WAAW,EAAE,CAAC,EAAE,YAEzB,KAAC,aAAa,KAAG,GACf,EACJ,YAAG,IAAI,EAAC,sBAAsB,EAAC,MAAM,EAAC,QAAQ,EAAC,GAAG,EAAC,YAAY,gCAE3D,IACA,GACF,IACF,IACL,CACJ,CAAC;AACJ,CAAC;AAED,eAAe,GAAG,CAAC"}
+\ No newline at end of file
++{"version":3,"file":"AppNbformat.js","sourceRoot":"","sources":["../../src/examples/AppNbformat.tsx"],"names":[],"mappings":";AAAA;;;;GAIG;AAEH,OAAO,EAAE,QAAQ,EAAE,OAAO,EAAE,MAAM,OAAO,CAAC;AAC1C,OAAO,EAAE,QAAQ,EAAE,MAAM,SAAS,CAAC;AACnC,OAAO,MAAM,MAAM,mBAAmB,CAAC;AACvC,OAAO,EACL,gBAAgB,EAChB,UAAU,EACV,QAAQ,EACR,WAAW,EACX,oBAAoB,GACrB,MAAM,0BAA0B,CAAC;AAClC,OAAO,EACL,2BAA2B,EAC3B,GAAG,EACH,gBAAgB,GACjB,MAAM,0BAA0B,CAAC;AAClC,OAAO,EAAE,YAAY,EAAE,MAAM,EAAE,MAAM,eAAe,CAAC;AACrD,OAAO,EAAE,aAAa,EAAE,MAAM,wBAAwB,CAAC;AACvD,OAAO,EAAE,QAAQ,EAAE,MAAM,iBAAiB,CAAC;AAG3C,OAAO,EAAE,iBAAiB,EAAE,MAAM,MAAM,CAAC;AACzC,OAAO,EACL,UAAU,EACV,eAAe,EACf,MAAM,EACN,0BAA0B,GAC3B,MAAM,MAAM,CAAC;AAEd,OAAO,qBAAqB,MAAM,gCAAgC,CAAC;AAEnE,OAAO,sBAAsB,MAAM,8BAA8B,CAAC;AAElE,MAAM,YAAY,GAAG,sBAAsB,CAAC;AAC5C,MAAM,2BAA2B,GAAG,gBAAgB,CAClD,+CAA+C,EAC/C;IACE,SAAS,EAAE,MAAM;IACjB,KAAK,EAAE,QAAQ;CAChB,CACF,CAAC;AAIF,MAAM,cAAc,GAAG,MAAM,CAAC,GAAG,CAAA;;;;CAIhC,CAAC;AAEF,MAAM,IAAI,GAAG,GAAG,EAAE;IAChB,MAAM,EAAE,MAAM,EAAE,GAAG,UAAU,EAAE,CAAC;IAChC,MAAM,EAAE,cAAc,EAAE,aAAa,EAAE,GAAG,UAAU,CAAC;QACnD,kBAAkB,EAAE,IAAI;KACzB,CAAC,CAAC;IACH,MAAM,aAAa,GAAG,gBAAgB,EAAE,CAAC;IACzC,MAAM,CAAC,GAAG,EAAE,MAAM,CAAC,GAAG,QAAQ,CAAU,QAAQ,CAAC,CAAC;IAClD,MAAM,CAAC,QAAQ,EAAE,WAAW,CAAC,GAAG,QAAQ,CACtC,sBAAsB,CACvB,CAAC;IACF,MAAM,UAAU,GAAG,OAAO,CACxB,GAAG,EAAE,CAAC,CAAC,IAAI,oBAAoB,CAAC,EAAE,OAAO,EAAE,WAAW,EAAE,CAAC,CAAC,EAC1D,EAAE,CACH,CAAC;IACF,MAAM,QAAQ,GAAG,aAAa,CAAC,cAAc,CAAC,YAAY,CAAC,CAAC;IAC5D,MAAM,OAAO,GAAG,CACd,CAAM,EACN,KAAc,EACd,aAAyC,EACzC,EAAE;QACF,CAAC,CAAC,cAAc,EAAE,CAAC;QACnB,IAAI,GAAG,KAAK,UAAU,IAAI,KAAK,KAAK,QAAQ,EAAE,CAAC;YAC7C,IAAI,aAAa,IAAI,MAAM,EAAE,CAAC;gBAC5B,WAAW,CAAC,aAAa,CAAC,MAAM,EAAsB,CAAC,CAAC;YAC1D,CAAC;QACH,CAAC;QACD,IAAI,GAAG,KAAK,QAAQ,IAAI,KAAK,KAAK,UAAU,EAAE,CAAC;YAC7C,MAAM,EAAE,MAAM,CAAC,GAAG,EAAE;gBAClB,MAAM,IAAI,GAAG,QAAQ,EAAE,CAAC;gBACxB,MAAM,QAAQ,GAAG,IAAI,CAAC,WAAW,EAAE,CAAC;gBACpC,MAAM,QAAQ,GAAG,iBAAiB,CAAC,QAAQ,CAAC,CAAC;gBAC7C,WAAW,CAAC,QAAQ,CAAC,CAAC;YACxB,CAAC,CAAC,CAAC;QACL,CAAC;QACD,IAAI,GAAG,KAAK,UAAU,IAAI,KAAK,KAAK,UAAU,EAAE,CAAC;YAC/C,IAAI,aAAa,IAAI,MAAM,EAAE,CAAC;gBAC5B,WAAW,CAAC,aAAa,CAAC,MAAM,EAAsB,CAAC,CAAC;YAC1D,CAAC;QACH,CAAC;QACD,MAAM,CAAC,KAAK,CAAC,CAAC;IAChB,CAAC,CAAC;IACF,OAAO,CACL,MAAC,GAAG,IAAC,SAAS,EAAC,QAAQ,aACrB,MAAC,YAAY,kBAAY,sBAAsB,aAC7C,KAAC,YAAY,CAAC,IAAI,IAChB,IAAI,EAAC,EAAE,kBACO,GAAG,KAAK,QAAQ,CAAC,CAAC,CAAC,MAAM,CAAC,CAAC,CAAC,SAAS,EACnD,OAAO,EAAE,CAAC,CAAC,EAAE,CAAC,OAAO,CAAC,CAAC,EAAE,QAAQ,EAAE,QAAQ,EAAE,KAAK,CAAC,uBAGjC,EACpB,KAAC,YAAY,CAAC,IAAI,IAChB,IAAI,EAAC,EAAE,kBACO,GAAG,KAAK,UAAU,CAAC,CAAC,CAAC,MAAM,CAAC,CAAC,CAAC,SAAS,EACrD,OAAO,EAAE,CAAC,CAAC,EAAE,CAAC,OAAO,CAAC,CAAC,EAAE,UAAU,EAAE,QAAQ,EAAE,KAAK,CAAC,yBAGnC,EACpB,KAAC,YAAY,CAAC,IAAI,IAChB,IAAI,EAAC,EAAE,kBACO,GAAG,KAAK,UAAU,CAAC,CAAC,CAAC,MAAM,CAAC,CAAC,CAAC,SAAS,EACrD,OAAO,EAAE,CAAC,CAAC,EAAE,CAAC,OAAO,CAAC,CAAC,EAAE,UAAU,EAAE,QAAQ,EAAE,KAAK,CAAC,yBAGnC,IACP,EACd,GAAG,KAAK,QAAQ,IAAI,CACnB,MAAC,GAAG,eACF,KAAC,MAAM,IACL,QAAQ,EAAE,QAAQ,EAClB,mBAAmB,EAAE,OAAO,CAAC,EAAE;4BAC7B,OAAO,CAAC,GAAG,CAAC,kBAAkB,EAAE,OAAO,CAAC,CAAC;wBAC3C,CAAC,GACD,EACF,KAAC,MAAM,IACL,OAAO,EAAE,CAAC,CAAmB,EAAE,EAAE;4BAC/B,CAAC,CAAC,cAAc,EAAE,CAAC;4BACnB,IAAI,MAAM,EAAE,CAAC;gCACX,MAAM,WAAW,GAAG,MAAM,CAAC,gBAAgB,CACzC,qBAA4B,CAC7B,CAAC;gCACF,MAAM,CAAC,cAAc,CAAC,WAAW,CAAC,CAAC;4BACrC,CAAC;wBACH,CAAC,mCAGM,IACL,CACP,EACA,GAAG,KAAK,UAAU,IAAI,CACrB,KAAC,cAAc,cACb,MAAC,GAAG,IAAC,EAAE,EAAE,CAAC,aACP,cAAc,IAAI,aAAa,IAAI,CAClC,KAAC,QAAQ,IACP,EAAE,EAAE,YAAY,EAChB,MAAM,EAAE,aAAa,EACrB,cAAc,EAAE,cAAc,EAC9B,QAAQ,EAAE,sBAAsB,EAChC,UAAU,EAAE,UAAU,GACtB,CACH,EACD,KAAC,MAAM,IACL,OAAO,EAAE,CAAC,CAAmB,EAAE,EAAE;gCAC/B,CAAC,CAAC,cAAc,EAAE,CAAC;gCACnB,WAAW,CAAC,sBAAsB,CAAC,CAAC;4BACtC,CAAC,+BAGM,IACL,GACS,CAClB,EACA,GAAG,KAAK,UAAU,IAAI,CACrB,MAAC,GAAG,eACF,KAAC,QAAQ,IAAC,IAAI,EAAE,QAAQ,GAAI,SACxB,CACP,IACG,CACP,CAAC;AACJ,CAAC,CAAC;AAEF,MAAM,UAAU,GAAG;IACjB,OAAO,CACL,8BACE,cAAK,SAAS,EAAC,KAAK,YAClB,2DAA8B,GAC1B,EACN,KAAC,GAAG,IAAC,EAAE,EAAE,EAAE,EAAE,EAAE,CAAC,EAAE,EAAE,EAAE,CAAC,EAAE,YACvB,KAAC,2BAA2B,IAAC,QAAQ,EAAE,2BAA2B,GAAI,GAClE,EACN,KAAC,0BAA0B,IAAC,QAAQ,EAAE,2BAA2B,YAC/D,KAAC,eAAe,cACd,KAAC,IAAI,KAAG,GACQ,GACS,EAC7B,eAAK,SAAS,EAAC,WAAW,aAExB,eAAK,SAAS,EAAC,uCAAuC,aACpD,iBACE,SAAS,EAAC,iKAAiK,EAC3K,OAAO,EAAE,GAAG,EAAE,CAAC,KAAK,CAAC,uCAAuC,CAAC,mCAGtD,EAET,cAAK,SAAS,EAAC,kBAAkB,YAC/B,eAAM,SAAS,EAAC,qBAAqB,6CAE9B,GACH,IACF,EACN,cAAK,SAAS,EAAC,WAAW,YACxB,eACE,KAAK,EAAE;gCACL,OAAO,EAAE,MAAM;gCACf,UAAU,EAAE,QAAQ;gCACpB,cAAc,EAAE,QAAQ;gCACxB,SAAS,EAAE,QAAQ;6BACpB,aAED,YACE,IAAI,EAAC,sBAAsB,EAC3B,MAAM,EAAC,QAAQ,EACf,GAAG,EAAC,YAAY,EAChB,KAAK,EAAE,EAAE,WAAW,EAAE,CAAC,EAAE,YAEzB,KAAC,aAAa,KAAG,GACf,EACJ,YAAG,IAAI,EAAC,sBAAsB,EAAC,MAAM,EAAC,QAAQ,EAAC,GAAG,EAAC,YAAY,gCAE3D,IACA,GACF,IACF,IACL,CACJ,CAAC;AACJ,CAAC;AAED,eAAe,GAAG,CAAC"}
+\ No newline at end of file
+diff --git a/node_modules/@datalayer/jupyter-lexical/lib/examples/AppSimple.js b/node_modules/@datalayer/jupyter-lexical/lib/examples/AppSimple.js
+index 8d00909..ede4775 100644
+--- a/node_modules/@datalayer/jupyter-lexical/lib/examples/AppSimple.js
++++ b/node_modules/@datalayer/jupyter-lexical/lib/examples/AppSimple.js
+@@ -4,21 +4,17 @@ import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
+  *
+  * MIT License
+  */
+-import { useState, useEffect } from 'react';
++import { useMemo, useState, useEffect } from 'react';
+ import { Button, ToggleSwitch, Text } from '@primer/react';
+-import { Box, setupPrimerPortals } from '@datalayer/primer-addons';
+-import { MoonIcon, SunIcon, ThreeBarsIcon } from '@primer/octicons-react';
+-import { JupyterReactTheme, useJupyterReactStore, } from '@datalayer/jupyter-react';
+-import { useLexical, Editor, LexicalProvider, nbformatToLexical } from '../index.js';
+-import { ThemeContext } from '../context/ThemeContext.js';
++import { AppearanceControlsWithStore, Box, createThemeStore, } from '@datalayer/primer-addons';
++import { ThreeBarsIcon } from '@primer/octicons-react';
++import { useLexical, Editor, LexicalProvider, LexicalPrimerThemeProvider, nbformatToLexical, } from '../index.js';
+ import LEXICAL_MODEL from './content/Example.lexical.json';
+ import NBFORMAT_MODEL from './content/Example.ipynb.json';
+ const LexicalEditor = () => {
+     const { editor } = useLexical();
+-    // Load the Lexical model on mount
+     useEffect(() => {
+         if (editor) {
+-            // Defer setEditorState to avoid flushSync warning during React render
+             queueMicrotask(() => {
+                 const editorState = editor.parseEditorState(LEXICAL_MODEL);
+                 editor.setEditorState(editorState);
+@@ -35,8 +31,7 @@ const LexicalEditor = () => {
+                     }, children: "Insert Notebook Model" })] }) }));
+ };
+ const AppToolbar = (props) => {
+-    const { hasRuntime, toggleRuntime, colorMode, setColorMode } = props;
+-    const isDark = colorMode === 'night' || colorMode === 'dark';
++    const { hasRuntime, toggleRuntime, themeStore } = props;
+     return (_jsxs(Box, { sx: {
+             display: 'flex',
+             alignItems: 'center',
+@@ -46,10 +41,9 @@ const AppToolbar = (props) => {
+                     alignItems: 'center',
+                     gap: 3,
+                     marginLeft: 'auto',
+-                }, children: [_jsxs(Box, { sx: { display: 'flex', alignItems: 'center', gap: 2 }, children: [_jsx(SunIcon, { size: 16 }), _jsx(ToggleSwitch, { size: "small", defaultChecked: isDark, onChange: (on) => setColorMode(on ? 'night' : 'day'), statusLabelPosition: "end", "aria-labelledby": "colormode-toggle-label" }), _jsx(MoonIcon, { size: 16 })] }), _jsxs(Box, { sx: { display: 'flex', alignItems: 'center', gap: 2 }, children: [_jsx(Text, { id: "runtime-toggle-label", sx: { fontSize: 0, color: 'fg.muted' }, children: "Runtime" }), _jsx(ToggleSwitch, { size: "small", defaultChecked: hasRuntime, onChange: (on) => toggleRuntime(on), statusLabelPosition: "end", "aria-labelledby": "runtime-toggle-label" })] })] })] }));
++                }, children: [_jsx(AppearanceControlsWithStore, { useStore: themeStore }), _jsxs(Box, { sx: { display: 'flex', alignItems: 'center', gap: 2 }, children: [_jsx(Text, { id: "runtime-toggle-label", sx: { fontSize: 0, color: 'fg.muted' }, children: "Runtime" }), _jsx(ToggleSwitch, { size: "small", defaultChecked: hasRuntime, onChange: (on) => toggleRuntime(on), statusLabelPosition: "end", "aria-labelledby": "runtime-toggle-label" })] })] })] }));
+ };
+ export const App = () => {
+-    // Get initial state from URL or localStorage
+     const getInitialRuntimeState = () => {
+         const urlParams = new URLSearchParams(window.location.search);
+         const runtimeParam = urlParams.get('runtime');
+@@ -59,41 +53,23 @@ export const App = () => {
+         const stored = localStorage.getItem('hasRuntime');
+         return stored !== 'false';
+     };
+-    const getInitialColorMode = () => {
+-        const stored = localStorage.getItem('colorMode');
+-        if (stored === 'day' || stored === 'night') {
+-            return stored;
+-        }
+-        return 'day';
+-    };
+     const [hasRuntime] = useState(getInitialRuntimeState);
+-    const [colorMode, setColorMode] = useState(getInitialColorMode);
+-    const { setColormode } = useJupyterReactStore();
+-    // Setup Primer portals and sync JupyterReact store on color mode change
+-    useEffect(() => {
+-        const primerColormode = colorMode === 'night' || colorMode === 'dark' ? 'dark' : 'light';
+-        setupPrimerPortals(primerColormode);
+-        setColormode(primerColormode);
+-    }, [colorMode, setColormode]);
++    const themeStore = useMemo(() => createThemeStore('jupyter-lexical-primer-theme-example', {
++        colorMode: 'auto',
++        theme: 'matrix',
++    }), []);
+     const toggleRuntime = (newValue) => {
+         localStorage.setItem('hasRuntime', String(newValue));
+         const url = new URL(window.location.href);
+         url.searchParams.set('runtime', String(newValue));
+         window.location.href = url.toString();
+     };
+-    return (_jsx(JupyterReactTheme, { colormode: colorMode === 'night' || colorMode === 'dark' ? 'dark' : 'light', children: _jsxs(ThemeContext.Provider, { value: {
+-                theme: (colorMode === 'night' || colorMode === 'dark'
+-                    ? 'dark'
+-                    : 'light'),
+-            }, children: [_jsx("div", { className: "App", children: _jsx(AppToolbar, { hasRuntime: hasRuntime, toggleRuntime: toggleRuntime, colorMode: colorMode, setColorMode: (mode) => {
+-                            localStorage.setItem('colorMode', mode);
+-                            setColorMode(mode);
+-                        } }) }), _jsx(LexicalProvider, { children: _jsx(LexicalEditor, {}) }), _jsx("div", { className: "other App", children: _jsxs("div", { style: {
+-                            display: 'flex',
+-                            alignItems: 'center',
+-                            justifyContent: 'center',
+-                            textAlign: 'center',
+-                        }, children: [_jsx("a", { href: "https://datalayer.ai", target: "_blank", rel: "noreferrer", style: { marginRight: 8 }, children: _jsx(ThreeBarsIcon, {}) }), _jsx("a", { href: "https://datalayer.ai", target: "_blank", rel: "noreferrer", children: "Datalayer, Inc." })] }) })] }) }));
++    return (_jsxs(LexicalPrimerThemeProvider, { useStore: themeStore, children: [_jsx("div", { className: "App", children: _jsx(AppToolbar, { hasRuntime: hasRuntime, toggleRuntime: toggleRuntime, themeStore: themeStore }) }), _jsx(LexicalProvider, { children: _jsx(LexicalEditor, {}) }), _jsx("div", { className: "other App", children: _jsxs("div", { style: {
++                        display: 'flex',
++                        alignItems: 'center',
++                        justifyContent: 'center',
++                        textAlign: 'center',
++                    }, children: [_jsx("a", { href: "https://datalayer.ai", target: "_blank", rel: "noreferrer", style: { marginRight: 8 }, children: _jsx(ThreeBarsIcon, {}) }), _jsx("a", { href: "https://datalayer.ai", target: "_blank", rel: "noreferrer", children: "Datalayer, Inc." })] }) })] }));
+ };
+ export default App;
+ //# sourceMappingURL=AppSimple.js.map
+\ No newline at end of file
+diff --git a/node_modules/@datalayer/jupyter-lexical/lib/examples/AppSimple.js.map b/node_modules/@datalayer/jupyter-lexical/lib/examples/AppSimple.js.map
+index 8cc210b..25697b2 100644
+--- a/node_modules/@datalayer/jupyter-lexical/lib/examples/AppSimple.js.map
++++ b/node_modules/@datalayer/jupyter-lexical/lib/examples/AppSimple.js.map
+@@ -1 +1 @@
+-{"version":3,"file":"AppSimple.js","sourceRoot":"","sources":["../../src/examples/AppSimple.tsx"],"names":[],"mappings":"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"}
+\ No newline at end of file
++{"version":3,"file":"AppSimple.js","sourceRoot":"","sources":["../../src/examples/AppSimple.tsx"],"names":[],"mappings":"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"}
 \ No newline at end of file
 diff --git a/node_modules/@datalayer/jupyter-lexical/lib/examples/content/Example.ipynb.json b/node_modules/@datalayer/jupyter-lexical/lib/examples/content/Example.ipynb.json
 index 436d333..6f268d0 100644
@@ -4782,269 +4775,34 @@ index 9ee58cd..58e38d2 100644
 +    "version": 1
 +  }
  }
-diff --git a/node_modules/@datalayer/jupyter-lexical/lib/images/icons/plus.svg b/node_modules/@datalayer/jupyter-lexical/lib/images/icons/plus.svg
-new file mode 100644
-index 0000000..1a26928
---- /dev/null
-+++ b/node_modules/@datalayer/jupyter-lexical/lib/images/icons/plus.svg
-@@ -0,0 +1 @@
-+<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-plus"><path d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4z"/></svg>
+diff --git a/node_modules/@datalayer/jupyter-lexical/lib/plugins/ComponentPickerMenuPlugin.js b/node_modules/@datalayer/jupyter-lexical/lib/plugins/ComponentPickerMenuPlugin.js
+index 96f16aa..8813865 100644
+--- a/node_modules/@datalayer/jupyter-lexical/lib/plugins/ComponentPickerMenuPlugin.js
++++ b/node_modules/@datalayer/jupyter-lexical/lib/plugins/ComponentPickerMenuPlugin.js
+@@ -284,7 +284,13 @@ export const ComponentPickerMenuPlugin = ({ kernel, initCode = '', } = {}) => {
+         });
+     }, [editor]);
+     return (_jsxs(_Fragment, { children: [modal, _jsx(LexicalTypeaheadMenuPlugin, { onQueryChange: setQueryString, onSelectOption: onSelectOption, triggerFn: checkForTriggerMatch, options: options, menuRenderFn: (anchorElementRef, { selectedIndex, selectOptionAndCleanUp, setHighlightedIndex }) => anchorElementRef.current && options.length
+-                    ? ReactDOM.createPortal(_jsx(ThemeProvider, { colorMode: theme === 'dark' ? 'night' : 'day', children: _jsx(BaseStyles, { children: _jsx(Box, { sx: {
++                    ? ReactDOM.createPortal(_jsx(ThemeProvider, { colorMode: theme === 'dark' ? 'night' : 'day', children: _jsx(BaseStyles, { children: _jsx(Box, { onMouseDown: e => {
++                                    // Prevent the editor from losing focus/selection when
++                                    // the user clicks the scrollbar or any padding of the
++                                    // menu, which would otherwise cause the typeahead
++                                    // plugin to dismiss the menu.
++                                    e.preventDefault();
++                                }, sx: {
+                                     bg: 'canvas.overlay',
+                                     border: '1px solid',
+                                     borderColor: 'border.default',
+diff --git a/node_modules/@datalayer/jupyter-lexical/lib/plugins/ComponentPickerMenuPlugin.js.map b/node_modules/@datalayer/jupyter-lexical/lib/plugins/ComponentPickerMenuPlugin.js.map
+index b044c1e..9283f95 100644
+--- a/node_modules/@datalayer/jupyter-lexical/lib/plugins/ComponentPickerMenuPlugin.js.map
++++ b/node_modules/@datalayer/jupyter-lexical/lib/plugins/ComponentPickerMenuPlugin.js.map
+@@ -1 +1 @@
+-{"version":3,"file":"ComponentPickerMenuPlugin.js","sourceRoot":"","sources":["../../src/plugins/ComponentPickerMenuPlugin.tsx"],"names":[],"mappings":"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"}
 \ No newline at end of file
-diff --git a/node_modules/@datalayer/jupyter-lexical/lib/images/yellow-flower-small.jpg b/node_modules/@datalayer/jupyter-lexical/lib/images/yellow-flower-small.jpg
-new file mode 100644
-index 0000000..d2c37d3
-Binary files /dev/null and b/node_modules/@datalayer/jupyter-lexical/lib/images/yellow-flower-small.jpg differ
-diff --git a/node_modules/@datalayer/jupyter-lexical/lib/plugins/FloatingLinkEditorPlugin/index.css b/node_modules/@datalayer/jupyter-lexical/lib/plugins/FloatingLinkEditorPlugin/index.css
-new file mode 100644
-index 0000000..927b3e7
---- /dev/null
-+++ b/node_modules/@datalayer/jupyter-lexical/lib/plugins/FloatingLinkEditorPlugin/index.css
-@@ -0,0 +1,156 @@
-+/*
-+ * Copyright (c) 2021-2023 Datalayer, Inc.
-+ *
-+ * MIT License
-+ */
-+
-+.link-editor {
-+  position: absolute;
-+  top: 0;
-+  left: 0;
-+  z-index: 10;
-+  max-width: 400px;
-+  width: 100%;
-+  opacity: 0;
-+  background-color: var(--vscode-editorWidget-background, #fff);
-+  box-shadow: 0 5px 10px rgba(0, 0, 0, 0.3);
-+  border-radius: 8px;
-+  transition: opacity 0.5s;
-+  will-change: transform;
-+}
-+
-+.link-editor .link-editor-row {
-+  display: flex;
-+  align-items: center;
-+  gap: 8px;
-+  padding: 8px 12px;
-+}
-+
-+.link-editor .link-input {
-+  flex: 1;
-+  box-sizing: border-box;
-+  padding: 8px 12px;
-+  border-radius: 15px;
-+  background-color: var(--vscode-input-background, #eee);
-+  font-size: 15px;
-+  color: var(--vscode-input-foreground, rgb(5, 5, 5));
-+  border: 0;
-+  outline: 0;
-+  font-family: inherit;
-+}
-+
-+.link-editor .link-view {
-+  flex: 1;
-+  padding: 8px 12px;
-+  border-radius: 15px;
-+  font-size: 15px;
-+  color: var(--vscode-editorWidget-foreground, rgb(5, 5, 5));
-+  border: 0;
-+  outline: 0;
-+  font-family: inherit;
-+}
-+
-+.link-editor .link-view a {
-+  display: block;
-+  word-break: break-word;
-+  width: 100%;
-+  color: var(--vscode-textLink-foreground, rgb(33, 111, 219));
-+  text-decoration: none;
-+}
-+
-+.link-editor .link-view a:hover {
-+  text-decoration: underline;
-+}
-+
-+.link-editor div.link-edit {
-+  border: 0;
-+  background-color: transparent;
-+  background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path fill="%23666" d="M12.854.146a.5.5 0 0 0-.707 0L10.5 1.793 14.207 5.5l1.647-1.646a.5.5 0 0 0 0-.708l-3-3zm.646 6.061L9.793 2.5 3.293 9H3.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.207l6.5-6.5zm-7.468 7.468A.5.5 0 0 1 6 13.5V13h-.5a.5.5 0 0 1-.5-.5V12h-.5a.5.5 0 0 1-.5-.5V11h-.5a.5.5 0 0 1-.5-.5V10h-.5a.499.499 0 0 1-.175-.032l-.179.178a.5.5 0 0 0-.11.168l-2 5a.5.5 0 0 0 .65.65l5-2a.5.5 0 0 0 .168-.11l.178-.178z"/></svg>');
-+  background-size: 16px;
-+  background-position: center;
-+  background-repeat: no-repeat;
-+  border-radius: 4px;
-+  display: flex;
-+  align-items: center;
-+  justify-content: center;
-+  height: 35px;
-+  width: 35px;
-+  cursor: pointer;
-+  flex-shrink: 0;
-+}
-+
-+.link-editor div.link-edit:hover {
-+  background-color: var(
-+    --vscode-toolbar-hoverBackground,
-+    rgba(90, 93, 94, 0.1)
-+  );
-+}
-+
-+.link-editor div.link-trash {
-+  border: 0;
-+  background-color: transparent;
-+  background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="%23666" d="M3 6l3 18h12l3-18h-18zm19-4v2h-20v-2h5.711c.9 0 1.631-1.099 1.631-2h5.316c0 .901.73 2 1.631 2h5.711z"/></svg>');
-+  background-size: 16px;
-+  background-position: center;
-+  background-repeat: no-repeat;
-+  border-radius: 4px;
-+  display: flex;
-+  align-items: center;
-+  justify-content: center;
-+  height: 35px;
-+  width: 35px;
-+  cursor: pointer;
-+  flex-shrink: 0;
-+}
-+
-+.link-editor div.link-trash:hover {
-+  background-color: var(
-+    --vscode-toolbar-hoverBackground,
-+    rgba(90, 93, 94, 0.1)
-+  );
-+}
-+
-+.link-editor .link-cancel {
-+  border: 0;
-+  background-color: transparent;
-+  background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="%23666" d="M23 20.168l-8.185-8.187 8.185-8.174-2.832-2.807-8.182 8.179-8.176-8.179-2.81 2.81 8.186 8.196-8.186 8.184 2.81 2.81 8.203-8.192 8.18 8.192z"/></svg>');
-+  background-size: 16px;
-+  background-position: center;
-+  background-repeat: no-repeat;
-+  border-radius: 4px;
-+  display: flex;
-+  align-items: center;
-+  justify-content: center;
-+  height: 35px;
-+  width: 35px;
-+  cursor: pointer;
-+  flex-shrink: 0;
-+}
-+
-+.link-editor .link-cancel:hover {
-+  background-color: var(
-+    --vscode-toolbar-hoverBackground,
-+    rgba(90, 93, 94, 0.1)
-+  );
-+}
-+
-+.link-editor .link-confirm {
-+  border: 1px solid var(--vscode-button-border, #007acc);
-+  background-color: var(--vscode-button-background, #007acc);
-+  background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="%23fff" d="M20.285 2l-11.285 11.567-5.286-5.011-3.714 3.716 9 8.728 15-15.285z"/></svg>');
-+  background-size: 16px;
-+  background-position: center;
-+  background-repeat: no-repeat;
-+  border-radius: 4px;
-+  display: flex;
-+  align-items: center;
-+  justify-content: center;
-+  height: 35px;
-+  width: 35px;
-+  cursor: pointer;
-+  flex-shrink: 0;
-+}
-+
-+.link-editor .link-confirm:hover {
-+  background-color: var(--vscode-button-hoverBackground, #005a9e);
-+}
-diff --git a/node_modules/@datalayer/jupyter-lexical/lib/plugins/TableHoverActionsV2Plugin/index.css b/node_modules/@datalayer/jupyter-lexical/lib/plugins/TableHoverActionsV2Plugin/index.css
-new file mode 100644
-index 0000000..d329600
---- /dev/null
-+++ b/node_modules/@datalayer/jupyter-lexical/lib/plugins/TableHoverActionsV2Plugin/index.css
-@@ -0,0 +1,83 @@
-+/*
-+ * Copyright (c) 2021-2023 Datalayer, Inc.
-+ *
-+ * MIT License
-+ */
-+
-+/**
-+ * Copyright (c) Meta Platforms, Inc. and affiliates.
-+ *
-+ * This source code is licensed under the MIT license found in the
-+ * LICENSE file in the root directory of this source tree.
-+ *
-+ */
-+
-+.floating-add-indicator {
-+  background-image: url(../../../style/lexical/icons/plus.svg);
-+  background-color: #ffffff;
-+  background-position: center;
-+  background-repeat: no-repeat;
-+  background-size: 12px 12px;
-+  border: 1px solid #d0d0d0;
-+  border-radius: 2px;
-+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
-+  box-sizing: border-box;
-+  height: 18px;
-+  pointer-events: auto;
-+  transition: opacity 80ms ease;
-+  width: 18px;
-+  z-index: 10;
-+  cursor: pointer;
-+}
-+
-+.floating-filter-indicator {
-+  background-image: url(../../../style/lexical/icons/chevron-down.svg);
-+  background-color: #ffffff;
-+  background-position: center;
-+  background-repeat: no-repeat;
-+  background-size: 12px 12px;
-+  border: 1px solid #d0d0d0;
-+  border-radius: 2px;
-+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
-+  box-sizing: border-box;
-+  height: 18px;
-+  pointer-events: auto;
-+  transition: opacity 80ms ease;
-+  width: 18px;
-+  z-index: 10;
-+  cursor: pointer;
-+}
-+
-+.floating-filter-indicator:hover {
-+  background-color: #f3f3f3;
-+}
-+
-+.floating-add-indicator:hover {
-+  background-color: #f3f3f3;
-+}
-+
-+.floating-top-actions {
-+  display: flex;
-+  align-items: center;
-+  gap: 4px;
-+  position: relative;
-+}
-+
-+.floating-filter-container {
-+  position: relative;
-+}
-+
-+.floating-sort-menu__item {
-+  width: 100%;
-+  padding: 6px 12px;
-+  background: transparent;
-+  border: none;
-+  text-align: left;
-+  font-size: 12px;
-+  color: #1f1f1f;
-+  cursor: pointer;
-+}
-+
-+.floating-sort-menu__item:hover {
-+  background-color: #f3f3f3;
-+}
++{"version":3,"file":"ComponentPickerMenuPlugin.js","sourceRoot":"","sources":["../../src/plugins/ComponentPickerMenuPlugin.tsx"],"names":[],"mappings":"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"}
+\ No newline at end of file
 diff --git a/node_modules/@datalayer/jupyter-lexical/style/lexical/icons/LICENSE.md b/node_modules/@datalayer/jupyter-lexical/style/lexical/icons/LICENSE.md
 new file mode 100644
 index 0000000..ce74f6a
