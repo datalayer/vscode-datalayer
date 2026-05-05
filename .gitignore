@@ -10,6 +10,9 @@ node_modules/
 
 # IDE
 .vscode-test/
+
+# Auto-generated per-window Windsurf MCP config (dynamic port — do not commit)
+.windsurf/mcp.json
 .vscode/datalayer-cells/
 *.suo
 *.ntvs*

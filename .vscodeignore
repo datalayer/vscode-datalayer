@@ -91,6 +91,9 @@ node_modules/**
 # Exclude examples from whitelisted @datalayer packages
 node_modules/@datalayer/*/lib/examples/**
 
+# --- Whitelist: MCP SDK for Windsurf/Cascade HTTP server ---
+!node_modules/@modelcontextprotocol/sdk/**
+
 # Exclude @primer/css (not imported, @primer/react is separate)
 node_modules/@primer/css/**
 

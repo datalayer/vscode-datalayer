@@ -21,6 +21,7 @@ export * from "./createNotebook";
 
 // Document access tools
 export * from "./getActiveDocument";
+export * from "./listOpenDocuments";
 
 // Kernel management tools
 export * from "./listKernels";
@@ -29,12 +30,17 @@ export * from "./selectKernel";
 // Code execution tools
 export * from "./executeCode";
 
+// Batch execution tool (Code Mode)
+export * from "./batch";
+
 // Import all definitions for registry
+import { batchTool } from "./batch";
 import { createLexicalTool } from "./createLexical";
 import { createNotebookTool } from "./createNotebook";
 import { executeCodeTool } from "./executeCode";
 import { getActiveDocumentTool } from "./getActiveDocument";
 import { listKernelsTool } from "./listKernels";
+import { listOpenDocumentsTool } from "./listOpenDocuments";
 import { selectKernelTool } from "./selectKernel";
 
 /**
@@ -58,18 +64,46 @@ async function getAllToolDefinitionsAsync(): Promise<ToolDefinition[]> {
 
   // Filter out executeCode from package tools to avoid duplication
   // Also filter out tools that have missing operations
-  const notebookToolsFiltered = notebookToolDefinitions.filter(
-    (tool: ToolDefinition) =>
-      tool.name !== "datalayer_executeCode" &&
-      tool.name !== "datalayer_insertCells", // Operation doesn't exist
-  );
+  const notebookToolsFiltered = notebookToolDefinitions
+    .filter(
+      (tool: ToolDefinition) =>
+        tool.name !== "datalayer_executeCode" &&
+        tool.name !== "datalayer_insertCells", // Operation doesn't exist
+    )
+    .map((tool: ToolDefinition) => {
+      // Inject notebook_uri into every cell tool's parameter schema.
+      // This optional parameter lets the caller (e.g. Cascade) target a
+      // specific open notebook by URI rather than relying on whichever
+      // notebook happens to be focused in VS Code.
+      // The URI values can be discovered via datalayer_listOpenDocuments.
+      const params = tool.parameters as {
+        type: string;
+        properties?: Record<string, unknown>;
+        required?: string[];
+      };
+      return {
+        ...tool,
+        parameters: {
+          ...params,
+          properties: {
+            notebook_uri: {
+              type: "string",
+              description:
+                "Optional URI of the target notebook. Obtain from datalayer_listOpenDocuments or datalayer_getActiveDocument. Required when multiple notebooks are open and you need to target a specific one.",
+            },
+            ...(params.properties ?? {}),
+          },
+        },
+      };
+    });
   const lexicalToolsFiltered = lexicalToolDefinitions.filter(
     (tool: ToolDefinition) => tool.name !== "datalayer_executeCode_lexical",
   );
 
   return [
-    // Document access (1 tool)
+    // Document access (2 tools)
     getActiveDocumentTool,
+    listOpenDocumentsTool,
 
     // Document creation (2 unified smart tools)
     createNotebookTool,
@@ -81,6 +115,9 @@ async function getAllToolDefinitionsAsync(): Promise<ToolDefinition[]> {
 
     // Code execution (1 unified tool)
     executeCodeTool,
+
+    // Batch execution (Code Mode — 1 meta-tool)
+    batchTool,
 
     // Notebook tools from package (7 tools, excluding executeCode and insertCells)
     ...notebookToolsFiltered,
@@ -96,7 +133,7 @@ async function getAllToolDefinitionsAsync(): Promise<ToolDefinition[]> {
  * DEPRECATED: Use getAllToolDefinitionsAsync() instead to avoid loading React at startup.
  * This export is kept for backwards compatibility but will be removed.
  *
- * This includes 22 tools total (after unifying executeCode and filtering broken tools):
+ * This includes 23 tools total (after unifying executeCode and filtering broken tools):
  * - 6 VS Code-specific tools:
  *   - 2 unified smart document creation tools (createNotebook + createLexical)
  *   - 1 VS Code document access tool (getActiveDocument)
@@ -112,8 +149,9 @@ async function getAllToolDefinitionsAsync(): Promise<ToolDefinition[]> {
  * Note: insertCells is filtered out because its operation doesn't exist in the package.
  */
 export const allToolDefinitions = [
-  // Document access (1 tool)
+  // Document access (2 tools)
   getActiveDocumentTool,
+  listOpenDocumentsTool,
 
   // Document creation (2 unified smart tools)
   createNotebookTool,

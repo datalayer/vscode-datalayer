@@ -2,8 +2,8 @@
   "name": "datalayer-jupyter-vscode",
   "publisher": "Datalayer",
   "displayName": "Datalayer",
-  "description": "✨ 🤖 Managed AI Agents for Data Analysis. LLM are bad at data — we fix that.",
-  "version": "0.0.17",
+  "description": "✨ 🤖 Autonomous Agents for Data Analysis. LLM are bad at data — we fix that.",
+  "version": "0.0.17-alpha.adp12",
   "cache_version": "2",
   "icon": "images/datalayer-logo.png",
   "categories": [
@@ -113,6 +113,7 @@
     "@lumino/coreutils": "^2.1.1",
     "@lumino/disposable": "^2.1.1",
     "@lumino/signaling": "^2.1.1",
+    "@modelcontextprotocol/sdk": "^1.29.0",
     "@nteract/messaging": "^7.0.20",
     "@primer/react": "^37.19.0",
     "@primer/react-brand": "^0.58.1",

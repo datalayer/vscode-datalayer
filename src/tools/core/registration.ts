@@ -14,11 +14,13 @@ import type { ToolDefinition, ToolOperation } from "@datalayer/jupyter-react";
 import * as vscode from "vscode";
 
 import { getAllToolDefinitionsAsync } from "../definitions";
+import { batchOperation } from "../operations/batch";
 import { createLexicalOperation } from "../operations/createLexical";
 import { createNotebookOperation } from "../operations/createNotebook";
 import { executeCodeOperation } from "../operations/executeCode";
 import { getActiveDocumentOperation } from "../operations/getActiveDocument";
 import { listKernelsOperation } from "../operations/listKernels";
+import { listOpenDocumentsOperation } from "../operations/listOpenDocuments";
 import { selectKernelOperation } from "../operations/selectKernel";
 import { VSCodeToolAdapter } from "./toolAdapter";
 
@@ -34,12 +36,16 @@ export interface CombinedOperations {
   selectKernel: ToolOperation<unknown, unknown>;
   /** Gets the currently active document in VS Code. */
   getActiveDocument: ToolOperation<unknown, unknown>;
+  /** Lists all open Datalayer documents sorted by most-recently-used. */
+  listOpenDocuments: ToolOperation<unknown, unknown>;
   /** Creates a new notebook (local or remote). */
   createNotebook: ToolOperation<unknown, unknown>;
   /** Creates a new Lexical document. */
   createLexical: ToolOperation<unknown, unknown>;
   /** Executes code in a notebook or runtime. */
   executeCode: ToolOperation<unknown, unknown>;
+  /** Executes a batch of operations in one MCP call (Code Mode). */
+  batch: ToolOperation<unknown, unknown>;
   /** Additional operations from notebook and lexical packages. */
   [key: string]: ToolOperation<unknown, unknown>;
 }
@@ -73,11 +79,15 @@ export async function getCombinedOperations(): Promise<CombinedOperations> {
 
     // VS Code-specific operations (all use standard ToolOperation pattern)
     getActiveDocument: getActiveDocumentOperation,
+    listOpenDocuments: listOpenDocumentsOperation,
     createNotebook: createNotebookOperation,
     createLexical: createLexicalOperation,
 
     // Unified code execution (overrides package executeCode operations)
     executeCode: executeCodeOperation,
+
+    // Batch execution (Code Mode — runs multiple ops in one MCP call)
+    batch: batchOperation,
   };
 }
 

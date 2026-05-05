@@ -37,6 +37,19 @@ export interface DocumentRegistryEntry {
   type: DocumentType;
   /** Webview panel for tool execution messaging */
   webviewPanel?: vscode.WebviewPanel;
+  /**
+   * Whether the webview has sent its "ready" message, meaning the React app is
+   * fully loaded and the tool-execution message handler is live. Set to false
+   * by the early registration in resolveCustomEditor; set to true by
+   * markWebviewReady() when the "ready" message arrives.
+   */
+  isWebviewReady: boolean;
+  /**
+   * Unix timestamp (ms) of the last time this entry was accessed via the MCP
+   * executor or explicitly touched. Used to prefer the most-recently-used
+   * document when multiple documents of the same type are registered.
+   */
+  lastUsed: number;
 }
 
 /**
@@ -58,6 +71,40 @@ class DocumentRegistry {
   private uriToId = new Map<string, string>();
 
   /**
+   * Subscribe to VS Code tab-change events so that manually focusing a
+   * Datalayer custom editor tab also updates `lastUsed`, making it the
+   * preferred target for subsequent MCP tool calls.
+   *
+   * Call once during extension activation and push the returned disposable
+   * onto `context.subscriptions`.
+   *
+   * @returns A VS Code disposable that tears down the listener.
+   */
+  startTabWatcher(): vscode.Disposable {
+    return vscode.window.tabGroups.onDidChangeTabs(() => {
+      const activeTab = vscode.window.tabGroups.activeTabGroup.activeTab;
+      if (!activeTab?.input || typeof activeTab.input !== "object") {
+        return;
+      }
+      const tabInput = activeTab.input as { uri?: vscode.Uri; viewType?: string };
+      if (
+        tabInput.uri &&
+        (tabInput.viewType === "datalayer.jupyter-notebook" ||
+          tabInput.viewType === "datalayer.lexical-editor")
+      ) {
+        const uriStr = tabInput.uri.toString();
+        const documentId = this.uriToId.get(uriStr);
+        if (documentId) {
+          this.touch(documentId);
+          ServiceLoggers.main.debug(
+            `[DocumentRegistry] Tab focus updated lastUsed for: ${uriStr}`,
+          );
+        }
+      }
+    });
+  }
+
+  /**
    * Register a document with its ID, URI, and type.
    *
    * @param documentId - Document identifier (UID for remote, URI for local).
@@ -70,12 +117,15 @@ class DocumentRegistry {
     documentUri: string,
     type: DocumentType,
     webviewPanel?: vscode.WebviewPanel,
+    isWebviewReady = false,
   ): void {
     const entry: DocumentRegistryEntry = {
       documentId,
       documentUri,
       type,
       webviewPanel,
+      isWebviewReady,
+      lastUsed: Date.now(),
     };
     this.idToEntry.set(documentId, entry);
     this.uriToId.set(documentUri, documentId);
@@ -98,6 +148,42 @@ class DocumentRegistry {
   }
 
   /**
+   * Update the last-used timestamp for a document.
+   *
+   * Call this whenever a document is targeted by an MCP tool call so that
+   * recency-based selection prefers the correct document on the next call.
+   *
+   * @param documentId - Document identifier to touch.
+   */
+  touch(documentId: string): void {
+    const entry = this.idToEntry.get(documentId);
+    if (entry) {
+      entry.lastUsed = Date.now();
+    }
+  }
+
+  /**
+   * Mark a document's webview as ready to receive tool-execution messages.
+   *
+   * Call this from the provider's handleReadyMessage when the webview React app
+   * has finished loading and sent its "ready" handshake.
+   *
+   * @param documentUri - VS Code document URI string.
+   */
+  markWebviewReady(documentUri: string): void {
+    const documentId = this.uriToId.get(documentUri);
+    if (documentId) {
+      const entry = this.idToEntry.get(documentId);
+      if (entry) {
+        entry.isWebviewReady = true;
+        ServiceLoggers.main.debug(
+          `[DocumentRegistry] Webview ready: ${documentUri.substring(0, 60)}`,
+        );
+      }
+    }
+  }
+
+  /**
    * Get webview panel for active document.
    * Checks active custom editor tab (notebook or lexical).
    *
@@ -108,6 +194,70 @@ class DocumentRegistry {
     const uri = getActiveCustomEditorUri();
     if (uri) {
       return this.getWebviewPanel(uri.toString());
+    }
+    return undefined;
+  }
+
+  /**
+   * Get the best available webview panel for tool execution.
+   *
+   * Prefers the currently active Datalayer editor tab (same as
+   * {@link getActiveWebviewPanel}), but when VS Code focus is elsewhere
+   * (e.g. the Cascade/Windsurf MCP chat panel is active), falls back to
+   * the first registered webview panel that is still visible.
+   *
+   * This is required for the MCP path where the user is interacting with
+   * Cascade in a side panel while the notebook tab is open but not focused.
+   *
+   * @returns Best available webview panel, or undefined if none registered.
+   */
+  getBestWebviewPanel(): vscode.WebviewPanel | undefined {
+    // Prefer active tab first (handles the focused-tab case)
+    const active = this.getActiveWebviewPanel();
+    if (active) {
+      return active;
+    }
+
+    // Fall back to any registered panel, sorted by most recently used.
+    // Prefer notebook panels over lexical ones to match the most common MCP use case.
+    // Within each type, prefer panels where the webview is already ready.
+    for (const type of ["notebook", "lexical"] as const) {
+      const entries = this.getByType(type);
+      const ready = entries.find((e) => e.webviewPanel && e.isWebviewReady);
+      if (ready) {
+        return ready.webviewPanel;
+      }
+      // Fall back to any panel with a webviewPanel, even if not yet ready.
+      const anyPanel = entries.find((e) => e.webviewPanel);
+      if (anyPanel) {
+        return anyPanel.webviewPanel;
+      }
+    }
+
+    return undefined;
+  }
+
+  /**
+   * Returns the best webview panel AND whether its webview is ready.
+   * Used by the MCP executor to give a precise "still loading" error
+   * instead of a 30-second timeout when the panel exists but the React
+   * app hasn't finished initializing.
+   *
+   * @returns Object with panel and isReady flag, or undefined if no panel found.
+   */
+  getBestWebviewPanelWithStatus():
+    | { panel: vscode.WebviewPanel; isReady: boolean }
+    | undefined {
+    for (const type of ["notebook", "lexical"] as const) {
+      const entries = this.getByType(type);
+      const ready = entries.find((e) => e.webviewPanel && e.isWebviewReady);
+      if (ready) {
+        return { panel: ready.webviewPanel!, isReady: true };
+      }
+      const anyPanel = entries.find((e) => e.webviewPanel);
+      if (anyPanel) {
+        return { panel: anyPanel.webviewPanel!, isReady: false };
+      }
     }
     return undefined;
   }
@@ -234,9 +384,9 @@ class DocumentRegistry {
    * @returns Array of registry entries.
    */
   getByType(type: DocumentType): DocumentRegistryEntry[] {
-    return Array.from(this.idToEntry.values()).filter(
-      (entry) => entry.type === type,
-    );
+    return Array.from(this.idToEntry.values())
+      .filter((entry) => entry.type === type)
+      .sort((a, b) => b.lastUsed - a.lastUsed);
   }
 
   /**

@@ -117,7 +117,9 @@
 - **Native local execution** - Direct ZMQ kernel communication without Jupyter server
 - **Rich status indicators** - Connection status and runtime info in status bar
 - **Command palette integration** - All features accessible via `Ctrl+Shift+P`
-- **GitHub Copilot integration** - Use natural language to create notebooks and insert cells (e.g., "Create a local notebook and add a plot")
+- **AI assistant integration** - Use natural language to create notebooks, insert cells, execute code, and manage documents:
+  - **GitHub Copilot** — 23 tools registered via VS Code's Language Model Tools API
+  - **Windsurf / Cascade** — same 23 tools exposed over a local MCP HTTP server at `http://localhost:3333/mcp`; intelligent multi-notebook selection automatically targets the most recently focused document; explicit notebook targeting via `datalayer_listOpenDocuments` + `notebook_uri` parameter
 
 ## 💡 Common Questions
 
@@ -204,6 +206,102 @@ Open settings (`Ctrl+,` / `Cmd+,`) and search "Datalayer":
 - `datalayer.logging.enablePerformanceMonitoring` - Track performance (default: false)
 
 ## Recent Updates
+
+### `datalayer_batch` Tool — Code Mode (`0.0.16-alpha.12`)
+
+New meta-tool that executes a sequence of Datalayer operations in a single MCP call, eliminating LLM round-trips between mechanical steps. Inspired by Cloudflare's Code Mode pattern.
+
+Instead of:
+```
+LLM → readAllCells → LLM → insertCell → LLM → runCell → LLM → readCell
+```
+
+Cascade can now plan the whole workflow upfront and send it once:
+```json
+datalayer_batch({
+  "operations": [
+    { "tool": "datalayer_readAllCells", "params": {} },
+    { "tool": "datalayer_insertCell",   "params": { "type": "code", "source": "print(42)", "index": 5 } },
+    { "tool": "datalayer_runCell",      "params": { "index": 5 } },
+    { "tool": "datalayer_readCell",     "params": { "index": 5 } }
+  ],
+  "notebook_uri": "..."
+})
+```
+
+The server executes all steps in order and returns an array of results. `stopOnError` (default `true`) halts on the first failure; set to `false` to collect partial results across all steps.
+
+### MathJax Stretchy Brackets Fixed (`0.0.16-alpha.11`)
+
+LaTeX commands like `\underbrace`, `\overbrace`, and `\underbracket` now render correctly in notebook markdown cells. Previously these stretchy delimiters appeared blank because the MathJax Size fonts were never loaded. Fixed by importing the MathJax extension's font CSS in the webview entry point.
+
+### Cross-Window Notebook Registry (`0.0.16-alpha.11`)
+
+When an MCP tool call fails to find a notebook locally, it now checks for other active VS Code windows and returns an informative error listing which notebooks are open in other windows and on which port, guiding you to switch to the correct Cascade session or reopen the notebook in the current window.
+
+### Intelligent Notebook Selection for Cascade (`0.0.16-alpha.2`)
+
+When multiple Datalayer notebooks are open, MCP tool calls now target the correct one automatically:
+
+- **Tab focus tracking** — clicking a notebook tab in VS Code updates its recency so Cascade targets it by default
+- **MCP call tracking** — each tool call reinforces the last-used document
+- **LLM-assisted disambiguation** — `datalayer_getActiveDocument` now returns a ranked list of all open documents so Cascade can match by filename or topic from the user's request, and ask when genuinely ambiguous
+
+### Multi-Window MCP Auto-Configuration (`0.0.16-alpha.10`)
+
+When multiple VS Code windows are open (e.g. one for the extension itself, one for a data science project), each window's Datalayer extension claims a different MCP port (3333–3340). Previously only the window on port 3333 worked because Windsurf's global config hardcoded that port.
+
+Now, on every extension activation, the extension patches `~/.codeium/windsurf/mcp_config.json` directly — updating only the `datalayer` entry with the current window's port while preserving all other servers. Windsurf hot-reloads the affected entry automatically when the file changes, so no manual refresh is needed. The most-recently-activated window always wins. A workspace-level `.windsurf/mcp.json` is also written as a transparency artifact.
+
+### `datalayer_listOpenDocuments` Tool + `notebook_uri` Parameter (`0.0.16-alpha.4`)
+
+- **New `datalayer_listOpenDocuments` tool** — returns all open Datalayer notebooks and lexical docs sorted by most-recently-used, with `uri`, `filename`, `type`, and `rank` fields.
+- **`notebook_uri` parameter on all cell tools** — `readAllCells`, `readCell`, `insertCell`, `updateCell`, `deleteCells`, `runCell` now accept an optional `notebook_uri` so Cascade can target any open notebook by URI without relying on VS Code focus state.
+
+### Tool Routing Fix: `listKernels`/`selectKernel`/`executeCode` (`0.0.16-alpha.5`)
+
+These tools were incorrectly requiring a lexical document open. `buildMcpExecutionContext` used `tags.includes("lexical")` as the `needsBlockDocument` discriminator, but `"lexical"` is shared by cross-domain tools. Switched to `tags.includes("block") || tags.includes("blocks")` — every actual block tool carries one of these; no cross-domain tool does.
+
+### Notebook Loading Race Conditions Fixed (`0.0.16-alpha.7` + `0.0.16-alpha.8`)
+
+Two race conditions that caused MCP tools to fail even when a notebook was open in the Datalayer editor have been resolved:
+
+- **alpha.7** — `documentRegistry.register()` was only called after the webview's `"ready"` message (several seconds after opening). MCP tool calls during that window found an empty registry. Fixed by registering immediately in `resolveCustomEditor()`.
+- **alpha.8** — Even after the registry was populated, tool calls during webview initialization would time out after 30 s. Added `isWebviewReady` tracking and `getBestWebviewPanelWithStatus()` so the MCP executor now returns a clear `"notebook still loading, please retry"` error instead of silently timing out.
+
+### Native Notebook Viewer Detection (`0.0.16-alpha.6`)
+
+When an `.ipynb` file is open in the native VS Code notebook viewer instead of the Datalayer custom editor, MCP tools now detect this automatically. A VS Code notification appears with a **"Reopen in Datalayer Editor"** button that reopens the file in the correct editor with one click. The error message returned to Cascade is also precise and actionable: `right-click → Open With… → Datalayer Notebook Editor`.
+
+### MCP Tool Routing Fix (`0.0.16-alpha.5`)
+
+Fixed a systematic routing bug where cross-domain tools (`datalayer_listKernels`, `datalayer_selectKernel`, `datalayer_executeCode`) failed with *"No Lexical document is open"* any time a `.dlex` file was not open. The MCP server was using `"lexical"` tag presence as the discriminator for "needs a lexical document ID", but `"lexical"` is a domain descriptor shared by many tools. Changed to use `"block"` / `"blocks"` tag instead, which precisely identifies actual block-operation tools.
+
+### Explicit Notebook Targeting (`0.0.16-alpha.4`)
+
+All notebook cell tools (`readAllCells`, `updateCell`, `runCell`, etc.) now expose an optional `notebook_uri` parameter. Combined with the new `datalayer_listOpenDocuments` tool (which returns all open notebooks sorted by recency with their URIs), Cascade can now target any open notebook explicitly without requiring it to be the active VS Code tab. This resolves workflows where multiple notebooks are open and the AI needs to work on a specific one.
+
+### Windsurf Skill (`0.0.16-alpha.2`)
+
+A Windsurf skill (`SKILL.md` + `tool-reference.md`) is bundled in `.windsurf/skills/datalayer-mcp/`. It establishes the Datalayer MCP server as the **required** interface for all Jupyter notebook work — prohibiting direct `.ipynb` file manipulation — and provides Cascade with tool reference, workflow recipes, error patterns, and notebook selection guidance.
+
+### Windsurf / Cascade MCP Integration (`0.0.16-alpha.1`)
+
+All 22 Datalayer tools are now available to [Windsurf](https://windsurf.com) / Cascade via a local MCP HTTP server that starts automatically with the extension.
+
+Add to `~/.codeium/windsurf/mcp_config.json`:
+
+```json
+{
+  "mcpServers": {
+    "datalayer": {
+      "serverUrl": "http://localhost:3333/mcp"
+    }
+  }
+}
+```
+
+The actual port is logged to the Datalayer output channel on activation (`MCP HTTP server listening on http://127.0.0.1:<port>/mcp`).
 
 ### Runtime Controller Improvements
 

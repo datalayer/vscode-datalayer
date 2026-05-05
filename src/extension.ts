@@ -309,6 +309,33 @@ export async function activate(
       );
     });
 
+    await runOptionalActivationStep(
+      "Starting MCP HTTP server for Windsurf/Cascade",
+      async () => {
+        const { startMcpServer } = await import("./mcp/mcpServer");
+        const mcpHttpServer = await startMcpServer(context, services!, ui!);
+        context.subscriptions.push({
+          dispose: () => {
+            mcpHttpServer.close();
+          },
+        });
+        // Keep lastUsed current when the user manually switches notebook tabs,
+        // so MCP tool calls without an explicit notebook_uri prefer the focused one.
+        context.subscriptions.push(
+          services!.documentRegistry.startTabWatcher(),
+        );
+        activationTimer.checkpoint("mcp_http_server_started");
+      },
+      (err) => {
+        logger.warn(
+          "MCP HTTP server failed to start (Windsurf/Cascade tools unavailable)",
+          {
+            error: err instanceof Error ? err.message : String(err),
+          },
+        );
+      },
+    );
+
     await runActivationStep("Activating Python extension", async () => {
       logger.debug(
         "Proactively activating Python extension for kernel discovery",

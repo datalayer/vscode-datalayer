@@ -420,6 +420,18 @@ export class NotebookProvider extends BaseDocumentProvider<NotebookDocument> {
     };
     webviewPanel.webview.html = this.getHtmlForWebview(webviewPanel.webview);
 
+    // Register immediately so MCP tools can find this document even before the
+    // webview sends its "ready" message (which triggers the full handleReadyMessage
+    // registration). Using the URI as the temporary ID is correct for local
+    // notebooks; for cloud notebooks, handleReadyMessage will re-register with
+    // the real documentId once the webview loads.
+    getServiceContainer().documentRegistry.register(
+      document.uri.toString(),
+      document.uri.toString(),
+      "notebook",
+      webviewPanel,
+    );
+
     webviewPanel.webview.onDidReceiveMessage((e) => {
       void this.onMessage(webviewPanel, document, e);
     });
@@ -624,11 +636,19 @@ export class NotebookProvider extends BaseDocumentProvider<NotebookDocument> {
 
     const notebookId = documentId || document.uri.toString();
 
+    // Pass isWebviewReady=true because this call happens after the webview
+    // has sent its "ready" message — the React app is fully loaded.
     getServiceContainer().documentRegistry.register(
       notebookId,
       document.uri.toString(),
       "notebook",
       webviewPanel,
+      true,
+    );
+    // Also mark ready on the early entry (which used uri as ID), in case
+    // both entries exist (e.g. cloud notebook: early uri-keyed + real-id-keyed).
+    getServiceContainer().documentRegistry.markWebviewReady(
+      document.uri.toString(),
     );
 
     this.postMessage(webviewPanel, "init", {
