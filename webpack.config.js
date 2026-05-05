@@ -279,7 +279,13 @@ const webviewConfig = {
         use: [require.resolve("style-loader"), require.resolve("css-loader")],
       },
       {
-        test: /\.(jpe?g|png|gif|ico|eot|ttf|map|woff2?)(\?v=\d+\.\d+\.\d+)?$/i,
+        // Keep font files as emitted assets (no inlining), matching
+        // the working UI/jupyter-react behavior for MathJax CHTML fonts.
+        test: /\.(eot|ttf|woff2?)(\?v=\d+\.\d+\.\d+)?$/i,
+        type: "asset/resource",
+      },
+      {
+        test: /\.(jpe?g|png|gif|ico|map)(\?v=\d+\.\d+\.\d+)?$/i,
         type: "asset/resource",
       },
       {
