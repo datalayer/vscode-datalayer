@@ -17,7 +17,6 @@ All notable changes to the Datalayer VS Code extension are documented here.
   - A lightweight stub `batchOperation` in `src/tools/operations/batch.ts` satisfies `validateToolDefinitions` and the VS Code Copilot tool path (returns a clear error directing callers to the MCP path).
   - New files: `src/tools/definitions/batch.ts`, `src/tools/operations/batch.ts`.
 
-
 ### Added (April 2025) — `0.0.17-alpha.adp11`
 
 - **Cross-window notebook registry via `globalState`**: New `CrossWindowRegistry` class (`src/mcp/crossWindowRegistry.ts`) uses VS Code's `ExtensionContext.globalState` (shared across all windows) to broadcast each window's open notebooks and MCP port. Every 15 seconds the registry writes a heartbeat + current notebook list; entries older than 45 seconds are treated as stale (window closed). When an MCP tool call fails to find a notebook locally, it now checks `globalState` for other active windows and returns an informative error listing exactly which notebooks are open in other windows and on which port, guiding the user to switch to the correct Cascade session or reopen the notebook in the current window.
@@ -29,6 +28,40 @@ All notable changes to the Datalayer VS Code extension are documented here.
 ### Fixed (April 2025) — `0.0.17-alpha.adp10`
 
 - **Multi-window MCP config now writes to the correct file**: `0.0.16-alpha.9` wrote a workspace-level `.windsurf/mcp.json`, but Windsurf **only** reads `~/.codeium/windsurf/mcp_config.json` — there is no workspace-level config override. The extension now updates the global `mcp_config.json` directly: it reads the existing file, patches only the `datalayer` entry with the claimed port, and writes it back, preserving all other servers. Windsurf hot-reloads the affected server automatically when the file changes (no manual refresh required). The workspace-level `.windsurf/mcp.json` is still written as a transparency artifact.
+
+### Fixed (April 2025) — `0.0.17-alpha.adp9`
+
+- **Multi-window MCP port collision**: When multiple VS Code windows are open, each window's Datalayer extension claims a different port (3333–3340). Previously only the window on port 3333 was reachable. Fixed by writing `.windsurf/mcp.json` on startup (superseded by alpha.10 which correctly targets the global config).
+
+### Fixed (April 2025) — `0.0.17-alpha.adp8`
+
+- **Webview-not-ready race condition**: Even after the early `register()` fix in alpha.7, tool calls made while the Datalayer React app was still initialising would time out after 30 seconds (the webview panel existed in the registry but couldn't handle messages yet). Fixed by:
+  1. Adding `isWebviewReady: boolean` to `DocumentRegistryEntry` — set `false` on early registration, `true` when `handleReadyMessage` fires (i.e. the webview has sent its `"ready"` handshake).
+  2. Adding `markWebviewReady(documentUri)` to `DocumentRegistry`, called from `handleReadyMessage` in `notebookProvider.ts`.
+  3. Replacing `getBestWebviewPanel()` in the MCP executor with `getBestWebviewPanelWithStatus()`, which now throws a precise `"notebook still loading, please wait and retry"` error instead of hitting the 30-second timeout.
+  4. `getBestWebviewPanel()` now prefers ready panels over not-yet-ready panels.
+
+### Fixed (April 2025) — `0.0.17-alpha.adp7`
+
+- **Race condition: registry empty when webview hasn't loaded yet** (root cause of most "no notebook found" errors): The `documentRegistry.register()` call in `notebookProvider.ts` was inside `handleReadyMessage()`, which is only triggered after the Datalayer webview React app finishes loading and sends a `"ready"` message. This takes several seconds. Any MCP tool call made before that point found an empty registry and failed — even though the notebook was visibly open in the Datalayer editor. Fixed by adding an early `register()` call directly in `resolveCustomEditor()` (immediately after the webview HTML is set), before any async work or message-handler setup.
+
+### Fixed (April 2025) — `0.0.17-alpha.adp6`
+
+- **Native VS Code notebook viewer detection**: When an `.ipynb` file is open in the native VS Code notebook viewer instead of the Datalayer custom editor, MCP tools previously returned a generic "No Datalayer notebook is open" error. The server now scans all open tabs, detects notebooks in the native viewer, fires a VS Code warning notification with a **"Reopen in Datalayer Editor"** action button, and throws a precise, actionable error message. Clicking the notification button automatically reopens the file in the correct editor.
+
+### Fixed (April 2025) — `0.0.17-alpha.adp5`
+
+- **`datalayer_listKernels`, `datalayer_selectKernel`, and `datalayer_executeCode` incorrectly required a lexical document**: `buildMcpExecutionContext` used `tags.includes("lexical")` as the discriminator for `needsBlockDocument`, causing these cross-domain tools to fail with `"No Lexical document is open"` when no `.dlex` file was open. Fixed by switching to `tags.includes("block") || tags.includes("blocks")`. Every actual block operation tool carries one of these tags; no cross-domain tool does.
+
+### Added (April 2025) — `0.0.17-alpha.adp4`
+
+- **`datalayer_listOpenDocuments` tool**: New VS Code-specific tool that returns every Jupyter notebook and Datalayer lexical document currently open in the Datalayer editor, sorted by most-recently-used first. Returns `uri`, `filename`, `type`, `rank`, and `mostRecent` for each document.
+
+- **`notebook_uri` parameter on all notebook cell tools**: All six notebook cell tools (`readAllCells`, `readCell`, `insertCell`, `updateCell`, `deleteCells`, `runCell`) now expose `notebook_uri` as an optional input parameter in their MCP schema. Cascade can now target any open notebook by URI rather than relying on whichever notebook happens to be focused in VS Code.
+
+### Fixed (April 2025) — `0.0.17-alpha.adp3`
+
+- **`datalayer_getActiveDocument` required a lexical document**: The tool has `"lexical"` in its tags (correctly describing that it supports lexical documents), but `buildMcpExecutionContext` was reading that as "this tool needs a lexical document ID resolved" — calling `resolveLexicalId()` on every invocation and failing with `"No Lexical document is open"` when working on a plain `.ipynb` notebook. Fixed by adding an `isPrerequisiteTool` guard: tools tagged `"prerequisite"` now skip document ID resolution entirely, since they are orientation/discovery tools that should work regardless of what document type is open.
 
 ### Added (April 2025) — `0.0.17-alpha.adp2`
 
@@ -52,49 +85,6 @@ All notable changes to the Datalayer VS Code extension are documented here.
   - Server startup failure is non-fatal: logged as a warning so extension activation is never blocked
   - Configure Windsurf via `~/.codeium/windsurf/mcp_config.json` — see `src/mcp/README.md`
   - New npm dependency: `@modelcontextprotocol/sdk@1.29.0` (externalized in webpack, whitelisted in `.vscodeignore`)
-
-### Fixed (April 2025) — `0.0.16-alpha.9`
-
-- **Multi-window MCP port collision**: When multiple VS Code windows are open, each window's Datalayer extension claims a different port (3333–3340). Previously only the window on port 3333 was reachable. Fixed by writing `.windsurf/mcp.json` on startup (superseded by alpha.10 which correctly targets the global config).
-
-### Fixed (April 2025) — `0.0.16-alpha.8`
-
-- **Webview-not-ready race condition**: Even after the early `register()` fix in alpha.7, tool calls made while the Datalayer React app was still initialising would time out after 30 seconds (the webview panel existed in the registry but couldn't handle messages yet). Fixed by:
-  1. Adding `isWebviewReady: boolean` to `DocumentRegistryEntry` — set `false` on early registration, `true` when `handleReadyMessage` fires (i.e. the webview has sent its `"ready"` handshake).
-  2. Adding `markWebviewReady(documentUri)` to `DocumentRegistry`, called from `handleReadyMessage` in `notebookProvider.ts`.
-  3. Replacing `getBestWebviewPanel()` in the MCP executor with `getBestWebviewPanelWithStatus()`, which now throws a precise `"notebook still loading, please wait and retry"` error instead of hitting the 30-second timeout.
-  4. `getBestWebviewPanel()` now prefers ready panels over not-yet-ready panels.
-
-### Fixed (April 2025) — `0.0.16-alpha.7`
-
-- **Race condition: registry empty when webview hasn't loaded yet** (root cause of most "no notebook found" errors): The `documentRegistry.register()` call in `notebookProvider.ts` was inside `handleReadyMessage()`, which is only triggered after the Datalayer webview React app finishes loading and sends a `"ready"` message. This takes several seconds. Any MCP tool call made before that point found an empty registry and failed — even though the notebook was visibly open in the Datalayer editor. Fixed by adding an early `register()` call directly in `resolveCustomEditor()` (immediately after the webview HTML is set), before any async work or message-handler setup.
-
-### Fixed (April 2025) — `0.0.16-alpha.6`
-
-- **Native VS Code notebook viewer detection**: When an `.ipynb` file is open in the native VS Code notebook viewer instead of the Datalayer custom editor, MCP tools previously returned a generic "No Datalayer notebook is open" error. The server now scans all open tabs, detects notebooks in the native viewer, fires a VS Code warning notification with a **"Reopen in Datalayer Editor"** action button, and throws a precise, actionable error message. Clicking the notification button automatically reopens the file in the correct editor.
-
-### Fixed (April 2025) — `0.0.16-alpha.5`
-
-- **`datalayer_listKernels`, `datalayer_selectKernel`, and `datalayer_executeCode` incorrectly required a lexical document**: `buildMcpExecutionContext` used `tags.includes("lexical")` as the discriminator for `needsBlockDocument`, causing these cross-domain tools to fail with `"No Lexical document is open"` when no `.dlex` file was open. Fixed by switching to `tags.includes("block") || tags.includes("blocks")`. Every actual block operation tool carries one of these tags; no cross-domain tool does.
-
-### Added (April 2025) — `0.0.16-alpha.4`
-
-- **`datalayer_listOpenDocuments` tool**: New VS Code-specific tool that returns every Jupyter notebook and Datalayer lexical document currently open in the Datalayer editor, sorted by most-recently-used first. Returns `uri`, `filename`, `type`, `rank`, and `mostRecent` for each document.
-
-- **`notebook_uri` parameter on all notebook cell tools**: All six notebook cell tools (`readAllCells`, `readCell`, `insertCell`, `updateCell`, `deleteCells`, `runCell`) now expose `notebook_uri` as an optional input parameter in their MCP schema. Cascade can now target any open notebook by URI rather than relying on whichever notebook happens to be focused in VS Code.
-
-### Fixed (April 2025) — `0.0.16-alpha.3`
-
-- **`datalayer_getActiveDocument` required a lexical document**: The tool has `"lexical"` in its tags (correctly describing that it supports lexical documents), but `buildMcpExecutionContext` was reading that as "this tool needs a lexical document ID resolved" — calling `resolveLexicalId()` on every invocation and failing with `"No Lexical document is open"` when working on a plain `.ipynb` notebook. Fixed by adding an `isPrerequisiteTool` guard: tools tagged `"prerequisite"` now skip document ID resolution entirely, since they are orientation/discovery tools that should work regardless of what document type is open.
-
-### Fixed (April 2025) — `0.0.16-alpha.2`
-
-- **Multi-notebook ambiguity**: Previously, when no Datalayer editor tab was focused (e.g. Cascade panel was active) and multiple notebooks were open, the MCP path always picked the first registered notebook regardless of what the user was working on. The new `lastUsed`-sorted `getByType()` and `startTabWatcher()` ensure the most recently focused or most recently used notebook is selected by default.
-
-### Fixed (April 2025) — `0.0.16-alpha.1`
-
-- **MCP tool execution when Cascade panel is focused**: `DocumentRegistry.getBestWebviewPanel()` added as a fallback to `getActiveWebviewPanel()`. Previously, notebook/lexical tool operations failed when VS Code focus was on the Cascade chat panel because the active-tab check returned nothing. The new method walks all registered webview panels and returns the first available one.
-- `resolveNotebookId` and `resolveLexicalId` in the MCP path similarly fall back to the document registry when the active-tab check returns no result.
 
 ### Fixed (January 2025)
 
