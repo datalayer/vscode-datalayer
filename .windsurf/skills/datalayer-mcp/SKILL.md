@@ -78,15 +78,50 @@ If `isConnected` is false, call `datalayer_listKernels` then `datalayer_selectKe
 ### Step 3 — Read before writing
 
 Before modifying anything:
-- Notebooks → `datalayer_readAllCells` to see current cell sources and outputs
-- Lexical docs → `datalayer_readAllBlocks` to see document structure and block IDs
+- Notebooks → `datalayer_readAllCells` to see current cell sources and outputs (you need the cell count to compute insertion indices)
+- Lexical docs → `datalayer_readAllBlocks` to see document structure and block IDs (you need these IDs for update/delete)
 
-### Step 4 — Execute using only Datalayer MCP tools
+### Step 4 — Plan ALL remaining steps, then batch them
 
-See `tool-reference.md` for the full tool table, common workflow recipes, and error patterns.
+**After Step 3 you have all the information you need. Before making any writes, plan every remaining step to completion, then issue ALL of them in a single `datalayer_batch` call.**
 
-**Targeting a specific notebook:** If the user references a notebook by name or path and multiple notebooks are open, find the matching URI from the `uri` returned by `datalayer_getActiveDocument` or from context, and pass it as `notebook_uri` in all subsequent cell/kernel calls. Do not guess — if the URI is unclear, ask.
+This is the default. Individual tool calls after Step 3 are the exception, not the rule.
 
-### Step 5 — Verify after mutations
+**Batch decision rule — ask one question:**
+> "Do I know the params for ALL remaining steps right now, without needing to inspect any intermediate result?"
+- **Yes** → use `datalayer_batch`
+- **No** (one step's output determines the next step's params) → individual call, then re-evaluate
 
-After any insert/update/delete/run, read back the affected cell or block to confirm the result before continuing.
+**Always batch (params are fully known after read):**
+- Insert one or more cells + run them + read back output
+- Update a cell + run it + read back output
+- Delete cells + read state to confirm
+- Multiple sequential inserts at known indices
+- Insert block(s) + run + verify in a lexical doc
+
+**Always individual (intermediate result needed):**
+- You need to inspect a cell's output to decide *what* to write in the next cell
+- You need to check whether execution succeeded before deciding on a follow-up action
+- You're doing exploratory/debugging work where each result changes the plan
+
+```
+datalayer_getActiveDocument     → (1 call) orient, get URI
+datalayer_readAllCells          → (1 call) read state, learn cell count N
+datalayer_batch({               → (1 call) ALL remaining writes + verification
+  notebook_uri: "...",
+  operations: [
+    { tool: "datalayer_insertCell", params: { type: "code", source: "...", index: N } },
+    { tool: "datalayer_runCell",    params: { index: N } },
+    { tool: "datalayer_readCell",   params: { index: N } }
+  ]
+})
+```
+Three MCP calls total instead of five. **This is the standard pattern.**
+
+### Step 5 — Targeting the right document
+
+If the user references a notebook by name or path and multiple notebooks are open, find the matching URI from Step 1's open-documents list and pass it as `notebook_uri` in ALL subsequent calls including inside `datalayer_batch`. Do not guess — if the URI is unclear, ask.
+
+### Step 6 — Verify after mutations
+
+`datalayer_batch` returns results for every sub-operation. Check the `"success"` fields and the final `readCell` / `readBlock` output before reporting completion. If verification shows unexpected output, issue a follow-up individual tool call or a new batch to fix it.

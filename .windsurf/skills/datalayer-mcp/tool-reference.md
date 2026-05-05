@@ -46,9 +46,34 @@
 
 ---
 
+## Batch Decision Guide
+
+**Default: use `datalayer_batch` for ALL writes after the initial read.**
+
+| Situation | Use |
+|---|---|
+| Insert cell(s) + run + verify | ✅ `datalayer_batch` |
+| Update cell(s) + run + verify | ✅ `datalayer_batch` |
+| Delete cells + read state | ✅ `datalayer_batch` |
+| Multiple sequential inserts at known indices | ✅ `datalayer_batch` |
+| Insert/update block(s) + run + verify | ✅ `datalayer_batch` |
+| Outcome of step N determines params of step N+1 | ❌ individual calls |
+| Exploratory debugging where each result changes the plan | ❌ individual calls |
+| Pure read (no mutations) | ❌ individual call |
+
+**The three-call pattern is the standard workflow:**
+```
+(1) datalayer_getActiveDocument   → orient, get URI
+(2) datalayer_readAllCells        → read state, get cell count N
+(3) datalayer_batch(notebook_uri, operations=[insert, run, read])
+```
+
+---
+
 ## Common Workflows
 
 ### Inspect a running notebook / read variable values
+*(reads only — no batching needed)*
 
 ```
 datalayer_getActiveDocument          → confirm URI + isConnected=true
@@ -62,65 +87,120 @@ import json
 print(json.dumps({"value": repr(my_var), "type": type(my_var).__name__, "shape": getattr(my_var, "shape", None)}))
 ```
 
-### Add new analysis cells to an existing notebook (single-step batch)
-
-Once you know the cell count, batch the mutations in one call:
-```
-datalayer_getActiveDocument          → get URI
-datalayer_readAllCells               → learn current cell count (N)
-datalayer_batch({
-  notebook_uri: "...",
-  operations: [
-    { tool: "datalayer_insertCell", params: { type: "code", source: "...", index: N } },
-    { tool: "datalayer_runCell",    params: { index: N } },
-    { tool: "datalayer_readCell",   params: { index: N } }
-  ]
-})                                   → insert + run + verify in one round-trip
-```
-
-**When to use `datalayer_batch`:**
-- You've already read the document state and are ready to mutate + verify
-- You have ≥ 2 sequential steps whose params don't depend on intermediate results
-- Keep reads that inform subsequent params (e.g. cell count) as separate upfront calls
-
-### Add new analysis cells to an existing notebook (multi-step, no batch)
+### Add cells to an existing notebook ✅ BATCH
 
 ```
-datalayer_getActiveDocument          → get URI, confirm kernel
-datalayer_readAllCells               → understand current state and total cell count
-datalayer_insertCell(index=N)        → add cell(s) at the right position
-datalayer_runCell(index=N)           → execute and verify output
-datalayer_readCell(index=N)          → confirm output is correct
+(1) datalayer_getActiveDocument      → get URI
+(2) datalayer_readAllCells           → learn current cell count N
+(3) datalayer_batch({
+      notebook_uri: "...",
+      operations: [
+        { tool: "datalayer_insertCell", params: { type: "code", source: "...", index: N } },
+        { tool: "datalayer_runCell",    params: { index: N } },
+        { tool: "datalayer_readCell",   params: { index: N } }
+      ]
+    })
+```
+3 MCP calls instead of 5.
+
+### Add multiple cells at once ✅ BATCH
+
+```
+(1) datalayer_getActiveDocument
+(2) datalayer_readAllCells           → N = current cell count
+(3) datalayer_batch({
+      notebook_uri: "...",
+      operations: [
+        { tool: "datalayer_insertCell", params: { type: "code", source: "import pandas as pd", index: N   } },
+        { tool: "datalayer_insertCell", params: { type: "code", source: "df = pd.read_csv('data.csv')", index: N+1 } },
+        { tool: "datalayer_insertCell", params: { type: "code", source: "df.head()", index: N+2 } },
+        { tool: "datalayer_runCell",    params: { index: N   } },
+        { tool: "datalayer_runCell",    params: { index: N+1 } },
+        { tool: "datalayer_runCell",    params: { index: N+2 } },
+        { tool: "datalayer_readCell",   params: { index: N+2 } }
+      ]
+    })
+```
+
+### Update an existing cell ✅ BATCH
+
+```
+(1) datalayer_getActiveDocument
+(2) datalayer_readAllCells           → find target cell index K
+(3) datalayer_batch({
+      notebook_uri: "...",
+      operations: [
+        { tool: "datalayer_updateCell", params: { index: K, source: "new code here" } },
+        { tool: "datalayer_runCell",    params: { index: K } },
+        { tool: "datalayer_readCell",   params: { index: K } }
+      ]
+    })
+```
+
+### Edit a lexical document ✅ BATCH
+
+```
+(1) datalayer_getActiveDocument
+(2) datalayer_readAllBlocks          → get block IDs and structure
+(3) datalayer_batch({
+      documentUri: "...",
+      operations: [
+        { tool: "datalayer_insertBlock",  params: { type: "paragraph", source: "...", afterId: "BOTTOM" } },
+        { tool: "datalayer_insertBlock",  params: { type: "jupyter-cell", source: "print('hello')", afterId: "BOTTOM" } },
+        { tool: "datalayer_runAllBlocks", params: {} }
+      ]
+    })
+```
+
+### Exploratory debugging ❌ INDIVIDUAL CALLS
+
+Use individual calls when each result informs the next step:
+```
+datalayer_getActiveDocument
+datalayer_readAllCells
+datalayer_runCell(index=K)           → inspect output; decide what to fix
+datalayer_updateCell(index=K, ...)   → fix based on what you saw
+datalayer_runCell(index=K)           → verify fix
 ```
 
 ### Start a new notebook on cloud
 
 ```
-datalayer_createNotebook             → creates in cloud (when authenticated)
-datalayer_selectKernel(type="new")   → spin up a fresh Datalayer cloud runtime
-datalayer_insertCell(index=0)        → add initial code
-datalayer_runCell(index=0)           → execute
+(1) datalayer_createNotebook         → creates in cloud (when authenticated)
+(2) datalayer_selectKernel(type="new")
+(3) datalayer_batch({
+      operations: [
+        { tool: "datalayer_insertCell", params: { type: "code", source: "import pandas as pd\nprint('ready')", index: 0 } },
+        { tool: "datalayer_runCell",    params: { index: 0 } },
+        { tool: "datalayer_readCell",   params: { index: 0 } }
+      ]
+    })
 ```
 
 ### Zero-setup execution (no Python install required)
 
 ```
-datalayer_createNotebook             → creates locally in workspace
-datalayer_selectKernel(type="pyodide") → Pyodide WASM kernel, runs in browser
-datalayer_executeCode(code="...")    → run Python with no local install
+(1) datalayer_createNotebook
+(2) datalayer_selectKernel(type="pyodide")
+(3) datalayer_executeCode(code="...")    → run Python immediately, no cell needed
 ```
 
 ### Create a Lexical report from notebook results
 
 ```
-datalayer_getActiveDocument          → confirm notebook URI
-datalayer_readAllCells               → collect outputs to include
-datalayer_createLexical              → new .dlex document
-datalayer_listAvailableBlocks        → discover block types
-datalayer_insertBlock(type="heading") → add title
-datalayer_insertBlock(type="paragraph") → add narrative
-datalayer_insertBlock(type="jupyter-cell") → add executable code
-datalayer_runAllBlocks               → execute all cells in the report
+(1) datalayer_getActiveDocument          → confirm notebook URI
+(2) datalayer_readAllCells               → collect outputs to summarise
+(3) datalayer_createLexical              → new .dlex document
+(4) datalayer_listAvailableBlocks        → discover block types and required params
+(5) datalayer_batch({
+      documentUri: "...",
+      operations: [
+        { tool: "datalayer_insertBlock", params: { type: "heading",      source: "Analysis Report", afterId: "BOTTOM" } },
+        { tool: "datalayer_insertBlock", params: { type: "paragraph",    source: "Summary of findings...", afterId: "BOTTOM" } },
+        { tool: "datalayer_insertBlock", params: { type: "jupyter-cell", source: "# key chart code", afterId: "BOTTOM" } }
+      ]
+    })
+(6) datalayer_runAllBlocks
 ```
 
 ---

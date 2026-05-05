@@ -11,7 +11,6 @@
  */
 
 import "./NotebookEditor";
-import "@jupyterlab/mathjax-extension/style/base.css";
 
 import { setStylesTarget } from "typestyle";
 

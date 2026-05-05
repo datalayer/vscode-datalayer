@@ -24,7 +24,7 @@ All notable changes to the Datalayer VS Code extension are documented here.
 
 ### Fixed (April 2025) — `0.0.17-alpha.adp11`
 
-- **MathJax stretchy brackets now render in markdown**: LaTeX commands like `\underbrace`, `\overbrace`, and `\underbracket` now render correctly in notebook markdown cells. Previously these stretchy delimiters appeared blank because the MathJax Size fonts (`MJXTEX-S1..S4`) were never loaded. Fixed by importing `@jupyterlab/mathjax-extension/style/base.css` in the webview entry point, which webpack processes to emit the 22 MathJax WOFF font files and inject the required `@font-face` declarations at runtime.
+- **MathJax stretchy brackets now render in markdown**: LaTeX commands like `\underbrace`, `\overbrace`, and `\underbracket` now render correctly in notebook markdown cells. Previously these stretchy delimiters appeared blank because the MathJax Size fonts (`MJXTEX-S1..S4`) were never loaded. ~~Initially fixed by importing `@jupyterlab/mathjax-extension/style/base.css` in the webview entry point~~ — **superseded by the upstream fix** (`52fd432`): `webpack.config.js` now splits font files (`.eot|ttf|woff2?`) into a dedicated `asset/resource` rule so MathJax CHTML fonts are emitted as separate files rather than inlined; the CSS import and its `webview/global.d.ts` type stub have been removed.
 
 ### Fixed (April 2025) — `0.0.17-alpha.adp10`
 
