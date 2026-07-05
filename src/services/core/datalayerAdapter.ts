@@ -11,9 +11,9 @@
  * @module services/datalayerAdapter
  */
 
+import { AgentRuntimesClient } from "@datalayer/agent-runtimes/lib/client/AgentRuntimesClient";
 import { AgentsMixin } from "@datalayer/agent-runtimes/lib/client/AgentsMixin";
 import type { DatalayerClientConfig } from "@datalayer/core/lib/client";
-import { DatalayerClient } from "@datalayer/core/lib/client";
 import * as vscode from "vscode";
 
 import { getValidatedSettingsGroup } from "../config/settingsValidator";
@@ -37,7 +37,7 @@ export interface VSCodeDatalayerConfig extends Partial<DatalayerClientConfig> {
  *
  */
 /** DatalayerClient class extended with AgentsMixin methods for agent management. */
-export const DatalayerClientWithAgents = AgentsMixin(DatalayerClient);
+export const DatalayerClientWithAgents = AgentsMixin(AgentRuntimesClient);
 
 /** Extended client type combining DatalayerClient with AgentsMixin methods. */
 export type ExtendedDatalayerClient = InstanceType<
@@ -119,7 +119,7 @@ export function getWebSocketUrl(): string {
  * Global Datalayer instance for the extension.
  * This is initialized in the extension activation and used throughout.
  */
-let globalDatalayerInstance: DatalayerClient | undefined;
+let globalDatalayerInstance: ExtendedDatalayerClient | undefined;
 
 /**
  * Sets the global Datalayer instance.
@@ -127,7 +127,7 @@ let globalDatalayerInstance: DatalayerClient | undefined;
  *
  * @param datalayer - The Datalayer instance to set globally.
  */
-export function setDatalayerInstance(datalayer: DatalayerClient): void {
+export function setDatalayerInstance(datalayer: ExtendedDatalayerClient): void {
   globalDatalayerInstance = datalayer;
 }
 
@@ -138,7 +138,7 @@ export function setDatalayerInstance(datalayer: DatalayerClient): void {
  *
  * @throws Error if Datalayer is not initialized.
  */
-export function getDatalayerInstance(): DatalayerClient {
+export function getDatalayerInstance(): ExtendedDatalayerClient {
   if (!globalDatalayerInstance) {
     throw new Error(
       "Datalayer not initialized. Call setDatalayerInstance first.",

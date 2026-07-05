@@ -10,7 +10,7 @@
  * @module models/projectTreeItem
  */
 
-import type { ProjectDTO } from "@datalayer/core/lib/models/ProjectDTO";
+import type { ProjectDTO } from "@datalayer/agent-runtimes/lib/models/ProjectDTO";
 import * as vscode from "vscode";
 
 /**

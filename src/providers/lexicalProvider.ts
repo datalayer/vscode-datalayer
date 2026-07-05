@@ -16,7 +16,7 @@
  * @see https://code.visualstudio.com/api/extension-guides/custom-editors
  */
 
-import type { RuntimeDTO } from "@datalayer/core/lib/models/RuntimeDTO";
+import type { RuntimeDTO } from "@datalayer/agent-runtimes/lib/models/RuntimeDTO";
 import type {
   InlineCompletionConfig,
   TriggerMode,

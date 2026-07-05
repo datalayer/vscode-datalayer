@@ -4,7 +4,7 @@
  * MIT License
  */
 
-import type { SpaceDTO } from "@datalayer/core/lib/models/SpaceDTO";
+import type { SpaceDTO } from "@datalayer/agent-runtimes/lib/models/SpaceDTO";
 import * as assert from "assert";
 import * as vscode from "vscode";
 

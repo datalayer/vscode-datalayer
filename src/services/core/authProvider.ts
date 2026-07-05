@@ -11,7 +11,7 @@
  * @module services/authProvider
  */
 
-import type { DatalayerClient } from "@datalayer/core/lib/client";
+import type { AgentRuntimesClient as DatalayerClient } from "@datalayer/agent-runtimes/lib/client/AgentRuntimesClient";
 import type { UserDTO } from "@datalayer/core/lib/models/UserDTO";
 import * as vscode from "vscode";
 

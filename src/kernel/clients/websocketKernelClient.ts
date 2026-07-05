@@ -11,11 +11,11 @@
  * @module kernel/websocketKernelClient
  */
 
-import type { DatalayerClient } from "@datalayer/core/lib/client";
+import type { AgentRuntimesClient as DatalayerClient } from "@datalayer/agent-runtimes/lib/client/AgentRuntimesClient";
 import type {
   RuntimeDTO,
   RuntimeJSON,
-} from "@datalayer/core/lib/models/RuntimeDTO";
+} from "@datalayer/agent-runtimes/lib/models/RuntimeDTO";
 import { v4 as uuidv4 } from "uuid";
 import { WebSocket } from "ws";
 

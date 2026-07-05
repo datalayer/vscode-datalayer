@@ -13,10 +13,10 @@
  * @see https://code.visualstudio.com/api/extension-guides/tree-view
  */
 
+import type { LexicalDTO } from "@datalayer/agent-runtimes/lib/models/LexicalDTO";
+import type { NotebookDTO } from "@datalayer/agent-runtimes/lib/models/NotebookDTO";
+import type { SpaceDTO } from "@datalayer/agent-runtimes/lib/models/SpaceDTO";
 import { ItemTypes } from "@datalayer/core/lib/client/constants";
-import type { LexicalDTO } from "@datalayer/core/lib/models/LexicalDTO";
-import type { NotebookDTO } from "@datalayer/core/lib/models/NotebookDTO";
-import type { SpaceDTO } from "@datalayer/core/lib/models/SpaceDTO";
 import * as vscode from "vscode";
 
 import { getServiceContainer } from "../extension";

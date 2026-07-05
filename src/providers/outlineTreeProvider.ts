@@ -13,7 +13,7 @@
 
 import * as vscode from "vscode";
 
-import type { OutlineItem } from "../../webview/types/messages";
+import type { OutlineItem } from "../types/outline";
 
 /**
  * Tree provider for document outline view.

@@ -33,7 +33,7 @@ async function showAgentSpecPicker(
 ): Promise<string | undefined> {
   const datalayer = getServiceContainer().datalayer;
 
-  const specs = datalayer.listAgentSpecs();
+  const specs = datalayer.listAgentspecs();
   if (specs.length === 0) {
     vscode.window.showWarningMessage("No agent specifications available");
     return undefined;
@@ -50,7 +50,7 @@ async function showAgentSpecPicker(
   // Build QuickPick items — ready agents first, then those needing secrets
   const items = specs
     .map((spec) => {
-      const requiredVars = datalayer.getAgentSpecRequiredEnvVars(spec);
+      const requiredVars = datalayer.getAgentspecRequiredEnvVars(spec);
       const missingVars = requiredVars.filter(
         (v) => !existingSecretNames.has(v),
       );

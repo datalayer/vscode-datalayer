@@ -11,10 +11,10 @@
  * @module utils/runtimeSelector
  */
 
-import type { DatalayerClient } from "@datalayer/core/lib/client";
-import type { EnvironmentDTO } from "@datalayer/core/lib/models/EnvironmentDTO";
-import type { RuntimeDTO } from "@datalayer/core/lib/models/RuntimeDTO";
-import type { RuntimeSnapshotDTO } from "@datalayer/core/lib/models/RuntimeSnapshotDTO";
+import type { AgentRuntimesClient as DatalayerClient } from "@datalayer/agent-runtimes/lib/client/AgentRuntimesClient";
+import type { CodeSandboxSnapshotDTO as RuntimeSnapshotDTO } from "@datalayer/agent-runtimes/lib/models/CodeSandboxSnapshotDTO";
+import type { EnvironmentDTO } from "@datalayer/agent-runtimes/lib/models/EnvironmentDTO";
+import type { RuntimeDTO } from "@datalayer/agent-runtimes/lib/models/RuntimeDTO";
 import * as vscode from "vscode";
 
 import { EnvironmentCache } from "../../services/cache/environmentCache";

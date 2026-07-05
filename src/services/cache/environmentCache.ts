@@ -11,8 +11,8 @@
  * @module services/environmentCache
  */
 
-import type { DatalayerClient } from "@datalayer/core/lib/client";
-import type { EnvironmentDTO } from "@datalayer/core/lib/models/EnvironmentDTO";
+import type { AgentRuntimesClient as DatalayerClient } from "@datalayer/agent-runtimes/lib/client/AgentRuntimesClient";
+import type { EnvironmentDTO } from "@datalayer/agent-runtimes/lib/models/EnvironmentDTO";
 
 import type { IAuthProvider } from "../interfaces/IAuthProvider";
 

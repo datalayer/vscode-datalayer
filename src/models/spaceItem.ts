@@ -11,10 +11,10 @@
  * @module models/spaceItem
  */
 
+import type { LexicalDTO } from "@datalayer/agent-runtimes/lib/models/LexicalDTO";
+import type { NotebookDTO } from "@datalayer/agent-runtimes/lib/models/NotebookDTO";
+import type { SpaceDTO } from "@datalayer/agent-runtimes/lib/models/SpaceDTO";
 import { ItemTypes } from "@datalayer/core/lib/client/constants";
-import type { LexicalDTO } from "@datalayer/core/lib/models/LexicalDTO";
-import type { NotebookDTO } from "@datalayer/core/lib/models/NotebookDTO";
-import type { SpaceDTO } from "@datalayer/core/lib/models/SpaceDTO";
 import * as path from "path";
 import * as vscode from "vscode";
 

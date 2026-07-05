@@ -14,7 +14,7 @@
  * @module tools/utils/runtimeExecutor
  */
 
-import type { RuntimeDTO } from "@datalayer/core/lib/models/RuntimeDTO";
+import type { RuntimeDTO } from "@datalayer/agent-runtimes/lib/models/RuntimeDTO";
 import type { IOutput } from "@jupyterlab/nbformat";
 import { Kernel, KernelManager, ServerConnection } from "@jupyterlab/services";
 

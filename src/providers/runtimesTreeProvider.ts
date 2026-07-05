@@ -14,8 +14,8 @@
  * @see https://code.visualstudio.com/api/extension-guides/tree-view
  */
 
-import type { RuntimeDTO } from "@datalayer/core/lib/models/RuntimeDTO";
-import type { RuntimeSnapshotDTO } from "@datalayer/core/lib/models/RuntimeSnapshotDTO";
+import type { CodeSandboxSnapshotDTO as RuntimeSnapshotDTO } from "@datalayer/agent-runtimes/lib/models/CodeSandboxSnapshotDTO";
+import type { RuntimeDTO } from "@datalayer/agent-runtimes/lib/models/RuntimeDTO";
 import * as vscode from "vscode";
 
 import { getServiceContainer } from "../extension";

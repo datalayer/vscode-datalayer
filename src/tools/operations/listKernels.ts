@@ -10,7 +10,7 @@
  * @module tools/operations/listKernels
  */
 
-import type { DatalayerClient } from "@datalayer/core/lib/client";
+import type { AgentRuntimesClient as DatalayerClient } from "@datalayer/agent-runtimes/lib/client/AgentRuntimesClient";
 import type { ToolOperation } from "@datalayer/jupyter-react";
 import { validateWithZod } from "@datalayer/jupyter-react";
 import type { PythonExtension } from "@vscode/python-extension";
