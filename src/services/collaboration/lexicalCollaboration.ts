@@ -119,7 +119,7 @@ export class LexicalCollaborationService {
       }
 
       // Build websocket URL directly using document UID (no session needed)
-      // Similar to Desktop app: `${configuration.spacerRunUrl.replace(/^http/, 'ws')}/api/spacer/v1/lexical/ws/${id}`
+      // Similar to Desktop app: `${configuration.spacerUrl.replace(/^http/, 'ws')}/api/spacer/v1/lexical/ws/${id}`
       const spacerUrl = getValidatedSettingsGroup("services").spacerUrl;
 
       // Convert http(s) to ws(s)

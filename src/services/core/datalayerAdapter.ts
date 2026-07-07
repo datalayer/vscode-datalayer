@@ -60,17 +60,17 @@ export function createVSCodeDatalayer(
   // Get validated configuration from VS Code settings
   const servicesConfig = getValidatedSettingsGroup("services");
 
-  const iamRunUrl = servicesConfig.iamUrl;
-  const runtimesRunUrl = servicesConfig.runtimesUrl;
-  const spacerRunUrl = servicesConfig.spacerUrl;
+  const iamUrl = servicesConfig.iamUrl;
+  const runtimesUrl = servicesConfig.runtimesUrl;
+  const spacerUrl = servicesConfig.spacerUrl;
 
   // Only log if ServiceLoggers is initialized (avoid initialization order issues)
   if (ServiceLoggers.isInitialized()) {
     const logger = ServiceLoggers.datalayerClient;
     logger.info("Initializing DatalayerClient Datalayer", {
-      iamRunUrl,
-      runtimesRunUrl,
-      spacerRunUrl,
+      iamUrl,
+      runtimesUrl,
+      spacerUrl,
       contextId: context.extension.id,
       storageType: "NodeStorage (keytar)",
     });
@@ -78,9 +78,9 @@ export function createVSCodeDatalayer(
 
   const datalayer = new DatalayerClientWithAgents({
     // Service URLs - now using the configured URLs
-    iamRunUrl,
-    runtimesRunUrl,
-    spacerRunUrl,
+    iamUrl,
+    runtimesUrl,
+    spacerUrl,
 
     // Use default NodeStorage (keytar) — credentials land in the OS
     // keyring under the IAM service URL, the same place the Datalayer
