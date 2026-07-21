@@ -154,8 +154,7 @@ export class VSCodeToolAdapter<
 
     // Read response format from validated VS Code configuration
     const responseFormat = getValidatedSettingsGroup("tools").responseFormat as
-      | "json"
-      | "toon";
+      "json" | "toon";
 
     // ALWAYS get all opened documents - provides complete context to ALL tools
     const documentsContext = getAllOpenedDocuments();

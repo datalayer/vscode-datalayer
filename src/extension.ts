@@ -59,8 +59,7 @@ export function getServiceContainer(): ServiceContainer {
  *
  */
 export function getOutlineTreeProvider():
-  | import("./providers/outlineTreeProvider").OutlineTreeProvider
-  | undefined {
+  import("./providers/outlineTreeProvider").OutlineTreeProvider | undefined {
   return ui?.outlineTreeProvider;
 }
 
@@ -70,8 +69,7 @@ export function getOutlineTreeProvider():
  *
  */
 export function getRuntimesTreeProvider():
-  | import("./providers/runtimesTreeProvider").RuntimesTreeProvider
-  | undefined {
+  import("./providers/runtimesTreeProvider").RuntimesTreeProvider | undefined {
   return ui?.runtimesTreeProvider;
 }
 
@@ -81,8 +79,7 @@ export function getRuntimesTreeProvider():
  *
  */
 export function getSettingsTreeProvider():
-  | import("./providers/settingsTreeProvider").SettingsTreeProvider
-  | undefined {
+  import("./providers/settingsTreeProvider").SettingsTreeProvider | undefined {
   return ui?.settingsTreeProvider;
 }
 
@@ -92,8 +89,7 @@ export function getSettingsTreeProvider():
  *
  */
 export function getLSPBridge():
-  | import("./services/bridges/lspBridge").LSPBridge
-  | undefined {
+  import("./services/bridges/lspBridge").LSPBridge | undefined {
   return lspBridge;
 }
 

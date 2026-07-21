@@ -466,8 +466,7 @@ export class ProxiedWebSocket extends EventTarget {
    */
   get onopen(): ((this: WebSocket, ev: Event) => unknown) | null {
     return (this.listeners.get("open") ?? null) as unknown as
-      | ((this: WebSocket, ev: Event) => unknown)
-      | null;
+      ((this: WebSocket, ev: Event) => unknown) | null;
   }
 
   /**
@@ -475,8 +474,7 @@ export class ProxiedWebSocket extends EventTarget {
    */
   get onmessage(): ((this: WebSocket, ev: MessageEvent) => unknown) | null {
     return (this.listeners.get("message") ?? null) as unknown as
-      | ((this: WebSocket, ev: MessageEvent) => unknown)
-      | null;
+      ((this: WebSocket, ev: MessageEvent) => unknown) | null;
   }
 
   /**
@@ -484,8 +482,7 @@ export class ProxiedWebSocket extends EventTarget {
    */
   get onclose(): ((this: WebSocket, ev: CloseEvent) => unknown) | null {
     return (this.listeners.get("close") ?? null) as unknown as
-      | ((this: WebSocket, ev: CloseEvent) => unknown)
-      | null;
+      ((this: WebSocket, ev: CloseEvent) => unknown) | null;
   }
 
   /**
@@ -493,8 +490,7 @@ export class ProxiedWebSocket extends EventTarget {
    */
   get onerror(): ((this: WebSocket, ev: Event) => unknown) | null {
     return (this.listeners.get("error") ?? null) as unknown as
-      | ((this: WebSocket, ev: Event) => unknown)
-      | null;
+      ((this: WebSocket, ev: Event) => unknown) | null;
   }
 
   /**

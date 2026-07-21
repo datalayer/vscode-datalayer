@@ -24,6 +24,4 @@ import type { TreeSectionItem } from "./treeSectionItem";
  * - SnapshotTreeItem: Individual runtime snapshots
  */
 export type RuntimesTreeItem =
-  | TreeSectionItem
-  | RuntimeTreeItem
-  | SnapshotTreeItem;
+  TreeSectionItem | RuntimeTreeItem | SnapshotTreeItem;

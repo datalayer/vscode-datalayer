@@ -101,8 +101,7 @@ export class DatalayerChatParticipant {
 
       // Parse the active document result
       const activeDocContent = activeDocResult.content[0] as
-        | string
-        | vscode.LanguageModelTextPart;
+        string | vscode.LanguageModelTextPart;
       const activeDocText =
         typeof activeDocContent === "string"
           ? activeDocContent
@@ -137,8 +136,7 @@ export class DatalayerChatParticipant {
           );
 
           const blocksContent = availableBlocksResult.content[0] as
-            | string
-            | vscode.LanguageModelTextPart;
+            string | vscode.LanguageModelTextPart;
           const blocksText =
             typeof blocksContent === "string"
               ? blocksContent

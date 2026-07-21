@@ -660,5 +660,4 @@ export type WebviewToExtensionMessage =
  * Bidirectional message type (for backward compatibility)
  */
 export type ExtensionMessage =
-  | ExtensionToWebviewMessage
-  | WebviewToExtensionMessage;
+  ExtensionToWebviewMessage | WebviewToExtensionMessage;

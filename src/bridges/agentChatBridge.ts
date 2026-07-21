@@ -115,8 +115,7 @@ export interface BridgeResponseErrorMessage {
  * Union of every message posted from the extension host to the webview.
  */
 export type BridgeOutgoingMessage =
-  | BridgeResponseMessage
-  | BridgeResponseErrorMessage;
+  BridgeResponseMessage | BridgeResponseErrorMessage;
 
 /**
  * Dispatches bridge requests from the Agent Chat webview to a real

@@ -33,10 +33,7 @@ export interface DatasourceEditDialogProps {
 }
 
 type DatasourceType =
-  | "Amazon Athena"
-  | "Google BigQuery"
-  | "Microsoft Sentinel"
-  | "Splunk";
+  "Amazon Athena" | "Google BigQuery" | "Microsoft Sentinel" | "Splunk";
 
 interface DatasourceData {
   uid: string;
