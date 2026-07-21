@@ -26,8 +26,10 @@ export class DatasourceTreeItem extends vscode.TreeItem {
   constructor(public readonly datasource: DatasourceJSON) {
     super(datasource.name, vscode.TreeItemCollapsibleState.None);
 
-    // Show datasource type in description.
-    this.description = datasource.type;
+    // Prefer variant when available (legacy/extended payloads), fallback to type.
+    const variant = (datasource as DatasourceJSON & { variant?: string })
+      .variant;
+    this.description = variant || datasource.type;
 
     // Tooltip with datasource details
     this.tooltip = new vscode.MarkdownString();
