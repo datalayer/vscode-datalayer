@@ -57,7 +57,7 @@ const webpackCli = require.resolve("webpack-cli/bin/cli.js");
 
 for (const name of CONFIG_NAMES) {
   const args = [webpackCli, "--config-name", name, ...passthroughArgs];
-  console.log(`\n\u25b6 webpack --config-name ${name} ${passthroughArgs.join(" ")}\n`);
+  console.log(`\n> webpack --config-name ${name} ${passthroughArgs.join(" ")}\n`);
 
   // Strip any inherited `--max-old-space-size` (the dev shell commonly exports
   // one, e.g. 8192) so our per-process heap wins — otherwise the inherited
@@ -80,9 +80,9 @@ for (const name of CONFIG_NAMES) {
   if (result.status !== 0) {
     const reason =
       result.signal != null ? `signal ${result.signal}` : `exit ${result.status}`;
-    console.error(`\n\u2716 webpack config "${name}" failed (${reason}).`);
+    console.error(`\nwebpack config "${name}" failed (${reason}).`);
     process.exit(result.status || 1);
   }
 }
 
-console.log("\n\u2714 All webpack configs built successfully.");
+console.log("\nAll webpack configs built successfully.");
