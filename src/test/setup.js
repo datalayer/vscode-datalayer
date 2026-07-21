@@ -69,6 +69,9 @@ const STUBS = {
   "@datalayer/core/lib/client/constants": { ItemTypes },
   "@datalayer/core/lib/api/iam/oauth2": { getOAuth2AuthzUrl: () => "" },
   "@datalayer/jupyter-react": { zodToToolParameters },
+  "@datalayer/agent-runtimes/lib/client/AgentRuntimesClient": {
+    AgentRuntimesClient: DatalayerClientStub,
+  },
   "@datalayer/agent-runtimes/lib/client/AgentsMixin": {
     AgentsMixin: AgentsMixinStub,
   },

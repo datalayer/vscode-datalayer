@@ -17,8 +17,8 @@ import * as vscode from "vscode";
 // CRITICAL: Use require() for os to ensure it uses the cached version from preload.ts
 // ES6 imports may execute before preload, causing "Cannot read properties of undefined (reading 'platform')"
 const os = require("os");
-import type { DatalayerClient } from "@datalayer/core/lib/client";
-import type { RuntimeDTO } from "@datalayer/core/lib/models/RuntimeDTO";
+import type { AgentRuntimesClient as DatalayerClient } from "@datalayer/agent-runtimes/lib/client/AgentRuntimesClient";
+import type { RuntimeDTO } from "@datalayer/agent-runtimes/lib/models/RuntimeDTO";
 
 import { getServiceContainer } from "../../extension";
 import { Document } from "../../models/spaceItem";

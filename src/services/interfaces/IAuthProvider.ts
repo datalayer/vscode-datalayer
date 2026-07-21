@@ -11,7 +11,7 @@
  * @module services/interfaces/IAuthProvider
  */
 
-import type { UserDTO } from "@datalayer/core/lib/models/UserDTO";
+import type { UserJSON } from "@datalayer/agent-runtimes/lib/models";
 import * as vscode from "vscode";
 
 import type { AuthMethod } from "../../ui/dialogs/authMethodSelector";
@@ -22,7 +22,7 @@ import type { CredentialsInput } from "../../ui/dialogs/credentialsInput";
  */
 export interface VSCodeAuthState {
   isAuthenticated: boolean;
-  user: UserDTO | null;
+  user: UserJSON | null;
   error: string | null;
 }
 
@@ -98,7 +98,7 @@ export interface IAuthProvider {
    * Gets current user information.
    * @returns User object if authenticated, null otherwise
    */
-  getCurrentUser(): UserDTO | null;
+  getCurrentUser(): UserJSON | null;
 
   /**
    * Gets authentication token.

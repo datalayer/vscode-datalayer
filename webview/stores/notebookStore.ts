@@ -10,7 +10,7 @@
  * Eliminates props drilling and sessionStorage hacks.
  */
 
-import type { RuntimeJSON } from "@datalayer/core/lib/client";
+import type { RuntimeJSON } from "@datalayer/agent-runtimes/lib/models";
 import type { StoreApi, UseBoundStore } from "zustand";
 import { create } from "zustand";
 

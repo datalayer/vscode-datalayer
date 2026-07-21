@@ -11,8 +11,8 @@
  * @module test/utils/mockFactory
  */
 
-import type { DatalayerClient as _DatalayerClient } from "@datalayer/core/lib/client";
-import type { RuntimeDTO as _Runtime } from "@datalayer/core/lib/models/RuntimeDTO";
+import type { AgentRuntimesClient as _DatalayerClient } from "@datalayer/agent-runtimes/lib/client/AgentRuntimesClient";
+import type { RuntimeDTO as _Runtime } from "@datalayer/agent-runtimes/lib/models/RuntimeDTO";
 import type { User as _User } from "@datalayer/core/lib/models/User";
 import * as vscode from "vscode";
 

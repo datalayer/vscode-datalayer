@@ -13,7 +13,7 @@
 
 import React from "react";
 import { ToolbarButton } from "./ToolbarButton";
-import type { RuntimeJSON } from "@datalayer/core/lib/client";
+import type { RuntimeJSON } from "@datalayer/agent-runtimes/lib/models";
 import { isLocalKernelUrl } from "../../../src/constants/kernelConstants";
 
 /** Props for the KernelSelector component. */

@@ -4,8 +4,8 @@
  * MIT License
  */
 
-import type { DatalayerClient } from "@datalayer/core/lib/client";
-import type { RuntimeDTO } from "@datalayer/core/lib/models/RuntimeDTO";
+import type { AgentRuntimesClient as DatalayerClient } from "@datalayer/agent-runtimes/lib/client/AgentRuntimesClient";
+import type { RuntimeDTO } from "@datalayer/agent-runtimes/lib/models/RuntimeDTO";
 import * as assert from "assert";
 import * as vscode from "vscode";
 

@@ -33,7 +33,7 @@ import {
   DefaultExecutor,
   useNotebookStore,
 } from "@datalayer/jupyter-react";
-import { DatalayerCollaborationProvider } from "@datalayer/core/lib/collaboration";
+import { DatalayerCollaborationProvider } from "@datalayer/agent-runtimes/lib/collaboration";
 import {
   MessageHandlerContext,
   type ExtensionMessage,
@@ -384,7 +384,7 @@ function NotebookEditorCore({
   const collaborationProvider = useMemo(() => {
     if (isDatalayerNotebook && serverUrl && token && documentId) {
       return new DatalayerCollaborationProvider({
-        runUrl: serverUrl,
+        datalayerUrl: serverUrl,
         token: token,
         // Use proxy fetch to avoid CORS issues in VS Code webview
         fetchFn: proxyFetch as unknown as typeof fetch,

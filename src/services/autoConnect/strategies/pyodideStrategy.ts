@@ -13,7 +13,7 @@
  * @module services/autoConnect/strategies/pyodideStrategy
  */
 
-import type { RuntimeDTO } from "@datalayer/core/lib/models/RuntimeDTO";
+import type { RuntimeDTO } from "@datalayer/agent-runtimes/lib/models/RuntimeDTO";
 
 import { ServiceLoggers } from "../../logging/loggers";
 import type {

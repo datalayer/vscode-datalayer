@@ -34,10 +34,7 @@ export interface DatasourceDialogProps {
 }
 
 type DatasourceType =
-  | "Amazon Athena"
-  | "Google BigQuery"
-  | "Microsoft Sentinel"
-  | "Splunk";
+  "Amazon Athena" | "Google BigQuery" | "Microsoft Sentinel" | "Splunk";
 
 interface FormData {
   type: DatasourceType;

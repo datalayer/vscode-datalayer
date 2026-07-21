@@ -24,6 +24,4 @@ import type { TreeSectionItem } from "./treeSectionItem";
  * - DatasourceTreeItem: Individual datasources
  */
 export type SettingsTreeItem =
-  | TreeSectionItem
-  | SecretTreeItem
-  | DatasourceTreeItem;
+  TreeSectionItem | SecretTreeItem | DatasourceTreeItem;

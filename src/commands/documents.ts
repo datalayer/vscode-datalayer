@@ -24,7 +24,7 @@
  * - `datalayer.refreshSpaces` - Refreshes spaces tree view to reflect latest state
  */
 
-import type { SpaceDTO } from "@datalayer/core/lib/models/SpaceDTO";
+import type { SpaceDTO } from "@datalayer/agent-runtimes/lib/models/SpaceDTO";
 import * as fs from "fs";
 import * as vscode from "vscode";
 

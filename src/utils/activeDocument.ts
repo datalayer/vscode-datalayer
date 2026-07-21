@@ -17,10 +17,7 @@ import * as vscode from "vscode";
  * Editor type for active document
  */
 export type EditorType =
-  | "datalayer-notebook"
-  | "datalayer-lexical"
-  | "native-notebook"
-  | "other";
+  "datalayer-notebook" | "datalayer-lexical" | "native-notebook" | "other";
 
 /**
  * Active document information including URI and editor type

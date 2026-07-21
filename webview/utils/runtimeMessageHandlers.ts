@@ -11,7 +11,7 @@
  * @module utils/runtimeMessageHandlers
  */
 
-import type { RuntimeJSON } from "@datalayer/core/lib/client";
+import type { RuntimeJSON } from "@datalayer/agent-runtimes/lib/models";
 
 import type {
   KernelSelectedMessage,

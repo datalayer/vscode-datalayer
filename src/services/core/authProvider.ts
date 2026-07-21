@@ -11,8 +11,8 @@
  * @module services/authProvider
  */
 
-import type { DatalayerClient } from "@datalayer/core/lib/client";
-import type { UserDTO } from "@datalayer/core/lib/models/UserDTO";
+import type { AgentRuntimesClient as DatalayerClient } from "@datalayer/agent-runtimes/lib/client/AgentRuntimesClient";
+import type { UserJSON } from "@datalayer/agent-runtimes/lib/models";
 import * as vscode from "vscode";
 
 import { showAuthMethodPicker } from "../../ui/dialogs/authMethodSelector";
@@ -543,8 +543,9 @@ export class DatalayerAuthProvider
    * Delegates to Datalayer's authentication manager.
    * @returns Current user DTO or null if not authenticated.
    */
-  getCurrentUser(): UserDTO | null {
-    return this.datalayer.auth.getCurrentUser() || null;
+  getCurrentUser(): UserJSON | null {
+    const user = this.datalayer.auth.getCurrentUser();
+    return user ? user.toJSON() : null;
   }
 
   /**

@@ -120,7 +120,7 @@ async function showDatasourceDialog(
     type: "init",
     body: {
       token,
-      iamRunUrl: "https://prod1.datalayer.run",
+      iamUrl: "https://prod1.datalayer.run",
     },
   });
 
@@ -265,7 +265,7 @@ export async function showDatasourceEditDialog(
       type: "init-edit",
       body: {
         token,
-        iamRunUrl: "https://prod1.datalayer.run",
+        iamUrl: "https://prod1.datalayer.run",
         datasource: {
           uid: datasource.uid,
           type: datasource.type,

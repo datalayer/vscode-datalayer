@@ -19,8 +19,8 @@
  * @module services/autoConnect/autoConnectService
  */
 
-import type { DatalayerClient } from "@datalayer/core/lib/client";
-import type { RuntimeDTO } from "@datalayer/core/lib/models/RuntimeDTO";
+import type { AgentRuntimesClient as DatalayerClient } from "@datalayer/agent-runtimes/lib/client/AgentRuntimesClient";
+import type { RuntimeDTO } from "@datalayer/agent-runtimes/lib/models/RuntimeDTO";
 import * as vscode from "vscode";
 
 import type { RuntimesTreeProvider } from "../../providers/runtimesTreeProvider";

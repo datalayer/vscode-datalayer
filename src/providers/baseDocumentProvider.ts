@@ -13,13 +13,13 @@
 
 import * as vscode from "vscode";
 
-import type { OutlineUpdateMessage } from "../../webview/types/messages";
 import { getOutlineTreeProvider } from "../extension";
 import { NetworkBridgeService } from "../services/bridges/networkBridge";
 import { RuntimeBridgeService } from "../services/bridges/runtimeBridge";
 import { ServiceLoggers } from "../services/logging/loggers";
 import { DocumentMessageRouter } from "../services/messaging/messageRouter";
 import { createExtensionRunner, Runner } from "../tools/core/runnerSetup";
+import type { OutlineUpdateMessage } from "../types/outline";
 import type { ExtensionMessage } from "../types/vscode/messages";
 
 /**

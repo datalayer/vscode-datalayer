@@ -17,11 +17,7 @@ import * as vscode from "vscode";
  * Document type classification
  */
 export type DocumentType =
-  | "notebook"
-  | "lexical"
-  | "text"
-  | "other"
-  | "unknown";
+  "notebook" | "lexical" | "text" | "other" | "unknown";
 
 /**
  * Editor type for opened documents - CRITICAL to know which editor is being used!

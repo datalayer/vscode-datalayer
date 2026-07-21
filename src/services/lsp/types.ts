@@ -30,9 +30,7 @@ export type LSPRequest =
  * LSP response message types sent from extension host to webview
  */
 export type LSPResponse =
-  | LSPCompletionResponse
-  | LSPHoverResponse
-  | LSPErrorResponse;
+  LSPCompletionResponse | LSPHoverResponse | LSPErrorResponse;
 
 /**
  * Request completions for a cell at a specific position
