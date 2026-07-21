@@ -13,8 +13,8 @@
  * @see https://code.visualstudio.com/api/extension-guides/tree-view
  */
 
-import type { DatasourceDTO } from "@datalayer/core/lib/models/Datasource";
-import type { SecretDTO } from "@datalayer/core/lib/models/Secret";
+import type { DatasourceJSON } from "@datalayer/core/lib/models/Datasource";
+import type { SecretJSON } from "@datalayer/core/lib/models/Secret";
 import * as vscode from "vscode";
 
 import { getServiceContainer } from "../extension";
@@ -40,8 +40,8 @@ export class SettingsTreeProvider implements vscode.TreeDataProvider<SettingsTre
   > = this._onDidChangeTreeData.event;
 
   private authService: DatalayerAuthProvider;
-  private secretsCache: SecretDTO[] = [];
-  private datasourcesCache: DatasourceDTO[] = [];
+  private secretsCache: SecretJSON[] = [];
+  private datasourcesCache: DatasourceJSON[] = [];
 
   /**
    * Creates a new SettingsTreeProvider with automatic refresh on auth changes.
@@ -127,7 +127,8 @@ export class SettingsTreeProvider implements vscode.TreeDataProvider<SettingsTre
 
     try {
       const datalayer = getServiceContainer().datalayer;
-      this.secretsCache = (await datalayer.listSecrets()) ?? [];
+      const secrets = (await datalayer.listSecrets()) ?? [];
+      this.secretsCache = secrets.map((secret) => secret.toJSON());
     } catch (_error) {
       // Silently fail - tree will be empty
       this.secretsCache = [];
@@ -146,8 +147,10 @@ export class SettingsTreeProvider implements vscode.TreeDataProvider<SettingsTre
 
     try {
       const datalayer = getServiceContainer().datalayer;
-      // Datalayer returns DatasourceDTO[] directly
-      this.datasourcesCache = (await datalayer.listDatasources()) ?? [];
+      const datasources = (await datalayer.listDatasources()) ?? [];
+      this.datasourcesCache = datasources.map((datasource) =>
+        datasource.toJSON(),
+      );
 
       ServiceLoggers.main.debug(
         `[Settings] Loaded ${this.datasourcesCache.length} datasource(s)`,

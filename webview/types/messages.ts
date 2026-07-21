@@ -11,7 +11,7 @@
  * @module types/messages
  */
 
-import type { RuntimeJSON } from "@datalayer/core/lib/client";
+import type { RuntimeJSON } from "@datalayer/agent-runtimes/lib/models";
 import type { InlineCompletionConfig } from "@datalayer/jupyter-lexical";
 
 import type { CollaborationConfig } from "../stores/lexicalStore";

@@ -10,7 +10,7 @@
  * @module models/secretTreeItem
  */
 
-import type { SecretDTO } from "@datalayer/core/lib/models/Secret";
+import type { SecretJSON } from "@datalayer/core/lib/models/Secret";
 import * as vscode from "vscode";
 
 /**
@@ -24,7 +24,7 @@ export class SecretTreeItem extends vscode.TreeItem {
    *
    * @param secret - Secret DTO from the Datalayer platform.
    */
-  constructor(public readonly secret: SecretDTO) {
+  constructor(public readonly secret: SecretJSON) {
     super(secret.name, vscode.TreeItemCollapsibleState.None);
 
     // Show variant and masked value in description

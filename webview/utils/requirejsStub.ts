@@ -26,19 +26,23 @@ export function initializeRequireJSStub(): void {
     // Stub define function - just stores the module
     const modules = new Map<string, unknown>();
 
-    type DefineFunction = ((name: string, module: unknown) => void) & {
-      amd?: Record<string, unknown>;
+    type DefineFunction = ((...args: unknown[]) => void) & {
+      amd: object;
     };
 
-    const defineFunc: DefineFunction = (name: string, module: unknown) => {
-      modules.set(name, module);
-    };
+    const defineFunc: DefineFunction = ((...args: unknown[]) => {
+      const [name, module] = args;
+      if (typeof name === "string") {
+        modules.set(name, module);
+      }
+    }) as DefineFunction;
 
     // Add amd property to mark this as an AMD-compatible define function
     // This is required by the RequireJS RequireDefine interface
     defineFunc.amd = {};
 
-    window.define = defineFunc;
+    // Cast to the merged global define type used by libs in this webview context.
+    window.define = defineFunc as unknown as typeof window.define;
 
     // Stub require function - returns stored modules
     // @ts-expect-error - Simplified require stub doesn't match full Require interface

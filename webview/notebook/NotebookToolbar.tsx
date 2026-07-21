@@ -19,7 +19,7 @@ import React, {
 } from "react";
 import { notebookStore } from "@datalayer/jupyter-react";
 import { MessageHandlerContext } from "../services/messageHandler";
-import type { RuntimeJSON } from "@datalayer/core/lib/client";
+import type { RuntimeJSON } from "@datalayer/agent-runtimes/lib/models";
 
 // Import shared toolbar components
 import {

@@ -10,7 +10,7 @@
  * Uses MutableServiceManager to prevent Notebook2 re-renders when switching runtimes.
  */
 
-import type { RuntimeJSON } from "@datalayer/core/lib/client";
+import type { RuntimeJSON } from "@datalayer/agent-runtimes/lib/models";
 import type { ServiceManager } from "@jupyterlab/services";
 import { useCallback, useRef, useState } from "react";
 

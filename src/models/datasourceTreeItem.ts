@@ -10,7 +10,7 @@
  * @module models/datasourceTreeItem
  */
 
-import type { DatasourceDTO } from "@datalayer/core/lib/models/Datasource";
+import type { DatasourceJSON } from "@datalayer/core/lib/models/Datasource";
 import * as vscode from "vscode";
 
 /**
@@ -23,11 +23,11 @@ export class DatasourceTreeItem extends vscode.TreeItem {
    *
    * @param datasource - Datasource DTO from the Datalayer platform.
    */
-  constructor(public readonly datasource: DatasourceDTO) {
+  constructor(public readonly datasource: DatasourceJSON) {
     super(datasource.name, vscode.TreeItemCollapsibleState.None);
 
-    // Show variant in description (e.g., "athena", "bigquery")
-    this.description = datasource.variant || datasource.type;
+    // Show datasource type in description.
+    this.description = datasource.type;
 
     // Tooltip with datasource details
     this.tooltip = new vscode.MarkdownString();

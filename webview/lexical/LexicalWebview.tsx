@@ -20,7 +20,7 @@ import ReactDOM from "react-dom/client";
 import { ServiceManager } from "@jupyterlab/services";
 import { LexicalEditor } from "./LexicalEditor";
 import { vsCodeAPI } from "../services/messageHandler";
-import type { RuntimeJSON } from "@datalayer/core/lib/client";
+import type { RuntimeJSON } from "@datalayer/agent-runtimes/lib/models";
 import { useRuntimeManager } from "../hooks/useRuntimeManager";
 import {
   createLexicalStore,
