@@ -59,6 +59,7 @@ const resolvePackage = (packageName) => {
 
 /** @type WebpackConfig */
 const extensionConfig = {
+  name: "extension",
   target: "node", // VS Code extensions run in a Node.js-context 📖 -> https://webpack.js.org/configuration/node/
   mode: "none", // this leaves the source code as close as possible to the original (when packaging we set this to 'production')
   entry: "./src/preload.ts", // CHANGED: Use preload.ts to force os module loading BEFORE any other code, 📖 -> https://webpack.js.org/configuration/entry-context/
@@ -131,6 +132,18 @@ const extensionConfig = {
         use: [
           {
             loader: "ts-loader",
+            options: {
+              // Transpile only — do NOT run ts-loader's full type checker here.
+              // Type safety is enforced separately by `npm run type-check`
+              // (`tsc --noEmit`, which passes cleanly). Full type-checking in
+              // ts-loader builds an in-memory TS program spanning all of
+              // node_modules' declaration files, which (a) is the dominant
+              // memory consumer that pushed this bundle past the Node heap and
+              // (b) surfaced false positives caused by duplicate `zod`/type
+              // copies in the monorepo that `tsc` (with the project's module
+              // resolution) does not report.
+              transpileOnly: true,
+            },
           },
         ],
       },
@@ -183,6 +196,7 @@ const extensionConfig = {
 const WEBVIEW_PERFORMANCE_HINTS = { hints: false };
 
 const webviewConfig = {
+  name: "webview",
   target: "web",
   // Use development mode when WEBVIEW_DEBUG=1 to preserve console.log and avoid minification
   mode: process.env.WEBVIEW_DEBUG ? "development" : "production",
@@ -388,6 +402,7 @@ const webviewConfig = {
 // Config for Lexical editor webview
 const lexicalWebviewConfig = {
   ...webviewConfig,
+  name: "lexical",
   entry: {
     main: "./webview/lexical/main.ts",
   },
@@ -542,6 +557,7 @@ const lexicalWebviewConfig = {
 
 // Config for Primer Showcase webview
 const showcaseWebviewConfig = {
+  name: "showcase",
   target: "web",
   mode: "none",
   devtool: "inline-source-map",
@@ -603,6 +619,7 @@ const showcaseWebviewConfig = {
 // the entry bundle lightweight enough for the webview to evaluate.
 const agentChatWebviewConfig = {
   ...webviewConfig,
+  name: "agentChat",
   entry: "./webview/agentChat/index.tsx",
   output: {
     path: path.resolve(__dirname, "dist"),
@@ -741,6 +758,7 @@ const aguiExampleConfig = {
 
 // Config for Datasource Dialog webview
 const datasourceDialogConfig = {
+  name: "datasource",
   target: "web",
   mode: "production", // Enable webpack production optimizations
   devtool: process.env.WEBVIEW_DEBUG
@@ -811,6 +829,7 @@ const datasourceDialogConfig = {
 
 // Config for Datasource Edit Dialog webview
 const datasourceEditDialogConfig = {
+  name: "datasource-edit",
   target: "web",
   mode: "production", // Enable webpack production optimizations
   devtool: process.env.WEBVIEW_DEBUG
@@ -922,5 +941,13 @@ if (process.env.ANALYZE === "true") {
     );
   });
 }
+
+// Build the configs sequentially instead of all at once. Webpack's
+// MultiCompiler otherwise compiles every config in parallel, so all seven
+// bundles (extension + six webviews) run their production minification at
+// the same time and their combined module graphs blow past the Node heap
+// limit (OOM even at --max-old-space-size=8192). Limiting parallelism to 1
+// keeps peak memory to a single config at a time. 📖 -> https://webpack.js.org/api/node/#multicompiler
+configs.parallelism = 1;
 
 module.exports = configs;

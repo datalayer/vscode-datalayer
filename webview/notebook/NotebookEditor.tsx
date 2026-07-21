@@ -33,7 +33,7 @@ import {
   DefaultExecutor,
   useNotebookStore,
 } from "@datalayer/jupyter-react";
-import { DatalayerCollaborationProvider } from "@datalayer/core/lib/collaboration";
+import { DatalayerCollaborationProvider } from "@datalayer/agent-runtimes/lib/collaboration";
 import {
   MessageHandlerContext,
   type ExtensionMessage,
