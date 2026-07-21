@@ -132,6 +132,8 @@
     "numpy",
     "codeai",
     "evals",
-    "toolsets"
+    "toolsets",
+    "agentspec",
+    "agentspecs"
   ]
 }
