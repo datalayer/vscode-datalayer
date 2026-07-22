@@ -416,22 +416,22 @@
       },
       {
         "command": "datalayer.runtimes.refresh",
-        "title": "Refresh Runtimes",
+        "title": "Refresh Agents",
         "icon": "$(refresh)"
       },
       {
         "command": "datalayer.runtimes.create",
-        "title": "Create Runtime",
+        "title": "Create Agent Runtime",
         "icon": "$(add)"
       },
       {
         "command": "datalayer.runtimes.terminate",
-        "title": "Terminate Runtime",
+        "title": "Terminate Agent Runtime",
         "icon": "$(trash)"
       },
       {
         "command": "datalayer.runtimes.terminateAll",
-        "title": "Terminate All Runtimes",
+        "title": "Terminate All Agent Runtimes",
         "icon": "$(trash)"
       },
       {
@@ -557,12 +557,6 @@
           "contextualTitle": "Document Outline"
         },
         {
-          "id": "datalayerProjects",
-          "name": "Projects",
-          "icon": "$(project)",
-          "contextualTitle": "Datalayer Projects"
-        },
-        {
           "id": "datalayerSpaces",
           "name": "Spaces",
           "icon": "$(cloud)",
@@ -570,9 +564,9 @@
         },
         {
           "id": "datalayerRuntimes",
-          "name": "Runtimes",
+          "name": "Agents",
           "icon": "$(vm)",
-          "contextualTitle": "Datalayer Runtimes"
+          "contextualTitle": "Datalayer Agents"
         },
         {
           "id": "datalayerSettings",
@@ -594,11 +588,6 @@
       {
         "view": "datalayerSpaces",
         "contents": "Welcome to Datalayer Spaces.\n[Login to Datalayer](command:datalayer.login) to view your spaces and documents.",
-        "when": "!datalayer.authenticated"
-      },
-      {
-        "view": "datalayerProjects",
-        "contents": "Welcome to Datalayer Projects.\n[Login to Datalayer](command:datalayer.login) to view your projects.",
         "when": "!datalayer.authenticated"
       }
     ],
@@ -775,12 +764,12 @@
         },
         {
           "command": "datalayer.projects.refresh",
-          "when": "view == datalayerProjects",
+          "when": "view == datalayerSpaces",
           "group": "navigation@1"
         },
         {
           "command": "datalayer.projects.create",
-          "when": "view == datalayerProjects",
+          "when": "view == datalayerSpaces",
           "group": "navigation@2"
         }
       ],
@@ -922,33 +911,23 @@
         },
         {
           "command": "datalayer.projects.assignAgent",
-          "when": "view == datalayerProjects && viewItem =~ /project-.*-noAgent/",
+          "when": "view == datalayerSpaces && viewItem =~ /project-.*-noAgent/",
           "group": "1_agent@1"
         },
         {
           "command": "datalayer.projects.unassignAgent",
-          "when": "view == datalayerProjects && viewItem =~ /project-.*-withAgent/",
+          "when": "view == datalayerSpaces && viewItem =~ /project-.*-withAgent/",
           "group": "1_agent@2"
         },
         {
           "command": "datalayer.projects.viewDetails",
-          "when": "view == datalayerProjects && viewItem =~ /^project-/",
+          "when": "view == datalayerSpaces && viewItem =~ /^project-/",
           "group": "3_info"
         },
         {
           "command": "datalayer.projects.rename",
-          "when": "view == datalayerProjects && viewItem =~ /^project-/",
+          "when": "view == datalayerSpaces && viewItem =~ /^project-/",
           "group": "5_edit"
-        },
-        {
-          "command": "datalayer.openDocument",
-          "when": "view == datalayerProjects && (viewItem == notebook || viewItem == document)",
-          "group": "1_open@1"
-        },
-        {
-          "command": "datalayer.downloadDocument",
-          "when": "view == datalayerProjects && (viewItem == notebook || viewItem == document)",
-          "group": "1_open@2"
         }
       ],
       "explorer/context": [

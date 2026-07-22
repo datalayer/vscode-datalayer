@@ -11,13 +11,39 @@
  * @module commands/projects
  */
 
+import type { ProjectDTO } from "@datalayer/agent-runtimes/lib/models/ProjectDTO";
 import * as vscode from "vscode";
 
 import { getServiceContainer } from "../extension";
 import { ProjectTreeItem } from "../models/projectTreeItem";
-import { ProjectsTreeProvider } from "../providers/projectsTreeProvider";
-import { RuntimesTreeProvider } from "../providers/runtimesTreeProvider";
-import { SettingsTreeProvider } from "../providers/settingsTreeProvider";
+import { SpaceItem } from "../models/spaceItem";
+import type { ProjectsTreeProvider } from "../providers/projectsTreeProvider";
+import type { RuntimesTreeProvider } from "../providers/runtimesTreeProvider";
+import type { SettingsTreeProvider } from "../providers/settingsTreeProvider";
+import type { SpacesTreeProvider } from "../providers/spacesTreeProvider";
+
+/**
+ * Extracts a project from either the legacy Projects view item or a project
+ * space item in the Spaces view.
+ *
+ * @param item - Selected tree item from Projects or Spaces.
+ *
+ * @returns Resolved project DTO or undefined when selection is not a project.
+ */
+function getProjectFromItem(
+  item: ProjectTreeItem | SpaceItem | undefined,
+): ProjectDTO | undefined {
+  if (!item) {
+    return undefined;
+  }
+  if (item instanceof ProjectTreeItem) {
+    return item.project;
+  }
+  if (item instanceof SpaceItem) {
+    return item.data.project;
+  }
+  return undefined;
+}
 
 /**
  * Shows the agent spec picker and handles missing secret creation.
@@ -155,6 +181,7 @@ async function showAgentSpecPicker(
  * @param projectsTreeProvider - The Projects tree view provider for refresh.
  * @param runtimesTreeProvider - The Runtimes tree view provider for refresh.
  * @param settingsTreeProvider - The Settings tree view provider for refresh.
+ * @param spacesTreeProvider - The Spaces tree view provider for refresh.
  *
  */
 export function registerProjectsCommands(
@@ -162,6 +189,7 @@ export function registerProjectsCommands(
   projectsTreeProvider?: ProjectsTreeProvider,
   runtimesTreeProvider?: RuntimesTreeProvider,
   settingsTreeProvider?: SettingsTreeProvider,
+  spacesTreeProvider?: SpacesTreeProvider,
 ): void {
   /**
    * Command: datalayer.projects.refresh
@@ -169,9 +197,8 @@ export function registerProjectsCommands(
    */
   context.subscriptions.push(
     vscode.commands.registerCommand("datalayer.projects.refresh", () => {
-      if (projectsTreeProvider) {
-        projectsTreeProvider.refresh();
-      }
+      projectsTreeProvider?.refresh();
+      spacesTreeProvider?.refresh();
     }),
   );
 
@@ -235,6 +262,7 @@ export function registerProjectsCommands(
             );
 
             projectsTreeProvider?.refresh();
+            spacesTreeProvider?.refresh();
           },
         );
       } catch (error) {
@@ -252,13 +280,12 @@ export function registerProjectsCommands(
   context.subscriptions.push(
     vscode.commands.registerCommand(
       "datalayer.projects.rename",
-      async (item: ProjectTreeItem) => {
-        if (!item || !item.project) {
+      async (item: ProjectTreeItem | SpaceItem) => {
+        const project = getProjectFromItem(item);
+        if (!project) {
           vscode.window.showErrorMessage("No project selected");
           return;
         }
-
-        const project = item.project;
         const oldName = project.name;
 
         const newName = await vscode.window.showInputBox({
@@ -307,6 +334,7 @@ export function registerProjectsCommands(
               );
 
               projectsTreeProvider?.refresh();
+              spacesTreeProvider?.refresh();
             },
           );
         } catch (error) {
@@ -325,13 +353,12 @@ export function registerProjectsCommands(
   context.subscriptions.push(
     vscode.commands.registerCommand(
       "datalayer.projects.assignAgent",
-      async (item: ProjectTreeItem) => {
-        if (!item || !item.project) {
+      async (item: ProjectTreeItem | SpaceItem) => {
+        const project = getProjectFromItem(item);
+        if (!project) {
           vscode.window.showErrorMessage("No project selected");
           return;
         }
-
-        const project = item.project;
         const specId = await showAgentSpecPicker(
           `Assign Agent to "${project.name}"`,
           settingsTreeProvider,
@@ -360,6 +387,7 @@ export function registerProjectsCommands(
               );
 
               projectsTreeProvider?.refresh();
+              spacesTreeProvider?.refresh();
               runtimesTreeProvider?.refresh();
               await vscode.commands.executeCommand(
                 "datalayer.internal.agentChat.refresh",
@@ -440,13 +468,12 @@ export function registerProjectsCommands(
   context.subscriptions.push(
     vscode.commands.registerCommand(
       "datalayer.projects.unassignAgent",
-      async (item: ProjectTreeItem) => {
-        if (!item || !item.project) {
+      async (item: ProjectTreeItem | SpaceItem) => {
+        const project = getProjectFromItem(item);
+        if (!project) {
           vscode.window.showErrorMessage("No project selected");
           return;
         }
-
-        const project = item.project;
 
         const confirmation = await vscode.window.showWarningMessage(
           `Remove agent "${project.attachedAgentPodName}" from project "${project.name}"?`,
@@ -474,6 +501,7 @@ export function registerProjectsCommands(
               );
 
               projectsTreeProvider?.refresh();
+              spacesTreeProvider?.refresh();
             },
           );
         } catch (error) {
@@ -492,13 +520,12 @@ export function registerProjectsCommands(
   context.subscriptions.push(
     vscode.commands.registerCommand(
       "datalayer.projects.viewDetails",
-      async (item: ProjectTreeItem) => {
-        if (!item || !item.project) {
+      async (item: ProjectTreeItem | SpaceItem) => {
+        const project = getProjectFromItem(item);
+        if (!project) {
           vscode.window.showErrorMessage("No project selected");
           return;
         }
-
-        const project = item.project;
 
         const details = [
           `Name: ${project.name}`,

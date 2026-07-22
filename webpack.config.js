@@ -259,6 +259,8 @@ const webviewConfig = {
       // Use resolvePackage helper to find packages in hoisted node_modules (monorepo)
       react: resolvePackage("react"),
       "react-dom": resolvePackage("react-dom"),
+      // Use bundler build for stable WASM loading in VS Code webviews.
+      "loro-crdt": require.resolve("loro-crdt/bundler"),
       "@codemirror/state": resolvePackage("@codemirror/state"),
       "@codemirror/view": resolvePackage("@codemirror/view"),
       "@codemirror/language": resolvePackage("@codemirror/language"),
@@ -539,6 +541,8 @@ const lexicalWebviewConfig = {
       // Use resolvePackage helper to find packages in hoisted node_modules (monorepo)
       react: resolvePackage("react"),
       "react-dom": resolvePackage("react-dom"),
+      // Use bundler build for stable WASM loading in VS Code webviews.
+      "loro-crdt": require.resolve("loro-crdt/bundler"),
       "@codemirror/state": resolvePackage("@codemirror/state"),
       "@codemirror/view": resolvePackage("@codemirror/view"),
       "@codemirror/language": resolvePackage("@codemirror/language"),
