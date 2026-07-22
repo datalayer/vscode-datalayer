@@ -46,6 +46,24 @@ function getProjectFromItem(
 }
 
 /**
+ * Generates a safe space handle from a display name.
+ *
+ * @param name - Space name entered by the user.
+ *
+ * @returns Kebab-case handle suitable for space creation.
+ */
+function generateSpaceHandle(name: string): string {
+  const base = name
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .replace(/-{2,}/g, "-");
+
+  return base.length > 0 ? base : "space";
+}
+
+/**
  * Shows the agent spec picker and handles missing secret creation.
  *
  * @param title - Title for the QuickPick dialog.
@@ -203,28 +221,28 @@ export function registerProjectsCommands(
   );
 
   /**
-   * Command: datalayer.projects.create
-   * Creates a new project via multi-step input dialog.
+   * Command: datalayer.spaces.create
+   * Creates a new space via multi-step input dialog.
    */
   context.subscriptions.push(
-    vscode.commands.registerCommand("datalayer.projects.create", async () => {
+    vscode.commands.registerCommand("datalayer.spaces.create", async () => {
       try {
         const datalayer = getServiceContainer().datalayer;
 
-        // Step 1: Enter project name
+        // Step 1: Enter space name
         const name = await vscode.window.showInputBox({
-          title: "Create Project - Step 1 of 2",
-          prompt: "Enter project name",
-          placeHolder: "my-project",
+          title: "Create Space - Step 1 of 3",
+          prompt: "Enter space name",
+          placeHolder: "my-space",
           validateInput: (value) => {
             if (!value || value.trim().length === 0) {
-              return "Project name cannot be empty";
+              return "Space name cannot be empty";
             }
             if (value.length < 3) {
-              return "Project name must be at least 3 characters";
+              return "Space name must be at least 3 characters";
             }
             if (value.length > 50) {
-              return "Project name must be 50 characters or less";
+              return "Space name must be 50 characters or less";
             }
             return undefined;
           },
@@ -236,9 +254,9 @@ export function registerProjectsCommands(
 
         // Step 2: Enter description (optional)
         const description = await vscode.window.showInputBox({
-          title: "Create Project - Step 2 of 2",
+          title: "Create Space - Step 2 of 3",
           prompt: "Enter description (optional)",
-          placeHolder: "Description of the project...",
+          placeHolder: "Description of the space...",
           validateInput: (value) => {
             if (value && value.length > 500) {
               return "Description must be 500 characters or less";
@@ -247,18 +265,61 @@ export function registerProjectsCommands(
           },
         });
 
-        // Create the project
+        // Step 3: Select variant
+        const variantChoice = await vscode.window.showQuickPick(
+          [
+            {
+              label: "default",
+              description: "Default space for general work",
+              value: "default",
+            },
+            {
+              label: "project",
+              description: "Project-oriented collaborative space",
+              value: "project",
+            },
+            {
+              label: "course",
+              description: "Course/training oriented space",
+              value: "course",
+            },
+          ],
+          {
+            title: "Create Space - Step 3 of 3",
+            placeHolder: "Select space variant",
+            matchOnDescription: true,
+          },
+        );
+
+        if (!variantChoice) {
+          return;
+        }
+
+        const spaceName = name.trim();
+        const spaceDescription = description?.trim() ?? "";
+        const spaceVariant = variantChoice.value;
+        const spaceHandle = generateSpaceHandle(spaceName);
+
+        // Create the space
         await vscode.window.withProgress(
           {
             location: vscode.ProgressLocation.Notification,
-            title: `Creating project "${name}"...`,
+            title: `Creating ${spaceVariant} space "${spaceName}"...`,
             cancellable: false,
           },
           async () => {
-            await datalayer.createProject(name.trim(), description?.trim());
+            await datalayer.createSpace(
+              spaceName,
+              spaceDescription,
+              spaceVariant,
+              spaceHandle,
+              "",
+              "",
+              false,
+            );
 
             vscode.window.showInformationMessage(
-              `Project "${name}" created successfully`,
+              `Space "${spaceName}" (${spaceVariant}) created successfully`,
             );
 
             projectsTreeProvider?.refresh();
@@ -267,7 +328,7 @@ export function registerProjectsCommands(
         );
       } catch (error) {
         vscode.window.showErrorMessage(
-          `Failed to create project: ${error instanceof Error ? error.message : error}`,
+          `Failed to create space: ${error instanceof Error ? error.message : error}`,
         );
       }
     }),
