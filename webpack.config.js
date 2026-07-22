@@ -652,10 +652,7 @@ const agentChatWebviewConfig = {
   },
   resolve: {
     ...webviewConfig.resolve,
-    extensions: [
-      ...(webviewConfig.resolve?.extensions || []),
-      ".wasm",
-    ],
+    extensions: [...(webviewConfig.resolve?.extensions || []), ".wasm"],
   },
   optimization: {
     // Allow code splitting — the Chat component is loaded via React.lazy.
