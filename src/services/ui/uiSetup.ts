@@ -17,7 +17,7 @@ import { AgentChatViewProvider } from "../../providers/agentChatViewProvider";
 import { LexicalProvider } from "../../providers/lexicalProvider";
 import { NotebookProvider } from "../../providers/notebookProvider";
 import { OutlineTreeProvider } from "../../providers/outlineTreeProvider";
-import { ProjectsTreeProvider } from "../../providers/projectsTreeProvider";
+import type { ProjectsTreeProvider } from "../../providers/projectsTreeProvider";
 import { RuntimesTreeProvider } from "../../providers/runtimesTreeProvider";
 import { SettingsTreeProvider } from "../../providers/settingsTreeProvider";
 import { SmartDynamicControllerManager } from "../../providers/smartDynamicControllerManager";
@@ -41,8 +41,8 @@ export interface ExtensionUI {
   spacesTreeProvider: SpacesTreeProvider;
   /** Tree view provider for runtimes */
   runtimesTreeProvider: RuntimesTreeProvider;
-  /** Tree view provider for projects */
-  projectsTreeProvider: ProjectsTreeProvider;
+  /** Optional legacy tree view provider for projects */
+  projectsTreeProvider?: ProjectsTreeProvider;
   /** Tree view provider for settings (secrets + datasources) */
   settingsTreeProvider: SettingsTreeProvider;
   /** Smart dynamic controller manager for runtime selection and switching */
@@ -97,7 +97,7 @@ export async function initializeUI(
   );
   context.subscriptions.push(controllerManager);
 
-  // Create all tree providers in display order (outline, spaces, runtimes, snapshots)
+  // Create all tree providers in display order (outline, spaces, agents, settings)
 
   // 1. Outline tree provider (FIRST)
   const outlineTreeProvider = new OutlineTreeProvider();
@@ -159,7 +159,7 @@ export async function initializeUI(
     }),
   );
 
-  // 3. Runtimes tree provider (THIRD) - includes Runtimes + Snapshots sections
+  // 3. Runtimes tree provider (THIRD) - shown as "Agents" and includes sections
   const runtimesTreeProvider = new RuntimesTreeProvider(authProvider);
   context.subscriptions.push(
     vscode.window.createTreeView("datalayerRuntimes", {
@@ -168,17 +168,7 @@ export async function initializeUI(
     }),
   );
 
-  // 4. Projects tree provider (FOURTH)
-  const projectsTreeProvider = new ProjectsTreeProvider(authProvider);
-  context.subscriptions.push(
-    projectsTreeProvider,
-    vscode.window.createTreeView("datalayerProjects", {
-      treeDataProvider: projectsTreeProvider,
-      showCollapseAll: true,
-    }),
-  );
-
-  // 5. Settings tree provider (FIFTH) - includes Secrets + Datasources sections
+  // 4. Settings tree provider (FOURTH) - includes Secrets + Datasources sections
   const settingsTreeProvider = new SettingsTreeProvider(authProvider);
   context.subscriptions.push(
     vscode.window.createTreeView("datalayerSettings", {
@@ -221,7 +211,7 @@ export async function initializeUI(
     outlineTreeProvider,
     spacesTreeProvider,
     runtimesTreeProvider,
-    projectsTreeProvider,
+    projectsTreeProvider: undefined,
     settingsTreeProvider,
     controllerManager,
   };

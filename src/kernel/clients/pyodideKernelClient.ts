@@ -93,7 +93,7 @@ export class PyodideKernelClient {
       const path = await import("path");
       const fs = await import("fs/promises");
 
-      const pyodideVersion = "0.29.3";
+      const pyodideVersion = "0.29.4";
 
       // Create cache directory path
       const cacheDir = path.join(

@@ -13,6 +13,7 @@
 
 import type { LexicalDTO } from "@datalayer/agent-runtimes/lib/models/LexicalDTO";
 import type { NotebookDTO } from "@datalayer/agent-runtimes/lib/models/NotebookDTO";
+import type { ProjectDTO } from "@datalayer/agent-runtimes/lib/models/ProjectDTO";
 import type { SpaceDTO } from "@datalayer/agent-runtimes/lib/models/SpaceDTO";
 import { ItemTypes } from "@datalayer/core/lib/client/constants";
 import * as path from "path";
@@ -56,6 +57,8 @@ export interface SpaceItemData {
   space?: SpaceDTO;
   /** Datalayer Notebook or Lexical model instance (for NOTEBOOK/DOCUMENT types) */
   document?: Document;
+  /** Project metadata when the space variant is "project" */
+  project?: ProjectDTO;
   /** Error message (for ERROR type) */
   error?: string;
   /** Username of the authenticated user */
@@ -88,9 +91,44 @@ export class SpaceItem extends vscode.TreeItem {
   ) {
     super(label, collapsibleState);
     this.tooltip = this.getTooltip();
-    this.contextValue = data.type;
+    this.contextValue = this.getContextValue();
     this.iconPath = this.getIcon();
+    this.description = this.getDescription();
     this.command = this.getCommand();
+  }
+
+  /**
+   * Computes the context value used by view/item/context menus.
+   *
+   * @returns Context value string for VS Code menu matching.
+   */
+  private getContextValue(): string {
+    if (this.data.type === ItemType.SPACE && this.data.space) {
+      const variant = this.data.space.variant;
+      if (variant === "project") {
+        const project = this.data.project;
+        if (project) {
+          const visibilityPart = project.isPublic ? "public" : "private";
+          const agentPart = project.hasAgent ? "withAgent" : "noAgent";
+          return `project-${visibilityPart}-${agentPart}`;
+        }
+        return "project-space";
+      }
+      return "space";
+    }
+    return this.data.type;
+  }
+
+  /**
+   * Computes a secondary description for tree items.
+   *
+   * @returns Description string shown inline in the tree.
+   */
+  private getDescription(): string | undefined {
+    if (this.data.type === ItemType.SPACE && this.data.space) {
+      return this.data.space.variant;
+    }
+    return undefined;
   }
 
   /**

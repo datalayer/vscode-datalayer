@@ -15,6 +15,7 @@
 
 import type { LexicalDTO } from "@datalayer/agent-runtimes/lib/models/LexicalDTO";
 import type { NotebookDTO } from "@datalayer/agent-runtimes/lib/models/NotebookDTO";
+import type { ProjectDTO } from "@datalayer/agent-runtimes/lib/models/ProjectDTO";
 import type { SpaceDTO } from "@datalayer/agent-runtimes/lib/models/SpaceDTO";
 import { ItemTypes } from "@datalayer/core/lib/client/constants";
 import * as vscode from "vscode";
@@ -39,6 +40,7 @@ export class SpacesTreeProvider implements vscode.TreeDataProvider<SpaceItem> {
 
   private authService: DatalayerAuthProvider;
   private spacesCache: Map<string, SpaceDTO[]> = new Map();
+  private projectsBySpaceId: Map<string, ProjectDTO> = new Map();
   private itemsCache: Map<string, (NotebookDTO | LexicalDTO)[]> = new Map();
 
   /**
@@ -55,6 +57,7 @@ export class SpacesTreeProvider implements vscode.TreeDataProvider<SpaceItem> {
    */
   refresh(): void {
     this.spacesCache.clear();
+    this.projectsBySpaceId.clear();
     this.itemsCache.clear();
     this._onDidChangeTreeData.fire();
   }
@@ -68,6 +71,7 @@ export class SpacesTreeProvider implements vscode.TreeDataProvider<SpaceItem> {
     // Clear both the items cache and spaces cache to ensure fresh data
     this.itemsCache.delete(spaceId);
     this.spacesCache.clear(); // Clear spaces cache to get fresh items data
+    this.projectsBySpaceId.clear();
     this._onDidChangeTreeData.fire();
   }
 
@@ -166,11 +170,22 @@ export class SpacesTreeProvider implements vscode.TreeDataProvider<SpaceItem> {
       if (this.spacesCache.has("user")) {
         spaces = this.spacesCache.get("user")!;
       } else {
-        // Fetch spaces from Datalayer, excluding projects (shown in Projects view)
+        // Fetch spaces from Datalayer, including all variants.
         const datalayer = getServiceContainer().datalayer;
-        const allSpaces = (await datalayer.getMySpaces()) ?? [];
-        spaces = allSpaces.filter((s) => s.variant !== "project");
+        spaces = (await datalayer.getMySpaces()) ?? [];
         this.spacesCache.set("user", spaces);
+
+        // Build a project lookup keyed by space uid so project actions can
+        // be surfaced directly in the Spaces tree.
+        this.projectsBySpaceId.clear();
+        try {
+          const projects = (await datalayer.getProjects()) ?? [];
+          for (const project of projects) {
+            this.projectsBySpaceId.set(project.uid, project);
+          }
+        } catch (_error) {
+          // Projects are optional here; keep spaces usable even if this fails.
+        }
 
         // Pre-fetch items for all spaces so they appear immediately
         await Promise.all(
@@ -216,13 +231,19 @@ export class SpacesTreeProvider implements vscode.TreeDataProvider<SpaceItem> {
 
       // Create tree items with Expanded state so items show immediately
       return spaces.map((space) => {
-        const name = space.name;
-        const variant = space.variant;
-        const label = variant === "default" ? `${name} (Default)` : name;
-        return new SpaceItem(label, vscode.TreeItemCollapsibleState.Expanded, {
-          type: ItemType.SPACE,
-          space: space,
-        });
+        const project =
+          space.variant === "project"
+            ? this.projectsBySpaceId.get(space.uid)
+            : undefined;
+        return new SpaceItem(
+          space.name,
+          vscode.TreeItemCollapsibleState.Expanded,
+          {
+            type: ItemType.SPACE,
+            space,
+            project,
+          },
+        );
       });
     } catch (error) {
       return [

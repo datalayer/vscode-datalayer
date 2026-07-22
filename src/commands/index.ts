@@ -16,7 +16,7 @@
 import * as vscode from "vscode";
 
 import { OutlineTreeProvider } from "../providers/outlineTreeProvider";
-import { ProjectsTreeProvider } from "../providers/projectsTreeProvider";
+import type { ProjectsTreeProvider } from "../providers/projectsTreeProvider";
 import { RuntimesTreeProvider } from "../providers/runtimesTreeProvider";
 import { SettingsTreeProvider } from "../providers/settingsTreeProvider";
 import { SmartDynamicControllerManager } from "../providers/smartDynamicControllerManager";
@@ -52,7 +52,7 @@ export interface CommandServices {
   /** Controller manager for native notebook controller integration */
   controllerManager: SmartDynamicControllerManager;
   runtimesTreeProvider: RuntimesTreeProvider;
-  projectsTreeProvider: ProjectsTreeProvider;
+  projectsTreeProvider?: ProjectsTreeProvider;
   settingsTreeProvider: SettingsTreeProvider;
   outlineTreeProvider: OutlineTreeProvider;
 }
@@ -105,6 +105,7 @@ export function registerAllCommands(
     services.projectsTreeProvider,
     services.runtimesTreeProvider,
     services.settingsTreeProvider,
+    services.spacesTreeProvider,
   );
 
   // Register smart create commands (context-aware notebook/lexical creation)
