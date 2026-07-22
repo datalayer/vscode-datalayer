@@ -155,7 +155,7 @@ async function loadRuntimeData(
     {
       location: vscode.ProgressLocation.Notification,
       title: hideExistingRuntimes
-        ? "Loading Datalayer environments..."
+        ? "Loading Datalayer runtime profiles..."
         : "Loading Datalayer runtimes...",
       cancellable: true,
     },
@@ -237,7 +237,7 @@ export async function selectDatalayerRuntime(
       items[0]!.kind === vscode.QuickPickItemKind.Separator)
   ) {
     vscode.window.showInformationMessage(
-      "No runtimes or environments available",
+      "No runtimes or runtime profiles available",
     );
     return undefined;
   }
@@ -248,7 +248,7 @@ export async function selectDatalayerRuntime(
     ? "Create New Runtime"
     : "Select Datalayer Runtime";
   quickPick.placeholder = hideExistingRuntimes
-    ? "Choose an environment for your new runtime"
+    ? "Choose a runtime profile for your new runtime"
     : "Choose an existing runtime or create a new one";
   quickPick.ignoreFocusOut = true;
   quickPick.items = items;

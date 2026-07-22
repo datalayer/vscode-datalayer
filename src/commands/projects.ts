@@ -235,13 +235,14 @@ export function registerProjectsCommands(
           prompt: "Enter space name",
           placeHolder: "my-space",
           validateInput: (value) => {
-            if (!value || value.trim().length === 0) {
+            const trimmed = value?.trim() ?? "";
+            if (!trimmed) {
               return "Space name cannot be empty";
             }
-            if (value.length < 3) {
+            if (trimmed.length < 3) {
               return "Space name must be at least 3 characters";
             }
-            if (value.length > 50) {
+            if (trimmed.length > 50) {
               return "Space name must be 50 characters or less";
             }
             return undefined;
@@ -355,16 +356,17 @@ export function registerProjectsCommands(
           value: oldName,
           placeHolder: oldName,
           validateInput: (value) => {
-            if (!value || value.trim().length === 0) {
+            const trimmed = value?.trim() ?? "";
+            if (!trimmed) {
               return "Project name cannot be empty";
             }
-            if (value.length < 3) {
+            if (trimmed.length < 3) {
               return "Project name must be at least 3 characters";
             }
-            if (value.length > 50) {
+            if (trimmed.length > 50) {
               return "Project name must be 50 characters or less";
             }
-            if (value === oldName) {
+            if (trimmed === oldName.trim()) {
               return "New name must be different from current name";
             }
             return undefined;

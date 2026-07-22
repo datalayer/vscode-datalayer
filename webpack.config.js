@@ -626,6 +626,7 @@ const agentChatWebviewConfig = {
   name: "agentChat",
   entry: "./webview/agentChat/index.tsx",
   output: {
+    ...webviewConfig.output,
     path: path.resolve(__dirname, "dist"),
     filename: "agentChat.js",
     chunkFilename: "agentChat.[name].chunk.js",
@@ -633,6 +634,28 @@ const agentChatWebviewConfig = {
     // which in a VS Code webview is a vscode-webview-resource: URI.
     // Async chunks loaded by webpack will resolve relative to that.
     publicPath: "auto",
+    // Needed for loro-crdt WASM when bundled through @datalayer/lexical-loro.
+    webassemblyModuleFilename: "[hash].module.wasm",
+  },
+  experiments: {
+    asyncWebAssembly: true,
+  },
+  module: {
+    ...webviewConfig.module,
+    rules: [
+      ...webviewConfig.module.rules,
+      {
+        test: /\.wasm$/,
+        type: "webassembly/async",
+      },
+    ],
+  },
+  resolve: {
+    ...webviewConfig.resolve,
+    extensions: [
+      ...(webviewConfig.resolve?.extensions || []),
+      ".wasm",
+    ],
   },
   optimization: {
     // Allow code splitting — the Chat component is loaded via React.lazy.

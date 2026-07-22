@@ -240,7 +240,7 @@ For the `vercel-ai` protocol, `<Chat>` builds `POST {ingress}/api/v1/vercel-ai/{
 
 ### Commands (`src/commands/projects.ts`)
 
-- `datalayer.projects.refresh` - Refresh the projects tree
+- `datalayer.projects.refresh` - Refresh the legacy projects view and the Spaces tree
 - `datalayer.spaces.create` - Create a new space
 - `datalayer.projects.rename` - Rename a project
 - `datalayer.projects.assignAgent` / `unassignAgent` - Manage AI agent assignments
