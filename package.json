@@ -175,7 +175,7 @@
     "eslint-plugin-simple-import-sort": "^12.1.1",
     "husky": "^9.1.7",
     "jsdom": "^29.0.1",
-    "knip": "^6.3.0",
+    "knip": "^6.29.0",
     "lint-staged": "^16.4.0",
     "mini-svg-data-uri": "^1.4.4",
     "null-loader": "^4.0.1",
