@@ -118,7 +118,7 @@
     "@primer/css": "^21.5.1",
     "@primer/octicons-react": "^19.29.1",
     "@primer/react": "^37.31.0",
-    "@primer/react-brand": "^0.58.0",
+    "@primer/react-brand": "^0.71.0",
     "@toon-format/toon": "^2.1.0",
     "@vscode/codicons": "^0.0.45",
     "@vscode/jupyter-extension": "^1.1.1",
