@@ -98,7 +98,7 @@
     "@github/keytar": "^7.10.6",
     "@jupyter/ydoc": "^4.1.1",
     "@jupyterlab/services": "^7.0.0",
-    "@lexical/code": "^0.35.0",
+    "@lexical/code": "^0.48.0",
     "@lexical/html": "^0.35.0",
     "@lexical/link": "^0.35.0",
     "@lexical/list": "^0.35.0",
