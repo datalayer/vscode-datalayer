@@ -87,7 +87,7 @@
     "@codemirror/lint": "^6.9.5",
     "@codemirror/search": "^6.5.11",
     "@codemirror/state": "^6.5.2",
-    "@codemirror/view": "^6.38.3",
+    "@codemirror/view": "^6.43.7",
     "@datalayer/agent-runtimes": "^1.0.17",
     "@datalayer/core": "^1.0.48",
     "@datalayer/jupyter-lexical": "^1.0.18",
