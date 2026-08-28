@@ -230,34 +230,34 @@ export class BridgeAgentRuntimesClient implements IAgentRuntimesClient {
   }
 
   /** @inheritdoc */
-  getAgentStatus(podName: string, agentId?: string): Promise<RunningAgent> {
-    return this.request<RunningAgent>("getAgentStatus", [podName, agentId]);
+  getAgentStatus(runtimeName: string, agentId?: string): Promise<RunningAgent> {
+    return this.request<RunningAgent>("getAgentStatus", [runtimeName, agentId]);
   }
 
   /** @inheritdoc */
-  pauseAgent(podName: string): Promise<void> {
-    return this.request<void>("pauseAgent", [podName]);
+  pauseAgent(runtimeName: string): Promise<void> {
+    return this.request<void>("pauseAgent", [runtimeName]);
   }
 
   /** @inheritdoc */
-  resumeAgent(podName: string): Promise<void> {
-    return this.request<void>("resumeAgent", [podName]);
+  resumeAgent(runtimeName: string): Promise<void> {
+    return this.request<void>("resumeAgent", [runtimeName]);
   }
 
   /** @inheritdoc */
   getAgentCheckpoints(
-    podName: string,
+    runtimeName: string,
     agentId?: string,
   ): Promise<ConversationCheckpoint[]> {
     return this.request<ConversationCheckpoint[]>("getAgentCheckpoints", [
-      podName,
+      runtimeName,
       agentId,
     ]);
   }
 
   /** @inheritdoc */
-  getAgentUsage(podName: string, agentId?: string): Promise<AgentUsageSummary> {
-    return this.request<AgentUsageSummary>("getAgentUsage", [podName, agentId]);
+  getAgentUsage(runtimeName: string, agentId?: string): Promise<AgentUsageSummary> {
+    return this.request<AgentUsageSummary>("getAgentUsage", [runtimeName, agentId]);
   }
 
   /** @inheritdoc */

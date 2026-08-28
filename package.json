@@ -2,7 +2,7 @@
   "name": "datalayer-jupyter-vscode",
   "publisher": "Datalayer",
   "displayName": "Datalayer",
-  "description": "\u2728 \ud83e\udd16 Managed AI Agents for Data Analysis. LLM are bad at data \u2014 we fix that.",
+  "description": "✨ 🤖 Managed AI Agents for Data Analysis. LLM are bad at data — we fix that.",
   "version": "0.0.18",
   "cache_version": "2",
   "icon": "images/datalayer-logo.png",
@@ -1124,7 +1124,7 @@
           "lexical"
         ],
         "toolReferenceName": "selectKernel",
-        "modelDescription": "Selects and connects a kernel to the active document (notebook or lexical), enabling code execution. Always connects to the currently active document. IMPORTANT: Call listKernels first to see all available kernels if unsure which kernel to use. EXAMPLES OF NATURAL LANGUAGE TO PARAMETER MAPPING: User says 'connect to pyodide' \u2192 use kernelId: 'pyodide'. User says 'connect to new runtime' \u2192 use kernelId: 'new'. User says 'connect to active runtime' \u2192 use kernelId: 'active'. User says 'connect to local ipykernel' \u2192 use kernelId: 'local'. User says 'connect to gpu runtime for 10 minutes' \u2192 use kernelId: 'new', environmentType: 'GPU', durationMinutes: 10. The kernelId parameter is REQUIRED and must be specified for every invocation. **IMPORTANT: Always ensure you call getActiveDocument before running this operation.**",
+        "modelDescription": "Selects and connects a kernel to the active document (notebook or lexical), enabling code execution. Always connects to the currently active document. IMPORTANT: Call listKernels first to see all available kernels if unsure which kernel to use. EXAMPLES OF NATURAL LANGUAGE TO PARAMETER MAPPING: User says 'connect to pyodide' → use kernelId: 'pyodide'. User says 'connect to new runtime' → use kernelId: 'new'. User says 'connect to active runtime' → use kernelId: 'active'. User says 'connect to local ipykernel' → use kernelId: 'local'. User says 'connect to gpu runtime for 10 minutes' → use kernelId: 'new', environmentType: 'GPU', durationMinutes: 10. The kernelId parameter is REQUIRED and must be specified for every invocation. **IMPORTANT: Always ensure you call getActiveDocument before running this operation.**",
         "canBeReferencedInPrompt": true,
         "inputSchema": {
           "type": "object",

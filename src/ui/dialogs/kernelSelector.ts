@@ -123,7 +123,7 @@ export async function showKernelSelector(
               // Spinner message already sent via onRuntimeSelected callback
               await kernelBridge.connectWebviewDocument(documentUri, runtime);
               vscode.window.showInformationMessage(
-                `Connected to runtime "${runtime.givenName || runtime.podName}"`,
+                `Connected to runtime "${runtime.givenName || runtime.runtimeName}"`,
               );
 
               // Refresh the runtimes tree to show the new/selected runtime
@@ -231,7 +231,7 @@ export async function showKernelSelector(
               token: token,
               status: "ready",
               environment_name: "jupyter",
-              pod_name: "jupyter-server",
+              runtime_name: "jupyter-server",
               burning_rate: 0,
             };
 

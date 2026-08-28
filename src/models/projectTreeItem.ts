@@ -36,7 +36,7 @@ export class ProjectTreeItem extends vscode.TreeItem {
       runtimeGivenName ||
       project.attachedAgentGivenName ||
       project.attachedAgentSpecId ||
-      project.attachedAgentPodName;
+      project.attachedAgentRuntimeName;
     const agentInfo = project.hasAgent
       ? `agent: ${agentDisplayName}`
       : "no agent";
@@ -62,7 +62,7 @@ export class ProjectTreeItem extends vscode.TreeItem {
         );
       }
       this.tooltip.appendMarkdown(
-        `- **Agent Pod:** ${project.attachedAgentPodName}\n`,
+        `- **Agent Pod:** ${project.attachedAgentRuntimeName}\n`,
       );
     }
     this.tooltip.appendMarkdown(

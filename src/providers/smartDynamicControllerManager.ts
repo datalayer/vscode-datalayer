@@ -152,10 +152,10 @@ export class SmartDynamicControllerManager implements vscode.Disposable {
     const runtimeData =
       typeof runtime.toJSON === "function" ? runtime.toJSON() : runtime;
 
-    // Use givenName if available, otherwise use podName
+    // Use givenName if available, otherwise use runtimeName
     const displayName =
       runtimeData.givenName ||
-      runtimeData.podName ||
+      runtimeData.runtimeName ||
       `Runtime ${runtime.uid.substring(0, 8)}`;
 
     // Create the runtime-specific controller
@@ -168,7 +168,7 @@ export class SmartDynamicControllerManager implements vscode.Disposable {
 
     const environmentName = runtimeData.environmentName || "Runtime";
     controller.description = `Connected to ${environmentName}`;
-    controller.detail = `Pod: ${runtimeData.podName || runtime.uid}`;
+    controller.detail = `Pod: ${runtimeData.runtimeName || runtime.uid}`;
     controller.supportedLanguages = ["python", "markdown", "raw"];
     controller.supportsExecutionOrder = true;
 

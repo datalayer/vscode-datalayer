@@ -539,7 +539,7 @@ export function registerProjectsCommands(
         }
 
         const confirmation = await vscode.window.showWarningMessage(
-          `Remove agent "${project.attachedAgentPodName}" from project "${project.name}"?`,
+          `Remove agent "${project.attachedAgentRuntimeName}" from project "${project.name}"?`,
           { modal: true },
           "Unassign Agent",
         );
@@ -596,7 +596,7 @@ export function registerProjectsCommands(
           `UID: ${project.uid}`,
           `Visibility: ${project.isPublic ? "Public" : "Private"}`,
           `Description: ${project.description || "None"}`,
-          `Agent: ${project.hasAgent ? `${project.attachedAgentPodName}${project.attachedAgentSpecId ? ` (${project.attachedAgentSpecId})` : ""}` : "None"}`,
+          `Agent: ${project.hasAgent ? `${project.attachedAgentRuntimeName}${project.attachedAgentSpecId ? ` (${project.attachedAgentSpecId})` : ""}` : "None"}`,
           `Created: ${project.createdAt.toLocaleString()}`,
         ].join("\n");
 

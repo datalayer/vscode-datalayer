@@ -587,12 +587,12 @@ export class DocumentBridge {
     const metadata = this.documentMetadata.get(documentId);
 
     // Check if we have a cached runtime, but verify it's still running
-    if (metadata?.runtime?.podName) {
+    if (metadata?.runtime?.runtimeName) {
       try {
         // Verify the runtime still exists and is running
         const datalayer = getServiceContainer().datalayer;
         const currentRuntime = await datalayer.getRuntime(
-          metadata.runtime.podName,
+          metadata.runtime.runtimeName,
         );
 
         if (currentRuntime && currentRuntime.ingress && currentRuntime.token) {
@@ -625,8 +625,8 @@ export class DocumentBridge {
       this.documentMetadata.set(documentId, metadata);
 
       // Track active runtimes
-      if (runtime.podName) {
-        this.activeRuntimes.add(runtime.podName);
+      if (runtime.runtimeName) {
+        this.activeRuntimes.add(runtime.runtimeName);
       }
     }
 

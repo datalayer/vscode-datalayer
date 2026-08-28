@@ -17,7 +17,7 @@ import { RuntimeTreeItem } from "../../models/runtimeTreeItem";
 function createRuntimeDTO(overrides: Record<string, unknown> = {}): RuntimeDTO {
   const defaults = {
     uid: "mock-runtime-id",
-    podName: "mock-pod-123",
+    runtimeName: "mock-pod-123",
     givenName: "Test Runtime",
     environmentName: "python-cpu-env",
     environmentTitle: "Python CPU",
@@ -40,8 +40,8 @@ suite("RuntimeTreeItem Tests", () => {
     assert.strictEqual(item.label, "My Runtime");
   });
 
-  test("falls back to podName when givenName is empty", () => {
-    const runtime = createRuntimeDTO({ givenName: "", podName: "pod-abc-123" });
+  test("falls back to runtimeName when givenName is empty", () => {
+    const runtime = createRuntimeDTO({ givenName: "", runtimeName: "pod-abc-123" });
     const item = new RuntimeTreeItem(runtime);
 
     assert.strictEqual(item.label, "pod-abc-123");

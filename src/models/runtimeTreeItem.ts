@@ -27,7 +27,7 @@ export class RuntimeTreeItem extends vscode.TreeItem {
    */
   constructor(public readonly runtime: RuntimeDTO) {
     super(
-      runtime.givenName || runtime.podName,
+      runtime.givenName || runtime.runtimeName,
       vscode.TreeItemCollapsibleState.None,
     );
 
@@ -37,7 +37,7 @@ export class RuntimeTreeItem extends vscode.TreeItem {
 
     // Tooltip with full details
     this.tooltip = new vscode.MarkdownString(
-      `**Runtime:** ${runtime.givenName || runtime.podName}\n\n` +
+      `**Runtime:** ${runtime.givenName || runtime.runtimeName}\n\n` +
         `**Environment:** ${runtime.environmentTitle || runtime.environmentName}\n\n` +
         `**Started:** ${runtime.startedAt.toLocaleString()}\n\n` +
         `**Expires:** ${runtime.expiredAt.toLocaleString()}\n\n` +

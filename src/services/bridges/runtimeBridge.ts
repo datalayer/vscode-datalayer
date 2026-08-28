@@ -171,7 +171,7 @@ export class RuntimeBridgeService extends BaseService {
       environmentTitle?: string;
       environmentName?: string;
       uid?: string;
-      podName?: string;
+      runtimeName?: string;
     };
 
     if (!runtimeObj) {
@@ -198,10 +198,10 @@ export class RuntimeBridgeService extends BaseService {
     try {
       const datalayer = getServiceContainer().datalayer;
 
-      // Delete the runtime via Datalayer - MUST use pod_name, not uid!
-      // If podName is missing, construct it from uid (format: runtime-{uid})
-      const podName = runtimeObj.podName ?? `runtime-${runtimeObj.uid}`;
-      await datalayer.deleteRuntime(podName);
+      // Delete the runtime via Datalayer - MUST use runtime_name, not uid!
+      // If runtimeName is missing, construct it from uid (format: runtime-{uid})
+      const runtimeName = runtimeObj.runtimeName ?? `runtime-${runtimeObj.uid}`;
+      await datalayer.deleteRuntime(runtimeName);
 
       // Notify user of success
       vscode.window.showInformationMessage(

@@ -94,7 +94,7 @@ async function handleActiveRuntime(
 
   if (runningRuntimes.length > 1) {
     const runtimeNames = runningRuntimes
-      .map((r) => `"${r.givenName || r.podName}"`)
+      .map((r) => `"${r.givenName || r.runtimeName}"`)
       .join(", ");
     return {
       success: false,
@@ -111,8 +111,8 @@ async function handleActiveRuntime(
     success: true,
     kernelId: runtime.uid,
     documentUri: ctx.documentUri.toString(),
-    message: `Connected to runtime "${runtime.givenName || runtime.podName}"`,
-    chatMessage: `Connected to ${runtime.givenName || runtime.podName}`,
+    message: `Connected to runtime "${runtime.givenName || runtime.runtimeName}"`,
+    chatMessage: `Connected to ${runtime.givenName || runtime.runtimeName}`,
   };
 }
 
@@ -274,7 +274,7 @@ async function handleCreateNewRuntime(
 
   const maxAttempts = 20;
   for (let i = 0; i < maxAttempts; i++) {
-    const refreshed = await ctx.datalayer.getRuntime(runtime.podName);
+    const refreshed = await ctx.datalayer.getRuntime(runtime.runtimeName);
     if (refreshed?.ingress) {
       runtime = refreshed;
       break;
@@ -335,8 +335,8 @@ async function handleCloudRuntime(
     return {
       success: false,
       error: `Runtime ${runtimeUid} is not ready`,
-      message: `Runtime "${runtime.givenName || runtime.podName}" is not ready. It may still be starting.`,
-      chatMessage: `Runtime not ready: ${runtime.givenName || runtime.podName}`,
+      message: `Runtime "${runtime.givenName || runtime.runtimeName}" is not ready. It may still be starting.`,
+      chatMessage: `Runtime not ready: ${runtime.givenName || runtime.runtimeName}`,
     };
   }
 
@@ -346,8 +346,8 @@ async function handleCloudRuntime(
     success: true,
     kernelId: runtime.uid,
     documentUri: ctx.documentUri.toString(),
-    message: `Connected to runtime "${runtime.givenName || runtime.podName}"`,
-    chatMessage: `Connected to ${runtime.givenName || runtime.podName}`,
+    message: `Connected to runtime "${runtime.givenName || runtime.runtimeName}"`,
+    chatMessage: `Connected to ${runtime.givenName || runtime.runtimeName}`,
   };
 }
 

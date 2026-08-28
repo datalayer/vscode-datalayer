@@ -604,7 +604,7 @@ export function registerInternalCommands(
         // Create a mock runtime object for Pyodide (similar to local kernel)
         const pyodideRuntime = {
           uid: `pyodide-${Date.now()}`,
-          podName: "pyodide-browser",
+          runtimeName: "pyodide-browser",
           givenName: "Pyodide",
           environmentName: "pyodide",
           environmentTitle: "Pyodide (Browser Python)",

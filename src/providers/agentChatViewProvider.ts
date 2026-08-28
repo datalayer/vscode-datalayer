@@ -15,7 +15,7 @@
  * On view resolve (and on every sign-in) the provider:
  *
  * 1. Calls `datalayer.listRuntimes()` to enumerate all available runtimes.
- * 2. Extracts `{podName, ingress, token, givenName, environmentName}` for
+ * 2. Extracts `{runtimeName, ingress, token, givenName, environmentName}` for
  *    every runtime that has a valid ingress URL and token.
  * 3. Posts the full list to the webview as a `chat-agents` message.
  * 4. The webview renders a picker; the user selects one.
@@ -53,7 +53,7 @@ export interface ChatAgentHandle {
    * on `<Chat>` for tracking/telemetry. The `agentId` prop is hard-coded
    * to `"default"` instead — see `webview/agentChat/App.tsx`.
    */
-  podName: string;
+  runtimeName: string;
   /** Ingress URL used as the `baseUrl` on `<Chat>`. */
   ingress: string;
   /** Per-runtime auth token used as the `authToken` on `<Chat>`. */
@@ -326,7 +326,7 @@ export class AgentChatViewProvider implements vscode.WebviewViewProvider {
           const ingress = runtime.ingress;
           const token = runtime.token;
           ServiceLoggers.main.debug("[AgentChat] runtime", {
-            podName: runtime.podName,
+            runtimeName: runtime.runtimeName,
             hasIngress: !!ingress,
             hasToken: !!token,
             givenName: runtime.givenName,
@@ -347,7 +347,7 @@ export class AgentChatViewProvider implements vscode.WebviewViewProvider {
               .replace("/jupyter/server/", "/agent-runtimes/")
               .replace(/\/$/, "");
             agents.push({
-              podName: runtime.podName,
+              runtimeName: runtime.runtimeName,
               ingress: normalizedIngress,
               token,
               givenName: runtime.givenName,

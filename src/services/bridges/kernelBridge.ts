@@ -247,7 +247,7 @@ export class KernelBridge implements vscode.Disposable {
     // to use the in-browser Pyodide kernel instead of making HTTP requests
     const pyodideRuntime: ExtendedRuntimeJSON = {
       uid: "pyodide-local",
-      podName: "pyodide-local",
+      runtimeName: "pyodide-local",
       givenName: "Pyodide",
       environmentName: "python",
       environmentTitle: "Pyodide",
@@ -340,7 +340,7 @@ export class KernelBridge implements vscode.Disposable {
     // Build runtime object - local kernels don't have expiration
     const mockRuntime: ExtendedRuntimeJSON = {
       uid: kernelInfo.id,
-      podName: `local-kernel-${kernelInfo.id}`,
+      runtimeName: `local-kernel-${kernelInfo.id}`,
       givenName: kernelInfo.displayName,
       environmentName: kernelInfo.type,
       environmentTitle: kernelInfo.displayName,

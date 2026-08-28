@@ -123,8 +123,8 @@ export class ProjectsTreeProvider implements vscode.TreeDataProvider<ProjectsTre
         (project) =>
           new ProjectTreeItem(
             project,
-            project.attachedAgentPodName
-              ? this.runtimeNamesCache.get(project.attachedAgentPodName)
+            project.attachedAgentRuntimeName
+              ? this.runtimeNamesCache.get(project.attachedAgentRuntimeName)
               : undefined,
           ),
       );
@@ -190,15 +190,15 @@ export class ProjectsTreeProvider implements vscode.TreeDataProvider<ProjectsTre
       if (projectsWithAgents.length > 0) {
         try {
           const runtimes = await datalayer.listRuntimes();
-          const activePodNames = new Set(runtimes.map((r) => r.podName));
+          const activePodNames = new Set(runtimes.map((r) => r.runtimeName));
           this.runtimeNamesCache.clear();
           for (const r of runtimes) {
-            this.runtimeNamesCache.set(r.podName, r.givenName);
+            this.runtimeNamesCache.set(r.runtimeName, r.givenName);
           }
           for (const project of projectsWithAgents) {
-            if (!activePodNames.has(project.attachedAgentPodName!)) {
+            if (!activePodNames.has(project.attachedAgentRuntimeName!)) {
               ServiceLoggers.main.info(
-                `[Projects] Runtime "${project.attachedAgentPodName}" no longer exists, unassigning from project "${project.name}"`,
+                `[Projects] Runtime "${project.attachedAgentRuntimeName}" no longer exists, unassigning from project "${project.name}"`,
               );
               try {
                 await datalayer.unassignAgentFromProject(project.uid);

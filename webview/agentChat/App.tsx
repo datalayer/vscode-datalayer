@@ -159,7 +159,7 @@ export interface AgentChatSettings {
 /** Minimal runtime handle for the agent picker. */
 export interface ChatAgentHandle {
   /** Kubernetes pod name — used as runtime identifier. */
-  podName: string;
+  runtimeName: string;
   /** Ingress URL — used as `baseUrl` on `<Chat>`. */
   ingress: string;
   /** Per-runtime auth token — used as `authToken` on `<Chat>`. */
@@ -256,7 +256,7 @@ function AppInner(props: AppProps): React.JSX.Element {
       return;
     }
     if (agents.length === 1) {
-      const only = agents[0]!.podName;
+      const only = agents[0]!.runtimeName;
       if (selectedPod !== only) {
         setSelectedPod(only);
       }
@@ -264,7 +264,7 @@ function AppInner(props: AppProps): React.JSX.Element {
     }
     if (
       selectedPod !== null &&
-      !agents.some((a) => a.podName === selectedPod)
+      !agents.some((a) => a.runtimeName === selectedPod)
     ) {
       setSelectedPod(null);
     }
@@ -274,7 +274,7 @@ function AppInner(props: AppProps): React.JSX.Element {
     if (!agents || !selectedPod) {
       return null;
     }
-    return agents.find((a) => a.podName === selectedPod) ?? null;
+    return agents.find((a) => a.runtimeName === selectedPod) ?? null;
   }, [agents, selectedPod]);
 
   const handleAgentChange = useCallback(
@@ -388,7 +388,7 @@ function AppInner(props: AppProps): React.JSX.Element {
         >
           <option value="">-- Select an agent --</option>
           {agents.map((a) => (
-            <option key={a.podName} value={a.podName}>
+            <option key={a.runtimeName} value={a.runtimeName}>
               {a.givenName} ({a.environmentName})
             </option>
           ))}
@@ -422,7 +422,7 @@ function AppInner(props: AppProps): React.JSX.Element {
                   // within a pod `default`; it's not the pod name. The pod
                   // identifier goes in `runtimeId` for tracking/telemetry.
                   agentId="default"
-                  runtimeId={selectedAgent.podName}
+                  runtimeId={selectedAgent.runtimeName}
                   height="100%"
                   showHeader={true}
                   showInput={true}
