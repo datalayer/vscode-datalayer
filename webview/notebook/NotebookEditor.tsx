@@ -11,6 +11,7 @@
  * @module notebook/NotebookEditor
  */
 
+import type { JSX } from "react";
 import { ErrorBoundary } from "../components/ErrorBoundary";
 import React, {
   useContext,
