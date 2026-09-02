@@ -384,7 +384,7 @@ function NotebookEditorCore({
   const collaborationProvider = useMemo(() => {
     if (isDatalayerNotebook && serverUrl && token && documentId) {
       return new DatalayerCollaborationProvider({
-        datalayerUrl: serverUrl,
+        spacerUrl: serverUrl,
         token: token,
         // Use proxy fetch to avoid CORS issues in VS Code webview
         fetchFn: proxyFetch as unknown as typeof fetch,

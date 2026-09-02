@@ -190,13 +190,15 @@ export class ProjectsTreeProvider implements vscode.TreeDataProvider<ProjectsTre
       if (projectsWithAgents.length > 0) {
         try {
           const runtimes = await datalayer.listRuntimes();
-          const activePodNames = new Set(runtimes.map((r) => r.runtimeName));
+          const activeRuntimeNames = new Set(
+            runtimes.map((r) => r.runtimeName),
+          );
           this.runtimeNamesCache.clear();
           for (const r of runtimes) {
             this.runtimeNamesCache.set(r.runtimeName, r.givenName);
           }
           for (const project of projectsWithAgents) {
-            if (!activePodNames.has(project.attachedAgentRuntimeName!)) {
+            if (!activeRuntimeNames.has(project.attachedAgentRuntimeName!)) {
               ServiceLoggers.main.info(
                 `[Projects] Runtime "${project.attachedAgentRuntimeName}" no longer exists, unassigning from project "${project.name}"`,
               );
