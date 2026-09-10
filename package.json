@@ -116,7 +116,7 @@
     "@nteract/messaging": "^7.0.20",
     "@primer/brand-primitives": "^0.51.0",
     "@primer/css": "^21.5.1",
-    "@primer/octicons-react": "^19.29.1",
+    "@primer/octicons-react": "^19.35.0",
     "@primer/react": "^37.31.0",
     "@primer/react-brand": "^0.58.0",
     "@toon-format/toon": "^2.1.0",
