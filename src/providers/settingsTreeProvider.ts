@@ -13,7 +13,6 @@
  * @see https://code.visualstudio.com/api/extension-guides/tree-view
  */
 
-import type { DatasourceJSON } from "@datalayer/core/lib/models/Datasource";
 import type { SecretJSON } from "@datalayer/core/lib/models/Secret";
 import * as vscode from "vscode";
 
@@ -23,6 +22,8 @@ import { SecretTreeItem } from "../models/secretTreeItem";
 import type { SettingsTreeItem } from "../models/settingsTreeItem";
 import { TreeSectionItem } from "../models/treeSectionItem";
 import { DatalayerAuthProvider } from "../services/core/authProvider";
+import type { DatasourceJSON } from "../services/datasources";
+import { datasourceConnection, listDatasources } from "../services/datasources";
 import { ServiceLoggers } from "../services/logging/loggers";
 
 /**
@@ -146,11 +147,7 @@ export class SettingsTreeProvider implements vscode.TreeDataProvider<SettingsTre
     }
 
     try {
-      const datalayer = getServiceContainer().datalayer;
-      const datasources = (await datalayer.listDatasources()) ?? [];
-      this.datasourcesCache = datasources.map((datasource) =>
-        datasource.toJSON(),
-      );
+      this.datasourcesCache = await listDatasources(datasourceConnection());
 
       ServiceLoggers.main.debug(
         `[Settings] Loaded ${this.datasourcesCache.length} datasource(s)`,

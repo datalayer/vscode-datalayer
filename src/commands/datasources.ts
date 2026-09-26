@@ -12,9 +12,12 @@
 
 import * as vscode from "vscode";
 
-import { getServiceContainer } from "../extension";
 import { DatasourceTreeItem } from "../models/datasourceTreeItem";
 import { SettingsTreeProvider } from "../providers/settingsTreeProvider";
+import {
+  datasourceConnection,
+  deleteDatasource,
+} from "../services/datasources";
 import {
   createDatasourceDialogCommand,
   showDatasourceEditDialog,
@@ -81,8 +84,7 @@ export function registerDatasourcesCommands(
         }
 
         try {
-          const datalayer = getServiceContainer().datalayer;
-          await datalayer.deleteDatasource(datasource.uid);
+          await deleteDatasource(datasourceConnection(), datasource.uid);
 
           vscode.window.showInformationMessage(
             `Datasource "${datasource.name}" deleted successfully`,

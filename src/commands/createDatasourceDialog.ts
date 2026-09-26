@@ -13,6 +13,12 @@
 import * as vscode from "vscode";
 
 import { getServiceContainer } from "../extension";
+import {
+  createDatasource,
+  datasourceConnection,
+  getDatasource,
+  updateDatasource,
+} from "../services/datasources";
 import { getDatasourceEditDialogHtml } from "../ui/templates/datasourceEditTemplate";
 import { getDatasourceDialogHtml } from "../ui/templates/datasourceTemplate";
 
@@ -133,7 +139,10 @@ async function showDatasourceDialog(
             "[Datasource] Creating datasource with data:",
             message.body,
           );
-          const datasource = await datalayer.createDatasource(message.body);
+          const datasource = await createDatasource(
+            datasourceConnection(),
+            message.body,
+          );
           console.log("[Datasource] Created successfully:", datasource);
           vscode.window.showInformationMessage(
             `Datasource "${datasource.name}" created successfully`,
@@ -255,7 +264,10 @@ export async function showDatasourceEditDialog(
   // Fetch datasource data and send initialization data
   try {
     const datalayer = getServiceContainer().datalayer;
-    const datasource = await datalayer.getDatasource(datasourceUid);
+    const datasource = await getDatasource(
+      datasourceConnection(),
+      datasourceUid,
+    );
     const token = datalayer.getToken();
 
     // Update panel title with datasource name
@@ -288,8 +300,6 @@ export async function showDatasourceEditDialog(
 
   // Handle messages from webview (reuse the same handler as create)
   panel.webview.onDidReceiveMessage(async (message) => {
-    const datalayer = getServiceContainer().datalayer;
-
     switch (message.type) {
       case "update-datasource":
         try {
@@ -297,7 +307,8 @@ export async function showDatasourceEditDialog(
             "[Datasource] Updating datasource with data:",
             message.body,
           );
-          const datasource = await datalayer.updateDatasource(
+          const datasource = await updateDatasource(
+            datasourceConnection(),
             message.body.uid,
             message.body,
           );

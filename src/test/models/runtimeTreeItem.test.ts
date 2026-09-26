@@ -41,7 +41,10 @@ suite("RuntimeTreeItem Tests", () => {
   });
 
   test("falls back to runtimeName when givenName is empty", () => {
-    const runtime = createRuntimeDTO({ givenName: "", runtimeName: "pod-abc-123" });
+    const runtime = createRuntimeDTO({
+      givenName: "",
+      runtimeName: "pod-abc-123",
+    });
     const item = new RuntimeTreeItem(runtime);
 
     assert.strictEqual(item.label, "pod-abc-123");

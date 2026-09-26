@@ -256,8 +256,14 @@ export class BridgeAgentRuntimesClient implements IAgentRuntimesClient {
   }
 
   /** @inheritdoc */
-  getAgentUsage(runtimeName: string, agentId?: string): Promise<AgentUsageSummary> {
-    return this.request<AgentUsageSummary>("getAgentUsage", [runtimeName, agentId]);
+  getAgentUsage(
+    runtimeName: string,
+    agentId?: string,
+  ): Promise<AgentUsageSummary> {
+    return this.request<AgentUsageSummary>("getAgentUsage", [
+      runtimeName,
+      agentId,
+    ]);
   }
 
   /** @inheritdoc */
