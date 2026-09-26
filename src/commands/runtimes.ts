@@ -239,7 +239,7 @@ export function registerRuntimeCommands(
         // Create QuickPick items for individual runtimes
         const runtimeItems: RuntimeQuickPickItem[] = runtimes.map(
           (runtime) => ({
-            label: `$(server) ${runtime.givenName || runtime.podName}`,
+            label: `$(server) ${runtime.givenName || runtime.runtimeName}`,
             description: `${runtime.environmentTitle || runtime.environmentName}`,
             detail: formatTimeRemaining(runtime.expiredAt),
             runtime, // Store runtime object for later use
@@ -281,7 +281,7 @@ export function registerRuntimeCommands(
           const results = await Promise.allSettled(
             runtimes.map((runtime) =>
               datalayer
-                .deleteRuntime(runtime.podName)
+                .deleteRuntime(runtime.runtimeName)
                 .then(() => ({ success: true, runtime }))
                 .catch((error) => ({ success: false, runtime, error })),
             ),
@@ -317,7 +317,7 @@ export function registerRuntimeCommands(
         }
 
         const runtimeName =
-          selectedRuntime.givenName || selectedRuntime.podName;
+          selectedRuntime.givenName || selectedRuntime.runtimeName;
         const confirmed = await showTwoStepConfirmation(
           CommonConfirmations.terminateRuntime(runtimeName),
         );
@@ -327,7 +327,7 @@ export function registerRuntimeCommands(
         }
 
         // Terminate the runtime
-        await datalayer.deleteRuntime(selectedRuntime.podName);
+        await datalayer.deleteRuntime(selectedRuntime.runtimeName);
 
         vscode.window.showInformationMessage(
           `Runtime "${runtimeName}" terminated successfully`,
@@ -375,16 +375,16 @@ export function registerRuntimeCommands(
 
           // Test deleteRuntime API with detailed error handling
           const runtime = runtimes[0]!;
-          const podName = runtime.podName;
-          if (!podName) {
-            throw new Error("Runtime missing podName from Datalayer");
+          const runtimeName = runtime.runtimeName;
+          if (!runtimeName) {
+            throw new Error("Runtime missing runtimeName from Datalayer");
           }
 
           vscode.window.showInformationMessage(
             `Debug: Terminating runtime "${runtime.givenName}". Check console for details.`,
           );
 
-          const _result = await datalayer.deleteRuntime(podName);
+          const _result = await datalayer.deleteRuntime(runtimeName);
           vscode.window.showInformationMessage(
             `Debug: Runtime terminated successfully. Result: ${JSON.stringify(
               _result,
@@ -415,7 +415,7 @@ export function registerRuntimeCommands(
       "datalayer.internal.runtime.terminate",
       async (uri: vscode.Uri, runtime: unknown) => {
         const runtimeObj = runtime as {
-          podName?: string;
+          runtimeName?: string;
           givenName?: string;
           given_name?: string;
           uid?: string;
@@ -430,7 +430,7 @@ export function registerRuntimeCommands(
           const isLocalKernel =
             runtimeObj.ingress?.startsWith("http://local-kernel-") ||
             runtimeObj.ingress === "http://pyodide-local";
-          const isDatalayerRuntime = !isLocalKernel && !!runtimeObj.podName;
+          const isDatalayerRuntime = !isLocalKernel && !!runtimeObj.runtimeName;
 
           if (isDatalayerRuntime) {
             // Datalayer runtime - call API to terminate
@@ -443,11 +443,11 @@ export function registerRuntimeCommands(
               return;
             }
 
-            await datalayer.deleteRuntime(runtimeObj.podName!);
+            await datalayer.deleteRuntime(runtimeObj.runtimeName!);
             const runtimeName =
               runtimeObj.givenName ||
               runtimeObj.given_name ||
-              runtimeObj.podName;
+              runtimeObj.runtimeName;
             vscode.window.showInformationMessage(
               `Runtime "${runtimeName}" terminated successfully.`,
             );
@@ -649,7 +649,7 @@ export function registerRuntimeCommands(
           return;
         }
 
-        const runtimeName = item.runtime.givenName || item.runtime.podName;
+        const runtimeName = item.runtime.givenName || item.runtime.runtimeName;
 
         const confirmed = await showTwoStepConfirmation(
           CommonConfirmations.terminateRuntime(runtimeName),
@@ -660,7 +660,7 @@ export function registerRuntimeCommands(
         }
 
         try {
-          await datalayer.deleteRuntime(item.runtime.podName);
+          await datalayer.deleteRuntime(item.runtime.runtimeName);
           vscode.window.showInformationMessage(
             `Runtime "${runtimeName}" terminated successfully`,
           );
@@ -727,9 +727,9 @@ export function registerRuntimeCommands(
               const results = await Promise.allSettled(
                 runtimes.map((runtime, index) => {
                   progress.report({
-                    message: `Terminating ${runtime.givenName || runtime.podName} (${index + 1}/${runtimes.length})`,
+                    message: `Terminating ${runtime.givenName || runtime.runtimeName} (${index + 1}/${runtimes.length})`,
                   });
-                  return datalayer.deleteRuntime(runtime.podName);
+                  return datalayer.deleteRuntime(runtime.runtimeName);
                 }),
               );
 
@@ -782,7 +782,7 @@ export function registerRuntimeCommands(
         }
 
         const runtime = item.runtime;
-        const runtimeName = runtime.givenName || runtime.podName;
+        const runtimeName = runtime.givenName || runtime.runtimeName;
 
         // Check if runtime is running (has ingress URL)
         if (!runtime.ingress) {
@@ -865,7 +865,7 @@ export function registerRuntimeCommands(
             },
             async () => {
               const snapshot = await datalayer.createSnapshot(
-                runtime.podName,
+                runtime.runtimeName,
                 snapshotName,
                 description || "",
                 stopAfterSnapshot.stop,
@@ -965,13 +965,13 @@ async function terminateRuntime(
         cancellable: false,
       },
       async () => {
-        // MUST use pod_name for deleteRuntime API
-        const podName = runtime.podName;
-        if (!podName) {
-          throw new Error("Runtime missing podName from Datalayer");
+        // MUST use runtime_name for deleteRuntime API
+        const runtimeName = runtime.runtimeName;
+        if (!runtimeName) {
+          throw new Error("Runtime missing runtimeName from Datalayer");
         }
 
-        await datalayer.deleteRuntime(podName);
+        await datalayer.deleteRuntime(runtimeName);
       },
     );
 

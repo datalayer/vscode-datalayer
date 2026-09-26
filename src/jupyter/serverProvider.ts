@@ -297,7 +297,7 @@ export class DatalayerJupyterServerProvider
       this.serverChangeEmitter.fire();
 
       vscode.window.showInformationMessage(
-        `Runtime "${runtime.givenName || runtime.podName}" created successfully!`,
+        `Runtime "${runtime.givenName || runtime.runtimeName}" created successfully!`,
       );
 
       return this.runtimeToJupyterServer(runtime);
@@ -371,7 +371,7 @@ export class DatalayerJupyterServerProvider
       this.serverChangeEmitter.fire();
 
       vscode.window.showInformationMessage(
-        `Runtime "${runtime.givenName || runtime.podName}" created successfully!`,
+        `Runtime "${runtime.givenName || runtime.runtimeName}" created successfully!`,
       );
 
       return this.runtimeToJupyterServer(runtime);
@@ -411,7 +411,7 @@ export class DatalayerJupyterServerProvider
     const controllerId = `datalayer-runtime-${runtime.uid}`;
     const displayName =
       runtime.givenName ||
-      runtime.podName ||
+      runtime.runtimeName ||
       `Runtime ${runtime.uid.substring(0, 8)}`;
 
     return {

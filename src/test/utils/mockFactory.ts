@@ -112,7 +112,7 @@ export function createMockRuntime(
 ): unknown {
   return {
     uid: "mock-runtime-id",
-    podName: "mock-pod-123",
+    runtimeName: "mock-pod-123",
     givenName: "Test Runtime",
     environmentName: "python-cpu-env",
     environmentTitle: "Python CPU",

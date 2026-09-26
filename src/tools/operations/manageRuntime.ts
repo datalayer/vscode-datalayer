@@ -154,8 +154,8 @@ export const startRuntimeOperation: ToolOperation<
 
       // Map Datalayer runtime data to RuntimeInfo type
       const runtime = {
-        id: runtimeData.uid || runtimeData.podName,
-        name: runtimeData.podName,
+        id: runtimeData.uid || runtimeData.runtimeName,
+        name: runtimeData.runtimeName,
         environment: environmentName,
         status: "running" as const,
         durationMinutes: duration,
@@ -270,11 +270,11 @@ export const connectRuntimeOperation: ToolOperation<
       // Map to RuntimeInfo type
       const runtimeDataTyped = runtimeData as {
         uid?: string;
-        podName?: string;
+        runtimeName?: string;
       };
       const runtime = {
-        id: runtimeDataTyped.uid || runtimeDataTyped.podName || "unknown",
-        name: runtimeDataTyped.podName || runtimeName || "unknown",
+        id: runtimeDataTyped.uid || runtimeDataTyped.runtimeName || "unknown",
+        name: runtimeDataTyped.runtimeName || runtimeName || "unknown",
         status: "running" as const,
         metadata: runtimeData as Record<string, unknown>,
       };

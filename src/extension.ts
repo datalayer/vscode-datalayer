@@ -20,9 +20,14 @@ import { registerChatContextProvider } from "./chat/chatContextProvider";
 import { registerAllCommands } from "./commands";
 import { DatalayerFileSystemProvider } from "./providers/documentsFileSystemProvider";
 import {
+  HOME_FOLDER_SCHEME,
+  HomeFolderFileSystemProvider,
+} from "./providers/homeFolderFileSystemProvider";
+import {
   DocumentBridge,
   notifyExtensionReady,
 } from "./services/bridges/documentBridge";
+import { getValidatedSettingsGroup } from "./services/config/settingsValidator";
 import { setupAuthStateManagement } from "./services/core/authManager";
 import type { DatalayerAuthProvider } from "./services/core/authProvider";
 import { ServiceContainer } from "./services/core/serviceContainer";
@@ -198,6 +203,32 @@ export async function activate(
         { stage: "extension_activation" },
       );
       activationTimer.checkpoint("ui_initialized");
+    });
+
+    await runActivationStep("Registering the Home Folder file system", () => {
+      const provider = new HomeFolderFileSystemProvider(() => {
+        const token = services?.authProvider?.getToken?.();
+        const contentsUrl = getValidatedSettingsGroup("services").runtimesUrl;
+        return token && contentsUrl ? { contentsUrl, token } : undefined;
+      });
+      context.subscriptions.push(
+        vscode.workspace.registerFileSystemProvider(
+          HOME_FOLDER_SCHEME,
+          provider,
+          {
+            isCaseSensitive: true,
+            isReadonly: false,
+          },
+        ),
+        vscode.commands.registerCommand("datalayer.openHomeFolder", () => {
+          const uri = vscode.Uri.parse(`${HOME_FOLDER_SCHEME}:/`);
+          vscode.workspace.updateWorkspaceFolders(
+            vscode.workspace.workspaceFolders?.length ?? 0,
+            0,
+            { uri, name: "Datalayer Home Folder" },
+          );
+        }),
+      );
     });
 
     await runActivationStep("Registering filesystem provider", () => {

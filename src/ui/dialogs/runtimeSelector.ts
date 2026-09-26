@@ -102,7 +102,7 @@ function buildRuntimeQuickPickItems(
       const runtimeData = runtime.toJSON();
       const displayName =
         runtimeData.givenName ??
-        runtimeData.podName ??
+        runtimeData.runtimeName ??
         `Runtime ${runtimeData.uid.slice(0, 8)}`;
       const env =
         runtimeData.environmentTitle ??
@@ -599,7 +599,7 @@ export async function createRuntime(
           const tempRuntime = {
             uid: "creating",
             givenName: `Creating ${environment.title || environment.name}...`,
-            podName: "creating",
+            runtimeName: "creating",
             environmentName: environment.name,
             environmentTitle: environment.title || environment.name,
             type: "notebook",

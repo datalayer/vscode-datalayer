@@ -9,6 +9,7 @@
  * Shows a "Add Comment" option when text is selected.
  */
 
+import type { JSX } from "react";
 import React, { useEffect, useState } from "react";
 import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext";
 import { $getSelection, $isRangeSelection } from "lexical";

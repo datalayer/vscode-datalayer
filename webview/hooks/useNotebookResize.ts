@@ -21,7 +21,7 @@ import { useEffect } from "react";
  */
 export function useNotebookResize(
   notebookId: string,
-  containerRef: React.RefObject<HTMLDivElement>,
+  containerRef: React.RefObject<HTMLDivElement | null>,
 ): void {
   useEffect(() => {
     const updateHeight = (): void => {

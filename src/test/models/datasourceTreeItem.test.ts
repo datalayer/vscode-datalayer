@@ -4,18 +4,18 @@
  * MIT License
  */
 
-import type { DatasourceDTO } from "@datalayer/core/lib/models/Datasource";
 import * as assert from "assert";
 import * as vscode from "vscode";
 
 import { DatasourceTreeItem } from "../../models/datasourceTreeItem";
+import type { DatasourceJSON } from "../../services/datasources";
 
 /**
- * Creates a mock DatasourceDTO with the given overrides.
+ * Creates a mock DatasourceJSON with the given overrides.
  */
-function createDatasourceDTO(
+function createDatasourceJSON(
   overrides: Record<string, unknown> = {},
-): DatasourceDTO {
+): DatasourceJSON {
   return {
     uid: "ds-001",
     name: "my-athena-ds",
@@ -26,19 +26,19 @@ function createDatasourceDTO(
     outputBucket: "s3://output-bucket/",
     createdAt: new Date("2025-01-15T10:00:00Z"),
     ...overrides,
-  } as DatasourceDTO;
+  } as DatasourceJSON;
 }
 
 suite("DatasourceTreeItem Tests", () => {
   test("uses datasource name as label", () => {
-    const ds = createDatasourceDTO({ name: "prod-bigquery" });
+    const ds = createDatasourceJSON({ name: "prod-bigquery" });
     const item = new DatasourceTreeItem(ds);
 
     assert.strictEqual(item.label, "prod-bigquery");
   });
 
   test("is not collapsible", () => {
-    const ds = createDatasourceDTO();
+    const ds = createDatasourceJSON();
     const item = new DatasourceTreeItem(ds);
 
     assert.strictEqual(
@@ -48,14 +48,14 @@ suite("DatasourceTreeItem Tests", () => {
   });
 
   test("description shows variant when available", () => {
-    const ds = createDatasourceDTO({ variant: "bigquery" });
+    const ds = createDatasourceJSON({ variant: "bigquery" });
     const item = new DatasourceTreeItem(ds);
 
     assert.strictEqual(item.description, "bigquery");
   });
 
   test("description falls back to type when variant is undefined", () => {
-    const ds = createDatasourceDTO({
+    const ds = createDatasourceJSON({
       variant: undefined,
       type: "Amazon Athena",
     });
@@ -65,14 +65,14 @@ suite("DatasourceTreeItem Tests", () => {
   });
 
   test("tooltip is a MarkdownString", () => {
-    const ds = createDatasourceDTO();
+    const ds = createDatasourceJSON();
     const item = new DatasourceTreeItem(ds);
 
     assert.ok(item.tooltip instanceof vscode.MarkdownString);
   });
 
   test("tooltip contains datasource name", () => {
-    const ds = createDatasourceDTO({ name: "test-ds" });
+    const ds = createDatasourceJSON({ name: "test-ds" });
     const item = new DatasourceTreeItem(ds);
 
     const md = item.tooltip as vscode.MarkdownString;
@@ -80,7 +80,7 @@ suite("DatasourceTreeItem Tests", () => {
   });
 
   test("tooltip contains type", () => {
-    const ds = createDatasourceDTO({ type: "Google BigQuery" });
+    const ds = createDatasourceJSON({ type: "Google BigQuery" });
     const item = new DatasourceTreeItem(ds);
 
     const md = item.tooltip as vscode.MarkdownString;
@@ -88,7 +88,7 @@ suite("DatasourceTreeItem Tests", () => {
   });
 
   test("tooltip contains description when available", () => {
-    const ds = createDatasourceDTO({
+    const ds = createDatasourceJSON({
       description: "Staging data warehouse",
     });
     const item = new DatasourceTreeItem(ds);
@@ -98,7 +98,7 @@ suite("DatasourceTreeItem Tests", () => {
   });
 
   test("tooltip omits description when empty", () => {
-    const ds = createDatasourceDTO({ description: "" });
+    const ds = createDatasourceJSON({ description: "" });
     const item = new DatasourceTreeItem(ds);
 
     const md = item.tooltip as vscode.MarkdownString;
@@ -106,7 +106,7 @@ suite("DatasourceTreeItem Tests", () => {
   });
 
   test("tooltip contains database when available", () => {
-    const ds = createDatasourceDTO({ database: "prod_db" });
+    const ds = createDatasourceJSON({ database: "prod_db" });
     const item = new DatasourceTreeItem(ds);
 
     const md = item.tooltip as vscode.MarkdownString;
@@ -114,7 +114,7 @@ suite("DatasourceTreeItem Tests", () => {
   });
 
   test("tooltip omits database when undefined", () => {
-    const ds = createDatasourceDTO({ database: undefined });
+    const ds = createDatasourceJSON({ database: undefined });
     const item = new DatasourceTreeItem(ds);
 
     const md = item.tooltip as vscode.MarkdownString;
@@ -122,7 +122,7 @@ suite("DatasourceTreeItem Tests", () => {
   });
 
   test("tooltip contains outputBucket when available", () => {
-    const ds = createDatasourceDTO({
+    const ds = createDatasourceJSON({
       outputBucket: "s3://my-bucket/results/",
     });
     const item = new DatasourceTreeItem(ds);
@@ -132,7 +132,7 @@ suite("DatasourceTreeItem Tests", () => {
   });
 
   test("tooltip omits outputBucket when undefined", () => {
-    const ds = createDatasourceDTO({ outputBucket: undefined });
+    const ds = createDatasourceJSON({ outputBucket: undefined });
     const item = new DatasourceTreeItem(ds);
 
     const md = item.tooltip as vscode.MarkdownString;
@@ -140,7 +140,7 @@ suite("DatasourceTreeItem Tests", () => {
   });
 
   test("tooltip contains createdAt when available", () => {
-    const ds = createDatasourceDTO({
+    const ds = createDatasourceJSON({
       createdAt: new Date("2025-06-01T12:00:00Z"),
     });
     const item = new DatasourceTreeItem(ds);
@@ -150,7 +150,7 @@ suite("DatasourceTreeItem Tests", () => {
   });
 
   test("tooltip omits createdAt when undefined", () => {
-    const ds = createDatasourceDTO({ createdAt: undefined });
+    const ds = createDatasourceJSON({ createdAt: undefined });
     const item = new DatasourceTreeItem(ds);
 
     const md = item.tooltip as vscode.MarkdownString;
@@ -158,7 +158,7 @@ suite("DatasourceTreeItem Tests", () => {
   });
 
   test("tooltip contains UID", () => {
-    const ds = createDatasourceDTO({ uid: "ds-xyz-789" });
+    const ds = createDatasourceJSON({ uid: "ds-xyz-789" });
     const item = new DatasourceTreeItem(ds);
 
     const md = item.tooltip as vscode.MarkdownString;
@@ -166,7 +166,7 @@ suite("DatasourceTreeItem Tests", () => {
   });
 
   test("uses database icon", () => {
-    const ds = createDatasourceDTO();
+    const ds = createDatasourceJSON();
     const item = new DatasourceTreeItem(ds);
 
     assert.ok(item.iconPath instanceof vscode.ThemeIcon);
@@ -174,14 +174,14 @@ suite("DatasourceTreeItem Tests", () => {
   });
 
   test("contextValue is 'datasource'", () => {
-    const ds = createDatasourceDTO();
+    const ds = createDatasourceJSON();
     const item = new DatasourceTreeItem(ds);
 
     assert.strictEqual(item.contextValue, "datasource");
   });
 
   test("has editDatasource click command", () => {
-    const ds = createDatasourceDTO();
+    const ds = createDatasourceJSON();
     const item = new DatasourceTreeItem(ds);
 
     assert.ok(item.command);
@@ -190,7 +190,7 @@ suite("DatasourceTreeItem Tests", () => {
   });
 
   test("command passes the tree item as argument", () => {
-    const ds = createDatasourceDTO();
+    const ds = createDatasourceJSON();
     const item = new DatasourceTreeItem(ds);
 
     assert.ok(item.command!.arguments);
@@ -198,7 +198,7 @@ suite("DatasourceTreeItem Tests", () => {
   });
 
   test("stores the datasource reference", () => {
-    const ds = createDatasourceDTO({ uid: "ds-ref-id" });
+    const ds = createDatasourceJSON({ uid: "ds-ref-id" });
     const item = new DatasourceTreeItem(ds);
 
     assert.strictEqual(item.datasource.uid, "ds-ref-id");

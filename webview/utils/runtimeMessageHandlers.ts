@@ -150,7 +150,7 @@ export function handleSetRuntime(
       givenName: "Jupyter Server",
       ingress: body.baseUrl,
       token: body.token || "",
-      podName: "local",
+      runtimeName: "local",
       environmentName: "jupyter",
       environmentTitle: "Jupyter",
       type: "notebook",

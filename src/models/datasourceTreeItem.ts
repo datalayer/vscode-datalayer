@@ -10,8 +10,9 @@
  * @module models/datasourceTreeItem
  */
 
-import type { DatasourceJSON } from "@datalayer/core/lib/models/Datasource";
 import * as vscode from "vscode";
+
+import type { DatasourceJSON } from "../services/datasources";
 
 /**
  * Tree item for displaying a datasource.
@@ -21,15 +22,13 @@ export class DatasourceTreeItem extends vscode.TreeItem {
   /**
    * Creates a new DatasourceTreeItem with icon, tooltip, and click command.
    *
-   * @param datasource - Datasource DTO from the Datalayer platform.
+   * @param datasource - The datasource, flattened from its content source.
    */
   constructor(public readonly datasource: DatasourceJSON) {
     super(datasource.name, vscode.TreeItemCollapsibleState.None);
 
-    // Prefer variant when available (legacy/extended payloads), fallback to type.
-    const variant = (datasource as DatasourceJSON & { variant?: string })
-      .variant;
-    this.description = variant || datasource.type;
+    // The connector type when known, the display type otherwise.
+    this.description = datasource.variant || datasource.type;
 
     // Tooltip with datasource details
     this.tooltip = new vscode.MarkdownString();

@@ -28,7 +28,7 @@ function createMockRuntimeDTO(
 ): RuntimeDTO {
   return {
     uid: "runtime-001",
-    podName: "pod-123",
+    runtimeName: "pod-123",
     givenName: "Test Runtime",
     environmentName: "python-cpu",
     environmentTitle: "Python CPU",

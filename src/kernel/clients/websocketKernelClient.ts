@@ -115,6 +115,8 @@ export class WebSocketKernelClient {
    * Creates a new WebSocketKernelClient for communicating with a Jupyter kernel.
    *
    * @param runtime - The Datalayer runtime configuration to connect to.
+   *
+   * @throws When `runtime` is not a runtime object.
    */
   constructor(
     runtime: RuntimeDTO | RuntimeJSON,

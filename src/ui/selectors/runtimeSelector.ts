@@ -241,7 +241,7 @@ export class DatalayerRuntimeSelector {
     await this.controllerManager.ensureRuntimeController(runtime);
 
     vscode.window.showInformationMessage(
-      `Runtime "${runtime.givenName || runtime.podName}" created successfully!`,
+      `Runtime "${runtime.givenName || runtime.runtimeName}" created successfully!`,
     );
   }
 
@@ -276,7 +276,7 @@ export class DatalayerRuntimeSelector {
     await this.controllerManager.ensureRuntimeController(runtime);
 
     vscode.window.showInformationMessage(
-      `Runtime "${runtime.givenName || runtime.podName}" created successfully!`,
+      `Runtime "${runtime.givenName || runtime.runtimeName}" created successfully!`,
     );
   }
 }

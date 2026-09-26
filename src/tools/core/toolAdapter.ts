@@ -322,7 +322,7 @@ export class VSCodeToolAdapter<
 
         // Return runtime info from services
         // This would need to be enhanced to return actual runtime data
-        return { podName: runtimeName || "default-runtime" };
+        return { runtimeName: runtimeName || "default-runtime" };
       },
 
       // Default runtime duration from settings

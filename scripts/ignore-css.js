@@ -18,6 +18,14 @@ global.navigator = dom.window.navigator;
 global.HTMLElement = dom.window.HTMLElement;
 global.WebSocket = dom.window.WebSocket;
 global.Element = dom.window.Element;
+// The *constructors*, not just the instances: `@microsoft/fast-foundation`
+// branches on `target instanceof Document` while registering design tokens, and
+// an undefined global there is a ReferenceError rather than a false.
+global.Document = dom.window.Document;
+global.DocumentFragment = dom.window.DocumentFragment;
+global.ShadowRoot = dom.window.ShadowRoot;
+global.HTMLStyleElement = dom.window.HTMLStyleElement;
+global.CSSStyleDeclaration = dom.window.CSSStyleDeclaration;
 global.Node = dom.window.Node;
 global.Event = dom.window.Event;
 global.CustomEvent = dom.window.CustomEvent;
@@ -26,8 +34,82 @@ global.KeyboardEvent = dom.window.KeyboardEvent;
 global.DragEvent = dom.window.DragEvent;
 global.MutationObserver = dom.window.MutationObserver;
 global.CSSStyleSheet = dom.window.CSSStyleSheet;
-global.customElements = dom.window.customElements;
+// Two copies of a package that defines a custom element both call `define`
+// with the same name, and the second throws NotSupportedError. Primer pulls in
+// `@github/relative-time-element`, and it is installed per workspace rather
+// than hoisted, so importing the tool definitions reaches two of them. This
+// script only reads tool metadata — the first definition wins and the repeats
+// are ignored, rather than aborting the build over a registry nothing renders.
+const customElementRegistry = dom.window.customElements;
+const defineCustomElement = customElementRegistry.define.bind(customElementRegistry);
+customElementRegistry.define = function (name, constructor, options) {
+  if (customElementRegistry.get(name)) {
+    return;
+  }
+  defineCustomElement(name, constructor, options);
+};
+global.customElements = customElementRegistry;
 global.self = global.window;
+// Browser code reaches for these as bare globals rather than `window.`, and
+// jsdom only puts them on its window — an unqualified reference is then a
+// ReferenceError rather than a missing feature. Copied wholesale rather than
+// one at a time, because each omission only shows up as the next crash in a
+// graph this size (`@microsoft/fast-element` schedules through the global rAF,
+// `@jupyter/web-components` reads the theme through `getComputedStyle`).
+for (const name of [
+  'requestAnimationFrame',
+  'cancelAnimationFrame',
+  'getComputedStyle',
+  'DOMParser',
+  'XMLSerializer',
+  'NodeFilter',
+  'Range',
+  'getSelection',
+  'HTMLIFrameElement',
+  'HTMLInputElement',
+  'HTMLTextAreaElement',
+  'HTMLAnchorElement',
+  'SVGElement',
+  'DOMException',
+  'Text',
+  'Comment',
+  'AbortController',
+  'IntersectionObserver',
+  'ResizeObserver',
+]) {
+  const value = dom.window[name];
+  if (typeof value === 'function') {
+    global[name] = typeof value.prototype === 'object' ? value : value.bind(dom.window);
+  }
+}
+
+// jsdom implements neither observer. Nothing here renders, so both only have to
+// be constructible and silent.
+class NoopObserver {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+  takeRecords() {
+    return [];
+  }
+}
+// jsdom implements neither `DragEvent` nor `PointerEvent`, and `@lumino/dragdrop`
+// declares `class Event extends DragEvent` at module scope — an undefined base
+// class is a TypeError the moment the module is imported, before any of this is
+// used. Both carry no behaviour here; they only have to be extendable.
+if (typeof dom.window.DragEvent !== 'function') {
+  global.DragEvent = class DragEvent extends dom.window.MouseEvent {};
+  global.window.DragEvent = global.DragEvent;
+}
+if (typeof dom.window.PointerEvent !== 'function') {
+  global.PointerEvent = class PointerEvent extends dom.window.MouseEvent {};
+  global.window.PointerEvent = global.PointerEvent;
+}
+
+global.ResizeObserver = global.ResizeObserver || NoopObserver;
+global.IntersectionObserver = global.IntersectionObserver || NoopObserver;
+global.window.ResizeObserver = global.window.ResizeObserver || NoopObserver;
+global.window.IntersectionObserver = global.window.IntersectionObserver || NoopObserver;
 
 // Add matchMedia stub
 global.window.matchMedia = global.window.matchMedia || function() {
