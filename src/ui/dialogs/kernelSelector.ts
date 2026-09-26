@@ -225,14 +225,14 @@ export async function showKernelSelector(
             // Create a runtime-like object for the Jupyter server
             const jupyterRuntime: Record<string, unknown> = {
               uid: `jupyter-${Date.now()}`,
-              given_name: "Jupyter Server",
+              givenName: "Jupyter Server",
               name: "Jupyter Server",
               ingress: baseUrl,
               token: token,
               status: "ready",
-              environment_name: "jupyter",
-              runtime_name: "jupyter-server",
-              burning_rate: 0,
+              environmentName: "jupyter",
+              runtimeName: "jupyter-server",
+              burningRate: 0,
             };
 
             // If we have a document URI, connect it to the Jupyter server

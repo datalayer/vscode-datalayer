@@ -20,16 +20,16 @@ import { registerChatContextProvider } from "./chat/chatContextProvider";
 import { registerAllCommands } from "./commands";
 import { DatalayerFileSystemProvider } from "./providers/documentsFileSystemProvider";
 import {
-  DocumentBridge,
-  notifyExtensionReady,
-} from "./services/bridges/documentBridge";
-import { setupAuthStateManagement } from "./services/core/authManager";
-import type { DatalayerAuthProvider } from "./services/core/authProvider";
-import { getValidatedSettingsGroup } from "./services/config/settingsValidator";
-import {
   HOME_FOLDER_SCHEME,
   HomeFolderFileSystemProvider,
 } from "./providers/homeFolderFileSystemProvider";
+import {
+  DocumentBridge,
+  notifyExtensionReady,
+} from "./services/bridges/documentBridge";
+import { getValidatedSettingsGroup } from "./services/config/settingsValidator";
+import { setupAuthStateManagement } from "./services/core/authManager";
+import type { DatalayerAuthProvider } from "./services/core/authProvider";
 import { ServiceContainer } from "./services/core/serviceContainer";
 import { ServiceLoggers } from "./services/logging/loggers";
 import { PerformanceLogger } from "./services/logging/performanceLogger";
@@ -212,10 +212,14 @@ export async function activate(
         return token && contentsUrl ? { contentsUrl, token } : undefined;
       });
       context.subscriptions.push(
-        vscode.workspace.registerFileSystemProvider(HOME_FOLDER_SCHEME, provider, {
-          isCaseSensitive: true,
-          isReadonly: false,
-        }),
+        vscode.workspace.registerFileSystemProvider(
+          HOME_FOLDER_SCHEME,
+          provider,
+          {
+            isCaseSensitive: true,
+            isReadonly: false,
+          },
+        ),
         vscode.commands.registerCommand("datalayer.openHomeFolder", () => {
           const uri = vscode.Uri.parse(`${HOME_FOLDER_SCHEME}:/`);
           vscode.workspace.updateWorkspaceFolders(
