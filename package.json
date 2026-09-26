@@ -92,7 +92,7 @@
     "@datalayer/core": "^1.2.12",
     "@datalayer/jupyter-lexical": "^2.0.18",
     "@datalayer/jupyter-react": "^2.0.18",
-    "@datalayer/lexical-loro": "^1.0.7",
+    "@datalayer/lexical-loro": "^1.0.6",
     "@datalayer/primer-addons": "^1.0.23",
     "@excalidraw/excalidraw": "^0.18.0",
     "@github/keytar": "^7.10.6",
