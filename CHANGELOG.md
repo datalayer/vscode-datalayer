@@ -4,6 +4,19 @@ All notable changes to the Datalayer VS Code extension are documented here.
 
 ## [Unreleased]
 
+## [0.0.19] - 2026-09-26
+
+### Added
+
+- **Home Folder file system**: the Datalayer Home Folder as a writable `datalayer-home:` workspace folder, on the same checksummed, resumable transfer contract as the web application and the CLI ([#445](https://github.com/datalayer/vscode-datalayer/pull/445))
+
+### Changed
+
+- **Datalayer packages**: `@datalayer/core` 1.2.12, `@datalayer/agent-runtimes` 1.3.14, `@datalayer/jupyter-react` and `@datalayer/jupyter-lexical` 2.0.18, React 19 ([#445](https://github.com/datalayer/vscode-datalayer/pull/445))
+- **Runtime identifiers**: the extension and its webviews use the runtime's `runtimeName` everywhere the platform stopped exposing pod names ([#445](https://github.com/datalayer/vscode-datalayer/pull/445))
+- **Datasources**: managed as Contents sources, the model Datalayer Core 1.2 replaced the IAM datasources with; the create dialog does not attach a credential yet ([#445](https://github.com/datalayer/vscode-datalayer/pull/445))
+- **Panels**: reworked panels ([#412](https://github.com/datalayer/vscode-datalayer/pull/412))
+
 ## [0.0.16] - 2026-04-29
 
 ### Added
