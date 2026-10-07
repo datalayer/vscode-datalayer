@@ -36,6 +36,9 @@ import {
   APP_CHAT_WORDS,
   type AppChatChoice,
   type EditorContext,
+  noneTalkableSentence,
+  pickedHandleOf,
+  talkableKeyOf,
 } from "../../src/chat/appChat";
 
 // A deployed application's chat (STUDIO A-18), loaded when one is picked.
@@ -214,6 +217,8 @@ export interface AppProps {
   services: { aiAgentsUrl: string; spacerUrl: string } | null;
   /** Reads the editor's open file, through the extension host. */
   readEditor: () => Promise<EditorContext | undefined>;
+  /** Asks the extension host to sign the person for a deployment (D-21). */
+  signUser: (deploymentUid: string) => Promise<void>;
   /** Callback to request agent list refresh. */
   onRefreshAgents: () => void;
   /** Callback to create a new agent runtime. */
@@ -270,6 +275,7 @@ function AppInner(props: AppProps): React.JSX.Element {
     deploymentsError,
     services,
     readEditor,
+    signUser,
     onRefreshAgents,
     onCreateAgent,
     onLogin,
@@ -278,22 +284,31 @@ function AppInner(props: AppProps): React.JSX.Element {
   // `runtime:<pod>` or `app:<deployment uid>`.
   const [selected, setSelected] = useState<string | null>(null);
 
+  // The same deployments listed again change nothing: the conversation
+  // open survives a refresh (memoized on what is talked to, not the list).
+  const talkableKey = talkableKeyOf(deployments ?? []);
   const talkable = useMemo(
     () =>
       (deployments ?? []).flatMap((choice) =>
         choice.kind === "talk" ? [choice.handle] : [],
       ),
-    [deployments],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [talkableKey],
   );
+  const closed = (deployments ?? []).flatMap((choice) =>
+    choice.kind === "closed" ? [choice] : [],
+  );
+  // The runtimes failing to list hides no application: they count as none.
+  const runtimes = agentsError ? [] : (agents ?? []);
 
   // Auto-select when there is exactly one choice, or clear a selection that
   // no longer exists in the refreshed lists.
   useEffect(() => {
-    if (!agents) {
+    if (agents === null && talkable.length === 0) {
       return;
     }
     const values = [
-      ...agents.map((a) => RUNTIME + a.runtimeName),
+      ...runtimes.map((a) => RUNTIME + a.runtimeName),
       ...talkable.map((handle) => APP + handle.uid),
     ];
     if (values.length === 1) {
@@ -305,7 +320,8 @@ function AppInner(props: AppProps): React.JSX.Element {
     if (selected !== null && !values.includes(selected)) {
       setSelected(null);
     }
-  }, [agents, talkable, selected]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [agents, agentsError, talkable, selected]);
 
   const selectedAgent = useMemo(() => {
     if (!agents || !selected?.startsWith(RUNTIME)) {
@@ -315,13 +331,16 @@ function AppInner(props: AppProps): React.JSX.Element {
     return agents.find((a) => a.runtimeName === pod) ?? null;
   }, [agents, selected]);
 
-  const selectedApp = useMemo(() => {
-    if (!selected?.startsWith(APP)) {
-      return null;
-    }
-    const uid = selected.slice(APP.length);
-    return talkable.find((handle) => handle.uid === uid) ?? null;
-  }, [talkable, selected]);
+  // The deployment picked, as the newest listing has it (its runtime, agent
+  // or version may have changed since it was picked).
+  const selectedApp = useMemo(
+    () =>
+      selected?.startsWith(APP)
+        ? pickedHandleOf(deployments ?? [], selected.slice(APP.length))
+        : null,
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [talkableKey, selected],
+  );
 
   const handleAgentChange = useCallback(
     (event: React.ChangeEvent<HTMLSelectElement>) => {
@@ -351,8 +370,8 @@ function AppInner(props: AppProps): React.JSX.Element {
     );
   }
 
-  // Agents loading.
-  if (agents === null) {
+  // Agents loading, and no application to talk to yet.
+  if (agents === null && talkable.length === 0) {
     return (
       <div style={containerStyle}>
         <p style={messageStyle}>Loading agents...</p>
@@ -360,8 +379,9 @@ function AppInner(props: AppProps): React.JSX.Element {
     );
   }
 
-  // Error fetching agents.
-  if (agentsError) {
+  // Error fetching agents, and no application to talk to: the error is
+  // fatal only then (an application's chat does not need the runtimes).
+  if (agentsError && talkable.length === 0) {
     return (
       <div style={containerStyle}>
         <p style={{ ...messageStyle, color: "var(--vscode-errorForeground)" }}>
@@ -375,7 +395,7 @@ function AppInner(props: AppProps): React.JSX.Element {
   }
 
   // No agents, and no application to talk to.
-  if (agents.length === 0 && talkable.length === 0) {
+  if (runtimes.length === 0 && talkable.length === 0) {
     if (creatingAgent) {
       // The "Create Agent" flow is in flight (spec picker → API call →
       // pod spin-up). Provisioning takes 5–30s; without this in-place
@@ -396,9 +416,19 @@ function AppInner(props: AppProps): React.JSX.Element {
         <p style={messageStyle}>No agents available.</p>
         {deployments !== null ? (
           <p style={{ ...messageStyle, fontSize: "12px", opacity: 0.7 }}>
-            {deploymentsError ?? APP_CHAT_WORDS.none}
+            {deploymentsError
+              ? `${APP_CHAT_WORDS.listFailed}: ${deploymentsError}`
+              : noneTalkableSentence(deployments)}
           </p>
         ) : null}
+        {closed.map((choice) => (
+          <p
+            key={choice.uid}
+            style={{ ...messageStyle, fontSize: "12px", opacity: 0.7 }}
+          >
+            {choice.why}
+          </p>
+        ))}
         <p style={{ ...messageStyle, fontSize: "12px", opacity: 0.7 }}>
           Create an agent to start chatting.
         </p>
@@ -450,9 +480,19 @@ function AppInner(props: AppProps): React.JSX.Element {
               ))}
             </optgroup>
           ) : null}
-          {agents.length > 0 ? (
+          {closed.length > 0 ? (
+            // Closed choices stay in the picker, each with why.
+            <optgroup label={APP_CHAT_WORDS.closedGroup}>
+              {closed.map((choice) => (
+                <option key={choice.uid} value="" disabled title={choice.why}>
+                  {choice.name}: {choice.why}
+                </option>
+              ))}
+            </optgroup>
+          ) : null}
+          {runtimes.length > 0 ? (
             <optgroup label={APP_CHAT_WORDS.runtimesGroup}>
-              {agents.map((a) => (
+              {runtimes.map((a) => (
                 <option key={a.runtimeName} value={RUNTIME + a.runtimeName}>
                   {a.givenName} ({a.environmentName})
                 </option>
@@ -470,6 +510,21 @@ function AppInner(props: AppProps): React.JSX.Element {
           &#x21bb;
         </button>
       </div>
+      {deploymentsError || agentsError ? (
+        // Said beside the picker, whatever else is listed or picked.
+        <p
+          style={{
+            ...messageStyle,
+            fontSize: "12px",
+            margin: "4px 8px",
+            color: "var(--vscode-errorForeground)",
+          }}
+        >
+          {deploymentsError
+            ? `${APP_CHAT_WORDS.listFailed}: ${deploymentsError}`
+            : `Failed to load agents: ${agentsError}`}
+        </p>
+      ) : null}
 
       {/* Chat area */}
       <div style={{ flex: 1, overflow: "hidden" }}>
@@ -482,12 +537,14 @@ function AppInner(props: AppProps): React.JSX.Element {
             <Suspense fallback={<LoadingChat />}>
               <AgentRuntimesClientProvider client={client}>
                 <LazyAppChat
-                  // A new conversation for each deployment picked.
-                  key={selectedApp.uid}
+                  // A new conversation for each deployment picked, or when
+                  // where it is kept changes; the same listing keeps it.
+                  key={`${selectedApp.uid} ${selectedApp.version} ${selectedApp.url} ${selectedApp.agentId}`}
                   handle={selectedApp}
                   services={services}
                   user={auth.user}
                   readEditor={readEditor}
+                  signUser={signUser}
                 />
               </AgentRuntimesClientProvider>
             </Suspense>

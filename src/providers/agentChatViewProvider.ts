@@ -48,11 +48,17 @@ import { AgentChatBridgeHandler } from "../bridges/agentChatBridge";
 import { AgentChatNetworkBridge } from "../bridges/agentChatNetworkBridge";
 import {
   type AppChatChoice,
+  type AppChatHandle,
   deploymentChoicesOf,
   deploymentsUrl,
   editorContextOf,
+  fetchUserToken,
+  isRunOf,
   signedPrefixesOf,
+  type SignedUser,
+  signedUserFresh,
   signsRequest,
+  withUserToken,
 } from "../chat/appChat";
 import {
   type AgentChatSettings,
@@ -131,6 +137,16 @@ export class AgentChatViewProvider implements vscode.WebviewViewProvider {
    */
   private signedPrefixes: string[] = [];
 
+  /** The deployments last listed that can be talked to, by uid (A-18). */
+  private talkable = new Map<string, AppChatHandle>();
+
+  /**
+   * The user tokens ai-agents signed the person with, by deployment, for
+   * the deployments that take only a signed user (D-21): put in their
+   * runs' bodies by the network bridge, never posted to the webview.
+   */
+  private signedUsers = new Map<string, SignedUser | null>();
+
   /**
    * Constructs the provider.
    *
@@ -147,11 +163,13 @@ export class AgentChatViewProvider implements vscode.WebviewViewProvider {
     // Development builds without leaking them into webview logs in
     // Production / Test installs.
     this.bridge = new AgentChatBridgeHandler(sdk, context.extensionMode);
-    this.networkBridge = new AgentChatNetworkBridge((url) =>
-      this.authProvider.isAuthenticated() &&
-      signsRequest(url, this.signedPrefixes)
-        ? this.authProvider.getToken() || undefined
-        : undefined,
+    this.networkBridge = new AgentChatNetworkBridge(
+      (url) =>
+        this.authProvider.isAuthenticated() &&
+        signsRequest(url, this.signedPrefixes)
+          ? this.authProvider.getToken() || undefined
+          : undefined,
+      (url, method, body) => this.signedRunBody(url, method, body),
     );
   }
 
@@ -308,6 +326,14 @@ export class AgentChatViewProvider implements vscode.WebviewViewProvider {
       }
     } else if (type === "login") {
       await vscode.commands.executeCommand("datalayer.login");
+    } else if (type === "user-token-request") {
+      const { requestId, deploymentUid } = raw as {
+        requestId?: unknown;
+        deploymentUid?: unknown;
+      };
+      if (typeof requestId === "string" && typeof deploymentUid === "string") {
+        await this.signUser(requestId, deploymentUid);
+      }
     } else if (type === "editor-context-request") {
       const requestId = (raw as { requestId?: unknown }).requestId;
       if (typeof requestId === "string") {
@@ -348,6 +374,8 @@ export class AgentChatViewProvider implements vscode.WebviewViewProvider {
   private async runRefreshAgents(): Promise<void> {
     if (!this.view || !this.authProvider.isAuthenticated()) {
       this.signedPrefixes = [];
+      this.talkable.clear();
+      this.signedUsers.clear();
       this.postAgents([], null);
       this.postDeployments([], null);
       return;
@@ -362,8 +390,8 @@ export class AgentChatViewProvider implements vscode.WebviewViewProvider {
    */
   private async refreshDeployments(): Promise<void> {
     const services = getValidatedSettingsGroup("services");
-    // ai-agents is served on the runtimes plane (core's `aiAgentsUrl`).
-    const aiAgentsUrl = services.runtimesUrl;
+    // ai-agents' own setting (core's `aiAgentsUrl`), never the runtimes'.
+    const aiAgentsUrl = services.aiAgentsUrl;
     try {
       const response = await fetch(deploymentsUrl(aiAgentsUrl), {
         headers: { Authorization: `Bearer ${this.authProvider.getToken()}` },
@@ -382,6 +410,19 @@ export class AgentChatViewProvider implements vscode.WebviewViewProvider {
         );
       }
       const choices = deploymentChoicesOf(await response.json());
+      this.talkable = new Map(
+        choices.flatMap((choice) =>
+          choice.kind === "talk"
+            ? [[choice.handle.uid, choice.handle] as const]
+            : [],
+        ),
+      );
+      // A deployment no longer talked to is no longer signed for.
+      for (const uid of [...this.signedUsers.keys()]) {
+        if (!this.talkable.has(uid)) {
+          this.signedUsers.delete(uid);
+        }
+      }
       this.signedPrefixes = signedPrefixesOf(
         choices.flatMap((choice) =>
           choice.kind === "talk" ? [choice.handle] : [],
@@ -398,6 +439,8 @@ export class AgentChatViewProvider implements vscode.WebviewViewProvider {
         message,
       });
       this.signedPrefixes = [];
+      this.talkable.clear();
+      this.signedUsers.clear();
       this.postDeployments([], message);
     }
   }
@@ -408,6 +451,8 @@ export class AgentChatViewProvider implements vscode.WebviewViewProvider {
    * @param deployments - Each talked to, or why not.
    * @param error - Why they could not be listed, or null.
    * @param services - The ai-agents and Spacer base URLs the view asks.
+   * @param services.aiAgentsUrl - The ai-agents service's base URL.
+   * @param services.spacerUrl - The Spacer service's base URL.
    */
   private postDeployments(
     deployments: AppChatChoice[],
@@ -426,11 +471,91 @@ export class AgentChatViewProvider implements vscode.WebviewViewProvider {
   }
 
   /**
+   * The person's user token for a deployment (D-21), asked of ai-agents with
+   * their own token when there is none or it is about to end.
+   *
+   * @param deploymentUid - The uid of the deployment talked to.
+   *
+   * @returns What ai-agents signed, sent in the runs' bodies.
+   */
+  private async userTokenFor(deploymentUid: string): Promise<string> {
+    const kept = this.signedUsers.get(deploymentUid);
+    if (kept && signedUserFresh(kept, Date.now() / 1000)) {
+      return kept.token;
+    }
+    const token = this.authProvider.getToken();
+    if (!this.authProvider.isAuthenticated() || !token) {
+      throw new Error("Sign in to Datalayer to talk to your applications.");
+    }
+    const signed = await fetchUserToken(
+      getValidatedSettingsGroup("services").aiAgentsUrl,
+      deploymentUid,
+      token,
+    );
+    this.signedUsers.set(deploymentUid, signed);
+    return signed.token;
+  }
+
+  /**
+   * Answers the view's `user-token-request` (D-21): signs the person for a
+   * deployment listed as talked to, and says only whether it was done.
+   *
+   * @param requestId - The id the view's request is answered under.
+   * @param deploymentUid - The uid of the deployment talked to.
+   */
+  private async signUser(
+    requestId: string,
+    deploymentUid: string,
+  ): Promise<void> {
+    let error: string | null = null;
+    try {
+      if (!this.talkable.has(deploymentUid)) {
+        throw new Error("This deployment is not one you can talk to here now.");
+      }
+      this.signedUsers.set(deploymentUid, null);
+      await this.userTokenFor(deploymentUid);
+    } catch (failure) {
+      this.signedUsers.delete(deploymentUid);
+      error = failure instanceof Error ? failure.message : String(failure);
+    }
+    void this.view?.webview.postMessage({
+      type: "user-token",
+      requestId,
+      error,
+    });
+  }
+
+  /**
+   * The body a run of a signed deployment leaves with: its user token put in
+   * as `forwardedProps.loop.user_token` (D-21); `undefined` for any other
+   * request, sent as the webview built it.
+   *
+   * @param url - The request's URL.
+   * @param method - Its method.
+   * @param body - Its body.
+   *
+   * @returns The body to send, or undefined.
+   */
+  private async signedRunBody(
+    url: string,
+    method: string,
+    body: string,
+  ): Promise<string | undefined> {
+    for (const uid of this.signedUsers.keys()) {
+      const handle = this.talkable.get(uid);
+      if (handle && isRunOf(url, method, handle)) {
+        return withUserToken(body, await this.userTokenFor(uid));
+      }
+    }
+    return undefined;
+  }
+
+  /**
    * Answers the view's `editor-context-request` with the active editor's
    * file (STUDIO A-18, D-10): asked only when an application's agent calls
    * `host_context` and its Appspec names the page.
    *
-   * @param requestId - The view's request.
+   * @param requestId - The id the view's request is answered under.
    */
   private postEditorContext(requestId: string): void {
     if (!this.view) {

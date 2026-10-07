@@ -131,7 +131,7 @@ An application you built and deployed in the Datalayer Agent Studio answers in V
 - **Approvals** - when one of its rules says _ask me first_, the request appears in the chat: approve or decline it there.
 - **What it did** - under the chat, each tool it called as a line, e.g. `Support Desk → odoo-accounting: odoo_accounting_aged_balance`.
 - **Your open file** - only when the application lets its host pass the page (`deployment.embedded.host.context: [page]` in its Appspec) and a rule lets `host_context` run: when its agent asks, it gets the file open in your editor (its path, language, text up to 20,000 characters, and the selection). Nothing is read before it asks, and nothing when the application says otherwise.
-- **Signed users** - an application that takes only a user its host's server signed (`deployment.embedded.host.user: signed`) is not opened in VS Code: VS Code does not hold the deployment's secret, and the sidebar says so.
+- **Signed users** - an application that takes only a signed user (`deployment.embedded.host.user: signed`) is opened in VS Code with a short user token Datalayer signs for you (fifteen minutes; the extension host asks ai-agents for it with your token and puts it in the runs; the sidebar never holds it), sent with each run as `forwardedProps.loop.user_token`. Only the version deployed decides: when the application was saved since, it is not opened until that version is deployed.
 
 ## 💡 Common Questions
 

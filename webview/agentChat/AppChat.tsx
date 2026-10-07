@@ -16,8 +16,12 @@
  * it with the person's token: the view never holds it.
  *
  * Before the chat opens, the application's Appspec is read from its Spacer
- * item: one that takes only a user its host's server signed (D-21) is
- * refused in a sentence; what its host may pass (D-10) decides whether its
+ * item, and only the version the deployment runs decides — another one is
+ * refused in a sentence. One that takes only a signed user (D-21) is opened
+ * once the extension host has asked ai-agents to sign the person
+ * (`signUser`): the host puts the user token in each run's body as
+ * `forwardedProps.loop.user_token`, and the view never holds it either;
+ * what its host may pass (D-10) decides whether its
  * agent is given `host_context`, answered with the editor's open file as
  * `page`. Its approvals (R-05) are ai-agents' Tool Approvals, polled while
  * the chat is open and answered by `<Chat>`'s approval banner; its tool
@@ -44,8 +48,10 @@ import {
   hostContextTool,
   pendingApprovalsOf,
   pendingApprovalsUrl,
-  signedRefusal,
+  revisionRefusal,
+  takesSignedUser,
   toolLineOf,
+  userTokenRefusal,
 } from "../../src/chat/appChat";
 
 /** How often the approvals the agent waits on are read, while open. */
@@ -61,6 +67,12 @@ export interface AppChatProps {
   user: { handle: string; email: string } | null;
   /** Reads the editor's open file, through the extension host. */
   readEditor: () => Promise<EditorContext | undefined>;
+  /**
+   * Asks the extension host to sign the person for the deployment (D-21):
+   * resolves when the host holds a user token for its runs, rejects with
+   * ai-agents' sentence.
+   */
+  signUser: (deploymentUid: string) => Promise<void>;
 }
 
 /**
@@ -92,7 +104,7 @@ async function refusalOf(response: Response, what: string): Promise<string> {
  * @returns React element.
  */
 export default function AppChat(props: AppChatProps): React.JSX.Element {
-  const { handle, services, user, readEditor } = props;
+  const { handle, services, user, readEditor, signUser } = props;
   const [host, setHost] = useState<AppHost | null>(null);
   const [problem, setProblem] = useState<string | null>(null);
   const [approvals, setApprovals] = useState<AppChatApproval[]>([]);
@@ -124,7 +136,43 @@ export default function AppChat(props: AppChatProps): React.JSX.Element {
     };
   }, [handle.appUid, services.spacerUrl]);
 
-  const refused = host ? signedRefusal(handle.name, host) : "";
+  // Only the version deployed decides who its user is and what is passed.
+  const revisionRefused = host ? revisionRefusal(handle, host) : "";
+  const signed = Boolean(host && !revisionRefused && takesSignedUser(host));
+  const [signedRefused, setSignedRefused] = useState("");
+  const [signedReady, setSignedReady] = useState(false);
+
+  // A signed application (D-21): the extension host asks ai-agents to sign
+  // the person, and sends the user token with each run.
+  useEffect(() => {
+    setSignedRefused("");
+    setSignedReady(false);
+    if (!signed) {
+      return;
+    }
+    let live = true;
+    signUser(handle.uid)
+      .then(() => {
+        if (live) {
+          setSignedReady(true);
+        }
+      })
+      .catch((error: unknown) => {
+        if (live) {
+          setSignedRefused(
+            userTokenRefusal(
+              handle.name,
+              error instanceof Error ? error.message : String(error),
+            ),
+          );
+        }
+      });
+    return () => {
+      live = false;
+    };
+  }, [signed, signUser, handle.uid, handle.name]);
+
+  const refused = revisionRefused || signedRefused;
 
   // The approvals its agent waits on, while the chat is open.
   const readApprovals = useCallback(async (): Promise<void> => {
@@ -173,12 +221,12 @@ export default function AppChat(props: AppChatProps): React.JSX.Element {
   // terms, never a guess.
   const editorLine = host ? editorContextRefusal(handle, host) : "";
   const frontendTools = useMemo(() => {
-    if (!host || host.revision !== handle.version) {
+    if (!host || revisionRefusal(handle, host)) {
       return [];
     }
     const tool = hostContextTool(host, readEditor, user);
     return tool ? [tool] : [];
-  }, [host, handle.version, readEditor, user]);
+  }, [host, handle, readEditor, user]);
 
   if (problem) {
     return (
@@ -189,7 +237,7 @@ export default function AppChat(props: AppChatProps): React.JSX.Element {
       </div>
     );
   }
-  if (!host) {
+  if (!host || (signed && !signedReady && !signedRefused)) {
     return (
       <div style={containerStyle}>
         <p style={messageStyle}>{APP_CHAT_WORDS.reading}</p>

@@ -1692,6 +1692,11 @@
           "default": "https://r1.datalayer.run",
           "description": "Runtimes service URL for computational environments"
         },
+        "datalayer.services.aiAgentsUrl": {
+          "type": "string",
+          "default": "https://r1.datalayer.run",
+          "description": "ai-agents service URL for your deployed applications, their approvals and user tokens"
+        },
         "datalayer.services.spacerUrl": {
           "type": "string",
           "default": "https://prod1.datalayer.run",

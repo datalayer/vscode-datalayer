@@ -78,6 +78,8 @@ export const servicesSettingsSchema = z.object({
   runtimesUrl: urlSchema("https://r1.datalayer.run"),
   /** Spacer service URL. */
   spacerUrl: urlSchema("https://prod1.datalayer.run"),
+  /** ai-agents service URL: deployments, Tool Approvals, user tokens (core's `aiAgentsUrl`). */
+  aiAgentsUrl: urlSchema("https://r1.datalayer.run"),
   /** WebSocket URL for Spacer real-time collaboration. */
   spacerWsUrl: wsUrlSchema("wss://prod1.datalayer.run"),
 });

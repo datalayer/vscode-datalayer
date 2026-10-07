@@ -101,6 +101,39 @@ const editorRequests = new Map<
   (context: EditorContext | undefined) => void
 >();
 let editorRequestCount = 0;
+// The view's requests to sign the person for a deployment (D-21), by id.
+const signRequests = new Map<
+  string,
+  { resolve: () => void; reject: (error: Error) => void }
+>();
+
+/**
+ * Asks the extension host to sign the person for a deployment that takes
+ * only a signed user (D-21): the host asks ai-agents with the person's
+ * token and keeps the user token, which it puts in the runs' bodies — it
+ * never reaches the view.
+ *
+ * @param deploymentUid - The deployment talked to.
+ *
+ * @returns Resolves once signed; rejects with ai-agents' sentence.
+ */
+function requestSignedUser(deploymentUid: string): Promise<void> {
+  editorRequestCount += 1;
+  const requestId = `sign-${editorRequestCount}`;
+  return new Promise((resolve, reject) => {
+    signRequests.set(requestId, { resolve, reject });
+    vscode.postMessage({
+      type: "user-token-request",
+      requestId,
+      deploymentUid,
+    });
+    setTimeout(() => {
+      if (signRequests.delete(requestId)) {
+        reject(new Error("ai-agents did not answer in time."));
+      }
+    }, 20_000);
+  });
+}
 
 /**
  * Asks the extension host for the active editor's file, which it reads
@@ -180,6 +213,7 @@ function render(): void {
       deploymentsError={currentDeploymentsError}
       services={currentServices}
       readEditor={requestEditorContext}
+      signUser={requestSignedUser}
       onRefreshAgents={handleRefreshAgents}
       onCreateAgent={handleCreateAgent}
       onLogin={handleLogin}
@@ -247,6 +281,19 @@ window.addEventListener("message", (event) => {
       currentDeploymentsError = msg.error;
       currentServices = msg.services ?? currentServices;
       render();
+      break;
+    }
+    case "user-token": {
+      const msg = data as { requestId: string; error: string | null };
+      const pending = signRequests.get(msg.requestId);
+      if (pending) {
+        signRequests.delete(msg.requestId);
+        if (msg.error) {
+          pending.reject(new Error(msg.error));
+        } else {
+          pending.resolve();
+        }
+      }
       break;
     }
     case "editor-context": {
