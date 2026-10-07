@@ -26,6 +26,7 @@ __webpack_nonce__ = (window as unknown as { __webpack_nonce__?: string })
 import React from "react";
 import { createRoot } from "react-dom/client";
 
+import type { AppChatChoice, EditorContext } from "../../src/chat/appChat";
 import {
   type AgentChatAuthState,
   type AgentChatSettings,
@@ -89,6 +90,37 @@ let currentAgentsError: string | null = null;
 // Code shows lives at the screen edge, so we surface a spinner inside the
 // sidebar so the empty state doesn't look frozen.
 let creatingAgent = false;
+// The person's deployments (STUDIO A-18), each talked to or said why not;
+// null while loading.
+let currentDeployments: AppChatChoice[] | null = null;
+let currentDeploymentsError: string | null = null;
+let currentServices: { aiAgentsUrl: string; spacerUrl: string } | null = null;
+// The view's requests for the editor's open file, by id.
+const editorRequests = new Map<
+  string,
+  (context: EditorContext | undefined) => void
+>();
+let editorRequestCount = 0;
+
+/**
+ * Asks the extension host for the active editor's file, which it reads
+ * only now (STUDIO A-18, D-10).
+ *
+ * @returns The file, or undefined when none is open.
+ */
+function requestEditorContext(): Promise<EditorContext | undefined> {
+  editorRequestCount += 1;
+  const requestId = `editor-${editorRequestCount}`;
+  return new Promise((resolve) => {
+    editorRequests.set(requestId, resolve);
+    vscode.postMessage({ type: "editor-context-request", requestId });
+    setTimeout(() => {
+      if (editorRequests.delete(requestId)) {
+        resolve(undefined);
+      }
+    }, 5_000);
+  });
+}
 
 const container = document.getElementById("root");
 if (!container) {
@@ -144,6 +176,10 @@ function render(): void {
       agentsError={currentAgentsError}
       client={bridgeClient}
       creatingAgent={creatingAgent}
+      deployments={currentDeployments}
+      deploymentsError={currentDeploymentsError}
+      services={currentServices}
+      readEditor={requestEditorContext}
       onRefreshAgents={handleRefreshAgents}
       onCreateAgent={handleCreateAgent}
       onLogin={handleLogin}
@@ -199,6 +235,30 @@ window.addEventListener("message", (event) => {
       // clear the spinner so the user can see the resulting state.
       creatingAgent = false;
       render();
+      break;
+    }
+    case "chat-deployments": {
+      const msg = data as {
+        deployments: AppChatChoice[];
+        error: string | null;
+        services: { aiAgentsUrl: string; spacerUrl: string } | null;
+      };
+      currentDeployments = msg.deployments;
+      currentDeploymentsError = msg.error;
+      currentServices = msg.services ?? currentServices;
+      render();
+      break;
+    }
+    case "editor-context": {
+      const msg = data as {
+        requestId: string;
+        context: EditorContext | null;
+      };
+      const resolve = editorRequests.get(msg.requestId);
+      if (resolve) {
+        editorRequests.delete(msg.requestId);
+        resolve(msg.context ?? undefined);
+      }
       break;
     }
     default:

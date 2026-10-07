@@ -7,7 +7,8 @@
 /**
  * Agent Chat sidebar application component.
  *
- * Renders an agent picker when multiple runtimes are available, then
+ * Renders an agent picker — the person's runtimes, and their deployed
+ * applications kept always on (STUDIO A-18, talked to by `AppChat`) — then
  * lazy-loads the heavy `<Chat>` component from `@datalayer/agent-runtimes`
  * via `React.lazy` + `Suspense`. This keeps the initial bundle small
  * (~3 MiB) so the webview evaluates immediately; the Chat chunk (~16 MiB)
@@ -30,6 +31,21 @@ import type { IAgentRuntimesClient } from "@datalayer/agent-runtimes/lib/client/
 import { AgentRuntimesClientProvider } from "@datalayer/agent-runtimes/lib/client/AgentRuntimesClientContext";
 import type { Protocol } from "@datalayer/agent-runtimes/lib/types/protocol";
 import { BaseStyles, ThemeProvider } from "@primer/react";
+
+import {
+  APP_CHAT_WORDS,
+  type AppChatChoice,
+  type EditorContext,
+} from "../../src/chat/appChat";
+
+// A deployed application's chat (STUDIO A-18), loaded when one is picked.
+const LazyAppChat = React.lazy(() => import("./AppChat"));
+
+/** The picker's value for a runtime. */
+const RUNTIME = "runtime:";
+
+/** The picker's value for a deployed application. */
+const APP = "app:";
 
 /**
  * Protocols the embedded `<Chat>` component accepts. Mirrors the upstream
@@ -190,6 +206,14 @@ export interface AppProps {
    * user gets immediate feedback during the 5–30s spin-up window.
    */
   creatingAgent: boolean;
+  /** The person's deployments, each talked to or why not; null while loading. */
+  deployments: AppChatChoice[] | null;
+  /** Why the deployments could not be listed, if they could not. */
+  deploymentsError: string | null;
+  /** The ai-agents and Spacer base URLs a deployment's chat asks. */
+  services: { aiAgentsUrl: string; spacerUrl: string } | null;
+  /** Reads the editor's open file, through the extension host. */
+  readEditor: () => Promise<EditorContext | undefined>;
   /** Callback to request agent list refresh. */
   onRefreshAgents: () => void;
   /** Callback to create a new agent runtime. */
@@ -242,44 +266,66 @@ function AppInner(props: AppProps): React.JSX.Element {
     agentsError,
     client,
     creatingAgent,
+    deployments,
+    deploymentsError,
+    services,
+    readEditor,
     onRefreshAgents,
     onCreateAgent,
     onLogin,
   } = props;
 
-  const [selectedPod, setSelectedPod] = useState<string | null>(null);
+  // `runtime:<pod>` or `app:<deployment uid>`.
+  const [selected, setSelected] = useState<string | null>(null);
 
-  // Auto-select when there is exactly one agent, or when the previously
-  // selected pod no longer exists in the refreshed list.
+  const talkable = useMemo(
+    () =>
+      (deployments ?? []).flatMap((choice) =>
+        choice.kind === "talk" ? [choice.handle] : [],
+      ),
+    [deployments],
+  );
+
+  // Auto-select when there is exactly one choice, or clear a selection that
+  // no longer exists in the refreshed lists.
   useEffect(() => {
     if (!agents) {
       return;
     }
-    if (agents.length === 1) {
-      const only = agents[0]!.runtimeName;
-      if (selectedPod !== only) {
-        setSelectedPod(only);
+    const values = [
+      ...agents.map((a) => RUNTIME + a.runtimeName),
+      ...talkable.map((handle) => APP + handle.uid),
+    ];
+    if (values.length === 1) {
+      if (selected !== values[0]) {
+        setSelected(values[0]!);
       }
       return;
     }
-    if (
-      selectedPod !== null &&
-      !agents.some((a) => a.runtimeName === selectedPod)
-    ) {
-      setSelectedPod(null);
+    if (selected !== null && !values.includes(selected)) {
+      setSelected(null);
     }
-  }, [agents, selectedPod]);
+  }, [agents, talkable, selected]);
 
   const selectedAgent = useMemo(() => {
-    if (!agents || !selectedPod) {
+    if (!agents || !selected?.startsWith(RUNTIME)) {
       return null;
     }
-    return agents.find((a) => a.runtimeName === selectedPod) ?? null;
-  }, [agents, selectedPod]);
+    const pod = selected.slice(RUNTIME.length);
+    return agents.find((a) => a.runtimeName === pod) ?? null;
+  }, [agents, selected]);
+
+  const selectedApp = useMemo(() => {
+    if (!selected?.startsWith(APP)) {
+      return null;
+    }
+    const uid = selected.slice(APP.length);
+    return talkable.find((handle) => handle.uid === uid) ?? null;
+  }, [talkable, selected]);
 
   const handleAgentChange = useCallback(
     (event: React.ChangeEvent<HTMLSelectElement>) => {
-      setSelectedPod(event.target.value || null);
+      setSelected(event.target.value || null);
     },
     [],
   );
@@ -328,8 +374,8 @@ function AppInner(props: AppProps): React.JSX.Element {
     );
   }
 
-  // No agents available.
-  if (agents.length === 0) {
+  // No agents, and no application to talk to.
+  if (agents.length === 0 && talkable.length === 0) {
     if (creatingAgent) {
       // The "Create Agent" flow is in flight (spec picker → API call →
       // pod spin-up). Provisioning takes 5–30s; without this in-place
@@ -348,6 +394,11 @@ function AppInner(props: AppProps): React.JSX.Element {
     return (
       <div style={containerStyle}>
         <p style={messageStyle}>No agents available.</p>
+        {deployments !== null ? (
+          <p style={{ ...messageStyle, fontSize: "12px", opacity: 0.7 }}>
+            {deploymentsError ?? APP_CHAT_WORDS.none}
+          </p>
+        ) : null}
         <p style={{ ...messageStyle, fontSize: "12px", opacity: 0.7 }}>
           Create an agent to start chatting.
         </p>
@@ -381,17 +432,33 @@ function AppInner(props: AppProps): React.JSX.Element {
       {/* Agent picker bar */}
       <div style={pickerBarStyle}>
         <select
-          value={selectedPod ?? ""}
+          value={selected ?? ""}
           onChange={handleAgentChange}
           style={selectStyle}
           aria-label="Select agent"
         >
           <option value="">-- Select an agent --</option>
-          {agents.map((a) => (
-            <option key={a.runtimeName} value={a.runtimeName}>
-              {a.givenName} ({a.environmentName})
-            </option>
-          ))}
+          {talkable.length > 0 ? (
+            <optgroup label={APP_CHAT_WORDS.pickerGroup}>
+              {talkable.map((handle) => (
+                <option key={handle.uid} value={APP + handle.uid}>
+                  {handle.name}
+                  {handle.slug
+                    ? ` (/apps/${handle.slug})`
+                    : ` (${handle.target})`}
+                </option>
+              ))}
+            </optgroup>
+          ) : null}
+          {agents.length > 0 ? (
+            <optgroup label={APP_CHAT_WORDS.runtimesGroup}>
+              {agents.map((a) => (
+                <option key={a.runtimeName} value={RUNTIME + a.runtimeName}>
+                  {a.givenName} ({a.environmentName})
+                </option>
+              ))}
+            </optgroup>
+          ) : null}
         </select>
         <button
           type="button"
@@ -406,10 +473,29 @@ function AppInner(props: AppProps): React.JSX.Element {
 
       {/* Chat area */}
       <div style={{ flex: 1, overflow: "hidden" }}>
-        {selectedAgent && settings && client ? (
+        {selectedApp && services && client ? (
           <ChatErrorBoundary
             onRetry={() => {
-              setSelectedPod(null);
+              setSelected(null);
+            }}
+          >
+            <Suspense fallback={<LoadingChat />}>
+              <AgentRuntimesClientProvider client={client}>
+                <LazyAppChat
+                  // A new conversation for each deployment picked.
+                  key={selectedApp.uid}
+                  handle={selectedApp}
+                  services={services}
+                  user={auth.user}
+                  readEditor={readEditor}
+                />
+              </AgentRuntimesClientProvider>
+            </Suspense>
+          </ChatErrorBoundary>
+        ) : selectedAgent && settings && client ? (
+          <ChatErrorBoundary
+            onRetry={() => {
+              setSelected(null);
             }}
           >
             <Suspense fallback={<LoadingChat />}>

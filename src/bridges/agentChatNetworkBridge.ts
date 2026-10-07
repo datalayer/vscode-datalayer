@@ -302,6 +302,19 @@ const ALLOWED_WS_PROTOCOLS: ReadonlySet<string> = new Set(["wss:"]);
  * real HTTP/WebSocket endpoints from the extension host.
  */
 export class AgentChatNetworkBridge {
+  /**
+   * Constructs the bridge.
+   *
+   * @param authorize - Answers the bearer token a fetch is signed with, or
+   *   `undefined` to send it as the webview built it. The view of a deployed
+   *   application (STUDIO A-18) never holds the person's token: the host
+   *   lends it to the requests the provider says it may sign.
+   */
+  constructor(
+    private readonly authorize: (url: string) => string | undefined = () =>
+      undefined,
+  ) {}
+
   /** All WebSocket connections owned by this handler, keyed by socketId. */
   private readonly sockets = new Map<string, WebSocket>();
 
@@ -431,10 +444,29 @@ export class AgentChatNetworkBridge {
       bodyBytes: body ? body.byteLength : 0,
     });
 
+    // The person's token, lent to the requests the provider signs (A-18):
+    // set only where the webview sent none, or an empty bearer.
+    const token = this.authorize(validated.href);
+    const sent = Object.keys(headers).find(
+      (key) => key.toLowerCase() === "authorization",
+    );
+    const unsigned =
+      sent === undefined ||
+      /^bearer\s*(undefined|null)?\s*$/i.test(headers[sent] ?? "");
+    const outgoing =
+      token && unsigned
+        ? {
+            ...Object.fromEntries(
+              Object.entries(headers).filter(([key]) => key !== sent),
+            ),
+            Authorization: `Bearer ${token}`,
+          }
+        : headers;
+
     try {
       const response = await fetch(validated.href, {
         method,
-        headers,
+        headers: outgoing,
         body: body ? Buffer.from(body) : undefined,
         signal: controller.signal,
         // Relevant for streaming: do NOT buffer.

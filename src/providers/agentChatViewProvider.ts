@@ -26,6 +26,19 @@
  * provider, which dispatches `datalayer.createAgent` and refreshes the
  * agent list when the new runtime comes up.
  *
+ * ## A deployed application's agent (STUDIO A-18)
+ *
+ * Beside the runtimes, the provider lists the person's deployments at
+ * ai-agents (`GET /api/ai-agents/v1/apps/deployments`, the runtimes plane)
+ * and posts them as `chat-deployments`, each talked to or said why not
+ * (`deploymentChoicesOf`). The webview talks to one over its runtime's
+ * session API; it never holds the person's token: the network bridge
+ * lends it to the requests under the prefixes `signedPrefixesOf` gives —
+ * the runtimes those deployments are kept on, ai-agents' Tool Approvals
+ * and Spacer's items. The editor's open file is read only when the view
+ * asks for it (`editor-context-request`), which it does when the
+ * application's agent calls `host_context` and its Appspec lets it.
+ *
  * @module providers/agentChatViewProvider
  */
 
@@ -33,6 +46,14 @@ import * as vscode from "vscode";
 
 import { AgentChatBridgeHandler } from "../bridges/agentChatBridge";
 import { AgentChatNetworkBridge } from "../bridges/agentChatNetworkBridge";
+import {
+  type AppChatChoice,
+  deploymentChoicesOf,
+  deploymentsUrl,
+  editorContextOf,
+  signedPrefixesOf,
+  signsRequest,
+} from "../chat/appChat";
 import {
   type AgentChatSettings,
   getValidatedSettingsGroup,
@@ -104,6 +125,13 @@ export class AgentChatViewProvider implements vscode.WebviewViewProvider {
   private inFlightRefresh: Promise<void> | undefined;
 
   /**
+   * The URL prefixes the network bridge signs with the person's token:
+   * the runtimes of the deployments last listed, Tool Approvals, Spacer's
+   * items (STUDIO A-18). Empty while nobody is signed in.
+   */
+  private signedPrefixes: string[] = [];
+
+  /**
    * Constructs the provider.
    *
    * @param context - VS Code extension context.
@@ -119,7 +147,12 @@ export class AgentChatViewProvider implements vscode.WebviewViewProvider {
     // Development builds without leaking them into webview logs in
     // Production / Test installs.
     this.bridge = new AgentChatBridgeHandler(sdk, context.extensionMode);
-    this.networkBridge = new AgentChatNetworkBridge();
+    this.networkBridge = new AgentChatNetworkBridge((url) =>
+      this.authProvider.isAuthenticated() &&
+      signsRequest(url, this.signedPrefixes)
+        ? this.authProvider.getToken() || undefined
+        : undefined,
+    );
   }
 
   /** @inheritdoc */
@@ -275,6 +308,11 @@ export class AgentChatViewProvider implements vscode.WebviewViewProvider {
       }
     } else if (type === "login") {
       await vscode.commands.executeCommand("datalayer.login");
+    } else if (type === "editor-context-request") {
+      const requestId = (raw as { requestId?: unknown }).requestId;
+      if (typeof requestId === "string") {
+        this.postEditorContext(requestId);
+      }
     }
   }
 
@@ -309,9 +347,119 @@ export class AgentChatViewProvider implements vscode.WebviewViewProvider {
    */
   private async runRefreshAgents(): Promise<void> {
     if (!this.view || !this.authProvider.isAuthenticated()) {
+      this.signedPrefixes = [];
       this.postAgents([], null);
+      this.postDeployments([], null);
       return;
     }
+    await Promise.all([this.refreshRuntimes(), this.refreshDeployments()]);
+  }
+
+  /**
+   * Lists the person's deployments at ai-agents and posts them to the
+   * webview as `chat-deployments` (STUDIO A-18); the runtimes they are kept
+   * on become the prefixes the bridge signs.
+   */
+  private async refreshDeployments(): Promise<void> {
+    const services = getValidatedSettingsGroup("services");
+    // ai-agents is served on the runtimes plane (core's `aiAgentsUrl`).
+    const aiAgentsUrl = services.runtimesUrl;
+    try {
+      const response = await fetch(deploymentsUrl(aiAgentsUrl), {
+        headers: { Authorization: `Bearer ${this.authProvider.getToken()}` },
+      });
+      if (!response.ok) {
+        let detail = "";
+        try {
+          const body = (await response.json()) as { detail?: unknown };
+          detail = typeof body.detail === "string" ? body.detail : "";
+        } catch {
+          // The status says it.
+        }
+        throw new Error(
+          detail ||
+            `ai-agents answered ${response.status} for your deployments.`,
+        );
+      }
+      const choices = deploymentChoicesOf(await response.json());
+      this.signedPrefixes = signedPrefixesOf(
+        choices.flatMap((choice) =>
+          choice.kind === "talk" ? [choice.handle] : [],
+        ),
+        { aiAgentsUrl, spacerUrl: services.spacerUrl },
+      );
+      this.postDeployments(choices, null, {
+        aiAgentsUrl,
+        spacerUrl: services.spacerUrl,
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      ServiceLoggers.main.warn("[AgentChat] Failed to list deployments", {
+        message,
+      });
+      this.signedPrefixes = [];
+      this.postDeployments([], message);
+    }
+  }
+
+  /**
+   * Posts the person's deployments to the webview.
+   *
+   * @param deployments - Each talked to, or why not.
+   * @param error - Why they could not be listed, or null.
+   * @param services - The ai-agents and Spacer base URLs the view asks.
+   */
+  private postDeployments(
+    deployments: AppChatChoice[],
+    error: string | null,
+    services?: { aiAgentsUrl: string; spacerUrl: string },
+  ): void {
+    if (!this.view) {
+      return;
+    }
+    void this.view.webview.postMessage({
+      type: "chat-deployments",
+      deployments,
+      error,
+      services: services ?? null,
+    });
+  }
+
+  /**
+   * Answers the view's `editor-context-request` with the active editor's
+   * file (STUDIO A-18, D-10): asked only when an application's agent calls
+   * `host_context` and its Appspec names the page.
+   *
+   * @param requestId - The view's request.
+   */
+  private postEditorContext(requestId: string): void {
+    if (!this.view) {
+      return;
+    }
+    const editor = vscode.window.activeTextEditor;
+    const context = editor
+      ? editorContextOf(
+          {
+            path: vscode.workspace.asRelativePath(editor.document.uri, false),
+            language: editor.document.languageId,
+            text: editor.document.getText(),
+          },
+          editor.selection.isEmpty
+            ? undefined
+            : editor.document.getText(editor.selection),
+        )
+      : null;
+    void this.view.webview.postMessage({
+      type: "editor-context",
+      requestId,
+      context,
+    });
+  }
+
+  /**
+   * Lists the runtimes and posts their handles to the webview.
+   */
+  private async refreshRuntimes(): Promise<void> {
     try {
       const runtimes = (await this.sdk.listRuntimes()) ?? [];
       const agents: ChatAgentHandle[] = [];
