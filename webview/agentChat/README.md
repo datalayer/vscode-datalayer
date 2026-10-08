@@ -23,6 +23,18 @@ extension host so CORS and auth never get in the way.
   loading states, auto-selects when exactly one runtime is available, and
   hands off to a lazy-loaded `<Chat>` from `@datalayer/agent-runtimes`
   wrapped in `<AgentRuntimesClientProvider client={bridgeClient}>`.
+- [AppChat.tsx](./AppChat.tsx) - A deployed application's agent (STUDIO
+  A-18), lazy-loaded when one is picked under _Your applications_: reads
+  its Appspec from Spacer, refuses one that takes only a signed user
+  (D-21), then mounts `<Chat protocol="ag-ui">` on the session API's
+  `<kept runtime>/api/v1/apps/agents/<agent>/ag-ui/`, with its pending
+  Tool Approvals (polled from ai-agents, answered in the banner), the
+  `host_context` tool answered with the editor's open file when the
+  Appspec lets it (D-10), and the transcript's lines under the chat
+  (A-06). Every request goes through the network bridge; the extension
+  host signs the allowed ones with the person's token, which the view
+  never holds. Pure logic in
+  [`src/chat/appChat.ts`](../../src/chat/appChat.ts).
 - [bridgeClient.ts](./bridgeClient.ts) - `BridgeAgentRuntimesClient`
   implements the 22-method `IAgentRuntimesClient` surface by posting
   typed RPC envelopes to the extension host. Used for keyring-scoped

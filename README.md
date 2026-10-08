@@ -119,6 +119,20 @@
 - **Command palette integration** - All features accessible via `Ctrl+Shift+P`
 - **GitHub Copilot integration** - Use natural language to create notebooks and insert cells (e.g., "Create a local notebook and add a plot")
 
+### Talk to your agent
+
+An application you built and deployed in the Datalayer Agent Studio answers in VS Code, in the **Agent Chat** sidebar. This is a preview, off by default: turn on the **Datalayer › Agent Chat: Enabled** setting (`datalayer.agentChat.enabled`) to use it. Off, the sidebar lists no application and asks Datalayer nothing about them; your runtimes' chat is the same either way.
+
+1. Sign in to Datalayer (`Datalayer: Login`) and turn on `datalayer.agentChat.enabled`.
+2. In the Studio, open the application's **Ship** tab and turn on **Always on**: VS Code talks to the runtime the deployment is kept on.
+3. Open the **Agent Chat** sidebar and pick the application under **Your applications**. A deployment that cannot be talked to is listed as closed under **Not available here**, saying why: paused, not live, not kept always on, or its runtime not running.
+4. Talk to it. The conversation is a session of the deployment, through the same session API its hosted page uses, in your name.
+
+- **Approvals** - when one of its rules says _ask me first_, the request appears in the chat: approve or decline it there.
+- **What it did** - under the chat, each tool it called as a line, e.g. `Support Desk → odoo-accounting: odoo_accounting_aged_balance`.
+- **Your open file** - only when the application lets its host pass the page (`deployment.embedded.host.context: [page]` in its Appspec) and a rule lets `host_context` run: when its agent asks, it gets the file open in your editor (its path, language, text up to 20,000 characters, and the selection). Nothing is read before it asks, and nothing when the application says otherwise.
+- **Signed users** - an application that takes only a signed user (`deployment.embedded.host.user: signed`) is opened in VS Code with a short user token Datalayer signs for you (fifteen minutes; the extension host asks ai-agents for it with your token and puts it in the runs; the sidebar never holds it), sent with each run as `forwardedProps.loop.user_token`. Only the version deployed decides: when the application was saved since, it is not opened until that version is deployed.
+
 ## 💡 Common Questions
 
 **Do I need Python locally?** No! Cloud runtimes handle all execution with zero local setup. You can still connect to local Python/Jupyter environments if preferred for hybrid workflows.

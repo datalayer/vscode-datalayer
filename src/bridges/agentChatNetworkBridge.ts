@@ -302,6 +302,28 @@ const ALLOWED_WS_PROTOCOLS: ReadonlySet<string> = new Set(["wss:"]);
  * real HTTP/WebSocket endpoints from the extension host.
  */
 export class AgentChatNetworkBridge {
+  /**
+   * Constructs the bridge.
+   *
+   * @param authorize - Answers the bearer token a fetch is signed with, or
+   *   `undefined` to send it as the webview built it. The view of a deployed
+   *   application (STUDIO A-18) never holds the person's token: the host
+   *   lends it to the requests the provider says it may sign.
+   * @param rewriteBody - Answers the body a fetch leaves with, or `undefined`
+   *   to send it as the webview built it: a run of a deployment that takes
+   *   only a signed user (D-21) gets its user token in its body here, so
+   *   that the webview never holds it either.
+   */
+  constructor(
+    private readonly authorize: (url: string) => string | undefined = () =>
+      undefined,
+    private readonly rewriteBody: (
+      url: string,
+      method: string,
+      body: string,
+    ) => Promise<string | undefined> = async () => undefined,
+  ) {}
+
   /** All WebSocket connections owned by this handler, keyed by socketId. */
   private readonly sockets = new Map<string, WebSocket>();
 
@@ -431,11 +453,42 @@ export class AgentChatNetworkBridge {
       bodyBytes: body ? body.byteLength : 0,
     });
 
+    // The person's token, lent to the requests the provider signs (A-18):
+    // set only where the webview sent none, or an empty bearer.
+    const token = this.authorize(validated.href);
+    const sent = Object.keys(headers).find(
+      (key) => key.toLowerCase() === "authorization",
+    );
+    const unsigned =
+      sent === undefined ||
+      /^bearer\s*(undefined|null)?\s*$/i.test(headers[sent] ?? "");
+    const outgoing =
+      token && unsigned
+        ? {
+            ...Object.fromEntries(
+              Object.entries(headers).filter(([key]) => key !== sent),
+            ),
+            Authorization: `Bearer ${token}`,
+          }
+        : headers;
+
     try {
+      const rewritten = body
+        ? await this.rewriteBody(
+            validated.href,
+            method,
+            Buffer.from(body).toString("utf8"),
+          )
+        : undefined;
       const response = await fetch(validated.href, {
         method,
-        headers,
-        body: body ? Buffer.from(body) : undefined,
+        headers: outgoing,
+        body:
+          rewritten !== undefined
+            ? rewritten
+            : body
+              ? Buffer.from(body)
+              : undefined,
         signal: controller.signal,
         // Relevant for streaming: do NOT buffer.
         // @ts-expect-error — Node 22 accepts this; TS lib dom may not list it.

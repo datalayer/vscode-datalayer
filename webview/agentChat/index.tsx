@@ -26,6 +26,7 @@ __webpack_nonce__ = (window as unknown as { __webpack_nonce__?: string })
 import React from "react";
 import { createRoot } from "react-dom/client";
 
+import type { AppChatChoice, EditorContext } from "../../src/chat/appChat";
 import {
   type AgentChatAuthState,
   type AgentChatSettings,
@@ -89,6 +90,70 @@ let currentAgentsError: string | null = null;
 // Code shows lives at the screen edge, so we surface a spinner inside the
 // sidebar so the empty state doesn't look frozen.
 let creatingAgent = false;
+// The person's deployments (STUDIO A-18), each talked to or said why not;
+// null while loading.
+let currentDeployments: AppChatChoice[] | null = null;
+let currentDeploymentsError: string | null = null;
+let currentServices: { aiAgentsUrl: string; spacerUrl: string } | null = null;
+// The view's requests for the editor's open file, by id.
+const editorRequests = new Map<
+  string,
+  (context: EditorContext | undefined) => void
+>();
+let editorRequestCount = 0;
+// The view's requests to sign the person for a deployment (D-21), by id.
+const signRequests = new Map<
+  string,
+  { resolve: () => void; reject: (error: Error) => void }
+>();
+
+/**
+ * Asks the extension host to sign the person for a deployment that takes
+ * only a signed user (D-21): the host asks ai-agents with the person's
+ * token and keeps the user token, which it puts in the runs' bodies — it
+ * never reaches the view.
+ *
+ * @param deploymentUid - The deployment talked to.
+ *
+ * @returns Resolves once signed; rejects with ai-agents' sentence.
+ */
+function requestSignedUser(deploymentUid: string): Promise<void> {
+  editorRequestCount += 1;
+  const requestId = `sign-${editorRequestCount}`;
+  return new Promise((resolve, reject) => {
+    signRequests.set(requestId, { resolve, reject });
+    vscode.postMessage({
+      type: "user-token-request",
+      requestId,
+      deploymentUid,
+    });
+    setTimeout(() => {
+      if (signRequests.delete(requestId)) {
+        reject(new Error("ai-agents did not answer in time."));
+      }
+    }, 20_000);
+  });
+}
+
+/**
+ * Asks the extension host for the active editor's file, which it reads
+ * only now (STUDIO A-18, D-10).
+ *
+ * @returns The file, or undefined when none is open.
+ */
+function requestEditorContext(): Promise<EditorContext | undefined> {
+  editorRequestCount += 1;
+  const requestId = `editor-${editorRequestCount}`;
+  return new Promise((resolve) => {
+    editorRequests.set(requestId, resolve);
+    vscode.postMessage({ type: "editor-context-request", requestId });
+    setTimeout(() => {
+      if (editorRequests.delete(requestId)) {
+        resolve(undefined);
+      }
+    }, 5_000);
+  });
+}
 
 const container = document.getElementById("root");
 if (!container) {
@@ -144,6 +209,11 @@ function render(): void {
       agentsError={currentAgentsError}
       client={bridgeClient}
       creatingAgent={creatingAgent}
+      deployments={currentDeployments}
+      deploymentsError={currentDeploymentsError}
+      services={currentServices}
+      readEditor={requestEditorContext}
+      signUser={requestSignedUser}
       onRefreshAgents={handleRefreshAgents}
       onCreateAgent={handleCreateAgent}
       onLogin={handleLogin}
@@ -199,6 +269,44 @@ window.addEventListener("message", (event) => {
       // clear the spinner so the user can see the resulting state.
       creatingAgent = false;
       render();
+      break;
+    }
+    case "chat-deployments": {
+      const msg = data as {
+        // null while `datalayer.agentChat.enabled` is off.
+        deployments: AppChatChoice[] | null;
+        error: string | null;
+        services: { aiAgentsUrl: string; spacerUrl: string } | null;
+      };
+      currentDeployments = msg.deployments;
+      currentDeploymentsError = msg.error;
+      currentServices = msg.services ?? currentServices;
+      render();
+      break;
+    }
+    case "user-token": {
+      const msg = data as { requestId: string; error: string | null };
+      const pending = signRequests.get(msg.requestId);
+      if (pending) {
+        signRequests.delete(msg.requestId);
+        if (msg.error) {
+          pending.reject(new Error(msg.error));
+        } else {
+          pending.resolve();
+        }
+      }
+      break;
+    }
+    case "editor-context": {
+      const msg = data as {
+        requestId: string;
+        context: EditorContext | null;
+      };
+      const resolve = editorRequests.get(msg.requestId);
+      if (resolve) {
+        editorRequests.delete(msg.requestId);
+        resolve(msg.context ?? undefined);
+      }
       break;
     }
     default:
