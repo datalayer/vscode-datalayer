@@ -4,6 +4,13 @@ All notable changes to the Datalayer VS Code extension are documented here.
 
 ## [Unreleased]
 
+## [0.0.20] - 2026-10-08
+
+### Added
+
+- **Talk to your deployed applications** (preview, off by default): with `datalayer.agentChat.enabled` on, the Agent Chat sidebar lists your deployed applications; one kept always on is talked to over its runtime's session API, with its approvals, the tools it called and, when its Appspec lets it, the open file; any other is listed as closed, saying why ([#457](https://github.com/datalayer/vscode-datalayer/pull/457))
+- **Setting** `datalayer.services.aiAgentsUrl` for the ai-agents service ([#457](https://github.com/datalayer/vscode-datalayer/pull/457))
+
 ## [0.0.19] - 2026-09-26
 
 ### Added
