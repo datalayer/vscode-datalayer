@@ -1740,6 +1740,11 @@
           "default": "codeai/simple",
           "description": "Agent specification ID used when creating a new agent runtime from the Agent Chat sidebar (e.g. `codeai/simple`, `datalayer/notebook-assistant`)."
         },
+        "datalayer.agentChat.enabled": {
+          "type": "boolean",
+          "default": false,
+          "description": "Talk to your deployed applications' agents in the Agent Chat sidebar (preview, off by default). On, the sidebar lists your deployments: those kept always on can be talked to, the others are listed as closed, saying why. Your runtimes' chat is the same either way."
+        },
         "datalayer.autoConnect.strategies": {
           "type": "array",
           "items": {

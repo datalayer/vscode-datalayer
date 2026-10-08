@@ -107,6 +107,14 @@ export interface AppChatApproval {
 /** The most of an open file's text passed to an application. */
 export const EDITOR_TEXT_LIMIT = 20_000;
 
+/**
+ * The default of `datalayer.agentChat.enabled`: talking to a deployed
+ * application's agent is off until it has had one pass against a
+ * deployment kept always on. Off, the sidebar lists no deployment, asks
+ * ai-agents nothing and never mounts `AppChat`; its runtimes are as before.
+ */
+export const APP_CHAT_ENABLED_DEFAULT = false;
+
 /** The surface, as the sentences and the transcript's lines name it. */
 export const SURFACE = "VS Code";
 

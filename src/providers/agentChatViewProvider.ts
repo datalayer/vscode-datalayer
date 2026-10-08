@@ -235,6 +235,10 @@ export class AgentChatViewProvider implements vscode.WebviewViewProvider {
         if (event.affectsConfiguration("datalayer.agentChat")) {
           this.postChatSettings(getValidatedSettingsGroup("agentChat"));
         }
+        if (event.affectsConfiguration("datalayer.agentChat.enabled")) {
+          // Turned on, the deployments are listed; turned off, forgotten.
+          void this.refreshAgents();
+        }
       },
     );
 
@@ -372,15 +376,31 @@ export class AgentChatViewProvider implements vscode.WebviewViewProvider {
    * stays correct.
    */
   private async runRefreshAgents(): Promise<void> {
+    // `datalayer.agentChat.enabled` (off by default): off, no deployment is
+    // listed, ai-agents is asked nothing and the view never opens `AppChat`.
+    const appChat = getValidatedSettingsGroup("agentChat").enabled;
     if (!this.view || !this.authProvider.isAuthenticated()) {
-      this.signedPrefixes = [];
-      this.talkable.clear();
-      this.signedUsers.clear();
+      this.forgetDeployments();
       this.postAgents([], null);
-      this.postDeployments([], null);
+      this.postDeployments(appChat ? [] : null, null);
+      return;
+    }
+    if (!appChat) {
+      this.forgetDeployments();
+      this.postDeployments(null, null);
+      await this.refreshRuntimes();
       return;
     }
     await Promise.all([this.refreshRuntimes(), this.refreshDeployments()]);
+  }
+
+  /**
+   * Forgets the deployments last listed: none is talked to or signed for.
+   */
+  private forgetDeployments(): void {
+    this.signedPrefixes = [];
+    this.talkable.clear();
+    this.signedUsers.clear();
   }
 
   /**
@@ -438,9 +458,7 @@ export class AgentChatViewProvider implements vscode.WebviewViewProvider {
       ServiceLoggers.main.warn("[AgentChat] Failed to list deployments", {
         message,
       });
-      this.signedPrefixes = [];
-      this.talkable.clear();
-      this.signedUsers.clear();
+      this.forgetDeployments();
       this.postDeployments([], message);
     }
   }
@@ -448,14 +466,15 @@ export class AgentChatViewProvider implements vscode.WebviewViewProvider {
   /**
    * Posts the person's deployments to the webview.
    *
-   * @param deployments - Each talked to, or why not.
+   * @param deployments - Each talked to, or why not; null when
+   *   `datalayer.agentChat.enabled` is off (nothing listed, nothing said).
    * @param error - Why they could not be listed, or null.
    * @param services - The ai-agents and Spacer base URLs the view asks.
    * @param services.aiAgentsUrl - The ai-agents service's base URL.
    * @param services.spacerUrl - The Spacer service's base URL.
    */
   private postDeployments(
-    deployments: AppChatChoice[],
+    deployments: AppChatChoice[] | null,
     error: string | null,
     services?: { aiAgentsUrl: string; spacerUrl: string },
   ): void {
@@ -561,7 +580,10 @@ export class AgentChatViewProvider implements vscode.WebviewViewProvider {
     if (!this.view) {
       return;
     }
-    const editor = vscode.window.activeTextEditor;
+    // Off, no application is talked to here: the open file is never read.
+    const editor = getValidatedSettingsGroup("agentChat").enabled
+      ? vscode.window.activeTextEditor
+      : undefined;
     const context = editor
       ? editorContextOf(
           {

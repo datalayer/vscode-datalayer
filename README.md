@@ -121,11 +121,11 @@
 
 ### Talk to your agent
 
-An application you built and deployed in the Datalayer Agent Studio answers in VS Code, in the **Agent Chat** sidebar.
+An application you built and deployed in the Datalayer Agent Studio answers in VS Code, in the **Agent Chat** sidebar. This is a preview, off by default: turn on the **Datalayer › Agent Chat: Enabled** setting (`datalayer.agentChat.enabled`) to use it. Off, the sidebar lists no application and asks Datalayer nothing about them; your runtimes' chat is the same either way.
 
-1. Sign in to Datalayer (`Datalayer: Login`).
+1. Sign in to Datalayer (`Datalayer: Login`) and turn on `datalayer.agentChat.enabled`.
 2. In the Studio, open the application's **Ship** tab and turn on **Always on**: VS Code talks to the runtime the deployment is kept on.
-3. Open the **Agent Chat** sidebar and pick the application under **Your applications**. A deployment that cannot be talked to yet is not listed; the sidebar says why when none can.
+3. Open the **Agent Chat** sidebar and pick the application under **Your applications**. A deployment that cannot be talked to is listed as closed under **Not available here**, saying why: paused, not live, not kept always on, or its runtime not running.
 4. Talk to it. The conversation is a session of the deployment, through the same session API its hosted page uses, in your name.
 
 - **Approvals** - when one of its rules says _ask me first_, the request appears in the chat: approve or decline it there.

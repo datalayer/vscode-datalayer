@@ -273,7 +273,8 @@ window.addEventListener("message", (event) => {
     }
     case "chat-deployments": {
       const msg = data as {
-        deployments: AppChatChoice[];
+        // null while `datalayer.agentChat.enabled` is off.
+        deployments: AppChatChoice[] | null;
         error: string | null;
         services: { aiAgentsUrl: string; spacerUrl: string } | null;
       };

@@ -15,6 +15,7 @@
 import * as vscode from "vscode";
 import { z } from "zod";
 
+import { APP_CHAT_ENABLED_DEFAULT } from "../../chat/appChat";
 import { ServiceLoggers } from "../logging/loggers";
 
 // ---------------------------------------------------------------------------
@@ -154,6 +155,12 @@ export const agentChatSettingsSchema = z.object({
     .default("vercel-ai"),
   /** Agent specification ID used when the sidebar provisions a fresh runtime. */
   agentSpecId: z.string().default("codeai/simple"),
+  /**
+   * Talk to the person's deployed applications in the sidebar (STUDIO A-18).
+   * Off by default, as the `datalayer.agentChat.enabled` contribution in
+   * `package.json` says.
+   */
+  enabled: z.boolean().default(APP_CHAT_ENABLED_DEFAULT),
 });
 
 /** Schema for the `datalayer.completion.inlinellm` settings group. */

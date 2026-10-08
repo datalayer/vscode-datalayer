@@ -442,7 +442,7 @@ describe("the review of 2026-10-07: live only, the version said, a signed user s
         { ...running, uid: "gone", state: "deleted" },
         { ...running, uid: "none", state: undefined },
         { ...running, uid: "nov", version: undefined },
-        { ...running, uid: "badv", version: "3" },
+        { ...running, uid: "bad-version", version: "3" },
         { ...running, uid: "zero", version: 0 },
       ],
     });

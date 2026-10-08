@@ -11,8 +11,10 @@
  */
 
 import * as assert from "assert";
+import * as vscode from "vscode";
 
 import {
+  agentChatSettingsSchema,
   autoConnectSettingsSchema,
   inlineLlmCompletionSettingsSchema,
   loggingSettingsSchema,
@@ -31,6 +33,7 @@ suite("Settings Validator - Schemas", () => {
         iamUrl: "https://custom.example.com",
         runtimesUrl: "https://runtimes.example.com",
         spacerUrl: "https://spacer.example.com",
+        aiAgentsUrl: "https://ai-agents.example.com",
         spacerWsUrl: "wss://spacer.example.com",
       };
       const result = servicesSettingsSchema.safeParse(input);
@@ -45,6 +48,7 @@ suite("Settings Validator - Schemas", () => {
       assert.strictEqual(result.data.runtimesUrl, "https://r1.datalayer.run");
       assert.strictEqual(result.data.spacerUrl, "https://prod1.datalayer.run");
       assert.strictEqual(result.data.spacerWsUrl, "wss://prod1.datalayer.run");
+      assert.strictEqual(result.data.aiAgentsUrl, "https://r1.datalayer.run");
     });
 
     test("invalid URLs fail validation", () => {
@@ -63,6 +67,29 @@ suite("Settings Validator - Schemas", () => {
       assert.ok(
         result.error.issues.some((i) => i.path.includes("spacerWsUrl")),
       );
+    });
+  });
+
+  suite("agentChatSettingsSchema", () => {
+    test("talking to deployed applications is off by default", () => {
+      const result = agentChatSettingsSchema.safeParse({});
+      assert.ok(result.success);
+      assert.strictEqual(result.data.enabled, false);
+      assert.strictEqual(result.data.protocol, "vercel-ai");
+      assert.strictEqual(result.data.agentSpecId, "codeai/simple");
+    });
+
+    test("the extension contributes it off", () => {
+      const enabled = vscode.workspace
+        .getConfiguration("datalayer.agentChat")
+        .inspect<boolean>("enabled");
+      assert.strictEqual(enabled?.defaultValue, false);
+    });
+
+    test("it can be turned on", () => {
+      const result = agentChatSettingsSchema.safeParse({ enabled: true });
+      assert.ok(result.success);
+      assert.strictEqual(result.data.enabled, true);
     });
   });
 
