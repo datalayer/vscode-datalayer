@@ -487,8 +487,19 @@ const lexicalWebviewConfig = {
           fullySpecified: false,
         },
       },
+      // onnxruntime-web's WASM is an Emscripten build loaded at runtime, not
+      // an ES WebAssembly module (it imports from Emscripten's own "a"); the
+      // voice code points onnxruntime-web at the speech models' CDN, so only
+      // its URL is kept and the file is not emitted.
       {
         test: /\.wasm$/,
+        include: /[\\/]onnxruntime-web[\\/]/,
+        type: "asset/resource",
+        generator: { emit: false },
+      },
+      {
+        test: /\.wasm$/,
+        exclude: /[\\/]onnxruntime-web[\\/]/,
         type: "webassembly/async",
       },
       // Python file loader (for Pyodide kernel)
@@ -644,8 +655,19 @@ const agentChatWebviewConfig = {
     ...webviewConfig.module,
     rules: [
       ...webviewConfig.module.rules,
+      // onnxruntime-web's WASM is an Emscripten build loaded at runtime, not
+      // an ES WebAssembly module (it imports from Emscripten's own "a"); the
+      // voice code points onnxruntime-web at the speech models' CDN, so only
+      // its URL is kept and the file is not emitted.
       {
         test: /\.wasm$/,
+        include: /[\\/]onnxruntime-web[\\/]/,
+        type: "asset/resource",
+        generator: { emit: false },
+      },
+      {
+        test: /\.wasm$/,
+        exclude: /[\\/]onnxruntime-web[\\/]/,
         type: "webassembly/async",
       },
     ],
