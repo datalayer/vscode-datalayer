@@ -27,17 +27,17 @@ Tests are numbered with a prefix to control execution order:
 npm run vsix
 
 # Run all smoke tests
-bash .github/scripts/run-smoke-tests.sh ./datalayer-jupyter-vscode-*.vsix
+bash .github/scripts/run-smoke-tests.sh ./datalayer-vscode-*.vsix
 ```
 
 ### Run Individual Test
 
 ```bash
 # Test VSIX structure
-bash .github/scripts/smoke-tests/01-verify-vsix-structure.sh ./datalayer-jupyter-vscode-*.vsix
+bash .github/scripts/smoke-tests/01-verify-vsix-structure.sh ./datalayer-vscode-*.vsix
 
 # Test pyodide import
-node .github/scripts/smoke-tests/02-test-pyodide-import.js ./datalayer-jupyter-vscode-*.vsix
+node .github/scripts/smoke-tests/02-test-pyodide-import.js ./datalayer-vscode-*.vsix
 ```
 
 ## Adding New Smoke Tests
@@ -45,6 +45,7 @@ node .github/scripts/smoke-tests/02-test-pyodide-import.js ./datalayer-jupyter-v
 ### 1. Create a New Test File
 
 Choose a numbering scheme:
+
 - `03-` through `09-` for high-priority tests (run first)
 - `10-` through `99-` for additional tests
 
@@ -98,15 +99,15 @@ echo "✅ Test passed"
 const vsixFile = process.argv[2];
 
 if (!vsixFile) {
-  console.error('❌ ERROR: No .vsix file provided');
+  console.error("❌ ERROR: No .vsix file provided");
   process.exit(1);
 }
 
-console.log('🧪 Testing: <what you\'re testing>');
+console.log("🧪 Testing: <what you're testing>");
 
 // Your test logic here
 
-console.log('✅ Test passed');
+console.log("✅ Test passed");
 ```
 
 ### 3. Make It Executable
@@ -132,6 +133,7 @@ The CI will automatically run your new test on all platforms!
 **Purpose**: Verify .vsix package structure and pyodide inclusion
 
 **What it checks**:
+
 - .vsix is a valid ZIP file
 - `extension/node_modules/pyodide/` directory exists
 - Critical files present: `package.json`, `pyodide.js`, `pyodide.asm.js`
@@ -144,6 +146,7 @@ The CI will automatically run your new test on all platforms!
 **Purpose**: Test pyodide import resolution using the exact pattern from extension code
 
 **What it checks**:
+
 - Simulates the `path.join(__dirname, "..", "..", "node_modules", "pyodide")` pattern
 - Verifies the resolved path exists
 - Tests that pyodide module can be required

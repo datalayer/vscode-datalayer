@@ -23,7 +23,7 @@ suite("OAuthFlowManager Tests", () => {
     context = createMockExtensionContext();
     // Provide a real extension id
     (context.extension as unknown as { id: string }).id =
-      "datalayer.datalayer-jupyter-vscode";
+      "datalayer.datalayer-vscode";
     if (!ServiceLoggers.isInitialized()) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (LoggerManager as any).instance = undefined;
@@ -67,7 +67,7 @@ suite("OAuthFlowManager Tests", () => {
       const logger = createMockLogger();
       const manager = new OAuthFlowManager(context, logger);
       const uri = manager.callbackUri;
-      assert.ok(uri.includes("datalayer.datalayer-jupyter-vscode"));
+      assert.ok(uri.includes("datalayer.datalayer-vscode"));
       assert.ok(uri.endsWith("/auth"));
     });
   });

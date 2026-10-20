@@ -436,9 +436,9 @@ Bypass Lumino command system entirely for Shift+Enter. Register a custom keyboar
 When making changes to jupyter-ui packages:
 
 ```bash
-cd /Users/goanpeca/Desktop/develop/datalayer/vscode-datalayer
+cd /Users/goanpeca/Desktop/develop/datalayer/vscode
 
-# Sync changes from jupyter-ui packages to vscode-datalayer node_modules
+# Sync changes from jupyter-ui packages to vscode node_modules
 npm run sync:jupyter:react   # or sync:jupyter:lexical
 
 # Create patches for the changes

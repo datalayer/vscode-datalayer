@@ -488,9 +488,7 @@ export class DatalayerAuthProvider
         );
       } else if (selected.label === "$(github) Report Issue") {
         await vscode.env.openExternal(
-          vscode.Uri.parse(
-            "https://github.com/datalayer/vscode-datalayer/issues/new",
-          ),
+          vscode.Uri.parse("https://github.com/datalayer/vscode/issues/new"),
         );
       }
     } else {
@@ -521,9 +519,7 @@ export class DatalayerAuthProvider
         );
       } else if (selected.label === "$(github) Report Issue") {
         await vscode.env.openExternal(
-          vscode.Uri.parse(
-            "https://github.com/datalayer/vscode-datalayer/issues/new",
-          ),
+          vscode.Uri.parse("https://github.com/datalayer/vscode/issues/new"),
         );
       }
     }

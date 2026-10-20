@@ -180,9 +180,9 @@ await collaborationService.setupCollaboration(document);
 
 ## Files Modified
 
-1. `/Users/goanpeca/Desktop/develop/datalayer/vscode-datalayer/src/providers/lexicalProvider.ts`
-2. `/Users/goanpeca/Desktop/develop/datalayer/vscode-datalayer/src/services/ui/uiSetup.ts`
-3. `/Users/goanpeca/Desktop/develop/datalayer/vscode-datalayer/webview/lexical/LexicalEditor.tsx`
+1. `/Users/goanpeca/Desktop/develop/datalayer/vscode/src/providers/lexicalProvider.ts`
+2. `/Users/goanpeca/Desktop/develop/datalayer/vscode/src/services/ui/uiSetup.ts`
+3. `/Users/goanpeca/Desktop/develop/datalayer/vscode/webview/lexical/LexicalEditor.tsx`
 
 ---
 

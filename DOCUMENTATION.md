@@ -122,4 +122,4 @@ The GitHub Actions Code Quality workflow runs on every PR:
 ## API Documentation
 
 - **Generated docs**: `docs/` directory (git-ignored)
-- **Live site**: [vscode-datalayer.netlify.app](https://vscode-datalayer.netlify.app) (auto-deployed)
+- **Live site**: [vscode.netlify.app](https://vscode.netlify.app) (auto-deployed)

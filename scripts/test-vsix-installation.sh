@@ -84,7 +84,7 @@ echo ""
 echo "👀 Step 5: Checking for activation errors..."
 
 # Try to get extension status using VS Code CLI
-EXTENSION_ID="datalayer.datalayer-jupyter-vscode"
+EXTENSION_ID="datalayer.datalayer-vscode"
 if code --list-extensions | grep -q "$EXTENSION_ID"; then
   echo "✅ Extension is installed: $EXTENSION_ID"
 else

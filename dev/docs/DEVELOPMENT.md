@@ -95,7 +95,7 @@ The extension depends on local packages from sibling directories:
 The packages have the following dependency structure:
 
 ```
-vscode-datalayer
+vscode
 ├── @datalayer/core (UI components, SDK client)
 ├── @datalayer/jupyter-lexical (Lexical editor with Jupyter blocks)
 │   └── @datalayer/lexical-loro (CRDT collaboration provider)
@@ -400,7 +400,7 @@ The extension uses **zeromq** for direct kernel communication. Since zeromq is a
 
 The extension is built as a **single universal VSIX** that works on all platforms:
 
-- `datalayer-jupyter-vscode-{version}.vsix` - Works on macOS (Intel + ARM), Windows, and Linux
+- `datalayer-vscode-{version}.vsix` - Works on macOS (Intel + ARM), Windows, and Linux
 
 This is the same approach used by VS Code Jupyter extension. The VSIX includes native binaries for all platforms, and zeromq automatically selects the correct binary at runtime.
 
@@ -1184,7 +1184,7 @@ editor.registerCommand(
 - `jupyter-ui/packages/lexical/src/plugins/LSPTabCompletionPlugin.tsx` (NEW)
 - `jupyter-ui/packages/lexical/src/plugins/LSPDocumentSyncPlugin.tsx` (NEW)
 - `jupyter-ui/packages/lexical/src/plugins/index.ts` (MODIFIED - exports)
-- `vscode-datalayer/webview/lexical/LexicalEditor.tsx` (MODIFIED - integration)
+- `vscode/webview/lexical/LexicalEditor.tsx` (MODIFIED - integration)
 
 **Testing Lexical LSP**:
 
@@ -1667,7 +1667,7 @@ npm run doc:coverage
 
 ### Online Documentation
 
-**Live Documentation**: [https://vscode-datalayer.netlify.app](https://vscode-datalayer.netlify.app)
+**Live Documentation**: [https://vscode.netlify.app](https://vscode.netlify.app)
 
 The documentation is automatically built and deployed on every push to the main branch using Netlify. It includes:
 
@@ -2379,7 +2379,7 @@ All code should include proper JSDoc comments for TypeScript interfaces, classes
 - **Testing Guide**: [TESTING.md](./TESTING.md)
 - **Contributing**: [CONTRIBUTING.md](./CONTRIBUTING.md)
 - **Release Process**: [RELEASE.md](./RELEASE.md)
-- **API Documentation**: [https://vscode-datalayer.netlify.app](https://vscode-datalayer.netlify.app)
+- **API Documentation**: [https://vscode.netlify.app](https://vscode.netlify.app)
 
 ### External Resources
 

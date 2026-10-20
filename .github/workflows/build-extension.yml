@@ -63,7 +63,7 @@ jobs:
         id: vsix-info
         run: |
           VERSION=$(node -p "require('./package.json').version")
-          VSIX_FILE="datalayer-jupyter-vscode-${VERSION}.vsix"
+          VSIX_FILE="datalayer-vscode-${VERSION}.vsix"
 
           if [ -f "$VSIX_FILE" ]; then
             echo "✅ Found VSIX: $VSIX_FILE"
@@ -120,7 +120,7 @@ jobs:
 
             **Download the extension** (works on all platforms):
 
-            ### [`Download datalayer-jupyter-vscode.vsix` ⬇️](${{ steps.get-artifact.outputs.vsix_url }})
+            ### [`Download datalayer-vscode.vsix` ⬇️](${{ steps.get-artifact.outputs.vsix_url }})
 
             > 💡 This universal VSIX includes native binaries for all platforms (macOS Intel, macOS ARM, Windows, Linux) and works everywhere!
 
@@ -140,7 +140,7 @@ jobs:
 
             ### Method 2: Command Line
             ```bash
-            code --install-extension datalayer-jupyter-vscode-{version}.vsix
+            code --install-extension datalayer-vscode-{version}.vsix
             ```
 
             ### Method 3: Drag & Drop

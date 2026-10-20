@@ -41,7 +41,7 @@ jobs:
         id: vsix-info
         run: |
           VERSION=$(node -p "require('./package.json').version")
-          VSIX_FILE="datalayer-jupyter-vscode-${VERSION}.vsix"
+          VSIX_FILE="datalayer-vscode-${VERSION}.vsix"
 
           if [ -f "$VSIX_FILE" ]; then
             echo "✅ Found VSIX: $VSIX_FILE"

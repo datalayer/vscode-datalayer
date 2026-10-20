@@ -19,7 +19,7 @@ Foundational services for authentication, platform integration, dependency injec
 
 - **authManager.ts** - Synchronizes authentication state with VS Code UI components. Listens to `onAuthStateChanged` events and refreshes spaces tree, runtimes tree, and status bar. Coordinates the visual feedback loop when auth state changes.
 
-- **oauthFlowManager.ts** - Handles OAuth authentication flows for VS Code. Opens the system browser with the OAuth URL and registers a URI handler (`vscode://datalayer.datalayer-jupyter-vscode/auth/callback`) to receive the callback. Extracts the auth token from the callback URL.
+- **oauthFlowManager.ts** - Handles OAuth authentication flows for VS Code. Opens the system browser with the OAuth URL and registers a URI handler (`vscode://datalayer.datalayer-vscode/auth/callback`) to receive the callback. Extracts the auth token from the callback URL.
 
 - **datalayerAdapter.ts** - VS Code adapter for Datalayer platform integration. Creates `DatalayerClient` instances configured with VS Code settings (`datalayer.services.iamUrl`, etc.) and provides the factory function used by `ServiceContainer`. Configures handlers for VS Code-specific behavior (error dialogs, login prompts).
 

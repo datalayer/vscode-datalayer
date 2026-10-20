@@ -2,11 +2,11 @@
 
 [![Become a Sponsor](https://img.shields.io/static/v1?label=Become%20a%20Sponsor&message=%E2%9D%A4&logo=GitHub&style=flat&color=1ABC9C)](https://github.com/sponsors/datalayer)
 
-[![Build Status](https://github.com/datalayer/vscode-datalayer/actions/workflows/build-extension.yml/badge.svg)](https://github.com/datalayer/vscode-datalayer/actions/workflows/build-extension.yml)
-[![VS Code Marketplace](https://img.shields.io/visual-studio-marketplace/v/Datalayer.datalayer-jupyter-vscode?label=VS%20Code%20Marketplace&logo=visual-studio-code)](https://marketplace.visualstudio.com/items?itemName=Datalayer.datalayer-jupyter-vscode)
-[![Installs](https://img.shields.io/visual-studio-marketplace/i/Datalayer.datalayer-jupyter-vscode?label=Installs)](https://marketplace.visualstudio.com/items?itemName=Datalayer.datalayer-jupyter-vscode)
+[![Build Status](https://github.com/datalayer/vscode/actions/workflows/build-extension.yml/badge.svg)](https://github.com/datalayer/vscode/actions/workflows/build-extension.yml)
+[![VS Code Marketplace](https://img.shields.io/visual-studio-marketplace/v/Datalayer.datalayer-vscode?label=VS%20Code%20Marketplace&logo=visual-studio-code)](https://marketplace.visualstudio.com/items?itemName=Datalayer.datalayer-vscode)
+[![Installs](https://img.shields.io/visual-studio-marketplace/i/Datalayer.datalayer-vscode?label=Installs)](https://marketplace.visualstudio.com/items?itemName=Datalayer.datalayer-vscode)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Documentation](https://img.shields.io/badge/docs-TypeDoc-blue.svg)](https://vscode-datalayer.netlify.app)
+[![Documentation](https://img.shields.io/badge/docs-TypeDoc-blue.svg)](https://vscode.netlify.app)
 
 # Datalayer for Visual Studio Code
 
@@ -42,7 +42,7 @@
 ## ⚡ Quick Start
 
 1. **Create a free account** at [datalayer.app](https://datalayer.app).
-2. **Install** from [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=Datalayer.datalayer-jupyter-vscode)
+2. **Install** from [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=Datalayer.datalayer-vscode)
 3. **Login**: `Ctrl+Shift+P` → "Datalayer: Login to Datalayer" → select your type of OAuth login (GitHub)
 4. **Scale instantly**: Open any `.ipynb` file with the Datalayer Editor → click kernel picker → select cloud runtime
 5. **Create rich docs**: Create `.dlex` files for Notion-like collaborative reports with code, images and rich formatting
@@ -159,7 +159,7 @@ An application you built and deployed in the Datalayer Agent Studio answers in V
 
 **From `.vsix` file:**
 
-1. Download from [releases](https://github.com/datalayer/vscode-datalayer/releases)
+1. Download from [releases](https://github.com/datalayer/vscode/releases)
 2. Open Command Palette (`Ctrl+Shift+P` / `Cmd+Shift+P`) → "Extensions: Install from VSIX..."
 
 ## Key Commands
@@ -232,11 +232,11 @@ Open settings (`Ctrl+,` / `Cmd+,`) and search "Datalayer":
 - [CONTRIBUTING.md](./dev/docs/CONTRIBUTING.md) - Contribution guidelines
 - [TESTING.md](./dev/docs/TESTING.md) - Test infrastructure and coverage
 - [CHANGELOG.md](./CHANGELOG.md) - Version history
-- [API Documentation](https://vscode-datalayer.netlify.app) - Complete TypeScript API reference
+- [API Documentation](https://vscode.netlify.app) - Complete TypeScript API reference
 
 ## Support & Community
 
-- [GitHub Issues](https://github.com/datalayer/vscode-datalayer/issues) - Bug reports and features
+- [GitHub Issues](https://github.com/datalayer/vscode/issues) - Bug reports and features
 - [Datalayer Docs](https://docs.datalayer.ai) - Platform documentation
 - [Website](https://datalayer.ai) - Learn more
 

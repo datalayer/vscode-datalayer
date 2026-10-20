@@ -21,7 +21,7 @@ vsix: ## vsix
 	npm run vsix
 
 vsix-reinstall: vsix ## vsix
-	code --uninstall-extension datalayer.datalayer-jupyter-vscode || true
+	code --uninstall-extension datalayer.datalayer-vscode || true
 	code --install-extension *.vsix
 
 jupyter-server: ## start the jupyter server
