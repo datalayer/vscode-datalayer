@@ -67,16 +67,37 @@ export interface HarnessFacts {
   modes: string[];
 }
 
+/**
+ * Reads a value as a string.
+ *
+ * @param value - Anything.
+ *
+ * @returns The string, or `""` for anything else.
+ */
 function text(value: unknown): string {
   return typeof value === "string" ? value : "";
 }
 
+/**
+ * Reads a value as a list of strings.
+ *
+ * @param value - Anything.
+ *
+ * @returns Its strings, or `[]` for anything else.
+ */
 function list(value: unknown): string[] {
   return Array.isArray(value)
     ? value.filter((item): item is string => typeof item === "string")
     : [];
 }
 
+/**
+ * Reads a value as a record.
+ *
+ * @param value - Anything.
+ *
+ * @returns The record, or `{}` for anything else.
+ */
 function record(value: unknown): Record<string, unknown> {
   return value && typeof value === "object" && !Array.isArray(value)
     ? (value as Record<string, unknown>)
@@ -139,7 +160,6 @@ export function harnessesOf(body: unknown): HarnessFacts[] {
   });
 }
 
-// eslint-disable-next-line no-control-regex
 const ANSI = /\u001b\[[0-9;]*[A-Za-z]/g;
 
 /**
@@ -367,7 +387,7 @@ export function termsRefusal(
  * Checks a harness against the machine: binaries and Node's version, the
  * adapter in the Shield's prefix, the credential, the terms.
  *
- * @param facts - The harness.
+ * @param facts - The harness as the catalogue lists it.
  * @param machine - What the machine has.
  *
  * @returns The verdict, each unmet part a sentence.
@@ -450,10 +470,10 @@ export function harnessCheck(
 /**
  * The sentence that says where a credential came from (decision O-1).
  *
- * @param name - The credential's name.
+ * @param name - The credential's name (`ANTHROPIC_API_KEY`).
  * @param source - Where it was found.
  *
- * @returns The sentence.
+ * @returns One sentence saying where it was taken from.
  */
 export function credentialSourceSaid(
   name: string,
@@ -464,7 +484,13 @@ export function credentialSourceSaid(
     : `${name} is taken from the extension's secret storage.`;
 }
 
-/** The key under which a credential is kept in the extension's secret storage. */
+/**
+ * The key under which a credential is kept in the extension's secret storage.
+ *
+ * @param name - The credential's name (`ANTHROPIC_API_KEY`).
+ *
+ * @returns The key, `datalayer.harness.credential.<name>`.
+ */
 export function credentialSecretKey(name: string): string {
   return `datalayer.harness.credential.${name}`;
 }

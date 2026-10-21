@@ -43,7 +43,13 @@ export const OPEN_SHIP_COMMAND = "datalayer.apps.openShip";
 /** How long `loop apps run --web` may take to say where it serves. */
 const SERVE_TIMEOUT_MS = 90_000;
 
-/** The workspace-state key of a file's application uid. */
+/**
+ * The workspace-state key of a file's application uid.
+ *
+ * @param file - The Appspec's path.
+ *
+ * @returns The key, `datalayer.apps.uid:<file>`.
+ */
 export function uidKeyOf(file: string): string {
   return `datalayer.apps.uid:${file}`;
 }
@@ -104,7 +110,15 @@ export function registerAppsCommands(
   );
 }
 
-/** The file to try: the one given, else the active editor's. */
+/**
+ * The file to try: the one given, else the active editor's.
+ *
+ * @param resource - The file the command was run on, when it was.
+ *
+ * @returns The file's path and content.
+ *
+ * @throws Error when nothing is open to try.
+ */
 async function fileOf(
   resource?: vscode.Uri,
 ): Promise<{ path: string; content: string }> {
@@ -118,6 +132,16 @@ async function fileOf(
   return { path: uri.fsPath, content: document.getText() };
 }
 
+/**
+ * Runs the Appspec or `app.py` on this machine and shows its page beside the editor.
+ *
+ * @param localRuntimes - The local runtimes, for `loop`'s path.
+ * @param resource - The file the command was run on, when it was.
+ * @param previews - The preview panels open, by file.
+ * @param output - The channel the command's lines go to.
+ *
+ * @returns Where the page is served, or undefined when nothing was tried.
+ */
 async function tryHere(
   localRuntimes: LocalRuntimeService,
   resource: vscode.Uri | undefined,
@@ -221,6 +245,15 @@ async function tryHere(
   return url;
 }
 
+/**
+ * Opens the application's Validate or Ship tab in the browser.
+ *
+ * @param context - The extension context, for the file's application uid.
+ * @param tab - `validate` or `ship`.
+ * @param resource - The file the command was run on, when it was.
+ *
+ * @returns Once the browser was asked, or the person told what is missing.
+ */
 async function openTab(
   context: vscode.ExtensionContext,
   tab: "validate" | "ship",

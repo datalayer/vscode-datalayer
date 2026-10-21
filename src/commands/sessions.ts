@@ -50,8 +50,8 @@ import {
 import type { ExtendedDatalayerClient } from "../services/core/datalayerAdapter";
 import {
   credentialSourceSaid,
-  harnessCheck,
   type HarnessCheck,
+  harnessCheck,
   type HarnessFacts,
 } from "../services/localRuntime/harnessCheck";
 import type { LocalRuntimeService } from "../services/localRuntime/localRuntimeService";
@@ -88,10 +88,10 @@ export async function openSessionInChat(
 /**
  * Checks a harness against this machine, the catalogue read from the local runtime or `loop harnesses`.
  *
- * @param localRuntimes - The service.
- * @param facts - The harness.
+ * @param localRuntimes - The local runtimes, which read the machine.
+ * @param facts - The harness as the catalogue lists it.
  *
- * @returns The verdict.
+ * @returns What the machine has and lacks for it.
  */
 export async function checkHarnessHere(
   localRuntimes: LocalRuntimeService,
@@ -406,14 +406,12 @@ export function registerSessionsCommands(
         description: string;
         baseUrl: string;
         signed: boolean;
-      }> = localRuntimes
-        .list()
-        .map((runtime) => ({
-          label: `This machine — ${runtime.folder.name}`,
-          description: runtime.url,
-          baseUrl: runtime.url,
-          signed: false,
-        }));
+      }> = localRuntimes.list().map((runtime) => ({
+        label: `This machine — ${runtime.folder.name}`,
+        description: runtime.url,
+        baseUrl: runtime.url,
+        signed: false,
+      }));
       if (services.authProvider.isAuthenticated()) {
         for (const runtime of (await services.datalayer.listRuntimes()) ?? []) {
           const target = sessionTargetOf(

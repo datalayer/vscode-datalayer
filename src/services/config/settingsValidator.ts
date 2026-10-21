@@ -235,6 +235,7 @@ export type ProseLlmCompletionSettings = z.infer<
 /** Validated agent chat settings. */
 export type AgentChatSettings = z.infer<typeof agentChatSettingsSchema>;
 
+/** Validated local runtime settings (`datalayer.local`). */
 export type LocalSettings = z.infer<typeof localSettingsSchema>;
 
 /** All validated Datalayer extension settings. */

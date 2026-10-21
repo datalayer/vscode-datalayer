@@ -32,19 +32,19 @@ import {
   type CredentialSource,
   DISABLED_SENTENCE,
   INSTALL_LINE,
-  localRuntimeHandle,
   type LocalRuntimeHandle,
+  localRuntimeHandle,
   LOOP_SERVE_ARGUMENTS,
   type LoopDetection,
-  type LoopRefusalReason,
   loopDetection,
+  type LoopRefusalReason,
   portOf,
   runtimeEnvironment,
 } from "./detect";
 import {
   credentialSecretKey,
-  type HarnessFacts,
   harnessesOf,
+  type HarnessFacts,
   type HarnessMachine,
   parseLoopHarnesses,
   shieldPrefixOf,
@@ -114,7 +114,7 @@ export class LocalRuntimeService extends BaseService {
   /**
    * @param context - The extension context (secret storage).
    * @param auth - The sign-in, for the token handed to the runtime.
-   * @param logger - The logger.
+   * @param logger - Where the service's lines go.
    */
   constructor(
     private readonly context: vscode.ExtensionContext,
@@ -219,7 +219,7 @@ export class LocalRuntimeService extends BaseService {
    *
    * @param folder - The workspace folder: the harness's workspace.
    *
-   * @returns The runtime.
+   * @returns The running local runtime of that folder.
    *
    * @throws LocalRuntimeRefused when `loop` is absent, too old, unanswered, turned off, or the start fails.
    */
@@ -367,6 +367,13 @@ export class LocalRuntimeService extends BaseService {
     }
   }
 
+  /**
+   * Starts `loop serve` for a folder and waits until it answers.
+   *
+   * @param folder - The workspace folder it serves.
+   *
+   * @returns The running local runtime.
+   */
   private async start(folder: vscode.WorkspaceFolder): Promise<LocalRuntime> {
     const detection = await this.detect();
     if (!detection.ok) {
@@ -439,6 +446,14 @@ export class LocalRuntimeService extends BaseService {
     return runtime;
   }
 
+  /**
+   * Reads the port `loop serve` prints, logging its lines meanwhile.
+   *
+   * @param child - The `loop serve` process.
+   * @param folder - The folder it serves, named in the refusal.
+   *
+   * @returns The port, once printed.
+   */
   private portOf(
     child: ChildProcess,
     folder: vscode.WorkspaceFolder,
@@ -503,6 +518,13 @@ export class LocalRuntimeService extends BaseService {
     });
   }
 
+  /**
+   * Waits until the runtime answers `/health`, or refuses in a sentence.
+   *
+   * @param url - The runtime's address.
+   * @param child - The `loop serve` process, watched for an early exit.
+   * @param folder - The folder it serves, named in the refusal.
+   */
   private async awaitHealth(
     url: string,
     child: ChildProcess,
@@ -533,6 +555,11 @@ export class LocalRuntimeService extends BaseService {
     );
   }
 
+  /**
+   * Writes a line to the *Datalayer: Local runtime* channel, made on first use.
+   *
+   * @param line - What to write.
+   */
   private log(line: string): void {
     if (!this.channel) {
       this.channel = vscode.window.createOutputChannel(
@@ -543,6 +570,13 @@ export class LocalRuntimeService extends BaseService {
   }
 }
 
+/**
+ * Whether a path exists.
+ *
+ * @param path - The path looked for.
+ *
+ * @returns Whether it is there.
+ */
 async function exists(path: string): Promise<boolean> {
   try {
     await fs.access(path);
@@ -552,10 +586,24 @@ async function exists(path: string): Promise<boolean> {
   }
 }
 
+/**
+ * What went wrong, in words.
+ *
+ * @param error - What was thrown.
+ *
+ * @returns Its message, or the value as a string.
+ */
 function message(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
 }
 
+/**
+ * The first non-empty line of a command's output.
+ *
+ * @param output - What the command printed.
+ *
+ * @returns That line, trimmed, or `""`.
+ */
 function firstLine(output: string): string {
   return (
     output
@@ -600,6 +648,11 @@ function run(
   });
 }
 
+/**
+ * Stops a process: SIGTERM, then SIGKILL when it lingers.
+ *
+ * @param child - The process stopped.
+ */
 async function terminate(child: ChildProcess): Promise<void> {
   if (child.exitCode !== null || child.signalCode !== null) {
     return;

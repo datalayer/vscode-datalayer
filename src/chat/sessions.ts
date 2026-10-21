@@ -29,6 +29,8 @@ import {
   sessionStateSaid,
 } from "@datalayer/agent-runtimes/lib/portable/activity";
 
+import type { SessionAttention } from "./attention";
+
 /** Where a session runs: Datalayer's record, or a local runtime of one workspace folder. */
 export type SessionPlace =
   | { kind: "datalayer" }
@@ -37,7 +39,7 @@ export type SessionPlace =
 /**
  * One key per place.
  *
- * @param place - The place.
+ * @param place - Datalayer, or a folder's local runtime.
  *
  * @returns `datalayer`, or `local:<folder>`.
  */
@@ -48,9 +50,9 @@ export function placeKey(place: SessionPlace): string {
 /**
  * The place as the tree labels it.
  *
- * @param place - The place.
+ * @param place - Datalayer, or a folder's local runtime.
  *
- * @returns *On Datalayer*, or *On this machine — <folder>*.
+ * @returns The words: *On Datalayer*, or *On this machine — <folder>*.
  */
 export function placeLabel(place: SessionPlace): string {
   return place.kind === "datalayer"
@@ -61,10 +63,10 @@ export function placeLabel(place: SessionPlace): string {
 /**
  * Where a session is listed on Datalayer: the record, through ai-agents, for its opener.
  *
- * @param aiAgentsUrl - ai-agents' base URL.
+ * @param aiAgentsUrl - Where ai-agents answers (its base address).
  * @param openedBy - The person's uid.
  *
- * @returns The URL.
+ * @returns The route's address, the opener in its query.
  */
 export function datalayerSessionsUrl(
   aiAgentsUrl: string,
@@ -90,6 +92,13 @@ export interface ListedSession {
   application: SessionApplication;
 }
 
+/**
+ * Reads a value as a string.
+ *
+ * @param value - Anything.
+ *
+ * @returns The string, or `""` for anything else.
+ */
 function said(value: unknown): string {
   return typeof value === "string" ? value : "";
 }
@@ -198,9 +207,9 @@ export function filterSessions(
 /**
  * The filter in words, for the view's description.
  *
- * @param filter - The filter.
+ * @param filter - What narrows the tree.
  *
- * @returns *application: x · state: open · title: y*, or empty when nothing is narrowed.
+ * @returns The filter's words, *application: x · state: open · title: y*, or empty when nothing is narrowed.
  */
 export function filterSaid(filter: SessionFilter): string {
   return [
@@ -244,9 +253,9 @@ export function groupByApplication(
 /**
  * A row's label: its title, else its uid.
  *
- * @param row - The session.
+ * @param row - The session as listed.
  *
- * @returns The label.
+ * @returns The words the tree shows on the row.
  */
 export function rowLabel(row: SessionRow): string {
   return row.title || row.uid;
@@ -316,10 +325,10 @@ export function contextValueOf(
 /**
  * The one row a place that did not answer shows.
  *
- * @param place - The place.
+ * @param place - Datalayer, or a folder's local runtime.
  * @param message - What went wrong, the server's words.
  *
- * @returns The sentence.
+ * @returns One sentence naming the place and what went wrong.
  */
 export function placeProblemSentence(
   place: SessionPlace,
@@ -427,9 +436,9 @@ export function teamOf(agentId: string): string {
 /**
  * The seat of an execution, from its agent id; the id itself when it names no seat.
  *
- * @param agentId - The execution's agent id.
+ * @param agentId - The execution's agent id (`team:<team>:<seat>`).
  *
- * @returns The seat.
+ * @returns The seat's name, or the id itself.
  */
 export function seatOf(agentId: string): string {
   if (!agentId.startsWith(TEAM_PREFIX)) {
@@ -448,7 +457,7 @@ export function seatOf(agentId: string): string {
  *
  * @param executions - The executions answered.
  *
- * @returns The runs.
+ * @returns One run per root execution, newest first, with its seats.
  *
  * @throws Error for an execution without an id, or a state word that is none.
  */
@@ -524,9 +533,9 @@ export function teamRunsOf(executions: readonly unknown[]): TeamRun[] {
 /**
  * Where the control plane lists the person's executions.
  *
- * @param aiAgentsUrl - ai-agents' base URL.
+ * @param aiAgentsUrl - Where ai-agents answers (its base address).
  *
- * @returns The URL.
+ * @returns The route's address.
  */
 export function executionsUrl(aiAgentsUrl: string): string {
   return `${aiAgentsUrl.replace(/\/$/, "")}/api/ai-agents/v1/orchestration/executions`;
@@ -535,9 +544,9 @@ export function executionsUrl(aiAgentsUrl: string): string {
 /**
  * A team run's label: its team and its goal's first line.
  *
- * @param run - The run.
+ * @param run - The team run as listed.
  *
- * @returns The label.
+ * @returns The label, *<team> — <goal>*, else the team, else the execution id.
  */
 export function teamRunLabel(run: TeamRun): string {
   const goal = run.goal.split("\n")[0]?.trim() ?? "";
@@ -547,7 +556,7 @@ export function teamRunLabel(run: TeamRun): string {
 /**
  * A team run's description: its state, its seats, its supervisor's last line.
  *
- * @param run - The run.
+ * @param run - The team run as listed.
  *
  * @returns The parts joined with ` · `.
  */
@@ -566,7 +575,7 @@ export function teamRunDescription(run: TeamRun): string {
 /**
  * A seat's description: its state and whether its session can be opened.
  *
- * @param seat - The seat.
+ * @param seat - The seat as listed under its run.
  *
  * @returns The parts joined with ` · `.
  */
@@ -583,7 +592,13 @@ export function teamSeatDescription(seat: TeamSeat): string {
 /** The sentence under *Teams* when the person has no run. */
 export const NO_TEAM_RUN = "No team run yet.";
 
-/** The sentence under *Teams* when the control plane did not answer. */
+/**
+ * The sentence under *Teams* when the control plane did not answer.
+ *
+ * @param message - What went wrong, the server's words.
+ *
+ * @returns One sentence naming what went wrong.
+ */
 export function teamsProblemSentence(message: string): string {
   return `Datalayer did not answer for your team runs: ${message}`;
 }

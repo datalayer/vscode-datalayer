@@ -36,9 +36,9 @@ import type { ApprovalRaised } from "../chat/attention";
 import { diffShownOf, terminalShownOf } from "../chat/sessionDisplays";
 import { localSessionFolder, studioActivityUrl } from "../chat/sessionVerbs";
 import type { ExtendedDatalayerClient } from "../services/core/datalayerAdapter";
+import type { LocalApprovalSource } from "../services/localRuntime/localApprovalSource";
 import { ServiceLoggers } from "../services/logging/loggers";
 import type { ApprovalNotifications } from "../services/ui/approvalNotifications";
-import type { LocalApprovalSource } from "../services/localRuntime/localApprovalSource";
 import type { DiffDocuments } from "../services/ui/diffDocuments";
 import {
   sessionsOf,

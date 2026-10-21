@@ -40,15 +40,15 @@ import {
   NO_HARNESS_SENTENCE,
   ownInstructionsFiles,
   runtimeRefusal,
-  SET_CREDENTIAL_COMMAND,
   sessionUidOf,
-  startRequestOf,
-  startedSession,
+  SET_CREDENTIAL_COMMAND,
   type StartedSession,
+  startedSession,
+  startRequestOf,
   type WorkspaceAppspec,
 } from "../chat/startHere";
-import type { LocalRuntimeService } from "../services/localRuntime/localRuntimeService";
 import { credentialSourceSaid } from "../services/localRuntime/harnessCheck";
+import type { LocalRuntimeService } from "../services/localRuntime/localRuntimeService";
 import { pickWorkspaceFolder, showLocalRuntimeRefusal } from "./localRuntime";
 import { checkHarnessHere, openSessionInChat } from "./sessions";
 
@@ -91,6 +91,10 @@ export function registerStartHereCommands(
 /**
  * The folder the agent works in: the one the resource is in, the only one
  * open, or the one the person picks of a multi-root workspace.
+ *
+ * @param resource - The folder or file the command was run on, when it was.
+ *
+ * @returns The workspace folder, or undefined when the person declined.
  */
 async function folderOf(
   resource?: vscode.Uri,
@@ -109,7 +113,13 @@ async function folderOf(
   return pickWorkspaceFolder("Which folder does the coding agent work in?");
 }
 
-/** The folder's own Appspecs: every `.yaml`/`.yml` declaring the schema, outside node_modules. */
+/**
+ * The folder's own Appspecs: every `.yaml`/`.yml` declaring the schema, outside node_modules.
+ *
+ * @param folder - The workspace folder searched.
+ *
+ * @returns The Appspecs found, by path.
+ */
 async function workspaceAppspecs(
   folder: vscode.WorkspaceFolder,
 ): Promise<WorkspaceAppspec[]> {
@@ -141,6 +151,16 @@ async function workspaceAppspecs(
   return found.sort((a, b) => a.path.localeCompare(b.path));
 }
 
+/**
+ * Starts a coding agent in the folder: the harness picked and checked, the
+ * application configured, the session opened and handed to the chat.
+ *
+ * @param localRuntimes - The local runtimes, one started for the folder.
+ * @param output - The channel the start's lines go to.
+ * @param resource - The folder or file the command was run on, when it was.
+ *
+ * @returns The session started, or undefined when the person declined.
+ */
 async function startHere(
   localRuntimes: LocalRuntimeService,
   output: vscode.OutputChannel,
@@ -281,7 +301,16 @@ async function startHere(
   return started;
 }
 
-/** `POST /api/v1/apps/sessions`: the stream read until it names the session. */
+/**
+ * `POST /api/v1/apps/sessions`: the stream read until it names the session.
+ *
+ * @param url - The local runtime's address.
+ * @param agentId - The agent the session runs on.
+ *
+ * @returns The session's uid.
+ *
+ * @throws Error when the runtime refuses, answers nothing, or names no session.
+ */
 async function openSession(url: string, agentId: string): Promise<string> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), SESSION_OPEN_TIMEOUT_MS);

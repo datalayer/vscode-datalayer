@@ -59,8 +59,8 @@ export interface KnownRuntime {
  * Datalayer, the runtime the session runs on, found among the person's by
  * its uid (the runtime's `DATALAYER_RUNTIME_ID`) or its name.
  *
- * @param place - The session's place.
- * @param row - The session.
+ * @param place - Where the session runs: this machine, or Datalayer.
+ * @param row - The session as listed, with where it runs on Datalayer.
  * @param runtimes - The person's runtimes, for a session on Datalayer.
  *
  * @returns The target, or the sentence when no runtime of the person's holds the session.
@@ -139,10 +139,10 @@ export function swapChoicesOf(
  * What the person is told before a swap is sent: the runtime words the
  * sentence the new agent reads; this says what is about to happen.
  *
- * @param row - The session.
+ * @param row - The session's uid, agent and turns so far.
  * @param target - The agent it goes on with.
  *
- * @returns The sentence.
+ * @returns What the person reads before the swap is sent.
  */
 export function swapSentence(
   row: Pick<SessionRow, "uid" | "agent" | "turns">,
@@ -259,9 +259,9 @@ export const STUDIO_ORIGIN = "https://datalayer.ai";
 /**
  * The application's Activity page in the Studio.
  *
- * @param appUid - The application.
+ * @param appUid - The application's uid at Datalayer.
  *
- * @returns The URL.
+ * @returns The page's address, its Activity tab chosen.
  */
 export function studioActivityUrl(appUid: string): string {
   return `${STUDIO_ORIGIN}/studio/apps/${encodeURIComponent(appUid)}?tab=activity`;
@@ -270,11 +270,11 @@ export function studioActivityUrl(appUid: string): string {
 /**
  * A local session's folder in the file store (`~/.datalayer/sessions/<uid>`).
  *
- * @param home - The person's home, or the sessions path they configured.
- * @param uid - The session.
+ * @param home - The person's home directory.
+ * @param uid - The session's uid, which names its folder.
  * @param sessionsPath - `AGENT_RUNTIMES_SESSIONS_PATH`, when set.
  *
- * @returns The folder.
+ * @returns The absolute path of the session's folder.
  */
 export function localSessionFolder(
   home: string,

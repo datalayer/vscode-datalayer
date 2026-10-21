@@ -16,7 +16,6 @@
 import * as vscode from "vscode";
 
 import { getServiceContainer } from "../extension";
-
 import { OutlineTreeProvider } from "../providers/outlineTreeProvider";
 import type { ProjectsTreeProvider } from "../providers/projectsTreeProvider";
 import { RuntimesTreeProvider } from "../providers/runtimesTreeProvider";

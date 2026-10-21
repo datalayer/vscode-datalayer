@@ -101,7 +101,7 @@ export function localSessionProtocol(
 ): ProtocolConfig {
   const base = runtimeUrl.replace(/\/+$/, "");
   const agent = encodeURIComponent(agentId);
-  return {
+  const protocol: ProtocolConfig = {
     type: "ag-ui",
     endpoint: `${base}/api/v1/apps/agents/${agent}/ag-ui/`,
     agentId,
@@ -110,5 +110,6 @@ export function localSessionProtocol(
     uiSocket: `${base.replace(/^http/, "ws")}/api/v1/apps/ui`,
     uiFiles: `${base}/api/v1/apps/agents/${agent}/files`,
     appSessions: `${base}/api/v1/apps/sessions`,
-  } as ProtocolConfig;
+  };
+  return protocol;
 }

@@ -82,7 +82,7 @@ export class PlaceItem extends vscode.TreeItem {
   readonly kind = "place" as const;
 
   /**
-   * @param place - The place.
+   * @param place - Datalayer, a folder's local runtime, or the Teams group.
    */
   constructor(public readonly place: TreePlace) {
     super(
@@ -106,8 +106,8 @@ export class ApplicationItem extends vscode.TreeItem {
   readonly kind = "application" as const;
 
   /**
-   * @param place - The place.
-   * @param application - The application.
+   * @param place - Where the sessions run.
+   * @param application - Which application the sessions belong to.
    * @param sessions - Its sessions kept by the filter.
    */
   constructor(
@@ -132,7 +132,7 @@ export class SessionItem extends vscode.TreeItem {
   readonly kind = "session" as const;
 
   /**
-   * @param place - The place.
+   * @param place - Where the session runs.
    * @param listed - The session with its application.
    */
   constructor(
@@ -166,7 +166,7 @@ export class SessionItem extends vscode.TreeItem {
     };
   }
 
-  /** The session. */
+  /** The session as listed, for the verbs. */
   get row(): SessionRow {
     return this.listed.row;
   }
@@ -177,7 +177,7 @@ export class NoteItem extends vscode.TreeItem {
   readonly kind = "note" as const;
 
   /**
-   * @param sentence - The sentence.
+   * @param sentence - What the row says.
    * @param problem - Whether it says a place did not answer.
    */
   constructor(sentence: string, problem = false) {
@@ -193,7 +193,7 @@ export class TeamRunItem extends vscode.TreeItem {
   readonly kind = "team" as const;
 
   /**
-   * @param run - The run.
+   * @param run - The team run as listed.
    */
   constructor(public readonly run: TeamRun) {
     super(teamRunLabel(run), vscode.TreeItemCollapsibleState.Collapsed);
@@ -220,8 +220,8 @@ export class SeatItem extends vscode.TreeItem {
   readonly kind = "seat" as const;
 
   /**
-   * @param run - The run.
-   * @param seat - The seat.
+   * @param run - The team run the seat belongs to.
+   * @param seat - The seat as listed under it.
    */
   constructor(
     public readonly run: TeamRun,
@@ -283,7 +283,7 @@ export class SessionsTreeProvider
   /**
    * The view, once created: its description says the filter.
    *
-   * @param view - The tree view.
+   * @param view - The Sessions view as VS Code created it.
    */
   attach(view: vscode.TreeView<SessionsTreeItem>): void {
     this.view = view;
@@ -308,7 +308,11 @@ export class SessionsTreeProvider
     this.changed.fire();
   }
 
-  /** The filter in force. */
+  /**
+   * The filter in force.
+   *
+   * @returns What narrows the tree now.
+   */
   getFilter(): SessionFilter {
     return this.filter;
   }
@@ -360,6 +364,13 @@ export class SessionsTreeProvider
     this.changed.dispose();
   }
 
+  /**
+   * A place's rows, read once and kept until the next refresh.
+   *
+   * @param place - Which place.
+   *
+   * @returns Its rows, as read or being read.
+   */
   private childrenOfPlace(place: TreePlace): Promise<SessionsTreeItem[]> {
     const key = place.kind === "teams" ? "teams" : placeKey(place);
     let pending = this.cache.get(key);
@@ -370,6 +381,13 @@ export class SessionsTreeProvider
     return pending;
   }
 
+  /**
+   * Reads a place: its sessions grouped by application, or one row saying why not.
+   *
+   * @param place - Which place.
+   *
+   * @returns The rows under it.
+   */
   private async readPlace(place: TreePlace): Promise<SessionsTreeItem[]> {
     if (place.kind === "teams") {
       if (!this.sources.signedIn()) {
@@ -424,6 +442,7 @@ export class SessionsTreeProvider
     }
   }
 
+  /** Writes the filter's words in the view's description. */
   private sayFilter(): void {
     if (this.view) {
       this.view.description = filterSaid(this.filter);
@@ -431,6 +450,13 @@ export class SessionsTreeProvider
   }
 }
 
+/**
+ * What went wrong, in words.
+ *
+ * @param error - What was thrown.
+ *
+ * @returns Its message, or the value as a string.
+ */
 function message(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
 }
@@ -446,10 +472,10 @@ export interface SessionSourcesAuth {
  * The real sources: ai-agents with the token for Datalayer and the teams,
  * each running local runtime for this machine.
  *
- * @param auth - The sign-in.
- * @param localRuntimes - The local runtimes.
+ * @param auth - The sign-in, for the token and the person's uid.
+ * @param localRuntimes - The local runtimes running on this machine.
  *
- * @returns The sources.
+ * @returns What the tree reads.
  */
 export function sessionSourcesOf(
   auth: SessionSourcesAuth,

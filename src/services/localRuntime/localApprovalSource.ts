@@ -88,7 +88,9 @@ export class LocalApprovalSource implements vscode.Disposable {
   private readonly subscriptions: vscode.Disposable[] = [];
 
   /** Focuses the chat on an approval (*Show*); set by the chat's provider. */
-  public showInChat: (id: string) => void = () => undefined;
+  public showInChat: (id: string) => void = () => {
+    // Nothing until the chat's provider sets it.
+  };
 
   /**
    * @param runtimes - The local runtimes running.
@@ -113,7 +115,11 @@ export class LocalApprovalSource implements vscode.Disposable {
     return [...(this.entries.get(this.key(url))?.pending ?? [])];
   }
 
-  /** Every runtime watched, with its approvals. */
+  /**
+   * Every runtime watched, with its approvals.
+   *
+   * @returns One entry per runtime, its approvals as last read.
+   */
   public all(): LocalApprovals[] {
     return [...this.entries.values()].map((entry) => ({
       url: entry.url,
@@ -126,7 +132,7 @@ export class LocalApprovalSource implements vscode.Disposable {
    * to once the next snapshot no longer lists it.
    *
    * @param url - The runtime's address.
-   * @param id - The approval.
+   * @param id - Which approval is decided.
    * @param approved - Whether it is approved.
    *
    * @returns The sentence: done, answered elsewhere, not confirmed.
@@ -177,6 +183,13 @@ export class LocalApprovalSource implements vscode.Disposable {
     this.changed.dispose();
   }
 
+  /**
+   * The map's key of a runtime.
+   *
+   * @param url - The runtime's address.
+   *
+   * @returns The address without its trailing slash.
+   */
   private key(url: string): string {
     return url.replace(/\/+$/, "");
   }
@@ -198,6 +211,12 @@ export class LocalApprovalSource implements vscode.Disposable {
     }
   }
 
+  /**
+   * Opens a runtime's approvals socket and keeps its entry.
+   *
+   * @param url - The runtime's address.
+   * @param folderName - The folder it runs for, named in the notifications.
+   */
   private open(url: string, folderName: string): void {
     const socket = new WebSocket(localApprovalsSocketUrl(url, LOCAL_AGENT_ID));
     const entry: Entry = {
@@ -245,6 +264,11 @@ export class LocalApprovalSource implements vscode.Disposable {
     });
   }
 
+  /**
+   * Closes a runtime's socket and forgets it, its waiters answered.
+   *
+   * @param key - The runtime's key.
+   */
   private forget(key: string): void {
     const entry = this.entries.get(key);
     if (!entry) {
@@ -267,7 +291,12 @@ export class LocalApprovalSource implements vscode.Disposable {
     this.changed.fire({ url: entry.url, approvals: [] });
   }
 
-  /** A snapshot: the pending approvals read, said, handed on; the decisions confirmed. */
+  /**
+   * A snapshot: the pending approvals read, said, handed on; the decisions confirmed.
+   *
+   * @param entry - The runtime the snapshot came from.
+   * @param message - The `agent.snapshot` message, parsed.
+   */
   private snapshot(entry: Entry, message: unknown): void {
     entry.pending = approvalsOfSnapshot(message, LOCAL_AGENT_ID);
     for (const waiter of entry.waiters.splice(0)) {

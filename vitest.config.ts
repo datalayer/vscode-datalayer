@@ -34,6 +34,14 @@ export default defineConfig({
     globals: true,
     // One worker: the suites are small, and the machine is shared.
     maxWorkers: 1,
+    // agent-runtimes' `lib` is ESM with extensionless relative imports, which
+    // Node's resolver refuses once the package is a real `node_modules`
+    // dependency (CI); inlined, Vite resolves them as the bundle does.
+    server: {
+      deps: {
+        inline: [/@datalayer\/agent-runtimes/],
+      },
+    },
     coverage: {
       provider: "v8",
       include: [

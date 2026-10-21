@@ -27,6 +27,16 @@ const settings = vi.hoisted(() => ({
 
 vi.mock("vscode", () => ({
   ColorThemeKind: { Light: 1, Dark: 2, HighContrast: 3 },
+  // The provider holds an emitter for `session-changed`; never fired here.
+  EventEmitter: class {
+    event = () => ({ dispose: () => undefined });
+    fire() {
+      return undefined;
+    }
+    dispose() {
+      return undefined;
+    }
+  },
   window: {
     onDidChangeActiveColorTheme: () => ({ dispose: () => undefined }),
     activeTextEditor: {

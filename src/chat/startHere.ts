@@ -27,8 +27,8 @@
  * @module chat/startHere
  */
 
-import type { AppHost } from "./appChat";
 import type { HarnessFacts } from "../services/localRuntime/harnessCheck";
+import type { AppHost } from "./appChat";
 import type { OpenSessionRequest } from "./sessionVerbs";
 
 /** The instructions files a folder may hold of its own, by harness convention. */
@@ -56,10 +56,24 @@ export const NO_HARNESS_SENTENCE =
 /** The command that keeps a harness credential in the secret storage (VS-03's). */
 export const SET_CREDENTIAL_COMMAND = "datalayer.sessions.setCredential";
 
+/**
+ * Reads a value as a string.
+ *
+ * @param value - Anything.
+ *
+ * @returns The string, or `""` for anything else.
+ */
 function text(value: unknown): string {
   return typeof value === "string" ? value : "";
 }
 
+/**
+ * Reads a value as a record.
+ *
+ * @param value - Anything.
+ *
+ * @returns The record, or `{}` for anything else.
+ */
 function record(value: unknown): Record<string, unknown> {
   return value && typeof value === "object" && !Array.isArray(value)
     ? (value as Record<string, unknown>)
@@ -105,8 +119,10 @@ export function ownInstructionsFiles(entries: readonly string[]): string[] {
  *
  * @param own - The folder's own instructions files.
  * @param harness - The harness, with the file it is given.
+ * @param harness.name - What the harness is called.
+ * @param harness.instructionsFile - The file it reads its instructions from, or `""`.
  *
- * @returns The sentence.
+ * @returns One or two sentences for the session's first line.
  */
 export function keptSaid(
   own: readonly string[],
@@ -203,6 +219,8 @@ export interface AppPick {
  * every action in the record.
  *
  * @param harness - The harness's id and name.
+ * @param harness.id - What `harness:` names.
+ * @param harness.name - What the harness is called.
  * @param folderName - The workspace folder's name.
  *
  * @returns The Appspec, as `POST /api/v1/apps/configure` takes it.
@@ -265,7 +283,9 @@ export function blankHarnessApp(
  * first, then the folder's own Appspecs.
  *
  * @param harness - The harness picked.
- * @param folderName - The folder.
+ * @param harness.id - What `harness:` names.
+ * @param harness.name - What the harness is called.
+ * @param folderName - The workspace folder's name.
  * @param own - The folder's Appspecs.
  *
  * @returns The items, the blank one first.
@@ -316,9 +336,9 @@ export function configureRequestOf(spec: Record<string, unknown>): {
  * The agent the runtime made for the application, from `configure`'s
  * answer: `agent_id`, else `id`, else the runtime's `default`.
  *
- * @param answer - The route's answer.
+ * @param answer - The route's answer, as JSON.
  *
- * @returns The agent id.
+ * @returns What the runtime calls the agent.
  */
 export function agentIdOf(answer: unknown): string {
   const body = record(answer);
@@ -329,9 +349,9 @@ export function agentIdOf(answer: unknown): string {
  * The body of `POST /api/v1/apps/sessions`: the agent, no opener (the
  * person's first message is the first turn).
  *
- * @param agentId - The agent.
+ * @param agentId - The agent the session runs on.
  *
- * @returns The request body.
+ * @returns The request body, as JSON takes it.
  */
 export function startRequestOf(agentId: string): {
   agent: string;
@@ -346,7 +366,7 @@ export function startRequestOf(agentId: string): {
  *
  * @param streamed - The response body, SSE lines or JSON.
  *
- * @returns The uid.
+ * @returns What the stream named as the session.
  *
  * @throws Error when no session is named in it.
  */
@@ -428,6 +448,13 @@ export interface StartedSession extends OpenSessionRequest {
  * local place, the session, the agent, the application's host terms.
  *
  * @param input - The folder, the runtime, the session, the agent, the application and its host terms.
+ * @param input.folder - The workspace folder's path.
+ * @param input.folderName - The workspace folder's name.
+ * @param input.url - The local runtime's address.
+ * @param input.uid - The session opened.
+ * @param input.agentId - The agent it runs on.
+ * @param input.spec - The application's Appspec.
+ * @param input.host - What the Appspec lets the host pass.
  *
  * @returns The request, as {@link OpenSessionRequest} plus the host terms.
  */

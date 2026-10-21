@@ -19,7 +19,7 @@ import { createServer } from "net";
 /**
  * A free loopback port, picked by the OS.
  *
- * @returns The port.
+ * @returns The port number, free at the moment it was picked.
  */
 export function freePort(): Promise<number> {
   return new Promise((resolve, reject) => {
@@ -49,6 +49,9 @@ export interface LoopProcess {
  * @param loopPath - Where `loop` is.
  * @param args - Its arguments.
  * @param options - The working directory, the environment, the line reader.
+ * @param options.cwd - The working directory.
+ * @param options.env - The environment the process gets.
+ * @param options.onLine - Told each line of stdout and stderr.
  *
  * @returns The process.
  */

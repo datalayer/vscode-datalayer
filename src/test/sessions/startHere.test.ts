@@ -15,11 +15,11 @@ import * as assert from "assert";
 import * as path from "path";
 import * as vscode from "vscode";
 
-import { START_HERE_COMMAND } from "../../commands/startHere";
 import {
   SET_CREDENTIAL_COMMAND,
   type StartedSession,
 } from "../../chat/startHere";
+import { START_HERE_COMMAND } from "../../commands/startHere";
 
 const STUB_LOOP = path.resolve(
   __dirname,

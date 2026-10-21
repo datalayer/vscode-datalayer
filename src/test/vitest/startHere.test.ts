@@ -25,8 +25,8 @@ import {
   ownInstructionsFiles,
   runtimeRefusal,
   sessionUidOf,
-  startRequestOf,
   startedSession,
+  startRequestOf,
 } from "../../chat/startHere";
 import { harnessesOf } from "../../services/localRuntime/harnessCheck";
 

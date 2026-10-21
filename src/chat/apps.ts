@@ -91,7 +91,7 @@ export function tryArguments(file: string, port: number): string[] {
 /**
  * The page's address on a port.
  *
- * @param port - The port.
+ * @param port - The loopback port `loop apps run` picked.
  *
  * @returns `http://127.0.0.1:<port>/app`.
  */
@@ -130,7 +130,7 @@ export function refusalLineOf(line: string): string | null {
  * @param uid - The application's uid, once pushed.
  * @param tab - `validate` or `ship`.
  *
- * @returns The URL.
+ * @returns The Studio page's address.
  */
 export function studioTabUrl(uid: string, tab: "validate" | "ship"): string {
   return `${STUDIO_ORIGIN}/studio/apps/${encodeURIComponent(uid)}?tab=${tab}`;
@@ -174,11 +174,11 @@ export function isAppUid(value: string): boolean {
 }
 
 /**
- * The panel's title.
+ * What the preview panel is called in its tab.
  *
  * @param name - The application's name.
  *
- * @returns *Try: <name>*.
+ * @returns The title, *Try: <name>*.
  */
 export function panelTitle(name: string): string {
   return `Try: ${name}`;
@@ -191,7 +191,7 @@ export function panelTitle(name: string): string {
  * @param url - The preview's address.
  * @param name - The application's name.
  *
- * @returns The HTML.
+ * @returns The page's markup, whole.
  */
 export function previewHtml(url: string, name: string): string {
   const origin = new URL(url).origin;

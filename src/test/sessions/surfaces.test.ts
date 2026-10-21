@@ -13,7 +13,7 @@
  */
 
 import * as assert from "assert";
-import { spawn, type ChildProcess } from "child_process";
+import { type ChildProcess, spawn } from "child_process";
 import * as path from "path";
 import * as vscode from "vscode";
 
