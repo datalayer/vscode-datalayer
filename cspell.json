@@ -156,6 +156,8 @@
     "youtu",
     "zeromq",
     "zmqold",
-    "Zustand"
+    "Zustand",
+    "octicon",
+    "pytest"
   ]
 }

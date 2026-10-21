@@ -43,6 +43,19 @@ extension host so CORS and auth never get in the way.
   runtime lifecycle). Chat runtime endpoints (config, history, sandbox
   status, skills, tool-approval streams, etc.) are tunneled through the
   raw network bridge instead.
+- [sessionSurfaces.tsx](./sessionSurfaces.tsx) - The chat's side of the
+  editor's session surfaces: what it posts to the extension host (an
+  approval raised or shown, a decision sent after reading the approval
+  again, a diff to open, a terminal's output, the session's state) and what
+  it answers (`approval-decide`, `focus-approval`); the Reactor the chat
+  reads display renderers from, with agent-runtimes' `DiffCard` (plus
+  _Open in the editor_) and `TerminalCard` for the Shield's diff and
+  terminal types.
+- [vscodeSessionActions.ts](./vscodeSessionActions.ts) - VS Code's two
+  entries on a thread's menu, contributed to agent-runtimes'
+  `loop.session.action` point beside the chat's own: _Reveal in Explorer_
+  (a local session's folder in the file store) and _Open in the Studio_
+  (the application's Activity page), each done by the extension host.
 - [networkBridge.ts](./networkBridge.ts) - `installNetworkBridge` replaces
   `window.fetch` and `window.WebSocket` with proxies that tunnel every
   non-local call through `postMessage` so the Node.js extension host can

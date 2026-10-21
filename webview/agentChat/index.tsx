@@ -27,6 +27,7 @@ import React from "react";
 import { createRoot } from "react-dom/client";
 
 import type { AppChatChoice, EditorContext } from "../../src/chat/appChat";
+import type { OpenSessionRequest } from "../../src/chat/sessionVerbs";
 import {
   type AgentChatAuthState,
   type AgentChatSettings,
@@ -51,6 +52,10 @@ import {
 // in any of the eagerly-imported modules, split this entry into a tiny
 // bootstrap that installs the bridge and then `import()`s the rest.
 import { installNetworkBridge } from "./networkBridge";
+import {
+  handleHostSurfaceMessage,
+  installSessionSurfaces,
+} from "./sessionSurfaces";
 
 declare const acquireVsCodeApi: () => {
   postMessage: (message: unknown) => void;
@@ -75,6 +80,9 @@ const vscode = acquireVsCodeApi();
 // Install the fetch/WebSocket overrides first so any module imported below
 // that uses the globals gets the bridged versions.
 installNetworkBridge(vscode);
+// The editor's surfaces of a session (approvals, diffs, terminals, the
+// status bar) are drawn by the extension host from what the chat posts.
+installSessionSurfaces(vscode);
 
 // Create the bridge transport and client.
 const transport = createBridgeTransport(vscode);
@@ -95,6 +103,8 @@ let creatingAgent = false;
 let currentDeployments: AppChatChoice[] | null = null;
 let currentDeploymentsError: string | null = null;
 let currentServices: { aiAgentsUrl: string; spacerUrl: string } | null = null;
+// The session the Sessions view asked to open, if any.
+let currentOpenRequest: OpenSessionRequest | null = null;
 // The view's requests for the editor's open file, by id.
 const editorRequests = new Map<
   string,
@@ -212,6 +222,7 @@ function render(): void {
       deployments={currentDeployments}
       deploymentsError={currentDeploymentsError}
       services={currentServices}
+      openRequest={currentOpenRequest}
       readEditor={requestEditorContext}
       signUser={requestSignedUser}
       onRefreshAgents={handleRefreshAgents}
@@ -284,6 +295,11 @@ window.addEventListener("message", (event) => {
       render();
       break;
     }
+    case "open-session": {
+      currentOpenRequest = (data as { request: OpenSessionRequest }).request;
+      render();
+      break;
+    }
     case "user-token": {
       const msg = data as { requestId: string; error: string | null };
       const pending = signRequests.get(msg.requestId);
@@ -310,6 +326,9 @@ window.addEventListener("message", (event) => {
       break;
     }
     default:
+      // A decision asked from a notification, or the chat focused on an
+      // approval (`approval-decide`, `focus-approval`).
+      handleHostSurfaceMessage(data as { type: string });
       break;
   }
 });

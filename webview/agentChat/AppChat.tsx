@@ -30,9 +30,16 @@
  * @module webview/agentChat/AppChat
  */
 
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 
 import Chat from "@datalayer/agent-runtimes/lib/chat/Chat";
+import { actionOf } from "@datalayer/agent-runtimes/lib/portable/approvalCard";
 
 import {
   agUiEndpoint,
@@ -42,6 +49,7 @@ import {
   type AppChatApproval,
   type AppChatHandle,
   type AppHost,
+  approvalUrl,
   decideApprovalUrl,
   editorContextRefusal,
   type EditorContext,
@@ -53,6 +61,23 @@ import {
   toolLineOf,
   userTokenRefusal,
 } from "../../src/chat/appChat";
+import {
+  ATTENTION_WORDS,
+  decisionOutcome,
+  stillPending,
+} from "../../src/chat/attention";
+import {
+  answerTextOf,
+  ensureDisplayRenderers,
+  noteTurn,
+  postSurface,
+  registerApprovalHandlers,
+  reportNoSession,
+  reportSessionChanged,
+  reportSessionState,
+  reportToolResult,
+  setSurfaceContext,
+} from "./sessionSurfaces";
 
 /** How often the approvals the agent waits on are read, while open. */
 const APPROVALS_POLL_MS = 3_000;
@@ -109,6 +134,32 @@ export default function AppChat(props: AppChatProps): React.JSX.Element {
   const [problem, setProblem] = useState<string | null>(null);
   const [approvals, setApprovals] = useState<AppChatApproval[]>([]);
   const [lines, setLines] = useState<string[]>([]);
+  // The turn as the editor's status bar is told it, and what was last
+  // answered (its first line, for a finished turn's notification).
+  const [running, setRunning] = useState(false);
+  const [lastAnswer, setLastAnswer] = useState("");
+  const approvalsRef = useRef<AppChatApproval[]>([]);
+  approvalsRef.current = approvals;
+
+  // The session the editor's surfaces are told of (its approvals as
+  // notifications, its diffs, its terminal, the status bar); the displays'
+  // renderers mounted once.
+  useEffect(() => {
+    ensureDisplayRenderers();
+    setSurfaceContext({
+      sessionKey: handle.uid,
+      title: handle.name,
+      agent: handle.agentId,
+      harness: "",
+      app: handle.name,
+      local: false,
+    });
+    return () => {
+      registerApprovalHandlers(null);
+      setSurfaceContext(null);
+      reportNoSession();
+    };
+  }, [handle.uid, handle.name, handle.agentId]);
 
   // The Appspec, from the application's Spacer item.
   useEffect(() => {
@@ -217,6 +268,92 @@ export default function AppChat(props: AppChatProps): React.JSX.Element {
     [services.aiAgentsUrl, readApprovals],
   );
 
+  // The chat is open on the application: its approvals are said as editor
+  // notifications too (each once), and the banner showing them is what
+  // allows a decision from the notification.
+  const chatOpen = Boolean(host && !refused);
+  useEffect(() => {
+    if (!chatOpen || approvals.length === 0) {
+      return;
+    }
+    postSurface({
+      type: "approval-raised",
+      app: handle.name,
+      sessionKey: handle.uid,
+      approvals: approvals.map((approval) => ({
+        id: approval.id,
+        toolName: approval.toolName,
+        args: approval.args,
+        agentId: approval.agentId,
+        requestedAt: approval.requestedAt,
+      })),
+    });
+    postSurface({
+      type: "approval-shown",
+      ids: approvals.map((approval) => approval.id),
+    });
+  }, [chatOpen, approvals, handle.name, handle.uid]);
+
+  // A decision taken from the notification: the approval read again first
+  // (one answered elsewhere is said so, one gone reveals nothing), then
+  // sent through the one route, and what the route answered said.
+  useEffect(() => {
+    if (!chatOpen) {
+      return;
+    }
+    registerApprovalHandlers({
+      decide: async (approvalId, approved) => {
+        const read = await fetch(approvalUrl(services.aiAgentsUrl, approvalId));
+        if (!read.ok) {
+          return decisionOutcome(read.status, approved, "");
+        }
+        const record = (await read.json()) as {
+          status?: unknown;
+          tool_name?: unknown;
+        };
+        if (!stillPending(record)) {
+          await readApprovals();
+          return ATTENTION_WORDS.answeredElsewhere;
+        }
+        const known = approvalsRef.current.find(
+          (approval) => approval.id === approvalId,
+        );
+        const action = actionOf(
+          known?.toolName ??
+            (typeof record.tool_name === "string" ? record.tool_name : ""),
+        );
+        const response = await fetch(
+          decideApprovalUrl(services.aiAgentsUrl, approvalId, approved),
+          {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({}),
+          },
+        );
+        await readApprovals();
+        return decisionOutcome(response.status, approved, action);
+      },
+      focus: () => {
+        window.focus();
+      },
+    });
+    return () => {
+      registerApprovalHandlers(null);
+    };
+  }, [chatOpen, services.aiAgentsUrl, readApprovals]);
+
+  // The turn's phase, for the status bar: waiting for the person while an
+  // approval is pending, answering while a turn runs, idle otherwise.
+  useEffect(() => {
+    if (!chatOpen) {
+      return;
+    }
+    reportSessionState({
+      turn: approvals.length > 0 ? "waiting" : running ? "running" : "idle",
+      ...(lastAnswer ? { lastAnswer } : {}),
+    });
+  }, [chatOpen, approvals.length, running, lastAnswer]);
+
   // What VS Code passes as the host (D-10): only the version deployed's
   // terms, never a guess.
   const editorLine = host ? editorContextRefusal(handle, host) : "";
@@ -277,6 +414,23 @@ export default function AppChat(props: AppChatProps): React.JSX.Element {
               ...said,
               toolLineOf(handle.name, toolName, host),
             ]);
+          }}
+          // What the editor draws of the session: a terminal's output in
+          // the Terminal panel, the turn in the status bar.
+          onToolCallComplete={({ toolName, result }) => {
+            reportToolResult(toolName, result);
+          }}
+          onMessageSent={() => {
+            noteTurn();
+            setRunning(true);
+          }}
+          onMessageReceived={(message) => {
+            setRunning(false);
+            const said = answerTextOf(message);
+            if (said) {
+              setLastAnswer(said);
+            }
+            reportSessionChanged();
           }}
           pendingApprovals={approvals}
           onApproveApproval={(approvalId) => decide(approvalId, true)}

@@ -60,6 +60,7 @@ import {
   signsRequest,
   withUserToken,
 } from "../chat/appChat";
+import type { OpenSessionRequest } from "../chat/sessionVerbs";
 import {
   type AgentChatSettings,
   getValidatedSettingsGroup,
@@ -150,6 +151,12 @@ export class AgentChatViewProvider implements vscode.WebviewViewProvider {
    */
   private signedUsers = new Map<string, SignedUser | null>();
 
+  /** Fired when the chat says a session changed (a turn answered). */
+  private readonly sessionChangedEmitter = new vscode.EventEmitter<void>();
+
+  /** A session changed in the chat: the Sessions view reads again. */
+  public readonly onSessionChanged = this.sessionChangedEmitter.event;
+
   /**
    * Constructs the provider.
    *
@@ -163,6 +170,14 @@ export class AgentChatViewProvider implements vscode.WebviewViewProvider {
     private readonly authProvider: DatalayerAuthProvider,
     private readonly sdk: ExtendedDatalayerClient,
     private readonly localRuntimes?: LocalRuntimeService,
+    /**
+     * The editor's surfaces of a session (approvals as notifications, diffs
+     * in the diff view, terminals, the status bar), attached to the view's
+     * webview beside the bridges; none when not given.
+     */
+    private readonly surfaces?: {
+      attach(webview: vscode.Webview): vscode.Disposable;
+    },
   ) {
     // Forward `extensionMode` so the bridge can include JS stack traces in
     // Development builds without leaking them into webview logs in
@@ -206,6 +221,7 @@ export class AgentChatViewProvider implements vscode.WebviewViewProvider {
 
     const bridgeSubscription = this.bridge.attach(webviewView.webview);
     const networkSubscription = this.networkBridge.attach(webviewView.webview);
+    const surfacesSubscription = this.surfaces?.attach(webviewView.webview);
 
     const messageSubscription = webviewView.webview.onDidReceiveMessage(
       (message: unknown) => {
@@ -268,6 +284,7 @@ export class AgentChatViewProvider implements vscode.WebviewViewProvider {
       this.stopPolling();
       bridgeSubscription.dispose();
       networkSubscription.dispose();
+      surfacesSubscription?.dispose();
       messageSubscription.dispose();
       authSubscription.dispose();
       themeSubscription.dispose();
@@ -287,6 +304,17 @@ export class AgentChatViewProvider implements vscode.WebviewViewProvider {
    */
   public async refresh(): Promise<void> {
     await this.refreshAgents();
+  }
+
+  /**
+   * Opens a session in the chat, from the Sessions view: the view shown,
+   * the chat told which session and where it runs (`open-session`).
+   *
+   * @param request - The session and its place.
+   */
+  public openSession(request: OpenSessionRequest): void {
+    this.view?.show(true);
+    void this.view?.webview.postMessage({ type: "open-session", request });
   }
 
   /** Starts the visibility-aware polling timer. Idempotent. */
@@ -343,6 +371,8 @@ export class AgentChatViewProvider implements vscode.WebviewViewProvider {
       if (typeof requestId === "string" && typeof deploymentUid === "string") {
         await this.signUser(requestId, deploymentUid);
       }
+    } else if (type === "session-changed") {
+      this.sessionChangedEmitter.fire();
     } else if (type === "editor-context-request") {
       const requestId = (raw as { requestId?: unknown }).requestId;
       if (typeof requestId === "string") {

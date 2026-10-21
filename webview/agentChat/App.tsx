@@ -23,6 +23,7 @@ import React, {
   useCallback,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 import type { ErrorInfo, ReactNode } from "react";
@@ -40,6 +41,19 @@ import {
   pickedHandleOf,
   talkableKeyOf,
 } from "../../src/chat/appChat";
+import { openSessionChoice } from "../../src/chat/openSession";
+import type { OpenSessionRequest } from "../../src/chat/sessionVerbs";
+
+import {
+  answerTextOf,
+  ensureDisplayRenderers,
+  noteTurn,
+  reportNoSession,
+  reportSessionChanged,
+  reportSessionState,
+  reportToolResult,
+  setSurfaceContext,
+} from "./sessionSurfaces";
 
 // A deployed application's chat (STUDIO A-18), loaded when one is picked.
 const LazyAppChat = React.lazy(() => import("./AppChat"));
@@ -187,6 +201,8 @@ export interface ChatAgentHandle {
   givenName: string;
   /** Environment label. */
   environmentName: string;
+  /** Where it runs: `local` for a local runtime of a workspace folder, else Datalayer. */
+  place?: "datalayer" | "local";
 }
 
 /** Props for the App component. */
@@ -215,6 +231,8 @@ export interface AppProps {
   deploymentsError: string | null;
   /** The ai-agents and Spacer base URLs a deployment's chat asks. */
   services: { aiAgentsUrl: string; spacerUrl: string } | null;
+  /** The session the Sessions view asked to open, or null. */
+  openRequest: OpenSessionRequest | null;
   /** Reads the editor's open file, through the extension host. */
   readEditor: () => Promise<EditorContext | undefined>;
   /** Asks the extension host to sign the person for a deployment (D-21). */
@@ -274,6 +292,7 @@ function AppInner(props: AppProps): React.JSX.Element {
     deployments,
     deploymentsError,
     services,
+    openRequest,
     readEditor,
     signUser,
     onRefreshAgents,
@@ -283,6 +302,33 @@ function AppInner(props: AppProps): React.JSX.Element {
 
   // `runtime:<pod>` or `app:<deployment uid>`.
   const [selected, setSelected] = useState<string | null>(null);
+  // What the chat says of a session opened from the Sessions view.
+  const [openSaid, setOpenSaid] = useState("");
+
+  // A session opened from the Sessions view: the picker set to its place —
+  // the local runtime of its folder, the deployment of its application —
+  // and the session said; not listed, said why.
+  const handledOpen = useRef<OpenSessionRequest | null>(null);
+  useEffect(() => {
+    // Each request once, when the lists are read: a later pick of the
+    // person's is theirs.
+    if (!openRequest || handledOpen.current === openRequest) {
+      return;
+    }
+    if (agents === null && deployments === null) {
+      return;
+    }
+    handledOpen.current = openRequest;
+    const choice = openSessionChoice(
+      openRequest,
+      agentsError ? [] : (agents ?? []),
+      deployments ?? [],
+    );
+    if (choice.value) {
+      setSelected(choice.value);
+    }
+    setOpenSaid(choice.said);
+  }, [openRequest, agents, agentsError, deployments]);
 
   // The same deployments listed again change nothing: the conversation
   // open survives a refresh (memoized on what is talked to, not the list).
@@ -348,6 +394,32 @@ function AppInner(props: AppProps): React.JSX.Element {
     },
     [],
   );
+
+  // The session the editor's surfaces are told of: a runtime's chat here
+  // (an application's chat names its own in `AppChat`); none when nothing
+  // is picked. The displays' renderers (a diff, a terminal) are mounted once.
+  useEffect(() => {
+    if (selectedAgent) {
+      ensureDisplayRenderers();
+      setSurfaceContext({
+        sessionKey: `runtime:${selectedAgent.runtimeName}`,
+        title: selectedAgent.givenName,
+        agent: "default",
+        harness: "",
+        app: selectedAgent.givenName,
+        local: selectedAgent.place === "local",
+      });
+      reportSessionState({ turn: "idle" });
+      return () => {
+        setSurfaceContext(null);
+        reportNoSession();
+      };
+    }
+    if (!selectedApp) {
+      reportNoSession();
+    }
+    return undefined;
+  }, [selectedAgent, selectedApp]);
 
   // Not authenticated — show sign-in prompt.
   if (!auth.authenticated) {
@@ -510,6 +582,18 @@ function AppInner(props: AppProps): React.JSX.Element {
           &#x21bb;
         </button>
       </div>
+      {openSaid ? (
+        <p
+          style={{
+            ...messageStyle,
+            fontSize: "12px",
+            margin: "4px 8px",
+            opacity: 0.8,
+          }}
+        >
+          {openSaid}
+        </p>
+      ) : null}
       {deploymentsError || agentsError ? (
         // Said beside the picker, whatever else is listed or picked.
         <p
@@ -573,6 +657,22 @@ function AppInner(props: AppProps): React.JSX.Element {
                   autoConnect={true}
                   streaming={true}
                   clearOnMount={true}
+                  // What the editor draws of the session: a terminal's
+                  // output in the Terminal panel, the turn in the status bar.
+                  onToolCallComplete={({ toolName, result }) => {
+                    reportToolResult(toolName, result);
+                  }}
+                  onMessageSent={() => {
+                    noteTurn();
+                    reportSessionState({ turn: "running" });
+                  }}
+                  onMessageReceived={(message) => {
+                    reportSessionState({
+                      turn: "idle",
+                      lastAnswer: answerTextOf(message),
+                    });
+                    reportSessionChanged();
+                  }}
                 />
               </AgentRuntimesClientProvider>
             </Suspense>

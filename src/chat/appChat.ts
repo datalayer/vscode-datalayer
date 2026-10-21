@@ -222,6 +222,19 @@ export function decideApprovalUrl(
 }
 
 /**
+ * Where one approval is read again before it is decided from an editor
+ * notification: ai-agents' Tool Approvals, by id.
+ *
+ * @param aiAgentsUrl - Where ai-agents answers.
+ * @param approvalId - Which approval to read.
+ *
+ * @returns Its address at ai-agents' Tool Approvals.
+ */
+export function approvalUrl(aiAgentsUrl: string, approvalId: string): string {
+  return `${base(aiAgentsUrl)}/api/ai-agents/v1/tool-approvals/${encodeURIComponent(approvalId)}`;
+}
+
+/**
  * Reads a record field as a string.
  *
  * @param value - Anything.

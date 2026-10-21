@@ -17,6 +17,7 @@ import {
   agUiEndpoint,
   appHostOf,
   appItemUrl,
+  approvalUrl,
   behaviourOf,
   decideApprovalUrl,
   deploymentChoicesOf,
@@ -642,5 +643,13 @@ describe("the review of 2026-10-07: live only, the version said, a signed user s
     expect(sent[1][1]?.body).toBe("{}");
     expect(sent[2][1]).toBeUndefined();
     expect(asked).toBe(1);
+  });
+});
+
+describe("an approval read again before a decision from the editor", () => {
+  it("is read by its id at ai-agents' Tool Approvals", () => {
+    expect(approvalUrl("https://prod1.datalayer.run/", "a/1")).toBe(
+      "https://prod1.datalayer.run/api/ai-agents/v1/tool-approvals/a%2F1",
+    );
   });
 });

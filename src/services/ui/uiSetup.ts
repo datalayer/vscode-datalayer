@@ -13,6 +13,11 @@
 
 import * as vscode from "vscode";
 
+import { SessionSurfacesHandler } from "../../bridges/agentChatBridge";
+import {
+  OPEN_SESSION_COMMAND,
+  type OpenSessionRequest,
+} from "../../chat/sessionVerbs";
 import { AgentChatViewProvider } from "../../providers/agentChatViewProvider";
 import { LexicalProvider } from "../../providers/lexicalProvider";
 import { NotebookProvider } from "../../providers/notebookProvider";
@@ -31,6 +36,10 @@ import { DatalayerAuthProvider } from "../core/authProvider";
 import type { ExtendedDatalayerClient } from "../core/datalayerAdapter";
 import type { LocalRuntimeService } from "../localRuntime/localRuntimeService";
 import { ServiceLoggers } from "../logging/loggers";
+import { ApprovalNotifications } from "./approvalNotifications";
+import { DiffDocuments } from "./diffDocuments";
+import { SessionStatusBar } from "./sessionStatusBar";
+import { SessionTerminals } from "./sessionTerminal";
 import { DatalayerStatusBar } from "./statusBar";
 
 /**
@@ -205,11 +214,26 @@ export async function initializeUI(
   //    extension host via the AgentChatBridgeHandler, which answers
   //    IAgentRuntimesClient calls using the shared DatalayerClient +
   //    AgentsMixin so the webview never sees the auth token.
+  //    The editor's surfaces of a session — approvals as notifications,
+  //    diffs in the diff view, commands in a read-only terminal, the
+  //    sessions in the status bar — are drawn by the extension host from
+  //    what the chat posts (`SessionSurfacesHandler`).
+  const diffs = new DiffDocuments();
+  const terminals = new SessionTerminals();
+  const sessionStatusBar = new SessionStatusBar();
+  context.subscriptions.push(diffs, terminals, sessionStatusBar);
+  const surfaces = new SessionSurfacesHandler({
+    diffs,
+    terminals,
+    approvals: new ApprovalNotifications(),
+    statusBar: sessionStatusBar,
+  });
   const agentChatViewProvider = new AgentChatViewProvider(
     context,
     authProvider,
     datalayer,
     localRuntimes,
+    surfaces,
   );
   // A local runtime started or stopped is a place the picker lists.
   context.subscriptions.push(
@@ -232,6 +256,26 @@ export async function initializeUI(
       "datalayer.internal.agentChat.refresh",
       () => agentChatViewProvider.refresh(),
     ),
+  );
+
+  // The Sessions view opens a session in the chat through this command, and
+  // reads again when the chat says a session changed.
+  context.subscriptions.push(
+    vscode.commands.registerCommand(
+      OPEN_SESSION_COMMAND,
+      (request: unknown) => {
+        if (
+          request &&
+          typeof request === "object" &&
+          typeof (request as { uid?: unknown }).uid === "string"
+        ) {
+          agentChatViewProvider.openSession(request as OpenSessionRequest);
+        }
+      },
+    ),
+    agentChatViewProvider.onSessionChanged(() => {
+      sessionsTreeProvider.refresh();
+    }),
   );
 
   return {

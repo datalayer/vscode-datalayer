@@ -22,6 +22,13 @@ the extension host under the user's credentials.
   `@datalayer/agent-runtimes` and dispatches whitelisted method calls from
   the webview to the SDK. Typed request/response surface (22 methods from
   `IAgentRuntimesClient`).
+- **agentChatBridge.ts** (also) - `SessionSurfacesHandler` draws the editor's
+  surfaces of a session from what the chat posts: `approval-raised` and
+  `approval-shown` (an editor notification per approval, the decision
+  asked back of the chat with `approval-decide` and answered with
+  `approval-decided`), `open-diff` (the diff view), `terminal-output`
+  (the session's terminal), `session-state` (the status bar),
+  `session-ended`; `focus-approval` focuses the chat on _Show_.
 - **agentChatNetworkBridge.ts** - `AgentChatNetworkBridge` answers raw
   `net.fetch.*` and `net.ws.*` messages from the webview. Agent-runtimes
   contains many components and protocol adapters that issue direct

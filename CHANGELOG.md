@@ -19,6 +19,13 @@ All notable changes to the Datalayer VS Code extension are documented here.
 - **A local runtime** per workspace folder (`loop serve`, started when asked, never at startup): `loop` found on PATH, under uv tool's and pipx's bins or at `datalayer.local.loopPath`, refused in a sentence with the install line (`uv tool install 'agent-runtimes[shield]'`) when missing or too old; listed as a place in the Agent Chat picker; its output in the _Datalayer: Local runtime_ channel; Datalayer: Start/Stop the Local Runtime
 - **The coding agent checked** before it starts here: Datalayer: Check a Coding Agent on This Machine (binaries and Node's version, the adapter, the credential, the terms), `agent-shield setup` offered in a terminal with the command shown whole; Datalayer: Set a Harness Credential keeps it in VS Code's secret storage, never in settings
 - **Settings** `datalayer.local.enabled`, `datalayer.local.loopPath`
+- **A session's approvals, diffs, terminals and status in the editor**: an _ask me first_ request is also an editor notification naming the application, the action and its class (never its arguments) — _Approve_, _Decline_ after the chat has shown it and the approval was read again, _Show_ focusing the chat; a diff a coding agent wrote opens in the editor's diff view from its row (_Open in the editor_), the _after_ side the file on disk when it holds what was written, reviewed and never applied; what the agent ran is written to a read-only terminal per session in the Terminal panel; the status bar says _Datalayer: n waiting for you_ or _Datalayer: working…_, and a finished turn of a session the chat does not show is a notification
+- **Diffs and terminals drawn in the chat** as the web draws them, from the same displays
+- **The Sessions view opens a session in the chat** (its row, _Resume_): the chat set to the session's place — the local runtime of its folder, the deployment of its application — and the Sessions view read again after each answered turn; the thread's menu gains _Reveal in Explorer_ (a local session's folder) and _Open in the Studio_ (the application's Activity page)
+
+### Changed
+
+- **Datalayer packages**: `@datalayer/agent-runtimes` 1.5.66 (the session API, the chat's session entries, the diff and terminal displays), `@datalayer/core` 1.2.21, `@datalayer/jupyter-react` and `@datalayer/jupyter-lexical` 2.0.20, `@datalayer/primer-addons` 1.0.40, `@datalayer/reactor` 1.3.1
 
 ## [0.0.20] - 2026-10-08
 
