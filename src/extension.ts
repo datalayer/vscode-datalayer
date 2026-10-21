@@ -163,8 +163,9 @@ export async function activate(
     const activationTimer = PerformanceLogger.createTimer(
       "extension_activation",
       {
-        version: vscode.extensions.getExtension("datalayer.datalayer-vscode")
-          ?.packageJSON.version,
+        version: vscode.extensions.getExtension(
+          "datalayer.datalayer-jupyter-vscode",
+        )?.packageJSON.version,
         vscodeVersion: vscode.version,
       },
     );
@@ -182,8 +183,9 @@ export async function activate(
 
     const logger = services!.logger;
     logger.info("Datalayer extension activation started", {
-      version: vscode.extensions.getExtension("datalayer.datalayer-vscode")
-        ?.packageJSON.version,
+      version: vscode.extensions.getExtension(
+        "datalayer.datalayer-jupyter-vscode",
+      )?.packageJSON.version,
       vscodeVersion: vscode.version,
       extensionId: context.extension.id,
       workspaceFolder: vscode.workspace.workspaceFolders?.[0]?.uri.toString(),

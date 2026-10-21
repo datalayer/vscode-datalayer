@@ -3,8 +3,8 @@
 [![Become a Sponsor](https://img.shields.io/static/v1?label=Become%20a%20Sponsor&message=%E2%9D%A4&logo=GitHub&style=flat&color=1ABC9C)](https://github.com/sponsors/datalayer)
 
 [![Build Status](https://github.com/datalayer/vscode/actions/workflows/build-extension.yml/badge.svg)](https://github.com/datalayer/vscode/actions/workflows/build-extension.yml)
-[![VS Code Marketplace](https://img.shields.io/visual-studio-marketplace/v/Datalayer.datalayer-vscode?label=VS%20Code%20Marketplace&logo=visual-studio-code)](https://marketplace.visualstudio.com/items?itemName=Datalayer.datalayer-vscode)
-[![Installs](https://img.shields.io/visual-studio-marketplace/i/Datalayer.datalayer-vscode?label=Installs)](https://marketplace.visualstudio.com/items?itemName=Datalayer.datalayer-vscode)
+[![VS Code Marketplace](https://img.shields.io/visual-studio-marketplace/v/datalayer.datalayer-jupyter-vscode?label=VS%20Code%20Marketplace&logo=visual-studio-code)](https://marketplace.visualstudio.com/items?itemName=datalayer.datalayer-jupyter-vscode)
+[![Installs](https://img.shields.io/visual-studio-marketplace/i/datalayer.datalayer-jupyter-vscode?label=Installs)](https://marketplace.visualstudio.com/items?itemName=datalayer.datalayer-jupyter-vscode)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Documentation](https://img.shields.io/badge/docs-TypeDoc-blue.svg)](https://vscode.netlify.app)
 
@@ -42,7 +42,7 @@
 ## ⚡ Quick Start
 
 1. **Create a free account** at [datalayer.app](https://datalayer.app).
-2. **Install** from [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=Datalayer.datalayer-vscode)
+2. **Install** from [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=datalayer.datalayer-jupyter-vscode)
 3. **Login**: `Ctrl+Shift+P` → "Datalayer: Login to Datalayer" → select your type of OAuth login (GitHub)
 4. **Scale instantly**: Open any `.ipynb` file with the Datalayer Editor → click kernel picker → select cloud runtime
 5. **Create rich docs**: Create `.dlex` files for Notion-like collaborative reports with code, images and rich formatting

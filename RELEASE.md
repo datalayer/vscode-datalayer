@@ -72,7 +72,7 @@ git push origin main --follow-tags
 
 ```bash
 # 1. Unpublish from marketplace
-npx vsce unpublish Datalayer.datalayer-vscode@0.0.11
+npx vsce unpublish datalayer.datalayer-jupyter-vscode@0.0.11
 
 # 2. Delete GitHub release (go to releases page and click delete)
 
@@ -113,6 +113,6 @@ Pre-releases (with `-` in version) only go to GitHub, not marketplace.
 
 **Resources:**
 
-- [Marketplace](https://marketplace.visualstudio.com/items?itemName=Datalayer.datalayer-vscode)
+- [Marketplace](https://marketplace.visualstudio.com/items?itemName=datalayer.datalayer-jupyter-vscode)
 - [Releases](https://github.com/datalayer/vscode/releases)
 - [Actions](https://github.com/datalayer/vscode/actions)
