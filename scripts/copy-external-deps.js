@@ -310,6 +310,46 @@ for (const dep of externalDeps) {
 // - package.json (required for Node.js "exports" resolution)
 // - lib/tools/ (the actual runtime code for MCP tools)
 // This saves ~370MB by NOT copying dist/ (plotly.js, excalidraw, etc.)
+/**
+ * Copy into destLib every .js file under srcLib that the files under startDir
+ * reach through relative imports, transitively. Fails when an import names a
+ * file the package does not have, rather than shipping a broken copy.
+ */
+function copyRelativeImportsOf(srcLib, destLib, startDir) {
+  const IMPORT = /(?:import|export)\s[^'"]*?from\s*['"](\.{1,2}\/[^'"]+)['"]|import\(\s*['"](\.{1,2}\/[^'"]+)['"]\s*\)/g;
+  const seen = new Set();
+  const queue = [];
+  const walk = dir => {
+    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+      const full = path.join(dir, entry.name);
+      if (entry.isDirectory()) walk(full);
+      else if (entry.name.endsWith('.js')) queue.push(full);
+    }
+  };
+  walk(startDir);
+  queue.forEach(file => seen.add(file));
+  while (queue.length) {
+    const file = queue.pop();
+    const text = fs.readFileSync(file, 'utf8');
+    for (const match of text.matchAll(IMPORT)) {
+      const spec = match[1] || match[2];
+      const base = path.resolve(path.dirname(file), spec);
+      const target = [base, `${base}.js`, path.join(base, 'index.js')].find(
+        candidate => fs.existsSync(candidate) && fs.statSync(candidate).isFile()
+      );
+      if (!target) {
+        throw new Error(`${path.relative(srcLib, file)} imports ${spec}, which the package does not contain`);
+      }
+      if (seen.has(target) || !target.startsWith(srcLib)) continue;
+      seen.add(target);
+      queue.push(target);
+      const dest = path.join(destLib, path.relative(srcLib, target));
+      fs.mkdirSync(path.dirname(dest), { recursive: true });
+      fs.copyFileSync(target, dest);
+    }
+  }
+}
+
 for (const dep of datalayerToolsPackages) {
   if (copiedPackages.has(dep)) {
     console.log(`   ⏭️  Skipping duplicate ${dep}`);
@@ -338,6 +378,10 @@ for (const dep of datalayerToolsPackages) {
     const toolsDest = path.join(targetPath, 'lib', 'tools');
     if (fs.existsSync(toolsSrc)) {
       copyRecursive(toolsSrc, toolsDest);
+      // lib/tools reaches outside itself by relative import (e.g.
+      // ../../utils/debugLog.js): copy every lib file it reaches, so the
+      // extension never loads a module the copy left behind.
+      copyRelativeImportsOf(path.join(sourcePath, 'lib'), path.join(targetPath, 'lib'), toolsSrc);
       const toolsSize = getDirectorySize(toolsDest);
       const toolsSizeMB = (toolsSize / (1024 * 1024)).toFixed(2);
       console.log(`      lib/tools/: ${toolsSizeMB}MB`);
