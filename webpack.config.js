@@ -101,9 +101,11 @@ const extensionConfig = {
     // When webpack encounters React imports in these packages, it externalizes them (because React is external above)
     // This prevents Node.js from trying to load packages with CSS imports at runtime
     // EXCEPTION: /tools exports must be external to avoid bundling dependencies with os.platform() calls
-    "@datalayer/jupyter-react/tools": "commonjs @datalayer/jupyter-react/tools",
-    "@datalayer/jupyter-lexical/lib/tools":
-      "commonjs @datalayer/jupyter-lexical/lib/tools",
+    // ES modules, loaded with a native import() at activation (Node's ESM
+    // loader), never through require.
+    "@datalayer/jupyter-react/tools": "import @datalayer/jupyter-react/tools",
+    "@datalayer/jupyter-lexical/lib/tools/index.js":
+      "import @datalayer/jupyter-lexical/lib/tools/index.js",
     "@jupyterlab/application": "commonjs @jupyterlab/application",
     "@jupyterlab/notebook": "commonjs @jupyterlab/notebook",
     "@jupyterlab/cells": "commonjs @jupyterlab/cells",

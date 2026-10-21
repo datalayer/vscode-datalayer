@@ -54,11 +54,14 @@ export interface CombinedOperations {
 export async function getCombinedOperations(): Promise<CombinedOperations> {
   // IMPORTANT: Lazy-load these packages to avoid triggering browser imports at module load time
   // These packages have browser dependencies (@primer/react, etc.) that can't load in Node.js/extension host
-  // Using require inside async function to defer loading until actually needed
-  const { notebookToolOperations } = require("@datalayer/jupyter-react/tools");
-  const {
-    lexicalToolOperations,
-  } = require("@datalayer/jupyter-lexical/lib/tools");
+  // Imported inside the async function to defer loading until needed — both
+  // are ES modules, read by Node's ESM loader (webpack keeps them external).
+  const { notebookToolOperations } =
+    await import("@datalayer/jupyter-react/tools");
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const lexical: Record<string, any> =
+    await import("@datalayer/jupyter-lexical/lib/tools/index.js");
+  const { lexicalToolOperations } = lexical;
 
   return {
     // Notebook operations (from datalayer-react)

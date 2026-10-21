@@ -53,9 +53,8 @@ export const executeCodeOperation: ToolOperation<ExecuteCodeParams, unknown> = {
       if (editorType === "datalayer-notebook") {
         try {
           // Import notebook operations from /tools export (Node.js compatible, excludes React components)
-          const {
-            notebookToolOperations,
-          } = require("@datalayer/jupyter-react/tools");
+          const { notebookToolOperations } =
+            await import("@datalayer/jupyter-react/tools");
 
           // Resolve documentId from URI
           const services = getServiceContainer();
@@ -76,9 +75,10 @@ export const executeCodeOperation: ToolOperation<ExecuteCodeParams, unknown> = {
       } else if (editorType === "datalayer-lexical") {
         try {
           // Import lexical operations from /tools export (Node.js compatible, excludes React components)
-          const {
-            lexicalToolOperations,
-          } = require("@datalayer/jupyter-lexical/lib/tools");
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const lexical: Record<string, any> =
+            await import("@datalayer/jupyter-lexical/lib/tools/index.js");
+          const { lexicalToolOperations } = lexical;
 
           // Resolve documentId from URI
           const services = getServiceContainer();
