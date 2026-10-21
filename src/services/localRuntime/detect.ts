@@ -25,7 +25,7 @@
  */
 
 /** The oldest agent-runtimes whose `loop` the extension starts. */
-export const LOOP_MIN_VERSION = "1.5.68";
+export const LOOP_MIN_VERSION = "1.5.69";
 
 /** The one line that installs `loop` with the Shield. */
 export const INSTALL_LINE = "uv tool install 'agent-runtimes[shield]'";

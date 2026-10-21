@@ -117,9 +117,9 @@ describe("the refusals", () => {
     expect(
       loopDetection({
         path: "/usr/bin/loop",
-        versionOutput: "Agent Runtimes Chat v1.5.68",
+        versionOutput: "Agent Runtimes Chat v1.5.69",
       }),
-    ).toEqual({ ok: true, path: "/usr/bin/loop", version: "1.5.68" });
+    ).toEqual({ ok: true, path: "/usr/bin/loop", version: "1.5.69" });
     expect(
       loopDetection({
         path: "/usr/bin/loop",

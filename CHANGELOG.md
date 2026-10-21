@@ -9,13 +9,13 @@ All notable changes to the Datalayer VS Code extension are documented here.
 - **A session opened from the Sessions view is its own conversation** in the Datalayer Chat (agent-runtimes 1.5.68): read from its runtime by uid, with the thread's `⋯` menu — the chat's entries and the extension's _Reveal in Explorer_ and _Open in the Studio_ — drawn beside the header
 - **A local session's approvals**: an _ask me first_ request of a coding agent on this machine is read over the local runtime's websocket, said as an editor notification and listed in the chat's banner; decided from either over the same websocket, the notification's decision allowed once the chat has shown it
 - **The session's terminal is written as the command streams**, not when it ends; the Sessions view feeds the status bar, so a finished turn of a session the chat does not show is a notification
-- The local runtime must be agent-runtimes 1.5.68 or later; plain `http://127.0.0.1` to a local runtime running on this machine is let through the chat's network bridge, and nothing else over plain http
+- The local runtime (`loop`) must be agent-runtimes 1.5.69 or later; plain `http://127.0.0.1` to a local runtime running on this machine is let through the chat's network bridge, and nothing else over plain http
 
 ## [0.1.0] - 2026-10-21
 
 ### Added
 
-- **A coding agent in your folder**: `Datalayer: Start a coding agent here` starts Claude Code, Codex or another coding agent of the catalogue in the open folder on the local runtime, as the blank harness application or one of the folder's own Appspecs, and opens its session in the Datalayer Chat; your own `CLAUDE.md`/`AGENTS.md` is kept as it is and said — a coding agent whose own instructions file the folder already has reads yours, the application's written beside it under `.datalayer/` and handed to it with its first prompt (agent-runtimes 1.5.68); the open file reaches the agent only when it asks and the application lets it
+- **A coding agent in your folder**: `Datalayer: Start a coding agent here` starts Claude Code, Codex or another coding agent of the catalogue in the open folder on the local runtime, as the blank harness application or one of the folder's own Appspecs, and opens its session in the Datalayer Chat; your own `CLAUDE.md`/`AGENTS.md` is kept as it is and said — a coding agent whose own instructions file the folder already has reads yours, the application's written beside it under `.datalayer/` and handed to it with its first prompt (agent-runtimes 1.5.69); the open file reaches the agent only when it asks and the application lets it
 - **Try it here**: `Datalayer: Try this application` runs the Appspec or `app.py` open in the editor on your machine with hot reload (`loop apps run --web --watch`) and shows its page in a panel beside the editor; `Open this application's Validate tab` and `… Ship tab` open the application's pages in the browser
 - **Tests**: the pure modules under a vitest `pure` project (`src/test/vitest`, node), beside the webview's; the extension-host suite gains the coding agent and Try against a stub `loop` (`src/test/fixtures/stub-loop`), run by CI on three OSes
 

@@ -11,7 +11,7 @@
 import { createServer } from "node:http";
 import { WebSocketServer } from "ws";
 
-const VERSION = "1.5.68";
+const VERSION = "1.5.69";
 const args = process.argv.slice(2);
 
 const CATALOGUE = {
