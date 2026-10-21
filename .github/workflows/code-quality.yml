@@ -48,7 +48,7 @@ jobs:
           sudo apt-get install -y libsecret-1-dev
 
       - name: Install dependencies
-        run: npm install --ignore-engines
+        run: npm install -g npm@11 && npm install --ignore-engines
 
       - name: Check formatting
         run: npm run format:check
@@ -72,7 +72,7 @@ jobs:
           sudo apt-get install -y libsecret-1-dev
 
       - name: Install dependencies
-        run: npm install --ignore-engines
+        run: npm install -g npm@11 && npm install --ignore-engines
 
       - name: Run linting
         run: npm run lint
@@ -96,7 +96,7 @@ jobs:
           sudo apt-get install -y libsecret-1-dev
 
       - name: Install dependencies
-        run: npm install --ignore-engines
+        run: npm install -g npm@11 && npm install --ignore-engines
 
       - name: Run type checking
         run: npm run type-check
@@ -120,7 +120,7 @@ jobs:
           sudo apt-get install -y libsecret-1-dev
 
       - name: Install dependencies
-        run: npm install --ignore-engines
+        run: npm install -g npm@11 && npm install --ignore-engines
 
       - name: Check README.md in every directory
         run: npm run docs:check-readmes
@@ -147,7 +147,7 @@ jobs:
           sudo apt-get install -y libsecret-1-dev
 
       - name: Install dependencies
-        run: npm install --ignore-engines
+        run: npm install -g npm@11 && npm install --ignore-engines
 
       - name: Check spelling
         run: npm run check:spelling

@@ -59,7 +59,7 @@ jobs:
             libxtst6
 
       - name: Install dependencies
-        run: npm install --ignore-engines
+        run: npm install -g npm@11 && npm install --ignore-engines
 
       - name: Install VS Code CLI (Ubuntu)
         if: matrix.os == 'ubuntu-latest'

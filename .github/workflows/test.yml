@@ -49,7 +49,7 @@ jobs:
           sudo apt-get install -y libsecret-1-dev
 
       - name: Install dependencies
-        run: npm install --ignore-engines
+        run: npm install -g npm@11 && npm install --ignore-engines
 
       - name: Compile tests
         run: npm run compile-tests
@@ -97,7 +97,7 @@ jobs:
           sudo apt-get install -y libsecret-1-dev
 
       - name: Install dependencies
-        run: npm install --ignore-engines
+        run: npm install -g npm@11 && npm install --ignore-engines
 
       - name: Run the webview and pure-module tests with coverage (both vitest projects)
         run: npx vitest run --coverage
