@@ -64,12 +64,24 @@ export function spawnLoop(
     onLine: (line: string, stream: "stdout" | "stderr") => void;
   },
 ): LoopProcess {
-  const child = spawn(loopPath, [...args], {
-    cwd: options.cwd,
-    env: options.env,
-    windowsHide: true,
-    stdio: ["ignore", "pipe", "pipe"],
-  });
+  // A `.cmd` on Windows runs through the shell (Node refuses to spawn one
+  // without it, EINVAL), as the local runtime's does; the shell joins the
+  // command and its arguments, so one with a space is quoted.
+  const viaShell =
+    process.platform === "win32" && /\.(cmd|bat)$/i.test(loopPath);
+  const quoted = (value: string): string =>
+    /\s/.test(value) ? `"${value}"` : value;
+  const child = spawn(
+    viaShell ? quoted(loopPath) : loopPath,
+    viaShell ? args.map(quoted) : [...args],
+    {
+      cwd: options.cwd,
+      env: options.env,
+      windowsHide: true,
+      shell: viaShell,
+      stdio: ["ignore", "pipe", "pipe"],
+    },
+  );
   const read = (
     stream: "stdout" | "stderr",
     chunkSource: NodeJS.ReadableStream | null,
