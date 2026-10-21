@@ -37,7 +37,9 @@ import type { LocalRuntimeService } from "../services/localRuntime/localRuntimeS
 
 /** The commands. */
 export const TRY_HERE_COMMAND = "datalayer.apps.tryHere";
+/** The command that opens the application's Validate tab in the browser. */
 export const OPEN_VALIDATE_COMMAND = "datalayer.apps.openValidate";
+/** The command that opens the application's Ship tab in the browser. */
 export const OPEN_SHIP_COMMAND = "datalayer.apps.openShip";
 
 /** How long `loop apps run --web` may take to say where it serves. */

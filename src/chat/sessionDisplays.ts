@@ -213,6 +213,7 @@ export interface AfterSide {
 export const DIFF_WORDS = {
   disk: "after: the file on disk, which holds what the agent wrote",
   notHere: "after: as the agent wrote it (the file is not in this folder)",
+  /** The file on disk no longer holds what was written. */
   differs: (disk: number, shown: number): string =>
     `after: as the agent wrote it (the file on disk differs: ${disk} bytes on disk, ${shown} bytes written)`,
   datalayer: "after: as the agent wrote it, on its runtime",
@@ -262,9 +263,11 @@ export function afterSideOf(
 
 /** What the editor says in and of a session's terminal. */
 export const TERMINAL_WORDS = {
+  /** The terminal's name in the Terminal panel. */
   name: (title: string): string => `Datalayer: ${title}`,
   readOnly:
     "This terminal shows what the agent ran; its commands are decided in the chat.",
+  /** The command's exit, written after its output. */
   exit: (code: number): string => `[exit ${code}]`,
 } as const;
 

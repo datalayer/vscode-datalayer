@@ -136,12 +136,19 @@ export const ATTENTION_WORDS = {
   notShown: "Open the chat to read the whole request before deciding it: Show.",
   answeredElsewhere: "This approval was answered elsewhere.",
   gone: "This approval is no longer waiting.",
+  /** What a decision came to: approved. */
   approved: (action: string): string => `Approved: ${action}.`,
+  /** What a decision came to: declined. */
   declined: (action: string): string => `Declined: ${action}.`,
+  /** A decision the route refused, with its status. */
   refused: (status: number): string => `The decision was refused (${status}).`,
+  /** The status bar while a turn of any session runs. */
   working: "Datalayer: working…",
+  /** The status bar while sessions wait for the person. */
   waiting: (count: number): string => `Datalayer: ${count} waiting for you`,
+  /** A finished turn of a session not in front, when its answer has no first line. */
   finished: (title: string): string => `${title} finished its turn.`,
+  /** A session whose runtime no longer holds it. */
   runtimeGone: (title: string): string => `${title}: its runtime went away.`,
 } as const;
 

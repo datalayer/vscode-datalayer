@@ -126,7 +126,7 @@ async function main() {
     // Step 2: Verify installation
     console.log('🔍 Step 2: Verifying installation...');
     const { stdout } = await runCommand(CODE_CLI, ['--list-extensions'], { silent: true });
-    const extensionId = 'datalayer.datalayer-jupyter-vscode';
+    const extensionId = 'datalayer.datalayer-vscode';
 
     if (!stdout.includes(extensionId)) {
       throw new Error(`Extension ${extensionId} not found in installed extensions`);
@@ -209,7 +209,7 @@ const vscode = require('vscode');
 async function activate() {
   try {
     // Wait for extension to activate
-    const extensionId = 'datalayer.datalayer-jupyter-vscode';
+    const extensionId = 'datalayer.datalayer-vscode';
     const extension = vscode.extensions.getExtension(extensionId);
 
     if (!extension) {

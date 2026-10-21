@@ -67,7 +67,11 @@ export interface SessionSources {
   /** The sessions on Datalayer, for the person signed in. */
   datalayer(): Promise<ListedSession[]>;
   /** The local runtimes running, each with its sessions. */
-  local(): Array<{ place: SessionPlace; list(): Promise<ListedSession[]> }>;
+  local(): Array<{
+    place: SessionPlace;
+    /** Reads the runtime's sessions. */
+    list(): Promise<ListedSession[]>;
+  }>;
   /** The person's team runs. */
   teams(): Promise<TeamRun[]>;
   /** Fires when a place appears or goes (a local runtime started or stopped). */
@@ -463,8 +467,11 @@ function message(error: unknown): string {
 
 /** The sign-in the sources read from. */
 export interface SessionSourcesAuth {
+  /** Whether the person is signed in. */
   isAuthenticated(): boolean;
+  /** The person's token, or `""` signed out. */
   getToken(): string;
+  /** The sign-in's state, with the person. */
   getAuthState(): VSCodeAuthState;
 }
 

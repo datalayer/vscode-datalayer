@@ -59,7 +59,12 @@ import { showLocalRuntimeRefusal } from "./localRuntime";
 
 /** What the commands need. */
 export interface SessionsCommandServices {
-  authProvider: { getToken(): string; isAuthenticated(): boolean };
+  authProvider: {
+    /** The person's token, or `""` signed out. */
+    getToken(): string;
+    /** Whether the person is signed in. */
+    isAuthenticated(): boolean;
+  };
   datalayer: ExtendedDatalayerClient;
   sessionsTreeProvider: SessionsTreeProvider;
   localRuntimes: LocalRuntimeService;

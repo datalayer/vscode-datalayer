@@ -38,6 +38,7 @@ import type { ApprovalNotifications } from "../ui/approvalNotifications";
 
 /** What the source watches: the local runtimes running. */
 export interface WatchedRuntimes {
+  /** The runtimes running now, each with its folder. */
   list(): Array<{ url: string; folder: { name: string } }>;
   onDidChange: vscode.Event<void>;
 }

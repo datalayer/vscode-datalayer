@@ -52,7 +52,9 @@ import {
 
 /** A sign-in the service reads from: the token, when there is one. */
 export interface TokenSource {
+  /** The person's token, or `""` signed out. */
   getToken(): string;
+  /** Whether the person is signed in. */
   isAuthenticated(): boolean;
 }
 
