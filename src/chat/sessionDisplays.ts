@@ -275,7 +275,7 @@ export const TERMINAL_WORDS = {
    *
    * @param title - The session's title.
    *
-   * @returns *Datalayer: <title>*.
+   * @returns The name, *Datalayer: <title>*.
    */
   name: (title: string): string => `Datalayer: ${title}`,
   readOnly:
@@ -283,9 +283,9 @@ export const TERMINAL_WORDS = {
   /**
    * The command's exit, written after its output.
    *
-   * @param code - The exit code.
+   * @param code - What the command ended with.
    *
-   * @returns `[exit <code>]`.
+   * @returns The line, `[exit <code>]`.
    */
   exit: (code: number): string => `[exit ${code}]`,
 } as const;
