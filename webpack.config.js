@@ -80,6 +80,11 @@ const extensionConfig = {
     path: path.resolve(__dirname, "dist"),
     filename: "extension.js",
     libraryTarget: "commonjs2",
+    // The extension host's Node runs import(): the tools entries (ES modules)
+    // are loaded with it, as `import` externals.
+    environment: {
+      dynamicImport: true,
+    },
   },
   externals: {
     vscode: "commonjs vscode", // the vscode-module is created on-the-fly and must be excluded. Add other modules that cannot be webpack'ed, -> https://webpack.js.org/configuration/externals/
