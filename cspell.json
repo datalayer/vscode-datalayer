@@ -24,7 +24,6 @@
     "agui",
     "anyfile",
     "Appspec",
-    "goosehints",
     "Appspecs",
     "astro",
     "athena",
@@ -63,6 +62,7 @@
     "evals",
     "evalue",
     "excalidraw",
+    "goosehints",
     "harnesses",
     "horizontalrule",
     "idents",
@@ -99,6 +99,7 @@
     "nonce",
     "nteract",
     "numpy",
+    "octicon",
     "odoo",
     "ovsx",
     "PATHEXT",
@@ -116,6 +117,7 @@
     "pyimport",
     "pyodide",
     "pyplot",
+    "pytest",
     "PYTHONUNBUFFERED",
     "reconnections",
     "redactions",
@@ -138,6 +140,7 @@
     "typedoc",
     "typestyle",
     "uids",
+    "unactivated",
     "unassigning",
     "unauthenticated",
     "uninit",
@@ -156,8 +159,6 @@
     "youtu",
     "zeromq",
     "zmqold",
-    "Zustand",
-    "octicon",
-    "pytest"
+    "Zustand"
   ]
 }
