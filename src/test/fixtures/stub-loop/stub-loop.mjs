@@ -128,6 +128,14 @@ if (args[0] === "serve") {
       response.writeHead(status, { "Content-Type": "application/json" });
       response.end(JSON.stringify(value));
     };
+    // Where the runtime answers it (routes/health.py, at the root): the
+    // extension waits on it before it lists or opens anything.
+    if (request.method === "GET" && url.pathname === "/health")
+      return json(200, {
+        status: "healthy",
+        service: "agent-runtimes",
+        version: VERSION,
+      });
     if (request.method === "GET" && url.pathname === "/api/v1/harnesses")
       return json(200, CATALOGUE);
     if (request.method === "GET" && url.pathname === "/api/v1/apps")

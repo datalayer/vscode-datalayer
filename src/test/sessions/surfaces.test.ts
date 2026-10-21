@@ -22,9 +22,12 @@ import { ATTENTION_WORDS } from "../../chat/attention";
 import { LOCAL_AGENT_ID } from "../../chat/localApprovals";
 import { portOf } from "../../services/localRuntime/detect";
 import { LocalApprovalSource } from "../../services/localRuntime/localApprovalSource";
+import { LoggerManager } from "../../services/logging/loggerManager";
+import { ServiceLoggers } from "../../services/logging/loggers";
 import type { ApprovalNotifications } from "../../services/ui/approvalNotifications";
 import type { DiffDocuments } from "../../services/ui/diffDocuments";
 import type { SessionTerminals } from "../../services/ui/sessionTerminal";
+import { createMockExtensionContext } from "../utils/mockFactory";
 
 const STUB_LOOP = path.resolve(
   __dirname,
@@ -104,6 +107,13 @@ suite("A session's surfaces in the editor (VS-07, VS-08, VS-09)", function () {
     await vscode.extensions
       .getExtension("Datalayer.datalayer-vscode")
       ?.activate();
+    // The extension initialised its own bundle's loggers; the sources this
+    // suite builds (LocalApprovalSource) log through this copy of the module.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (LoggerManager as any).instance = undefined;
+    ServiceLoggers.initialize(
+      LoggerManager.getInstance(createMockExtensionContext()),
+    );
     surfaces = await vscode.commands.executeCommand<Surfaces>(
       SESSION_SURFACES_COMMAND,
     );
