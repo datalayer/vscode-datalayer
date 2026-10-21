@@ -446,7 +446,13 @@ export async function activate(
       const { showUnifiedWelcomePrompt, disableBuiltInNotebookTool } =
         await import("./onboarding/unifiedWelcome");
       void disableBuiltInNotebookTool(context, logger);
-      await showUnifiedWelcomePrompt(context, logger);
+      // Shown, not awaited: the welcome waits on the person's answer, and
+      // activation does not (it held the extension unactivated until then).
+      void showUnifiedWelcomePrompt(context, logger).catch((error: unknown) =>
+        logger.warn("The welcome prompt failed", {
+          error: error instanceof Error ? error.message : String(error),
+        }),
+      );
     });
 
     await runActivationStep("Finalizing activation", () => {
