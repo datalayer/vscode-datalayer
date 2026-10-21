@@ -143,6 +143,12 @@ async function runOptionalActivationStep(
   }
 }
 
+/** What the extension's activation answers (`extension.exports`). */
+export interface DatalayerExtensionApi {
+  /** How long the activation took, in milliseconds; none when it failed. */
+  activationMs: number | undefined;
+}
+
 /**
  * Activates the Datalayer VS Code extension by initializing all services, UI, and commands.
  * This function is called when the extension is activated by VS Code.
@@ -150,12 +156,14 @@ async function runOptionalActivationStep(
  *
  * @param context - The extension context provided by VS Code.
  *
- * @returns Promise that resolves when activation is complete.
+ * @returns What the extension tells another (and its tests): how long its
+ * activation took, in milliseconds, once it completed.
  *
  */
 export async function activate(
   context: vscode.ExtensionContext,
-): Promise<void> {
+): Promise<DatalayerExtensionApi> {
+  let activationMs: number | undefined;
   // Outer try-catch for the entire activation
   try {
     console.log("[ACTIVATION] Step 1: Extension activation started");
@@ -443,7 +451,9 @@ export async function activate(
 
     await runActivationStep("Finalizing activation", () => {
       notifyExtensionReady();
-      activationTimer.end("success");
+      activationMs = activationTimer.end("success");
+      // In the host's log, so CI records the number against its budget.
+      console.log(`[ACTIVATION] Activated in ${activationMs.toFixed(0)} ms`);
       logger.info("Datalayer extension activation completed successfully", {
         totalCommands: context.subscriptions.length,
       });
@@ -470,6 +480,7 @@ export async function activate(
       }`,
     );
   }
+  return { activationMs };
 }
 
 /**

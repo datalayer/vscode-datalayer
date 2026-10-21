@@ -389,11 +389,11 @@ export class PerformanceTimer {
    *
    * @param status - Operation status: 'success', 'failure', or 'cancelled' (default: 'success').
    *
-   * @returns Void.
+   * @returns The operation's total duration, in milliseconds.
    *
    * @throws Error if timer has not been started.
    */
-  end(status: "success" | "failure" | "cancelled" = "success"): void {
+  end(status: "success" | "failure" | "cancelled" = "success"): number {
     if (!this.startTime || !this.startMemory) {
       throw new Error("Timer not started. Call start() first.");
     }
@@ -434,6 +434,7 @@ export class PerformanceTimer {
     this.startTime = undefined;
     this.startMemory = undefined;
     this.checkpoints = [];
+    return totalDuration;
   }
 
   /**
