@@ -4,6 +4,14 @@ All notable changes to the Datalayer VS Code extension are documented here.
 
 ## [Unreleased]
 
+## [0.1.0] - 2026-10-21
+
+### Added
+
+- **A coding agent in your folder**: `Datalayer: Start a coding agent here` starts Claude Code, Codex or another coding agent of the catalogue in the open folder on the local runtime, as the blank harness application or one of the folder's own Appspecs, and opens its session in the Datalayer Chat; your own `CLAUDE.md`/`AGENTS.md` is kept and said; a coding agent whose own instructions file the folder already has is refused in a sentence; the open file reaches the agent only when it asks and the application lets it
+- **Try it here**: `Datalayer: Try this application` runs the Appspec or `app.py` open in the editor on your machine with hot reload (`loop apps run --web --watch`) and shows its page in a panel beside the editor; `Open this application's Validate tab` and `… Ship tab` open the application's pages in the browser
+- **Tests**: the pure modules under a vitest `pure` project (`src/test/vitest`, node), beside the webview's; the extension-host suite gains the coding agent and Try against a stub `loop` (`src/test/fixtures/stub-loop`), run by CI on three OSes
+
 ### Added
 
 - **Sessions view**: your sessions on Datalayer and on this machine in the Datalayer sidebar, grouped by place then application, each with its state, agent, turns and lineage; a Teams group with your team runs and their seats; a filter by application, state and title; refreshed on sign-in, on a local runtime's start or stop and by the title's button, never polled; an unreachable place said in one row

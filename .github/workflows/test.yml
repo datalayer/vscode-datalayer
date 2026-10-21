@@ -8,6 +8,7 @@ on:
       - "webview/**"
       - "*.json"
       - "*.ts"
+      - ".vscode-test.mjs"
       - ".github/workflows/test.yml"
   pull_request:
     branches: [main]
@@ -16,6 +17,7 @@ on:
       - "webview/**"
       - "*.json"
       - "*.ts"
+      - ".vscode-test.mjs"
       - ".github/workflows/test.yml"
 
 concurrency:
@@ -77,7 +79,7 @@ jobs:
           fail_ci_if_error: false
 
   webview-tests:
-    name: Webview Tests
+    name: Webview and pure-module tests
     runs-on: ubuntu-latest
     timeout-minutes: 10
 
@@ -99,7 +101,7 @@ jobs:
       - name: Install dependencies
         run: npm install --ignore-engines
 
-      - name: Run webview tests with coverage
+      - name: Run the webview and pure-module tests with coverage (both vitest projects)
         run: npx vitest run --coverage
 
       - name: Upload webview coverage to Codecov

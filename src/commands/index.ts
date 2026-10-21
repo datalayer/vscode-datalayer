@@ -29,6 +29,7 @@ import { DatalayerAuthProvider } from "../services/core/authProvider";
 import type { LocalRuntimeService } from "../services/localRuntime/localRuntimeService";
 import { registerAgentChatCommands } from "./agentChat";
 import { registerAgUICommands } from "./agui";
+import { registerAppsCommands } from "./apps";
 import { registerAuthCommands } from "./auth";
 import { registerCreateCommands } from "./create";
 import { registerDatasourcesCommands } from "./datasources";
@@ -42,6 +43,7 @@ import { registerRuntimeCommands } from "./runtimes";
 import { registerSecretsCommands } from "./secrets";
 import { registerSessionsCommands } from "./sessions";
 import { registerSnapshotCommands } from "./snapshots";
+import { registerStartHereCommands } from "./startHere";
 import { registerThemeCommands } from "./theme";
 
 // Re-export internal command helpers for use by providers
@@ -144,4 +146,8 @@ export function registerAllCommands(
     sessionsTreeProvider: services.sessionsTreeProvider,
     localRuntimes: services.localRuntimes,
   });
+
+  // A coding agent in the open folder (VS-06), and the Studio's journey from the editor (VS-11).
+  registerStartHereCommands(context, services.localRuntimes);
+  registerAppsCommands(context, services.localRuntimes);
 }

@@ -4,6 +4,7 @@ All services organized by domain. Services contain the core business logic of th
 
 ## Subdirectories
 
+- **apps/** - Running `loop apps run --web` as a child process for _Try it here_ (VS-11)
 - **core/** - Core infrastructure: authentication, Datalayer adapter, service container, error handling
 - **autoConnect/** - Automatic notebook-to-runtime connection using strategy pattern
 - **bridges/** - Communication bridges between extension, webview, and platform

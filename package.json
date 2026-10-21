@@ -3,7 +3,7 @@
   "publisher": "Datalayer",
   "displayName": "Datalayer",
   "description": "✨ 🤖 Managed AI Agents for Data Analysis. LLM are bad at data — we fix that.",
-  "version": "0.0.20",
+  "version": "0.1.0",
   "cache_version": "2",
   "icon": "images/datalayer-logo.png",
   "categories": [
@@ -136,6 +136,7 @@
     "uuid": "^8.3.2",
     "ws": "^8.20.0",
     "y-websocket": "3.0.0",
+    "yaml": "^2.9.1",
     "yjs": "^13.6.30",
     "zeromq": "^6.0.0-beta.20",
     "zod": "4.3.6"
@@ -626,6 +627,28 @@
         "command": "datalayer.local.stop",
         "title": "Stop the Local Runtime",
         "category": "Datalayer"
+      },
+      {
+        "command": "datalayer.sessions.startHere",
+        "title": "Start a coding agent here",
+        "category": "Datalayer",
+        "icon": "$(terminal)"
+      },
+      {
+        "command": "datalayer.apps.tryHere",
+        "title": "Try this application",
+        "category": "Datalayer",
+        "icon": "$(play)"
+      },
+      {
+        "command": "datalayer.apps.openValidate",
+        "title": "Open this application's Validate tab",
+        "category": "Datalayer"
+      },
+      {
+        "command": "datalayer.apps.openShip",
+        "title": "Open this application's Ship tab",
+        "category": "Datalayer"
       }
     ],
     "viewsContainers": {
@@ -854,6 +877,18 @@
         {
           "command": "datalayer.sessions.openInStudio",
           "when": "false"
+        },
+        {
+          "command": "datalayer.apps.tryHere",
+          "when": "resourceExtname == .yaml || resourceExtname == .yml || resourceExtname == .py"
+        },
+        {
+          "command": "datalayer.apps.openValidate",
+          "when": "resourceExtname == .yaml || resourceExtname == .yml || resourceExtname == .py"
+        },
+        {
+          "command": "datalayer.apps.openShip",
+          "when": "resourceExtname == .yaml || resourceExtname == .yml || resourceExtname == .py"
         }
       ],
       "view/title": [
@@ -941,6 +976,11 @@
           "command": "datalayer.local.stop",
           "when": "view == datalayerSessions",
           "group": "3_local@2"
+        },
+        {
+          "command": "datalayer.sessions.startHere",
+          "when": "view == datalayerSessions",
+          "group": "navigation@0"
         }
       ],
       "view/item/context": [
@@ -1163,6 +1203,11 @@
           "command": "datalayer.copyLocalFileToSpace",
           "when": "resourceExtname == .ipynb || resourceExtname == .dlex || resourceExtname == .lexical",
           "group": "5_cutcopypaste@100"
+        },
+        {
+          "command": "datalayer.sessions.startHere",
+          "when": "explorerResourceIsFolder",
+          "group": "navigation@12"
         }
       ],
       "editor/title": [
@@ -1179,6 +1224,11 @@
         {
           "command": "datalayer.agentChat.focus",
           "group": "navigation"
+        },
+        {
+          "command": "datalayer.apps.tryHere",
+          "when": "resourceExtname == .yaml || resourceExtname == .yml || resourceFilename == app.py",
+          "group": "navigation@3"
         }
       ],
       "notebook/toolbar": [

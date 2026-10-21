@@ -438,12 +438,34 @@ export function appHostOf(body: unknown): AppHost {
       "The application holds no Appspec that can be read: open it in the Studio and save it.",
     );
   }
-  const spec = record(stored.spec);
-  const host = record(record(record(spec.deployment).embedded).host);
   const revision = Number(record(stored.state).revision);
+  return appHostOfSpec(
+    record(stored.spec),
+    text(document.name_t),
+    Number.isFinite(revision) ? Math.trunc(revision) : 0,
+  );
+}
+
+/**
+ * What an Appspec says of its host, from the spec itself — read from a
+ * Spacer item (`appHostOf`) or from a file of the workspace (a local
+ * session, VS-06): the same terms, decided the same way.
+ *
+ * @param spec - The Appspec.
+ * @param fallbackName - The name when the spec has none.
+ * @param revision - The version the spec is; 0 for a file.
+ *
+ * @returns Its host's terms.
+ */
+export function appHostOfSpec(
+  spec: Record<string, unknown>,
+  fallbackName = "",
+  revision = 0,
+): AppHost {
+  const host = record(record(record(spec.deployment).embedded).host);
   return {
-    name: text(spec.name) || text(document.name_t),
-    revision: Number.isFinite(revision) ? Math.trunc(revision) : 0,
+    name: text(spec.name) || fallbackName,
+    revision,
     context: texts(host.context).filter((name) => HOST_NAME.test(name)),
     user: host.user === "signed" ? "signed" : "claimed",
     functions: (Array.isArray(host.functions) ? host.functions : [])
