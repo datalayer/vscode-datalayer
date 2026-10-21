@@ -107,7 +107,7 @@ suite("A session's surfaces in the editor (VS-07, VS-08, VS-09)", function () {
     await vscode.extensions
       .getExtension("Datalayer.datalayer-vscode")
       ?.activate();
-    // The extension initialised its own bundle's loggers; the sources this
+    // The extension initialized its own bundle's loggers; the sources this
     // suite builds (LocalApprovalSource) log through this copy of the module.
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (LoggerManager as any).instance = undefined;
