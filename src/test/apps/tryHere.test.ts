@@ -28,7 +28,7 @@ suite("Try this application (VS-11)", function () {
 
   suiteSetup(async () => {
     await vscode.extensions
-      .getExtension("Datalayer.datalayer-vscode")
+      .getExtension("Datalayer.datalayer-jupyter-vscode")
       ?.activate();
     await vscode.workspace
       .getConfiguration("datalayer.local")

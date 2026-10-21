@@ -1,5 +1,5 @@
 {
-  "name": "datalayer-vscode",
+  "name": "datalayer-jupyter-vscode",
   "publisher": "Datalayer",
   "displayName": "Datalayer",
   "description": "✨ 🤖 Managed AI Agents for Data Analysis. LLM are bad at data — we fix that.",
@@ -69,7 +69,7 @@
     "type-check": "tsc --noEmit && tsc --noEmit -p tsconfig.webview.json",
     "vscode:prepublish": "npm run build:icons && npm run sync:tools",
     "vsix": "npm run clean:vsix && npm run package && node scripts/copyZmqBinaries.js && node scripts/copy-external-deps.js && node scripts/optimize-primer.js && npx @vscode/vsce package --no-yarn --no-dependencies",
-    "vsix:install": "code --install-extension ./datalayer-vscode-*.vsix --force",
+    "vsix:install": "code --install-extension ./datalayer-jupyter-vscode-*.vsix --force",
     "watch": "webpack --watch",
     "watch-tests": "tsc -p . -w --outDir out",
     "watch:debug": "npm run clean:dist && cross-env WEBVIEW_DEBUG=1 webpack --watch",

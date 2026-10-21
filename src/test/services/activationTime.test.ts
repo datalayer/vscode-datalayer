@@ -25,7 +25,7 @@ const ACTIVATION_BUDGET_MS = 15_000;
 suite("The extension's activation time (VS-14)", () => {
   test("is measured, said and under its budget", async () => {
     const extension = vscode.extensions.getExtension<DatalayerExtensionApi>(
-      "Datalayer.datalayer-vscode",
+      "Datalayer.datalayer-jupyter-vscode",
     );
     assert.ok(extension, "the extension is not installed in this host");
     const api = await extension.activate();

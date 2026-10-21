@@ -74,7 +74,7 @@ suite("Start a coding agent here (VS-06)", function () {
 
   suiteSetup(async () => {
     await vscode.extensions
-      .getExtension("Datalayer.datalayer-vscode")
+      .getExtension("Datalayer.datalayer-jupyter-vscode")
       ?.activate();
     await vscode.workspace
       .getConfiguration("datalayer.local")

@@ -27,17 +27,17 @@ Tests are numbered with a prefix to control execution order:
 npm run vsix
 
 # Run all smoke tests
-bash .github/scripts/run-smoke-tests.sh ./datalayer-vscode-*.vsix
+bash .github/scripts/run-smoke-tests.sh ./datalayer-jupyter-vscode-*.vsix
 ```
 
 ### Run Individual Test
 
 ```bash
 # Test VSIX structure
-bash .github/scripts/smoke-tests/01-verify-vsix-structure.sh ./datalayer-vscode-*.vsix
+bash .github/scripts/smoke-tests/01-verify-vsix-structure.sh ./datalayer-jupyter-vscode-*.vsix
 
 # Test pyodide import
-node .github/scripts/smoke-tests/02-test-pyodide-import.js ./datalayer-vscode-*.vsix
+node .github/scripts/smoke-tests/02-test-pyodide-import.js ./datalayer-jupyter-vscode-*.vsix
 ```
 
 ## Adding New Smoke Tests

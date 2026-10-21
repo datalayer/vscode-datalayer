@@ -105,7 +105,7 @@ suite("A session's surfaces in the editor (VS-07, VS-08, VS-09)", function () {
 
   suiteSetup(async () => {
     await vscode.extensions
-      .getExtension("Datalayer.datalayer-vscode")
+      .getExtension("Datalayer.datalayer-jupyter-vscode")
       ?.activate();
     // The extension initialized its own bundle's loggers; the sources this
     // suite builds (LocalApprovalSource) log through this copy of the module.
