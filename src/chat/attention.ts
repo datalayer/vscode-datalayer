@@ -136,19 +136,55 @@ export const ATTENTION_WORDS = {
   notShown: "Open the chat to read the whole request before deciding it: Show.",
   answeredElsewhere: "This approval was answered elsewhere.",
   gone: "This approval is no longer waiting.",
-  /** What a decision came to: approved. */
+  /**
+   * What a decision came to: approved.
+   *
+   * @param action - The action in words.
+   *
+   * @returns The sentence.
+   */
   approved: (action: string): string => `Approved: ${action}.`,
-  /** What a decision came to: declined. */
+  /**
+   * What a decision came to: declined.
+   *
+   * @param action - The action in words.
+   *
+   * @returns The sentence.
+   */
   declined: (action: string): string => `Declined: ${action}.`,
-  /** A decision the route refused, with its status. */
+  /**
+   * A decision the route refused.
+   *
+   * @param status - The route's status.
+   *
+   * @returns The sentence.
+   */
   refused: (status: number): string => `The decision was refused (${status}).`,
   /** The status bar while a turn of any session runs. */
   working: "Datalayer: working…",
-  /** The status bar while sessions wait for the person. */
+  /**
+   * The status bar while sessions wait for the person.
+   *
+   * @param count - How many wait.
+   *
+   * @returns The item's text.
+   */
   waiting: (count: number): string => `Datalayer: ${count} waiting for you`,
-  /** A finished turn of a session not in front, when its answer has no first line. */
+  /**
+   * A finished turn of a session not in front, when its answer has no first line.
+   *
+   * @param title - The session's title.
+   *
+   * @returns The sentence.
+   */
   finished: (title: string): string => `${title} finished its turn.`,
-  /** A session whose runtime no longer holds it. */
+  /**
+   * A session whose runtime no longer holds it.
+   *
+   * @param title - The session's title.
+   *
+   * @returns The sentence.
+   */
   runtimeGone: (title: string): string => `${title}: its runtime went away.`,
 } as const;
 

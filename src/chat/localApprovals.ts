@@ -29,7 +29,13 @@ export const LOCAL_AGENT_ID = "default";
 export const LOCAL_APPROVAL_WORDS = {
   notConfirmed:
     "The local runtime did not confirm the decision in time: decide it in the chat.",
-  /** The runtime's socket closed before confirming. */
+  /**
+   * The runtime's socket closed before confirming.
+   *
+   * @param folderName - The folder the runtime runs for.
+   *
+   * @returns The sentence.
+   */
   socketGone: (folderName: string): string =>
     `The local runtime of ${folderName} went away before answering.`,
 } as const;

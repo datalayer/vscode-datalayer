@@ -33,13 +33,32 @@ export interface PickerRuntime {
 
 /** What the chat says of a session opened from the Sessions view. */
 export const OPEN_SESSION_WORDS = {
-  /** The session's conversation is open in the chat. */
+  /**
+   * The session's conversation is open in the chat.
+   *
+   * @param title - The session's title.
+   * @param state - Its state word.
+   *
+   * @returns The sentence.
+   */
   opened: (title: string, state: string): string =>
     `${title || "This session"} (${state}): its conversation is open here.`,
-  /** The local runtime of its folder is not listed. */
+  /**
+   * The local runtime of its folder is not listed.
+   *
+   * @param folderName - The session's folder.
+   *
+   * @returns The sentence.
+   */
   noRuntime: (folderName: string): string =>
     `The local runtime of ${folderName} is not listed: start it from the Sessions view, then open the session again.`,
-  /** Its application's deployment is not listed. */
+  /**
+   * Its application's deployment is not listed.
+   *
+   * @param title - The session's title.
+   *
+   * @returns The sentence.
+   */
   noDeployment: (title: string): string =>
     `${title || "This session"} runs on Datalayer, and its application is not listed here: turn on the Datalayer › Agent Chat setting and keep the application always on in its Ship tab.`,
 } as const;

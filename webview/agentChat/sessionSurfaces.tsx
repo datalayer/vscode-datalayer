@@ -86,6 +86,12 @@ export type SurfacePost =
   | { type: "session-state"; sessions: SessionAttention[] }
   | { type: "session-ended"; sessionKey: string }
   | { type: "session-changed" }
+  | {
+      type: "local-approval-decide";
+      url: string;
+      id: string;
+      approved: boolean;
+    }
   | VsCodeSessionActionPost;
 
 /** The session the chat shows, for what is posted about it. */

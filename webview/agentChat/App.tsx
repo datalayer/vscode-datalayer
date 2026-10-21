@@ -474,9 +474,9 @@ function AppInner(props: AppProps): React.JSX.Element {
     }
   }, [localPending]);
   const decideLocal = useCallback(
-    (approvalId: string, approved: boolean): boolean => {
+    (approvalId: string, approved: boolean): void => {
       if (!selectedAgent) {
-        return false;
+        return;
       }
       postSurface({
         type: "local-approval-decide",
@@ -484,7 +484,6 @@ function AppInner(props: AppProps): React.JSX.Element {
         id: approvalId,
         approved,
       });
-      return true;
     },
     [selectedAgent],
   );
