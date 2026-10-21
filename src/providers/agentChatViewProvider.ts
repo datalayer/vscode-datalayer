@@ -54,6 +54,7 @@ import {
   editorContextOf,
   fetchUserToken,
   isRunOf,
+  loopbackRuntimeUrl,
   signedPrefixesOf,
   type SignedUser,
   signedUserFresh,
@@ -67,6 +68,7 @@ import {
 } from "../services/config/settingsValidator";
 import type { DatalayerAuthProvider } from "../services/core/authProvider";
 import type { ExtendedDatalayerClient } from "../services/core/datalayerAdapter";
+import type { LocalApprovalSource } from "../services/localRuntime/localApprovalSource";
 import type { LocalRuntimeService } from "../services/localRuntime/localRuntimeService";
 import { ServiceLoggers } from "../services/logging/loggers";
 import { getAgentChatHtml } from "../ui/templates/agentChatTemplate";
@@ -178,6 +180,8 @@ export class AgentChatViewProvider implements vscode.WebviewViewProvider {
     private readonly surfaces?: {
       attach(webview: vscode.Webview): vscode.Disposable;
     },
+    /** The local runtimes' approvals (VS-07): posted to the chat's banner. */
+    private readonly localApprovals?: LocalApprovalSource,
   ) {
     // Forward `extensionMode` so the bridge can include JS stack traces in
     // Development builds without leaking them into webview logs in
@@ -190,6 +194,13 @@ export class AgentChatViewProvider implements vscode.WebviewViewProvider {
           ? this.authProvider.getToken() || undefined
           : undefined,
       (url, method, body) => this.signedRunBody(url, method, body),
+      // A local runtime's loopback address (VS-02): plain http/ws to a
+      // runtime running on this machine, and to nothing else.
+      (url) =>
+        loopbackRuntimeUrl(
+          url,
+          (this.localRuntimes?.list() ?? []).map((runtime) => runtime.url),
+        ) !== undefined,
     );
   }
 
@@ -222,6 +233,28 @@ export class AgentChatViewProvider implements vscode.WebviewViewProvider {
     const bridgeSubscription = this.bridge.attach(webviewView.webview);
     const networkSubscription = this.networkBridge.attach(webviewView.webview);
     const surfacesSubscription = this.surfaces?.attach(webviewView.webview);
+    // A local runtime's approvals as they change (VS-07): the banner's
+    // source for a session on this machine; *Show* focuses the chat on one.
+    const approvalsSubscription = this.localApprovals?.onDidChange((change) => {
+      void webviewView.webview.postMessage({
+        type: "local-approvals",
+        url: change.url,
+        approvals: change.approvals,
+      });
+    });
+    if (this.localApprovals) {
+      this.localApprovals.showInChat = (id) => {
+        this.view?.show(true);
+        void this.view?.webview.postMessage({ type: "focus-approval", id });
+      };
+      for (const change of this.localApprovals.all()) {
+        void webviewView.webview.postMessage({
+          type: "local-approvals",
+          url: change.url,
+          approvals: change.approvals,
+        });
+      }
+    }
 
     const messageSubscription = webviewView.webview.onDidReceiveMessage(
       (message: unknown) => {
@@ -285,6 +318,7 @@ export class AgentChatViewProvider implements vscode.WebviewViewProvider {
       bridgeSubscription.dispose();
       networkSubscription.dispose();
       surfacesSubscription?.dispose();
+      approvalsSubscription?.dispose();
       messageSubscription.dispose();
       authSubscription.dispose();
       themeSubscription.dispose();

@@ -22,6 +22,7 @@ import type { SessionRow } from "@datalayer/agent-runtimes/lib/portable/activity
 import * as vscode from "vscode";
 
 import {
+  attentionRowsOf,
   contextValueOf,
   datalayerSessionsUrl,
   executionsUrl,
@@ -57,6 +58,7 @@ import { getValidatedSettingsGroup } from "../services/config/settingsValidator"
 import type { VSCodeAuthState } from "../services/interfaces/IAuthProvider";
 import type { LocalRuntimeService } from "../services/localRuntime/localRuntimeService";
 import { ServiceLoggers } from "../services/logging/loggers";
+import { SESSIONS_ATTENTION_COMMAND } from "../services/ui/sessionStatusBar";
 
 /** What the tree reads: each place's sessions, the team runs. */
 export interface SessionSources {
@@ -396,6 +398,15 @@ export class SessionsTreeProvider
               .local()
               .find((local) => placeKey(local.place) === placeKey(place))
               ?.list() ?? Promise.reject(new Error("the runtime is gone")));
+      // The place's sessions as the status bar watches them (VS-10): every
+      // one listed, unfiltered, through the internal command.
+      void vscode.commands
+        .executeCommand(
+          SESSIONS_ATTENTION_COMMAND,
+          attentionRowsOf(listed),
+          placeKey(place),
+        )
+        .then(undefined, () => undefined);
       const kept = filterSessions(listed, this.filter);
       if (kept.length === 0) {
         return [new NoteItem(NOTHING_LISTED)];

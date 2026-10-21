@@ -28,6 +28,7 @@ import {
   fetchUserToken,
   hostContextTool,
   isRunOf,
+  loopbackRuntimeUrl,
   noneTalkableSentence,
   pendingApprovalsOf,
   pendingApprovalsUrl,
@@ -651,5 +652,38 @@ describe("an approval read again before a decision from the editor", () => {
     expect(approvalUrl("https://prod1.datalayer.run/", "a/1")).toBe(
       "https://prod1.datalayer.run/api/ai-agents/v1/tool-approvals/a%2F1",
     );
+  });
+});
+
+describe("a local runtime's loopback address (VS-02)", () => {
+  const running = ["http://127.0.0.1:41231", "http://127.0.0.1:41232/"];
+
+  it("lets plain http and ws through to a runtime running on this machine", () => {
+    expect(
+      loopbackRuntimeUrl("http://127.0.0.1:41231/api/v1/apps/sessions", running)
+        ?.href,
+    ).toBe("http://127.0.0.1:41231/api/v1/apps/sessions");
+    expect(
+      loopbackRuntimeUrl("ws://127.0.0.1:41232/api/v1/apps/ui", running)?.href,
+    ).toBe("ws://127.0.0.1:41232/api/v1/apps/ui");
+  });
+
+  it("lets nothing else through", () => {
+    // Another port, another host, a credential, https (which is the bridge's own rule).
+    expect(
+      loopbackRuntimeUrl("http://127.0.0.1:9999/x", running),
+    ).toBeUndefined();
+    expect(
+      loopbackRuntimeUrl("http://10.0.0.1:41231/x", running),
+    ).toBeUndefined();
+    expect(
+      loopbackRuntimeUrl("http://a:b@127.0.0.1:41231/x", running),
+    ).toBeUndefined();
+    expect(
+      loopbackRuntimeUrl("https://127.0.0.1:41231/x", running),
+    ).toBeUndefined();
+    expect(loopbackRuntimeUrl("file:///etc/passwd", running)).toBeUndefined();
+    expect(loopbackRuntimeUrl("not a url", running)).toBeUndefined();
+    expect(loopbackRuntimeUrl("http://127.0.0.1:41231/x", [])).toBeUndefined();
   });
 });

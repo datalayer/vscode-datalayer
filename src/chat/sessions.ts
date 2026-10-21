@@ -587,3 +587,25 @@ export const NO_TEAM_RUN = "No team run yet.";
 export function teamsProblemSentence(message: string): string {
   return `Datalayer did not answer for your team runs: ${message}`;
 }
+
+/**
+ * The sessions of a place as the status bar watches them (VS-10): one row
+ * per session listed, by its uid, none in front — the chat says which is.
+ *
+ * @param listed - The place's sessions as read.
+ *
+ * @returns The rows for `datalayer.internal.sessions.attention`.
+ */
+export function attentionRowsOf(
+  listed: readonly ListedSession[],
+): SessionAttention[] {
+  return listed.map(({ row }) => ({
+    key: row.uid,
+    title: row.title || row.uid,
+    agent: row.agent,
+    state: row.state,
+    turn: row.turn,
+    held: row.held,
+    inFront: false,
+  }));
+}

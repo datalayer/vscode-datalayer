@@ -41,16 +41,22 @@ import {
   pickedHandleOf,
   talkableKeyOf,
 } from "../../src/chat/appChat";
-import { openSessionChoice } from "../../src/chat/openSession";
+import type { ApprovalRaised } from "../../src/chat/attention";
+import {
+  localSessionProtocol,
+  openSessionChoice,
+} from "../../src/chat/openSession";
 import type { OpenSessionRequest } from "../../src/chat/sessionVerbs";
 
 import {
   answerTextOf,
   ensureDisplayRenderers,
   noteTurn,
+  postSurface,
   reportNoSession,
   reportSessionChanged,
   reportSessionState,
+  reportToolDisplay,
   reportToolResult,
   setSurfaceContext,
 } from "./sessionSurfaces";
@@ -233,6 +239,8 @@ export interface AppProps {
   services: { aiAgentsUrl: string; spacerUrl: string } | null;
   /** The session the Sessions view asked to open, or null. */
   openRequest: OpenSessionRequest | null;
+  /** The local runtimes' pending approvals, by runtime address (VS-07). */
+  localApprovals: Record<string, ApprovalRaised[]>;
   /** Reads the editor's open file, through the extension host. */
   readEditor: () => Promise<EditorContext | undefined>;
   /** Asks the extension host to sign the person for a deployment (D-21). */
@@ -293,6 +301,7 @@ function AppInner(props: AppProps): React.JSX.Element {
     deploymentsError,
     services,
     openRequest,
+    localApprovals,
     readEditor,
     signUser,
     onRefreshAgents,
@@ -395,6 +404,29 @@ function AppInner(props: AppProps): React.JSX.Element {
     [],
   );
 
+  // A session of a deployed application opened from the Sessions view
+  // (VS-24): its conversation read by uid on the kept runtime.
+  const openedApp =
+    openRequest &&
+    openRequest.place.kind !== "local" &&
+    selectedApp &&
+    Boolean(openRequest.appUid) &&
+    selectedApp.appUid === openRequest.appUid
+      ? openRequest
+      : null;
+
+  // The session opened on the runtime picked (VS-24): the Sessions view's
+  // request, when it names this local runtime — its conversation read by
+  // uid over the session API, the thread's menu drawn.
+  const openedLocal =
+    openRequest &&
+    openRequest.place.kind === "local" &&
+    selectedAgent?.place === "local" &&
+    openRequest.place.url.replace(/\/+$/, "") ===
+      selectedAgent.ingress.replace(/\/+$/, "")
+      ? openRequest
+      : null;
+
   // The session the editor's surfaces are told of: a runtime's chat here
   // (an application's chat names its own in `AppChat`); none when nothing
   // is picked. The displays' renderers (a diff, a terminal) are mounted once.
@@ -402,11 +434,13 @@ function AppInner(props: AppProps): React.JSX.Element {
     if (selectedAgent) {
       ensureDisplayRenderers();
       setSurfaceContext({
-        sessionKey: `runtime:${selectedAgent.runtimeName}`,
-        title: selectedAgent.givenName,
-        agent: "default",
+        sessionKey: openedLocal
+          ? openedLocal.uid
+          : `runtime:${selectedAgent.runtimeName}`,
+        title: openedLocal?.title || selectedAgent.givenName,
+        agent: openedLocal?.agent ?? "default",
         harness: "",
-        app: selectedAgent.givenName,
+        app: openedLocal?.title || selectedAgent.givenName,
         local: selectedAgent.place === "local",
       });
       reportSessionState({ turn: "idle" });
@@ -419,7 +453,41 @@ function AppInner(props: AppProps): React.JSX.Element {
       reportNoSession();
     }
     return undefined;
-  }, [selectedAgent, selectedApp]);
+  }, [selectedAgent, selectedApp, openedLocal]);
+
+  // A local runtime's approvals (VS-07): the banner's source for a session
+  // on this machine — read by the host over the runtime's websocket; the
+  // banner listing them is what allows a decision from the notification.
+  const localPending = useMemo<ApprovalRaised[]>(
+    () =>
+      selectedAgent?.place === "local"
+        ? (localApprovals[selectedAgent.ingress.replace(/\/+$/, "")] ?? [])
+        : [],
+    [selectedAgent, localApprovals],
+  );
+  useEffect(() => {
+    if (localPending.length > 0) {
+      postSurface({
+        type: "approval-shown",
+        ids: localPending.map((approval) => approval.id),
+      });
+    }
+  }, [localPending]);
+  const decideLocal = useCallback(
+    (approvalId: string, approved: boolean): boolean => {
+      if (!selectedAgent) {
+        return false;
+      }
+      postSurface({
+        type: "local-approval-decide",
+        url: selectedAgent.ingress,
+        id: approvalId,
+        approved,
+      });
+      return true;
+    },
+    [selectedAgent],
+  );
 
   // Not authenticated — show sign-in prompt.
   if (!auth.authenticated) {
@@ -623,8 +691,10 @@ function AppInner(props: AppProps): React.JSX.Element {
                 <LazyAppChat
                   // A new conversation for each deployment picked, or when
                   // where it is kept changes; the same listing keeps it.
-                  key={`${selectedApp.uid} ${selectedApp.version} ${selectedApp.url} ${selectedApp.agentId}`}
+                  // A session opened from the Sessions view is another.
+                  key={`${selectedApp.uid} ${selectedApp.version} ${selectedApp.url} ${selectedApp.agentId} ${openedApp?.uid ?? ""}`}
                   handle={selectedApp}
+                  openUid={openedApp?.uid}
                   services={services}
                   user={auth.user}
                   readEditor={readEditor}
@@ -642,13 +712,30 @@ function AppInner(props: AppProps): React.JSX.Element {
             <Suspense fallback={<LoadingChat />}>
               <AgentRuntimesClientProvider client={client}>
                 <LazyChat
-                  protocol={narrowProtocol(settings.protocol)}
+                  // A session opened from the Sessions view (VS-24): its
+                  // conversation, over the session API; another open is
+                  // another chat.
+                  key={openedLocal ? `session:${openedLocal.uid}` : "runtime"}
+                  protocol={
+                    openedLocal
+                      ? localSessionProtocol(
+                          selectedAgent.ingress,
+                          openedLocal.agent,
+                        )
+                      : narrowProtocol(settings.protocol)
+                  }
+                  thread={
+                    openedLocal
+                      ? { id: openedLocal.uid, messages: [], fromRuntime: true }
+                      : undefined
+                  }
+                  sessionActions={openedLocal ? {} : undefined}
                   baseUrl={selectedAgent.ingress}
                   authToken={selectedAgent.token}
                   // The SAAS agent-runtimes server names the default agent
                   // within a pod `default`; it's not the pod name. The pod
                   // identifier goes in `runtimeId` for tracking/telemetry.
-                  agentId="default"
+                  agentId={openedLocal?.agent ?? "default"}
                   runtimeId={selectedAgent.runtimeName}
                   height="100%"
                   showHeader={true}
@@ -659,9 +746,19 @@ function AppInner(props: AppProps): React.JSX.Element {
                   clearOnMount={true}
                   // What the editor draws of the session: a terminal's
                   // output in the Terminal panel, the turn in the status bar.
+                  onToolCallUpdate={({ display }) => {
+                    reportToolDisplay(display);
+                  }}
                   onToolCallComplete={({ toolName, result }) => {
                     reportToolResult(toolName, result);
                   }}
+                  pendingApprovals={localPending}
+                  onApproveApproval={(approvalId) =>
+                    decideLocal(approvalId, true)
+                  }
+                  onRejectApproval={(approvalId) =>
+                    decideLocal(approvalId, false)
+                  }
                   onMessageSent={() => {
                     noteTurn();
                     reportSessionState({ turn: "running" });

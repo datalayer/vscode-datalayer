@@ -34,7 +34,6 @@ import {
   appPicks,
   configureRequestOf,
   harnessPicks,
-  instructionsConflict,
   instructionsFilesOf,
   isAppspec,
   keptSaid,
@@ -212,18 +211,14 @@ async function startHere(
     output.appendLine(part.sentence);
   }
 
-  // The folder's own instructions files: kept, or in the way.
+  // The folder's own instructions files: kept, and said (the runtime keeps
+  // them: the application's instructions go beside, VS-23).
   const own = ownInstructionsFiles(readdirSync(folder.uri.fsPath));
   const harness = {
     id: facts.id,
     name: facts.name,
     instructionsFile: instructionsFiles[facts.id] ?? "",
   };
-  const conflict = instructionsConflict(own, harness);
-  if (conflict) {
-    throw new Error(conflict);
-  }
-
   // The application: the blank one, or one of the folder's own.
   const appPick = await vscode.window.showQuickPick(
     appPicks(harness, folder.name, await workspaceAppspecs(folder)),

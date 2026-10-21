@@ -75,6 +75,7 @@ import {
   reportNoSession,
   reportSessionChanged,
   reportSessionState,
+  reportToolDisplay,
   reportToolResult,
   setSurfaceContext,
 } from "./sessionSurfaces";
@@ -92,6 +93,11 @@ export interface AppChatProps {
   user: { handle: string; email: string } | null;
   /** Reads the editor's open file, through the extension host. */
   readEditor: () => Promise<EditorContext | undefined>;
+  /**
+   * A session of the application opened from the Sessions view (VS-24):
+   * its conversation is read by uid from the kept runtime.
+   */
+  openUid?: string;
   /**
    * Asks the extension host to sign the person for the deployment (D-21):
    * resolves when the host holds a user token for its runs, rejects with
@@ -129,7 +135,7 @@ async function refusalOf(response: Response, what: string): Promise<string> {
  * @returns React element.
  */
 export default function AppChat(props: AppChatProps): React.JSX.Element {
-  const { handle, services, user, readEditor, signUser } = props;
+  const { handle, services, user, readEditor, signUser, openUid } = props;
   const [host, setHost] = useState<AppHost | null>(null);
   const [problem, setProblem] = useState<string | null>(null);
   const [approvals, setApprovals] = useState<AppChatApproval[]>([]);
@@ -397,6 +403,14 @@ export default function AppChat(props: AppChatProps): React.JSX.Element {
       <div style={{ flex: 1, overflow: "hidden" }}>
         <Chat
           protocol="ag-ui"
+          // The session opened from the Sessions view (VS-24), read from
+          // the kept runtime by uid; the thread's menu beside the header.
+          thread={
+            openUid
+              ? { id: openUid, messages: [], fromRuntime: true }
+              : undefined
+          }
+          sessionActions={{}}
           baseUrl={handle.url}
           endpoint={agUiEndpoint(handle)}
           configEndpoint={`${handle.url}/api/v1/configure`}
@@ -417,6 +431,9 @@ export default function AppChat(props: AppChatProps): React.JSX.Element {
           }}
           // What the editor draws of the session: a terminal's output in
           // the Terminal panel, the turn in the status bar.
+          onToolCallUpdate={({ display }) => {
+            reportToolDisplay(display);
+          }}
           onToolCallComplete={({ toolName, result }) => {
             reportToolResult(toolName, result);
           }}

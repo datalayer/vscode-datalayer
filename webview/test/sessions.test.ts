@@ -14,6 +14,7 @@
 
 import {
   applicationOf,
+  attentionRowsOf,
   contextValueOf,
   datalayerSessionsUrl,
   executionsUrl,
@@ -390,5 +391,57 @@ describe("the team runs", () => {
     expect(teamSeatDescription(run!.seats[1]!)).toBe(
       "waiting · no session yet",
     );
+  });
+});
+
+describe("the sessions as the status bar watches them (VS-10)", () => {
+  it("is one row per session listed, none in front", () => {
+    const listed = listedSessionsOf({
+      sessions: [
+        {
+          uid: "s-1",
+          state: "open",
+          turn: "waiting",
+          held: true,
+          agent: "shield-mvp-claude-code",
+          harness: "claude-code",
+          title: "Fix the tests",
+          turns: 2,
+          archived: false,
+          app: { id: "coder", name: "Coder" },
+        },
+        {
+          uid: "s-2",
+          state: "paused",
+          turn: "",
+          held: null,
+          agent: "desk",
+          title: "",
+          turns: 0,
+          archived: false,
+        },
+      ],
+      has_more: false,
+    });
+    expect(attentionRowsOf(listed)).toEqual([
+      {
+        key: "s-1",
+        title: "Fix the tests",
+        agent: "shield-mvp-claude-code",
+        state: "open",
+        turn: "waiting",
+        held: true,
+        inFront: false,
+      },
+      {
+        key: "s-2",
+        title: "s-2",
+        agent: "desk",
+        state: "paused",
+        turn: "",
+        held: null,
+        inFront: false,
+      },
+    ]);
   });
 });

@@ -13,7 +13,10 @@
 
 import * as vscode from "vscode";
 
-import { SessionSurfacesHandler } from "../../bridges/agentChatBridge";
+import {
+  SESSION_SURFACES_COMMAND,
+  SessionSurfacesHandler,
+} from "../../bridges/agentChatBridge";
 import {
   OPEN_SESSION_COMMAND,
   type OpenSessionRequest,
@@ -34,6 +37,7 @@ import { SpacesTreeProvider } from "../../providers/spacesTreeProvider";
 import { EnvironmentCache } from "../cache/environmentCache";
 import { DatalayerAuthProvider } from "../core/authProvider";
 import type { ExtendedDatalayerClient } from "../core/datalayerAdapter";
+import { LocalApprovalSource } from "../localRuntime/localApprovalSource";
 import type { LocalRuntimeService } from "../localRuntime/localRuntimeService";
 import { ServiceLoggers } from "../logging/loggers";
 import { ApprovalNotifications } from "./approvalNotifications";
@@ -222,11 +226,20 @@ export async function initializeUI(
   const terminals = new SessionTerminals();
   const sessionStatusBar = new SessionStatusBar();
   context.subscriptions.push(diffs, terminals, sessionStatusBar);
+  const approvalNotifications = new ApprovalNotifications();
+  // The local runtimes' approvals (VS-07): decided over each runtime's
+  // websocket, said as notifications and handed to the chat's banner.
+  const localApprovals = new LocalApprovalSource(
+    localRuntimes,
+    approvalNotifications,
+  );
+  context.subscriptions.push(localApprovals);
   const surfaces = new SessionSurfacesHandler({
     diffs,
     terminals,
-    approvals: new ApprovalNotifications(),
+    approvals: approvalNotifications,
     statusBar: sessionStatusBar,
+    localApprovals,
   });
   const agentChatViewProvider = new AgentChatViewProvider(
     context,
@@ -234,6 +247,18 @@ export async function initializeUI(
     datalayer,
     localRuntimes,
     surfaces,
+    localApprovals,
+  );
+  // The surfaces' services, for the extension-host suite (the diff
+  // documents' scheme is registered once, by this instance).
+  context.subscriptions.push(
+    vscode.commands.registerCommand(SESSION_SURFACES_COMMAND, () => ({
+      diffs,
+      terminals,
+      approvals: approvalNotifications,
+      statusBar: sessionStatusBar,
+      localApprovals,
+    })),
   );
   // A local runtime started or stopped is a place the picker lists.
   context.subscriptions.push(

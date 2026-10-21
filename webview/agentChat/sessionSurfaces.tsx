@@ -32,6 +32,7 @@ import {
   SHIELD_TERMINAL_TYPE,
 } from "@datalayer/agent-runtimes/lib/portable/displays";
 import { LoopSessionAction } from "@datalayer/agent-runtimes/lib/apps/core";
+import type { ProtocolDisplay } from "@datalayer/agent-runtimes/lib/portable/displays";
 import type { ToolCallRenderContext } from "@datalayer/agent-runtimes/lib/types/chat";
 import {
   buildReactorFromPlugins,
@@ -229,6 +230,26 @@ export function reportToolResult(toolName: string, result: unknown): void {
 }
 
 /**
+ * A running tool call's display as the stream updates it (VS-24's hook,
+ * `onToolCallUpdate`): a terminal display is written to the session's
+ * terminal in the editor as the command streams, not only when it ends.
+ *
+ * @param display - The display as it stands now.
+ */
+export function reportToolDisplay(display: ProtocolDisplay): void {
+  const shown = context;
+  if (!shown || display.kind !== "terminal") {
+    return;
+  }
+  post({
+    type: "terminal-output",
+    sessionKey: shown.sessionKey,
+    title: shown.title,
+    display,
+  });
+}
+
+/**
  * The session's state as the chat knows it, for the status bar: the one in
  * front, with its turn's phase.
  *
@@ -399,5 +420,9 @@ export function ensureDisplayRenderers(): void {
       ),
     ],
   });
-  registerReactor(buildReactorFromPlugins([plugin as never]));
+  // Started: a Reactor's contributions are read as it starts, so the
+  // renderers and the menu's entries are there for the chat to read.
+  const reactor = buildReactorFromPlugins([plugin as never]);
+  void reactor.start();
+  registerReactor(reactor);
 }

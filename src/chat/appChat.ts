@@ -959,6 +959,50 @@ export function signedPrefixesOf(
 }
 
 /**
+ * A request of the view to a local runtime (VSCODE VS-02): plain `http:`
+ * or `ws:` to the loopback address of a runtime running on this machine —
+ * the one case the bridge lets through without TLS, since the runtime is
+ * this extension's own process. Anything else over `http:`/`ws:` is not.
+ *
+ * @param raw - Where the request goes.
+ * @param runtimeUrls - The local runtimes running (`http://127.0.0.1:<port>`).
+ *
+ * @returns The URL when it is one of theirs; otherwise `undefined`.
+ */
+export function loopbackRuntimeUrl(
+  raw: string,
+  runtimeUrls: readonly string[],
+): URL | undefined {
+  let target: URL;
+  try {
+    target = new URL(raw);
+  } catch {
+    return undefined;
+  }
+  if (
+    (target.protocol !== "http:" && target.protocol !== "ws:") ||
+    target.username ||
+    target.password ||
+    (target.hostname !== "127.0.0.1" && target.hostname !== "localhost")
+  ) {
+    return undefined;
+  }
+  const runs = runtimeUrls.some((runtime) => {
+    try {
+      const local = new URL(runtime);
+      return (
+        local.protocol === "http:" &&
+        local.hostname === target.hostname &&
+        local.port === target.port
+      );
+    } catch {
+      return false;
+    }
+  });
+  return runs ? target : undefined;
+}
+
+/**
  * Whether a request of the view is signed with the person's token: an
  * HTTPS URL under one of the prefixes, its origin the prefix's own.
  *

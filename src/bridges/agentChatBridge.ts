@@ -38,6 +38,7 @@ import { localSessionFolder, studioActivityUrl } from "../chat/sessionVerbs";
 import type { ExtendedDatalayerClient } from "../services/core/datalayerAdapter";
 import { ServiceLoggers } from "../services/logging/loggers";
 import type { ApprovalNotifications } from "../services/ui/approvalNotifications";
+import type { LocalApprovalSource } from "../services/localRuntime/localApprovalSource";
 import type { DiffDocuments } from "../services/ui/diffDocuments";
 import {
   sessionsOf,
@@ -338,6 +339,9 @@ export class AgentChatBridgeHandler {
  * - `session-state {sessions}` — the chat's sessions (the one in front):
  *   the status bar and the finished turns.
  * - `session-ended {sessionKey}` — its terminal disposed.
+ * - `local-approval-decide {url, id, approved}` — the banner's decision on
+ *   a local session, sent over the runtime's websocket (VS-07); the host
+ *   posts `local-approvals {url, approvals}` as each runtime's change.
  */
 export type SessionSurfaceMessage =
   | {
@@ -364,7 +368,13 @@ export type SessionSurfaceMessage =
   | { type: "session-state"; sessions: unknown }
   | { type: "session-ended"; sessionKey: string }
   | { type: "reveal-session"; uid: string }
-  | { type: "open-studio"; appUid: string };
+  | { type: "open-studio"; appUid: string }
+  | {
+      type: "local-approval-decide";
+      url: string;
+      id: string;
+      approved: boolean;
+    };
 
 /** The services a session's surfaces are drawn with. */
 export interface SessionSurfaceServices {
@@ -372,10 +382,15 @@ export interface SessionSurfaceServices {
   terminals: SessionTerminals;
   approvals: ApprovalNotifications;
   statusBar: SessionStatusBar;
+  /** The local runtimes' approvals, decided over their websockets (VS-07). */
+  localApprovals?: LocalApprovalSource;
 }
 
 /** How long the chat has to answer a decision asked of it. */
 const DECISION_TIMEOUT_MS = 20_000;
+
+/** The internal command answering the surfaces' services (the extension-host suite's). */
+export const SESSION_SURFACES_COMMAND = "datalayer.internal.sessions.surfaces";
 
 /** The view the chat lives in, focused on *Show*. */
 const CHAT_VIEW_FOCUS_COMMAND = "datalayerAgentChatView.focus";
@@ -442,7 +457,8 @@ export class SessionSurfacesHandler {
       type === "session-state" ||
       type === "session-ended" ||
       type === "reveal-session" ||
-      type === "open-studio"
+      type === "open-studio" ||
+      type === "local-approval-decide"
     );
   }
 
@@ -508,6 +524,24 @@ export class SessionSurfacesHandler {
       case "open-studio":
         await this.elsewhere(raw);
         return;
+      case "local-approval-decide": {
+        // The banner's decision on a local session: sent over the
+        // runtime's websocket; the next snapshot redraws the banner.
+        const source = this.services.localApprovals;
+        if (
+          source &&
+          typeof raw.url === "string" &&
+          typeof raw.id === "string" &&
+          typeof raw.approved === "boolean"
+        ) {
+          const said = await source.decide(raw.url, raw.id, raw.approved);
+          ServiceLoggers.main.info("[Approvals] local decision", {
+            id: raw.id,
+            said,
+          });
+        }
+        return;
+      }
       default:
         return;
     }

@@ -297,6 +297,10 @@ const ALLOWED_FETCH_PROTOCOLS: ReadonlySet<string> = new Set(["https:"]);
 /** WSS-only allowlist for outbound `WebSocket` connections. */
 const ALLOWED_WS_PROTOCOLS: ReadonlySet<string> = new Set(["wss:"]);
 
+/** The plain schemes, let through for a local runtime's loopback address only. */
+const PLAIN_FETCH: ReadonlySet<string> = new Set(["http:"]);
+const PLAIN_WS: ReadonlySet<string> = new Set(["ws:"]);
+
 /**
  * Handles `net.*` messages from the Agent Chat webview by relaying them to
  * real HTTP/WebSocket endpoints from the extension host.
@@ -322,6 +326,12 @@ export class AgentChatNetworkBridge {
       method: string,
       body: string,
     ) => Promise<string | undefined> = async () => undefined,
+    /**
+     * Answers whether a plain `http:`/`ws:` URL is let through: the loopback
+     * address of a local runtime running on this machine (VS-02), and
+     * nothing else — the provider knows which run (`loopbackRuntimeUrl`).
+     */
+    private readonly allowsPlain: (url: string) => boolean = () => false,
   ) {}
 
   /** All WebSocket connections owned by this handler, keyed by socketId. */
@@ -429,7 +439,9 @@ export class AgentChatNetworkBridge {
     // Reject non-HTTPS targets up front so a compromised webview cannot use
     // the bridge as an SSRF primitive (file://, internal HTTP, custom
     // schemes, etc.). The Datalayer agent runtime ingress is always HTTPS.
-    const validated = validateBridgeUrl(url, ALLOWED_FETCH_PROTOCOLS);
+    const validated =
+      validateBridgeUrl(url, ALLOWED_FETCH_PROTOCOLS) ??
+      (this.allowsPlain(url) ? validateBridgeUrl(url, PLAIN_FETCH) : undefined);
     if (!validated) {
       ServiceLoggers.main.warn(
         "[AgentChatNetBridge] rejected fetch with disallowed URL",
@@ -606,7 +618,9 @@ export class AgentChatNetworkBridge {
     // WebSocket targets are restricted to `wss://` for the same reason as
     // fetch — the bridge runs in the host's network identity and must not
     // accept arbitrary schemes from the webview.
-    const validated = validateBridgeUrl(url, ALLOWED_WS_PROTOCOLS);
+    const validated =
+      validateBridgeUrl(url, ALLOWED_WS_PROTOCOLS) ??
+      (this.allowsPlain(url) ? validateBridgeUrl(url, PLAIN_WS) : undefined);
     if (!validated) {
       ServiceLoggers.main.warn(
         "[AgentChatNetBridge] rejected ws-open with disallowed URL",

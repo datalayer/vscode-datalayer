@@ -27,6 +27,7 @@ import React from "react";
 import { createRoot } from "react-dom/client";
 
 import type { AppChatChoice, EditorContext } from "../../src/chat/appChat";
+import type { ApprovalRaised } from "../../src/chat/attention";
 import type { OpenSessionRequest } from "../../src/chat/sessionVerbs";
 import {
   type AgentChatAuthState,
@@ -105,6 +106,9 @@ let currentDeploymentsError: string | null = null;
 let currentServices: { aiAgentsUrl: string; spacerUrl: string } | null = null;
 // The session the Sessions view asked to open, if any.
 let currentOpenRequest: OpenSessionRequest | null = null;
+// The local runtimes' approvals, by runtime address (VS-07): the host reads
+// them over each runtime's websocket and posts them as they change.
+let currentLocalApprovals: Record<string, ApprovalRaised[]> = {};
 // The view's requests for the editor's open file, by id.
 const editorRequests = new Map<
   string,
@@ -223,6 +227,7 @@ function render(): void {
       deploymentsError={currentDeploymentsError}
       services={currentServices}
       openRequest={currentOpenRequest}
+      localApprovals={currentLocalApprovals}
       readEditor={requestEditorContext}
       signUser={requestSignedUser}
       onRefreshAgents={handleRefreshAgents}
@@ -297,6 +302,17 @@ window.addEventListener("message", (event) => {
     }
     case "open-session": {
       currentOpenRequest = (data as { request: OpenSessionRequest }).request;
+      render();
+      break;
+    }
+    case "local-approvals": {
+      const msg = data as { url: string; approvals: ApprovalRaised[] };
+      currentLocalApprovals = {
+        ...currentLocalApprovals,
+        [msg.url.replace(/\/+$/, "")]: Array.isArray(msg.approvals)
+          ? msg.approvals
+          : [],
+      };
       render();
       break;
     }

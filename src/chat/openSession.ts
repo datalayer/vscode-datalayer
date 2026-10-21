@@ -13,6 +13,8 @@
  * @module chat/openSession
  */
 
+import type { ProtocolConfig } from "@datalayer/agent-runtimes/lib/types/protocol";
+
 import type { AppChatChoice } from "./appChat";
 import type { OpenSessionRequest } from "./sessionVerbs";
 
@@ -32,7 +34,7 @@ export interface PickerRuntime {
 /** What the chat says of a session opened from the Sessions view. */
 export const OPEN_SESSION_WORDS = {
   opened: (title: string, state: string): string =>
-    `${title || "This session"} (${state}): its runtime's chat is open here. Its own conversation is opened by the chat's next release; until then this is a new conversation on the same runtime.`,
+    `${title || "This session"} (${state}): its conversation is open here.`,
   noRuntime: (folderName: string): string =>
     `The local runtime of ${folderName} is not listed: start it from the Sessions view, then open the session again.`,
   noDeployment: (title: string): string =>
@@ -79,4 +81,34 @@ export function openSessionChoice(
   return deployment && deployment.kind === "talk"
     ? { value: APP_VALUE + deployment.handle.uid, said }
     : { value: null, said: OPEN_SESSION_WORDS.noDeployment(request.title) };
+}
+
+/**
+ * The chat's protocol on a local runtime (VS-24): the session API's AG-UI
+ * route of the agent, each thread a session — as the Studio's chat view
+ * speaks to a runtime — with its ui channel and its sessions route, so a
+ * session opened by uid is the conversation, and its menu's entries act on
+ * it. Nothing is signed: the runtime is this machine's own.
+ *
+ * @param runtimeUrl - The local runtime's address (`http://127.0.0.1:<port>`).
+ * @param agentId - The agent the sessions run on (`default`).
+ *
+ * @returns The protocol configuration `<Chat protocol>` takes as given.
+ */
+export function localSessionProtocol(
+  runtimeUrl: string,
+  agentId: string,
+): ProtocolConfig {
+  const base = runtimeUrl.replace(/\/+$/, "");
+  const agent = encodeURIComponent(agentId);
+  return {
+    type: "ag-ui",
+    endpoint: `${base}/api/v1/apps/agents/${agent}/ag-ui/`,
+    agentId,
+    configEndpoint: `${base}/api/v1/configure`,
+    enableConfigQuery: true,
+    uiSocket: `${base.replace(/^http/, "ws")}/api/v1/apps/ui`,
+    uiFiles: `${base}/api/v1/apps/agents/${agent}/files`,
+    appSessions: `${base}/api/v1/apps/sessions`,
+  } as ProtocolConfig;
 }

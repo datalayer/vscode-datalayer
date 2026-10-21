@@ -19,7 +19,6 @@ import {
   blankHarnessApp,
   configureRequestOf,
   harnessPicks,
-  instructionsConflict,
   instructionsFilesOf,
   isAppspec,
   keptSaid,
@@ -105,27 +104,24 @@ describe("the folder's own instructions files", () => {
     expect(instructionsFilesOf({})).toEqual({});
   });
 
-  it("refuses when the folder's own file is the one the harness is given", () => {
-    const claude = { name: "Claude Code", instructionsFile: "CLAUDE.md" };
-    expect(instructionsConflict(["CLAUDE.md"], claude)).toContain(
-      "would overwrite yours",
-    );
-    expect(instructionsConflict(["AGENTS.md"], claude)).toBeNull();
-    expect(
-      instructionsConflict(["CLAUDE.md"], { name: "X", instructionsFile: "" }),
-    ).toBeNull();
-  });
-
-  it("says what is kept in the session's first line", () => {
+  it("says what is kept in the session's first line, and where the application's go", () => {
     const codex = { name: "Codex", instructionsFile: "AGENTS.md" };
     expect(keptSaid(["CLAUDE.md"], codex)).toBe(
-      "Your CLAUDE.md is kept as it is. Codex is given its instructions as AGENTS.md, written by Datalayer from the application.",
+      "Your CLAUDE.md is kept as it is. Codex is given the application's instructions as AGENTS.md, written by Datalayer, read-only.",
     );
     expect(keptSaid(["CLAUDE.md", "GEMINI.md"], codex)).toContain(
       "Your CLAUDE.md, GEMINI.md are kept as they are.",
     );
-    expect(keptSaid([], codex)).toContain(
-      "This folder has no instructions file of its own.",
+    expect(keptSaid([], codex)).toBe(
+      "This folder has no instructions file of its own. Codex is given the application's instructions as AGENTS.md, written by Datalayer, read-only.",
+    );
+    // The folder's own file is the harness's: kept, the application's beside it (VS-23).
+    const claude = { name: "Claude Code", instructionsFile: "CLAUDE.md" };
+    expect(keptSaid(["CLAUDE.md"], claude)).toBe(
+      "Your CLAUDE.md is kept as it is. Claude Code reads your CLAUDE.md as its own; the application's instructions are written beside it, as .datalayer/CLAUDE.md (read-only), and go to Claude Code ahead of the session's first prompt.",
+    );
+    expect(keptSaid(["CLAUDE.md"], { name: "X", instructionsFile: "" })).toBe(
+      "Your CLAUDE.md is kept as it is.",
     );
   });
 });

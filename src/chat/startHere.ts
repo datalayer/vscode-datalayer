@@ -101,31 +101,6 @@ export function ownInstructionsFiles(entries: readonly string[]): string[] {
 }
 
 /**
- * Why the start is refused when the folder's own instructions file is the
- * one the harness is given: the runtime writes `<instructions file>` from
- * the application, read-only, over whatever is there — it would overwrite
- * the folder's own. Nothing is started until agent-runtimes keeps it.
- *
- * @param own - The folder's own instructions files.
- * @param harness - The harness picked, with the file it writes.
- *
- * @returns The sentence, or null when nothing of the folder's is in the way.
- */
-export function instructionsConflict(
-  own: readonly string[],
-  harness: { name: string; instructionsFile: string },
-): string | null {
-  if (!harness.instructionsFile || !own.includes(harness.instructionsFile)) {
-    return null;
-  }
-  return (
-    `This folder has its own ${harness.instructionsFile}, and ${harness.name} is given a ${harness.instructionsFile} ` +
-    `that Datalayer writes from the application, read-only: starting it here would overwrite yours. ` +
-    `Move or rename your ${harness.instructionsFile} first, or pick a harness that reads another file.`
-  );
-}
-
-/**
  * The session's first line: what of the folder's own is kept.
  *
  * @param own - The folder's own instructions files.
@@ -137,14 +112,25 @@ export function keptSaid(
   own: readonly string[],
   harness: { name: string; instructionsFile: string },
 ): string {
-  const given = harness.instructionsFile
-    ? ` ${harness.name} is given its instructions as ${harness.instructionsFile}, written by Datalayer from the application.`
-    : "";
+  const file = harness.instructionsFile;
+  if (!file) {
+    return own.length === 0
+      ? "This folder has no instructions file of its own."
+      : `Your ${own.join(", ")} ${own.length === 1 ? "is" : "are"} kept as ${own.length === 1 ? "it is" : "they are"}.`;
+  }
+  const given = ` ${harness.name} is given the application's instructions as ${file}, written by Datalayer, read-only.`;
   if (own.length === 0) {
     return `This folder has no instructions file of its own.${given}`;
   }
   const names = own.join(", ");
-  return `Your ${names} ${own.length === 1 ? "is" : "are"} kept as ${own.length === 1 ? "it is" : "they are"}.${given}`;
+  const kept = `Your ${names} ${own.length === 1 ? "is" : "are"} kept as ${own.length === 1 ? "it is" : "they are"}.`;
+  if (!own.includes(file)) {
+    return `${kept}${given}`;
+  }
+  return (
+    `${kept} ${harness.name} reads your ${file} as its own; the application's instructions are written beside it, ` +
+    `as .datalayer/${file} (read-only), and go to ${harness.name} ahead of the session's first prompt.`
+  );
 }
 
 /** A harness as the quick pick offers it. */
