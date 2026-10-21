@@ -38,6 +38,36 @@ import { listKernelsTool } from "./listKernels";
 import { selectKernelTool } from "./selectKernel";
 
 /**
+ * The tool definitions a package's tools entry exports, or a refusal that
+ * says which package answered what — rather than a TypeError further on.
+ *
+ * @param loaded - What `require` gave for the entry.
+ * @param entry - The entry's specifier.
+ * @param name - The export holding the definitions.
+ *
+ * @returns The entry's tool definitions, as exported.
+ *
+ * @throws Error naming the entry and what it answered, when the export is not an array.
+ */
+function definitionsOf(
+  loaded: unknown,
+  entry: string,
+  name: string,
+): ToolDefinition[] {
+  const value = (loaded as Record<string, unknown> | undefined)?.[name];
+  if (!Array.isArray(value)) {
+    const keys =
+      loaded && typeof loaded === "object"
+        ? Object.keys(loaded).slice(0, 12).join(", ")
+        : typeof loaded;
+    throw new Error(
+      `${entry} has no ${name} array (it answered: ${keys || "nothing"})`,
+    );
+  }
+  return value as ToolDefinition[];
+}
+
+/**
  * Loads all tool definitions from VS Code-specific and package sources asynchronously.
  *
  * @returns Promise resolving to array of all tool definitions.
@@ -51,10 +81,16 @@ async function getAllToolDefinitionsAsync(): Promise<ToolDefinition[]> {
   require("os");
 
   // Import package tool definitions from /tools export (Node.js compatible, excludes React components)
-  const { notebookToolDefinitions } = require("@datalayer/jupyter-react/tools");
-  const {
-    lexicalToolDefinitions,
-  } = require("@datalayer/jupyter-lexical/lib/tools");
+  const notebookToolDefinitions = definitionsOf(
+    require("@datalayer/jupyter-react/tools"),
+    "@datalayer/jupyter-react/tools",
+    "notebookToolDefinitions",
+  );
+  const lexicalToolDefinitions = definitionsOf(
+    require("@datalayer/jupyter-lexical/lib/tools"),
+    "@datalayer/jupyter-lexical/lib/tools",
+    "lexicalToolDefinitions",
+  );
 
   // Filter out executeCode from package tools to avoid duplication
   // Also filter out tools that have missing operations
