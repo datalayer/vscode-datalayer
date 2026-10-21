@@ -19,12 +19,17 @@ import { NotebookProvider } from "../../providers/notebookProvider";
 import { OutlineTreeProvider } from "../../providers/outlineTreeProvider";
 import type { ProjectsTreeProvider } from "../../providers/projectsTreeProvider";
 import { RuntimesTreeProvider } from "../../providers/runtimesTreeProvider";
+import {
+  sessionSourcesOf,
+  SessionsTreeProvider,
+} from "../../providers/sessionsTreeProvider";
 import { SettingsTreeProvider } from "../../providers/settingsTreeProvider";
 import { SmartDynamicControllerManager } from "../../providers/smartDynamicControllerManager";
 import { SpacesTreeProvider } from "../../providers/spacesTreeProvider";
 import { EnvironmentCache } from "../cache/environmentCache";
 import { DatalayerAuthProvider } from "../core/authProvider";
 import type { ExtendedDatalayerClient } from "../core/datalayerAdapter";
+import type { LocalRuntimeService } from "../localRuntime/localRuntimeService";
 import { ServiceLoggers } from "../logging/loggers";
 import { DatalayerStatusBar } from "./statusBar";
 
@@ -39,6 +44,8 @@ export interface ExtensionUI {
   outlineTreeProvider: OutlineTreeProvider;
   /** Tree view provider for spaces */
   spacesTreeProvider: SpacesTreeProvider;
+  /** Tree view provider for the Sessions view (VS-04) */
+  sessionsTreeProvider: SessionsTreeProvider;
   /** Tree view provider for runtimes */
   runtimesTreeProvider: RuntimesTreeProvider;
   /** Optional legacy tree view provider for projects */
@@ -56,6 +63,7 @@ export interface ExtensionUI {
  * @param context - VS Code extension context.
  * @param authProvider - Authentication provider instance.
  * @param datalayer - Datalayer instance.
+ * @param localRuntimes - The local runtimes (VS-02), listed as a place in the Sessions view and the chat.
  *
  * @returns Container with all initialized UI components.
  *
@@ -64,6 +72,7 @@ export async function initializeUI(
   context: vscode.ExtensionContext,
   authProvider: DatalayerAuthProvider,
   datalayer: ExtendedDatalayerClient,
+  localRuntimes: LocalRuntimeService,
 ): Promise<ExtensionUI> {
   const statusBar = DatalayerStatusBar.getInstance(authProvider);
   context.subscriptions.push(statusBar);
@@ -159,6 +168,20 @@ export async function initializeUI(
     }),
   );
 
+  // 2b. Sessions tree provider (between Spaces and Agents): the person's
+  //     sessions on Datalayer and on this machine, and their team runs.
+  const sessionsTreeProvider = new SessionsTreeProvider(
+    sessionSourcesOf(authProvider, localRuntimes),
+    authProvider.onAuthStateChanged,
+  );
+  sessionsTreeProvider.attach(
+    vscode.window.createTreeView("datalayerSessions", {
+      treeDataProvider: sessionsTreeProvider,
+      showCollapseAll: true,
+    }),
+  );
+  context.subscriptions.push(sessionsTreeProvider);
+
   // 3. Runtimes tree provider (THIRD) - shown as "Agents" and includes sections
   const runtimesTreeProvider = new RuntimesTreeProvider(authProvider);
   context.subscriptions.push(
@@ -186,6 +209,11 @@ export async function initializeUI(
     context,
     authProvider,
     datalayer,
+    localRuntimes,
+  );
+  // A local runtime started or stopped is a place the picker lists.
+  context.subscriptions.push(
+    localRuntimes.onDidChange(() => agentChatViewProvider.refresh()),
   );
   context.subscriptions.push(
     vscode.window.registerWebviewViewProvider(
@@ -210,6 +238,7 @@ export async function initializeUI(
     statusBar,
     outlineTreeProvider,
     spacesTreeProvider,
+    sessionsTreeProvider,
     runtimesTreeProvider,
     projectsTreeProvider: undefined,
     settingsTreeProvider,

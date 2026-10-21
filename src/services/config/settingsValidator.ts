@@ -163,6 +163,14 @@ export const agentChatSettingsSchema = z.object({
   enabled: z.boolean().default(APP_CHAT_ENABLED_DEFAULT),
 });
 
+/** Schema for the `datalayer.local` settings group (the local runtime, VS-02). */
+export const localSettingsSchema = z.object({
+  /** Whether a local runtime is started when a session or a Try asks for it. */
+  enabled: z.boolean().default(true),
+  /** Where `loop` is; empty looks on PATH, then under uv tool's and pipx's bins. */
+  loopPath: z.string().default(""),
+});
+
 /** Schema for the `datalayer.completion.inlinellm` settings group. */
 export const inlineLlmCompletionSettingsSchema = z.object({
   /** Toggle LLM-powered inline code completions in Jupyter cells. */
@@ -227,6 +235,8 @@ export type ProseLlmCompletionSettings = z.infer<
 /** Validated agent chat settings. */
 export type AgentChatSettings = z.infer<typeof agentChatSettingsSchema>;
 
+export type LocalSettings = z.infer<typeof localSettingsSchema>;
+
 /** All validated Datalayer extension settings. */
 export interface DatalayerSettings {
   /** Service endpoint URLs. */
@@ -249,6 +259,7 @@ export interface DatalayerSettings {
   proseLlmCompletion: ProseLlmCompletionSettings;
   /** Agent chat sidebar configuration. */
   agentChat: AgentChatSettings;
+  local: LocalSettings;
 }
 
 // ---------------------------------------------------------------------------
@@ -391,6 +402,7 @@ export function getValidatedSettings(): DatalayerSettings {
       agentChatSettingsSchema,
       "agentChat",
     ),
+    local: validateSection("datalayer.local", localSettingsSchema, "local"),
   };
 }
 
@@ -449,6 +461,8 @@ export function getValidatedSettingsGroup<K extends keyof DatalayerSettings>(
         agentChatSettingsSchema,
         "agentChat",
       ),
+    local: () =>
+      validateSection("datalayer.local", localSettingsSchema, "local"),
   };
 
   return mapping[group]() as DatalayerSettings[K];

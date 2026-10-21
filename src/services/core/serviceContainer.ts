@@ -22,6 +22,7 @@ import type { IErrorHandler } from "../interfaces/IErrorHandler";
 import type { IKernelBridge } from "../interfaces/IKernelBridge";
 import type { ILogger } from "../interfaces/ILogger";
 import type { ILoggerManager } from "../interfaces/ILoggerManager";
+import { LocalRuntimeService } from "../localRuntime/localRuntimeService";
 import { LoggerManager } from "../logging/loggerManager";
 import { ServiceLoggers } from "../logging/loggers";
 import { NotebookNetworkService } from "../network/networkProxy";
@@ -47,6 +48,9 @@ export interface IServiceContainer extends ILifecycle {
 
   // Document services
   readonly documentRegistry: DocumentRegistry;
+
+  // The local runtimes (VS-02)
+  readonly localRuntimes: LocalRuntimeService;
 
   // Notebook services
   readonly documentBridge: IDocumentBridge;
@@ -119,7 +123,25 @@ export class ServiceContainer implements IServiceContainer {
    *
    * @param context - The VS Code extension context for accessing extension state.
    */
+  private _localRuntimes?: LocalRuntimeService;
+
   constructor(public readonly context: vscode.ExtensionContext) {}
+
+  /**
+   * The local runtimes (VS-02): one `loop serve` per workspace folder,
+   * started when a session or a Try asks for it, never at activation.
+   */
+  get localRuntimes(): LocalRuntimeService {
+    if (!this._localRuntimes) {
+      this._localRuntimes = new LocalRuntimeService(
+        this.context,
+        this.authProvider as DatalayerAuthProvider,
+        this.logger,
+      );
+      void this._localRuntimes.initialize();
+    }
+    return this._localRuntimes;
+  }
 
   /**
    * Gets or lazily initializes the Datalayer client.
@@ -317,6 +339,9 @@ export class ServiceContainer implements IServiceContainer {
       // Dispose services in reverse order
       if (this._documentBridge) {
         this._documentBridge.dispose();
+      }
+      if (this._localRuntimes) {
+        await this._localRuntimes.dispose();
       }
 
       // Note: Once services are migrated to BaseService,

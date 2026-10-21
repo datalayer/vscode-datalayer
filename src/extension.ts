@@ -199,6 +199,7 @@ export async function activate(
             context,
             services!.authProvider as DatalayerAuthProvider,
             services!.datalayer,
+            services!.localRuntimes,
           ),
         { stage: "extension_activation" },
       );
@@ -288,6 +289,8 @@ export async function activate(
           spacesTreeProvider: ui!.spacesTreeProvider,
           controllerManager: ui!.controllerManager,
           runtimesTreeProvider: ui!.runtimesTreeProvider,
+          sessionsTreeProvider: ui!.sessionsTreeProvider,
+          localRuntimes: services!.localRuntimes,
           projectsTreeProvider: ui!.projectsTreeProvider,
           settingsTreeProvider: ui!.settingsTreeProvider,
           outlineTreeProvider: ui!.outlineTreeProvider,

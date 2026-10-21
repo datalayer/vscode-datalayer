@@ -66,6 +66,7 @@ import {
 } from "../services/config/settingsValidator";
 import type { DatalayerAuthProvider } from "../services/core/authProvider";
 import type { ExtendedDatalayerClient } from "../services/core/datalayerAdapter";
+import type { LocalRuntimeService } from "../services/localRuntime/localRuntimeService";
 import { ServiceLoggers } from "../services/logging/loggers";
 import { getAgentChatHtml } from "../ui/templates/agentChatTemplate";
 
@@ -89,6 +90,8 @@ export interface ChatAgentHandle {
   givenName: string;
   /** Environment name (e.g. `ai-agents-env`). */
   environmentName: string;
+  /** Where it runs: `local` for a local runtime of a workspace folder (VS-02), no token lent to it. */
+  place?: "datalayer" | "local";
 }
 
 /**
@@ -153,11 +156,13 @@ export class AgentChatViewProvider implements vscode.WebviewViewProvider {
    * @param context - VS Code extension context.
    * @param authProvider - Auth provider for event subscription.
    * @param sdk - Shared extended DatalayerClient instance.
+   * @param localRuntimes - The local runtimes (VS-02), listed as places beside Datalayer's runtimes.
    */
   constructor(
     private readonly context: vscode.ExtensionContext,
     private readonly authProvider: DatalayerAuthProvider,
     private readonly sdk: ExtendedDatalayerClient,
+    private readonly localRuntimes?: LocalRuntimeService,
   ) {
     // Forward `extensionMode` so the bridge can include JS stack traces in
     // Development builds without leaking them into webview logs in
@@ -654,6 +659,11 @@ export class AgentChatViewProvider implements vscode.WebviewViewProvider {
             error: err instanceof Error ? err.message : String(err),
           });
         }
+      }
+      // The local runtimes (VS-02): a place beside Datalayer's, over
+      // loopback, no token lent (the bridge signs its prefixes alone).
+      for (const local of this.localRuntimes?.handles() ?? []) {
+        agents.push(local);
       }
       ServiceLoggers.main.debug("[AgentChat] posting agents to webview", {
         agentCount: agents.length,

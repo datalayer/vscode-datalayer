@@ -4,6 +4,14 @@ All notable changes to the Datalayer VS Code extension are documented here.
 
 ## [Unreleased]
 
+### Added
+
+- **Sessions view**: your sessions on Datalayer and on this machine in the Datalayer sidebar, grouped by place then application, each with its state, agent, turns and lineage; a Teams group with your team runs and their seats; a filter by application, state and title; refreshed on sign-in, on a local runtime's start or stop and by the title's button, never polled; an unreachable place said in one row
+- **The seven verbs** on a session, from its context menu: Resume, Switch Agent…, Clone from Here…, Export…, Rename…, Archive, End, and Import a Session… in the title bar — the session API called from the extension host, every refusal the runtime's own sentence; Reveal in Explorer for a local session, Open in the Studio for one on Datalayer
+- **A local runtime** per workspace folder (`loop serve`, started when asked, never at startup): `loop` found on PATH, under uv tool's and pipx's bins or at `datalayer.local.loopPath`, refused in a sentence with the install line (`uv tool install 'agent-runtimes[shield]'`) when missing or too old; listed as a place in the Agent Chat picker; its output in the _Datalayer: Local runtime_ channel; Datalayer: Start/Stop the Local Runtime
+- **The coding agent checked** before it starts here: Datalayer: Check a Coding Agent on This Machine (binaries and Node's version, the adapter, the credential, the terms), `agent-shield setup` offered in a terminal with the command shown whole; Datalayer: Set a Harness Credential keeps it in VS Code's secret storage, never in settings
+- **Settings** `datalayer.local.enabled`, `datalayer.local.loopPath`
+
 ## [0.0.20] - 2026-10-08
 
 ### Added

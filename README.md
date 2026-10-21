@@ -133,6 +133,24 @@ An application you built and deployed in the Datalayer Agent Studio answers in V
 - **Your open file** - only when the application lets its host pass the page (`deployment.embedded.host.context: [page]` in its Appspec) and a rule lets `host_context` run: when its agent asks, it gets the file open in your editor (its path, language, text up to 20,000 characters, and the selection). Nothing is read before it asks, and nothing when the application says otherwise.
 - **Signed users** - an application that takes only a signed user (`deployment.embedded.host.user: signed`) is opened in VS Code with a short user token Datalayer signs for you (fifteen minutes; the extension host asks ai-agents for it with your token and puts it in the runs; the sidebar never holds it), sent with each run as `forwardedProps.loop.user_token`. Only the version deployed decides: when the application was saved since, it is not opened until that version is deployed.
 
+### Sessions
+
+The **Sessions** view in the Datalayer sidebar lists the conversations you opened with your applications' agents — **on Datalayer** (the sessions Datalayer keeps for you, grouped by application) and **on this machine** (the sessions of a local runtime running in one of your workspace folders) — each with its state (open, paused, ended, and whether it is answering or waiting for you), its agent and the coding agent it runs on, its turns and where it comes from (cloned from another session at a turn, imported from a file). A **Teams** group lists your team runs with their seats; a seat's session opens by its uid. Filter by application, state and title from the title bar; archived sessions are hidden. The view refreshes when you sign in, when a local runtime starts or stops, and with the title's button — it never polls.
+
+Right-click a session for its verbs, the same `loop sessions` and the web chat offer: **Resume**, **Switch Agent…** (another agent of the runtime goes on with the conversation; it is told so in a sentence, shown to you), **Clone from Here…** (a new session, paused, cut at the turn you name), **Export…** (a `<uid>.session.jsonl` file), **Rename…**, **Archive**, **End**; **Import a Session…** in the title bar imports such a file on a runtime of your choice, and asks you for an agent when the runtime says the file's is not there. Every refusal is the runtime's own sentence. A local session's folder opens with **Reveal in Explorer**; a Datalayer session's application opens with **Open in the Studio**.
+
+### A coding agent in your folder
+
+A coding agent — Claude Code, Codex, any coding agent of the catalogue — runs in a workspace folder **on your own machine**, behind the Shield, through a **local runtime** the extension starts for that folder (`loop serve`, one per folder, never at startup). `loop` is a prerequisite, not bundled: install it once with
+
+```bash
+uv tool install 'agent-runtimes[shield]'
+```
+
+and the extension finds it on your PATH (or under uv tool's and pipx's bins, or where `datalayer.local.loopPath` says). When it is missing or too old, the extension says so in a sentence with the install line to copy. **Datalayer: Start the Local Runtime** and **Stop the Local Runtime** are in the command palette and the Sessions view's menu; the runtime's output is in the _Datalayer: Local runtime_ channel. Its sessions live in `~/.datalayer/sessions`, where `loop sessions list` lists them too.
+
+Before a coding agent starts, **Datalayer: Check a Coding Agent on This Machine** checks what it needs — `node` and `git` and their versions, its adapter, its credential (`ANTHROPIC_API_KEY` for Claude Code, `OPENAI_API_KEY` for Codex) — and says each missing part; it offers to open a terminal with `agent-shield setup --harness <id>` typed for you to run, and to take the credential with **Datalayer: Set a Harness Credential**, which keeps it in VS Code's secret storage, never in settings and never shown. The credential is taken from your environment first, the secret storage second; the extension says which it used. A coding agent whose terms serve third parties with an API key only is not started on a subscription login. When you are signed in, the local runtime is given your Datalayer token and reads your organization's Shield policies; signed out, the local policy file alone.
+
 ## 💡 Common Questions
 
 **Do I need Python locally?** No! Cloud runtimes handle all execution with zero local setup. You can still connect to local Python/Jupyter environments if preferred for hybrid workflows.
@@ -183,6 +201,19 @@ An application you built and deployed in the Datalayer Agent Studio answers in V
 - Context menu in Spaces tree: New Notebook/Datalayer Document in cloud workspace
 - Context menu: Open, Rename, Delete
 
+**Sessions:**
+
+- Refresh/Filter Sessions, Import a Session…
+- Context menu: Resume, Switch Agent…, Clone from Here…, Export…, Rename…, Archive, End, Reveal in Explorer, Open in the Studio
+- Check a Coding Agent on This Machine, Set a Harness Credential
+- Start/Stop the Local Runtime
+- Start a Coding Agent Here
+
+**Applications:**
+
+- Try This Application (hot reload, the page beside the editor)
+- Open This Application's Validate Tab / Ship Tab (in the browser)
+
 **Runtimes:**
 
 - Select/Switch Runtime (local ↔ cloud switching)
@@ -209,6 +240,11 @@ Open settings (`Ctrl+,` / `Cmd+,`) and search "Datalayer":
   - `["Active Runtime", "Ask"]` - Try active runtime, then ask user if none available
   - `["Ask"]` - Always show runtime selection dialog
   - `[]` - No auto-connect, manual selection required
+
+**Local runtime:**
+
+- `datalayer.local.enabled` - Start a local runtime (`loop serve`) in a workspace folder when a session asks for it (default: true)
+- `datalayer.local.loopPath` - Where `loop` is; empty looks on PATH, then under uv tool's and pipx's bins
 
 **Logging:**
 

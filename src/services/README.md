@@ -13,6 +13,7 @@ All services organized by domain. Services contain the core business logic of th
 - **documents/** - Document registry for ID-URI mapping
 - **interfaces/** - TypeScript interfaces for service contracts
 - **kernel/** - Local kernel management (ZMQ, Python extension integration)
+- **localRuntime/** - The local runtime: `loop serve` per workspace folder, `loop` found and judged, the harness check, the credential in the secret storage (VS-02, VS-03)
 - **logging/** - Hierarchical logging with VS Code LogOutputChannel
 - **lsp/** - Language Server Protocol integration for notebook cells
 - **messaging/** - Centralized message routing for document providers

@@ -537,6 +537,95 @@
         "command": "datalayer.openHomeFolder",
         "title": "Datalayer: Open Home Folder",
         "category": "Datalayer"
+      },
+      {
+        "command": "datalayer.sessions.refresh",
+        "title": "Refresh Sessions",
+        "category": "Datalayer",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "datalayer.sessions.filter",
+        "title": "Filter Sessions",
+        "category": "Datalayer",
+        "icon": "$(filter)"
+      },
+      {
+        "command": "datalayer.sessions.import",
+        "title": "Import a Session…",
+        "category": "Datalayer",
+        "icon": "$(cloud-upload)"
+      },
+      {
+        "command": "datalayer.sessions.open",
+        "title": "Open the Session",
+        "category": "Datalayer"
+      },
+      {
+        "command": "datalayer.sessions.resume",
+        "title": "Resume",
+        "category": "Datalayer"
+      },
+      {
+        "command": "datalayer.sessions.swap",
+        "title": "Switch Agent…",
+        "category": "Datalayer"
+      },
+      {
+        "command": "datalayer.sessions.clone",
+        "title": "Clone from Here…",
+        "category": "Datalayer"
+      },
+      {
+        "command": "datalayer.sessions.export",
+        "title": "Export…",
+        "category": "Datalayer"
+      },
+      {
+        "command": "datalayer.sessions.rename",
+        "title": "Rename…",
+        "category": "Datalayer"
+      },
+      {
+        "command": "datalayer.sessions.archive",
+        "title": "Archive",
+        "category": "Datalayer"
+      },
+      {
+        "command": "datalayer.sessions.end",
+        "title": "End",
+        "category": "Datalayer"
+      },
+      {
+        "command": "datalayer.sessions.revealFolder",
+        "title": "Reveal in Explorer",
+        "category": "Datalayer"
+      },
+      {
+        "command": "datalayer.sessions.openInStudio",
+        "title": "Open in the Studio",
+        "category": "Datalayer"
+      },
+      {
+        "command": "datalayer.sessions.checkHarness",
+        "title": "Check a Coding Agent on This Machine",
+        "category": "Datalayer",
+        "icon": "$(checklist)"
+      },
+      {
+        "command": "datalayer.sessions.setCredential",
+        "title": "Set a Harness Credential",
+        "category": "Datalayer"
+      },
+      {
+        "command": "datalayer.local.start",
+        "title": "Start the Local Runtime",
+        "category": "Datalayer"
+      },
+      {
+        "command": "datalayer.local.stop",
+        "title": "Stop the Local Runtime",
+        "category": "Datalayer"
       }
     ],
     "viewsContainers": {
@@ -566,6 +655,12 @@
           "name": "Spaces",
           "icon": "$(cloud)",
           "contextualTitle": "Datalayer Spaces"
+        },
+        {
+          "id": "datalayerSessions",
+          "name": "Sessions",
+          "icon": "$(comment-discussion)",
+          "contextualTitle": "Datalayer Sessions"
         },
         {
           "id": "datalayerRuntimes",
@@ -719,6 +814,46 @@
         {
           "command": "datalayer.projects.viewDetails",
           "when": "false"
+        },
+        {
+          "command": "datalayer.sessions.open",
+          "when": "false"
+        },
+        {
+          "command": "datalayer.sessions.resume",
+          "when": "false"
+        },
+        {
+          "command": "datalayer.sessions.swap",
+          "when": "false"
+        },
+        {
+          "command": "datalayer.sessions.clone",
+          "when": "false"
+        },
+        {
+          "command": "datalayer.sessions.export",
+          "when": "false"
+        },
+        {
+          "command": "datalayer.sessions.rename",
+          "when": "false"
+        },
+        {
+          "command": "datalayer.sessions.archive",
+          "when": "false"
+        },
+        {
+          "command": "datalayer.sessions.end",
+          "when": "false"
+        },
+        {
+          "command": "datalayer.sessions.revealFolder",
+          "when": "false"
+        },
+        {
+          "command": "datalayer.sessions.openInStudio",
+          "when": "false"
         }
       ],
       "view/title": [
@@ -771,6 +906,41 @@
           "command": "datalayer.spaces.create",
           "when": "view == datalayerSpaces",
           "group": "navigation@2"
+        },
+        {
+          "command": "datalayer.sessions.refresh",
+          "when": "view == datalayerSessions",
+          "group": "navigation@1"
+        },
+        {
+          "command": "datalayer.sessions.filter",
+          "when": "view == datalayerSessions",
+          "group": "navigation@2"
+        },
+        {
+          "command": "datalayer.sessions.import",
+          "when": "view == datalayerSessions",
+          "group": "navigation@3"
+        },
+        {
+          "command": "datalayer.sessions.checkHarness",
+          "when": "view == datalayerSessions",
+          "group": "2_harness@1"
+        },
+        {
+          "command": "datalayer.sessions.setCredential",
+          "when": "view == datalayerSessions",
+          "group": "2_harness@2"
+        },
+        {
+          "command": "datalayer.local.start",
+          "when": "view == datalayerSessions",
+          "group": "3_local@1"
+        },
+        {
+          "command": "datalayer.local.stop",
+          "when": "view == datalayerSessions",
+          "group": "3_local@2"
         }
       ],
       "view/item/context": [
@@ -928,6 +1098,56 @@
           "command": "datalayer.projects.rename",
           "when": "view == datalayerSpaces && viewItem =~ /^project-/",
           "group": "5_edit"
+        },
+        {
+          "command": "datalayer.sessions.resume",
+          "when": "view == datalayerSessions && viewItem =~ /^session-paused-/",
+          "group": "1_verbs@1"
+        },
+        {
+          "command": "datalayer.sessions.swap",
+          "when": "view == datalayerSessions && viewItem =~ /^session-open-/",
+          "group": "1_verbs@2"
+        },
+        {
+          "command": "datalayer.sessions.clone",
+          "when": "view == datalayerSessions && viewItem =~ /^session-/",
+          "group": "1_verbs@3"
+        },
+        {
+          "command": "datalayer.sessions.export",
+          "when": "view == datalayerSessions && viewItem =~ /^session-/",
+          "group": "1_verbs@4"
+        },
+        {
+          "command": "datalayer.sessions.rename",
+          "when": "view == datalayerSessions && viewItem =~ /^session-(open|paused)-/",
+          "group": "2_edit@1"
+        },
+        {
+          "command": "datalayer.sessions.archive",
+          "when": "view == datalayerSessions && viewItem =~ /^session-/",
+          "group": "2_edit@2"
+        },
+        {
+          "command": "datalayer.sessions.end",
+          "when": "view == datalayerSessions && viewItem =~ /^session-(open|paused)-/",
+          "group": "3_end@1"
+        },
+        {
+          "command": "datalayer.sessions.revealFolder",
+          "when": "view == datalayerSessions && viewItem =~ /^session-.*-local$/",
+          "group": "4_extension@1"
+        },
+        {
+          "command": "datalayer.sessions.openInStudio",
+          "when": "view == datalayerSessions && viewItem =~ /^session-.*-datalayer$/",
+          "group": "4_extension@2"
+        },
+        {
+          "command": "datalayer.sessions.open",
+          "when": "view == datalayerSessions && viewItem == seat-session",
+          "group": "1_verbs@1"
         }
       ],
       "explorer/context": [
@@ -1917,6 +2137,16 @@
           "type": "number",
           "default": -1,
           "markdownDescription": "Number of blocks to include as context when generating prose completions. Use `-1` for entire document (recommended for better context awareness), or specify a positive number to limit context scope."
+        },
+        "datalayer.local.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Start a local runtime (`loop serve`) in a workspace folder when a session or a Try asks for it: a coding agent runs in that folder, behind the Shield, on your own machine. Off, nothing local is started."
+        },
+        "datalayer.local.loopPath": {
+          "type": "string",
+          "default": "",
+          "description": "Where `loop` is (the agent-runtimes command). Empty, it is looked for on PATH, then under uv tool's and pipx's bins. Install it with `uv tool install 'agent-runtimes[shield]'`."
         }
       }
     },
