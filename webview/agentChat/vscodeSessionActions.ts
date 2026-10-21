@@ -22,11 +22,23 @@ import type { SessionActionContribution } from "@datalayer/agent-runtimes/lib/ap
 /** What the entries say. */
 export const VSCODE_SESSION_ACTION_WORDS = {
   reveal: "Reveal in Explorer",
-  /** Said after the folder was shown. */
+  /**
+   * Said after the folder was shown.
+   *
+   * @param uid - The session whose folder it is.
+   *
+   * @returns The sentence.
+   */
   revealed: (uid: string): string =>
     `The folder of ${uid} is shown in the Explorer.`,
   openStudio: "Open in the Studio",
-  /** Said after the Studio page was opened. */
+  /**
+   * Said after the Studio page was opened.
+   *
+   * @param title - The session's title.
+   *
+   * @returns The sentence.
+   */
   opened: (title: string): string =>
     `${title || "This conversation"} is listed on the Studio's Activity, in the browser.`,
 } as const;
