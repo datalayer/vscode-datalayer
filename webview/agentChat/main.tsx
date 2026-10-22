@@ -14,15 +14,6 @@
  * @module webview/agentChat/main
  */
 
-// Tell webpack which nonce to use for dynamically injected <script> tags
-// (async chunks loaded via React.lazy). The nonce value is set by the
-// HTML template before this bundle executes.
-// eslint-disable-next-line @typescript-eslint/naming-convention, camelcase
-declare let __webpack_nonce__: string | undefined;
-// eslint-disable-next-line @typescript-eslint/naming-convention, camelcase, prefer-const
-__webpack_nonce__ = (window as unknown as { __webpack_nonce__?: string })
-  .__webpack_nonce__;
-
 import React from "react";
 import { createRoot } from "react-dom/client";
 

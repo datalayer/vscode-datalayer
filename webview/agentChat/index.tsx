@@ -17,6 +17,16 @@
  * @module webview/agentChat/index
  */
 
+// Tell webpack which nonce to use for the <script> tags of the chunks it
+// loads — this page's own `import("./main")` first, then React.lazy's —
+// before any is asked for: the webview's CSP refuses a script without it.
+// The value is set by the HTML template before this bundle executes.
+// eslint-disable-next-line @typescript-eslint/naming-convention, camelcase
+declare let __webpack_nonce__: string | undefined;
+// eslint-disable-next-line @typescript-eslint/naming-convention, camelcase, prefer-const
+__webpack_nonce__ = (window as unknown as { __webpack_nonce__?: string })
+  .__webpack_nonce__;
+
 import { installNetworkBridge } from "./networkBridge";
 import { vscode } from "./vscodeApi";
 
