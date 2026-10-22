@@ -18,7 +18,11 @@ import type { SessionRow } from "@datalayer/agent-runtimes/lib/portable/activity
 import type { ProtocolConfig } from "@datalayer/agent-runtimes/lib/types/protocol";
 
 import type { AppChatChoice } from "./appChat";
-import { type OpenSessionRequest, sessionTargetOf } from "./sessionVerbs";
+import {
+  type OpenSessionRequest,
+  STUDIO_ORIGIN,
+  sessionTargetOf,
+} from "./sessionVerbs";
 
 /** The picker's value for a runtime. */
 export const RUNTIME_VALUE = "runtime:";
@@ -56,27 +60,78 @@ export const OPEN_SESSION_WORDS = {
    */
   noRuntime: (folderName: string): string =>
     `The local runtime of ${folderName} is not listed: start it from the Sessions view, then open the session again.`,
+  /**
+   * A team run's seat, read from its record.
+   *
+   * @param executionId - The team run.
+   *
+   * @returns The sentence.
+   */
+  teamSeat: (executionId: string): string =>
+    `A seat of team run ${executionId}: its conversation is read here; to act on the run, open it on Datalayer.`,
+  /**
+   * A session on Datalayer on no runtime, read from its record.
+   *
+   * @param state - Its state word (`paused`, `ended`).
+   *
+   * @returns The sentence.
+   */
+  onNoRuntime: (state: string): string =>
+    `${state ? state[0]!.toUpperCase() + state.slice(1) : "Paused"} on no runtime: resume it on Datalayer to go on here.`,
 } as const;
+
+/**
+ * A team run's page on Datalayer, where its verbs are.
+ *
+ * @param executionId - The team run.
+ *
+ * @returns The page's address.
+ */
+export function teamRunUrl(executionId: string): string {
+  return `${STUDIO_ORIGIN}/executions/${encodeURIComponent(executionId)}`;
+}
+
+/** A session read from its record, read-only: why, and where to act on it. */
+export interface RecordRead {
+  /** The sentence under the transcript, why it is read-only. */
+  why: string;
+  /** Where it is acted on, when there is a page for it. */
+  link?: { label: string; url: string };
+}
 
 /**
  * The picker's choice for a session, and the sentence said. A local
  * session: the local runtime whose address is its place. A session on
- * Datalayer: the talkable deployment of its application when the picker
- * lists it, else the person's runtime it runs on. Nothing, said why, when
- * none holds it — a session is never pointed at another runtime.
+ * Datalayer: a team run's seat is read from its record; else the talkable
+ * deployment of its application when the picker lists it, else the
+ * person's runtime it runs on, else — on no runtime — read from its record.
+ * Nothing, said why, when a runtime that is not the person's holds it — a
+ * session is never pointed at another runtime.
  *
  * @param request - The session and its place.
  * @param runtimes - The runtimes the picker lists.
  * @param deployments - The deployments the picker lists.
  *
- * @returns The value to select (or null) and the sentence.
+ * @returns The value to select (or null), the sentence, and the record to
+ *   read when the session is read from it.
  */
 export function openSessionChoice(
   request: OpenSessionRequest,
   runtimes: readonly PickerRuntime[],
   deployments: readonly AppChatChoice[],
-): { value: string | null; said: string } {
+): { value: string | null; said: string; record?: RecordRead } {
   const said = OPEN_SESSION_WORDS.opened(request.title, request.state);
+  if (request.place.kind === "datalayer" && request.teamRun) {
+    const why = OPEN_SESSION_WORDS.teamSeat(request.teamRun);
+    return {
+      value: null,
+      said: why,
+      record: {
+        why,
+        link: { label: "Open the run", url: teamRunUrl(request.teamRun) },
+      },
+    };
+  }
   if (request.place.kind === "local") {
     const wanted = request.place.url.replace(/\/+$/, "");
     const runtime = runtimes.find(
@@ -100,6 +155,10 @@ export function openSessionChoice(
   if (deployment && deployment.kind === "talk") {
     return { value: APP_VALUE + deployment.handle.uid, said };
   }
+  if (!request.runtimeUid) {
+    const why = OPEN_SESSION_WORDS.onNoRuntime(request.state);
+    return { value: null, said: why, record: { why } };
+  }
   const datalayerRuntimes = runtimes.filter(
     (candidate) => candidate.place !== "local",
   );
@@ -108,11 +167,7 @@ export function openSessionChoice(
     {
       uid: request.uid,
       state: request.state,
-      runsOn: request.teamRun
-        ? { kind: "team_run", executionId: request.teamRun }
-        : request.runtimeUid
-          ? { kind: "runtime", uid: request.runtimeUid }
-          : null,
+      runsOn: { kind: "runtime", uid: request.runtimeUid },
     } as Pick<SessionRow, "uid" | "runsOn" | "state">,
     datalayerRuntimes.map((candidate) => ({
       uid: candidate.uid ?? candidate.runtimeName,

@@ -28,6 +28,7 @@ import { createRoot } from "react-dom/client";
 
 import type { AppChatChoice, EditorContext } from "../../src/chat/appChat";
 import type { ApprovalRaised } from "../../src/chat/attention";
+import type { TranscriptLine } from "../../src/chat/sessionRecord";
 import type { OpenSessionRequest } from "../../src/chat/sessionVerbs";
 import {
   type AgentChatAuthState,
@@ -164,6 +165,35 @@ function requestSignedUser(deploymentUid: string): Promise<void> {
   });
 }
 
+// The view's requests for a session's record, by id.
+const recordRequests = new Map<
+  string,
+  { resolve: (lines: TranscriptLine[]) => void; reject: (error: Error) => void }
+>();
+
+/**
+ * Asks the extension host for a session's conversation from its record at
+ * ai-agents (a team run's seat, a session on no runtime): the host reads it
+ * with the person's token, which never reaches the view.
+ *
+ * @param uid - The session.
+ *
+ * @returns The transcript's lines; rejects with the sentence said.
+ */
+function requestSessionRecord(uid: string): Promise<TranscriptLine[]> {
+  editorRequestCount += 1;
+  const requestId = `record-${editorRequestCount}`;
+  return new Promise((resolve, reject) => {
+    recordRequests.set(requestId, { resolve, reject });
+    vscode.postMessage({ type: "read-session-record", requestId, uid });
+    setTimeout(() => {
+      if (recordRequests.delete(requestId)) {
+        reject(new Error("ai-agents did not answer in time."));
+      }
+    }, 20_000);
+  });
+}
+
 /**
  * Asks the extension host for the active editor's file, which it reads
  * only now (STUDIO A-18, D-10).
@@ -245,6 +275,7 @@ function render(): void {
       localApprovals={currentLocalApprovals}
       readEditor={requestEditorContext}
       signUser={requestSignedUser}
+      readSessionRecord={requestSessionRecord}
       onRefreshAgents={handleRefreshAgents}
       onCreateAgent={handleCreateAgent}
       onLogin={handleLogin}
@@ -341,6 +372,25 @@ window.addEventListener("message", (event) => {
           pending.reject(new Error(msg.error));
         } else {
           pending.resolve();
+        }
+      }
+      break;
+    }
+    case "session-record": {
+      const msg = data as {
+        requestId: string;
+        lines: TranscriptLine[] | null;
+        error: string | null;
+      };
+      const pending = recordRequests.get(msg.requestId);
+      if (pending) {
+        recordRequests.delete(msg.requestId);
+        if (msg.error || !msg.lines) {
+          pending.reject(
+            new Error(msg.error || "The session's record was not read."),
+          );
+        } else {
+          pending.resolve(msg.lines);
         }
       }
       break;

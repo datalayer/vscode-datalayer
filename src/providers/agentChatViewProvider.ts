@@ -61,6 +61,7 @@ import {
   signsRequest,
   withUserToken,
 } from "../chat/appChat";
+import { recordTranscriptOf, sessionRecordUrl } from "../chat/sessionRecord";
 import type { OpenSessionRequest } from "../chat/sessionVerbs";
 import {
   type AgentChatSettings,
@@ -407,6 +408,11 @@ export class AgentChatViewProvider implements vscode.WebviewViewProvider {
       if (typeof requestId === "string" && typeof deploymentUid === "string") {
         await this.signUser(requestId, deploymentUid);
       }
+    } else if (type === "read-session-record") {
+      const { requestId, uid } = raw as { requestId?: unknown; uid?: unknown };
+      if (typeof requestId === "string" && typeof uid === "string") {
+        await this.readSessionRecord(requestId, uid);
+      }
     } else if (type === "session-changed") {
       this.sessionChangedEmitter.fire();
     } else if (type === "editor-context-request") {
@@ -638,6 +644,59 @@ export class AgentChatViewProvider implements vscode.WebviewViewProvider {
       }
     }
     return undefined;
+  }
+
+  /**
+   * Answers the view's `read-session-record`: a session the chat cannot talk
+   * to (a team run's seat, a session on no runtime) read from its record at
+   * ai-agents with the person's token, and posted as its transcript's lines
+   * (`session-record`) — the token never reaches the view.
+   *
+   * @param requestId - The id the view's request is answered under.
+   * @param uid - The session.
+   */
+  private async readSessionRecord(
+    requestId: string,
+    uid: string,
+  ): Promise<void> {
+    let lines: ReturnType<typeof recordTranscriptOf> | null = null;
+    let error: string | null = null;
+    try {
+      const token = this.authProvider.getToken();
+      if (!this.authProvider.isAuthenticated() || !token) {
+        throw new Error("Sign in to Datalayer to read this session.");
+      }
+      const aiAgentsUrl = getValidatedSettingsGroup("services").aiAgentsUrl;
+      const response = await fetch(sessionRecordUrl(aiAgentsUrl, uid), {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!response.ok) {
+        let detail = "";
+        try {
+          const body = (await response.json()) as { detail?: unknown };
+          detail = typeof body.detail === "string" ? body.detail : "";
+        } catch {
+          // The status says it.
+        }
+        throw new Error(
+          detail ||
+            `ai-agents answered ${response.status} for the record of session ${uid}.`,
+        );
+      }
+      lines = recordTranscriptOf(await response.json());
+    } catch (failure) {
+      error = failure instanceof Error ? failure.message : String(failure);
+      ServiceLoggers.main.warn("[AgentChat] session record not read", {
+        uid,
+        error,
+      });
+    }
+    void this.view?.webview.postMessage({
+      type: "session-record",
+      requestId,
+      lines,
+      error,
+    });
   }
 
   /**

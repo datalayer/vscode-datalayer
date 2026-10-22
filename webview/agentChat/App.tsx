@@ -42,7 +42,12 @@ import {
   talkableKeyOf,
 } from "../../src/chat/appChat";
 import type { ApprovalRaised } from "../../src/chat/attention";
-import { openSessionChoice, sessionProtocol } from "../../src/chat/openSession";
+import {
+  openSessionChoice,
+  type RecordRead,
+  sessionProtocol,
+} from "../../src/chat/openSession";
+import type { TranscriptLine } from "../../src/chat/sessionRecord";
 import {
   RUNTIME_AGENT_WORDS,
   type RuntimeAgent,
@@ -52,6 +57,7 @@ import {
 } from "../../src/chat/runtimeAgent";
 import type { OpenSessionRequest } from "../../src/chat/sessionVerbs";
 import { PrimerVSCodeTheme } from "../theme/PrimerVSCodeTheme";
+import { SessionTranscript } from "./SessionTranscript";
 
 import {
   answerTextOf,
@@ -236,6 +242,8 @@ export interface AppProps {
   readEditor: () => Promise<EditorContext | undefined>;
   /** Asks the extension host to sign the person for a deployment (D-21). */
   signUser: (deploymentUid: string) => Promise<void>;
+  /** Asks the extension host for a session's conversation from its record. */
+  readSessionRecord: (uid: string) => Promise<TranscriptLine[]>;
   /** Callback to request agent list refresh. */
   onRefreshAgents: () => void;
   /** Callback to create a new agent runtime. */
@@ -296,6 +304,7 @@ function AppInner(props: AppProps): React.JSX.Element {
     localApprovals,
     readEditor,
     signUser,
+    readSessionRecord,
     onRefreshAgents,
     onCreateAgent,
     onLogin,
@@ -309,6 +318,9 @@ function AppInner(props: AppProps): React.JSX.Element {
   // picker is not drawn — its conversation is its runtime's, never pointed
   // at another — until the person goes back to all agents.
   const [opened, setOpened] = useState<OpenSessionRequest | null>(null);
+  // A session the chat cannot talk to (a team run's seat, one on no
+  // runtime): its conversation read from its record, read-only.
+  const [recordRead, setRecordRead] = useState<RecordRead | null>(null);
 
   // A session opened from the Sessions view: the chat set to its place —
   // the local runtime of its folder, the deployment of its application, the
@@ -332,6 +344,7 @@ function AppInner(props: AppProps): React.JSX.Element {
     setOpened(openRequest);
     setSelected(choice.value);
     setOpenSaid(choice.said);
+    setRecordRead(choice.record ?? null);
   }, [openRequest, agents, agentsError, deployments]);
 
   // Back to all agents: the session closed here, the picker drawn again.
@@ -339,6 +352,7 @@ function AppInner(props: AppProps): React.JSX.Element {
     setOpened(null);
     setSelected(null);
     setOpenSaid("");
+    setRecordRead(null);
   }, []);
 
   // The same deployments listed again change nothing: the conversation
@@ -778,11 +792,19 @@ function AppInner(props: AppProps): React.JSX.Element {
           <span style={sessionStateStyle}>{opened.state}</span>
         </div>
         <div style={{ flex: 1, overflow: "hidden" }}>
-          {chat ?? (
-            <div style={containerStyle}>
-              <p style={messageStyle}>{openSaid}</p>
-            </div>
-          )}
+          {chat ??
+            (recordRead ? (
+              <SessionTranscript
+                key={opened.uid}
+                uid={opened.uid}
+                read={recordRead}
+                readSessionRecord={readSessionRecord}
+              />
+            ) : (
+              <div style={containerStyle}>
+                <p style={messageStyle}>{openSaid}</p>
+              </div>
+            ))}
         </div>
       </div>
     );

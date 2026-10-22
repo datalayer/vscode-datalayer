@@ -9,7 +9,8 @@
 /**
  * A session opened in the chat from the Sessions view: the picker's choice
  * for its place (the local runtime of its folder, the deployment of its
- * application) and what the chat says, listed or not.
+ * application), what the chat says, listed or not, and the record read when
+ * it cannot be talked to (a team run's seat, a session on no runtime).
  */
 
 import type { AppChatChoice } from "../../src/chat/appChat";
@@ -17,6 +18,7 @@ import {
   OPEN_SESSION_WORDS,
   openSessionChoice,
   sessionProtocol,
+  teamRunUrl,
 } from "../../src/chat/openSession";
 import type { OpenSessionRequest } from "../../src/chat/sessionVerbs";
 
@@ -116,29 +118,66 @@ describe("a session opened from the Sessions view", () => {
     ).toBeNull();
   });
 
-  it("says why when the session is on no runtime, a team seat, or not on yours", () => {
-    const paused = openSessionChoice(
-      { ...datalayer, state: "paused" },
-      runtimes,
-      [],
-    );
-    expect(paused.value).toBeNull();
-    expect(paused.said).toMatch(/^Session s-2 is on no runtime now \(paused\)/);
-
+  it("reads a team run's seat from its record, with the run's page", () => {
     const seat = openSessionChoice(
       { ...datalayer, appUid: "", teamRun: "ex-9" },
       runtimes,
       deployments,
     );
     expect(seat.value).toBeNull();
-    expect(seat.said).toMatch(/seat of team run ex-9/);
+    expect(seat.record).toEqual({
+      why: OPEN_SESSION_WORDS.teamSeat("ex-9"),
+      link: { label: "Open the run", url: teamRunUrl("ex-9") },
+    });
+    expect(seat.record?.why).toBe(
+      "A seat of team run ex-9: its conversation is read here; to act on the run, open it on Datalayer.",
+    );
+    expect(teamRunUrl("ex 9")).toBe("https://datalayer.ai/executions/ex%209");
+    // Its application's deployment listed changes nothing: the seat is the team's.
+    expect(
+      openSessionChoice(
+        { ...datalayer, teamRun: "ex-9" },
+        runtimes,
+        deployments,
+      ).record?.why,
+    ).toBe(OPEN_SESSION_WORDS.teamSeat("ex-9"));
+  });
 
+  it("reads a session on no runtime from its record", () => {
+    const paused = openSessionChoice(
+      { ...datalayer, state: "paused" },
+      runtimes,
+      [],
+    );
+    expect(paused.value).toBeNull();
+    expect(paused.record).toEqual({
+      why: "Paused on no runtime: resume it on Datalayer to go on here.",
+    });
+    expect(
+      openSessionChoice({ ...datalayer, state: "ended" }, runtimes, []).record
+        ?.why,
+    ).toBe("Ended on no runtime: resume it on Datalayer to go on here.");
+  });
+
+  it("never reads the record of a session it can talk to", () => {
+    expect(openSessionChoice(datalayer, runtimes, deployments).record).toBe(
+      undefined,
+    );
+    expect(
+      openSessionChoice({ ...datalayer, runtimeUid: "rt-1" }, runtimes, [])
+        .record,
+    ).toBe(undefined);
+    expect(openSessionChoice(local, runtimes, []).record).toBe(undefined);
+  });
+
+  it("says why when the session runs on a runtime not yours", () => {
     const foreign = openSessionChoice(
       { ...datalayer, runtimeUid: "rt-other" },
       runtimes,
       [],
     );
     expect(foreign.value).toBeNull();
+    expect(foreign.record).toBe(undefined);
     expect(foreign.said).toMatch(
       /runs on runtime rt-other, which is not one of yours now/,
     );
