@@ -7,8 +7,8 @@
 /**
  * The extension's theme for Primer React: Datalayer's `vscode` theme
  * variant, whose every token reads the editor's own `--vscode-*` variable,
- * so a webview is drawn in the colour theme the editor has and follows it
- * the moment the person picks another. The colour mode is the editor's
+ * so a webview is drawn in the color theme the editor has and follows it
+ * the moment the person picks another. The color mode is the editor's
  * (`theme-change`), passed down from the webview's root.
  *
  * @module theme/PrimerVSCodeTheme
@@ -33,7 +33,7 @@ export interface PrimerVSCodeThemeProps {
   children: ReactNode;
 }
 
-/** Wraps children in Datalayer's `vscode` theme, in the editor's colour mode. */
+/** Wraps children in Datalayer's `vscode` theme, in the editor's color mode. */
 export function PrimerVSCodeTheme({
   colorMode,
   style,

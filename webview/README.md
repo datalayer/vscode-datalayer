@@ -24,6 +24,7 @@ Both editors share common infrastructure: theme integration, service managers, s
 - **components/** - Shared React components (toolbar, progress bar, dialogs)
 - **contexts/** - React context providers (theme)
 - **datasource/** - Datasource creation/edit dialog webviews
+- **home/** - The Datalayer home page webview (the sidebar's blocks on one page)
 - **hooks/** - React hooks for runtime management, notebook model, outline, resize
 - **lexical/** - Lexical editor and its plugins
 - **notebook/** - Jupyter notebook editor

@@ -8,7 +8,7 @@
  * The *Datalayer* home page's data, read from the sidebar's own tree
  * providers: each provider is asked for its items (`getChildren()`,
  * `getTreeItem()`), a few levels deep, and each item becomes a plain,
- * serialisable node — label, description, tooltip, icon id, command,
+ * serializable node — label, description, tooltip, icon id, command,
  * contextValue, children. The page draws the nodes; a click is sent back by
  * the node's key, and the host runs the item's own command with its own
  * arguments, kept here, as the tree would.
@@ -46,9 +46,23 @@ export interface TreeItemLike {
 
 /** What is asked of a tree provider (`vscode.TreeDataProvider`'s shape). */
 export interface TreeProviderLike<T> {
+  /**
+   * The children of an element, or the roots.
+   *
+   * @param element - The element whose children are asked; none for the roots.
+   *
+   * @returns The children, or nothing when there are none.
+   */
   getChildren(
     element?: T,
   ): T[] | null | undefined | PromiseLike<T[] | null | undefined>;
+  /**
+   * The tree item an element is drawn as.
+   *
+   * @param element - An element the provider answered.
+   *
+   * @returns Its tree item.
+   */
   getTreeItem(element: T): TreeItemLike | PromiseLike<TreeItemLike>;
 }
 

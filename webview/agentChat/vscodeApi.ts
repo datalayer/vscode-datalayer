@@ -16,9 +16,13 @@ declare const acquireVsCodeApi: () => VsCodeApi;
 
 /** What VS Code gives a webview. */
 export interface VsCodeApi {
+  /** Posts a message to the extension host. */
   postMessage: (message: unknown) => void;
+  /** The state the page kept, across its hiding and showing. */
   getState: () => unknown;
+  /** Keeps the page's state, across its hiding and showing. */
   setState: (state: unknown) => void;
 }
 
+/** The page's one handle on VS Code. */
 export const vscode: VsCodeApi = acquireVsCodeApi();

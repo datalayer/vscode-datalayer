@@ -335,7 +335,7 @@ function SectionCard({
 /**
  * The Datalayer mark, as the sidebar and the contributed `datalayer-logo`
  * glyph draw it: three rows of two bars, the second of each at half
- * strength, in the text's colour.
+ * strength, in the text's color.
  */
 function DatalayerMark({ size }: { size: number }) {
   const rows: Array<[number, number, number]> = [

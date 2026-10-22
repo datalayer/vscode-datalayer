@@ -123,7 +123,7 @@ describe("a tree item's fields", () => {
       command: "datalayer.sessions.open",
       arguments: [self],
     });
-    // The node is what the page is posted: it serialises.
+    // The node is what the page is posted: it serializes.
     expect(JSON.parse(JSON.stringify(node))).toEqual(node);
   });
 

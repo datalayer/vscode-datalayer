@@ -710,7 +710,6 @@ const agentChatWebviewConfig = {
   // see comment on `WEBVIEW_PERFORMANCE_HINTS`).
 };
 
-
 // Config for Datasource Dialog webview
 const datasourceDialogConfig = {
   name: "datasource",

@@ -171,7 +171,6 @@ export function registerAllCommands(
   // Register outline commands
   registerOutlineCommands(context, services.outlineTreeProvider);
 
-
   // Register Pyodide commands (browser-based Python)
   registerPyodideCommands(context);
 

@@ -10,11 +10,11 @@
  * own provider, which those components need for their context and for
  * JupyterLab's stylesheets.
  *
- * jupyter-react loads Primer's primitive colour sheets, so its own box would
+ * jupyter-react loads Primer's primitive color sheets, so its own box would
  * wear Primer's blues over the theme; the theme's variables are laid on that
  * box inline, where nothing beats them. That is the one thing the theme in
  * primer addons cannot do by itself: primer addons knows no jupyter-react.
- * Everything else — the colours, the JupyterLab variables, CodeMirror's
+ * Everything else — the colors, the JupyterLab variables, CodeMirror's
  * selection, Excalidraw's palette — is the theme's.
  *
  * @module theme/DatalayerVSCodeTheme
@@ -26,10 +26,13 @@ import { JupyterReactTheme } from "@datalayer/jupyter-react";
 import { vscodeTheme, vscodeThemeStyles } from "@datalayer/primer-addons";
 import { PrimerVSCodeTheme } from "./PrimerVSCodeTheme";
 
+/** What {@link DatalayerVSCodeTheme} is given. */
 export interface DatalayerVSCodeThemeProps {
+  /** The editor's color mode, followed by the theme. */
   colorMode: "light" | "dark";
   /** Whether jupyter-react loads JupyterLab's stylesheets (a notebook needs them). */
   loadJupyterLabCss?: boolean;
+  /** What the theme wraps. */
   children: ReactNode;
 }
 

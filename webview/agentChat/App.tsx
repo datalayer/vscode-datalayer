@@ -272,7 +272,6 @@ export function App(props: AppProps): React.JSX.Element {
  */
 function AppInner(props: AppProps): React.JSX.Element {
   const {
-    theme,
     auth,
     settings,
     agents,
