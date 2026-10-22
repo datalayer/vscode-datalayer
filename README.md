@@ -1,4 +1,4 @@
-<a href="https://datalayer.io"><img src="https://assets.datalayer.tech/datalayer-25.png" width="150"/></a>
+[![Datalayer](https://images.datalayer.io/legacy/datalayer-25.svg)](https://datalayer.ai)
 
 [![Become a Sponsor](https://img.shields.io/static/v1?label=Become%20a%20Sponsor&message=%E2%9D%A4&logo=GitHub&style=flat&color=1ABC9C)](https://github.com/sponsors/datalayer)
 
@@ -16,7 +16,9 @@
 
 **See it in action:**
 
-<img src="https://assets.datalayer.tech/demo-vscode-lexical.gif" alt="Datalayer extension running Datalayer document in VS Code"/>
+<img src="https://images.datalayer.io/products/vscode/home.png" alt="The Datalayer page in VS Code: your sessions, agents, spaces, outline and settings under tabs, beside the Datalayer sidebar and the Datalayer Chat"/>
+
+<img src="https://images.datalayer.io/products/vscode/demo-vscode-lexical.gif" alt="Datalayer extension running Datalayer document in VS Code"/>
 
 ## 🚀 Key Benefits
 
