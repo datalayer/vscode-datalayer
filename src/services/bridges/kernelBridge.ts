@@ -8,6 +8,14 @@
  * Kernel bridge service that routes kernel connections to appropriate handlers.
  * Detects notebook type and connects kernels accordingly.
  *
+ * A document is connected to a remote runtime (`connectWebviewDocument`), to
+ * a local ZMQ kernel it spawns (`connectWebviewDocumentToLocalKernel`), or to
+ * Pyodide (`connectWebviewDocumentToPyodide`, a pseudo-runtime whose ingress
+ * is `http://pyodide-local`). The webview is told in order:
+ * `kernel-starting` (it shows a spinner), then `kernel-selected` (it creates
+ * its service manager); for Pyodide, `kernel-selected` is sent again once
+ * the webview answers `kernel-ready`.
+ *
  * @module services/kernelBridge
  */
 

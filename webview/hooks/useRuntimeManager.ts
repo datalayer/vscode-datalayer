@@ -5,9 +5,22 @@
  */
 
 /**
- * @module hooks/useRuntimeManager
  * Manages runtime selection and service manager lifecycle.
  * Uses MutableServiceManager to prevent Notebook2 re-renders when switching runtimes.
+ *
+ * The `MutableServiceManager` is created once and its proxy kept in a ref:
+ * `Notebook2` re-renders only when that reference changes, and it never
+ * does, so swapping runtimes keeps the cells, the scroll position and the
+ * widgets' state.
+ *
+ * A runtime is Pyodide when its ingress is `http://pyodide-local`, a local
+ * kernel when `isLocalKernelUrl` says so, remote otherwise. A local kernel is
+ * started (`startNew`, which the tools need for an active kernel); a remote
+ * one is not, as it already runs on its server and the webview cannot reach
+ * it across origins. Leaving a remote runtime force-closes its manager, so
+ * no call goes to a server that may be gone.
+ *
+ * @module hooks/useRuntimeManager
  */
 
 import type { RuntimeJSON } from "@datalayer/agent-runtimes/lib/models";

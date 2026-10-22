@@ -5,7 +5,10 @@
  */
 
 /**
- * Entry point for the Datalayer home page webview (`datalayer.home`).
+ * Entry point for the Datalayer home page webview (`datalayer.home`): the
+ * initial color mode read from VS Code's body classes, then the page.
+ *
+ * @module webview/home/main
  */
 
 import React from "react";

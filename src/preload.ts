@@ -5,13 +5,17 @@
  */
 
 /**
- * Pre-initialization module
+ * Pre-initialization module, the actual webpack entry point of the extension.
  *
- * This file is the ACTUAL webpack entry point. It preloads critical modules
- * before loading the main extension code.
+ * It puts `os`, `prebuild-install` and `ws` in Node's require cache before
+ * the extension code loads, then re-exports `./extension`. Native modules
+ * such as cmake-ts call `os.platform()` while they load, which fails when
+ * `os` is not loaded yet.
  *
  * CRITICAL: This must use CommonJS require(), NOT ES6 imports, to ensure
  * the os module loads before ANY other code executes.
+ *
+ * @module preload
  */
 
 // CRITICAL: Preload os module FIRST

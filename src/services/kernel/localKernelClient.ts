@@ -6,7 +6,14 @@
 
 /**
  * Local kernel client using direct ZMQ communication.
- * Spawns ipykernel processes and connects via ZMQ sockets.
+ * Spawns ipykernel processes and connects via ZMQ sockets, bypassing the
+ * Jupyter server entirely.
+ *
+ * The kernel is `python -m ipykernel_launcher -f <connection file>`, the
+ * connection file written to a fresh `datalayer-kernel-*` temporary
+ * directory (loopback IP, free ports, an HMAC-SHA256 key). It runs in the
+ * document's folder, or in the first workspace folder for a document with
+ * no folder on disk (`datalayer://`).
  *
  * @module services/kernel/localKernelClient
  */

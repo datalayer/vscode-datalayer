@@ -5,7 +5,10 @@
  */
 
 /**
- * Entry point for Datasource Edit Dialog webview
+ * Entry point for Datasource Edit Dialog webview: the dialog drawn in the
+ * editor's color mode, redrawn when the extension host says it changed.
+ *
+ * @module webview/datasource/editMain
  */
 
 import React from "react";

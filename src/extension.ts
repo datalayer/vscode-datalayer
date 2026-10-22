@@ -8,6 +8,10 @@
  * Main extension module for the Datalayer VS Code extension.
  * Orchestrates the initialization of all services, UI components, and commands.
  *
+ * The code under `src/` runs in the Node.js extension host: authentication,
+ * the platform's API, kernels and the webviews' orchestration. The webviews'
+ * own code is under `webview/`.
+ *
  * NOTE: The os module is preloaded by preload.ts (the webpack entry point)
  * to ensure it's available before cmake-ts tries to call os.platform()
  *

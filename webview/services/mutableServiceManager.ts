@@ -5,10 +5,20 @@
  */
 
 /**
- * @module mutableServiceManager
  * A wrapper around ServiceManager that allows changing the underlying service manager
  * without causing React re-renders. This is achieved by keeping the wrapper object
  * stable while swapping the internal service manager.
+ *
+ * `createProxy` returns a proxy that forwards every property to the current
+ * service manager. Its object properties (`kernels`, `sessions`, `contents`
+ * and the like) are proxies too, forwarding to the current manager's, never
+ * to a reference read before a swap; they are cached and never cleared on a
+ * swap, so a `SessionContext` keeps the same objects. A swap away from a
+ * terminated remote runtime can skip `dispose()` (`forceClose`), which would
+ * otherwise call a server that is gone; leaving Pyodide shuts its sessions
+ * down. Kernel connections never reconnect on their own.
+ *
+ * @module mutableServiceManager
  */
 
 import { ServerConnection, ServiceManager } from "@jupyterlab/services";

@@ -4,6 +4,17 @@
  * MIT License
  */
 
+/**
+ * The *Create Datasource* dialog: the type (Amazon Athena, Google BigQuery,
+ * Microsoft Sentinel, Splunk) and its fields, checked before the request is
+ * posted to the extension host.
+ *
+ * Each datasource dialog is its own webpack entry, drawn in its own webview
+ * panel (`main.tsx`, `editMain.tsx`).
+ *
+ * @module webview/datasource/DatasourceDialog
+ */
+
 import React, { useState, useEffect } from "react";
 import {
   Box,

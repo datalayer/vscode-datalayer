@@ -11,6 +11,8 @@ import { getActiveCustomEditorUri } from "../../utils/activeDocument";
 /**
  * Creates a real filesystem file that updates with current editor context.
  * Copilot can see this file and it auto-updates when you switch files.
+ *
+ * @module services/copilot/realFileContextProvider
  */
 export class RealFileContextProvider {
   private contextFilePath: vscode.Uri | undefined;

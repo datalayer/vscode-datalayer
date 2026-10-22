@@ -7,7 +7,8 @@
 /**
  * Tree data provider for the Datalayer Runtimes view.
  * Displays running runtimes and snapshots in separate collapsible sections
- * with auto-refresh capabilities for runtimes.
+ * with auto-refresh capabilities for runtimes: every 30 seconds, so the
+ * time remaining stays current.
  *
  * @module providers/runtimesTreeProvider
  *

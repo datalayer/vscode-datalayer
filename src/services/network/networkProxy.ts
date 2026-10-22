@@ -7,6 +7,8 @@
 /**
  * Network proxy service for Jupyter notebook communications.
  * Handles WebSocket and HTTP request forwarding between webview and servers.
+ * A local kernel URL (`isLocalKernelUrl`) never reaches the network: it is
+ * answered by the local kernel through `localKernelProxy`.
  *
  * @module services/notebookNetwork
  */

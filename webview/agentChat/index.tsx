@@ -14,6 +14,13 @@
  * nothing but the bridge is imported statically; the page (`./main`) and
  * all it imports arrive by `import()`, once the bridge is in place.
  *
+ * Webpack emits this entry as `dist/agentChat.js` (`agentChatWebviewConfig`
+ * in `webpack.config.js`); `AgentChatViewProvider` loads it in the
+ * `datalayerAgentChatView` view of the `datalayerChat` activity-bar
+ * container. Its extension-host counterparts are `AgentChatBridgeHandler`
+ * (the typed client's requests) and `AgentChatNetworkBridge` (the
+ * `net.fetch.*` and `net.ws.*` envelopes of the network bridge).
+ *
  * @module webview/agentChat/index
  */
 

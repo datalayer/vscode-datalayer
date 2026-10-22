@@ -8,6 +8,10 @@
  * Datalayer-based authentication provider for VS Code.
  * Provides authentication state management and event notifications using the DatalayerClient.
  *
+ * On initialization the session is restored from the OS keyring, else
+ * migrated from the old VS Code secret. A login (credentials or OAuth) sets
+ * the token on the client with `setToken`, without which API calls fail.
+ *
  * @module services/authProvider
  */
 

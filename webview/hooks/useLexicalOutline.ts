@@ -4,6 +4,14 @@
  * MIT License
  */
 
+/**
+ * The outline of a Lexical document for the Outline view: its headings and
+ * its Jupyter input cells, posted to the extension host once edits pause for
+ * 200 ms, and only when the outline changed.
+ *
+ * @module hooks/useLexicalOutline
+ */
+
 import { $isHeadingNode } from "@lexical/rich-text";
 import { $getRoot, LexicalEditor } from "lexical";
 import { useCallback, useEffect, useRef } from "react";

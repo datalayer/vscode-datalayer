@@ -20,6 +20,21 @@
  * reach arbitrary properties on the client instance. The whitelist mirrors
  * {@link IAgentRuntimesClient}.
  *
+ * The chat talks to the extension host through two bridges: this typed SDK
+ * bridge, for the operations that need the user's Datalayer token from the
+ * OS keyring (listing agents, creating runtimes), and the raw network bridge
+ * (`agentChatNetworkBridge.ts`), for every direct HTTP/WebSocket call
+ * `@datalayer/agent-runtimes` makes with a runtime token it already holds
+ * (chat streaming, protocol adapters, MCP status).
+ *
+ * `SessionSurfacesHandler`, in this module too, draws the editor's surfaces
+ * of a session from what the chat posts: `approval-raised` and
+ * `approval-shown` (an editor notification per approval, the decision asked
+ * back of the chat with `approval-decide` and answered with
+ * `approval-decided`), `open-diff` (the diff view), `terminal-output` (the
+ * session's terminal), `session-state` (the status bar) and `session-ended`;
+ * `focus-approval` focuses the chat on *Show*.
+ *
  * Phase 2b scope: request/response only (no streaming). Streaming support
  * (for `streamChat`) lands alongside the chat endpoint SDK coverage in a
  * follow-up phase.

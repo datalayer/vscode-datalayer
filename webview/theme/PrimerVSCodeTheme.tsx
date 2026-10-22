@@ -11,6 +11,11 @@
  * the moment the person picks another. The color mode is the editor's
  * (`theme-change`), passed down from the webview's root.
  *
+ * It sits around every view built of Primer components (the Datalayer chat,
+ * the home page, the datasource dialogs, the showcase); its portals (menus,
+ * dialogs) are themed too. The theme itself lives in primer addons; nothing
+ * is mapped here.
+ *
  * @module theme/PrimerVSCodeTheme
  */
 

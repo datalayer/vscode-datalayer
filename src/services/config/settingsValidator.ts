@@ -9,6 +9,10 @@
  * Uses Zod schemas to validate VS Code workspace configuration values
  * and provides safe defaults when invalid values are detected.
  *
+ * There is one schema per `datalayer.*` settings group of `package.json`.
+ * `getValidatedSettings` reads every group, `getValidatedSettingsGroup` one;
+ * an invalid value is replaced by its default and logged as a warning.
+ *
  * @module services/config/settingsValidator
  */
 

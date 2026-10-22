@@ -8,6 +8,10 @@
  * Type-safe message protocol for extension-webview communication.
  * Uses discriminated unions for compile-time type safety and IDE autocomplete.
  *
+ * The webviews run in a browser sandbox, not in the Node.js extension host:
+ * `postMessage` is their only way to the extension, so both sides agree on
+ * these shapes.
+ *
  * @module types/messages
  */
 

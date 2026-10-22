@@ -5,9 +5,14 @@
  */
 
 /**
- * @module stores/notebookStore
  * Centralized state management for notebook webview using Zustand.
  * Eliminates props drilling and sessionStorage hacks.
+ *
+ * Each webview creates its own store with `createNotebookStore`: there is no
+ * global singleton. Derived state is computed in the components through
+ * selectors, never stored.
+ *
+ * @module stores/notebookStore
  */
 
 import type { RuntimeJSON } from "@datalayer/agent-runtimes/lib/models";

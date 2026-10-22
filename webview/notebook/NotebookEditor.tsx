@@ -8,6 +8,14 @@
  * Notebook editor component for VS Code webview.
  * Uses modern React patterns with hooks and centralized state management.
  *
+ * Four hooks do the work: `useRuntimeManager` (the stable service manager
+ * proxy handed to `Notebook2`), `useNotebookModel` (model changes and the
+ * dirty state, sent to the extension host), `useNotebookResize` (Lumino's
+ * layout when the container resizes) and `useNotebookOutline` (the Outline
+ * view). The state comes from the Zustand store, not from props. The id of
+ * the notebook shown is kept in a ref, so a webview reused for another
+ * document starts from a clean state.
+ *
  * @module notebook/NotebookEditor
  */
 

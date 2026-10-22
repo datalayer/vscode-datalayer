@@ -8,6 +8,10 @@
  * Type-safe message handler for webview-extension communication.
  * Provides async/await request/response pattern and discriminated union types.
  *
+ * A request waits 30 seconds by default for the response with its
+ * `requestId`. A timeout only stops the wait: the extension host may still
+ * process the request.
+ *
  * @module services/messageHandler
  */
 

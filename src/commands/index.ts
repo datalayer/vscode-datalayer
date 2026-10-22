@@ -8,6 +8,9 @@
  * Central command registration module for the Datalayer VS Code extension.
  * Aggregates and exports all command registration functions.
  *
+ * Each file of this directory registers the commands of one domain. A
+ * command is a thin wrapper that delegates to the services.
+ *
  * @module commands
  *
  * @see https://code.visualstudio.com/api/extension-guides/command

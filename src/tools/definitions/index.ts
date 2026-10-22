@@ -10,6 +10,9 @@
  * VS Code-specific tool definitions only.
  * Cell and block tool definitions live in their respective packages.
  *
+ * These definitions are the source of truth for the `languageModelTools` of
+ * `package.json`, which `scripts/sync-package-json.ts` writes from them.
+ *
  * @module tools/definitions
  */
 

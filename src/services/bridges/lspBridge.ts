@@ -6,7 +6,8 @@
 
 /**
  * Bridge for handling LSP-related messages between webview and extension host.
- * Routes completion/hover requests to appropriate LSP services.
+ * Routes completion/hover requests to appropriate LSP services: Pylance for
+ * a Python cell, the Markdown language server for a Markdown cell.
  *
  * @module services/bridges/lspBridge
  */
