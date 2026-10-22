@@ -30,7 +30,6 @@ import type { ErrorInfo, ReactNode } from "react";
 
 import type { IAgentRuntimesClient } from "@datalayer/agent-runtimes/lib/client/IAgentRuntimesClient";
 import { AgentRuntimesClientProvider } from "@datalayer/agent-runtimes/lib/client/AgentRuntimesClientContext";
-import type { Protocol } from "@datalayer/agent-runtimes/lib/types/protocol";
 import { agentRuntimesUrlOf } from "@datalayer/agent-runtimes/lib/portable/sessions";
 import { BaseStyles } from "@primer/react";
 
@@ -44,6 +43,13 @@ import {
 } from "../../src/chat/appChat";
 import type { ApprovalRaised } from "../../src/chat/attention";
 import { openSessionChoice, sessionProtocol } from "../../src/chat/openSession";
+import {
+  RUNTIME_AGENT_WORDS,
+  type RuntimeAgent,
+  type RuntimeAgentChoice,
+  fetchRuntimeAgents,
+  runtimeAgentOf,
+} from "../../src/chat/runtimeAgent";
 import type { OpenSessionRequest } from "../../src/chat/sessionVerbs";
 import { PrimerVSCodeTheme } from "../theme/PrimerVSCodeTheme";
 
@@ -78,38 +84,6 @@ const RUNTIME = "runtime:";
 
 /** The picker's value for a deployed application. */
 const APP = "app:";
-
-/**
- * Protocols the embedded `<Chat>` component accepts. Mirrors the upstream
- * `Protocol` type exactly — kept here as a runtime allowlist so the
- * settings string from VS Code can be narrowed safely without resorting
- * to a `as Protocol` cast that would silently let unknown values through.
- */
-const SUPPORTED_PROTOCOLS = [
-  "ag-ui",
-  "a2a",
-  "acp",
-  "vercel-ai",
-  "vercel-ai-jupyter",
-] as const satisfies readonly Protocol[];
-
-/** Default applied when the user's setting is missing or unrecognized. */
-const DEFAULT_PROTOCOL: Protocol = "vercel-ai";
-
-/**
- * Narrows an arbitrary settings string into the upstream {@link Protocol}
- * type. Returns {@link DEFAULT_PROTOCOL} when the value is unrecognized
- * so the chat still mounts instead of throwing on a type mismatch.
- *
- * @param raw - Protocol string read from VS Code settings.
- *
- * @returns A guaranteed-valid `Protocol` value.
- */
-function narrowProtocol(raw: string): Protocol {
-  return (SUPPORTED_PROTOCOLS as readonly string[]).includes(raw)
-    ? (raw as Protocol)
-    : DEFAULT_PROTOCOL;
-}
 
 // Lazy-load the heavy Chat component. Webpack will code-split this into
 // a separate async chunk (`agentChat.vendors-xxx.chunk.js`).
@@ -467,18 +441,123 @@ function AppInner(props: AppProps): React.JSX.Element {
   // The session talked to on the runtime picked, local or on Datalayer.
   const openedOnRuntime = openedLocal ?? openedDatalayer;
 
+  // A runtime picked (not a session): its agents read from its own list,
+  // once per pick — `default` on a runtime of the person's, the
+  // application's own on an application's kept runtime — and the one talked
+  // to spoken to on its own transport. Several: the person picks.
+  const pickedRuntime = selectedAgent && !opened ? selectedAgent : null;
+  const pickedRuntimeKey = pickedRuntime
+    ? `${pickedRuntime.runtimeName} ${pickedRuntime.ingress}`
+    : "";
+  const pickedRuntimeRef = useRef(pickedRuntime);
+  pickedRuntimeRef.current = pickedRuntime;
+  const settingsProtocol = settings?.protocol ?? "";
+  const [runtimeAgents, setRuntimeAgents] = useState<
+    | { key: string; choice: RuntimeAgentChoice }
+    | { key: string; error: string }
+    | null
+  >(null);
+  const [runtimeAgentPick, setRuntimeAgentPick] = useState("");
+  useEffect(() => {
+    setRuntimeAgents(null);
+    setRuntimeAgentPick("");
+    const runtime = pickedRuntimeRef.current;
+    if (!pickedRuntimeKey || !runtime) {
+      return undefined;
+    }
+    const abort = new AbortController();
+    fetchRuntimeAgents(
+      runtime.ingress,
+      runtime.token,
+      (url, init) => fetch(url, init),
+      abort.signal,
+    )
+      .then((answer) => {
+        if (!abort.signal.aborted) {
+          setRuntimeAgents({
+            key: pickedRuntimeKey,
+            choice: runtimeAgentOf(
+              answer,
+              runtime.givenName || runtime.runtimeName,
+              settingsProtocol,
+            ),
+          });
+        }
+      })
+      .catch((error: unknown) => {
+        if (!abort.signal.aborted) {
+          setRuntimeAgents({
+            key: pickedRuntimeKey,
+            error: RUNTIME_AGENT_WORDS.failed(
+              runtime.givenName || runtime.runtimeName,
+              error instanceof Error ? error.message : String(error),
+            ),
+          });
+        }
+      });
+    return () => {
+      abort.abort();
+    };
+  }, [pickedRuntimeKey, settingsProtocol]);
+  const runtimeAgentsNow =
+    runtimeAgents && runtimeAgents.key === pickedRuntimeKey
+      ? runtimeAgents
+      : null;
+  const runtimeChoice =
+    runtimeAgentsNow && "choice" in runtimeAgentsNow
+      ? runtimeAgentsNow.choice
+      : null;
+  // The agent talked to on the runtime picked: the one its list names, or
+  // the one the person picked of several.
+  const runtimeAgent: RuntimeAgent | null =
+    runtimeChoice?.kind === "agent"
+      ? runtimeChoice.agent
+      : runtimeChoice?.kind === "several"
+        ? (runtimeChoice.agents.find(
+            (agent) => agent.id === runtimeAgentPick,
+          ) ?? null)
+        : null;
+
+  // What the chat talks to on the runtime picked: a session's own agent over
+  // the session API, or the agent the runtime lists on its own transport.
+  const runtimeTalk = !selectedAgent
+    ? null
+    : openedLocal
+      ? {
+          agentId: openedLocal.agent,
+          protocol: sessionProtocol(selectedAgent.ingress, openedLocal.agent),
+          baseUrl: selectedAgent.ingress,
+        }
+      : openedDatalayer
+        ? {
+            agentId: openedDatalayer.agent,
+            protocol: sessionProtocol(
+              agentRuntimesUrlOf(selectedAgent.ingress),
+              openedDatalayer.agent,
+              selectedAgent.token,
+            ),
+            baseUrl: agentRuntimesUrlOf(selectedAgent.ingress),
+          }
+        : runtimeAgent
+          ? {
+              agentId: runtimeAgent.id,
+              protocol: runtimeAgent.protocol,
+              baseUrl: selectedAgent.ingress,
+            }
+          : null;
+
   // The session the editor's surfaces are told of: a runtime's chat here
   // (an application's chat names its own in `AppChat`); none when nothing
   // is picked. The displays' renderers (a diff, a terminal) are mounted once.
   useEffect(() => {
-    if (selectedAgent) {
+    if (selectedAgent && (openedOnRuntime || runtimeAgent)) {
       ensureDisplayRenderers();
       setSurfaceContext({
         sessionKey: openedOnRuntime
           ? openedOnRuntime.uid
           : `runtime:${selectedAgent.runtimeName}`,
         title: openedOnRuntime?.title || selectedAgent.givenName,
-        agent: openedOnRuntime?.agent ?? "default",
+        agent: openedOnRuntime?.agent ?? runtimeAgent?.id ?? "",
         harness: "",
         app: openedOnRuntime?.title || selectedAgent.givenName,
         local: selectedAgent.place === "local",
@@ -493,7 +572,7 @@ function AppInner(props: AppProps): React.JSX.Element {
       reportNoSession();
     }
     return undefined;
-  }, [selectedAgent, selectedApp, openedOnRuntime]);
+  }, [selectedAgent, selectedApp, openedOnRuntime, runtimeAgent]);
 
   // A local runtime's approvals (VS-07): the banner's source for a session
   // on this machine — read by the host over the runtime's websocket; the
@@ -577,7 +656,7 @@ function AppInner(props: AppProps): React.JSX.Element {
         </LazyVSCodeTheme>
       </Suspense>
     </ChatErrorBoundary>
-  ) : selectedAgent && settings && client ? (
+  ) : selectedAgent && settings && client && runtimeTalk ? (
     <ChatErrorBoundary
       onRetry={() => {
         setSelected(null);
@@ -591,19 +670,11 @@ function AppInner(props: AppProps): React.JSX.Element {
               // conversation, over the session API; another open is
               // another chat.
               key={
-                openedOnRuntime ? `session:${openedOnRuntime.uid}` : "runtime"
+                openedOnRuntime
+                  ? `session:${openedOnRuntime.uid}`
+                  : `runtime:${selectedAgent.runtimeName}:${runtimeTalk.agentId}`
               }
-              protocol={
-                openedLocal
-                  ? sessionProtocol(selectedAgent.ingress, openedLocal.agent)
-                  : openedDatalayer
-                    ? sessionProtocol(
-                        agentRuntimesUrlOf(selectedAgent.ingress),
-                        openedDatalayer.agent,
-                        selectedAgent.token,
-                      )
-                    : narrowProtocol(settings.protocol)
-              }
+              protocol={runtimeTalk.protocol}
               thread={
                 openedOnRuntime
                   ? {
@@ -614,17 +685,14 @@ function AppInner(props: AppProps): React.JSX.Element {
                   : undefined
               }
               sessionActions={openedOnRuntime ? {} : undefined}
-              baseUrl={
-                openedDatalayer
-                  ? agentRuntimesUrlOf(selectedAgent.ingress)
-                  : selectedAgent.ingress
-              }
+              baseUrl={runtimeTalk.baseUrl}
               authToken={selectedAgent.token}
               // A session's agent is its own (its application's agent);
-              // otherwise the SAAS agent-runtimes server names the
-              // default agent within a pod `default`, not the pod name.
-              // The pod identifier goes in `runtimeId` for telemetry.
-              agentId={openedOnRuntime?.agent ?? "default"}
+              // otherwise the agent the runtime lists (`default` on a
+              // runtime of the person's, the application's own on an
+              // application's kept runtime), never assumed. The pod
+              // identifier goes in `runtimeId` for telemetry.
+              agentId={runtimeTalk.agentId}
               // The editor's theme, never the chat's own (Matrix).
               disableInternalJupyterTheme={true}
               runtimeId={selectedAgent.runtimeName}
@@ -851,11 +919,56 @@ function AppInner(props: AppProps): React.JSX.Element {
         </p>
       ) : null}
 
+      {runtimeChoice?.kind === "several" ? (
+        // Several agents on the runtime picked: the person picks one,
+        // none is guessed.
+        <div style={pickerBarStyle}>
+          <select
+            value={runtimeAgentPick}
+            onChange={(event) => {
+              setRuntimeAgentPick(event.target.value);
+            }}
+            style={{ ...selectStyle, fontSize: "12px" }}
+            aria-label={RUNTIME_AGENT_WORDS.pickLabel}
+          >
+            <option value="">{RUNTIME_AGENT_WORDS.pickPrompt}</option>
+            {runtimeChoice.agents.map((agent) => (
+              <option key={agent.id} value={agent.id}>
+                {agent.name === agent.id
+                  ? agent.id
+                  : `${agent.name} (${agent.id})`}
+              </option>
+            ))}
+          </select>
+        </div>
+      ) : null}
+
       {/* Chat area */}
       <div style={{ flex: 1, overflow: "hidden" }}>
         {chat ?? (
           <div style={containerStyle}>
-            <p style={messageStyle}>Select an agent above to start chatting.</p>
+            {!pickedRuntime ? (
+              <p style={messageStyle}>
+                Select an agent above to start chatting.
+              </p>
+            ) : !runtimeAgentsNow ? (
+              <p style={{ ...messageStyle, fontSize: "12px", opacity: 0.7 }}>
+                {RUNTIME_AGENT_WORDS.reading}
+              </p>
+            ) : "error" in runtimeAgentsNow ? (
+              <p
+                style={{
+                  ...messageStyle,
+                  color: "var(--vscode-errorForeground)",
+                }}
+              >
+                {runtimeAgentsNow.error}
+              </p>
+            ) : runtimeAgentsNow.choice.kind === "none" ? (
+              <p style={messageStyle}>{runtimeAgentsNow.choice.said}</p>
+            ) : runtimeAgentsNow.choice.kind === "several" ? (
+              <p style={messageStyle}>{RUNTIME_AGENT_WORDS.pickAbove}</p>
+            ) : null}
           </div>
         )}
       </div>

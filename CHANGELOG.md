@@ -8,6 +8,7 @@ All notable changes to the Datalayer VS Code extension are documented here.
 
 - **A session opened from the Sessions view no longer shows the runtime picker**: the Datalayer Chat draws a slim header instead — _All agents_ to go back, the session's title and state — and talks to the session on its own runtime with its own agent over the session API, a session on Datalayer included while `datalayer.agentChat.enabled` is off; a session on no runtime, a team run's seat, or one on a runtime that is not yours is said in a sentence, never sent to another runtime
 - **The Datalayer Chat follows your VS Code theme**: the chat's own dark theme no longer overrides the editor's colours
+- **A runtime picked in the Datalayer Chat no longer answers `HTTP 404: Not Found`**: the chat reads the runtime's agents (`GET /api/v1/agents`) and talks to `default` when listed, else to the only agent (an application's kept runtime runs only the application's), on the agent's own transport; a runtime running several agents shows a second select to pick one, and one running none says so
 
 ### Changed
 
