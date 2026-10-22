@@ -22,6 +22,7 @@ import {
   Heading,
   IconButton,
   Text,
+  UnderlineNav,
 } from "@primer/react";
 import { Box } from "@datalayer/primer-addons";
 import {
@@ -177,19 +178,6 @@ function visibleRows(
   return rows;
 }
 
-/**
- * Where a section sits on the page's six-column grid (wide windows): Sessions
- * and Agents share the first row, Spaces and Outline the second, Settings the
- * third on its own. Narrow, one section per row.
- */
-const GRID_SPAN: Record<string, string> = {
-  datalayerSessions: "span 3",
-  datalayerRuntimes: "span 3",
-  datalayerSpaces: "span 3",
-  datalayerOutline: "span 3",
-  datalayerSettings: "span 6",
-};
-
 /** One line, cut with an ellipsis: the whole text is the row's tooltip. */
 const ONE_LINE = {
   overflow: "hidden",
@@ -230,7 +218,6 @@ function SectionCard({
         minWidth: 0,
         display: "flex",
         flexDirection: "column",
-        gridColumn: ["auto", "auto", GRID_SPAN[section.id] ?? "span 6"],
       }}
     >
       <Box
@@ -272,7 +259,12 @@ function SectionCard({
         </Text>
       ) : (
         <ActionList
-          sx={{ maxHeight: 420, overflowY: "auto", overflowX: "hidden" }}
+          // The one section shown fills the page.
+          sx={{
+            maxHeight: "calc(100vh - 220px)",
+            overflowY: "auto",
+            overflowX: "hidden",
+          }}
         >
           {rows.map(({ node, depth, open }) => {
             const NodeIcon = iconOf(node.icon);
@@ -350,6 +342,10 @@ export interface HomePageProps {
 export function HomePage({ colorMode }: HomePageProps) {
   const [state, setState] = useState<HomeState | undefined>();
   const [refreshing, setRefreshing] = useState<Record<string, boolean>>({});
+  // The section shown: one at a time, under its tab; the first until picked.
+  const [tab, setTab] = useState<string | undefined>();
+  const shown =
+    state?.sections.find((section) => section.id === tab) ?? state?.sections[0];
 
   useEffect(() => {
     const onMessage = (event: MessageEvent) => {
@@ -422,30 +418,37 @@ export function HomePage({ colorMode }: HomePageProps) {
         {!state ? (
           <CenteredSpinner message="Reading the sidebar…" />
         ) : (
-          <Box
-            sx={{
-              display: "grid",
-              gridTemplateColumns: [
-                "minmax(0, 1fr)",
-                "minmax(0, 1fr)",
-                "repeat(6, minmax(0, 1fr))",
-              ],
-              gap: 3,
-              alignItems: "start",
-            }}
-          >
-            {state.sections.map((section) => (
-              <SectionCard
-                key={section.id}
-                section={section}
-                refreshing={!!refreshing[section.id]}
-                onRefresh={() => {
-                  setRefreshing((was) => ({ ...was, [section.id]: true }));
-                  post({ type: "refresh", section: section.id });
-                }}
-              />
-            ))}
-          </Box>
+          <>
+            <UnderlineNav aria-label="The sidebar's blocks">
+              {state.sections.map((section) => (
+                <UnderlineNav.Item
+                  key={section.id}
+                  icon={iconOf(section.icon)}
+                  counter={section.nodes.length}
+                  aria-current={section.id === shown?.id ? "page" : undefined}
+                  onSelect={(event: React.SyntheticEvent) => {
+                    event.preventDefault();
+                    setTab(section.id);
+                  }}
+                >
+                  {section.title}
+                </UnderlineNav.Item>
+              ))}
+            </UnderlineNav>
+            {shown && (
+              <Box sx={{ mt: 3 }}>
+                <SectionCard
+                  key={shown.id}
+                  section={shown}
+                  refreshing={!!refreshing[shown.id]}
+                  onRefresh={() => {
+                    setRefreshing((was) => ({ ...was, [shown.id]: true }));
+                    post({ type: "refresh", section: shown.id });
+                  }}
+                />
+              </Box>
+            )}
+          </>
         )}
       </Box>
     </PrimerVSCodeTheme>

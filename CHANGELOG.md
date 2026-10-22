@@ -6,6 +6,7 @@ All notable changes to the Datalayer VS Code extension are documented here.
 
 ### Added
 
+- **The Datalayer page shows one block at a time, under tabs**: Sessions, Agents, Spaces, Outline, Settings, each with its count
 - **Datalayer: Home** (`datalayer.home`): the sidebar's blocks — Outline, Spaces, Sessions, Agents and Settings — as one _Datalayer_ page in an editor tab, opened from the palette or from the _Open Datalayer_ button above the Outline. The page lists the items the sidebar lists, read from the same trees: a click does what the tree's click does, each section refreshes on its own and follows the sidebar's changes, and signed out the page says so with a _Sign in_ button
 
 ### Fixed
