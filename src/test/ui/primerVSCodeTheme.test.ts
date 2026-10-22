@@ -56,12 +56,12 @@ suite("Primer VS Code Theme Tests", () => {
       assert.ok(css.includes("var(--vscode-panel-border)"));
     });
 
-    test("maps the accent to VS Code's, never Primer's blue", () => {
+    test("maps the accent to the primary button's colour, never Primer's blue", () => {
       const css = getPrimerVSCodeThemeCSS();
 
       assert.ok(
         css.includes(
-          "--fgColor-accent: var(--vscode-textLink-foreground) !important",
+          "--fgColor-accent: var(--vscode-button-background) !important",
         ),
       );
       assert.ok(
@@ -71,7 +71,7 @@ suite("Primer VS Code Theme Tests", () => {
       );
       assert.ok(
         css.includes(
-          "--borderColor-accent-emphasis: var(--vscode-focusBorder) !important",
+          "--borderColor-accent-emphasis: var(--vscode-button-background) !important",
         ),
       );
     });

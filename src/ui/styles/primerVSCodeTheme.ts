@@ -21,14 +21,15 @@ export function getPrimerVSCodeThemeCSS(): string {
       --bgColor-muted: var(--vscode-editorWidget-background) !important;
       --borderColor-default: var(--vscode-panel-border) !important;
 
-      /* Accent: VS Code's own (links, focus, the primary button), never
-         Primer's GitHub blue — chips, links and selected states follow it */
-      --fgColor-accent: var(--vscode-textLink-foreground) !important;
+      /* Accent: the primary button's colour, as the Primer showcase draws it,
+         never Primer's GitHub blue — chips, labels, links and selected
+         states follow it; only focus rings keep VS Code's focus colour */
+      --fgColor-accent: var(--vscode-button-background) !important;
       --fgColor-onEmphasis: var(--vscode-button-foreground) !important;
       --bgColor-accent-emphasis: var(--vscode-button-background) !important;
-      --bgColor-accent-muted: color-mix(in srgb, var(--vscode-focusBorder) 15%, transparent) !important;
-      --borderColor-accent-emphasis: var(--vscode-focusBorder) !important;
-      --borderColor-accent-muted: color-mix(in srgb, var(--vscode-focusBorder) 40%, transparent) !important;
+      --bgColor-accent-muted: color-mix(in srgb, var(--vscode-button-background) 15%, transparent) !important;
+      --borderColor-accent-emphasis: var(--vscode-button-background) !important;
+      --borderColor-accent-muted: color-mix(in srgb, var(--vscode-button-background) 40%, transparent) !important;
       --focus-outlineColor: var(--vscode-focusBorder) !important;
 
       /* Button variant colors - Default */
