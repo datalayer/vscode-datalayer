@@ -6,7 +6,9 @@
 
 /**
  * Datalayer Jupyter Server Provider using official Jupyter Extension API.
- * Based on Colab's approach to show servers + commands in kernel picker.
+ * Based on Colab's approach to show servers + commands in kernel picker:
+ * the active Datalayer runtimes are listed in the native kernel picker,
+ * with the *Create GPU Runtime* and *Create CPU Runtime* commands.
  *
  * @module jupyter/serverProvider
  */

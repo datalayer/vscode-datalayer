@@ -1,0 +1,3 @@
+#!/bin/sh
+# The stub `loop` of the extension-host suite (VSCODE VS-14): see stub-loop.mjs.
+exec node "$(dirname "$0")/stub-loop.mjs" "$@"

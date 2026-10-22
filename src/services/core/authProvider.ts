@@ -8,6 +8,10 @@
  * Datalayer-based authentication provider for VS Code.
  * Provides authentication state management and event notifications using the DatalayerClient.
  *
+ * On initialization the session is restored from the OS keyring, else
+ * migrated from the old VS Code secret. A login (credentials or OAuth) sets
+ * the token on the client with `setToken`, without which API calls fail.
+ *
  * @module services/authProvider
  */
 
@@ -488,9 +492,7 @@ export class DatalayerAuthProvider
         );
       } else if (selected.label === "$(github) Report Issue") {
         await vscode.env.openExternal(
-          vscode.Uri.parse(
-            "https://github.com/datalayer/vscode-datalayer/issues/new",
-          ),
+          vscode.Uri.parse("https://github.com/datalayer/vscode/issues/new"),
         );
       }
     } else {
@@ -521,9 +523,7 @@ export class DatalayerAuthProvider
         );
       } else if (selected.label === "$(github) Report Issue") {
         await vscode.env.openExternal(
-          vscode.Uri.parse(
-            "https://github.com/datalayer/vscode-datalayer/issues/new",
-          ),
+          vscode.Uri.parse("https://github.com/datalayer/vscode/issues/new"),
         );
       }
     }

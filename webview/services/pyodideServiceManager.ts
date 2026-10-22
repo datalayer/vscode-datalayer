@@ -9,6 +9,10 @@
 /**
  * Minimal ServiceManager for Pyodide that makes ZERO HTTP requests
  * This is a complete reimplementation that doesn't inherit from ServiceManager.
+ * Python runs in the browser through WebAssembly, its kernels managed by a
+ * `BaseKernelManager`.
+ *
+ * @module pyodideServiceManager
  */
 
 import {

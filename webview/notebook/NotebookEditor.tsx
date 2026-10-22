@@ -8,6 +8,14 @@
  * Notebook editor component for VS Code webview.
  * Uses modern React patterns with hooks and centralized state management.
  *
+ * Four hooks do the work: `useRuntimeManager` (the stable service manager
+ * proxy handed to `Notebook2`), `useNotebookModel` (model changes and the
+ * dirty state, sent to the extension host), `useNotebookResize` (Lumino's
+ * layout when the container resizes) and `useNotebookOutline` (the Outline
+ * view). The state comes from the Zustand store, not from props. The id of
+ * the notebook shown is kept in a ref, so a webview reused for another
+ * document starts from a clean state.
+ *
  * @module notebook/NotebookEditor
  */
 
@@ -48,7 +56,7 @@ import { RuntimeProgressBar } from "../components/RuntimeProgressBar";
 // Initialize RequireJS stub for ClassicWidgetManager
 initializeRequireJSStub();
 import { NotebookToolbar } from "./NotebookToolbar";
-import { VSCodeTheme } from "../theme/VSCodeTheme";
+import { DatalayerVSCodeTheme } from "../theme/DatalayerVSCodeTheme";
 
 // Import our new hooks and stores
 import { createNotebookStore } from "../stores/notebookStore";
@@ -1235,7 +1243,7 @@ function NotebookEditorCore({
 /**
  * Main notebook component with theme provider.
  * Creates the store at this level so theme can be shared between
- * VSCodeTheme wrapper and NotebookEditorCore.
+ * DatalayerVSCodeTheme wrapper and NotebookEditorCore.
  */
 function NotebookEditor(): JSX.Element {
   // Create per-instance store - prevents global state sharing
@@ -1244,9 +1252,9 @@ function NotebookEditor(): JSX.Element {
   const theme = store((state) => state.theme);
 
   return (
-    <VSCodeTheme colorMode={theme} loadJupyterLabCss={true}>
+    <DatalayerVSCodeTheme colorMode={theme} loadJupyterLabCss={true}>
       <NotebookEditorCore store={store} />
-    </VSCodeTheme>
+    </DatalayerVSCodeTheme>
   );
 }
 

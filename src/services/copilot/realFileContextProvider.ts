@@ -3,6 +3,14 @@
  *
  * MIT License
  */
+
+/**
+ * A file on disk that holds the editor's current context, for Copilot to
+ * read.
+ *
+ * @module services/copilot/realFileContextProvider
+ */
+
 import * as path from "path";
 import * as vscode from "vscode";
 

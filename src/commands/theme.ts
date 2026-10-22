@@ -13,8 +13,6 @@
 import * as path from "path";
 import * as vscode from "vscode";
 
-import { getPrimerVSCodeThemeCSS } from "../ui/styles/primerVSCodeTheme";
-
 /**
  * Registers theme-related commands for Primer component showcase and demos.
  *
@@ -123,7 +121,6 @@ function getWebviewContent(
             height: 100%;
         }
 
-        ${getPrimerVSCodeThemeCSS()}
     </style>
 </head>
 <body>

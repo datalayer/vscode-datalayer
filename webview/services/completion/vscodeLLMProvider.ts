@@ -7,6 +7,13 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 /**
+ * Inline completions (ghost text) for notebook cells from VS Code's Language
+ * Model API (Copilot or any registered model), asked of the extension host.
+ *
+ * @module webview/services/completion/vscodeLLMProvider
+ */
+
+/**
  * Type definitions for inline completion (not exported from published package).
  */
 

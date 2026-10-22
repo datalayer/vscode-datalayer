@@ -21,6 +21,9 @@ export default defineConfig({
     'out/src/test/providers/**/*.test.js',
     'out/src/test/tools/**/*.test.js',
     'out/src/test/kernel/**/*.test.js',
+    // Sessions in the editor and the Studio's journey, against the stub `loop` (VS-14).
+    'out/src/test/sessions/**/*.test.js',
+    'out/src/test/apps/**/*.test.js',
   ],
   version: '1.107.0',
   workspaceFolder: './src/test/fixtures',

@@ -5,7 +5,10 @@
  */
 
 /**
- * Command handlers for Pyodide-related operations
+ * Command handlers for Pyodide-related operations: the cache clearing for
+ * both native and webview notebooks.
+ *
+ * @module commands/pyodide
  */
 
 import * as fs from "fs/promises";

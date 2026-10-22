@@ -16,6 +16,16 @@
  */
 
 const Module = require("module");
+const { pathToFileURL } = require("url");
+
+// agent-runtimes' `lib/portable` is loaded for real (below): its ESM imports
+// its siblings without an extension, which the loader hook resolves.
+if (typeof Module.register === "function") {
+  Module.register("./css-loader.mjs", pathToFileURL(__filename));
+}
+
+/** The one part of agent-runtimes the extension host runs as it is: the pure, shared `lib/portable`. */
+const REAL_PREFIX = "@datalayer/agent-runtimes/lib/portable/";
 
 const INTERCEPTED_PREFIXES = [
   "@datalayer/core",
@@ -83,6 +93,10 @@ Module._load = function (request, parent, isMain) {
   // Check exact match first
   if (STUBS[request]) {
     return STUBS[request];
+  }
+
+  if (request.startsWith(REAL_PREFIX)) {
+    return originalLoad.call(this, request, parent, isMain);
   }
 
   // Check prefix match for any intercepted package

@@ -7,6 +7,8 @@
 /**
  * Context menu plugin for adding comments via right-click.
  * Shows a "Add Comment" option when text is selected.
+ *
+ * @module lexical/plugins/ContextMenuPlugin
  */
 
 import type { JSX } from "react";

@@ -39,7 +39,6 @@ jobs:
         uses: actions/setup-node@v7
         with:
           node-version: "22"
-          cache: "npm"
 
       - name: Install system dependencies (Ubuntu only)
         if: matrix.os == 'ubuntu-latest'
@@ -60,7 +59,7 @@ jobs:
             libxtst6
 
       - name: Install dependencies
-        run: npm install --ignore-engines
+        run: npm install -g npm@11 && npm install --ignore-engines
 
       - name: Install VS Code CLI (Ubuntu)
         if: matrix.os == 'ubuntu-latest'

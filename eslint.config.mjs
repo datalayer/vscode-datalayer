@@ -27,6 +27,8 @@ export default [
       "*.config.mjs",
       "scripts/ignore-css-preload.mjs",
       "src/test/css-loader.mjs",
+      // The stub `loop` of the extension-host suite: plain Node, outside the projects.
+      "src/test/fixtures/**",
       "src/test/register-css-hook.mjs",
       "src/test/register-css-hook.js",
       "src/test/setup.js",
@@ -45,7 +47,11 @@ export default [
       ecmaVersion: 2022,
       sourceType: "module",
       parserOptions: {
-        project: ["./tsconfig.json", "./tsconfig.webview.json", "./tsconfig.webview-test.json"],
+        project: [
+          "./tsconfig.json",
+          "./tsconfig.webview.json",
+          "./tsconfig.webview-test.json",
+        ],
         tsconfigRootDir: import.meta.dirname,
       },
     },

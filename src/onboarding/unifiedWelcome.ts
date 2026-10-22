@@ -12,6 +12,11 @@
  * 2. Disabling Jupyter tools to avoid Copilot conflicts
  *
  * This avoids annoying users with multiple prompts on first activation.
+ *
+ * On the first run it also pins the Datalayer view container to the
+ * Activity Bar and opens the Datalayer sidebar.
+ *
+ * @module onboarding/unifiedWelcome
  */
 
 import * as vscode from "vscode";

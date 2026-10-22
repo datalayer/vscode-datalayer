@@ -32,7 +32,8 @@
     "@datalayer/agent-runtimes": {
       "IAgentRuntimesClient": "https://github.com/datalayer/agent-runtimes",
       "SdkAgentRuntimesClient": "https://github.com/datalayer/agent-runtimes",
-      "AgentsMixin": "https://github.com/datalayer/agent-runtimes"
+      "AgentsMixin": "https://github.com/datalayer/agent-runtimes",
+      "Protocol": "https://github.com/datalayer/agent-runtimes"
     }
   },
   "requiredToBeDocumented": [

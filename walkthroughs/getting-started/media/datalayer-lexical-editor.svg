@@ -85,7 +85,7 @@
           font-size="12"
           font-weight="400"
           fill="var(--vscode-breadcrumb-foreground)">
-      vscode-datalayer › dev › lexicals › vscode.lexical
+      vscode › dev › lexicals › vscode.lexical
     </text>
 
     <!-- Formatting toolbar -->

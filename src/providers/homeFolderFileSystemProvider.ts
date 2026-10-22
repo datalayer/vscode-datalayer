@@ -13,6 +13,9 @@
  * parts checksummed, completed, resumed from the verified parts when a save
  * is retried. There is no second upload implementation here.
  *
+ * `extension.ts` registers it once the service container exists. Directories
+ * are implicit: one exists as soon as a file is saved into it.
+ *
  * @module providers/homeFolderFileSystemProvider
  */
 

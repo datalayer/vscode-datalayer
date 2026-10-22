@@ -4,6 +4,14 @@
  * MIT License
  */
 
+/**
+ * The error boundary at the root of the notebook and Lexical editors: a
+ * rendering error shows a recovery view with *Try Again* instead of breaking
+ * the whole panel.
+ *
+ * @module components/ErrorBoundary
+ */
+
 import React, { Component, type ErrorInfo, type ReactNode } from "react";
 
 /** Props for the ErrorBoundary component. */

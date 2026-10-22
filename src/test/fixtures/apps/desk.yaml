@@ -1,0 +1,9 @@
+# A fixture application for the extension-host suite (VSCODE VS-11, VS-14).
+schema: loop.app/v1
+id: fixture-desk
+version: 0.0.1
+name: Fixture Desk
+kind: chat
+description: A desk that answers nothing, for the suite.
+agent: example-simple
+instructions: Answer in one sentence.

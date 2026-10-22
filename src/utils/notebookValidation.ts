@@ -4,6 +4,13 @@
  * MIT License
  */
 
+/**
+ * Validation that a tool operates on a Datalayer custom editor notebook,
+ * never on a native VS Code notebook.
+ *
+ * @module utils/notebookValidation
+ */
+
 import * as vscode from "vscode";
 
 import { getActiveCustomEditorUri } from "./activeDocument";

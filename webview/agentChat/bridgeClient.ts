@@ -18,6 +18,12 @@
  *   `postMessage` plumbing and returns a typed `request` function used by
  *   the class.
  *
+ * The client serves the operations scoped to the person's keyring token
+ * (runtimes, agents, notifications, events, evals, output artifacts,
+ * context and cost usage, runtime lifecycle). The chat runtime's own
+ * endpoints (configuration, history, sandbox status, skills, tool-approval
+ * streams) go through the raw network bridge instead (`networkBridge.ts`).
+ *
  * Phase 2b scope: request/response only. Streaming support (for
  * `streamChat`) lands in a follow-up phase when the SDK grows typed
  * streaming methods.

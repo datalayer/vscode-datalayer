@@ -20,6 +20,21 @@
  * reach arbitrary properties on the client instance. The whitelist mirrors
  * {@link IAgentRuntimesClient}.
  *
+ * The chat talks to the extension host through two bridges: this typed SDK
+ * bridge, for the operations that need the user's Datalayer token from the
+ * OS keyring (listing agents, creating runtimes), and the raw network bridge
+ * (`agentChatNetworkBridge.ts`), for every direct HTTP/WebSocket call
+ * `@datalayer/agent-runtimes` makes with a runtime token it already holds
+ * (chat streaming, protocol adapters, MCP status).
+ *
+ * `SessionSurfacesHandler`, in this module too, draws the editor's surfaces
+ * of a session from what the chat posts: `approval-raised` and
+ * `approval-shown` (an editor notification per approval, the decision asked
+ * back of the chat with `approval-decide` and answered with
+ * `approval-decided`), `open-diff` (the diff view), `terminal-output` (the
+ * session's terminal), `session-state` (the status bar) and `session-ended`;
+ * `focus-approval` focuses the chat on *Show*.
+ *
  * Phase 2b scope: request/response only (no streaming). Streaming support
  * (for `streamChat`) lands alongside the chat endpoint SDK coverage in a
  * follow-up phase.
@@ -29,10 +44,22 @@
 
 import type { IAgentRuntimesClient } from "@datalayer/agent-runtimes/lib/client/IAgentRuntimesClient";
 import { SdkAgentRuntimesClient } from "@datalayer/agent-runtimes/lib/client/SdkAgentRuntimesClient";
+import { homedir } from "os";
 import * as vscode from "vscode";
 
+import type { ApprovalRaised } from "../chat/attention";
+import { diffShownOf, terminalShownOf } from "../chat/sessionDisplays";
+import { localSessionFolder, studioActivityUrl } from "../chat/sessionVerbs";
 import type { ExtendedDatalayerClient } from "../services/core/datalayerAdapter";
+import type { LocalApprovalSource } from "../services/localRuntime/localApprovalSource";
 import { ServiceLoggers } from "../services/logging/loggers";
+import type { ApprovalNotifications } from "../services/ui/approvalNotifications";
+import type { DiffDocuments } from "../services/ui/diffDocuments";
+import {
+  sessionsOf,
+  type SessionStatusBar,
+} from "../services/ui/sessionStatusBar";
+import type { SessionTerminals } from "../services/ui/sessionTerminal";
 
 /**
  * Allowed method names the webview can invoke on the bridge. Mirrors the
@@ -301,5 +328,364 @@ export class AgentChatBridgeHandler {
       stack,
     };
     void webview.postMessage(response);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// The editor's surfaces of a session: approvals, diffs, terminals, the
+// status bar.
+// ---------------------------------------------------------------------------
+
+/**
+ * What the chat posts about a session, and what the extension host answers:
+ *
+ * - `approval-raised {app, sessionKey, approvals}` — the approvals the
+ *   chat's banner holds now; each new one is said as an editor notification.
+ * - `approval-shown {ids}` — the chat showed these whole: a decision from
+ *   the notification is allowed.
+ * - `approval-decide {requestId, id, approved}` (host → chat) — the
+ *   notification's decision: the chat reads the approval again and sends it
+ *   through the one route, then answers `approval-decided {requestId, said}`.
+ * - `focus-approval {id}` (host → chat) — *Show*: the chat focused on it.
+ * - `open-diff {display, harness, turn, local}` — a diff row's *Open in the
+ *   editor*, or a write's approval: opened in the diff view.
+ * - `terminal-output {sessionKey, title, display}` — a terminal display as
+ *   it stands: written to the session's terminal.
+ * - `session-state {sessions}` — the chat's sessions (the one in front):
+ *   the status bar and the finished turns.
+ * - `session-ended {sessionKey}` — its terminal disposed.
+ * - `local-approval-decide {url, id, approved}` — the banner's decision on
+ *   a local session, sent over the runtime's websocket (VS-07); the host
+ *   posts `local-approvals {url, approvals}` as each runtime's change.
+ */
+export type SessionSurfaceMessage =
+  | {
+      type: "approval-raised";
+      app: string;
+      sessionKey: string;
+      approvals: ApprovalRaised[];
+    }
+  | { type: "approval-shown"; ids: string[] }
+  | { type: "approval-decided"; requestId: string; said: string }
+  | {
+      type: "open-diff";
+      display: unknown;
+      harness?: string;
+      turn?: number;
+      local: boolean;
+    }
+  | {
+      type: "terminal-output";
+      sessionKey: string;
+      title: string;
+      display: unknown;
+    }
+  | { type: "session-state"; sessions: unknown }
+  | { type: "session-ended"; sessionKey: string }
+  | { type: "reveal-session"; uid: string }
+  | { type: "open-studio"; appUid: string }
+  | {
+      type: "local-approval-decide";
+      url: string;
+      id: string;
+      approved: boolean;
+    };
+
+/** The services a session's surfaces are drawn with. */
+export interface SessionSurfaceServices {
+  diffs: DiffDocuments;
+  terminals: SessionTerminals;
+  approvals: ApprovalNotifications;
+  statusBar: SessionStatusBar;
+  /** The local runtimes' approvals, decided over their websockets (VS-07). */
+  localApprovals?: LocalApprovalSource;
+}
+
+/** How long the chat has to answer a decision asked of it. */
+const DECISION_TIMEOUT_MS = 20_000;
+
+/** The internal command answering the surfaces' services (the extension-host suite's). */
+export const SESSION_SURFACES_COMMAND = "datalayer.internal.sessions.surfaces";
+
+/** The view the chat lives in, focused on *Show*. */
+const CHAT_VIEW_FOCUS_COMMAND = "datalayerAgentChatView.focus";
+
+/**
+ * Handles the chat's session-surface messages for one webview, and asks the
+ * chat to send the decisions taken from a notification.
+ */
+export class SessionSurfacesHandler {
+  /** The decisions asked of the chat, by request id. */
+  private readonly decisions = new Map<
+    string,
+    { resolve: (said: string) => void; timer: NodeJS.Timeout }
+  >();
+
+  private count = 0;
+
+  /**
+   * @param services - The editor's surfaces.
+   */
+  constructor(private readonly services: SessionSurfaceServices) {}
+
+  /**
+   * Attaches to a webview; detached by the disposable returned.
+   *
+   * @param webview - The chat's webview.
+   *
+   * @returns A disposable that detaches the listener.
+   */
+  public attach(webview: vscode.Webview): vscode.Disposable {
+    const listener = webview.onDidReceiveMessage((raw: unknown) => {
+      void this.handle(webview, raw);
+    });
+    return {
+      dispose: () => {
+        listener.dispose();
+        for (const pending of this.decisions.values()) {
+          clearTimeout(pending.timer);
+          pending.resolve("The chat went away before answering.");
+        }
+        this.decisions.clear();
+      },
+    };
+  }
+
+  /**
+   * Whether a raw message is one of the session-surface messages.
+   *
+   * @param raw - What the webview posted.
+   *
+   * @returns Whether it is one of them.
+   */
+  public static isSurfaceMessage(raw: unknown): raw is SessionSurfaceMessage {
+    if (raw === null || typeof raw !== "object") {
+      return false;
+    }
+    const type = (raw as { type?: unknown }).type;
+    return (
+      type === "approval-raised" ||
+      type === "approval-shown" ||
+      type === "approval-decided" ||
+      type === "open-diff" ||
+      type === "terminal-output" ||
+      type === "session-state" ||
+      type === "session-ended" ||
+      type === "reveal-session" ||
+      type === "open-studio" ||
+      type === "local-approval-decide"
+    );
+  }
+
+  /**
+   * Draws what one message asks: a notification, the diff view, the
+   * terminal, the status bar.
+   *
+   * @param webview - The chat's webview, answered on a decision.
+   * @param raw - What the webview posted.
+   */
+  private async handle(webview: vscode.Webview, raw: unknown): Promise<void> {
+    if (!SessionSurfacesHandler.isSurfaceMessage(raw)) {
+      return;
+    }
+    const { terminals, approvals, statusBar } = this.services;
+    switch (raw.type) {
+      case "approval-raised":
+        this.raised(webview, raw);
+        return;
+      case "approval-shown":
+        approvals.shownInChat(
+          Array.isArray(raw.ids)
+            ? raw.ids.filter((id): id is string => typeof id === "string")
+            : [],
+        );
+        return;
+      case "approval-decided": {
+        const pending = this.decisions.get(raw.requestId);
+        if (pending) {
+          this.decisions.delete(raw.requestId);
+          clearTimeout(pending.timer);
+          pending.resolve(
+            typeof raw.said === "string" && raw.said
+              ? raw.said
+              : "The decision was sent.",
+          );
+        }
+        return;
+      }
+      case "open-diff":
+        await this.openDiff(raw);
+        return;
+      case "terminal-output": {
+        const display = terminalShownOf(raw.display);
+        if (display && typeof raw.sessionKey === "string" && raw.sessionKey) {
+          terminals.write(
+            raw.sessionKey,
+            typeof raw.title === "string" ? raw.title : "",
+            display,
+          );
+        }
+        return;
+      }
+      case "session-state":
+        statusBar.observed("chat", sessionsOf(raw.sessions));
+        return;
+      case "session-ended":
+        if (typeof raw.sessionKey === "string") {
+          terminals.end(raw.sessionKey);
+        }
+        return;
+      case "reveal-session":
+      case "open-studio":
+        await this.elsewhere(raw);
+        return;
+      case "local-approval-decide": {
+        // The banner's decision on a local session: sent over the
+        // runtime's websocket; the next snapshot redraws the banner.
+        const source = this.services.localApprovals;
+        if (
+          source &&
+          typeof raw.url === "string" &&
+          typeof raw.id === "string" &&
+          typeof raw.approved === "boolean"
+        ) {
+          const said = await source.decide(raw.url, raw.id, raw.approved);
+          ServiceLoggers.main.info("[Approvals] local decision", {
+            id: raw.id,
+            said,
+          });
+        }
+        return;
+      }
+      default:
+        return;
+    }
+  }
+
+  /**
+   * The thread's menu entries VS Code adds: *Reveal in Explorer* (a local
+   * session's folder in the file store) and *Open in the Studio* (the
+   * application's Activity page, in the browser).
+   *
+   * @param raw - Which, and for what.
+   */
+  private async elsewhere(
+    raw: Extract<
+      SessionSurfaceMessage,
+      { type: "reveal-session" } | { type: "open-studio" }
+    >,
+  ): Promise<void> {
+    if (raw.type === "reveal-session") {
+      if (typeof raw.uid !== "string" || !/^[A-Za-z0-9_-]+$/.test(raw.uid)) {
+        return;
+      }
+      const folder = localSessionFolder(
+        homedir(),
+        raw.uid,
+        process.env.AGENT_RUNTIMES_SESSIONS_PATH,
+      );
+      await vscode.commands.executeCommand(
+        "revealFileInOS",
+        vscode.Uri.file(folder),
+      );
+      return;
+    }
+    if (typeof raw.appUid === "string" && raw.appUid) {
+      await vscode.env.openExternal(
+        vscode.Uri.parse(studioActivityUrl(raw.appUid)),
+      );
+    }
+  }
+
+  /**
+   * A diff row's *Open in the editor*: opened in the diff view, a refusal
+   * said.
+   *
+   * @param raw - The diff posted, and where it comes from.
+   */
+  private async openDiff(
+    raw: Extract<SessionSurfaceMessage, { type: "open-diff" }>,
+  ): Promise<void> {
+    const display = diffShownOf(raw.display);
+    if (!display) {
+      ServiceLoggers.main.warn("[Diff] a row that does not read as a diff");
+      return;
+    }
+    try {
+      await this.services.diffs.open({
+        display,
+        harness: typeof raw.harness === "string" ? raw.harness : "",
+        turn: typeof raw.turn === "number" ? raw.turn : 0,
+        local: raw.local === true,
+      });
+    } catch (error) {
+      void vscode.window.showWarningMessage(
+        error instanceof Error ? error.message : String(error),
+      );
+    }
+  }
+
+  /**
+   * The approvals the chat's banner holds now, each new one said as a
+   * notification whose decision is asked back of the chat.
+   *
+   * @param webview - The chat's webview.
+   * @param raw - The approvals posted.
+   */
+  private raised(
+    webview: vscode.Webview,
+    raw: Extract<SessionSurfaceMessage, { type: "approval-raised" }>,
+  ): void {
+    const listed = Array.isArray(raw.approvals) ? raw.approvals : [];
+    this.services.approvals.raised(
+      typeof raw.app === "string" && raw.app ? raw.app : "The application",
+      listed.filter(
+        (approval) =>
+          approval &&
+          typeof approval === "object" &&
+          typeof approval.id === "string" &&
+          typeof approval.toolName === "string",
+      ),
+      {
+        decide: (id, approved) => this.askDecision(webview, id, approved),
+        show: (id) => {
+          void vscode.commands.executeCommand(CHAT_VIEW_FOCUS_COMMAND);
+          void webview.postMessage({ type: "focus-approval", id });
+        },
+      },
+    );
+  }
+
+  /**
+   * Asks the chat to decide an approval through its route, and waits for
+   * what it says.
+   *
+   * @param webview - The chat's webview.
+   * @param id - The approval to decide.
+   * @param approved - Whether to approve it.
+   *
+   * @returns The sentence the chat answered, or that it did not answer.
+   */
+  private askDecision(
+    webview: vscode.Webview,
+    id: string,
+    approved: boolean,
+  ): Promise<string> {
+    this.count += 1;
+    const requestId = `decision-${this.count}`;
+    return new Promise((resolve) => {
+      const timer = setTimeout(() => {
+        if (this.decisions.delete(requestId)) {
+          resolve("The chat did not answer in time: decide it there.");
+        }
+      }, DECISION_TIMEOUT_MS);
+      this.decisions.set(requestId, { resolve, timer });
+      void webview.postMessage({
+        type: "approval-decide",
+        requestId,
+        id,
+        approved,
+      });
+    });
   }
 }

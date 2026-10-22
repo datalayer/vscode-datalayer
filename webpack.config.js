@@ -80,6 +80,11 @@ const extensionConfig = {
     path: path.resolve(__dirname, "dist"),
     filename: "extension.js",
     libraryTarget: "commonjs2",
+    // The extension host's Node runs import(): the tools entries (ES modules)
+    // are loaded with it, as `import` externals.
+    environment: {
+      dynamicImport: true,
+    },
   },
   externals: {
     vscode: "commonjs vscode", // the vscode-module is created on-the-fly and must be excluded. Add other modules that cannot be webpack'ed, -> https://webpack.js.org/configuration/externals/
@@ -101,9 +106,11 @@ const extensionConfig = {
     // When webpack encounters React imports in these packages, it externalizes them (because React is external above)
     // This prevents Node.js from trying to load packages with CSS imports at runtime
     // EXCEPTION: /tools exports must be external to avoid bundling dependencies with os.platform() calls
-    "@datalayer/jupyter-react/tools": "commonjs @datalayer/jupyter-react/tools",
-    "@datalayer/jupyter-lexical/lib/tools":
-      "commonjs @datalayer/jupyter-lexical/lib/tools",
+    // ES modules, loaded with a native import() at activation (Node's ESM
+    // loader), never through require.
+    "@datalayer/jupyter-react/tools": "import @datalayer/jupyter-react/tools",
+    "@datalayer/jupyter-lexical/lib/tools/index.js":
+      "import @datalayer/jupyter-lexical/lib/tools/index.js",
     "@jupyterlab/application": "commonjs @jupyterlab/application",
     "@jupyterlab/notebook": "commonjs @jupyterlab/notebook",
     "@jupyterlab/cells": "commonjs @jupyterlab/cells",
@@ -487,8 +494,19 @@ const lexicalWebviewConfig = {
           fullySpecified: false,
         },
       },
+      // onnxruntime-web's WASM is an Emscripten build loaded at runtime, not
+      // an ES WebAssembly module (it imports from Emscripten's own "a"); the
+      // voice code points onnxruntime-web at the speech models' CDN, so only
+      // its URL is kept and the file is not emitted.
       {
         test: /\.wasm$/,
+        include: /[\\/]onnxruntime-web[\\/]/,
+        type: "asset/resource",
+        generator: { emit: false },
+      },
+      {
+        test: /\.wasm$/,
+        exclude: /[\\/]onnxruntime-web[\\/]/,
         type: "webassembly/async",
       },
       // Python file loader (for Pyodide kernel)
@@ -644,8 +662,19 @@ const agentChatWebviewConfig = {
     ...webviewConfig.module,
     rules: [
       ...webviewConfig.module.rules,
+      // onnxruntime-web's WASM is an Emscripten build loaded at runtime, not
+      // an ES WebAssembly module (it imports from Emscripten's own "a"); the
+      // voice code points onnxruntime-web at the speech models' CDN, so only
+      // its URL is kept and the file is not emitted.
       {
         test: /\.wasm$/,
+        include: /[\\/]onnxruntime-web[\\/]/,
+        type: "asset/resource",
+        generator: { emit: false },
+      },
+      {
+        test: /\.wasm$/,
+        exclude: /[\\/]onnxruntime-web[\\/]/,
         type: "webassembly/async",
       },
     ],
@@ -681,37 +710,40 @@ const agentChatWebviewConfig = {
   // see comment on `WEBVIEW_PERFORMANCE_HINTS`).
 };
 
-// Config for ag-ui example webview
-const aguiExampleConfig = {
+// Config for Datasource Dialog webview
+const datasourceDialogConfig = {
+  name: "datasource",
   target: "web",
-  mode: "none",
-  devtool: "inline-source-map",
-  entry: "./webview/datalayer-core/AgUIExample.tsx",
+  mode: "production", // Enable webpack production optimizations
+  devtool: process.env.WEBVIEW_DEBUG
+    ? "inline-source-map"
+    : "hidden-source-map",
+  entry: "./webview/datasource/main.tsx",
   output: {
     path: path.resolve(__dirname, "dist"),
-    filename: "aguiExample.js",
+    filename: "datasourceDialog.js",
   },
+  performance: WEBVIEW_PERFORMANCE_HINTS,
   resolve: {
-    extensions: [".ts", ".tsx", ".js", ".jsx", ".json"],
+    extensions: [".ts", ".tsx", ".js", ".jsx", ".json", ".svg"],
     symlinks: true,
     fallback: {
       process: require.resolve("process/browser"),
       buffer: require.resolve("buffer/"),
-      stream: false,
+      stream: require.resolve("stream-browserify"),
+      // Disable node modules not needed in browser
+      fs: false,
+      path: false,
+      crypto: false,
     },
     alias: {
       // Use resolvePackage helper to find packages in hoisted node_modules (monorepo)
       react: resolvePackage("react"),
       "react-dom": resolvePackage("react-dom"),
+      // Stub out react-router-dom since we don't use navigation in webview
+      "react-router-dom": false,
     },
   },
-  ignoreWarnings: [
-    {
-      module: /node_modules\/@jupyterlite\/pyodide-kernel/,
-      message:
-        /Critical dependency: the request of a dependency is an expression/,
-    },
-  ],
   module: {
     rules: [
       {
@@ -726,49 +758,18 @@ const aguiExampleConfig = {
           },
         },
       },
-      { test: /\.raw\.css$/, type: "asset/source" },
       {
-        test: /(?<!\.raw)\.css$/,
+        test: /\.css$/,
         use: [require.resolve("style-loader"), require.resolve("css-loader")],
       },
       {
-        test: /\.svg/,
+        test: /\.svg$/,
         type: "asset/inline",
-        generator: {
-          dataUrl: (content) => miniSVGDataURI(content.toString()),
-        },
-      },
-      {
-        test: /\.(png|jpg|jpeg|gif|woff|woff2|eot|ttf|otf)$/,
-        type: "asset/resource",
       },
       {
         test: /\.(c|m)?js/,
         resolve: {
           fullySpecified: false,
-        },
-      },
-      // Rule for pyodide kernel wheel files
-      {
-        test: /\.whl$/,
-        type: "asset/resource",
-        generator: {
-          filename: "pypi/[name][ext]",
-        },
-      },
-      // Rule for other pyodide kernel resources
-      {
-        test: /pypi\/.*/,
-        type: "asset/resource",
-        generator: {
-          filename: "pypi/[name][ext][query]",
-        },
-      },
-      {
-        test: /pyodide-kernel-extension\/schema\/.*/,
-        type: "asset/resource",
-        generator: {
-          filename: "schema/[name][ext][query]",
         },
       },
     ],
@@ -780,18 +781,19 @@ const aguiExampleConfig = {
   ],
 };
 
-// Config for Datasource Dialog webview
-const datasourceDialogConfig = {
-  name: "datasource",
+// Config for the Datalayer home page webview (`datalayer.home`): Primer,
+// a few core components, no Chat, no jupyter-react — as small as `datasource`.
+const homeWebviewConfig = {
+  name: "home",
   target: "web",
   mode: "production", // Enable webpack production optimizations
   devtool: process.env.WEBVIEW_DEBUG
     ? "inline-source-map"
     : "hidden-source-map",
-  entry: "./webview/datasource/main.tsx",
+  entry: "./webview/home/main.tsx",
   output: {
     path: path.resolve(__dirname, "dist"),
-    filename: "datasourceDialog.js",
+    filename: "home.js",
   },
   performance: WEBVIEW_PERFORMANCE_HINTS,
   resolve: {
@@ -929,10 +931,10 @@ const configs = [
   webviewConfig,
   lexicalWebviewConfig,
   showcaseWebviewConfig,
+  homeWebviewConfig,
   datasourceDialogConfig,
   datasourceEditDialogConfig,
   agentChatWebviewConfig,
-  // aguiExampleConfig, // Commented out - file doesn't exist
 ];
 
 if (process.env.ANALYZE === "true") {
@@ -941,6 +943,7 @@ if (process.env.ANALYZE === "true") {
     "webview",
     "lexical",
     "showcase",
+    "home",
     "datasource",
     "datasource-edit",
     "agentChat",

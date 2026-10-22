@@ -9,6 +9,9 @@
  * Displays projects with their notebooks and lexical documents,
  * plus CRUD and agent management operations.
  *
+ * Refreshed every 30 seconds; a project whose assigned agent's runtime no
+ * longer exists has that agent unassigned.
+ *
  * @module providers/projectsTreeProvider
  *
  * @see https://code.visualstudio.com/api/extension-guides/tree-view

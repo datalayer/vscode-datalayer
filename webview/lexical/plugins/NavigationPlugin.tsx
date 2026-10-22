@@ -6,7 +6,10 @@
 
 /**
  * Lexical plugin for handling navigation to outline items.
- * Scrolls to and positions cursor at the target heading or code block.
+ * Scrolls to and positions cursor at the target heading or code block,
+ * when the person clicks the item in the Outline view.
+ *
+ * @module lexical/plugins/NavigationPlugin
  */
 
 import { useEffect } from "react";

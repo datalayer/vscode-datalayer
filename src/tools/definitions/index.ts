@@ -10,6 +10,9 @@
  * VS Code-specific tool definitions only.
  * Cell and block tool definitions live in their respective packages.
  *
+ * These definitions are the source of truth for the `languageModelTools` of
+ * `package.json`, which `scripts/sync-package-json.ts` writes from them.
+ *
  * @module tools/definitions
  */
 
@@ -38,6 +41,36 @@ import { listKernelsTool } from "./listKernels";
 import { selectKernelTool } from "./selectKernel";
 
 /**
+ * The tool definitions a package's tools entry exports, or a refusal that
+ * says which package answered what — rather than a TypeError further on.
+ *
+ * @param loaded - What `require` gave for the entry.
+ * @param entry - The entry's specifier.
+ * @param name - The export holding the definitions.
+ *
+ * @returns The entry's tool definitions, as exported.
+ *
+ * @throws Error naming the entry and what it answered, when the export is not an array.
+ */
+function definitionsOf(
+  loaded: unknown,
+  entry: string,
+  name: string,
+): ToolDefinition[] {
+  const value = (loaded as Record<string, unknown> | undefined)?.[name];
+  if (!Array.isArray(value)) {
+    const keys =
+      loaded && typeof loaded === "object"
+        ? Object.keys(loaded).slice(0, 12).join(", ")
+        : typeof loaded;
+    throw new Error(
+      `${entry} has no ${name} array (it answered: ${keys || "nothing"})`,
+    );
+  }
+  return value as ToolDefinition[];
+}
+
+/**
  * Loads all tool definitions from VS Code-specific and package sources asynchronously.
  *
  * @returns Promise resolving to array of all tool definitions.
@@ -51,10 +84,20 @@ async function getAllToolDefinitionsAsync(): Promise<ToolDefinition[]> {
   require("os");
 
   // Import package tool definitions from /tools export (Node.js compatible, excludes React components)
-  const { notebookToolDefinitions } = require("@datalayer/jupyter-react/tools");
-  const {
-    lexicalToolDefinitions,
-  } = require("@datalayer/jupyter-lexical/lib/tools");
+  // Imported, not required: both entries are ES modules, and the extension
+  // host's require answered jupyter-react's with an empty object, so no tool
+  // was registered and activation stopped there. A native import reads them
+  // as Node's ESM loader does (webpack keeps them external, as `import`).
+  const notebookToolDefinitions = definitionsOf(
+    await import("@datalayer/jupyter-react/tools"),
+    "@datalayer/jupyter-react/tools",
+    "notebookToolDefinitions",
+  );
+  const lexicalToolDefinitions = definitionsOf(
+    await import("@datalayer/jupyter-lexical/lib/tools/index.js"),
+    "@datalayer/jupyter-lexical/lib/tools/index.js",
+    "lexicalToolDefinitions",
+  );
 
   // Filter out executeCode from package tools to avoid duplication
   // Also filter out tools that have missing operations

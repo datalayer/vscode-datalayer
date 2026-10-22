@@ -8,6 +8,10 @@
  * Main extension module for the Datalayer VS Code extension.
  * Orchestrates the initialization of all services, UI components, and commands.
  *
+ * The code under `src/` runs in the Node.js extension host: authentication,
+ * the platform's API, kernels and the webviews' orchestration. The webviews'
+ * own code is under `webview/`.
+ *
  * NOTE: The os module is preloaded by preload.ts (the webpack entry point)
  * to ensure it's available before cmake-ts tries to call os.platform()
  *
@@ -143,6 +147,12 @@ async function runOptionalActivationStep(
   }
 }
 
+/** What the extension's activation answers (`extension.exports`). */
+export interface DatalayerExtensionApi {
+  /** How long the activation took, in milliseconds; none when it failed. */
+  activationMs: number | undefined;
+}
+
 /**
  * Activates the Datalayer VS Code extension by initializing all services, UI, and commands.
  * This function is called when the extension is activated by VS Code.
@@ -150,12 +160,14 @@ async function runOptionalActivationStep(
  *
  * @param context - The extension context provided by VS Code.
  *
- * @returns Promise that resolves when activation is complete.
+ * @returns What the extension tells another (and its tests): how long its
+ * activation took, in milliseconds, once it completed.
  *
  */
 export async function activate(
   context: vscode.ExtensionContext,
-): Promise<void> {
+): Promise<DatalayerExtensionApi> {
+  let activationMs: number | undefined;
   // Outer try-catch for the entire activation
   try {
     console.log("[ACTIVATION] Step 1: Extension activation started");
@@ -199,6 +211,7 @@ export async function activate(
             context,
             services!.authProvider as DatalayerAuthProvider,
             services!.datalayer,
+            services!.localRuntimes,
           ),
         { stage: "extension_activation" },
       );
@@ -288,6 +301,8 @@ export async function activate(
           spacesTreeProvider: ui!.spacesTreeProvider,
           controllerManager: ui!.controllerManager,
           runtimesTreeProvider: ui!.runtimesTreeProvider,
+          sessionsTreeProvider: ui!.sessionsTreeProvider,
+          localRuntimes: services!.localRuntimes,
           projectsTreeProvider: ui!.projectsTreeProvider,
           settingsTreeProvider: ui!.settingsTreeProvider,
           outlineTreeProvider: ui!.outlineTreeProvider,
@@ -435,12 +450,20 @@ export async function activate(
       const { showUnifiedWelcomePrompt, disableBuiltInNotebookTool } =
         await import("./onboarding/unifiedWelcome");
       void disableBuiltInNotebookTool(context, logger);
-      await showUnifiedWelcomePrompt(context, logger);
+      // Shown, not awaited: the welcome waits on the person's answer, and
+      // activation does not (it held the extension unactivated until then).
+      void showUnifiedWelcomePrompt(context, logger).catch((error: unknown) =>
+        logger.warn("The welcome prompt failed", {
+          error: error instanceof Error ? error.message : String(error),
+        }),
+      );
     });
 
     await runActivationStep("Finalizing activation", () => {
       notifyExtensionReady();
-      activationTimer.end("success");
+      activationMs = activationTimer.end("success");
+      // In the host's log, so CI records the number against its budget.
+      console.log(`[ACTIVATION] Activated in ${activationMs.toFixed(0)} ms`);
       logger.info("Datalayer extension activation completed successfully", {
         totalCommands: context.subscriptions.length,
       });
@@ -467,6 +490,7 @@ export async function activate(
       }`,
     );
   }
+  return { activationMs };
 }
 
 /**

@@ -4,7 +4,7 @@
 
 Integrate the `CommentPlugin` from `@datalayer/jupyter-lexical` into the VS Code extension's Lexical editor by **storing comment data as Lexical nodes** that automatically sync via the existing Loro collaboration provider.
 
-**Issue:** https://github.com/datalayer/vscode-datalayer/issues/124
+**Issue:** https://github.com/datalayer/vscode/issues/124
 
 **User Requirements:**
 
@@ -246,9 +246,9 @@ export function $isCommentThreadNode(node: unknown): node is CommentThreadNode {
 
 ---
 
-### Step 3: Install Missing Dependency (vscode-datalayer)
+### Step 3: Install Missing Dependency (vscode)
 
-**File:** `/Users/goanpeca/Desktop/develop/datalayer/vscode-datalayer/package.json`
+**File:** `/Users/goanpeca/Desktop/develop/datalayer/vscode/package.json`
 
 **Add:**
 
@@ -261,13 +261,13 @@ export function $isCommentThreadNode(node: unknown): node is CommentThreadNode {
 **Command:**
 
 ```bash
-cd /Users/goanpeca/Desktop/develop/datalayer/vscode-datalayer
+cd /Users/goanpeca/Desktop/develop/datalayer/vscode
 npm install @lexical/mark@^0.35.0
 ```
 
 ---
 
-### Step 4: Register CommentThreadNode (vscode-datalayer)
+### Step 4: Register CommentThreadNode (vscode)
 
 **File:** `webview/lexical/LexicalEditor.tsx`
 
@@ -292,7 +292,7 @@ nodes: [
 
 ---
 
-### Step 5: Add Comments Panel Visibility State (vscode-datalayer)
+### Step 5: Add Comments Panel Visibility State (vscode)
 
 **File:** `webview/lexical/LexicalEditor.tsx`
 
@@ -306,7 +306,7 @@ const [showCommentsPanel, setShowCommentsPanel] = useState(false);
 
 ---
 
-### Step 6: Add CommentPlugin to Plugin Tree (vscode-datalayer)
+### Step 6: Add CommentPlugin to Plugin Tree (vscode)
 
 **File:** `webview/lexical/LexicalEditor.tsx`
 
@@ -323,7 +323,7 @@ const [showCommentsPanel, setShowCommentsPanel] = useState(false);
 
 ---
 
-### Step 7: Add Toolbar Toggle Button (vscode-datalayer)
+### Step 7: Add Toolbar Toggle Button (vscode)
 
 **File:** `webview/lexical/LexicalToolbar.tsx`
 
@@ -432,15 +432,15 @@ npm version patch  # or minor/major
 npm publish
 ```
 
-### 3. Update vscode-datalayer Dependency
+### 3. Update vscode Dependency
 
 ```bash
-cd /Users/goanpeca/Desktop/develop/datalayer/vscode-datalayer
+cd /Users/goanpeca/Desktop/develop/datalayer/vscode
 npm install @datalayer/jupyter-lexical@latest
 npm install
 ```
 
-### 4. Build vscode-datalayer
+### 4. Build vscode
 
 ```bash
 npm run compile
@@ -467,7 +467,7 @@ npm run compile
    - ✅ `addComment()` creates/updates nodes
    - ✅ `deleteComment()` marks comments as deleted
 
-### Integration Tests (vscode-datalayer)
+### Integration Tests (vscode)
 
 1. **Install dependencies and build:**
 
@@ -557,7 +557,7 @@ npm run compile
 | `src/plugins/CommentPlugin.tsx`   | Add `showCommentsPanel` prop                              | ~5    |
 | `src/index.ts`                    | Export CommentThreadNode                                  | ~2    |
 
-### vscode-datalayer Extension
+### vscode Extension
 
 | File                                 | Changes                                                        | Lines |
 | ------------------------------------ | -------------------------------------------------------------- | ----- |
@@ -611,7 +611,7 @@ If integration fails or causes issues:
 4. Revert `src/index.ts`
 5. Rebuild package
 
-### vscode-datalayer Extension
+### vscode Extension
 
 1. Remove `@lexical/mark` from package.json
 2. Revert LexicalEditor.tsx

@@ -9,6 +9,10 @@
 /**
  * Pyodide kernel that uses inline Web Worker (Blob URL) to bypass CSP restrictions
  * Loads Pyodide from bundled resources using fetch+eval instead of importScripts.
+ * The worker (`pyodide/pyodideWorker.worker.js`) and the kernel's Python
+ * side (`pyodide/pyodide_kernel.py`) are bundled as text.
+ *
+ * @module pyodideInlineKernel
  */
 
 import { Kernel, KernelMessage, ServerConnection } from "@jupyterlab/services";

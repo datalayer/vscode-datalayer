@@ -1,6 +1,6 @@
 #!/bin/bash
 # Sync local Datalayer packages (@datalayer/core, jupyter-lexical, jupyter-react,
-# agent-runtimes) to vscode-datalayer node_modules.
+# agent-runtimes) to vscode node_modules.
 #
 # This script builds all local packages and copies their lib/ outputs
 # into the extension's node_modules for quick testing during development.
@@ -37,7 +37,7 @@ fi
 
 # Function to perform the sync
 sync_packages() {
-  echo -e "${BLUE}🔄 Syncing Datalayer packages to vscode-datalayer...${NC}"
+  echo -e "${BLUE}🔄 Syncing Datalayer packages to vscode...${NC}"
 
   # Build @datalayer/core
   echo -e "${BLUE}📦 Building @datalayer/core...${NC}"
@@ -73,7 +73,7 @@ sync_packages() {
     echo -e "${YELLOW}⏭️  Skipping @datalayer/agent-runtimes (directory not found, using npm version)${NC}"
   fi
 
-  # Copy all necessary files to vscode-datalayer node_modules
+  # Copy all necessary files to vscode node_modules
   echo -e "${BLUE}📋 Copying files to node_modules...${NC}"
   cd "$VSCODE_ROOT"
 

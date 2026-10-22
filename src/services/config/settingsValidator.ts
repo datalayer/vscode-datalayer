@@ -9,12 +9,17 @@
  * Uses Zod schemas to validate VS Code workspace configuration values
  * and provides safe defaults when invalid values are detected.
  *
+ * There is one schema per `datalayer.*` settings group of `package.json`.
+ * `getValidatedSettings` reads every group, `getValidatedSettingsGroup` one;
+ * an invalid value is replaced by its default and logged as a warning.
+ *
  * @module services/config/settingsValidator
  */
 
 import * as vscode from "vscode";
 import { z } from "zod";
 
+import { APP_CHAT_ENABLED_DEFAULT } from "../../chat/appChat";
 import { ServiceLoggers } from "../logging/loggers";
 
 // ---------------------------------------------------------------------------
@@ -78,6 +83,8 @@ export const servicesSettingsSchema = z.object({
   runtimesUrl: urlSchema("https://r1.datalayer.run"),
   /** Spacer service URL. */
   spacerUrl: urlSchema("https://prod1.datalayer.run"),
+  /** ai-agents service URL: deployments, Tool Approvals, user tokens (core's `aiAgentsUrl`). */
+  aiAgentsUrl: urlSchema("https://r1.datalayer.run"),
   /** WebSocket URL for Spacer real-time collaboration. */
   spacerWsUrl: wsUrlSchema("wss://prod1.datalayer.run"),
 });
@@ -152,6 +159,20 @@ export const agentChatSettingsSchema = z.object({
     .default("vercel-ai"),
   /** Agent specification ID used when the sidebar provisions a fresh runtime. */
   agentSpecId: z.string().default("codeai/simple"),
+  /**
+   * Talk to the person's deployed applications in the sidebar.
+   * On by default, as the `datalayer.agentChat.enabled` contribution in
+   * `package.json` says; off, nothing is listed and nothing asked.
+   */
+  enabled: z.boolean().default(APP_CHAT_ENABLED_DEFAULT),
+});
+
+/** Schema for the `datalayer.local` settings group (the local runtime, VS-02). */
+export const localSettingsSchema = z.object({
+  /** Whether a local runtime is started when a session or a Try asks for it. */
+  enabled: z.boolean().default(true),
+  /** Where `loop` is; empty looks on PATH, then under uv tool's and pipx's bins. */
+  loopPath: z.string().default(""),
 });
 
 /** Schema for the `datalayer.completion.inlinellm` settings group. */
@@ -218,6 +239,9 @@ export type ProseLlmCompletionSettings = z.infer<
 /** Validated agent chat settings. */
 export type AgentChatSettings = z.infer<typeof agentChatSettingsSchema>;
 
+/** Validated local runtime settings (`datalayer.local`). */
+export type LocalSettings = z.infer<typeof localSettingsSchema>;
+
 /** All validated Datalayer extension settings. */
 export interface DatalayerSettings {
   /** Service endpoint URLs. */
@@ -240,6 +264,7 @@ export interface DatalayerSettings {
   proseLlmCompletion: ProseLlmCompletionSettings;
   /** Agent chat sidebar configuration. */
   agentChat: AgentChatSettings;
+  local: LocalSettings;
 }
 
 // ---------------------------------------------------------------------------
@@ -382,6 +407,7 @@ export function getValidatedSettings(): DatalayerSettings {
       agentChatSettingsSchema,
       "agentChat",
     ),
+    local: validateSection("datalayer.local", localSettingsSchema, "local"),
   };
 }
 
@@ -440,6 +466,8 @@ export function getValidatedSettingsGroup<K extends keyof DatalayerSettings>(
         agentChatSettingsSchema,
         "agentChat",
       ),
+    local: () =>
+      validateSection("datalayer.local", localSettingsSchema, "local"),
   };
 
   return mapping[group]() as DatalayerSettings[K];

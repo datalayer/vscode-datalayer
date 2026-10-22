@@ -5,7 +5,21 @@
  */
 
 /**
- * Factory registration for VS Code tools
+ * Factory registration for VS Code tools: the tools GitHub Copilot calls
+ * through VS Code's Language Model Tools API to work on notebooks and
+ * Lexical documents.
+ *
+ * The operations come from three registries: the notebook operations of
+ * `@datalayer/jupyter-react/tools` and the Lexical operations of
+ * `@datalayer/jupyter-lexical` (both lazy-loaded, as they import browser
+ * code), and the VS Code-specific operations of `tools/operations`.
+ * `registerVSCodeTools` loads the definitions and the operations, checks
+ * that every definition has its operation, then registers each definition
+ * with `vscode.lm.registerTool` through its own `VSCodeToolAdapter`.
+ *
+ * The VS Code-specific operations run in the extension host; the document
+ * operations (cells, blocks) run in the webview, reached through
+ * `BridgeExecutor`.
  *
  * @module tools/vscode/registration
  */
@@ -54,11 +68,14 @@ export interface CombinedOperations {
 export async function getCombinedOperations(): Promise<CombinedOperations> {
   // IMPORTANT: Lazy-load these packages to avoid triggering browser imports at module load time
   // These packages have browser dependencies (@primer/react, etc.) that can't load in Node.js/extension host
-  // Using require inside async function to defer loading until actually needed
-  const { notebookToolOperations } = require("@datalayer/jupyter-react/tools");
-  const {
-    lexicalToolOperations,
-  } = require("@datalayer/jupyter-lexical/lib/tools");
+  // Imported inside the async function to defer loading until needed — both
+  // are ES modules, read by Node's ESM loader (webpack keeps them external).
+  const { notebookToolOperations } =
+    await import("@datalayer/jupyter-react/tools");
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const lexical: Record<string, any> =
+    await import("@datalayer/jupyter-lexical/lib/tools/index.js");
+  const { lexicalToolOperations } = lexical;
 
   return {
     // Notebook operations (from datalayer-react)

@@ -5,7 +5,11 @@
  */
 
 /**
- * Entry point for Primer Showcase webview
+ * Entry point for Primer Showcase webview, a development page drawing
+ * Primer React components in the editor's theme to check the theme's
+ * mapping (`datalayer.showPrimerThemeShowcase` loads `dist/showcase.js`).
+ *
+ * @module showcase
  */
 
 import React from "react";

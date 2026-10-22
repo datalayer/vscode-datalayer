@@ -1,12 +1,12 @@
-<a href="https://datalayer.io"><img src="https://assets.datalayer.tech/datalayer-25.png" width="150"/></a>
+[![Datalayer](https://images.datalayer.io/legacy/datalayer-25.png)](https://datalayer.ai)
 
 [![Become a Sponsor](https://img.shields.io/static/v1?label=Become%20a%20Sponsor&message=%E2%9D%A4&logo=GitHub&style=flat&color=1ABC9C)](https://github.com/sponsors/datalayer)
 
-[![Build Status](https://github.com/datalayer/vscode-datalayer/actions/workflows/build-extension.yml/badge.svg)](https://github.com/datalayer/vscode-datalayer/actions/workflows/build-extension.yml)
-[![VS Code Marketplace](https://img.shields.io/visual-studio-marketplace/v/Datalayer.datalayer-jupyter-vscode?label=VS%20Code%20Marketplace&logo=visual-studio-code)](https://marketplace.visualstudio.com/items?itemName=Datalayer.datalayer-jupyter-vscode)
-[![Installs](https://img.shields.io/visual-studio-marketplace/i/Datalayer.datalayer-jupyter-vscode?label=Installs)](https://marketplace.visualstudio.com/items?itemName=Datalayer.datalayer-jupyter-vscode)
+[![Build Status](https://github.com/datalayer/vscode/actions/workflows/build-extension.yml/badge.svg)](https://github.com/datalayer/vscode/actions/workflows/build-extension.yml)
+[![VS Code Marketplace](https://img.shields.io/visual-studio-marketplace/v/datalayer.datalayer-jupyter-vscode?label=VS%20Code%20Marketplace&logo=visual-studio-code)](https://marketplace.visualstudio.com/items?itemName=datalayer.datalayer-jupyter-vscode)
+[![Installs](https://img.shields.io/visual-studio-marketplace/i/datalayer.datalayer-jupyter-vscode?label=Installs)](https://marketplace.visualstudio.com/items?itemName=datalayer.datalayer-jupyter-vscode)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Documentation](https://img.shields.io/badge/docs-TypeDoc-blue.svg)](https://vscode-datalayer.netlify.app)
+[![Documentation](https://img.shields.io/badge/docs-TypeDoc-blue.svg)](https://vscode.netlify.app)
 
 # Datalayer for Visual Studio Code
 
@@ -16,7 +16,7 @@
 
 **See it in action:**
 
-<img src="https://assets.datalayer.tech/demo-vscode-lexical.gif" alt="Datalayer extension running Datalayer document in VS Code"/>
+<img src="https://images.datalayer.io/products/vscode/home.png" alt="The Datalayer page in VS Code: your sessions, agents, spaces, outline and settings under tabs, beside the Datalayer sidebar and the Datalayer Chat"/>
 
 ## 🚀 Key Benefits
 
@@ -42,7 +42,7 @@
 ## ⚡ Quick Start
 
 1. **Create a free account** at [datalayer.app](https://datalayer.app).
-2. **Install** from [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=Datalayer.datalayer-jupyter-vscode)
+2. **Install** from [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=datalayer.datalayer-jupyter-vscode)
 3. **Login**: `Ctrl+Shift+P` → "Datalayer: Login to Datalayer" → select your type of OAuth login (GitHub)
 4. **Scale instantly**: Open any `.ipynb` file with the Datalayer Editor → click kernel picker → select cloud runtime
 5. **Create rich docs**: Create `.dlex` files for Notion-like collaborative reports with code, images and rich formatting
@@ -119,6 +119,43 @@
 - **Command palette integration** - All features accessible via `Ctrl+Shift+P`
 - **GitHub Copilot integration** - Use natural language to create notebooks and insert cells (e.g., "Create a local notebook and add a plot")
 
+### Talk to your agent
+
+An application you built and deployed in the Datalayer Agent Studio answers in VS Code, in the **Agent Chat** sidebar. It is on by default; it can be turned off with the **Datalayer › Agent Chat: Enabled** setting (`datalayer.agentChat.enabled`): off, the sidebar lists no application and asks Datalayer nothing about them; your runtimes' chat is the same either way.
+
+1. Sign in to Datalayer (`Datalayer: Login`).
+2. In the Studio, open the application's **Ship** tab and turn on **Always on**: VS Code talks to the runtime the deployment is kept on.
+3. Open the **Agent Chat** sidebar and pick the application under **Your applications**. A deployment that cannot be talked to is listed as closed under **Not available here**, saying why: paused, not live, not kept always on, or its runtime not running.
+4. Talk to it. The conversation is a session of the deployment, through the same session API its hosted page uses, in your name.
+
+- **Approvals** - when one of its rules says _ask me first_, the request appears in the chat: approve or decline it there. The editor also shows a notification naming the application, the action and its class (_execute_, _write_, _delete_…) — never what it would run — with **Approve**, **Decline** and **Show**; a decision from the notification is taken only after the chat has shown the request and the approval was read again, and one answered elsewhere is said so.
+- **Diffs** - what a coding agent changed in a file is drawn in the chat as a diff; **Open in the editor** on the row opens it in the editor's diff view, _before_ and _after_, the _after_ side the file on disk when it holds what the agent wrote. The editor reviews a diff; it never applies one.
+- **Terminals** - what the agent ran is written, as it runs, to a read-only terminal named after the session in the Terminal panel: the command, its output, its exit. Its commands are decided in the chat, not typed there.
+- **The status bar** - _Datalayer: 2 waiting for you_ while sessions wait on you (click to open the first), _Datalayer: working…_ while a turn runs; a session the chat does not show says when its turn finishes, in a notification.
+- **What it did** - under the chat, each tool it called as a line, e.g. `Support Desk → odoo-accounting: odoo_accounting_aged_balance`.
+- **Your open file** - only when the application lets its host pass the page (`deployment.embedded.host.context: [page]` in its Appspec) and a rule lets `host_context` run: when its agent asks, it gets the file open in your editor (its path, language, text up to 20,000 characters, and the selection). Nothing is read before it asks, and nothing when the application says otherwise.
+- **Signed users** - an application that takes only a signed user (`deployment.embedded.host.user: signed`) is opened in VS Code with a short user token Datalayer signs for you (fifteen minutes; the extension host asks ai-agents for it with your token and puts it in the runs; the sidebar never holds it), sent with each run as `forwardedProps.loop.user_token`. Only the version deployed decides: when the application was saved since, it is not opened until that version is deployed.
+
+### Sessions
+
+The **Sessions** view in the Datalayer sidebar lists the conversations you opened with your applications' agents — **on Datalayer** (the sessions Datalayer keeps for you, grouped by application) and **on this machine** (the sessions of a local runtime running in one of your workspace folders) — each with its state (open, paused, ended, and whether it is answering or waiting for you), its agent and the coding agent it runs on, its turns and where it comes from (cloned from another session at a turn, imported from a file). A **Teams** group lists your team runs with their seats; a seat's session opens by its uid. Filter by application, state and title from the title bar; archived sessions are hidden. The view refreshes when you sign in, when a local runtime starts or stops, and with the title's button — it never polls.
+
+Right-click a session for its verbs, the same `loop sessions` and the web chat offer: **Resume**, **Switch Agent…** (another agent of the runtime goes on with the conversation; it is told so in a sentence, shown to you), **Clone from Here…** (a new session, paused, cut at the turn you name), **Export…** (a `<uid>.session.jsonl` file), **Rename…**, **Archive**, **End**; **Import a Session…** in the title bar imports such a file on a runtime of your choice, and asks you for an agent when the runtime says the file's is not there. Every refusal is the runtime's own sentence. A local session's folder opens with **Reveal in Explorer**; a Datalayer session's application opens with **Open in the Studio**.
+
+### A coding agent in your folder
+
+A coding agent — Claude Code, Codex, any coding agent of the catalogue — runs in a workspace folder **on your own machine**, behind the Shield, through a **local runtime** the extension starts for that folder (`loop serve`, one per folder, never at startup). `loop` is a prerequisite, not bundled: install it once with
+
+```bash
+uv tool install 'agent-runtimes[shield]'
+```
+
+and the extension finds it on your PATH (or under uv tool's and pipx's bins, or where `datalayer.local.loopPath` says). When it is missing or too old, the extension says so in a sentence with the install line to copy. **Datalayer: Start the Local Runtime** and **Stop the Local Runtime** are in the command palette and the Sessions view's menu; the runtime's output is in the _Datalayer: Local runtime_ channel. Its sessions live in `~/.datalayer/sessions`, where `loop sessions list` lists them too.
+
+Before a coding agent starts, **Datalayer: Check a Coding Agent on This Machine** checks what it needs — `node` and `git` and their versions, its adapter, its credential (`ANTHROPIC_API_KEY` for Claude Code, `OPENAI_API_KEY` for Codex) — and says each missing part; it offers to open a terminal with `agent-shield setup --harness <id>` typed for you to run, and to take the credential with **Datalayer: Set a Harness Credential**, which keeps it in VS Code's secret storage, never in settings and never shown. The credential is taken from your environment first, the secret storage second; the extension says which it used. A coding agent whose terms serve third parties with an API key only is not started on a subscription login. When you are signed in, the local runtime is given your Datalayer token and reads your organization's Shield policies; signed out, the local policy file alone.
+
+**Datalayer: Start a coding agent here** starts one in the open folder (the harness picked from the catalogue, the application the blank one or one of the folder's own Appspecs) and opens its session in the Datalayer Chat. Your folder's own `CLAUDE.md`, `AGENTS.md`, `GEMINI.md` or `.goosehints` is kept as it is: the coding agent reads it as its own, and the application's instructions are written beside it, under `.datalayer/` (read-only to the agent), and handed to it ahead of the session's first prompt — the session's first line says so. An _ask me first_ request is an editor notification and the chat's banner; what the agent ran is in a read-only terminal of the Terminal panel as it streams; a file it changed opens in the diff view.
+
 ## 💡 Common Questions
 
 **Do I need Python locally?** No! Cloud runtimes handle all execution with zero local setup. You can still connect to local Python/Jupyter environments if preferred for hybrid workflows.
@@ -145,10 +182,14 @@
 
 **From `.vsix` file:**
 
-1. Download from [releases](https://github.com/datalayer/vscode-datalayer/releases)
+1. Download from [releases](https://github.com/datalayer/vscode/releases)
 2. Open Command Palette (`Ctrl+Shift+P` / `Cmd+Shift+P`) → "Extensions: Install from VSIX..."
 
 ## Key Commands
+
+**Home:**
+
+- Home (_Datalayer: Home_, or _Open Datalayer_ at the top of the Datalayer sidebar): the sidebar's Sessions, Agents, Spaces, Outline and Settings as one page
 
 **Authentication:**
 
@@ -168,6 +209,19 @@
 - Create New Datalayer Document (local or cloud)
 - Context menu in Spaces tree: New Notebook/Datalayer Document in cloud workspace
 - Context menu: Open, Rename, Delete
+
+**Sessions:**
+
+- Refresh/Filter Sessions, Import a Session…
+- Context menu: Resume, Switch Agent…, Clone from Here…, Export…, Rename…, Archive, End, Reveal in Explorer, Open in the Studio
+- Check a Coding Agent on This Machine, Set a Harness Credential
+- Start/Stop the Local Runtime
+- Start a Coding Agent Here
+
+**Applications:**
+
+- Try This Application (hot reload, the page beside the editor)
+- Open This Application's Validate Tab / Ship Tab (in the browser)
 
 **Runtimes:**
 
@@ -196,6 +250,11 @@ Open settings (`Ctrl+,` / `Cmd+,`) and search "Datalayer":
   - `["Ask"]` - Always show runtime selection dialog
   - `[]` - No auto-connect, manual selection required
 
+**Local runtime:**
+
+- `datalayer.local.enabled` - Start a local runtime (`loop serve`) in a workspace folder when a session asks for it (default: true)
+- `datalayer.local.loopPath` - Where `loop` is; empty looks on PATH, then under uv tool's and pipx's bins
+
 **Logging:**
 
 - `datalayer.logging.level` - trace/debug/info/warn/error (default: info)
@@ -218,11 +277,11 @@ Open settings (`Ctrl+,` / `Cmd+,`) and search "Datalayer":
 - [CONTRIBUTING.md](./dev/docs/CONTRIBUTING.md) - Contribution guidelines
 - [TESTING.md](./dev/docs/TESTING.md) - Test infrastructure and coverage
 - [CHANGELOG.md](./CHANGELOG.md) - Version history
-- [API Documentation](https://vscode-datalayer.netlify.app) - Complete TypeScript API reference
+- [API Documentation](https://vscode.netlify.app) - Complete TypeScript API reference
 
 ## Support & Community
 
-- [GitHub Issues](https://github.com/datalayer/vscode-datalayer/issues) - Bug reports and features
+- [GitHub Issues](https://github.com/datalayer/vscode/issues) - Bug reports and features
 - [Datalayer Docs](https://docs.datalayer.ai) - Platform documentation
 - [Website](https://datalayer.ai) - Learn more
 

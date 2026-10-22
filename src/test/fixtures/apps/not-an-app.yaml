@@ -1,0 +1,4 @@
+# Not an application: a workflow file.
+jobs:
+  build:
+    runs-on: ubuntu-latest

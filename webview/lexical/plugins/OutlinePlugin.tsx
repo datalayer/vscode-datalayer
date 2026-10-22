@@ -7,6 +7,8 @@
 /**
  * Lexical plugin for extracting document outline.
  * Monitors the editor and sends outline updates to the extension.
+ *
+ * @module lexical/plugins/OutlinePlugin
  */
 
 import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext";

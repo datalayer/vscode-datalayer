@@ -6,8 +6,6 @@
 
 import * as vscode from "vscode";
 
-import { getPrimerVSCodeThemeCSS } from "../styles/primerVSCodeTheme";
-
 /**
  * Generates the HTML content for the datasource creation dialog webview with Primer theme CSS and CSP.
  * @param webview - Webview instance for generating secure URIs and CSP source.
@@ -56,7 +54,6 @@ export function getDatasourceDialogHtml(
       height: 100%;
     }
 
-    ${getPrimerVSCodeThemeCSS()}
   </style>
 </head>
 <body>

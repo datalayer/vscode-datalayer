@@ -4,6 +4,14 @@
  * MIT License
  */
 
+/**
+ * The *Edit Datasource* dialog: an existing datasource's name and
+ * description, the datasource received from the extension host
+ * (`init-edit`) once the dialog has said it is ready.
+ *
+ * @module webview/datasource/DatasourceEditDialog
+ */
+
 import React, { useState, useEffect } from "react";
 import {
   Box,

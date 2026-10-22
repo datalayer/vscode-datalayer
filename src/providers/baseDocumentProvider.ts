@@ -8,6 +8,18 @@
  * Base class for custom document providers (notebooks and lexical documents).
  * Provides common functionality for webview management, message routing, and lifecycle.
  *
+ * - **Message routing**: a `DocumentMessageRouter` dispatches the webview's
+ *   messages (runtime selection, kernel operations, HTTP/WebSocket proxying
+ *   through `NetworkBridgeService`, runtime lifecycle through
+ *   `RuntimeBridgeService`, responses, outline updates).
+ * - **Request/response**: `postMessageWithResponse` posts a message and
+ *   resolves when the webview answers with the same `requestId`.
+ * - **Tool execution**: `initializeRunnerForWebview` creates the `Runner`
+ *   that executes the MCP tools' document operations in the webview.
+ *
+ * Subclasses implement `openCustomDocument`, `resolveCustomEditor` and
+ * `getDocumentUri`.
+ *
  * @module providers/baseDocumentProvider
  */
 
