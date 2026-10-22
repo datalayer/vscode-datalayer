@@ -189,7 +189,7 @@ Before a coding agent starts, **Datalayer: Check a Coding Agent on This Machine*
 
 **Home:**
 
-- Home (_Datalayer: Home_, or _Open Datalayer_ above the Outline): the sidebar's Outline, Spaces, Sessions, Agents and Settings as one page
+- Home (_Datalayer: Home_, or _Open Datalayer_ at the top of the Datalayer sidebar): the sidebar's Sessions, Agents, Spaces, Outline and Settings as one page
 
 **Authentication:**
 

@@ -125,24 +125,11 @@ export function registerAllCommands(
   // Register theme commands (Primer showcase)
   registerThemeCommands(context);
 
-  // *Datalayer: Home*: the sidebar's blocks as one page, read from the same tree providers
+  // *Datalayer: Home*: the sidebar's blocks as one page, read from the same tree providers,
+  // in the sidebar's order: Sessions, Agents, Spaces, Outline, Settings
   registerHomeCommands(context, {
     authProvider: services.authProvider,
     sections: [
-      {
-        id: "datalayerOutline",
-        title: "Outline",
-        icon: "list-tree",
-        provider: services.outlineTreeProvider,
-        refresh: () => services.outlineTreeProvider.refresh(),
-      },
-      {
-        id: "datalayerSpaces",
-        title: "Spaces",
-        icon: "cloud",
-        provider: services.spacesTreeProvider,
-        refresh: () => services.spacesTreeProvider.refresh(),
-      },
       {
         id: "datalayerSessions",
         title: "Sessions",
@@ -156,6 +143,20 @@ export function registerAllCommands(
         icon: "vm",
         provider: services.runtimesTreeProvider,
         refresh: () => services.runtimesTreeProvider.refresh(),
+      },
+      {
+        id: "datalayerSpaces",
+        title: "Spaces",
+        icon: "cloud",
+        provider: services.spacesTreeProvider,
+        refresh: () => services.spacesTreeProvider.refresh(),
+      },
+      {
+        id: "datalayerOutline",
+        title: "Outline",
+        icon: "list-tree",
+        provider: services.outlineTreeProvider,
+        refresh: () => services.outlineTreeProvider.refresh(),
       },
       {
         id: "datalayerSettings",

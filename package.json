@@ -677,18 +677,6 @@
           "initialSize": 1
         },
         {
-          "id": "datalayerOutline",
-          "name": "Outline",
-          "icon": "$(list-tree)",
-          "contextualTitle": "Document Outline"
-        },
-        {
-          "id": "datalayerSpaces",
-          "name": "Spaces",
-          "icon": "$(cloud)",
-          "contextualTitle": "Datalayer Spaces"
-        },
-        {
           "id": "datalayerSessions",
           "name": "Sessions",
           "icon": "$(comment-discussion)",
@@ -699,6 +687,18 @@
           "name": "Agents",
           "icon": "$(vm)",
           "contextualTitle": "Datalayer Agents"
+        },
+        {
+          "id": "datalayerSpaces",
+          "name": "Spaces",
+          "icon": "$(cloud)",
+          "contextualTitle": "Datalayer Spaces"
+        },
+        {
+          "id": "datalayerOutline",
+          "name": "Outline",
+          "icon": "$(list-tree)",
+          "contextualTitle": "Document Outline"
         },
         {
           "id": "datalayerSettings",
