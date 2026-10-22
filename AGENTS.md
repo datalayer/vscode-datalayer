@@ -31,7 +31,7 @@ Code documentation lives in the source as TSDoc: each file opens with a `@module
 - **Node.js 22** required (matches VS Code 1.107+ Electron runtime). Use conda env `datalayer`.
 - **No emojis** in code, comments, or documentation.
 - **API field names**: Use `ingress` (not `jupyter_base_url`), `token` (not `jupyter_token`).
-- **SmartDynamicControllerManager** is intentionally DISABLED (`null as unknown` in `uiSetup.ts`).
+- **SmartDynamicControllerManager** is active: `uiSetup.ts` creates it, `authManager.ts` refreshes its controllers on sign-in and sign-out, and the runtime selector and `jupyter/serverProvider.ts` add a controller per runtime (`ensureRuntimeController`). It also keeps the Pyodide controller (`datalayer-pyodide`).
 - **FormData** for notebook/lexical creation, JSON for other API endpoints.
 - **NotebookActions** from `@jupyterlab/notebook` for cell manipulation (not commands or store methods).
 - Use Datalayer client directly with handlers pattern (no wrapper services).
@@ -266,7 +266,6 @@ For the `vercel-ai` protocol, `<Chat>` builds `POST {ingress}/api/v1/vercel-ai/{
 
 ## Known Limitations
 
-- Smart Controller: Disabled (native notebook controller needs improvement)
 - WebSocket Protocol: Uses older Jupyter protocol due to serialization constraints
 
 <!-- Last Updated: April 2026 -->
