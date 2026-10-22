@@ -25,6 +25,13 @@ export interface VSCodeThemeProps {
    * layout of its own and the view keeps its height.
    */
   style?: React.CSSProperties;
+  /**
+   * The Primer theme object the subtree's `sx` tokens resolve against. The
+   * default is jupyter-react's JupyterLab theme, whose accents are
+   * JupyterLab's brand blues; a view drawn like the Primer showcase passes
+   * Primer's own theme, whose tokens follow the VS Code mapping.
+   */
+  theme?: Record<string, unknown>;
   children: ReactNode;
 }
 
@@ -35,6 +42,7 @@ const StyledJupyterReactTheme = JupyterReactTheme as unknown as React.FC<
     colormode?: "light" | "dark";
     loadJupyterLabCss?: boolean;
     style?: React.CSSProperties;
+    theme?: Record<string, unknown>;
   }>
 >;
 
@@ -393,6 +401,7 @@ export function VSCodeTheme({
   colorMode,
   loadJupyterLabCss = true,
   style,
+  theme,
   children,
 }: VSCodeThemeProps) {
   return (
@@ -407,6 +416,7 @@ export function VSCodeTheme({
           colormode={colorMode}
           loadJupyterLabCss={loadJupyterLabCss}
           {...(style ? { style } : {})}
+          {...(theme ? { theme } : {})}
         >
           {children}
         </StyledJupyterReactTheme>

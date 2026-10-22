@@ -31,7 +31,7 @@ import type { ErrorInfo, ReactNode } from "react";
 import type { IAgentRuntimesClient } from "@datalayer/agent-runtimes/lib/client/IAgentRuntimesClient";
 import { AgentRuntimesClientProvider } from "@datalayer/agent-runtimes/lib/client/AgentRuntimesClientContext";
 import { agentRuntimesUrlOf } from "@datalayer/agent-runtimes/lib/portable/sessions";
-import { BaseStyles } from "@primer/react";
+import { BaseStyles, theme as primerTheme } from "@primer/react";
 
 import {
   APP_CHAT_WORDS,
@@ -663,6 +663,8 @@ function AppInner(props: AppProps): React.JSX.Element {
           loadJupyterLabCss={false}
           // No box of its own: the chat fills the panel by height.
           style={FILL_THROUGH}
+          // Primer's own theme, as the showcase: VS Code's colours, no brand blue.
+          theme={primerTheme}
         >
           <AgentRuntimesClientProvider client={client}>
             <LazyAppChat
@@ -693,6 +695,8 @@ function AppInner(props: AppProps): React.JSX.Element {
           loadJupyterLabCss={false}
           // No box of its own: the chat fills the panel by height.
           style={FILL_THROUGH}
+          // Primer's own theme, as the showcase: VS Code's colours, no brand blue.
+          theme={primerTheme}
         >
           <AgentRuntimesClientProvider client={client}>
             <LazyChat

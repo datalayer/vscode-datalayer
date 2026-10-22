@@ -81,7 +81,7 @@ export function sessionTargetOf(
     );
   }
   if (runsOn.kind === "team_run") {
-    return `Session ${row.uid} is a seat of team run ${runsOn.executionId}: the team's verbs come with a later release.`;
+    return `Session ${row.uid} is a seat of team run ${runsOn.executionId}: open it to read its conversation; to resume, swap, clone or export the run, open it on Datalayer (${STUDIO_ORIGIN}/executions/${encodeURIComponent(runsOn.executionId)}).`;
   }
   const runtime = runtimes.find(
     (candidate) =>

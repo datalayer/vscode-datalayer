@@ -21,6 +21,16 @@ export function getPrimerVSCodeThemeCSS(): string {
       --bgColor-muted: var(--vscode-editorWidget-background) !important;
       --borderColor-default: var(--vscode-panel-border) !important;
 
+      /* Accent: VS Code's own (links, focus, the primary button), never
+         Primer's GitHub blue — chips, links and selected states follow it */
+      --fgColor-accent: var(--vscode-textLink-foreground) !important;
+      --fgColor-onEmphasis: var(--vscode-button-foreground) !important;
+      --bgColor-accent-emphasis: var(--vscode-button-background) !important;
+      --bgColor-accent-muted: color-mix(in srgb, var(--vscode-focusBorder) 15%, transparent) !important;
+      --borderColor-accent-emphasis: var(--vscode-focusBorder) !important;
+      --borderColor-accent-muted: color-mix(in srgb, var(--vscode-focusBorder) 40%, transparent) !important;
+      --focus-outlineColor: var(--vscode-focusBorder) !important;
+
       /* Button variant colors - Default */
       --button-default-bgColor-rest: var(--vscode-button-secondaryBackground) !important;
       --button-default-bgColor-hover: var(--vscode-button-secondaryHoverBackground) !important;
