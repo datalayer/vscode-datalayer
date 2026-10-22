@@ -14,7 +14,8 @@
  * @module theme/PrimerVSCodeTheme
  */
 
-import type { CSSProperties, ReactNode } from "react";
+// React stays in scope: the webviews compile JSX with the classic runtime.
+import React, { type ReactNode } from "react";
 import {
   DatalayerThemeProvider,
   vscodeTheme,
@@ -28,7 +29,7 @@ export interface PrimerVSCodeThemeProps {
    * Laid on the theme's own box. A view filling its parent by height passes
    * `{ height: "100%" }`, or `{ display: "contents" }` for no box at all.
    */
-  style?: CSSProperties;
+  style?: React.CSSProperties;
   children: ReactNode;
 }
 
