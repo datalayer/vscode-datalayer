@@ -10,6 +10,8 @@
   },
   // Turn off tsc task auto detection since we have the necessary tasks as npm scripts
   "typescript.tsc.autoDetect": "off",
+  // The npm tasks (F5's watch) run with npm: the extension is installed with npm.
+  "npm.packageManager": "npm",
   "python-envs.defaultEnvManager": "ms-python.python:conda",
   "python-envs.defaultPackageManager": "ms-python.python:conda",
   "python-envs.pythonProjects": [
