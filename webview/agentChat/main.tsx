@@ -395,3 +395,7 @@ window.addEventListener("unload", () => {
 });
 
 render();
+
+// The page is loaded after the entry (a chunk), so the host waits for this
+// before posting the state it starts from: posted earlier, it was lost.
+vscode.postMessage({ type: "ready" });

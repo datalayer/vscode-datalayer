@@ -165,8 +165,10 @@ describe("datalayer.agentChat.enabled", () => {
   it("turned off, lists no deployment and asks ai-agents nothing", async () => {
     settings.agentChat.enabled = false;
     const { provider, sdk } = makeProvider();
-    const { view, posted } = makeView();
+    const { view, posted, send } = makeView();
     provider.resolveWebviewView(view as never);
+    // The page says it listens; the host posts its state then.
+    send({ type: "ready" });
     await settle();
 
     expect(fetchMock).not.toHaveBeenCalled();
@@ -184,6 +186,8 @@ describe("datalayer.agentChat.enabled", () => {
     const { provider } = makeProvider();
     const { view, posted, send } = makeView();
     provider.resolveWebviewView(view as never);
+    // The page says it listens; the host posts its state then.
+    send({ type: "ready" });
     await settle();
 
     send({ type: "editor-context-request", requestId: "r1" });
@@ -206,8 +210,10 @@ describe("datalayer.agentChat.enabled", () => {
 
   it("on by default, lists the deployments; one not kept always on is closed, saying why", async () => {
     const { provider } = makeProvider();
-    const { view, posted } = makeView();
+    const { view, posted, send } = makeView();
     provider.resolveWebviewView(view as never);
+    // The page says it listens; the host posts its state then.
+    send({ type: "ready" });
     await settle();
 
     expect(fetchMock).toHaveBeenCalledTimes(1);

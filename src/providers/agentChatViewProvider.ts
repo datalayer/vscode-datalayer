@@ -116,6 +116,10 @@ export class AgentChatViewProvider implements vscode.WebviewViewProvider {
 
   /** Current webview view, if resolved and still live. */
   private view: vscode.WebviewView | undefined;
+  /** Whether the page listens (it said `ready`); until then messages wait. */
+  private pageReady = false;
+  /** A session asked to open before the page listened: posted on `ready`. */
+  private pendingOpen: OpenSessionRequest | undefined;
 
   /** Bridge handler for `IAgentRuntimesClient` bridge calls. */
   private readonly bridge: AgentChatBridgeHandler;
@@ -210,6 +214,8 @@ export class AgentChatViewProvider implements vscode.WebviewViewProvider {
   /** @inheritdoc */
   public resolveWebviewView(webviewView: vscode.WebviewView): void {
     this.view = webviewView;
+    // A new page: nothing is posted to it until it says `ready`.
+    this.pageReady = false;
 
     // Explicitly allow the extension root as a local resource root so the
     // webview can load `dist/agentChat.js`. Notebook/lexical webviews work
@@ -265,10 +271,8 @@ export class AgentChatViewProvider implements vscode.WebviewViewProvider {
       },
     );
 
-    // Post initial state to the webview.
-    this.postChatSettings(getValidatedSettingsGroup("agentChat"));
-    this.postAuthState();
-    void this.refreshAgents();
+    // The initial state is posted when the page says it listens (`ready`):
+    // the page arrives as a chunk after the entry, so state posted now was lost.
 
     // React to auth changes.
     const authSubscription = this.authProvider.onAuthStateChanged(() => {
@@ -351,6 +355,11 @@ export class AgentChatViewProvider implements vscode.WebviewViewProvider {
    */
   public openSession(request: OpenSessionRequest): void {
     this.view?.show(true);
+    if (!this.pageReady) {
+      // The view is being created: its page is not listening yet.
+      this.pendingOpen = request;
+      return;
+    }
     void this.view?.webview.postMessage({ type: "open-session", request });
   }
 
@@ -382,7 +391,18 @@ export class AgentChatViewProvider implements vscode.WebviewViewProvider {
       return;
     }
     const type = (raw as { type?: unknown }).type;
-    if (type === "refresh-agents") {
+    if (type === "ready") {
+      // The page listens: the state it starts from (again on a reload).
+      this.pageReady = true;
+      this.postChatSettings(getValidatedSettingsGroup("agentChat"));
+      this.postAuthState();
+      await this.refreshAgents();
+      if (this.pendingOpen) {
+        const request = this.pendingOpen;
+        this.pendingOpen = undefined;
+        void this.view?.webview.postMessage({ type: "open-session", request });
+      }
+    } else if (type === "refresh-agents") {
       await this.refreshAgents();
     } else if (type === "create-agent") {
       // Always run the spec picker — that's what users expect when they
