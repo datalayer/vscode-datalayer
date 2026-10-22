@@ -6,7 +6,7 @@
   # Build command (clear cache and reinstall to ensure patches apply correctly)
   command = "rm -rf node_modules && npm install && npm run docs"
   # Publish directory (TypeDoc output)
-  publish = "docs/"
+  publish = "api-docs/"
   # Ignore node_modules cache
   ignore = "git diff --quiet $CACHED_COMMIT_REF $COMMIT_REF ."
 

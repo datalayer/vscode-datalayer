@@ -9,6 +9,7 @@ scripts/**
 dev/**
 patches/**
 docs/**
+api-docs/**
 docs-html/**
 docs-markdown/**
 coverage/**
