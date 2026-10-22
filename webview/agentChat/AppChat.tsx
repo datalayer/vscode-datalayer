@@ -418,6 +418,9 @@ export default function AppChat(props: AppChatProps): React.JSX.Element {
           // The editor's theme (the view wraps the chat in it), never the
           // chat's own (Matrix).
           disableInternalJupyterTheme={true}
+          // The sidebar is narrow and the indicator at its left edge: its
+          // details open below and to the right, never cut by the edge.
+          kernelIndicatorPosition="se"
           height="100%"
           showHeader={true}
           showInput={true}

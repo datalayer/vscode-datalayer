@@ -729,6 +729,9 @@ function AppInner(props: AppProps): React.JSX.Element {
               agentId={runtimeTalk.agentId}
               // The editor's theme, never the chat's own (Matrix).
               disableInternalJupyterTheme={true}
+              // The sidebar is narrow and the indicator at its left edge: its
+              // details open below and to the right, never cut by the edge.
+              kernelIndicatorPosition="se"
               runtimeId={selectedAgent.runtimeName}
               height="100%"
               showHeader={true}
