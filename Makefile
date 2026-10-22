@@ -14,7 +14,7 @@ default: help ## default target is help
 watch: ## watch
 	npm run watch
 
-dev: ## watch the extension, chat and home bundles, open a development window (Ctrl+R there to reload)
+dev: ## watch every bundle but the notebook's and the document's, open a development window (Ctrl+R there to reload)
 	./scripts/dev.sh
 
 package: ## package

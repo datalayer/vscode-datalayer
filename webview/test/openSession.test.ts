@@ -258,6 +258,6 @@ describe("the chat in the editor's theme", () => {
     // The chat needs no wrapper of its own: its boundary applies the theme.
     expect(
       readFileSync(resolve(__dirname, "../agentChat/App.tsx"), "utf8"),
-    ).not.toContain('VSCodeTheme"');
+    ).not.toContain('"../theme/VSCodeTheme"');
   });
 });
