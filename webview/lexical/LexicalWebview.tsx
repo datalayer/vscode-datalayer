@@ -35,10 +35,12 @@ import type {
   KernelSelectedMessage,
   RuntimeSelectedMessage,
 } from "../types/messages";
-import { VSCodeTheme } from "../theme/VSCodeTheme";
+import { DatalayerVSCodeTheme } from "../theme/DatalayerVSCodeTheme";
 import { ThemeProvider } from "../contexts/ThemeContext";
+
 import "@vscode/codicons/dist/codicon.css";
 import "@datalayer/jupyter-lexical/style/index.css";
+
 // Import Prism language grammars explicitly (webpack needs this!)
 import "prismjs/components/prism-python";
 import "prismjs/components/prism-javascript";
@@ -47,6 +49,7 @@ import "prismjs/components/prism-sql";
 // Import base Prism CSS (provides default token structure)
 // Our custom CSS will override the colors with theme-aware versions
 import "prismjs/themes/prism.css";
+
 import "./LexicalEditor.css";
 
 /**
@@ -436,7 +439,7 @@ function LexicalWebviewInner({
   }, [store]);
 
   return (
-    <VSCodeTheme colorMode={theme}>
+    <DatalayerVSCodeTheme colorMode={theme}>
       <ThemeProvider theme={theme}>
         <div
           data-theme={theme}
@@ -495,7 +498,7 @@ function LexicalWebviewInner({
               })()}
         </div>
       </ThemeProvider>
-    </VSCodeTheme>
+    </DatalayerVSCodeTheme>
   );
 }
 

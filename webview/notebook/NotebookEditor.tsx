@@ -48,7 +48,7 @@ import { RuntimeProgressBar } from "../components/RuntimeProgressBar";
 // Initialize RequireJS stub for ClassicWidgetManager
 initializeRequireJSStub();
 import { NotebookToolbar } from "./NotebookToolbar";
-import { VSCodeTheme } from "../theme/VSCodeTheme";
+import { DatalayerVSCodeTheme } from "../theme/DatalayerVSCodeTheme";
 
 // Import our new hooks and stores
 import { createNotebookStore } from "../stores/notebookStore";
@@ -1235,7 +1235,7 @@ function NotebookEditorCore({
 /**
  * Main notebook component with theme provider.
  * Creates the store at this level so theme can be shared between
- * VSCodeTheme wrapper and NotebookEditorCore.
+ * DatalayerVSCodeTheme wrapper and NotebookEditorCore.
  */
 function NotebookEditor(): JSX.Element {
   // Create per-instance store - prevents global state sharing
@@ -1244,9 +1244,9 @@ function NotebookEditor(): JSX.Element {
   const theme = store((state) => state.theme);
 
   return (
-    <VSCodeTheme colorMode={theme} loadJupyterLabCss={true}>
+    <DatalayerVSCodeTheme colorMode={theme} loadJupyterLabCss={true}>
       <NotebookEditorCore store={store} />
-    </VSCodeTheme>
+    </DatalayerVSCodeTheme>
   );
 }
 

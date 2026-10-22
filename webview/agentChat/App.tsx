@@ -74,22 +74,6 @@ import {
 // A deployed application's chat (STUDIO A-18), loaded when one is picked.
 const LazyAppChat = React.lazy(() => import("./AppChat"));
 
-// The editor's own theme around the chat (as the notebook and datasource
-// views have it): VS Code's colours mapped onto Primer's and JupyterLab's
-// variables, and the jupyter-react context the chat's kernel indicator
-// reads. Loaded with the chat, so the picker's first paint stays small.
-const LazyVSCodeTheme = React.lazy(() =>
-  import("../theme/VSCodeTheme").then((module) => ({
-    default: module.VSCodeTheme,
-  })),
-);
-
-/** The theme's box adds no layout: the chat's `height="100%"` reaches the panel. */
-const FILL_THROUGH: React.CSSProperties = {
-  display: "contents",
-  color: "var(--vscode-foreground)",
-};
-
 /** The picker's value for a runtime. */
 const RUNTIME = "runtime:";
 
@@ -656,27 +640,20 @@ function AppInner(props: AppProps): React.JSX.Element {
       }}
     >
       <Suspense fallback={<LoadingChat />}>
-        <LazyVSCodeTheme
-          colorMode={theme}
-          loadJupyterLabCss={false}
-          // No box of its own: the chat fills the panel by height.
-          style={FILL_THROUGH}
-        >
-          <AgentRuntimesClientProvider client={client}>
-            <LazyAppChat
-              // A new conversation for each deployment picked, or when
-              // where it is kept changes; the same listing keeps it.
-              // A session opened from the Sessions view is another.
-              key={`${selectedApp.uid} ${selectedApp.version} ${selectedApp.url} ${selectedApp.agentId} ${openedApp?.uid ?? ""}`}
-              handle={selectedApp}
-              openUid={openedApp?.uid}
-              services={services}
-              user={auth.user}
-              readEditor={readEditor}
-              signUser={signUser}
-            />
-          </AgentRuntimesClientProvider>
-        </LazyVSCodeTheme>
+        <AgentRuntimesClientProvider client={client}>
+          <LazyAppChat
+            // A new conversation for each deployment picked, or when
+            // where it is kept changes; the same listing keeps it.
+            // A session opened from the Sessions view is another.
+            key={`${selectedApp.uid} ${selectedApp.version} ${selectedApp.url} ${selectedApp.agentId} ${openedApp?.uid ?? ""}`}
+            handle={selectedApp}
+            openUid={openedApp?.uid}
+            services={services}
+            user={auth.user}
+            readEditor={readEditor}
+            signUser={signUser}
+          />
+        </AgentRuntimesClientProvider>
       </Suspense>
     </ChatErrorBoundary>
   ) : selectedAgent && settings && client && runtimeTalk ? (
@@ -686,78 +663,71 @@ function AppInner(props: AppProps): React.JSX.Element {
       }}
     >
       <Suspense fallback={<LoadingChat />}>
-        <LazyVSCodeTheme
-          colorMode={theme}
-          loadJupyterLabCss={false}
-          // No box of its own: the chat fills the panel by height.
-          style={FILL_THROUGH}
-        >
-          <AgentRuntimesClientProvider client={client}>
-            <LazyChat
-              // A session opened from the Sessions view (VS-24): its
-              // conversation, over the session API; another open is
-              // another chat.
-              key={
-                openedOnRuntime
-                  ? `session:${openedOnRuntime.uid}`
-                  : `runtime:${selectedAgent.runtimeName}:${runtimeTalk.agentId}`
-              }
-              protocol={runtimeTalk.protocol}
-              thread={
-                openedOnRuntime
-                  ? {
-                      id: openedOnRuntime.uid,
-                      messages: [],
-                      fromRuntime: true,
-                    }
-                  : undefined
-              }
-              sessionActions={openedOnRuntime ? {} : undefined}
-              baseUrl={runtimeTalk.baseUrl}
-              authToken={selectedAgent.token}
-              // A session's agent is its own (its application's agent);
-              // otherwise the agent the runtime lists (`default` on a
-              // runtime of the person's, the application's own on an
-              // application's kept runtime), never assumed. The pod
-              // identifier goes in `runtimeId` for telemetry.
-              agentId={runtimeTalk.agentId}
-              // The editor's theme, never the chat's own (Matrix).
-              // The sidebar is narrow and the indicator at its left edge: its
-              // details open below and to the right, never cut by the edge.
-              kernelIndicatorPosition="se"
-              runtimeId={selectedAgent.runtimeName}
-              height="100%"
-              showHeader={true}
-              showInput={true}
-              autoFocus={true}
-              autoConnect={true}
-              streaming={true}
-              clearOnMount={true}
-              // What the editor draws of the session: a terminal's
-              // output in the Terminal panel, the turn in the status bar.
-              onToolCallUpdate={({ display }) => {
-                reportToolDisplay(display);
-              }}
-              onToolCallComplete={({ toolName, result }) => {
-                reportToolResult(toolName, result);
-              }}
-              pendingApprovals={localPending}
-              onApproveApproval={(approvalId) => decideLocal(approvalId, true)}
-              onRejectApproval={(approvalId) => decideLocal(approvalId, false)}
-              onMessageSent={() => {
-                noteTurn();
-                reportSessionState({ turn: "running" });
-              }}
-              onMessageReceived={(message) => {
-                reportSessionState({
-                  turn: "idle",
-                  lastAnswer: answerTextOf(message),
-                });
-                reportSessionChanged();
-              }}
-            />
-          </AgentRuntimesClientProvider>
-        </LazyVSCodeTheme>
+        <AgentRuntimesClientProvider client={client}>
+          <LazyChat
+            // A session opened from the Sessions view (VS-24): its
+            // conversation, over the session API; another open is
+            // another chat.
+            key={
+              openedOnRuntime
+                ? `session:${openedOnRuntime.uid}`
+                : `runtime:${selectedAgent.runtimeName}:${runtimeTalk.agentId}`
+            }
+            protocol={runtimeTalk.protocol}
+            thread={
+              openedOnRuntime
+                ? {
+                    id: openedOnRuntime.uid,
+                    messages: [],
+                    fromRuntime: true,
+                  }
+                : undefined
+            }
+            sessionActions={openedOnRuntime ? {} : undefined}
+            baseUrl={runtimeTalk.baseUrl}
+            authToken={selectedAgent.token}
+            // A session's agent is its own (its application's agent);
+            // otherwise the agent the runtime lists (`default` on a
+            // runtime of the person's, the application's own on an
+            // application's kept runtime), never assumed. The pod
+            // identifier goes in `runtimeId` for telemetry.
+            agentId={runtimeTalk.agentId}
+            // The editor's theme, never the chat's own (Matrix).
+            // The sidebar is narrow and the indicator at its left edge: its
+            // details open below and to the right, never cut by the edge.
+            kernelIndicatorPosition="se"
+            runtimeId={selectedAgent.runtimeName}
+            height="100%"
+            showHeader={true}
+            showInput={true}
+            autoFocus={true}
+            autoConnect={true}
+            streaming={true}
+            clearOnMount={true}
+            // What the editor draws of the session: a terminal's
+            // output in the Terminal panel, the turn in the status bar.
+            onToolCallUpdate={({ display }) => {
+              reportToolDisplay(display);
+            }}
+            onToolCallComplete={({ toolName, result }) => {
+              reportToolResult(toolName, result);
+            }}
+            pendingApprovals={localPending}
+            onApproveApproval={(approvalId) => decideLocal(approvalId, true)}
+            onRejectApproval={(approvalId) => decideLocal(approvalId, false)}
+            onMessageSent={() => {
+              noteTurn();
+              reportSessionState({ turn: "running" });
+            }}
+            onMessageReceived={(message) => {
+              reportSessionState({
+                turn: "idle",
+                lastAnswer: answerTextOf(message),
+              });
+              reportSessionChanged();
+            }}
+          />
+        </AgentRuntimesClientProvider>
       </Suspense>
     </ChatErrorBoundary>
   ) : null;
