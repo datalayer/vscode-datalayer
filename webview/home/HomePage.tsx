@@ -177,6 +177,24 @@ function visibleRows(
   return rows;
 }
 
+/**
+ * Where a section sits on the page's six-column grid (wide windows): Sessions
+ * and Agents share the first row, Spaces, Outline and Settings the second.
+ * Narrow, one section per row.
+ */
+const GRID_SPAN: Record<string, string> = {
+  datalayerSessions: "span 3",
+  datalayerRuntimes: "span 3",
+};
+
+/** One line, cut with an ellipsis: the whole text is the row's tooltip. */
+const ONE_LINE = {
+  overflow: "hidden",
+  textOverflow: "ellipsis",
+  whiteSpace: "nowrap",
+  minWidth: 0,
+} as const;
+
 function SectionCard({
   section,
   refreshing,
@@ -209,6 +227,7 @@ function SectionCard({
         minWidth: 0,
         display: "flex",
         flexDirection: "column",
+        gridColumn: ["auto", "auto", GRID_SPAN[section.id] ?? "span 2"],
       }}
     >
       <Box
@@ -249,7 +268,9 @@ function SectionCard({
           {EMPTY[section.id] ?? "Nothing to show."}
         </Text>
       ) : (
-        <ActionList sx={{ maxHeight: 420, overflowY: "auto" }}>
+        <ActionList
+          sx={{ maxHeight: 420, overflowY: "auto", overflowX: "hidden" }}
+        >
           {rows.map(({ node, depth, open }) => {
             const NodeIcon = iconOf(node.icon);
             const state = sessionStateOf(node.contextValue);
@@ -257,8 +278,16 @@ function SectionCard({
             return (
               <ActionList.Item
                 key={node.key}
-                title={node.tooltip ?? node.command?.title}
-                sx={{ pl: 2 + depth * 3 }}
+                title={
+                  node.tooltip ??
+                  [node.label, node.description].filter(Boolean).join(" — ")
+                }
+                sx={{
+                  pl: 2 + depth * 3,
+                  // The label and its description on one line, cut to fit:
+                  // every flex box of the row may shrink below its text.
+                  "& span, & div": { minWidth: 0 },
+                }}
                 onSelect={() => {
                   if (node.command) {
                     post({ type: "run", key: node.key });
@@ -285,12 +314,14 @@ function SectionCard({
                     <NodeIcon />
                   )}
                 </ActionList.LeadingVisual>
-                {node.label}
-                {node.description && (
-                  <ActionList.Description variant="inline">
-                    {node.description}
-                  </ActionList.Description>
-                )}
+                <Box as="span" sx={{ ...ONE_LINE, display: "block" }}>
+                  {node.label}
+                  {node.description && (
+                    <Text sx={{ color: "fg.muted", fontSize: 0, ml: 2 }}>
+                      {node.description}
+                    </Text>
+                  )}
+                </Box>
                 {state && (
                   <ActionList.TrailingVisual>
                     <StatusLabel tone={STATE_TONES[state]}>
@@ -364,7 +395,7 @@ export function HomePage({ colorMode }: HomePageProps) {
         </Box>
         <Text as="p" sx={{ color: "fg.muted", mt: 0, mb: 3 }}>
           {state?.signedIn && state.user ? `Signed in as ${state.user}. ` : ""}
-          Your outline, spaces, sessions, agents and settings, as the sidebar
+          Your sessions, agents, spaces, outline and settings, as the sidebar
           shows them.
         </Text>
         {state && !state.signedIn && (
@@ -391,7 +422,11 @@ export function HomePage({ colorMode }: HomePageProps) {
           <Box
             sx={{
               display: "grid",
-              gridTemplateColumns: "repeat(auto-fill, minmax(340px, 1fr))",
+              gridTemplateColumns: [
+                "minmax(0, 1fr)",
+                "minmax(0, 1fr)",
+                "repeat(6, minmax(0, 1fr))",
+              ],
               gap: 3,
               alignItems: "start",
             }}
