@@ -18,8 +18,6 @@
 
 <img src="https://images.datalayer.io/products/vscode/home.png" alt="The Datalayer page in VS Code: your sessions, agents, spaces, outline and settings under tabs, beside the Datalayer sidebar and the Datalayer Chat"/>
 
-<img src="https://images.datalayer.io/products/vscode/demo-vscode-lexical.gif" alt="Datalayer extension running Datalayer document in VS Code"/>
-
 ## 🚀 Key Benefits
 
 ### ⚡ **Instant Cloud Scaling**
