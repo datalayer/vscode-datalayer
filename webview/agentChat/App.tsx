@@ -79,6 +79,12 @@ const LazyVSCodeTheme = React.lazy(() =>
   })),
 );
 
+/** The theme's box adds no layout: the chat's `height="100%"` reaches the panel. */
+const FILL_THROUGH: React.CSSProperties = {
+  display: "contents",
+  color: "var(--vscode-foreground)",
+};
+
 /** The picker's value for a runtime. */
 const RUNTIME = "runtime:";
 
@@ -638,7 +644,12 @@ function AppInner(props: AppProps): React.JSX.Element {
       }}
     >
       <Suspense fallback={<LoadingChat />}>
-        <LazyVSCodeTheme colorMode={theme} loadJupyterLabCss={false}>
+        <LazyVSCodeTheme
+          colorMode={theme}
+          loadJupyterLabCss={false}
+          // No box of its own: the chat fills the panel by height.
+          style={FILL_THROUGH}
+        >
           <AgentRuntimesClientProvider client={client}>
             <LazyAppChat
               // A new conversation for each deployment picked, or when
@@ -663,7 +674,12 @@ function AppInner(props: AppProps): React.JSX.Element {
       }}
     >
       <Suspense fallback={<LoadingChat />}>
-        <LazyVSCodeTheme colorMode={theme} loadJupyterLabCss={false}>
+        <LazyVSCodeTheme
+          colorMode={theme}
+          loadJupyterLabCss={false}
+          // No box of its own: the chat fills the panel by height.
+          style={FILL_THROUGH}
+        >
           <AgentRuntimesClientProvider client={client}>
             <LazyChat
               // A session opened from the Sessions view (VS-24): its

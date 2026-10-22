@@ -19,8 +19,24 @@ import { PrimerVSCodeTheme } from "./PrimerVSCodeTheme";
 export interface VSCodeThemeProps {
   colorMode: "light" | "dark";
   loadJupyterLabCss?: boolean;
+  /**
+   * Laid on the theme's own box (Primer's BaseStyles). A view filling its
+   * parent by height passes `{ display: "contents" }`, so the box adds no
+   * layout of its own and the view keeps its height.
+   */
+  style?: React.CSSProperties;
   children: ReactNode;
 }
+
+// JupyterReactTheme forwards unknown props (`style`) to its BaseStyles; its
+// typings do not list `style`, so the type is widened here.
+const StyledJupyterReactTheme = JupyterReactTheme as unknown as React.FC<
+  React.PropsWithChildren<{
+    colormode?: "light" | "dark";
+    loadJupyterLabCss?: boolean;
+    style?: React.CSSProperties;
+  }>
+>;
 
 /**
  * Inject CSS that maps VS Code variables to Jupyter theme variables.
@@ -376,6 +392,7 @@ function VSCodeCSSInjector({ colorMode }: { colorMode: "light" | "dark" }) {
 export function VSCodeTheme({
   colorMode,
   loadJupyterLabCss = true,
+  style,
   children,
 }: VSCodeThemeProps) {
   return (
@@ -386,12 +403,13 @@ export function VSCodeTheme({
       {/* Wrap with Primer theme provider for Primer React components */}
       <PrimerVSCodeTheme colorMode={colorMode}>
         {/* Wrap with JupyterReactTheme for Jupyter components */}
-        <JupyterReactTheme
+        <StyledJupyterReactTheme
           colormode={colorMode}
           loadJupyterLabCss={loadJupyterLabCss}
+          {...(style ? { style } : {})}
         >
           {children}
-        </JupyterReactTheme>
+        </StyledJupyterReactTheme>
       </PrimerVSCodeTheme>
     </>
   );
