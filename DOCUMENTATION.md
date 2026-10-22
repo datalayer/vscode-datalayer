@@ -2,7 +2,7 @@
 
 ## Overview
 
-This project enforces strict documentation at multiple levels: JSDoc via ESLint, TypeDoc for API docs, README.md per directory, and spell checking. All checks run in CI and pre-commit hooks.
+This project enforces strict documentation at multiple levels: JSDoc via ESLint, TypeDoc for API docs, and spell checking. Code documentation lives with the code, as TSDoc in the source files: there are no per-directory README files. All checks run in CI and pre-commit hooks.
 
 ## Commands
 
@@ -13,10 +13,7 @@ npm run docs
 # Validate documentation coverage
 npm run docs:coverage
 
-# Check README.md exists in every directory
-npm run docs:check-readmes
-
-# Combined check (READMEs + TypeDoc validation)
+# TypeDoc validation
 npm run docs:check
 
 # Generate Markdown documentation
@@ -94,15 +91,26 @@ Use only these tags (others will cause warnings):
 
 Do NOT use: `@class`, `@static`, `@async`, `@extends`, `@constructor`, `@export`, `@description`, `@typedef` - TypeDoc infers these from TypeScript.
 
-## README.md per Directory
+## Module Documentation
 
-Every directory under `src/`, `webview/`, and `scripts/` must have a `README.md` documenting:
+Each source file under `src/` and `webview/` opens, after its license header, with a TSDoc comment that ends with `@module <path>`: what the file is for, how it fits with its neighbors, and what is not obvious from the code. It must be the first `/** */` comment of the file. A design note about one class or function goes on that class or function. Keep this documentation in the source, next to what it describes, never in a separate Markdown file.
 
-- What the directory contains and its purpose
-- Every file with a description of exports, patterns, and key details
-- Subdirectories with brief descriptions
+```typescript
+/*
+ * Copyright (c) 2021-2025 Datalayer, Inc.
+ *
+ * MIT License
+ */
 
-Enforced by `scripts/check-readmes.sh` and included in `npm run check`. Currently 69 directories covered.
+/**
+ * Kernel bridge service that routes kernel connections to appropriate handlers.
+ *
+ * A document is connected to a remote runtime, a local ZMQ kernel or Pyodide;
+ * the webview is told `kernel-starting`, then `kernel-selected`.
+ *
+ * @module services/kernelBridge
+ */
+```
 
 ## Spell Checking
 
@@ -115,9 +123,8 @@ The GitHub Actions Code Quality workflow runs on every PR:
 1. Format check (Prettier)
 2. Lint (ESLint with 17+ JSDoc rules)
 3. Type check (TypeScript strict mode)
-4. README check (every directory)
-5. TypeDoc generation and validation (0 warnings)
-6. Spell check (cspell)
+4. TypeDoc generation and validation (0 warnings)
+5. Spell check (cspell)
 
 ## API Documentation
 

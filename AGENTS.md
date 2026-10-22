@@ -10,7 +10,7 @@ npm run watch            # Watch mode for development
 # Press F5 in VS Code to launch Extension Development Host
 
 npm run compile          # Build (includes icon font generation)
-npm run check            # Full suite: format + lint + type-check + docs (READMEs + TypeDoc) + spelling
+npm run check            # Full suite: format + lint + type-check + docs (TypeDoc) + spelling
 npm run check:dead-code  # Dead code detection via knip (not in check due to pre-existing issues)
 npm run vsix             # Create universal .vsix package
 ```
@@ -24,7 +24,7 @@ npm run vsix             # Create universal .vsix package
 - **Three Kernel Types**: Remote (Datalayer platform), Local (ZMQ via Python extension), Pyodide (WebAssembly)
 - **Sidebar Views** (registered in this order): Outline, Projects, Spaces, Runtimes, Settings
 
-Every directory has a `README.md` documenting its files, exports, and patterns.
+Code documentation lives in the source as TSDoc: each file opens with a `@module` comment describing what it is for and how it fits; there are no per-directory README files.
 
 ## Critical Rules
 
@@ -99,11 +99,10 @@ Constructor `@param` for private params uses `checkConstructors: false` to avoid
 - `requiredToBeDocumented`: Class, Function, Enum, Interface, TypeAlias, Variable, Method
 - `excludePrivate: true`
 
-### README.md per Directory
+### Module Documentation
 
-- Every directory under `src/`, `webview/`, `scripts/` must have a `README.md`
-- Enforced by `scripts/check-readmes.sh` in `npm run check`
-- 75 directories covered
+- Each file under `src/` and `webview/` opens (after the license header) with a TSDoc comment ending in `@module <path>`; it must be the file's first `/** */` comment
+- Design notes go into that comment, or onto the class or function they describe, never into a Markdown file next to the code
 
 ### Pre-commit Hooks (Husky + lint-staged)
 
@@ -166,7 +165,7 @@ npm run test:coverage    # Extension tests with coverage
 
 ## CI/CD Workflows (`.github/workflows/`)
 
-1. **Code Quality**: Format, lint, type-check, README check, TypeDoc validation, spell check
+1. **Code Quality**: Format, lint, type-check, TypeDoc validation, spell check
 2. **Extension Build & Test**: Multi-platform .vsix generation
 3. **Documentation**: TypeDoc generation + coverage validation + Netlify deployment
 

@@ -122,9 +122,6 @@ jobs:
       - name: Install dependencies
         run: npm install -g npm@11 && npm install --ignore-engines
 
-      - name: Check README.md in every directory
-        run: npm run docs:check-readmes
-
       - name: Generate and validate TypeDoc (0 warnings required)
         run: npm run docs
 
