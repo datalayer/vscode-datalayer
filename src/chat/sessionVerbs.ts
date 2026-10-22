@@ -296,6 +296,14 @@ export interface OpenSessionRequest {
   state: SessionRow["state"];
   /** The application's uid, when the session has one. */
   appUid: string;
+  /**
+   * On Datalayer, the runtime the session runs on (its `runsOn.uid` when
+   * `runsOn.kind` is `runtime`); absent when it is on none (paused, ended)
+   * or is a team run's seat.
+   */
+  runtimeUid?: string;
+  /** On Datalayer, the team run whose seat the session is, when it is one. */
+  teamRun?: string;
 }
 
 /** The command the chat's provider registers to open a session; the tree calls it. */

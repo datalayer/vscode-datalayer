@@ -31,7 +31,8 @@ import type { ErrorInfo, ReactNode } from "react";
 import type { IAgentRuntimesClient } from "@datalayer/agent-runtimes/lib/client/IAgentRuntimesClient";
 import { AgentRuntimesClientProvider } from "@datalayer/agent-runtimes/lib/client/AgentRuntimesClientContext";
 import type { Protocol } from "@datalayer/agent-runtimes/lib/types/protocol";
-import { BaseStyles, ThemeProvider } from "@primer/react";
+import { agentRuntimesUrlOf } from "@datalayer/agent-runtimes/lib/portable/sessions";
+import { BaseStyles } from "@primer/react";
 
 import {
   APP_CHAT_WORDS,
@@ -42,11 +43,9 @@ import {
   talkableKeyOf,
 } from "../../src/chat/appChat";
 import type { ApprovalRaised } from "../../src/chat/attention";
-import {
-  localSessionProtocol,
-  openSessionChoice,
-} from "../../src/chat/openSession";
+import { openSessionChoice, sessionProtocol } from "../../src/chat/openSession";
 import type { OpenSessionRequest } from "../../src/chat/sessionVerbs";
+import { PrimerVSCodeTheme } from "../theme/PrimerVSCodeTheme";
 
 import {
   answerTextOf,
@@ -63,6 +62,16 @@ import {
 
 // A deployed application's chat (STUDIO A-18), loaded when one is picked.
 const LazyAppChat = React.lazy(() => import("./AppChat"));
+
+// The editor's own theme around the chat (as the notebook and datasource
+// views have it): VS Code's colours mapped onto Primer's and JupyterLab's
+// variables, and the jupyter-react context the chat's kernel indicator
+// reads. Loaded with the chat, so the picker's first paint stays small.
+const LazyVSCodeTheme = React.lazy(() =>
+  import("../theme/VSCodeTheme").then((module) => ({
+    default: module.VSCodeTheme,
+  })),
+);
 
 /** The picker's value for a runtime. */
 const RUNTIME = "runtime:";
@@ -199,6 +208,8 @@ export interface AgentChatSettings {
 export interface ChatAgentHandle {
   /** Kubernetes pod name — used as runtime identifier. */
   runtimeName: string;
+  /** A Datalayer runtime's uid: what a session's `runsOn` names. */
+  uid?: string;
   /** Ingress URL — used as `baseUrl` on `<Chat>`. */
   ingress: string;
   /** Per-runtime auth token — used as `authToken` on `<Chat>`. */
@@ -271,11 +282,11 @@ export interface AppProps {
  */
 export function App(props: AppProps): React.JSX.Element {
   return (
-    <ThemeProvider colorMode={props.theme === "dark" ? "night" : "day"}>
+    <PrimerVSCodeTheme colorMode={props.theme}>
       <BaseStyles style={{ height: "100%" }}>
         <AppInner {...props} />
       </BaseStyles>
-    </ThemeProvider>
+    </PrimerVSCodeTheme>
   );
 }
 
@@ -291,6 +302,7 @@ export function App(props: AppProps): React.JSX.Element {
  */
 function AppInner(props: AppProps): React.JSX.Element {
   const {
+    theme,
     auth,
     settings,
     agents,
@@ -313,10 +325,14 @@ function AppInner(props: AppProps): React.JSX.Element {
   const [selected, setSelected] = useState<string | null>(null);
   // What the chat says of a session opened from the Sessions view.
   const [openSaid, setOpenSaid] = useState("");
+  // The session open in the chat, from the Sessions view: while it is, the
+  // picker is not drawn — its conversation is its runtime's, never pointed
+  // at another — until the person goes back to all agents.
+  const [opened, setOpened] = useState<OpenSessionRequest | null>(null);
 
-  // A session opened from the Sessions view: the picker set to its place —
-  // the local runtime of its folder, the deployment of its application —
-  // and the session said; not listed, said why.
+  // A session opened from the Sessions view: the chat set to its place —
+  // the local runtime of its folder, the deployment of its application, the
+  // runtime it runs on at Datalayer — and the session said; none, said why.
   const handledOpen = useRef<OpenSessionRequest | null>(null);
   useEffect(() => {
     // Each request once, when the lists are read: a later pick of the
@@ -333,11 +349,17 @@ function AppInner(props: AppProps): React.JSX.Element {
       agentsError ? [] : (agents ?? []),
       deployments ?? [],
     );
-    if (choice.value) {
-      setSelected(choice.value);
-    }
+    setOpened(openRequest);
+    setSelected(choice.value);
     setOpenSaid(choice.said);
   }, [openRequest, agents, agentsError, deployments]);
+
+  // Back to all agents: the session closed here, the picker drawn again.
+  const backToAgents = useCallback(() => {
+    setOpened(null);
+    setSelected(null);
+    setOpenSaid("");
+  }, []);
 
   // The same deployments listed again change nothing: the conversation
   // open survives a refresh (memoized on what is talked to, not the list).
@@ -357,7 +379,8 @@ function AppInner(props: AppProps): React.JSX.Element {
   const runtimes = agentsError ? [] : (agents ?? []);
 
   // Auto-select when there is exactly one choice, or clear a selection that
-  // no longer exists in the refreshed lists.
+  // no longer exists in the refreshed lists. Never while a session is open:
+  // what it is talked to on is its own place, or nothing.
   useEffect(() => {
     if (agents === null && talkable.length === 0) {
       return;
@@ -366,7 +389,7 @@ function AppInner(props: AppProps): React.JSX.Element {
       ...runtimes.map((a) => RUNTIME + a.runtimeName),
       ...talkable.map((handle) => APP + handle.uid),
     ];
-    if (values.length === 1) {
+    if (values.length === 1 && !opened) {
       if (selected !== values[0]) {
         setSelected(values[0]!);
       }
@@ -376,7 +399,7 @@ function AppInner(props: AppProps): React.JSX.Element {
       setSelected(null);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [agents, agentsError, talkable, selected]);
+  }, [agents, agentsError, talkable, selected, opened]);
 
   const selectedAgent = useMemo(() => {
     if (!agents || !selected?.startsWith(RUNTIME)) {
@@ -407,25 +430,42 @@ function AppInner(props: AppProps): React.JSX.Element {
   // A session of a deployed application opened from the Sessions view
   // (VS-24): its conversation read by uid on the kept runtime.
   const openedApp =
-    openRequest &&
-    openRequest.place.kind !== "local" &&
+    opened &&
+    opened.place.kind !== "local" &&
     selectedApp &&
-    Boolean(openRequest.appUid) &&
-    selectedApp.appUid === openRequest.appUid
-      ? openRequest
+    Boolean(opened.appUid) &&
+    selectedApp.appUid === opened.appUid
+      ? opened
       : null;
 
   // The session opened on the runtime picked (VS-24): the Sessions view's
   // request, when it names this local runtime — its conversation read by
   // uid over the session API, the thread's menu drawn.
   const openedLocal =
-    openRequest &&
-    openRequest.place.kind === "local" &&
+    opened &&
+    opened.place.kind === "local" &&
     selectedAgent?.place === "local" &&
-    openRequest.place.url.replace(/\/+$/, "") ===
+    opened.place.url.replace(/\/+$/, "") ===
       selectedAgent.ingress.replace(/\/+$/, "")
-      ? openRequest
+      ? opened
       : null;
+
+  // A session on Datalayer opened on the runtime it runs on: its
+  // conversation read by uid over that runtime's session API, signed with
+  // the runtime's token as the runtime pick is.
+  const openedDatalayer =
+    opened &&
+    opened.place.kind === "datalayer" &&
+    Boolean(opened.runtimeUid) &&
+    selectedAgent &&
+    selectedAgent.place !== "local" &&
+    (selectedAgent.runtimeName === opened.runtimeUid ||
+      selectedAgent.uid === opened.runtimeUid)
+      ? opened
+      : null;
+
+  // The session talked to on the runtime picked, local or on Datalayer.
+  const openedOnRuntime = openedLocal ?? openedDatalayer;
 
   // The session the editor's surfaces are told of: a runtime's chat here
   // (an application's chat names its own in `AppChat`); none when nothing
@@ -434,13 +474,13 @@ function AppInner(props: AppProps): React.JSX.Element {
     if (selectedAgent) {
       ensureDisplayRenderers();
       setSurfaceContext({
-        sessionKey: openedLocal
-          ? openedLocal.uid
+        sessionKey: openedOnRuntime
+          ? openedOnRuntime.uid
           : `runtime:${selectedAgent.runtimeName}`,
-        title: openedLocal?.title || selectedAgent.givenName,
-        agent: openedLocal?.agent ?? "default",
+        title: openedOnRuntime?.title || selectedAgent.givenName,
+        agent: openedOnRuntime?.agent ?? "default",
         harness: "",
-        app: openedLocal?.title || selectedAgent.givenName,
+        app: openedOnRuntime?.title || selectedAgent.givenName,
         local: selectedAgent.place === "local",
       });
       reportSessionState({ turn: "idle" });
@@ -453,7 +493,7 @@ function AppInner(props: AppProps): React.JSX.Element {
       reportNoSession();
     }
     return undefined;
-  }, [selectedAgent, selectedApp, openedLocal]);
+  }, [selectedAgent, selectedApp, openedOnRuntime]);
 
   // A local runtime's approvals (VS-07): the banner's source for a session
   // on this machine — read by the host over the runtime's websocket; the
@@ -509,11 +549,157 @@ function AppInner(props: AppProps): React.JSX.Element {
     );
   }
 
+  // The chat drawn: the deployment picked, or the runtime picked. While a
+  // session is open, only its own conversation — never another agent's.
+  const sessionChatReady = !opened || Boolean(openedApp || openedOnRuntime);
+  const chat = !sessionChatReady ? null : selectedApp && services && client ? (
+    <ChatErrorBoundary
+      onRetry={() => {
+        setSelected(null);
+      }}
+    >
+      <Suspense fallback={<LoadingChat />}>
+        <LazyVSCodeTheme colorMode={theme} loadJupyterLabCss={false}>
+          <AgentRuntimesClientProvider client={client}>
+            <LazyAppChat
+              // A new conversation for each deployment picked, or when
+              // where it is kept changes; the same listing keeps it.
+              // A session opened from the Sessions view is another.
+              key={`${selectedApp.uid} ${selectedApp.version} ${selectedApp.url} ${selectedApp.agentId} ${openedApp?.uid ?? ""}`}
+              handle={selectedApp}
+              openUid={openedApp?.uid}
+              services={services}
+              user={auth.user}
+              readEditor={readEditor}
+              signUser={signUser}
+            />
+          </AgentRuntimesClientProvider>
+        </LazyVSCodeTheme>
+      </Suspense>
+    </ChatErrorBoundary>
+  ) : selectedAgent && settings && client ? (
+    <ChatErrorBoundary
+      onRetry={() => {
+        setSelected(null);
+      }}
+    >
+      <Suspense fallback={<LoadingChat />}>
+        <LazyVSCodeTheme colorMode={theme} loadJupyterLabCss={false}>
+          <AgentRuntimesClientProvider client={client}>
+            <LazyChat
+              // A session opened from the Sessions view (VS-24): its
+              // conversation, over the session API; another open is
+              // another chat.
+              key={
+                openedOnRuntime ? `session:${openedOnRuntime.uid}` : "runtime"
+              }
+              protocol={
+                openedLocal
+                  ? sessionProtocol(selectedAgent.ingress, openedLocal.agent)
+                  : openedDatalayer
+                    ? sessionProtocol(
+                        agentRuntimesUrlOf(selectedAgent.ingress),
+                        openedDatalayer.agent,
+                        selectedAgent.token,
+                      )
+                    : narrowProtocol(settings.protocol)
+              }
+              thread={
+                openedOnRuntime
+                  ? {
+                      id: openedOnRuntime.uid,
+                      messages: [],
+                      fromRuntime: true,
+                    }
+                  : undefined
+              }
+              sessionActions={openedOnRuntime ? {} : undefined}
+              baseUrl={
+                openedDatalayer
+                  ? agentRuntimesUrlOf(selectedAgent.ingress)
+                  : selectedAgent.ingress
+              }
+              authToken={selectedAgent.token}
+              // A session's agent is its own (its application's agent);
+              // otherwise the SAAS agent-runtimes server names the
+              // default agent within a pod `default`, not the pod name.
+              // The pod identifier goes in `runtimeId` for telemetry.
+              agentId={openedOnRuntime?.agent ?? "default"}
+              // The editor's theme, never the chat's own (Matrix).
+              disableInternalJupyterTheme={true}
+              runtimeId={selectedAgent.runtimeName}
+              height="100%"
+              showHeader={true}
+              showInput={true}
+              autoFocus={true}
+              autoConnect={true}
+              streaming={true}
+              clearOnMount={true}
+              // What the editor draws of the session: a terminal's
+              // output in the Terminal panel, the turn in the status bar.
+              onToolCallUpdate={({ display }) => {
+                reportToolDisplay(display);
+              }}
+              onToolCallComplete={({ toolName, result }) => {
+                reportToolResult(toolName, result);
+              }}
+              pendingApprovals={localPending}
+              onApproveApproval={(approvalId) => decideLocal(approvalId, true)}
+              onRejectApproval={(approvalId) => decideLocal(approvalId, false)}
+              onMessageSent={() => {
+                noteTurn();
+                reportSessionState({ turn: "running" });
+              }}
+              onMessageReceived={(message) => {
+                reportSessionState({
+                  turn: "idle",
+                  lastAnswer: answerTextOf(message),
+                });
+                reportSessionChanged();
+              }}
+            />
+          </AgentRuntimesClientProvider>
+        </LazyVSCodeTheme>
+      </Suspense>
+    </ChatErrorBoundary>
+  ) : null;
+
   // Agents loading, and no application to talk to yet.
   if (agents === null && talkable.length === 0) {
     return (
       <div style={containerStyle}>
         <p style={messageStyle}>Loading agents...</p>
+      </div>
+    );
+  }
+
+  // A session open from the Sessions view: no picker — a back control, its
+  // title and state, then its conversation on its own runtime, or why not.
+  if (opened) {
+    return (
+      <div style={columnStyle}>
+        <div style={pickerBarStyle}>
+          <button
+            type="button"
+            style={backButtonStyle}
+            onClick={backToAgents}
+            title="All agents"
+            aria-label="All agents"
+          >
+            &#x2190; All agents
+          </button>
+          <span style={sessionTitleStyle} title={opened.title}>
+            {opened.title || "This session"}
+          </span>
+          <span style={sessionStateStyle}>{opened.state}</span>
+        </div>
+        <div style={{ flex: 1, overflow: "hidden" }}>
+          {chat ?? (
+            <div style={containerStyle}>
+              <p style={messageStyle}>{openSaid}</p>
+            </div>
+          )}
+        </div>
       </div>
     );
   }
@@ -649,18 +835,6 @@ function AppInner(props: AppProps): React.JSX.Element {
           &#x21bb;
         </button>
       </div>
-      {openSaid ? (
-        <p
-          style={{
-            ...messageStyle,
-            fontSize: "12px",
-            margin: "4px 8px",
-            opacity: 0.8,
-          }}
-        >
-          {openSaid}
-        </p>
-      ) : null}
       {deploymentsError || agentsError ? (
         // Said beside the picker, whatever else is listed or picked.
         <p
@@ -679,101 +853,7 @@ function AppInner(props: AppProps): React.JSX.Element {
 
       {/* Chat area */}
       <div style={{ flex: 1, overflow: "hidden" }}>
-        {selectedApp && services && client ? (
-          <ChatErrorBoundary
-            onRetry={() => {
-              setSelected(null);
-            }}
-          >
-            <Suspense fallback={<LoadingChat />}>
-              <AgentRuntimesClientProvider client={client}>
-                <LazyAppChat
-                  // A new conversation for each deployment picked, or when
-                  // where it is kept changes; the same listing keeps it.
-                  // A session opened from the Sessions view is another.
-                  key={`${selectedApp.uid} ${selectedApp.version} ${selectedApp.url} ${selectedApp.agentId} ${openedApp?.uid ?? ""}`}
-                  handle={selectedApp}
-                  openUid={openedApp?.uid}
-                  services={services}
-                  user={auth.user}
-                  readEditor={readEditor}
-                  signUser={signUser}
-                />
-              </AgentRuntimesClientProvider>
-            </Suspense>
-          </ChatErrorBoundary>
-        ) : selectedAgent && settings && client ? (
-          <ChatErrorBoundary
-            onRetry={() => {
-              setSelected(null);
-            }}
-          >
-            <Suspense fallback={<LoadingChat />}>
-              <AgentRuntimesClientProvider client={client}>
-                <LazyChat
-                  // A session opened from the Sessions view (VS-24): its
-                  // conversation, over the session API; another open is
-                  // another chat.
-                  key={openedLocal ? `session:${openedLocal.uid}` : "runtime"}
-                  protocol={
-                    openedLocal
-                      ? localSessionProtocol(
-                          selectedAgent.ingress,
-                          openedLocal.agent,
-                        )
-                      : narrowProtocol(settings.protocol)
-                  }
-                  thread={
-                    openedLocal
-                      ? { id: openedLocal.uid, messages: [], fromRuntime: true }
-                      : undefined
-                  }
-                  sessionActions={openedLocal ? {} : undefined}
-                  baseUrl={selectedAgent.ingress}
-                  authToken={selectedAgent.token}
-                  // The SAAS agent-runtimes server names the default agent
-                  // within a pod `default`; it's not the pod name. The pod
-                  // identifier goes in `runtimeId` for tracking/telemetry.
-                  agentId={openedLocal?.agent ?? "default"}
-                  runtimeId={selectedAgent.runtimeName}
-                  height="100%"
-                  showHeader={true}
-                  showInput={true}
-                  autoFocus={true}
-                  autoConnect={true}
-                  streaming={true}
-                  clearOnMount={true}
-                  // What the editor draws of the session: a terminal's
-                  // output in the Terminal panel, the turn in the status bar.
-                  onToolCallUpdate={({ display }) => {
-                    reportToolDisplay(display);
-                  }}
-                  onToolCallComplete={({ toolName, result }) => {
-                    reportToolResult(toolName, result);
-                  }}
-                  pendingApprovals={localPending}
-                  onApproveApproval={(approvalId) =>
-                    decideLocal(approvalId, true)
-                  }
-                  onRejectApproval={(approvalId) =>
-                    decideLocal(approvalId, false)
-                  }
-                  onMessageSent={() => {
-                    noteTurn();
-                    reportSessionState({ turn: "running" });
-                  }}
-                  onMessageReceived={(message) => {
-                    reportSessionState({
-                      turn: "idle",
-                      lastAnswer: answerTextOf(message),
-                    });
-                    reportSessionChanged();
-                  }}
-                />
-              </AgentRuntimesClientProvider>
-            </Suspense>
-          </ChatErrorBoundary>
-        ) : (
+        {chat ?? (
           <div style={containerStyle}>
             <p style={messageStyle}>Select an agent above to start chatting.</p>
           </div>
@@ -840,6 +920,44 @@ const secondaryButtonStyle: React.CSSProperties = {
   borderRadius: "2px",
   cursor: "pointer",
   fontSize: "var(--vscode-font-size)",
+};
+
+const columnStyle: React.CSSProperties = {
+  display: "flex",
+  flexDirection: "column",
+  height: "100%",
+  width: "100%",
+  overflow: "hidden",
+};
+
+const backButtonStyle: React.CSSProperties = {
+  padding: "4px 8px",
+  background: "var(--vscode-button-secondaryBackground)",
+  color: "var(--vscode-button-secondaryForeground)",
+  border: "none",
+  borderRadius: "2px",
+  cursor: "pointer",
+  fontSize: "var(--vscode-font-size)",
+  flexShrink: 0,
+};
+
+const sessionTitleStyle: React.CSSProperties = {
+  flex: 1,
+  minWidth: 0,
+  overflow: "hidden",
+  textOverflow: "ellipsis",
+  whiteSpace: "nowrap",
+  alignSelf: "center",
+  fontFamily: "var(--vscode-font-family)",
+  fontSize: "var(--vscode-font-size)",
+  color: "var(--vscode-foreground)",
+};
+
+const sessionStateStyle: React.CSSProperties = {
+  alignSelf: "center",
+  flexShrink: 0,
+  fontSize: "12px",
+  color: "var(--vscode-descriptionForeground)",
 };
 
 const pickerBarStyle: React.CSSProperties = {

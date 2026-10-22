@@ -85,6 +85,8 @@ export interface ChatAgentHandle {
    * to `"default"` instead — see `webview/agentChat/App.tsx`.
    */
   runtimeName: string;
+  /** A Datalayer runtime's uid: what a session's `runsOn` names (VS-24). */
+  uid?: string;
   /** Ingress URL used as the `baseUrl` on `<Chat>`. */
   ingress: string;
   /** Per-runtime auth token used as the `authToken` on `<Chat>`. */
@@ -712,6 +714,7 @@ export class AgentChatViewProvider implements vscode.WebviewViewProvider {
               .replace(/\/$/, "");
             agents.push({
               runtimeName: runtime.runtimeName,
+              uid: runtime.uid,
               ingress: normalizedIngress,
               token,
               givenName: runtime.givenName,

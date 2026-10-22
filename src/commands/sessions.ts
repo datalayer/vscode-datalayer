@@ -156,6 +156,12 @@ export function registerSessionsCommands(
     title: item.row.title,
     state: item.row.state,
     appUid: item.row.appUid,
+    ...(item.row.runsOn?.kind === "runtime"
+      ? { runtimeUid: item.row.runsOn.uid }
+      : {}),
+    ...(item.row.runsOn?.kind === "team_run"
+      ? { teamRun: item.row.runsOn.executionId }
+      : {}),
   });
 
   context.subscriptions.push(
@@ -209,6 +215,7 @@ export function registerSessionsCommands(
             title: `${item.run.team} · ${item.seat.seat}`,
             state: "open",
             appUid: "",
+            teamRun: item.run.executionId,
           });
           return;
         }

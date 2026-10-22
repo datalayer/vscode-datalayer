@@ -4,6 +4,11 @@ All notable changes to the Datalayer VS Code extension are documented here.
 
 ## [Unreleased]
 
+### Fixed
+
+- **A session opened from the Sessions view no longer shows the runtime picker**: the Datalayer Chat draws a slim header instead — _All agents_ to go back, the session's title and state — and talks to the session on its own runtime with its own agent over the session API, a session on Datalayer included while `datalayer.agentChat.enabled` is off; a session on no runtime, a team run's seat, or one on a runtime that is not yours is said in a sentence, never sent to another runtime
+- **The Datalayer Chat follows your VS Code theme**: the chat's own dark theme no longer overrides the editor's colours
+
 ### Changed
 
 - **A session opened from the Sessions view is its own conversation** in the Datalayer Chat (agent-runtimes 1.5.68): read from its runtime by uid, with the thread's `⋯` menu — the chat's entries and the extension's _Reveal in Explorer_ and _Open in the Studio_ — drawn beside the header

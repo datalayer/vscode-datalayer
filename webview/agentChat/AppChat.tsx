@@ -415,6 +415,9 @@ export default function AppChat(props: AppChatProps): React.JSX.Element {
           endpoint={agUiEndpoint(handle)}
           configEndpoint={`${handle.url}/api/v1/configure`}
           agentId={handle.agentId}
+          // The editor's theme (the view wraps the chat in it), never the
+          // chat's own (Matrix).
+          disableInternalJupyterTheme={true}
           height="100%"
           showHeader={true}
           showInput={true}
