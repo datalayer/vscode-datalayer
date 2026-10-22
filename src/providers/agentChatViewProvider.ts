@@ -688,6 +688,12 @@ export class AgentChatViewProvider implements vscode.WebviewViewProvider {
         count: runtimes.length,
       });
       for (const runtime of runtimes) {
+        // A deployment's runtime answers only its application's own routes:
+        // it is talked to as that application (Your applications) or through
+        // one of its sessions, never picked as a runtime by agent name.
+        if (runtime.deploymentUid) {
+          continue;
+        }
         try {
           const ingress = runtime.ingress;
           const token = runtime.token;
