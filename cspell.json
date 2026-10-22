@@ -7,7 +7,6 @@
     "dist",
     "out",
     "docs",
-    "api-docs",
     "coverage",
     ".vscode-test",
     "*.vsix",

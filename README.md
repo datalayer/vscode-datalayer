@@ -22,13 +22,13 @@ Pick an application you deployed in the Datalayer Agent Studio in the **Datalaye
 - **Terminals** showing what the agent ran, as it runs.
 - **The status bar** says when sessions are waiting for you.
 
-[More about the chat →](docs/agents.md)
+[More about the chat →](guides/agents.md)
 
 ## Pick up any session
 
 The **Sessions** view lists your conversations, on Datalayer and on this machine, with their state, agent and turns. Right-click one to **Resume**, **Switch Agent…**, **Clone from Here…**, **Export…**, **Rename…**, **Archive** or **End**; import a session from a file.
 
-[More about sessions →](docs/sessions.md)
+[More about sessions →](guides/sessions.md)
 
 ## A coding agent in your folder
 
@@ -40,13 +40,13 @@ uv tool install 'agent-runtimes[shield]'
 
 Then **Datalayer: Check a Coding Agent on This Machine**, and **Datalayer: Start a coding agent here**.
 
-[More about local coding agents →](docs/sessions.md#a-coding-agent-in-your-folder)
+[More about local coding agents →](guides/sessions.md#a-coding-agent-in-your-folder)
 
 ## Notebooks and documents
 
 Jupyter notebooks and Datalayer documents, run on cloud CPUs or GPUs, local Python or your Jupyter servers, switched from the kernel picker. Your cloud spaces are in the sidebar.
 
-[More about notebooks, documents and runtimes →](docs/notebooks-and-documents.md)
+[More about notebooks, documents and runtimes →](guides/notebooks-and-documents.md)
 
 ## Get started
 
@@ -55,7 +55,7 @@ Jupyter notebooks and Datalayer documents, run on cloud CPUs or GPUs, local Pyth
 3. Sign in: **Datalayer: Login to Datalayer**.
 4. Open **Datalayer: Home**, or the **Datalayer Chat** sidebar.
 
-All commands and settings: [docs/commands-and-settings.md](docs/commands-and-settings.md).
+All commands and settings: [guides/commands-and-settings.md](guides/commands-and-settings.md).
 
 ## Developers
 

@@ -32,7 +32,7 @@ Thumbs.db
 .env.local
 
 # Documentation (auto-generated)
-/api-docs/
+/docs/
 docs-html/
 docs-markdown/
 

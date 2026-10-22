@@ -9,7 +9,7 @@ scripts/**
 dev/**
 patches/**
 docs/**
-api-docs/**
+guides/**
 docs-html/**
 docs-markdown/**
 coverage/**

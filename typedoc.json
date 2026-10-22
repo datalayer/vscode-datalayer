@@ -2,7 +2,7 @@
   "$schema": "https://typedoc.org/schema.json",
   "entryPoints": ["src", "webview"],
   "entryPointStrategy": "expand",
-  "out": "api-docs",
+  "out": "docs",
   "tsconfig": "tsconfig.doc.json",
   "plugin": [],
   "exclude": [

@@ -6,8 +6,8 @@ All notable changes to the Datalayer VS Code extension are documented here.
 
 ### Changed
 
-- **A shorter README, about agents and sessions**: talking to your agents, picking up any session, a coding agent in your folder, then notebooks and documents; the details moved to guides under `docs/` (agents, sessions and local coding agents, notebooks and documents, commands and settings); a header image sized for the Marketplace
-- **The code documentation lives in the code**: the READMEs under `src/` and `webview/` became TSDoc in their source files; TypeDoc now writes the API reference to `api-docs/`
+- **A shorter README, about agents and sessions**: talking to your agents, picking up any session, a coding agent in your folder, then notebooks and documents; the details moved to guides under `guides/` (agents, sessions and local coding agents, notebooks and documents, commands and settings); a header image sized for the Marketplace
+- **The code documentation lives in the code**: the READMEs under `src/` and `webview/` became TSDoc in their source files
 
 ## [0.1.1] - 2026-10-22
 
