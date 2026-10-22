@@ -28,18 +28,21 @@ for bundle in $BUNDLES; do
   NAMES+=(--config-name "$bundle")
 done
 
-started=$(date +%s)
-npx webpack --watch "${NAMES[@]}" &
+# webpack's output goes to the terminal and to a log this script reads: the
+# extension is built when webpack says so. (A file's time says nothing: webpack
+# does not rewrite an output whose content did not change.)
+LOG=$(mktemp)
+npx webpack --watch "${NAMES[@]}" > >(tee "$LOG") 2>&1 &
 WATCH=$!
-trap 'kill "$WATCH" 2>/dev/null || true' EXIT INT TERM
+trap 'kill "$WATCH" 2>/dev/null || true; rm -f "$LOG"' EXIT INT TERM
 
 echo "make dev: watching ${BUNDLES} (DEV_BUNDLES=\"… webview lexical\" adds the notebook's and the document's) — waiting for the extension's first build…"
-until [ -f dist/extension.js ] && [ "$(stat -c %Y dist/extension.js)" -ge "$started" ]; do
+until grep -q "Compiler 'extension' finished" "$LOG"; do
   if ! kill -0 "$WATCH" 2>/dev/null; then
     echo "make dev: the webpack watch stopped before the extension was built." >&2
     exit 1
   fi
-  sleep 2
+  sleep 1
 done
 
 code --new-window --extensionDevelopmentPath="$PWD" ${FOLDER:+"$FOLDER"}
