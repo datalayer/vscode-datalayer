@@ -159,6 +159,15 @@ export async function initializeUI(
         return;
       }
 
+      // The Datalayer home page shows the outline of the document last
+      // active: switching to it keeps the outline.
+      if (
+        activeTab.input instanceof vscode.TabInputWebview &&
+        activeTab.input.viewType.endsWith("datalayer.home")
+      ) {
+        return;
+      }
+
       // If NOT a custom editor (notebook/lexical), clear outline
       if (
         !(activeTab.input instanceof vscode.TabInputCustom) &&

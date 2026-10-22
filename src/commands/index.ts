@@ -33,6 +33,7 @@ import { registerAuthCommands } from "./auth";
 import { registerCreateCommands } from "./create";
 import { registerDatasourcesCommands } from "./datasources";
 import { registerDocumentCommands } from "./documents";
+import { registerHomeCommands } from "./home";
 import { getConnectedRuntime, registerInternalCommands } from "./internal";
 import { registerLocalRuntimeCommands } from "./localRuntime";
 import { registerOutlineCommands } from "./outline";
@@ -124,6 +125,48 @@ export function registerAllCommands(
 
   // Register theme commands (Primer showcase)
   registerThemeCommands(context);
+
+  // *Datalayer: Home*: the sidebar's blocks as one page, read from the same tree providers
+  registerHomeCommands(context, {
+    authProvider: services.authProvider,
+    sections: [
+      {
+        id: "datalayerOutline",
+        title: "Outline",
+        icon: "list-tree",
+        provider: services.outlineTreeProvider,
+        refresh: () => services.outlineTreeProvider.refresh(),
+      },
+      {
+        id: "datalayerSpaces",
+        title: "Spaces",
+        icon: "cloud",
+        provider: services.spacesTreeProvider,
+        refresh: () => services.spacesTreeProvider.refresh(),
+      },
+      {
+        id: "datalayerSessions",
+        title: "Sessions",
+        icon: "comment-discussion",
+        provider: services.sessionsTreeProvider,
+        refresh: () => services.sessionsTreeProvider.refresh(),
+      },
+      {
+        id: "datalayerRuntimes",
+        title: "Agents",
+        icon: "vm",
+        provider: services.runtimesTreeProvider,
+        refresh: () => services.runtimesTreeProvider.refresh(),
+      },
+      {
+        id: "datalayerSettings",
+        title: "Settings",
+        icon: "settings-gear",
+        provider: services.settingsTreeProvider,
+        refresh: () => services.settingsTreeProvider.refresh(),
+      },
+    ],
+  });
 
   // Register outline commands
   registerOutlineCommands(context, services.outlineTreeProvider);

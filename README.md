@@ -187,6 +187,10 @@ Before a coding agent starts, **Datalayer: Check a Coding Agent on This Machine*
 
 ## Key Commands
 
+**Home:**
+
+- Home (_Datalayer: Home_, or _Open Datalayer_ above the Outline): the sidebar's Outline, Spaces, Sessions, Agents and Settings as one page
+
 **Authentication:**
 
 - Login/Logout

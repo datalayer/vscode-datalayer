@@ -4,6 +4,10 @@ All notable changes to the Datalayer VS Code extension are documented here.
 
 ## [Unreleased]
 
+### Added
+
+- **Datalayer: Home** (`datalayer.home`): the sidebar's blocks — Outline, Spaces, Sessions, Agents and Settings — as one _Datalayer_ page in an editor tab, opened from the palette or from the _Open Datalayer_ button above the Outline. The page lists the items the sidebar lists, read from the same trees: a click does what the tree's click does, each section refreshes on its own and follows the sidebar's changes, and signed out the page says so with a _Sign in_ button
+
 ### Fixed
 
 - **A session opened from the Sessions view no longer shows the runtime picker**: the Datalayer Chat draws a slim header instead — _All agents_ to go back, the session's title and state — and talks to the session on its own runtime with its own agent over the session API, a session on Datalayer included while `datalayer.agentChat.enabled` is off; a session on no runtime, a team run's seat, or one on a runtime that is not yours is said in a sentence, never sent to another runtime

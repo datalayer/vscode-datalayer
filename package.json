@@ -263,6 +263,12 @@
         "icon": "$(datalayer-logo)"
       },
       {
+        "command": "datalayer.home",
+        "title": "Home",
+        "category": "Datalayer",
+        "icon": "$(home)"
+      },
+      {
         "command": "datalayer.showPrimerThemeShowcase",
         "title": "Show Primer Theme Showcase",
         "category": "Datalayer"
@@ -669,6 +675,13 @@
     "views": {
       "datalayer": [
         {
+          "id": "datalayerHome",
+          "name": "Home",
+          "icon": "$(home)",
+          "contextualTitle": "Datalayer Home",
+          "initialSize": 1
+        },
+        {
           "id": "datalayerOutline",
           "name": "Outline",
           "icon": "$(list-tree)",
@@ -709,6 +722,10 @@
       ]
     },
     "viewsWelcome": [
+      {
+        "view": "datalayerHome",
+        "contents": "[Open Datalayer](command:datalayer.home)"
+      },
       {
         "view": "datalayerSpaces",
         "contents": "Welcome to Datalayer Spaces.\n[Login to Datalayer](command:datalayer.login) to view your spaces and documents.",

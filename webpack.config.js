@@ -880,6 +880,78 @@ const datasourceDialogConfig = {
   ],
 };
 
+// Config for the Datalayer home page webview (`datalayer.home`): Primer,
+// a few core components, no Chat, no jupyter-react — as small as `datasource`.
+const homeWebviewConfig = {
+  name: "home",
+  target: "web",
+  mode: "production", // Enable webpack production optimizations
+  devtool: process.env.WEBVIEW_DEBUG
+    ? "inline-source-map"
+    : "hidden-source-map",
+  entry: "./webview/home/main.tsx",
+  output: {
+    path: path.resolve(__dirname, "dist"),
+    filename: "home.js",
+  },
+  performance: WEBVIEW_PERFORMANCE_HINTS,
+  resolve: {
+    extensions: [".ts", ".tsx", ".js", ".jsx", ".json", ".svg"],
+    symlinks: true,
+    fallback: {
+      process: require.resolve("process/browser"),
+      buffer: require.resolve("buffer/"),
+      stream: require.resolve("stream-browserify"),
+      // Disable node modules not needed in browser
+      fs: false,
+      path: false,
+      crypto: false,
+    },
+    alias: {
+      // Use resolvePackage helper to find packages in hoisted node_modules (monorepo)
+      react: resolvePackage("react"),
+      "react-dom": resolvePackage("react-dom"),
+      // Stub out react-router-dom since we don't use navigation in webview
+      "react-router-dom": false,
+    },
+  },
+  module: {
+    rules: [
+      {
+        test: /\.tsx?$/,
+        exclude: /node_modules/,
+        use: {
+          loader: "ts-loader",
+          options: {
+            configFile: path.join(__dirname, "tsconfig.webview.json"),
+            experimentalWatchApi: true,
+            transpileOnly: true,
+          },
+        },
+      },
+      {
+        test: /\.css$/,
+        use: [require.resolve("style-loader"), require.resolve("css-loader")],
+      },
+      {
+        test: /\.svg$/,
+        type: "asset/inline",
+      },
+      {
+        test: /\.(c|m)?js/,
+        resolve: {
+          fullySpecified: false,
+        },
+      },
+    ],
+  },
+  plugins: [
+    new webpack.ProvidePlugin({
+      process: "process/browser",
+    }),
+  ],
+};
+
 // Config for Datasource Edit Dialog webview
 const datasourceEditDialogConfig = {
   name: "datasource-edit",
@@ -958,6 +1030,7 @@ const configs = [
   webviewConfig,
   lexicalWebviewConfig,
   showcaseWebviewConfig,
+  homeWebviewConfig,
   datasourceDialogConfig,
   datasourceEditDialogConfig,
   agentChatWebviewConfig,
@@ -970,6 +1043,7 @@ if (process.env.ANALYZE === "true") {
     "webview",
     "lexical",
     "showcase",
+    "home",
     "datasource",
     "datasource-edit",
     "agentChat",
