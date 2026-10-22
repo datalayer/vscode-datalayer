@@ -27,7 +27,6 @@ import { DocumentBridge } from "../services/bridges/documentBridge";
 import { DatalayerAuthProvider } from "../services/core/authProvider";
 import type { LocalRuntimeService } from "../services/localRuntime/localRuntimeService";
 import { registerAgentChatCommands } from "./agentChat";
-import { registerAgUICommands } from "./agui";
 import { registerAppsCommands } from "./apps";
 import { registerAuthCommands } from "./auth";
 import { registerCreateCommands } from "./create";
@@ -171,8 +170,6 @@ export function registerAllCommands(
   // Register outline commands
   registerOutlineCommands(context, services.outlineTreeProvider);
 
-  // Register ag-ui example commands
-  registerAgUICommands(context);
 
   // Register Pyodide commands (browser-based Python)
   registerPyodideCommands(context);

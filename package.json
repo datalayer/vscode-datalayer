@@ -274,11 +274,6 @@
         "category": "Datalayer"
       },
       {
-        "command": "datalayer.showAgUIExample",
-        "title": "Show ag-ui Notebook Example (with CopilotKit)",
-        "category": "Datalayer"
-      },
-      {
         "command": "datalayer.help",
         "title": "Help and Feedback",
         "category": "Datalayer"
