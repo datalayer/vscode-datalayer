@@ -266,7 +266,7 @@
         "command": "datalayer.home",
         "title": "Home",
         "category": "Datalayer",
-        "icon": "$(home)"
+        "icon": "$(datalayer-logo)"
       },
       {
         "command": "datalayer.showPrimerThemeShowcase",
@@ -672,7 +672,7 @@
         {
           "id": "datalayerHome",
           "name": "Home",
-          "icon": "$(home)",
+          "icon": "$(datalayer-logo)",
           "contextualTitle": "Datalayer Home",
           "initialSize": 1
         },

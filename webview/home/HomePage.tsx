@@ -45,7 +45,6 @@ import {
   FileIcon,
   FileMediaIcon,
   GearIcon,
-  HomeIcon,
   InfoIcon,
   KeyIcon,
   ListUnorderedIcon,
@@ -333,6 +332,42 @@ function SectionCard({
   );
 }
 
+/**
+ * The Datalayer mark, as the sidebar and the contributed `datalayer-logo`
+ * glyph draw it: three rows of two bars, the second of each at half
+ * strength, in the text's colour.
+ */
+function DatalayerMark({ size }: { size: number }) {
+  const rows: Array<[number, number, number]> = [
+    // [top, the split, bottom] in a 24-unit box; the bars run from 3 to 21.
+    [3, 8.4, 7.49],
+    [9.74, 12, 14.26],
+    [16.49, 15.6, 21],
+  ];
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="currentColor"
+      aria-hidden="true"
+    >
+      {rows.map(([top, split, bottom]) => (
+        <g key={top}>
+          <rect x={3} y={top} width={split - 3} height={bottom - top} />
+          <rect
+            x={split}
+            y={top}
+            width={21 - split}
+            height={bottom - top}
+            opacity={0.5}
+          />
+        </g>
+      ))}
+    </svg>
+  );
+}
+
 /** Props for the HomePage component. */
 export interface HomePageProps {
   colorMode: "light" | "dark";
@@ -387,7 +422,7 @@ export function HomePage({ colorMode }: HomePageProps) {
         }}
       >
         <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 1 }}>
-          <HomeIcon size={24} />
+          <DatalayerMark size={24} />
           <Heading as="h1" sx={{ fontSize: 4 }}>
             Datalayer
           </Heading>

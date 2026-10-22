@@ -92,7 +92,8 @@ export function registerHomeCommands(
  */
 export function homeButtonItem(): vscode.TreeItem {
   const item = new vscode.TreeItem("Open Datalayer");
-  item.iconPath = new vscode.ThemeIcon("home");
+  // The Datalayer mark, as the sidebar wears it (the contributed glyph).
+  item.iconPath = new vscode.ThemeIcon("datalayer-logo");
   item.tooltip =
     "Datalayer: Home — your outline, spaces, sessions, agents and settings on one page";
   item.command = { command: HOME_COMMAND, title: "Open Datalayer" };
