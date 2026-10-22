@@ -22,8 +22,10 @@
         },
         "background": {
           "activeOnStart": true,
-          "beginsPattern": "^webpack.*",
-          "endsPattern": "webpack.*compiled.*successfully"
+          // webpack-cli's own lines: the host needs the extension's compiler
+          // only; the webviews' compilers finish soon after (reload to see them).
+          "beginsPattern": "Compiler\\s*'extension' starting",
+          "endsPattern": "Compiler\\s*'extension' finished"
         }
       },
       "isBackground": true,
