@@ -4,8 +4,11 @@
   "version": "2.0.0",
   "tasks": [
     {
-      "type": "npm",
-      "script": "watch",
+      // A shell task, not `"type": "npm"`: VS Code picks yarn for npm tasks
+      // in some workspaces, and the extension is installed with npm.
+      "label": "npm: watch",
+      "type": "shell",
+      "command": "npm run watch",
       "problemMatcher": {
         "owner": "typescript",
         "fileLocation": ["relative", "${workspaceFolder}"],
@@ -34,8 +37,9 @@
       }
     },
     {
-      "type": "npm",
-      "script": "watch-tests",
+      "label": "npm: watch-tests",
+      "type": "shell",
+      "command": "npm run watch-tests",
       "problemMatcher": "$tsc-watch",
       "isBackground": true,
       "presentation": {
