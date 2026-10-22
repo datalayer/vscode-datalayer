@@ -75,13 +75,28 @@ export function registerHomeCommands(
   const home = new HomePanel(context, services);
   context.subscriptions.push(
     vscode.commands.registerCommand(HOME_COMMAND, () => home.show()),
-    // The button's view: no items, so its welcome content (the button) shows.
-    vscode.window.registerTreeDataProvider<never>(HOME_BUTTON_VIEW, {
-      getChildren: () => [],
+    // The button's view: one row, *Open Datalayer* — a row is the least
+    // height a sidebar view takes (a welcome button takes a block).
+    vscode.window.registerTreeDataProvider<vscode.TreeItem>(HOME_BUTTON_VIEW, {
+      getChildren: () => [homeButtonItem()],
       getTreeItem: (element) => element,
     }),
     home,
   );
+}
+
+/**
+ * The sidebar's one row that opens the page.
+ *
+ * @returns The row.
+ */
+export function homeButtonItem(): vscode.TreeItem {
+  const item = new vscode.TreeItem("Open Datalayer");
+  item.iconPath = new vscode.ThemeIcon("home");
+  item.tooltip =
+    "Datalayer: Home — your outline, spaces, sessions, agents and settings on one page";
+  item.command = { command: HOME_COMMAND, title: "Open Datalayer" };
+  return item;
 }
 
 /** The one *Datalayer* panel: opened, or revealed when open. */

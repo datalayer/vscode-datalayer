@@ -723,10 +723,6 @@
     },
     "viewsWelcome": [
       {
-        "view": "datalayerHome",
-        "contents": "[Open Datalayer](command:datalayer.home)"
-      },
-      {
         "view": "datalayerSpaces",
         "contents": "Welcome to Datalayer Spaces.\n[Login to Datalayer](command:datalayer.login) to view your spaces and documents.",
         "when": "!datalayer.authenticated"
