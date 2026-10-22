@@ -179,12 +179,15 @@ function visibleRows(
 
 /**
  * Where a section sits on the page's six-column grid (wide windows): Sessions
- * and Agents share the first row, Spaces, Outline and Settings the second.
- * Narrow, one section per row.
+ * and Agents share the first row, Spaces and Outline the second, Settings the
+ * third on its own. Narrow, one section per row.
  */
 const GRID_SPAN: Record<string, string> = {
   datalayerSessions: "span 3",
   datalayerRuntimes: "span 3",
+  datalayerSpaces: "span 3",
+  datalayerOutline: "span 3",
+  datalayerSettings: "span 6",
 };
 
 /** One line, cut with an ellipsis: the whole text is the row's tooltip. */
@@ -227,7 +230,7 @@ function SectionCard({
         minWidth: 0,
         display: "flex",
         flexDirection: "column",
-        gridColumn: ["auto", "auto", GRID_SPAN[section.id] ?? "span 2"],
+        gridColumn: ["auto", "auto", GRID_SPAN[section.id] ?? "span 6"],
       }}
     >
       <Box
