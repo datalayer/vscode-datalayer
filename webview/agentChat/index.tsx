@@ -93,16 +93,17 @@ const bridgeClient = new BridgeAgentRuntimesClient(transport.request);
 let currentTheme: "light" | "dark" = getInitialTheme();
 
 /**
- * The shared Datalayer theme store, which the chat's icons still read (its
- * default is the Matrix theme): set to the neutral Datalayer theme in VS
- * Code's color mode, so nothing in the chat wears another theme's colors.
- * Loaded lazily, as the chat is, after the network bridge.
+ * The shared Datalayer theme store, which the chat reads for its theme (the
+ * store's default is the Matrix theme): set to the `vscode` theme in the
+ * editor's color mode, so the chat and its icons wear the editor's own
+ * colours, as every other view of the extension does. Loaded lazily, as the
+ * chat is, after the network bridge.
  *
  * @param mode - VS Code's color mode.
  */
 function syncSharedTheme(mode: "light" | "dark"): void {
   void import("@datalayer/primer-addons").then(({ useThemeStore }) => {
-    useThemeStore.setState({ theme: "datalayer", colorMode: mode });
+    useThemeStore.setState({ theme: "vscode", colorMode: mode });
   });
 }
 syncSharedTheme(currentTheme);

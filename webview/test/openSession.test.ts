@@ -231,7 +231,7 @@ describe("the chat's protocol on a local session (VS-24)", () => {
 });
 
 describe("the chat in the editor's theme", () => {
-  it("turns off the chat's own theme on every <Chat> the view renders", async () => {
+  it("wears the editor's theme: the chat's own boundary on, the store on vscode", async () => {
     const { readFileSync } = await import("fs");
     const { resolve } = await import("path");
     for (const file of ["App.tsx", "AppChat.tsx"]) {
@@ -239,11 +239,21 @@ describe("the chat in the editor's theme", () => {
         resolve(__dirname, "../agentChat", file),
         "utf8",
       );
-      const chats = source.match(/<(Lazy)?Chat\s/g) ?? [];
-      const disabled =
-        source.match(/disableInternalJupyterTheme=\{true\}/g) ?? [];
-      expect(chats.length).toBeGreaterThan(0);
-      expect(disabled.length).toBe(chats.length);
+      expect(source.match(/<(Lazy)?Chat\s/g)?.length).toBeGreaterThan(0);
+      // The chat's boundary applies the store's theme — the vscode one.
+      expect(source).not.toContain("disableInternalJupyterTheme");
     }
+    const index = readFileSync(
+      resolve(__dirname, "../agentChat/index.tsx"),
+      "utf8",
+    );
+    expect(index).toContain('theme: "vscode"');
+    const theme = readFileSync(
+      resolve(__dirname, "../theme/VSCodeTheme.tsx"),
+      "utf8",
+    );
+    // jupyter-react's box gets the same variables inline.
+    expect(theme).toContain("vscodeThemeStyles[mode]");
+    expect(theme).toContain("theme={vscodeTheme}");
   });
 });

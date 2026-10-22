@@ -13,6 +13,7 @@
 
 import React, { useEffect, type ReactNode } from "react";
 import { JupyterReactTheme } from "@datalayer/jupyter-react";
+import { vscodeTheme, vscodeThemeStyles } from "@datalayer/primer-addons";
 import { PrimerVSCodeTheme } from "./PrimerVSCodeTheme";
 
 /** Props for the VSCodeTheme component. */
@@ -25,13 +26,6 @@ export interface VSCodeThemeProps {
    * layout of its own and the view keeps its height.
    */
   style?: React.CSSProperties;
-  /**
-   * The Primer theme object the subtree's `sx` tokens resolve against. The
-   * default is jupyter-react's JupyterLab theme, whose accents are
-   * JupyterLab's brand blues; a view drawn like the Primer showcase passes
-   * Primer's own theme, whose tokens follow the VS Code mapping.
-   */
-  theme?: Record<string, unknown>;
   children: ReactNode;
 }
 
@@ -45,6 +39,12 @@ const StyledJupyterReactTheme = JupyterReactTheme as unknown as React.FC<
     theme?: Record<string, unknown>;
   }>
 >;
+
+// The `vscode` theme's variables, laid inline on JupyterReactTheme's own box:
+// jupyter-react re-scopes Primer's primitive colours on that box, and only an
+// inline declaration beats them there (as agent-runtimes' chat does).
+const vscodeVars = (mode: "light" | "dark"): React.CSSProperties =>
+  vscodeThemeStyles[mode] as React.CSSProperties;
 
 /**
  * Inject CSS that maps VS Code variables to Jupyter theme variables.
@@ -401,7 +401,6 @@ export function VSCodeTheme({
   colorMode,
   loadJupyterLabCss = true,
   style,
-  theme,
   children,
 }: VSCodeThemeProps) {
   return (
@@ -410,13 +409,13 @@ export function VSCodeTheme({
       <VSCodeCSSInjector colorMode={colorMode} />
 
       {/* Wrap with Primer theme provider for Primer React components */}
-      <PrimerVSCodeTheme colorMode={colorMode}>
+      <PrimerVSCodeTheme colorMode={colorMode} style={style}>
         {/* Wrap with JupyterReactTheme for Jupyter components */}
         <StyledJupyterReactTheme
           colormode={colorMode}
           loadJupyterLabCss={loadJupyterLabCss}
-          {...(style ? { style } : {})}
-          {...(theme ? { theme } : {})}
+          theme={vscodeTheme}
+          style={{ ...vscodeVars(colorMode), ...style }}
         >
           {children}
         </StyledJupyterReactTheme>

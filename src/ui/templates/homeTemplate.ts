@@ -6,8 +6,6 @@
 
 import * as vscode from "vscode";
 
-import { getPrimerVSCodeThemeCSS } from "../styles/primerVSCodeTheme";
-
 /**
  * Generates the HTML content for the *Datalayer* home page webview with Primer theme CSS and CSP.
  * @param webview - Webview instance for generating secure URIs and CSP source.
@@ -55,7 +53,6 @@ export function getHomeHtml(
       height: 100%;
     }
 
-    ${getPrimerVSCodeThemeCSS()}
   </style>
 </head>
 <body>

@@ -10,6 +10,7 @@ All notable changes to the Datalayer VS Code extension are documented here.
 
 ### Fixed
 
+- **Every view wears the editor's theme, the chat included**: the extension's theming is now Datalayer's `vscode` theme variant (from `@datalayer/primer-addons`), whose every token reads the editor's own colour, so a webview follows the colour theme in use and changes with it; the chat no longer shows its own blue
 - **A team run's seat, or a session on Datalayer on no runtime, opened from the Sessions view is readable**: instead of a dead-end sentence, the Datalayer Chat reads the session's record at ai-agents (signed in the extension host; the token never reaches the view) and shows its conversation read-only under the session's header — what you asked, what the agent answered, each tool call in one line — with why it is read-only under it: a seat links to its team run on Datalayer, where the team's verbs are; a paused or ended session says to resume it on Datalayer
 - **A session opened from the Sessions view no longer shows the runtime picker**: the Datalayer Chat draws a slim header instead — _All agents_ to go back, the session's title and state — and talks to the session on its own runtime with its own agent over the session API, a session on Datalayer included while `datalayer.agentChat.enabled` is off; a session on no runtime, a team run's seat, or one on a runtime that is not yours is said in a sentence, never sent to another runtime
 - **The Datalayer Chat follows your VS Code theme**: the chat's own dark theme no longer overrides the editor's colours

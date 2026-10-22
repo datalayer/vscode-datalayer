@@ -31,7 +31,6 @@ import type { ErrorInfo, ReactNode } from "react";
 import type { IAgentRuntimesClient } from "@datalayer/agent-runtimes/lib/client/IAgentRuntimesClient";
 import { AgentRuntimesClientProvider } from "@datalayer/agent-runtimes/lib/client/AgentRuntimesClientContext";
 import { agentRuntimesUrlOf } from "@datalayer/agent-runtimes/lib/portable/sessions";
-import { BaseStyles, theme as primerTheme } from "@primer/react";
 
 import {
   APP_CHAT_WORDS,
@@ -255,9 +254,10 @@ export interface AppProps {
 /**
  * Root application component for the Agent Chat sidebar.
  *
- * Installs the Primer `ThemeProvider` + `BaseStyles` at the top of the
- * tree so Primer components that read theme tokens from React context
- * (e.g. `ActionMenu.Overlay` rendered into a portal) don't throw
+ * Installs Datalayer's `vscode` theme at the top of the tree — the editor's
+ * own colours on every Primer component, portals included — so components
+ * that read theme tokens from React context (e.g. `ActionMenu.Overlay`
+ * rendered into a portal) don't throw
  * "Cannot read properties of undefined (reading 'theme')". The actual
  * state/branching logic lives in `AppInner` (a private function in this
  * module) so the theme wrappers sit at the very root and are never
@@ -270,10 +270,8 @@ export interface AppProps {
  */
 export function App(props: AppProps): React.JSX.Element {
   return (
-    <PrimerVSCodeTheme colorMode={props.theme}>
-      <BaseStyles style={{ height: "100%" }}>
-        <AppInner {...props} />
-      </BaseStyles>
+    <PrimerVSCodeTheme colorMode={props.theme} style={{ height: "100%" }}>
+      <AppInner {...props} />
     </PrimerVSCodeTheme>
   );
 }
@@ -663,8 +661,6 @@ function AppInner(props: AppProps): React.JSX.Element {
           loadJupyterLabCss={false}
           // No box of its own: the chat fills the panel by height.
           style={FILL_THROUGH}
-          // Primer's own theme, as the showcase: VS Code's colours, no brand blue.
-          theme={primerTheme}
         >
           <AgentRuntimesClientProvider client={client}>
             <LazyAppChat
@@ -695,8 +691,6 @@ function AppInner(props: AppProps): React.JSX.Element {
           loadJupyterLabCss={false}
           // No box of its own: the chat fills the panel by height.
           style={FILL_THROUGH}
-          // Primer's own theme, as the showcase: VS Code's colours, no brand blue.
-          theme={primerTheme}
         >
           <AgentRuntimesClientProvider client={client}>
             <LazyChat
@@ -728,7 +722,6 @@ function AppInner(props: AppProps): React.JSX.Element {
               // identifier goes in `runtimeId` for telemetry.
               agentId={runtimeTalk.agentId}
               // The editor's theme, never the chat's own (Matrix).
-              disableInternalJupyterTheme={true}
               // The sidebar is narrow and the indicator at its left edge: its
               // details open below and to the right, never cut by the edge.
               kernelIndicatorPosition="se"

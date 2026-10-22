@@ -13,7 +13,6 @@
 import * as vscode from "vscode";
 
 import { getNonce } from "../../utils/webviewSecurity";
-import { getPrimerVSCodeThemeCSS } from "../styles/primerVSCodeTheme";
 
 /**
  * Generates the HTML content for the Agent Chat webview view, wiring up the
@@ -88,7 +87,6 @@ export function getAgentChatHtml(
       height: 100%;
     }
 
-    ${getPrimerVSCodeThemeCSS()}
   </style>
 </head>
 <body>
