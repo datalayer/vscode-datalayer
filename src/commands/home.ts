@@ -114,6 +114,7 @@ class HomePanel implements vscode.Disposable {
     private readonly services: HomeServices,
   ) {}
 
+  /** Opens the panel, or reveals it when it is open. */
   show(): void {
     if (this.panel) {
       this.panel.reveal();
@@ -164,10 +165,12 @@ class HomePanel implements vscode.Disposable {
     }
   }
 
+  /** Closes the panel, when it is open. */
   dispose(): void {
     this.panel?.dispose();
   }
 
+  /** The panel closed: its listeners, timers and kept commands let go. */
   private closed(): void {
     for (const disposable of this.panelDisposables) {
       disposable.dispose();
@@ -182,10 +185,16 @@ class HomePanel implements vscode.Disposable {
     this.panel = undefined;
   }
 
+  /**
+   * Posts a message to the page, when the panel is open.
+   *
+   * @param message - What the page is told.
+   */
   private post(message: HomeHostMessage): void {
     void this.panel?.webview.postMessage(message);
   }
 
+  /** Tells the page whether VS Code's theme is light or dark. */
   private postTheme(): void {
     const kind = vscode.window.activeColorTheme.kind;
     this.post({
@@ -198,6 +207,12 @@ class HomePanel implements vscode.Disposable {
     });
   }
 
+  /**
+   * Answers the page: its first paint, a sign-in, a section's refresh, a
+   * row's click.
+   *
+   * @param raw - The page's message, before it is read.
+   */
   private async onMessage(raw: unknown): Promise<void> {
     const message = pageMessageOf(raw);
     if (!message) {
@@ -232,7 +247,11 @@ class HomePanel implements vscode.Disposable {
     }
   }
 
-  /** A provider's change, read once its burst is over. */
+  /**
+   * A provider's change, read once its burst is over.
+   *
+   * @param id - The section whose provider changed.
+   */
   private schedule(id: string): void {
     if (!this.panel) {
       return;
@@ -258,6 +277,7 @@ class HomePanel implements vscode.Disposable {
     );
   }
 
+  /** Posts the sign-in and every section, read again. */
   private async postAll(): Promise<void> {
     const { authProvider, sections } = this.services;
     const state = authProvider.getAuthState();
@@ -277,6 +297,14 @@ class HomePanel implements vscode.Disposable {
     });
   }
 
+  /**
+   * Reads a section's tree, keeping the commands its rows run.
+   *
+   * @param id - The section's sidebar view id.
+   *
+   * @returns The section, its error said in it when the tree could not be
+   *   read; nothing when no section has the id.
+   */
   private async readSection(id: string): Promise<HomeSection | undefined> {
     const source = this.services.sections.find(
       (candidate) => candidate.id === id,

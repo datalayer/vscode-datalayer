@@ -14,6 +14,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  type HomeNode,
   iconOf,
   keyedBySection,
   labelOf,
@@ -45,6 +46,24 @@ function providerOf(roots: Element[]): TreeProviderLike<Element> & {
     },
     getTreeItem: (element: Element) => element.item,
   };
+}
+
+/**
+ * The node at an index, failing the test when there is none.
+ *
+ * @param nodes - The nodes read.
+ * @param index - Where the node is expected.
+ *
+ * @returns The node.
+ *
+ * @throws When no node is at the index.
+ */
+function nodeAt(nodes: readonly HomeNode[], index: number): HomeNode {
+  const node = nodes[index];
+  if (!node) {
+    throw new Error(`No node at ${index} of ${nodes.length}.`);
+  }
+  return node;
 }
 
 /** A ThemeIcon's shape. */
@@ -151,9 +170,10 @@ describe("snapshotTree", () => {
   it("reads labels, descriptions and nesting three levels deep", async () => {
     const { nodes } = await snapshotTree(providerOf(spaces));
     expect(nodes).toHaveLength(1);
-    expect(nodes[0].label).toBe("Datalayer (Ada)");
-    expect(nodes[0].expanded).toBe(true);
-    const library = nodes[0].children[0];
+    const root = nodeAt(nodes, 0);
+    expect(root.label).toBe("Datalayer (Ada)");
+    expect(root.expanded).toBe(true);
+    const library = nodeAt(root.children, 0);
     expect(library.key).toBe("0.0");
     expect(library.description).toBe("2 items");
     expect(library.expanded).toBe(false);
@@ -162,7 +182,7 @@ describe("snapshotTree", () => {
       "nested",
     ]);
     // The third level is not read below: it says there is more.
-    const nested = library.children[1];
+    const nested = nodeAt(library.children, 1);
     expect(nested.key).toBe("0.0.1");
     expect(nested.children).toEqual([]);
     expect(nested.more).toBe(true);
@@ -185,8 +205,8 @@ describe("snapshotTree", () => {
       depth: 1,
       maxItems: 10,
     });
-    expect(nodes[0].children).toEqual([]);
-    expect(nodes[0].more).toBe(true);
+    expect(nodeAt(nodes, 0).children).toEqual([]);
+    expect(nodeAt(nodes, 0).more).toBe(true);
   });
 
   it("caps each level and says there is more", async () => {
@@ -202,12 +222,13 @@ describe("snapshotTree", () => {
       depth: 3,
       maxItems: 3,
     });
-    expect(nodes[0].children.map((child) => child.label)).toEqual([
+    const runtimes = nodeAt(nodes, 0);
+    expect(runtimes.children.map((child) => child.label)).toEqual([
       "r0",
       "r1",
       "r2",
     ]);
-    expect(nodes[0].more).toBe(true);
+    expect(runtimes.more).toBe(true);
   });
 
   it("reads an empty or undefined answer as no nodes", async () => {
@@ -224,8 +245,9 @@ describe("snapshotTree", () => {
       "datalayerSpaces",
       await snapshotTree(providerOf(spaces)),
     );
-    expect(keyed.nodes[0].key).toBe("datalayerSpaces:0");
-    expect(keyed.nodes[0].children[0].children[0].key).toBe(
+    const root = nodeAt(keyed.nodes, 0);
+    expect(root.key).toBe("datalayerSpaces:0");
+    expect(nodeAt(nodeAt(root.children, 0).children, 0).key).toBe(
       "datalayerSpaces:0.0.0",
     );
     expect([...keyed.commands.keys()]).toEqual(["datalayerSpaces:0.0.0"]);

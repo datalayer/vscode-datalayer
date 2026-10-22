@@ -673,7 +673,7 @@ export class AgentChatViewProvider implements vscode.WebviewViewProvider {
    * (`session-record`) — the token never reaches the view.
    *
    * @param requestId - The id the view's request is answered under.
-   * @param uid - The session.
+   * @param uid - Which session, as ai-agents names it.
    */
   private async readSessionRecord(
     requestId: string,

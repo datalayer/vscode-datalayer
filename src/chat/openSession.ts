@@ -20,8 +20,8 @@ import type { ProtocolConfig } from "@datalayer/agent-runtimes/lib/types/protoco
 import type { AppChatChoice } from "./appChat";
 import {
   type OpenSessionRequest,
-  STUDIO_ORIGIN,
   sessionTargetOf,
+  STUDIO_ORIGIN,
 } from "./sessionVerbs";
 
 /** The picker's value for a runtime. */
@@ -83,7 +83,7 @@ export const OPEN_SESSION_WORDS = {
 /**
  * A team run's page on Datalayer, where its verbs are.
  *
- * @param executionId - The team run.
+ * @param executionId - The execution the run is, as ai-agents names it.
  *
  * @returns The page's address.
  */
@@ -114,6 +114,9 @@ export interface RecordRead {
  *
  * @returns The value to select (or null), the sentence, and the record to
  *   read when the session is read from it.
+ *
+ * @throws When the session's runtime is found by its target, then missing
+ *   from the picker's runtimes.
  */
 export function openSessionChoice(
   request: OpenSessionRequest,

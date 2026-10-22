@@ -132,7 +132,6 @@ export function candidateLoopPaths(host: DetectHost): string[] {
   return [...new Set(candidates)];
 }
 
-// eslint-disable-next-line no-control-regex
 const ANSI = /\u001b\[[0-9;]*[A-Za-z]/g;
 
 /**

@@ -193,10 +193,10 @@ export function iconOf(iconPath: unknown): string | undefined {
 /**
  * One tree item as a node, without its children.
  *
- * @param item - The tree item.
- * @param key - The node's key.
+ * @param item - The tree item, as its provider draws it.
+ * @param key - Its place in the tree (`0.2.1`).
  *
- * @returns The node, and the command its click runs.
+ * @returns The page's entry for it, and the command its click runs.
  */
 export function nodeOf(
   item: TreeItemLike,
@@ -267,8 +267,7 @@ export async function snapshotTree<T>(
     const children = (await provider.getChildren(element)) ?? [];
     const kept = children.slice(0, options.maxItems);
     const nodes: HomeNode[] = [];
-    for (let index = 0; index < kept.length; index++) {
-      const child = kept[index];
+    for (const [index, child] of kept.entries()) {
       const key = prefix ? `${prefix}.${index}` : `${index}`;
       const item = await provider.getTreeItem(child);
       const { node, command } = nodeOf(item, key);
@@ -310,7 +309,7 @@ export function sectionKey(sectionId: string, key: string): string {
  * Rewrites a snapshot's keys with the section's id.
  *
  * @param sectionId - The sidebar view's id.
- * @param snapshot - The section's snapshot.
+ * @param snapshot - The nodes and commands read from the view's tree.
  *
  * @returns The same snapshot keyed `<sectionId>:<key>`.
  */

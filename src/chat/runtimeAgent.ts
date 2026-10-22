@@ -18,8 +18,8 @@
  * @module chat/runtimeAgent
  */
 
-import type { Protocol } from "@datalayer/agent-runtimes/lib/types/protocol";
 import { agentRuntimesUrlOf } from "@datalayer/agent-runtimes/lib/portable/sessions";
+import type { Protocol } from "@datalayer/agent-runtimes/lib/types/protocol";
 
 /**
  * Protocols the embedded `<Chat>` component accepts. Mirrors the upstream
@@ -50,6 +50,13 @@ export function narrowProtocol(raw: string): Protocol {
   return isProtocol(raw) ? raw : DEFAULT_PROTOCOL;
 }
 
+/**
+ * Whether a string is one of the protocols the chat speaks.
+ *
+ * @param raw - A protocol word, from the settings or from a runtime.
+ *
+ * @returns True when it is one of {@link SUPPORTED_PROTOCOLS}.
+ */
 function isProtocol(raw: string): raw is Protocol {
   return (SUPPORTED_PROTOCOLS as readonly string[]).includes(raw);
 }
@@ -103,7 +110,7 @@ export const RUNTIME_AGENT_WORDS = {
 /**
  * Where a runtime lists its agents.
  *
- * @param ingress - The runtime's ingress.
+ * @param ingress - The address the runtime is reached at.
  *
  * @returns `<agent-runtimes base>/api/v1/agents`.
  */
@@ -181,7 +188,7 @@ export function runtimeAgentOf(
  * Reads a runtime's agents, signed with the runtime's token as the chat's
  * own requests to it are.
  *
- * @param ingress - The runtime's ingress.
+ * @param ingress - The address the runtime is reached at.
  * @param token - The runtime's token; nothing signed when empty.
  * @param fetcher - What asks (the webview's bridged `fetch`).
  * @param signal - Aborts the read.

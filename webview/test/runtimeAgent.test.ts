@@ -13,9 +13,9 @@
  */
 
 import {
-  RUNTIME_AGENT_WORDS,
   fetchRuntimeAgents,
   narrowProtocol,
+  RUNTIME_AGENT_WORDS,
   runtimeAgentOf,
   runtimeAgentsUrl,
 } from "../../src/chat/runtimeAgent";

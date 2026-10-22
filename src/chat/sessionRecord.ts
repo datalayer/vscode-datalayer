@@ -35,7 +35,7 @@ const TOOL_LINE_LIMIT = 120;
  * person opened, its entries oldest first.
  *
  * @param aiAgentsUrl - Where ai-agents answers (its base address).
- * @param uid - The session.
+ * @param uid - Which session, as ai-agents names it.
  *
  * @returns `<aiAgentsUrl>/api/ai-agents/v1/apps/records/sessions/<uid>`.
  */
@@ -43,10 +43,26 @@ export function sessionRecordUrl(aiAgentsUrl: string, uid: string): string {
   return `${aiAgentsUrl.replace(/\/+$/, "")}/api/ai-agents/v1/apps/records/sessions/${encodeURIComponent(uid)}`;
 }
 
+/**
+ * A payload's field read as text.
+ *
+ * @param value - The field, of any shape.
+ *
+ * @returns The field when it is a string, else the empty string.
+ */
 function stringOf(value: unknown): string {
   return typeof value === "string" ? value : "";
 }
 
+/**
+ * Text drawn on one line: its whitespace collapsed, cut with an ellipsis
+ * past the limit.
+ *
+ * @param text - The text, on as many lines as it comes.
+ * @param limit - The most characters drawn, the ellipsis included.
+ *
+ * @returns The text, flat and at most `limit` characters.
+ */
 function oneLine(text: string, limit: number): string {
   const flat = text.replace(/\s+/g, " ").trim();
   return flat.length > limit ? `${flat.slice(0, limit - 1)}…` : flat;
@@ -59,7 +75,7 @@ function oneLine(text: string, limit: number): string {
  * @param payload - The entry's payload.
  * @param summary - The entry's summary.
  *
- * @returns The line.
+ * @returns The tool's name and what it acted on, at most 120 characters.
  */
 function toolLineOf(payload: Record<string, unknown>, summary: string): string {
   const display =
@@ -89,7 +105,7 @@ function toolLineOf(payload: Record<string, unknown>, summary: string): string {
  * `output`'s words are the answer only when the record keeps no turns (else
  * they repeat the turn's). Runs and every other entry are left out.
  *
- * @param record - ai-agents' answer: `{ session, entries }`.
+ * @param record - The answer of ai-agents: `{ session, entries }`.
  *
  * @returns The lines.
  *
