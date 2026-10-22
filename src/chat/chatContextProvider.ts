@@ -27,6 +27,14 @@ export function registerChatContextProvider(
   _context: vscode.ExtensionContext,
 ): vscode.Disposable {
   const disposables: vscode.Disposable[] = [];
+  // A proposed API: an editor that does not expose it gets no context
+  // providers, and activation goes on without an error.
+  const chat = (
+    vscode as unknown as { chat?: { registerChatContextProvider?: unknown } }
+  ).chat;
+  if (typeof chat?.registerChatContextProvider !== "function") {
+    return new vscode.Disposable(() => undefined);
+  }
 
   // Register provider for notebook files
   disposables.push(
