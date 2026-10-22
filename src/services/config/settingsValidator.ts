@@ -156,9 +156,9 @@ export const agentChatSettingsSchema = z.object({
   /** Agent specification ID used when the sidebar provisions a fresh runtime. */
   agentSpecId: z.string().default("codeai/simple"),
   /**
-   * Talk to the person's deployed applications in the sidebar (STUDIO A-18).
-   * Off by default, as the `datalayer.agentChat.enabled` contribution in
-   * `package.json` says.
+   * Talk to the person's deployed applications in the sidebar.
+   * On by default, as the `datalayer.agentChat.enabled` contribution in
+   * `package.json` says; off, nothing is listed and nothing asked.
    */
   enabled: z.boolean().default(APP_CHAT_ENABLED_DEFAULT),
 });

@@ -453,8 +453,8 @@ export class AgentChatViewProvider implements vscode.WebviewViewProvider {
    * stays correct.
    */
   private async runRefreshAgents(): Promise<void> {
-    // `datalayer.agentChat.enabled` (off by default): off, no deployment is
-    // listed, ai-agents is asked nothing and the view never opens `AppChat`.
+    // `datalayer.agentChat.enabled` (on by default): turned off, no deployment
+    // is listed, ai-agents is asked nothing and the view never opens `AppChat`.
     const appChat = getValidatedSettingsGroup("agentChat").enabled;
     if (!this.view || !this.authProvider.isAuthenticated()) {
       this.forgetDeployments();

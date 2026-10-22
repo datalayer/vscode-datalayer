@@ -2021,8 +2021,8 @@
         },
         "datalayer.agentChat.enabled": {
           "type": "boolean",
-          "default": false,
-          "description": "Talk to your deployed applications' agents in the Agent Chat sidebar (preview, off by default). On, the sidebar lists your deployments: those kept always on can be talked to, the others are listed as closed, saying why. Your runtimes' chat is the same either way."
+          "default": true,
+          "description": "Talk to your deployed applications' agents in the Agent Chat sidebar (on by default). On, the sidebar lists your deployments: those kept always on can be talked to, the others are listed as closed, saying why. Off, the sidebar lists no application and asks Datalayer nothing about them. Your runtimes' chat is the same either way."
         },
         "datalayer.autoConnect.strategies": {
           "type": "array",

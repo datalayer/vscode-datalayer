@@ -5,9 +5,9 @@
  */
 
 /**
- * `datalayer.agentChat.enabled` (STUDIO A-18): off, the Agent Chat sidebar
- * lists no deployment, asks ai-agents nothing and never reads the open file;
- * on, it lists the deployments as before. Its default (off) is checked by
+ * `datalayer.agentChat.enabled`: turned off, the Agent Chat sidebar lists
+ * no deployment, asks ai-agents nothing and never reads the open file; on
+ * (the default), it lists the deployments. Its default (on) is checked by
  * the extension tests (`src/test/services/settingsValidator.test.ts`).
  */
 
@@ -17,7 +17,7 @@ const settings = vi.hoisted(() => ({
   agentChat: {
     protocol: "vercel-ai",
     agentSpecId: "codeai/simple",
-    enabled: false,
+    enabled: true,
   },
   services: {
     aiAgentsUrl: "https://ai-agents.test",
@@ -159,10 +159,11 @@ describe("datalayer.agentChat.enabled", () => {
 
   afterEach(() => {
     vi.unstubAllGlobals();
-    settings.agentChat.enabled = false;
+    settings.agentChat.enabled = true;
   });
 
-  it("off, lists no deployment and asks ai-agents nothing", async () => {
+  it("turned off, lists no deployment and asks ai-agents nothing", async () => {
+    settings.agentChat.enabled = false;
     const { provider, sdk } = makeProvider();
     const { view, posted } = makeView();
     provider.resolveWebviewView(view as never);
@@ -178,7 +179,8 @@ describe("datalayer.agentChat.enabled", () => {
     }
   });
 
-  it("off, never reads the open file nor signs for a deployment", async () => {
+  it("turned off, never reads the open file nor signs for a deployment", async () => {
+    settings.agentChat.enabled = false;
     const { provider } = makeProvider();
     const { view, posted, send } = makeView();
     provider.resolveWebviewView(view as never);
@@ -202,8 +204,7 @@ describe("datalayer.agentChat.enabled", () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
-  it("on, lists the deployments; one not kept always on is closed, saying why", async () => {
-    settings.agentChat.enabled = true;
+  it("on by default, lists the deployments; one not kept always on is closed, saying why", async () => {
     const { provider } = makeProvider();
     const { view, posted } = makeView();
     provider.resolveWebviewView(view as never);

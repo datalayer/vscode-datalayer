@@ -109,11 +109,12 @@ export const EDITOR_TEXT_LIMIT = 20_000;
 
 /**
  * The default of `datalayer.agentChat.enabled`: talking to a deployed
- * application's agent is off until it has had one pass against a
- * deployment kept always on. Off, the sidebar lists no deployment, asks
- * ai-agents nothing and never mounts `AppChat`; its runtimes are as before.
+ * application's agent is on (since 0.1.1; 0.1.0 held it off until it had
+ * had one pass against a deployment kept always on). Turned off, the
+ * sidebar lists no deployment, asks ai-agents nothing and never mounts
+ * `AppChat`; its runtimes are as before.
  */
-export const APP_CHAT_ENABLED_DEFAULT = false;
+export const APP_CHAT_ENABLED_DEFAULT = true;
 
 /** The surface, as the sentences and the transcript's lines name it. */
 export const SURFACE = "VS Code";

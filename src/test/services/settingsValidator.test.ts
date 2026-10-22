@@ -71,25 +71,25 @@ suite("Settings Validator - Schemas", () => {
   });
 
   suite("agentChatSettingsSchema", () => {
-    test("talking to deployed applications is off by default", () => {
+    test("talking to deployed applications is on by default", () => {
       const result = agentChatSettingsSchema.safeParse({});
       assert.ok(result.success);
-      assert.strictEqual(result.data.enabled, false);
+      assert.strictEqual(result.data.enabled, true);
       assert.strictEqual(result.data.protocol, "vercel-ai");
       assert.strictEqual(result.data.agentSpecId, "codeai/simple");
     });
 
-    test("the extension contributes it off", () => {
+    test("the extension contributes it on", () => {
       const enabled = vscode.workspace
         .getConfiguration("datalayer.agentChat")
         .inspect<boolean>("enabled");
-      assert.strictEqual(enabled?.defaultValue, false);
+      assert.strictEqual(enabled?.defaultValue, true);
     });
 
-    test("it can be turned on", () => {
-      const result = agentChatSettingsSchema.safeParse({ enabled: true });
+    test("it can be turned off", () => {
+      const result = agentChatSettingsSchema.safeParse({ enabled: false });
       assert.ok(result.success);
-      assert.strictEqual(result.data.enabled, true);
+      assert.strictEqual(result.data.enabled, false);
     });
   });
 
