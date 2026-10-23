@@ -7,6 +7,7 @@ All notable changes to the Datalayer VS Code extension are documented here.
 ### Fixed
 
 - **The chat with your own runtimes names the file a tool ran on**: each notebook or document tool's card says _on analysis.ipynb_ once the call returned, in place of its arguments' summary (with `@datalayer/agent-runtimes` 1.5.85)
+- **The Datalayer: Home page is in the packaged extension**: its bundle (`dist/home.js`) was built by `make dev` but left out of the release build, so the page stayed blank in an installed extension
 - **Spinners turn**: Primer's spinners stood still in the extension's views (the showcase, the chat, the Datalayer page, the dialogs), for want of Primer's motion tokens
 
 ## [0.1.3] - 2026-10-23
