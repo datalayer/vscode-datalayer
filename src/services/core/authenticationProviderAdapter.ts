@@ -28,6 +28,11 @@ export const DATALAYER_AUTH_PROVIDER_LABEL = "Datalayer";
 
 /** What the adapter reads of the extension's sign-in. */
 export interface AuthSource {
+  /**
+   * Who is signed in, if anyone.
+   *
+   * @returns Whether someone is, and their user.
+   */
   getAuthState(): {
     isAuthenticated: boolean;
     user: {
@@ -38,6 +43,11 @@ export interface AuthSource {
     } | null;
   };
   onAuthStateChanged: vscode.Event<unknown>;
+  /**
+   * The signed-in user's token, for the session VS Code holds.
+   *
+   * @returns The token.
+   */
   getToken(): string;
 }
 
