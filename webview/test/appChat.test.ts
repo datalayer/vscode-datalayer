@@ -355,6 +355,11 @@ describe("the transcript's lines (A-06)", () => {
       "Desk → VS Code: host_context",
     );
     expect(toolLineOf("Desk", "x", undefined)).toBe("Desk → its runtime: x");
+    expect(
+      toolLineOf("Desk", "datalayer_insertCell", host, [
+        "datalayer_insertCell",
+      ]),
+    ).toBe("Desk → VS Code: datalayer_insertCell");
   });
 });
 

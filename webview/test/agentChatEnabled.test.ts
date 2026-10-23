@@ -86,6 +86,13 @@ vi.mock("../../src/services/logging/loggers", () => ({
   },
 }));
 
+// The editor's tools: none registered here (the registry loads the
+// notebook and document packages).
+vi.mock("../../src/tools/core/registration", () => ({
+  registeredToolDefinitions: () => [],
+  runRegisteredTool: async () => undefined,
+}));
+
 vi.mock("../../src/ui/templates/agentChatTemplate", () => ({
   getAgentChatHtml: () => "<html></html>",
 }));

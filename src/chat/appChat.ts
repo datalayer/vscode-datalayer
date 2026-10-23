@@ -880,11 +880,14 @@ export function hostContextTool(
 /**
  * The transcript's line of a tool call (A-06): *Desk → Odoo: tool*, the
  * server of the connection the tool is of, *its runtime* for a tool of
- * none, *VS Code* for `host_context` — as ai-agents' Slack thread says it.
+ * none, *VS Code* for `host_context` and the editor's tools — as
+ * ai-agents' Slack thread says it.
  *
  * @param appName - The application's name.
  * @param tool - The tool called.
  * @param host - What its Appspec says, for its connections.
+ * @param editorTools - The tools VS Code runs on its editors
+ *   (`chat/documentTools`): said as *VS Code*'s too.
  *
  * @returns The line, as the transcript says it.
  */
@@ -892,8 +895,9 @@ export function toolLineOf(
   appName: string,
   tool: string,
   host: Pick<AppHost, "connections"> | undefined,
+  editorTools: readonly string[] = [],
 ): string {
-  if (tool === HOST_CONTEXT_TOOL) {
+  if (tool === HOST_CONTEXT_TOOL || editorTools.includes(tool)) {
     return `${appName} → VS Code: ${tool}`;
   }
   const connection = (host?.connections ?? []).find(

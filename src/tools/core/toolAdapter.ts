@@ -94,51 +94,64 @@ export class VSCodeToolAdapter<
     _token: vscode.CancellationToken,
   ): Promise<vscode.LanguageModelToolResult> {
     try {
-      // Build execution context (includes format from VS Code config)
-      const context = await this.buildExecutionContext(options.input);
-
-      // Step 1: Execute the core operation (returns pure typed data)
-      const result = await this.operation.execute(options.input, context);
-
-      // Step 2: Apply formatting (TOON or JSON) based on context.format
-      // This matches the WebviewRunner pattern
-      // Format response using bundled formatResponse from @datalayer/jupyter-react
-      const formattedResult = formatResponse(result, context.format || "toon");
-
-      // Special post-execution for create operations: Open the created document
-      // Local documents: auto-open here
-      // Cloud documents: already opened via openCloudDocument callback
-      if (
-        this.definition.operation === "createNotebook" ||
-        this.definition.operation === "createLexical"
-      ) {
-        const resultWithUri = result as { success?: boolean; uri?: string };
-        if (resultWithUri.success && resultWithUri.uri) {
-          const uri = vscode.Uri.parse(resultWithUri.uri);
-          if (uri.scheme === "file") {
-            // Only auto-open local documents here
-            // Cloud documents are already opened by openCloudDocument callback
-            if (this.definition.operation === "createNotebook") {
-              await this.openNotebook(resultWithUri.uri);
-            } else {
-              // For lexical, use vscode.open
-              await vscode.commands.executeCommand(
-                "vscode.openWith",
-                uri,
-                "datalayer.lexical-editor",
-              );
-            }
-          }
-        }
-      }
-
       // Step 3: Format for VS Code UI (convert to LanguageModelToolResult)
-      return this.formatResult(formattedResult);
+      return this.formatResult(await this.run(options.input));
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : String(error);
       throw new Error(`${this.definition.displayName} failed: ${errorMessage}`);
     }
+  }
+
+  /**
+   * Runs the tool on its input: what Copilot's calls (`invoke`) and the
+   * Datalayer Chat's agents' calls (`runRegisteredTool`) both run.
+   *
+   * @param input - The tool's arguments.
+   *
+   * @returns The operation's result, formatted (TOON or JSON) as the
+   *   `datalayer.tools.responseFormat` setting says.
+   */
+  async run(input: TParams): Promise<unknown> {
+    // Build execution context (includes format from VS Code config)
+    const context = await this.buildExecutionContext(input);
+
+    // Step 1: Execute the core operation (returns pure typed data)
+    const result = await this.operation.execute(input, context);
+
+    // Step 2: Apply formatting (TOON or JSON) based on context.format
+    // This matches the WebviewRunner pattern
+    // Format response using bundled formatResponse from @datalayer/jupyter-react
+    const formattedResult = formatResponse(result, context.format || "toon");
+
+    // Special post-execution for create operations: Open the created document
+    // Local documents: auto-open here
+    // Cloud documents: already opened via openCloudDocument callback
+    if (
+      this.definition.operation === "createNotebook" ||
+      this.definition.operation === "createLexical"
+    ) {
+      const resultWithUri = result as { success?: boolean; uri?: string };
+      if (resultWithUri.success && resultWithUri.uri) {
+        const uri = vscode.Uri.parse(resultWithUri.uri);
+        if (uri.scheme === "file") {
+          // Only auto-open local documents here
+          // Cloud documents are already opened by openCloudDocument callback
+          if (this.definition.operation === "createNotebook") {
+            await this.openNotebook(resultWithUri.uri);
+          } else {
+            // For lexical, use vscode.open
+            await vscode.commands.executeCommand(
+              "vscode.openWith",
+              uri,
+              "datalayer.lexical-editor",
+            );
+          }
+        }
+      }
+    }
+
+    return formattedResult;
   }
 
   /**

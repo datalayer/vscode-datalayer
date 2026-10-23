@@ -1,0 +1,338 @@
+/*
+ * Copyright (c) 2021-2025 Datalayer, Inc.
+ *
+ * MIT License
+ */
+
+/**
+ * The editor's tools of the Agent Chat sidebar, on the extension host's
+ * side: the provider lists the registered notebook and document tools to
+ * the view (`document-tools`) and runs a call of one on the active
+ * Datalayer editor through the same registry Copilot's calls go through
+ * (`document-tool-call` -> `document-tool-result`), naming the editor.
+ */
+
+import { afterEach, describe, expect, it, vi } from "vitest";
+
+const settings = vi.hoisted(() => ({
+  agentChat: {
+    protocol: "vercel-ai",
+    agentSpecId: "codeai/simple",
+    enabled: true,
+  },
+  services: {
+    aiAgentsUrl: "https://ai-agents.test",
+    spacerUrl: "https://spacer.test",
+  },
+}));
+
+const registry = vi.hoisted(() => ({
+  registeredToolDefinitions: () => [
+    {
+      name: "datalayer_insertCell",
+      description: "Insert a cell",
+      parameters: { type: "object", properties: {} },
+      tags: ["cell", "notebook", "insert"],
+      config: { invocationMessage: () => "not posted" },
+    },
+    {
+      name: "datalayer_readBlock",
+      description: "Read a block",
+      parameters: { type: "object", properties: {} },
+      tags: ["lexical", "read", "block"],
+    },
+    {
+      name: "datalayer_createNotebook",
+      description: "Create",
+      parameters: { type: "object", properties: {} },
+      tags: ["notebook", "create"],
+    },
+  ],
+  runRegisteredTool: vi.fn(
+    async (_name: string, _input: unknown): Promise<unknown> =>
+      "cell 2 inserted",
+  ),
+}));
+
+const active = vi.hoisted(() => ({
+  info: undefined as
+    { uri: { toString: () => string }; editorType: string } | undefined,
+}));
+
+vi.mock("vscode", () => ({
+  ColorThemeKind: { Light: 1, Dark: 2, HighContrast: 3 },
+  // The provider holds an emitter for `session-changed`; never fired here.
+  EventEmitter: class {
+    event = () => ({ dispose: () => undefined });
+    fire() {
+      return undefined;
+    }
+    dispose() {
+      return undefined;
+    }
+  },
+  window: {
+    onDidChangeActiveColorTheme: () => ({ dispose: () => undefined }),
+    activeTextEditor: {
+      document: {
+        uri: "file:///work/secret.py",
+        languageId: "python",
+        getText: () => "token = 'x'",
+      },
+      selection: { isEmpty: true },
+    },
+  },
+  workspace: {
+    onDidChangeConfiguration: () => ({ dispose: () => undefined }),
+    asRelativePath: () => "secret.py",
+  },
+}));
+
+vi.mock("../../src/services/config/settingsValidator", () => ({
+  getValidatedSettingsGroup: (group: "agentChat" | "services") =>
+    settings[group],
+}));
+
+vi.mock("../../src/bridges/agentChatBridge", () => ({
+  AgentChatBridgeHandler: class {
+    attach() {
+      return { dispose: () => undefined };
+    }
+  },
+}));
+
+vi.mock("../../src/bridges/agentChatNetworkBridge", () => ({
+  AgentChatNetworkBridge: class {
+    attach() {
+      return { dispose: () => undefined };
+    }
+  },
+}));
+
+vi.mock("../../src/services/logging/loggers", () => ({
+  ServiceLoggers: {
+    main: {
+      debug: () => undefined,
+      info: () => undefined,
+      warn: () => undefined,
+      error: () => undefined,
+    },
+  },
+}));
+
+// The registry Copilot's tools are registered in, and the active editor.
+vi.mock("../../src/tools/core/registration", () => registry);
+
+vi.mock("../../src/utils/activeDocument", () => ({
+  getActiveDocumentInfo: () => active.info,
+}));
+
+vi.mock("../../src/ui/templates/agentChatTemplate", () => ({
+  getAgentChatHtml: () => "<html></html>",
+}));
+
+import { AgentChatViewProvider } from "../../src/providers/agentChatViewProvider";
+
+/** A sidebar view whose posted messages are kept. */
+function makeView() {
+  const posted: Array<Record<string, unknown>> = [];
+  let receive: (message: unknown) => void = () => undefined;
+  const view = {
+    visible: false,
+    webview: {
+      options: {},
+      html: "",
+      postMessage: async (message: Record<string, unknown>) => {
+        posted.push(message);
+        return true;
+      },
+      onDidReceiveMessage: (listener: (message: unknown) => void) => {
+        receive = listener;
+        return { dispose: () => undefined };
+      },
+    },
+    onDidChangeVisibility: () => ({ dispose: () => undefined }),
+    onDidDispose: () => ({ dispose: () => undefined }),
+  };
+  return { view, posted, send: (message: unknown) => receive(message) };
+}
+
+/** A provider signed in, with no runtime. */
+function makeProvider() {
+  const auth = {
+    isAuthenticated: () => true,
+    getToken: () => "person-token",
+    getAuthState: () => ({ isAuthenticated: true, user: null }),
+    onAuthStateChanged: () => ({ dispose: () => undefined }),
+  };
+  const sdk = { listRuntimes: vi.fn(async () => []) };
+  const provider = new AgentChatViewProvider(
+    { extensionMode: 3, extensionUri: "file:///ext" } as never,
+    auth as never,
+    sdk as never,
+  );
+  return { provider, sdk };
+}
+
+/** Lets the refreshes started by `resolveWebviewView` settle. */
+const settle = () => new Promise((done) => setTimeout(done, 0));
+
+/** A provider resolved on a view that said it listens. */
+async function opened() {
+  const { provider } = makeProvider();
+  const made = makeView();
+  provider.resolveWebviewView(made.view as never);
+  made.send({ type: "ready" });
+  await settle();
+  await settle();
+  return made;
+}
+
+const notebook = (uri: string) => ({
+  uri: { toString: () => uri },
+  editorType: "datalayer-notebook",
+});
+
+describe("the editor's tools of the chat", () => {
+  afterEach(() => {
+    active.info = undefined;
+    registry.runRegisteredTool.mockClear();
+  });
+
+  it("lists the registered notebook and document tools, serializable", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => ({
+        ok: true,
+        json: async () => ({ deployments: [] }),
+      })),
+    );
+    const { posted } = await opened();
+    vi.unstubAllGlobals();
+    const listed = posted.find((m) => m.type === "document-tools");
+    expect(listed?.tools).toEqual([
+      {
+        name: "datalayer_insertCell",
+        description: "Insert a cell",
+        parameters: { type: "object", properties: {} },
+        writes: true,
+        target: "notebook",
+      },
+      {
+        name: "datalayer_readBlock",
+        description: "Read a block",
+        parameters: { type: "object", properties: {} },
+        writes: false,
+        target: "lexical",
+      },
+    ]);
+  });
+
+  it("runs a call on the active Datalayer notebook and names it", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => ({
+        ok: true,
+        json: async () => ({ deployments: [] }),
+      })),
+    );
+    const { posted, send } = await opened();
+    vi.unstubAllGlobals();
+    active.info = notebook("file:///work/My%20Analysis.ipynb");
+    send({
+      type: "document-tool-call",
+      requestId: "t1",
+      name: "datalayer_insertCell",
+      args: { source: "1+1", cells: '[{"a":1}]' },
+    });
+    await settle();
+    await settle();
+    expect(registry.runRegisteredTool).toHaveBeenCalledWith(
+      "datalayer_insertCell",
+      { source: "1+1", cells: [{ a: 1 }] },
+    );
+    expect(posted.find((m) => m.type === "document-tool-result")).toEqual({
+      type: "document-tool-result",
+      requestId: "t1",
+      outcome: {
+        editor: {
+          kind: "notebook",
+          name: "My Analysis.ipynb",
+          uri: "file:///work/My%20Analysis.ipynb",
+        },
+        result: "cell 2 inserted",
+      },
+    });
+  });
+
+  it("refuses, saying why, with no Datalayer editor of its kind active", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => ({
+        ok: true,
+        json: async () => ({ deployments: [] }),
+      })),
+    );
+    const { posted, send } = await opened();
+    vi.unstubAllGlobals();
+    active.info = notebook("file:///work/a.ipynb");
+    send({
+      type: "document-tool-call",
+      requestId: "t2",
+      name: "datalayer_readBlock",
+      args: {},
+    });
+    await settle();
+    await settle();
+    send({
+      type: "document-tool-call",
+      requestId: "t3",
+      name: "datalayer_createNotebook",
+      args: {},
+    });
+    await settle();
+    await settle();
+    expect(registry.runRegisteredTool).not.toHaveBeenCalled();
+    const results = posted.filter((m) => m.type === "document-tool-result");
+    expect(results.find((m) => m.requestId === "t2")?.outcome).toEqual({
+      error: expect.stringContaining("No Datalayer document (.dlex)"),
+    });
+    expect(results.find((m) => m.requestId === "t3")?.outcome).toEqual({
+      error: "datalayer_createNotebook is not a tool of VS Code's editors.",
+    });
+  });
+
+  it("says a tool's failure in the outcome", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => ({
+        ok: true,
+        json: async () => ({ deployments: [] }),
+      })),
+    );
+    const { posted, send } = await opened();
+    vi.unstubAllGlobals();
+    active.info = notebook("file:///work/a.ipynb");
+    registry.runRegisteredTool.mockRejectedValueOnce(
+      new Error("Tool execution timeout (30s): insertCell"),
+    );
+    send({
+      type: "document-tool-call",
+      requestId: "t4",
+      name: "datalayer_insertCell",
+      args: {},
+    });
+    await settle();
+    await settle();
+    expect(
+      posted.find((m) => m.type === "document-tool-result")?.outcome,
+    ).toEqual({
+      editor: {
+        kind: "notebook",
+        name: "a.ipynb",
+        uri: "file:///work/a.ipynb",
+      },
+      error: "Tool execution timeout (30s): insertCell",
+    });
+  });
+});

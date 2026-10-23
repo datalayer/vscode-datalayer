@@ -39,6 +39,16 @@
  * asks for it (`editor-context-request`), which it does when the
  * application's agent calls `host_context` and its Appspec lets it.
  *
+ * ## The editor's tools (`chat/documentTools`)
+ *
+ * On `ready` (and each refresh) the provider posts `document-tools`: the
+ * tools registered for Copilot that work on a Datalayer notebook or
+ * document. The view gives them to every chat's agent as frontend tools;
+ * a call comes back as `document-tool-call`, which the provider runs on the
+ * active Datalayer editor through the same registry (`runRegisteredTool`)
+ * and answers with `document-tool-result`: the editor it ran on and the
+ * result, or why not.
+ *
  * @module providers/agentChatViewProvider
  */
 
@@ -61,6 +71,15 @@ import {
   signsRequest,
   withUserToken,
 } from "../chat/appChat";
+import {
+  type ActiveEditor,
+  DOCUMENT_TOOL_WORDS,
+  documentToolArgsOf,
+  type DocumentToolOutcome,
+  documentToolRefusal,
+  documentToolSpecsOf,
+  editorNameOf,
+} from "../chat/documentTools";
 import { recordTranscriptOf, sessionRecordUrl } from "../chat/sessionRecord";
 import type { OpenSessionRequest } from "../chat/sessionVerbs";
 import {
@@ -73,6 +92,7 @@ import type { LocalApprovalSource } from "../services/localRuntime/localApproval
 import type { LocalRuntimeService } from "../services/localRuntime/localRuntimeService";
 import { ServiceLoggers } from "../services/logging/loggers";
 import { getAgentChatHtml } from "../ui/templates/agentChatTemplate";
+import { getActiveDocumentInfo } from "../utils/activeDocument";
 
 /**
  * Minimal shape of a runtime handle the webview needs to render its agent
@@ -391,11 +411,15 @@ export class AgentChatViewProvider implements vscode.WebviewViewProvider {
       return;
     }
     const type = (raw as { type?: unknown }).type;
+    if (await this.handleDocumentToolMessage(type, raw)) {
+      return;
+    }
     if (type === "ready") {
       // The page listens: the state it starts from (again on a reload).
       this.pageReady = true;
       this.postChatSettings(getValidatedSettingsGroup("agentChat"));
       this.postAuthState();
+      void this.postDocumentTools();
       await this.refreshAgents();
       if (this.pendingOpen) {
         const request = this.pendingOpen;
@@ -403,6 +427,7 @@ export class AgentChatViewProvider implements vscode.WebviewViewProvider {
         void this.view?.webview.postMessage({ type: "open-session", request });
       }
     } else if (type === "refresh-agents") {
+      void this.postDocumentTools();
       await this.refreshAgents();
     } else if (type === "create-agent") {
       // Always run the spec picker — that's what users expect when they
@@ -717,6 +742,123 @@ export class AgentChatViewProvider implements vscode.WebviewViewProvider {
       lines,
       error,
     });
+  }
+
+  /**
+   * Answers the page's messages of the editor's tools: `document-tools-request`
+   * with the list, `document-tool-call` with its `document-tool-result`.
+   *
+   * @param type - What the page says the message is (`document-tool-call`, …).
+   * @param raw - The message, as the page posted it.
+   *
+   * @returns Whether it was one of theirs.
+   */
+  private async handleDocumentToolMessage(
+    type: unknown,
+    raw: object,
+  ): Promise<boolean> {
+    if (type === "document-tools-request") {
+      await this.postDocumentTools();
+      return true;
+    }
+    if (type !== "document-tool-call") {
+      return false;
+    }
+    const { requestId, name, args } = raw as {
+      requestId?: unknown;
+      name?: unknown;
+      args?: unknown;
+    };
+    if (typeof requestId === "string" && typeof name === "string") {
+      const outcome = await this.runDocumentTool(
+        name,
+        args && typeof args === "object" && !Array.isArray(args)
+          ? (args as Record<string, unknown>)
+          : {},
+      );
+      void this.view?.webview.postMessage({
+        type: "document-tool-result",
+        requestId,
+        outcome,
+      });
+    }
+    return true;
+  }
+
+  /**
+   * Posts the notebook and document tools the chat's agents are given
+   * (`chat/documentTools`): the tools registered for Copilot that work on
+   * a Datalayer notebook or document. The registry is loaded lazily, as
+   * the extension's activation loads it.
+   */
+  private async postDocumentTools(): Promise<void> {
+    try {
+      const { registeredToolDefinitions } =
+        await import("../tools/core/registration");
+      void this.view?.webview.postMessage({
+        type: "document-tools",
+        tools: documentToolSpecsOf(registeredToolDefinitions()),
+      });
+    } catch (failure) {
+      ServiceLoggers.main.warn("[AgentChat] editor tools not listed", {
+        error: failure instanceof Error ? failure.message : String(failure),
+      });
+    }
+  }
+
+  /**
+   * Runs a tool a chat's agent called on the active Datalayer notebook or
+   * document, as Copilot's calls run it, and says which editor it ran on.
+   * Never throws: what failed is said in the outcome, which goes back to
+   * the run.
+   *
+   * @param name - The tool called.
+   * @param args - Its arguments, as the model sent them.
+   *
+   * @returns The outcome: the editor and the result, or why not.
+   */
+  private async runDocumentTool(
+    name: string,
+    args: Record<string, unknown>,
+  ): Promise<DocumentToolOutcome> {
+    const { registeredToolDefinitions, runRegisteredTool } =
+      await import("../tools/core/registration");
+    const spec = documentToolSpecsOf(registeredToolDefinitions()).find(
+      (tool) => tool.name === name,
+    );
+    if (!spec) {
+      return { error: DOCUMENT_TOOL_WORDS.unknown(name) };
+    }
+    const info = getActiveDocumentInfo();
+    const active: ActiveEditor | undefined = info
+      ? {
+          kind:
+            info.editorType === "datalayer-notebook"
+              ? "notebook"
+              : info.editorType === "datalayer-lexical"
+                ? "lexical"
+                : "other",
+          uri: info.uri.toString(),
+          name: editorNameOf(info.uri.toString()),
+        }
+      : undefined;
+    const refused = documentToolRefusal(spec.target, active);
+    if (refused || !active || active.kind === "other") {
+      return { error: refused };
+    }
+    const editor = { kind: active.kind, name: active.name, uri: active.uri };
+    try {
+      const result = await runRegisteredTool(name, documentToolArgsOf(args));
+      return { editor, result };
+    } catch (failure) {
+      const error =
+        failure instanceof Error ? failure.message : String(failure);
+      ServiceLoggers.main.warn("[AgentChat] document tool failed", {
+        name,
+        error,
+      });
+      return { editor, error };
+    }
   }
 
   /**

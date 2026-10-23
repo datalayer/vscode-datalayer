@@ -34,6 +34,7 @@ import { agentRuntimesUrlOf } from "@datalayer/agent-runtimes/lib/portable/sessi
 
 import {
   APP_CHAT_WORDS,
+  type AppChatApproval,
   type AppChatChoice,
   type EditorContext,
   noneTalkableSentence,
@@ -41,6 +42,7 @@ import {
   talkableKeyOf,
 } from "../../src/chat/appChat";
 import type { ApprovalRaised } from "../../src/chat/attention";
+import type { DocumentToolSpec } from "../../src/chat/documentTools";
 import {
   openSessionChoice,
   type RecordRead,
@@ -56,6 +58,7 @@ import {
 } from "../../src/chat/runtimeAgent";
 import type { OpenSessionRequest } from "../../src/chat/sessionVerbs";
 import { PrimerVSCodeTheme } from "../theme/PrimerVSCodeTheme";
+import { type CallDocumentTool, useDocumentTools } from "./documentTools";
 import { SessionTranscript } from "./SessionTranscript";
 
 import {
@@ -223,6 +226,10 @@ export interface AppProps {
   localApprovals: Record<string, ApprovalRaised[]>;
   /** Reads the editor's open file, through the extension host. */
   readEditor: () => Promise<EditorContext | undefined>;
+  /** The notebook and document tools the extension host lists. */
+  documentTools: DocumentToolSpec[];
+  /** Runs one on the active Datalayer editor, through the extension host. */
+  callDocumentTool: CallDocumentTool;
   /** Asks the extension host to sign the person for a deployment (D-21). */
   signUser: (deploymentUid: string) => Promise<void>;
   /** Asks the extension host for a session's conversation from its record. */
@@ -284,6 +291,8 @@ function AppInner(props: AppProps): React.JSX.Element {
     openRequest,
     localApprovals,
     readEditor,
+    documentTools,
+    callDocumentTool,
     signUser,
     readSessionRecord,
     onRefreshAgents,
@@ -593,8 +602,23 @@ function AppInner(props: AppProps): React.JSX.Element {
       });
     }
   }, [localPending]);
+  // The notebook and document tools of a runtime's agent: the frontend
+  // tools of its runs, a write asked in the banner first (no Appspec here).
+  const runtimeDocumentTools = useDocumentTools(
+    documentTools,
+    callDocumentTool,
+    runtimeTalk?.agentId ?? "",
+  );
+  const decideDocumentTool = runtimeDocumentTools.decide;
+  const runtimePending = useMemo<AppChatApproval[]>(
+    () => [...localPending, ...runtimeDocumentTools.asks],
+    [localPending, runtimeDocumentTools.asks],
+  );
   const decideLocal = useCallback(
     (approvalId: string, approved: boolean): void => {
+      if (decideDocumentTool(approvalId, approved)) {
+        return;
+      }
       if (!selectedAgent) {
         return;
       }
@@ -605,7 +629,7 @@ function AppInner(props: AppProps): React.JSX.Element {
         approved,
       });
     },
-    [selectedAgent],
+    [selectedAgent, decideDocumentTool],
   );
 
   // Not authenticated — show sign-in prompt.
@@ -650,6 +674,8 @@ function AppInner(props: AppProps): React.JSX.Element {
             services={services}
             user={auth.user}
             readEditor={readEditor}
+            documentTools={documentTools}
+            callDocumentTool={callDocumentTool}
             signUser={signUser}
           />
         </AgentRuntimesClientProvider>
@@ -703,6 +729,8 @@ function AppInner(props: AppProps): React.JSX.Element {
             autoConnect={true}
             streaming={true}
             clearOnMount={true}
+            // The active Datalayer notebook's or document's tools.
+            frontendTools={runtimeDocumentTools.frontendTools}
             // What the editor draws of the session: a terminal's
             // output in the Terminal panel, the turn in the status bar.
             onToolCallUpdate={({ display }) => {
@@ -711,7 +739,7 @@ function AppInner(props: AppProps): React.JSX.Element {
             onToolCallComplete={({ toolName, result }) => {
               reportToolResult(toolName, result);
             }}
-            pendingApprovals={localPending}
+            pendingApprovals={runtimePending}
             onApproveApproval={(approvalId) => decideLocal(approvalId, true)}
             onRejectApproval={(approvalId) => decideLocal(approvalId, false)}
             onMessageSent={() => {

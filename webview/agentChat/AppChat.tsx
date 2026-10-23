@@ -25,7 +25,10 @@
  * agent is given `host_context`, answered with the editor's open file as
  * `page`. Its approvals (R-05) are ai-agents' Tool Approvals, polled while
  * the chat is open and answered by `<Chat>`'s approval banner; its tool
- * calls are listed as the transcript's lines (A-06) under the chat.
+ * calls are listed as the transcript's lines (A-06) under the chat. The
+ * active Datalayer notebook's or document's tools are its agent's too
+ * (`./documentTools`), decided by its rules: a call asked of the person is
+ * shown in the same banner and answered here.
  *
  * @module webview/agentChat/AppChat
  */
@@ -66,6 +69,8 @@ import {
   decisionOutcome,
   stillPending,
 } from "../../src/chat/attention";
+import type { DocumentToolSpec } from "../../src/chat/documentTools";
+import { type CallDocumentTool, useDocumentTools } from "./documentTools";
 import {
   answerTextOf,
   ensureDisplayRenderers,
@@ -93,6 +98,10 @@ export interface AppChatProps {
   user: { handle: string; email: string } | null;
   /** Reads the editor's open file, through the extension host. */
   readEditor: () => Promise<EditorContext | undefined>;
+  /** The notebook and document tools the extension host lists. */
+  documentTools: DocumentToolSpec[];
+  /** Runs one on the active Datalayer editor, through the extension host. */
+  callDocumentTool: CallDocumentTool;
   /**
    * A session of the application opened from the Sessions view (VS-24):
    * its conversation is read by uid from the kept runtime.
@@ -135,7 +144,16 @@ async function refusalOf(response: Response, what: string): Promise<string> {
  * @returns React element.
  */
 export default function AppChat(props: AppChatProps): React.JSX.Element {
-  const { handle, services, user, readEditor, signUser, openUid } = props;
+  const {
+    handle,
+    services,
+    user,
+    readEditor,
+    documentTools,
+    callDocumentTool,
+    signUser,
+    openUid,
+  } = props;
   const [host, setHost] = useState<AppHost | null>(null);
   const [problem, setProblem] = useState<string | null>(null);
   const [approvals, setApprovals] = useState<AppChatApproval[]>([]);
@@ -348,6 +366,24 @@ export default function AppChat(props: AppChatProps): React.JSX.Element {
     };
   }, [chatOpen, services.aiAgentsUrl, readApprovals]);
 
+  // The active Datalayer notebook's or document's tools, decided by the
+  // application's rules (the runtime hands their calls back to the view).
+  const editorTools = useDocumentTools(
+    documentTools,
+    callDocumentTool,
+    handle.agentId,
+    host && !revisionRefusal(handle, host) ? host : undefined,
+  );
+  const decideEditorTool = editorTools.decide;
+  const pending = useMemo(
+    () => [...approvals, ...editorTools.asks],
+    [approvals, editorTools.asks],
+  );
+  const documentToolNames = useMemo(
+    () => documentTools.map((tool) => tool.name),
+    [documentTools],
+  );
+
   // The turn's phase, for the status bar: waiting for the person while an
   // approval is pending, answering while a turn runs, idle otherwise.
   useEffect(() => {
@@ -355,10 +391,10 @@ export default function AppChat(props: AppChatProps): React.JSX.Element {
       return;
     }
     reportSessionState({
-      turn: approvals.length > 0 ? "waiting" : running ? "running" : "idle",
+      turn: pending.length > 0 ? "waiting" : running ? "running" : "idle",
       ...(lastAnswer ? { lastAnswer } : {}),
     });
-  }, [chatOpen, approvals.length, running, lastAnswer]);
+  }, [chatOpen, pending.length, running, lastAnswer]);
 
   // What VS Code passes as the host (D-10): only the version deployed's
   // terms, never a guess.
@@ -368,8 +404,8 @@ export default function AppChat(props: AppChatProps): React.JSX.Element {
       return [];
     }
     const tool = hostContextTool(host, readEditor, user);
-    return tool ? [tool] : [];
-  }, [host, handle, readEditor, user]);
+    return [...(tool ? [tool] : []), ...editorTools.frontendTools];
+  }, [host, handle, readEditor, user, editorTools.frontendTools]);
 
   if (problem) {
     return (
@@ -431,7 +467,7 @@ export default function AppChat(props: AppChatProps): React.JSX.Element {
           onToolCallStart={({ toolName }) => {
             setLines((said) => [
               ...said,
-              toolLineOf(handle.name, toolName, host),
+              toolLineOf(handle.name, toolName, host, documentToolNames),
             ]);
           }}
           // What the editor draws of the session: a terminal's output in
@@ -454,9 +490,17 @@ export default function AppChat(props: AppChatProps): React.JSX.Element {
             }
             reportSessionChanged();
           }}
-          pendingApprovals={approvals}
-          onApproveApproval={(approvalId) => decide(approvalId, true)}
-          onRejectApproval={(approvalId) => decide(approvalId, false)}
+          pendingApprovals={pending}
+          // A call of the editor's tools asked here is answered here; any
+          // other approval is ai-agents'.
+          onApproveApproval={async (approvalId) =>
+            decideEditorTool(approvalId, true) ? true : decide(approvalId, true)
+          }
+          onRejectApproval={async (approvalId) =>
+            decideEditorTool(approvalId, false)
+              ? true
+              : decide(approvalId, false)
+          }
         />
       </div>
       <details style={transcriptStyle}>

@@ -21,6 +21,9 @@
  * operations (cells, blocks) run in the webview, reached through
  * `BridgeExecutor`.
  *
+ * The same registered tools are what the agents of the Datalayer Chat
+ * sidebar call as frontend tools (`runRegisteredTool`, `chat/documentTools`).
+ *
  * @module tools/vscode/registration
  */
 
@@ -96,6 +99,48 @@ export async function getCombinedOperations(): Promise<CombinedOperations> {
     // Unified code execution (overrides package executeCode operations)
     executeCode: executeCodeOperation,
   };
+}
+
+/** A tool registered, with the adapter that runs it. */
+interface RegisteredTool {
+  /** Its definition. */
+  definition: ToolDefinition;
+  /** What runs it (the one Copilot's calls go through). */
+  adapter: VSCodeToolAdapter<unknown>;
+}
+
+/** The tools registered, by name: what the Datalayer Chat's agents call too. */
+const registered = new Map<string, RegisteredTool>();
+
+/**
+ * The definitions of the tools registered, in their order.
+ *
+ * @returns The definitions; empty before `registerVSCodeTools` ran.
+ */
+export function registeredToolDefinitions(): ToolDefinition[] {
+  return [...registered.values()].map(({ definition }) => definition);
+}
+
+/**
+ * Runs a registered tool as Copilot's calls run it (`VSCodeToolAdapter.run`):
+ * the Datalayer Chat's agents call the same tools, on the same editors.
+ *
+ * @param name - The tool's name (`datalayer_insertCell`).
+ * @param input - Its arguments.
+ *
+ * @returns Its result, formatted as the `datalayer.tools.responseFormat` setting says.
+ *
+ * @throws Error when no tool of that name is registered.
+ */
+export async function runRegisteredTool(
+  name: string,
+  input: unknown,
+): Promise<unknown> {
+  const tool = registered.get(name);
+  if (!tool) {
+    throw new Error(`No tool ${name} is registered.`);
+  }
+  return tool.adapter.run(input);
 }
 
 /**
@@ -202,6 +247,7 @@ export async function registerVSCodeTools(
       context.subscriptions.push(
         vscode.lm.registerTool(definition.name, adapter),
       );
+      registered.set(definition.name, { definition, adapter });
     } catch (error) {
       console.error(
         `[Datalayer Tools] Failed to register tool ${definition.name}:`,
@@ -229,5 +275,6 @@ export function registerSingleTool(
   const adapter = new VSCodeToolAdapter(definition, operation);
   const disposable = vscode.lm.registerTool(definition.name, adapter);
   context.subscriptions.push(disposable);
+  registered.set(definition.name, { definition, adapter });
   return disposable;
 }

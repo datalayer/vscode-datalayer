@@ -2378,6 +2378,7 @@ All code should include proper JSDoc comments for TypeScript interfaces, classes
 - **Development Guide**: This document
 - **Testing Guide**: [TESTING.md](./TESTING.md)
 - **Contributing**: [CONTRIBUTING.md](./CONTRIBUTING.md)
+- **Editor tools of the Datalayer Chat's agents**: [AGENT_CHAT_TOOLS.md](./AGENT_CHAT_TOOLS.md)
 - **Release Process**: [RELEASE.md](./RELEASE.md)
 - **API Documentation**: [https://vscode.netlify.app](https://vscode.netlify.app)
 

@@ -19,6 +19,11 @@ import { createRoot } from "react-dom/client";
 
 import type { AppChatChoice, EditorContext } from "../../src/chat/appChat";
 import type { ApprovalRaised } from "../../src/chat/attention";
+import {
+  DOCUMENT_TOOL_WORDS,
+  type DocumentToolOutcome,
+  type DocumentToolSpec,
+} from "../../src/chat/documentTools";
 import type { TranscriptLine } from "../../src/chat/sessionRecord";
 import type { OpenSessionRequest } from "../../src/chat/sessionVerbs";
 import {
@@ -103,6 +108,39 @@ const editorRequests = new Map<
   (context: EditorContext | undefined) => void
 >();
 let editorRequestCount = 0;
+// The notebook and document tools the host lists (chat/documentTools).
+let currentDocumentTools: DocumentToolSpec[] = [];
+// The view's calls of those tools, by id.
+const toolCalls = new Map<string, (outcome: DocumentToolOutcome) => void>();
+/** How long a tool's call is waited on (running a cell can take a while). */
+const TOOL_CALL_TIMEOUT_MS = 120_000;
+
+/**
+ * Asks the extension host to run a notebook or document tool on the active
+ * Datalayer editor, as Copilot's calls run it.
+ *
+ * @param name - The tool called.
+ * @param args - Its arguments.
+ *
+ * @returns The outcome: the editor it ran on and the result, or why not.
+ */
+function requestDocumentTool(
+  name: string,
+  args: Record<string, unknown>,
+): Promise<DocumentToolOutcome> {
+  editorRequestCount += 1;
+  const requestId = `tool-${editorRequestCount}`;
+  return new Promise((resolve) => {
+    toolCalls.set(requestId, resolve);
+    vscode.postMessage({ type: "document-tool-call", requestId, name, args });
+    setTimeout(() => {
+      if (toolCalls.delete(requestId)) {
+        resolve({ error: DOCUMENT_TOOL_WORDS.notAnswered });
+      }
+    }, TOOL_CALL_TIMEOUT_MS);
+  });
+}
+
 // The view's requests to sign the person for a deployment (D-21), by id.
 const signRequests = new Map<
   string,
@@ -246,6 +284,8 @@ function render(): void {
       openRequest={currentOpenRequest}
       localApprovals={currentLocalApprovals}
       readEditor={requestEditorContext}
+      documentTools={currentDocumentTools}
+      callDocumentTool={requestDocumentTool}
       signUser={requestSignedUser}
       readSessionRecord={requestSessionRecord}
       onRefreshAgents={handleRefreshAgents}
@@ -364,6 +404,30 @@ window.addEventListener("message", (event) => {
         } else {
           pending.resolve(msg.lines);
         }
+      }
+      break;
+    }
+    case "document-tools": {
+      const msg = data as { tools?: unknown };
+      const listed = Array.isArray(msg.tools)
+        ? (msg.tools as DocumentToolSpec[])
+        : [];
+      // The same list, posted again on each refresh, keeps the chat's tools.
+      if (JSON.stringify(listed) !== JSON.stringify(currentDocumentTools)) {
+        currentDocumentTools = listed;
+        render();
+      }
+      break;
+    }
+    case "document-tool-result": {
+      const msg = data as {
+        requestId: string;
+        outcome: DocumentToolOutcome | null;
+      };
+      const resolve = toolCalls.get(msg.requestId);
+      if (resolve) {
+        toolCalls.delete(msg.requestId);
+        resolve(msg.outcome ?? { error: DOCUMENT_TOOL_WORDS.notAnswered });
       }
       break;
     }
