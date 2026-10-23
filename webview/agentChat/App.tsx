@@ -935,6 +935,15 @@ function AppInner(props: AppProps): React.JSX.Element {
     >
       {/* Agent picker bar */}
       <div style={pickerBarStyle}>
+        <IconButton
+          icon={PlusIcon}
+          size="small"
+          aria-label="Create an agent"
+          // At the sidebar's left edge: its tooltip opens to the right.
+          tooltipDirection="se"
+          onClick={onCreateRuntime}
+          style={{ alignSelf: "center", flexShrink: 0 }}
+        />
         <select
           value={selected ?? ""}
           onChange={handleAgentChange}
@@ -974,14 +983,6 @@ function AppInner(props: AppProps): React.JSX.Element {
             </optgroup>
           ) : null}
         </select>
-        <IconButton
-          icon={PlusIcon}
-          size="small"
-          aria-label="Create an agent"
-          tooltipDirection="s"
-          onClick={onCreateRuntime}
-          style={{ alignSelf: "center", flexShrink: 0 }}
-        />
         <button
           type="button"
           style={refreshButtonStyle}
