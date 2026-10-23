@@ -231,3 +231,86 @@ export function sessionProtocol(
   };
   return protocol;
 }
+
+/**
+ * An agent opened in the Datalayer Chat from the Agents view (a click on
+ * its runtime, on the sidebar or the Home page): the runtime the chat's
+ * picker selects.
+ */
+export interface OpenAgentRequest {
+  /** The runtime's uid. */
+  uid: string;
+  /** The runtime's name, as the picker keys it. */
+  runtimeName: string;
+  /** The name the person gave it, said when it is not listed. */
+  givenName: string;
+}
+
+/** The command the chat's provider registers to open an agent; the Agents view's click runs it. */
+export const OPEN_AGENT_COMMAND = "datalayer.internal.agentChat.openAgent";
+
+/** What the chat says of an agent opened from the Agents view. */
+export const OPEN_AGENT_WORDS = {
+  /**
+   * The agent is not in the chat's picker (still starting, or a deployed
+   * application's runtime, talked to as its application).
+   *
+   * @param name - The agent's name.
+   *
+   * @returns The sentence.
+   */
+  notListed: (name: string): string =>
+    `${name || "This agent"} is not listed in the chat: it may still be starting (refresh), or it runs a deployed application, listed under its application.`,
+} as const;
+
+/**
+ * The picker's choice for an agent opened from the Agents view: the
+ * Datalayer runtime of the same uid (or name), never a local one.
+ *
+ * @param request - The agent clicked.
+ * @param runtimes - The runtimes the picker lists.
+ *
+ * @returns The value to select and nothing said, or null and why.
+ */
+export function openAgentChoice(
+  request: OpenAgentRequest,
+  runtimes: readonly PickerRuntime[],
+): { value: string | null; said: string } {
+  const runtime = runtimes.find(
+    (candidate) =>
+      candidate.place !== "local" &&
+      ((Boolean(request.uid) && candidate.uid === request.uid) ||
+        candidate.runtimeName === request.runtimeName),
+  );
+  return runtime
+    ? { value: RUNTIME_VALUE + runtime.runtimeName, said: "" }
+    : {
+        value: null,
+        said: OPEN_AGENT_WORDS.notListed(
+          request.givenName || request.runtimeName,
+        ),
+      };
+}
+
+/**
+ * Whether a message names an agent to open: what the host's command and the
+ * chat's page accept, and nothing else.
+ *
+ * @param raw - The message's request, before it is read.
+ *
+ * @returns The request, or undefined when it is not one.
+ */
+export function openAgentRequestOf(raw: unknown): OpenAgentRequest | undefined {
+  if (raw === null || typeof raw !== "object") {
+    return undefined;
+  }
+  const { uid, runtimeName, givenName } = raw as Record<string, unknown>;
+  if (typeof runtimeName !== "string" || runtimeName.length === 0) {
+    return undefined;
+  }
+  return {
+    uid: typeof uid === "string" ? uid : "",
+    runtimeName,
+    givenName: typeof givenName === "string" ? givenName : "",
+  };
+}

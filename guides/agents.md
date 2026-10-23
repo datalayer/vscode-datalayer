@@ -9,6 +9,14 @@ An application you built and deployed in the Datalayer Agent Studio answers in V
 3. Open the **Datalayer Chat** sidebar and pick the application under **Your applications**. A deployment that cannot be talked to is listed under **Not available here**, with the reason: paused, not live, not kept always on, or its runtime not running.
 4. Talk to it. The conversation is a session of the deployment, in your name, through the same session API as its hosted page.
 
+## Your runtimes and snapshots
+
+The **Agents** block of the Datalayer sidebar (and of the **Datalayer: Home** page) lists your runtimes and your snapshots.
+
+- **Click a runtime** to open the **Datalayer Chat** with that agent picked. A runtime that runs a deployed application is talked to as its application, under **Your applications**; one still starting may need **Refresh agents** (↻) first.
+- **Click a snapshot** to open its details in an editor tab: name, description, environment, date, size, format, language, metadata, files and ID, with **Restore from Snapshot** and **Delete Snapshot**. Deleting it closes the tab.
+- **Create an agent** from the **+** of the Agents block, or from the **+** beside the agent picker at the top of the Datalayer Chat: both run the same flow.
+
 ## What the chat shows
 
 - **Approvals**: when one of its rules says _ask me first_, the request appears in the chat, where you approve or decline it. The editor also shows a notification naming the application, the action and its class (_execute_, _write_, _delete_…), never what it would run, with **Approve**, **Decline** and **Show**. A decision from the notification is taken only after the chat has shown the request and the approval was read again; one answered elsewhere is said so.

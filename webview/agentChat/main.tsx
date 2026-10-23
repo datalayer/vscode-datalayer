@@ -25,6 +25,10 @@ import {
   type DocumentToolOutcome,
   type DocumentToolSpec,
 } from "../../src/chat/documentTools";
+import {
+  type OpenAgentRequest,
+  openAgentRequestOf,
+} from "../../src/chat/openSession";
 import type { TranscriptLine } from "../../src/chat/sessionRecord";
 import type { OpenSessionRequest } from "../../src/chat/sessionVerbs";
 import {
@@ -100,6 +104,8 @@ let currentDeploymentsError: string | null = null;
 let currentServices: { aiAgentsUrl: string; spacerUrl: string } | null = null;
 // The session the Sessions view asked to open, if any.
 let currentOpenRequest: OpenSessionRequest | null = null;
+// The agent the Agents view asked to open (a click on it), if any.
+let currentAgentRequest: OpenAgentRequest | null = null;
 // The local runtimes' approvals, by runtime address (VS-07): the host reads
 // them over each runtime's websocket and posts them as they change.
 let currentLocalApprovals: Record<string, ApprovalRaised[]> = {};
@@ -273,6 +279,14 @@ function handleCreateAgent(): void {
   render();
 }
 
+/**
+ * Requests the extension host to run the Agents view's own create flow
+ * (its +), from the + beside the picker.
+ */
+function handleCreateRuntime(): void {
+  postControl("create-runtime");
+}
+
 /** Requests the extension host to start the Datalayer sign-in flow. */
 function handleLogin(): void {
   postControl("login");
@@ -293,6 +307,7 @@ function render(): void {
       deploymentsError={currentDeploymentsError}
       services={currentServices}
       openRequest={currentOpenRequest}
+      agentRequest={currentAgentRequest}
       localApprovals={currentLocalApprovals}
       readEditor={requestEditorContext}
       documentTools={currentDocumentTools}
@@ -301,6 +316,7 @@ function render(): void {
       readSessionRecord={requestSessionRecord}
       onRefreshAgents={handleRefreshAgents}
       onCreateAgent={handleCreateAgent}
+      onCreateRuntime={handleCreateRuntime}
       onLogin={handleLogin}
     />,
   );
@@ -373,6 +389,17 @@ window.addEventListener("message", (event) => {
     case "open-session": {
       currentOpenRequest = (data as { request: OpenSessionRequest }).request;
       render();
+      break;
+    }
+    case "open-agent": {
+      // A new object each time: the same agent clicked again is picked again.
+      const request = openAgentRequestOf(
+        (data as { request?: unknown }).request,
+      );
+      if (request) {
+        currentAgentRequest = request;
+        render();
+      }
       break;
     }
     case "local-approvals": {

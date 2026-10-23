@@ -49,6 +49,14 @@ export class SnapshotTreeItem extends vscode.TreeItem {
 
     // Use archive icon for snapshots
     this.iconPath = new vscode.ThemeIcon("archive");
+
+    // A click opens the snapshot's details (the Home page's row runs the
+    // same command).
+    this.command = {
+      command: "datalayer.snapshots.viewDetails",
+      title: "View Snapshot Details",
+      arguments: [this],
+    };
   }
 
   /**

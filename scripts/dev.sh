@@ -15,7 +15,7 @@ set -euo pipefail
 
 cd "$(dirname "$0")/.."
 
-BUNDLES=${DEV_BUNDLES:-"extension agentChat home showcase datasource datasource-edit"}
+BUNDLES=${DEV_BUNDLES:-"extension agentChat home snapshot showcase datasource datasource-edit"}
 FOLDER=${DEV_FOLDER:-}
 
 if ! command -v code >/dev/null 2>&1; then

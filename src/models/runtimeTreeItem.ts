@@ -14,6 +14,8 @@
 import type { RuntimeDTO } from "@datalayer/agent-runtimes/lib/models/RuntimeDTO";
 import * as vscode from "vscode";
 
+import { OPEN_AGENT_COMMAND, type OpenAgentRequest } from "../chat/openSession";
+
 /**
  * Tree item for displaying a runtime in the VS Code tree view.
  * Shows runtime details with appropriate icons and formatting.
@@ -50,6 +52,19 @@ export class RuntimeTreeItem extends vscode.TreeItem {
 
     // Use consistent icon for all runtimes
     this.iconPath = new vscode.ThemeIcon("vm-running");
+
+    // A click opens the Datalayer Chat with this agent picked (the Home
+    // page's row runs the same command).
+    const request: OpenAgentRequest = {
+      uid: runtime.uid,
+      runtimeName: runtime.runtimeName,
+      givenName: runtime.givenName,
+    };
+    this.command = {
+      command: OPEN_AGENT_COMMAND,
+      title: "Open in Datalayer Chat",
+      arguments: [request],
+    };
   }
 
   /**

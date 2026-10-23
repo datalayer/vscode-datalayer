@@ -853,6 +853,24 @@ const homeWebviewConfig = {
   ],
 };
 
+// Config for a snapshot's details page (`datalayer.snapshots.viewDetails`):
+// the home page's build (Primer, a few core components), its own entry.
+const snapshotWebviewConfig = {
+  ...homeWebviewConfig,
+  name: "snapshot",
+  entry: "./webview/snapshot/main.tsx",
+  output: {
+    path: path.resolve(__dirname, "dist"),
+    filename: "snapshot.js",
+  },
+  // Its own list: ANALYZE adds a plugin to each config's.
+  plugins: [
+    new webpack.ProvidePlugin({
+      process: "process/browser",
+    }),
+  ],
+};
+
 // Config for Datasource Edit Dialog webview
 const datasourceEditDialogConfig = {
   name: "datasource-edit",
@@ -932,6 +950,7 @@ const configs = [
   lexicalWebviewConfig,
   showcaseWebviewConfig,
   homeWebviewConfig,
+  snapshotWebviewConfig,
   datasourceDialogConfig,
   datasourceEditDialogConfig,
   agentChatWebviewConfig,
@@ -944,6 +963,7 @@ if (process.env.ANALYZE === "true") {
     "lexical",
     "showcase",
     "home",
+    "snapshot",
     "datasource",
     "datasource-edit",
     "agentChat",

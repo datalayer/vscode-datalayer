@@ -24,7 +24,14 @@
  * If no runtimes are available the webview shows an empty state with a
  * "Create Agent" button that posts a `create-agent` message back to this
  * provider, which dispatches `datalayer.createAgent` and refreshes the
- * agent list when the new runtime comes up.
+ * agent list when the new runtime comes up. The + beside the picker posts
+ * `create-runtime`, which runs the Agents view's own + command
+ * (`datalayer.runtimes.create`), then reads the list again.
+ *
+ * A runtime clicked in the Agents view (`openAgent`, through
+ * `OPEN_AGENT_COMMAND`) reveals the chat and posts `open-agent`: the picker
+ * selects it. Like a session opened from the Sessions view (`open-session`),
+ * a request made before the page listens is posted on its `ready`.
  *
  * ## A deployed application's agent (STUDIO A-18)
  *
@@ -82,6 +89,7 @@ import {
   editorNameOf,
   type OpenEditor,
 } from "../chat/documentTools";
+import type { OpenAgentRequest } from "../chat/openSession";
 import { recordTranscriptOf, sessionRecordUrl } from "../chat/sessionRecord";
 import type { OpenSessionRequest } from "../chat/sessionVerbs";
 import {
@@ -140,8 +148,14 @@ export class AgentChatViewProvider implements vscode.WebviewViewProvider {
   private view: vscode.WebviewView | undefined;
   /** Whether the page listens (it said `ready`); until then messages wait. */
   private pageReady = false;
-  /** A session asked to open before the page listened: posted on `ready`. */
-  private pendingOpen: OpenSessionRequest | undefined;
+  /**
+   * A session or an agent asked to open before the page listened: posted on
+   * `ready` (the last one asked).
+   */
+  private pendingOpen:
+    | { type: "open-session"; request: OpenSessionRequest }
+    | { type: "open-agent"; request: OpenAgentRequest }
+    | undefined;
 
   /** Bridge handler for `IAgentRuntimesClient` bridge calls. */
   private readonly bridge: AgentChatBridgeHandler;
@@ -379,10 +393,30 @@ export class AgentChatViewProvider implements vscode.WebviewViewProvider {
     this.view?.show(true);
     if (!this.pageReady) {
       // The view is being created: its page is not listening yet.
-      this.pendingOpen = request;
+      this.pendingOpen = { type: "open-session", request };
       return;
     }
     void this.view?.webview.postMessage({ type: "open-session", request });
+  }
+
+  /**
+   * Opens an agent in the chat, from the Agents view (a click on its
+   * runtime): the chat's container revealed and its view focused — created
+   * when it never was — then the picker told which runtime to select
+   * (`open-agent`), the list read again first so a runtime just created is
+   * in it. A request made while the page is loading waits for its `ready`,
+   * as a session's does.
+   *
+   * @param request - The agent clicked.
+   */
+  public async openAgent(request: OpenAgentRequest): Promise<void> {
+    await vscode.commands.executeCommand("datalayer.agentChat.focus");
+    if (!this.view || !this.pageReady) {
+      this.pendingOpen = { type: "open-agent", request };
+      return;
+    }
+    await this.refreshAgents();
+    void this.view?.webview.postMessage({ type: "open-agent", request });
   }
 
   /** Starts the visibility-aware polling timer. Idempotent. */
@@ -424,9 +458,9 @@ export class AgentChatViewProvider implements vscode.WebviewViewProvider {
       void this.postDocumentTools();
       await this.refreshAgents();
       if (this.pendingOpen) {
-        const request = this.pendingOpen;
+        const pending = this.pendingOpen;
         this.pendingOpen = undefined;
-        void this.view?.webview.postMessage({ type: "open-session", request });
+        void this.view?.webview.postMessage(pending);
       }
     } else if (type === "refresh-agents") {
       void this.postDocumentTools();
@@ -442,6 +476,14 @@ export class AgentChatViewProvider implements vscode.WebviewViewProvider {
       // `chat-agents` update.
       try {
         await vscode.commands.executeCommand("datalayer.createAgent");
+      } finally {
+        await this.refreshAgents();
+      }
+    } else if (type === "create-runtime") {
+      // The picker's +: the Agents view's own + (`datalayer.runtimes.create`),
+      // the same flow; the list read again however it ends.
+      try {
+        await vscode.commands.executeCommand("datalayer.runtimes.create");
       } finally {
         await this.refreshAgents();
       }

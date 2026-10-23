@@ -6,7 +6,9 @@
 
 /**
  * Snapshot management commands for the Datalayer VS Code extension.
- * Handles snapshot restoration, deletion, and viewing.
+ * Handles snapshot restoration, deletion, and viewing: a click on a snapshot
+ * in the Agents view (or its row on the Home page) opens its details page,
+ * one panel showing the snapshot clicked last, with its Restore and Delete.
  *
  * @module commands/snapshots
  */
@@ -18,6 +20,161 @@ import { SnapshotTreeItem } from "../models/snapshotTreeItem";
 import { RuntimesTreeProvider } from "../providers/runtimesTreeProvider";
 import { showTwoStepConfirmation } from "../ui/dialogs/confirmationDialog";
 import { createRuntime } from "../ui/dialogs/runtimeSelector";
+import {
+  snapshotDetailsOf,
+  type SnapshotHostMessage,
+  snapshotPageMessageOf,
+} from "../ui/snapshot/snapshotDetails";
+import { getSnapshotHtml } from "../ui/templates/snapshotTemplate";
+
+/** The details panel's view type. */
+const SNAPSHOT_VIEW_TYPE = "datalayer.snapshotDetails";
+
+/**
+ * The snapshot details panel: one, showing the snapshot clicked last —
+ * opened, or revealed and told the new snapshot when open.
+ */
+class SnapshotDetailsPanel {
+  private panel: vscode.WebviewPanel | undefined;
+  private item: SnapshotTreeItem | undefined;
+  /** The uid of the snapshot shown (read once: a deleted one's DTO throws). */
+  private uid: string | undefined;
+  private disposables: vscode.Disposable[] = [];
+
+  /** @param context - Extension context, for the bundle's location. */
+  constructor(private readonly context: vscode.ExtensionContext) {}
+
+  /**
+   * Shows a snapshot's details.
+   *
+   * @param item - The snapshot's tree item (its commands take it).
+   */
+  show(item: SnapshotTreeItem): void {
+    this.item = item;
+    this.uid = item.snapshot.uid;
+    if (this.panel) {
+      this.panel.title = `Snapshot: ${item.snapshot.name}`;
+      this.panel.reveal();
+      this.postDetails();
+      return;
+    }
+    const panel = vscode.window.createWebviewPanel(
+      SNAPSHOT_VIEW_TYPE,
+      `Snapshot: ${item.snapshot.name}`,
+      vscode.ViewColumn.One,
+      {
+        enableScripts: true,
+        retainContextWhenHidden: true,
+        localResourceRoots: [
+          vscode.Uri.joinPath(this.context.extensionUri, "dist"),
+        ],
+      },
+    );
+    this.panel = panel;
+    panel.iconPath = new vscode.ThemeIcon("archive");
+    panel.webview.html = getSnapshotHtml(
+      panel.webview,
+      this.context.extensionUri,
+    );
+    this.disposables.push(
+      vscode.window.onDidChangeActiveColorTheme(() => this.postTheme()),
+      panel.webview.onDidReceiveMessage((raw) => this.onMessage(raw)),
+      panel.onDidDispose(() => this.closed()),
+    );
+  }
+
+  /** Closes the panel, when it is open. */
+  dispose(): void {
+    this.panel?.dispose();
+  }
+
+  /**
+   * Closes the panel when it shows a snapshot that was deleted.
+   *
+   * @param uid - The snapshot deleted.
+   */
+  closeIfShowing(uid: string): void {
+    if (this.panel && this.uid === uid) {
+      this.dispose();
+    }
+  }
+
+  /** The panel closed: its listeners let go. */
+  private closed(): void {
+    for (const disposable of this.disposables) {
+      disposable.dispose();
+    }
+    this.disposables = [];
+    this.panel = undefined;
+    this.item = undefined;
+    this.uid = undefined;
+  }
+
+  /**
+   * Posts a message to the page, when the panel is open.
+   *
+   * @param message - What the page is told.
+   */
+  private post(message: SnapshotHostMessage): void {
+    void this.panel?.webview.postMessage(message);
+  }
+
+  /** Tells the page the snapshot's details. */
+  private postDetails(): void {
+    if (this.item) {
+      this.post({
+        type: "snapshot-details",
+        body: snapshotDetailsOf(this.item.snapshot.rawData()),
+      });
+    }
+  }
+
+  /** Tells the page whether VS Code's theme is light or dark. */
+  private postTheme(): void {
+    const kind = vscode.window.activeColorTheme.kind;
+    this.post({
+      type: "theme-changed",
+      theme:
+        kind === vscode.ColorThemeKind.Dark ||
+        kind === vscode.ColorThemeKind.HighContrast
+          ? "dark"
+          : "light",
+    });
+  }
+
+  /**
+   * Answers the page: its first paint, its Restore and Delete — the
+   * snapshot's own commands, as the tree's menu runs them.
+   *
+   * @param raw - The page's message, before it is read.
+   */
+  private async onMessage(raw: unknown): Promise<void> {
+    const message = snapshotPageMessageOf(raw);
+    const item = this.item;
+    if (!message || !item) {
+      return;
+    }
+    switch (message.type) {
+      case "ready":
+        this.postTheme();
+        this.postDetails();
+        return;
+      case "restore":
+        await vscode.commands.executeCommand(
+          "datalayer.snapshots.restore",
+          item,
+        );
+        return;
+      case "delete":
+        // Deleted, the command closes this page: nothing is left to show.
+        await vscode.commands.executeCommand(
+          "datalayer.snapshots.delete",
+          item,
+        );
+        return;
+    }
+  }
+}
 
 /**
  * Registers all snapshot-related commands for restoration, deletion, and viewing details.
@@ -31,6 +188,9 @@ export function registerSnapshotCommands(
   context: vscode.ExtensionContext,
   runtimesTreeProvider?: RuntimesTreeProvider,
 ): void {
+  const detailsPanel = new SnapshotDetailsPanel(context);
+  context.subscriptions.push(detailsPanel);
+
   /**
    * Command: datalayer.snapshots.refresh
    * Refreshes the snapshots section in the runtimes tree view.
@@ -123,19 +283,21 @@ export function registerSnapshotCommands(
 
   /**
    * Command: datalayer.snapshots.delete
-   * Deletes a snapshot permanently.
+   * Deletes a snapshot permanently; resolves true once it is deleted (its
+   * details page, when open on it, closes then), false when it is not.
    */
   context.subscriptions.push(
     vscode.commands.registerCommand(
       "datalayer.snapshots.delete",
-      async (item: SnapshotTreeItem) => {
+      async (item: SnapshotTreeItem): Promise<boolean> => {
         if (!item || !item.snapshot) {
           vscode.window.showErrorMessage("No snapshot selected");
-          return;
+          return false;
         }
 
         const snapshot = item.snapshot;
         const snapshotName = snapshot.name;
+        const snapshotUid = snapshot.uid;
 
         // Show confirmation dialog
         const confirmed = await showTwoStepConfirmation({
@@ -151,7 +313,7 @@ export function registerSnapshotCommands(
         });
 
         if (!confirmed) {
-          return;
+          return false;
         }
 
         try {
@@ -170,8 +332,12 @@ export function registerSnapshotCommands(
               runtimesTreeProvider?.refresh();
             },
           );
+          // Its details page, when open on it, has nothing left to show.
+          detailsPanel.closeIfShowing(snapshotUid);
+          return true;
         } catch (error) {
           vscode.window.showErrorMessage(`Failed to delete snapshot: ${error}`);
+          return false;
         }
       },
     ),
@@ -179,51 +345,19 @@ export function registerSnapshotCommands(
 
   /**
    * Command: datalayer.snapshots.viewDetails
-   * Shows detailed information about a snapshot.
+   * Opens the snapshot's details page: its name, description, environment,
+   * date, size, format, language, metadata and files, with its Restore and
+   * Delete. A click on a snapshot in the Agents view runs it.
    */
   context.subscriptions.push(
     vscode.commands.registerCommand(
       "datalayer.snapshots.viewDetails",
-      async (item: SnapshotTreeItem) => {
+      (item: SnapshotTreeItem) => {
         if (!item || !item.snapshot) {
           vscode.window.showErrorMessage("No snapshot selected");
           return;
         }
-
-        const snapshot = item.snapshot;
-        const snapshotData = snapshot.toJSON();
-
-        const details = `**Snapshot Details**
-
-**Name:** ${snapshot.name}
-
-**Description:** ${snapshot.description || "No description"}
-
-**Environment:** ${snapshot.environment}
-
-**Created:** ${new Date(snapshotData.updatedAt).toLocaleString()}
-
-**ID:** ${snapshotData.uid}`;
-
-        // Show in information message or quick pick
-        const action = await vscode.window.showInformationMessage(
-          `Snapshot: ${snapshot.name}`,
-          { detail: details, modal: false },
-          "Restore from Snapshot",
-          "Delete Snapshot",
-        );
-
-        if (action === "Restore from Snapshot") {
-          await vscode.commands.executeCommand(
-            "datalayer.snapshots.restore",
-            item,
-          );
-        } else if (action === "Delete Snapshot") {
-          await vscode.commands.executeCommand(
-            "datalayer.snapshots.delete",
-            item,
-          );
-        }
+        detailsPanel.show(item);
       },
     ),
   );

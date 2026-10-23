@@ -14,6 +14,10 @@
  * (~3 MiB) so the webview evaluates immediately; the Chat chunk (~16 MiB)
  * loads asynchronously after the picker renders.
  *
+ * The + beside the picker runs the Agents view's own create flow (its +);
+ * an agent clicked in the Agents view arrives as `agentRequest` and is
+ * selected in the picker (`openAgentChoice`).
+ *
  * @module webview/agentChat/App
  */
 
@@ -27,6 +31,8 @@ import React, {
   useState,
 } from "react";
 import type { ErrorInfo, ReactNode } from "react";
+import { IconButton } from "@primer/react";
+import { PlusIcon } from "@primer/octicons-react";
 
 import type { IAgentRuntimesClient } from "@datalayer/agent-runtimes/lib/client/IAgentRuntimesClient";
 import { AgentRuntimesClientProvider } from "@datalayer/agent-runtimes/lib/client/AgentRuntimesClientContext";
@@ -44,6 +50,8 @@ import {
 import type { ApprovalRaised } from "../../src/chat/attention";
 import type { DocumentToolSpec } from "../../src/chat/documentTools";
 import {
+  openAgentChoice,
+  type OpenAgentRequest,
   openSessionChoice,
   type RecordRead,
   sessionProtocol,
@@ -222,6 +230,8 @@ export interface AppProps {
   services: { aiAgentsUrl: string; spacerUrl: string } | null;
   /** The session the Sessions view asked to open, or null. */
   openRequest: OpenSessionRequest | null;
+  /** The agent the Agents view asked to open (a click on it), or null. */
+  agentRequest: OpenAgentRequest | null;
   /** The local runtimes' pending approvals, by runtime address (VS-07). */
   localApprovals: Record<string, ApprovalRaised[]>;
   /** Reads the editor's open file, through the extension host. */
@@ -238,6 +248,8 @@ export interface AppProps {
   onRefreshAgents: () => void;
   /** Callback to create a new agent runtime. */
   onCreateAgent: () => void;
+  /** Callback to run the Agents view's own create flow (its +). */
+  onCreateRuntime: () => void;
   /** Callback to trigger the Datalayer sign-in flow. */
   onLogin: () => void;
 }
@@ -289,6 +301,7 @@ function AppInner(props: AppProps): React.JSX.Element {
     deploymentsError,
     services,
     openRequest,
+    agentRequest,
     localApprovals,
     readEditor,
     documentTools,
@@ -297,6 +310,7 @@ function AppInner(props: AppProps): React.JSX.Element {
     readSessionRecord,
     onRefreshAgents,
     onCreateAgent,
+    onCreateRuntime,
     onLogin,
   } = props;
 
@@ -336,6 +350,32 @@ function AppInner(props: AppProps): React.JSX.Element {
     setOpenSaid(choice.said);
     setRecordRead(choice.record ?? null);
   }, [openRequest, agents, agentsError, deployments]);
+
+  // An agent clicked in the Agents view: back to the picker (a session open
+  // is closed) with its runtime selected; not listed, said why.
+  const [agentSaid, setAgentSaid] = useState("");
+  const handledAgent = useRef<OpenAgentRequest | null>(null);
+  useEffect(() => {
+    // Each request once, when the runtimes are read.
+    if (!agentRequest || handledAgent.current === agentRequest) {
+      return;
+    }
+    if (agents === null && !agentsError) {
+      return;
+    }
+    handledAgent.current = agentRequest;
+    const choice = openAgentChoice(
+      agentRequest,
+      agentsError ? [] : (agents ?? []),
+    );
+    setOpened(null);
+    setOpenSaid("");
+    setRecordRead(null);
+    if (choice.value) {
+      setSelected(choice.value);
+    }
+    setAgentSaid(choice.said);
+  }, [agentRequest, agents, agentsError]);
 
   // Back to all agents: the session closed here, the picker drawn again.
   const backToAgents = useCallback(() => {
@@ -407,6 +447,7 @@ function AppInner(props: AppProps): React.JSX.Element {
   const handleAgentChange = useCallback(
     (event: React.ChangeEvent<HTMLSelectElement>) => {
       setSelected(event.target.value || null);
+      setAgentSaid("");
     },
     [],
   );
@@ -842,6 +883,11 @@ function AppInner(props: AppProps): React.JSX.Element {
     return (
       <div style={containerStyle}>
         <p style={messageStyle}>No agents available.</p>
+        {agentSaid ? (
+          <p style={{ ...messageStyle, fontSize: "12px", opacity: 0.7 }}>
+            {agentSaid}
+          </p>
+        ) : null}
         {deployments !== null ? (
           <p style={{ ...messageStyle, fontSize: "12px", opacity: 0.7 }}>
             {deploymentsError
@@ -928,6 +974,14 @@ function AppInner(props: AppProps): React.JSX.Element {
             </optgroup>
           ) : null}
         </select>
+        <IconButton
+          icon={PlusIcon}
+          size="small"
+          aria-label="Create an agent"
+          tooltipDirection="s"
+          onClick={onCreateRuntime}
+          style={{ alignSelf: "center", flexShrink: 0 }}
+        />
         <button
           type="button"
           style={refreshButtonStyle}
@@ -951,6 +1005,12 @@ function AppInner(props: AppProps): React.JSX.Element {
           {deploymentsError
             ? `${APP_CHAT_WORDS.listFailed}: ${deploymentsError}`
             : `Failed to load agents: ${agentsError}`}
+        </p>
+      ) : null}
+      {agentSaid ? (
+        // An agent clicked in the Agents view that the picker does not list.
+        <p style={{ ...messageStyle, fontSize: "12px", margin: "4px 8px" }}>
+          {agentSaid}
         </p>
       ) : null}
 

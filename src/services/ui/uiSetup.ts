@@ -17,6 +17,7 @@ import {
   SESSION_SURFACES_COMMAND,
   SessionSurfacesHandler,
 } from "../../bridges/agentChatBridge";
+import { OPEN_AGENT_COMMAND, openAgentRequestOf } from "../../chat/openSession";
 import {
   OPEN_SESSION_COMMAND,
   type OpenSessionRequest,
@@ -309,6 +310,18 @@ export async function initializeUI(
     ),
     agentChatViewProvider.onSessionChanged(() => {
       sessionsTreeProvider.refresh();
+    }),
+  );
+
+  // A click on an agent of the Agents view (or its row on the Home page)
+  // opens the chat with that agent picked.
+  context.subscriptions.push(
+    vscode.commands.registerCommand(OPEN_AGENT_COMMAND, (request: unknown) => {
+      const agent = openAgentRequestOf(request);
+      if (agent) {
+        return agentChatViewProvider.openAgent(agent);
+      }
+      return undefined;
     }),
   );
 

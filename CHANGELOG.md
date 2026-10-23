@@ -4,6 +4,12 @@ All notable changes to the Datalayer VS Code extension are documented here.
 
 ## [0.1.4] - 2026-10-23
 
+### Added
+
+- **A runtime clicked in the Agents view opens the Datalayer Chat with that agent picked**: the chat sidebar is revealed (created when it never was) and its picker selects the runtime, leaving a session open there; a runtime the picker does not list (still starting, or one that runs a deployed application) is said so under the picker. The row of the **Datalayer: Home** page does the same
+- **A snapshot clicked in the Agents view opens its details**: an editor tab with its name, description, environment, date, size, format, language, metadata, files and ID, with **Restore from Snapshot** and **Delete Snapshot**; one tab shows the snapshot clicked last, and closes once that snapshot is deleted. The row of the **Datalayer: Home** page does the same
+- **A + beside the Datalayer Chat's agent picker**: _Create an agent_ runs the same flow as the **+** of the Agents view, and the picker reads the agents again once it ends
+
 ### Fixed
 
 - **The chat with your own runtimes names the file a tool ran on**: each notebook or document tool's card says _on analysis.ipynb_ once the call returned, in place of its arguments' summary (with `@datalayer/agent-runtimes` 1.5.85)

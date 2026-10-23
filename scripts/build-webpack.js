@@ -7,8 +7,8 @@
 /**
  * Build every webpack config in its own child process.
  *
- * Why this exists: `webpack.config.js` exports an array of eight configs
- * (extension + seven webviews). Webpack's MultiCompiler keeps *every* config's
+ * Why this exists: `webpack.config.js` exports an array of nine configs
+ * (extension + eight webviews). Webpack's MultiCompiler keeps *every* config's
  * compilation — module graphs, emitted assets and (in production) their
  * `hidden-source-map` files — resident in memory until the whole array
  * finishes. Since the `agentChat` webview now bundles `@datalayer/agent-runtimes`
@@ -18,7 +18,7 @@
  *
  * Running each config as a separate `webpack --config-name <name>` process
  * means the OS reclaims all memory between configs, so peak usage is bounded
- * by the single largest bundle instead of the sum of all eight.
+ * by the single largest bundle instead of the sum of all nine.
  *
  * Any CLI flags passed to this script (e.g. `--mode production
  * --devtool hidden-source-map`) are forwarded to every webpack invocation.
@@ -37,6 +37,7 @@ const CONFIG_NAMES = [
   "lexical",
   "showcase",
   "home",
+  "snapshot",
   "datasource",
   "datasource-edit",
   "agentChat",
