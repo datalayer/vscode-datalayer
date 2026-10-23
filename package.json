@@ -88,7 +88,7 @@
     "@codemirror/state": "^6.5.2",
     "@codemirror/view": "^6.38.3",
     "@datalayer/agent-runtimes": "^1.5.85",
-    "@datalayer/core": "^1.2.23",
+    "@datalayer/core": "^1.2.24",
     "@datalayer/jupyter-lexical": "^2.0.21",
     "@datalayer/jupyter-react": "^2.0.21",
     "@datalayer/lexical-loro": "^1.0.6",
