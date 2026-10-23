@@ -26,6 +26,10 @@ import {
   vscodeTheme,
   vscodeThemeStyles,
 } from "@datalayer/primer-addons";
+// Primer's motion tokens: its Spinner turns with `--base-duration-1000` and
+// `--base-easing-linear`, whose fallback is not a valid easing, so without
+// them the whole animation is dropped and the spinner stands still.
+import "@primer/primitives/dist/css/base/motion/motion.css";
 
 /** Props for the PrimerVSCodeTheme component. */
 export interface PrimerVSCodeThemeProps {
