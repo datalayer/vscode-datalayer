@@ -10,7 +10,7 @@ Both follow your VS Code theme.
 
 ## The Datalayer sidebar
 
-- **Home** (**Datalayer: Home**, or _Open Datalayer_ at the top of the sidebar): your sessions, agents, spaces, outline and settings as one page.
+- **Home** (**Datalayer: Home**, or _Open Datalayer_ at the top of the sidebar): your sessions, agents, spaces, outline and settings as one page. Signed in, a **Profile** row under _Open Datalayer_ (or **Datalayer: Profile**) opens your profile: your picture, username, display name, initials, origin and identifier, with a button that copies the identifier, the same view as on the web. It is read-only; **Edit on Datalayer** opens your profile settings on the web. Signing out closes it.
 - **Spaces**: your cloud notebooks and documents, as `datalayer://Space Name/document.ipynb`. Create, rename and delete them in place; shared spaces included.
 - **Agents**: your runtimes and their agents. Create and terminate runtimes; each shows its environment (CPU or GPU, memory), its time left and its health.
 - **Outline**: the headings of the open document.

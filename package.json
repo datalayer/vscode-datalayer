@@ -269,6 +269,12 @@
         "icon": "$(datalayer-logo)"
       },
       {
+        "command": "datalayer.profile.open",
+        "title": "Profile",
+        "category": "Datalayer",
+        "icon": "$(account)"
+      },
+      {
         "command": "datalayer.showPrimerThemeShowcase",
         "title": "Show Primer Theme Showcase",
         "category": "Datalayer"

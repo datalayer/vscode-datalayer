@@ -8,6 +8,7 @@ All notable changes to the Datalayer VS Code extension are documented here.
 
 - **A runtime clicked in the Agents view opens the Datalayer Chat with that agent picked**: the chat sidebar is revealed (created when it never was) and its picker selects the runtime, leaving a session open there; a runtime the picker does not list (still starting, or one that runs a deployed application) is said so under the picker. The row of the **Datalayer: Home** page does the same
 - **A snapshot clicked in the Agents view opens its details**: an editor tab with its name, description, environment, date, size, format, language, metadata, files and ID, with **Restore from Snapshot** and **Delete Snapshot**; one tab shows the snapshot clicked last, and closes once that snapshot is deleted. The row of the **Datalayer: Home** page does the same
+- **Your profile, from the Home view**: signed in, a **Profile** row under _Open Datalayer_ in the Datalayer sidebar (or **Datalayer: Profile**) opens your profile in an editor tab — picture, username, display name, initials, origin and identifier with a copy button — drawn by the same component as the web's profile page, from the account the extension is signed in with (nothing is fetched). **Edit on Datalayer** opens your profile settings on the web; signing out closes the tab, and signing in as someone else redraws it
 - **A + beside the Datalayer Chat's agent picker**: _Create an agent_ runs the same flow as the **+** of the Agents view, and the picker reads the agents again once it ends
 
 ### Fixed

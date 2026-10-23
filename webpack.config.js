@@ -871,6 +871,24 @@ const snapshotWebviewConfig = {
   ],
 };
 
+// Config for the Profile page (`datalayer.profile.open`): the home page's
+// build (Primer, core's UserIdentity), its own entry.
+const profileWebviewConfig = {
+  ...homeWebviewConfig,
+  name: "profile",
+  entry: "./webview/profile/main.tsx",
+  output: {
+    path: path.resolve(__dirname, "dist"),
+    filename: "profile.js",
+  },
+  // Its own list: ANALYZE adds a plugin to each config's.
+  plugins: [
+    new webpack.ProvidePlugin({
+      process: "process/browser",
+    }),
+  ],
+};
+
 // Config for Datasource Edit Dialog webview
 const datasourceEditDialogConfig = {
   name: "datasource-edit",
@@ -951,6 +969,7 @@ const configs = [
   showcaseWebviewConfig,
   homeWebviewConfig,
   snapshotWebviewConfig,
+  profileWebviewConfig,
   datasourceDialogConfig,
   datasourceEditDialogConfig,
   agentChatWebviewConfig,
@@ -964,6 +983,7 @@ if (process.env.ANALYZE === "true") {
     "showcase",
     "home",
     "snapshot",
+    "profile",
     "datasource",
     "datasource-edit",
     "agentChat",

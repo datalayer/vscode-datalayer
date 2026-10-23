@@ -11,8 +11,10 @@
  * an item's own command on a click, refreshes a block through its provider,
  * and reads again when a provider says its tree changed.
  *
- * The sidebar's *Home* view, first in the Datalayer container, is an empty
- * tree whose welcome content is one *Open Datalayer* button.
+ * The sidebar's *Home* view, first in the Datalayer container, is a tree of
+ * one *Open Datalayer* row, and under it, while signed in, a *Profile* row
+ * opening the Profile page (`commands/profile`); it is read again on each
+ * sign-in and sign-out.
  *
  * @module commands/home
  */
@@ -31,6 +33,7 @@ import {
   type TreeProviderLike,
 } from "../ui/home/homeSnapshot";
 import { getHomeHtml } from "../ui/templates/homeTemplate";
+import { PROFILE_COMMAND } from "./profile";
 
 /** The command's id. */
 export const HOME_COMMAND = "datalayer.home";
@@ -73,16 +76,47 @@ export function registerHomeCommands(
   services: HomeServices,
 ): void {
   const home = new HomePanel(context, services);
+  // The rows change with the sign-in: *Profile* only while signed in.
+  const rowsChanged = new vscode.EventEmitter<void>();
   context.subscriptions.push(
     vscode.commands.registerCommand(HOME_COMMAND, () => home.show()),
-    // The button's view: one row, *Open Datalayer* — a row is the least
-    // height a sidebar view takes (a welcome button takes a block).
+    // The button's view: *Open Datalayer*, then *Profile* when signed in —
+    // a row is the least height a sidebar view takes (a welcome button
+    // takes a block).
     vscode.window.registerTreeDataProvider<vscode.TreeItem>(HOME_BUTTON_VIEW, {
-      getChildren: () => [homeButtonItem()],
+      getChildren: () => homeRowItems(services.authProvider.isAuthenticated()),
       getTreeItem: (element) => element,
+      onDidChangeTreeData: rowsChanged.event,
     }),
+    services.authProvider.onAuthStateChanged(() => rowsChanged.fire()),
+    rowsChanged,
     home,
   );
+}
+
+/**
+ * The sidebar's Home view rows: *Open Datalayer*, then *Profile* while
+ * signed in.
+ *
+ * @param signedIn - Whether someone is signed in.
+ *
+ * @returns The rows, in order.
+ */
+export function homeRowItems(signedIn: boolean): vscode.TreeItem[] {
+  return signedIn ? [homeButtonItem(), profileItem()] : [homeButtonItem()];
+}
+
+/**
+ * The sidebar's row that opens the Profile page.
+ *
+ * @returns The row.
+ */
+export function profileItem(): vscode.TreeItem {
+  const item = new vscode.TreeItem("Profile");
+  item.iconPath = new vscode.ThemeIcon("account");
+  item.tooltip = "Your Datalayer profile";
+  item.command = { command: PROFILE_COMMAND, title: "Profile" };
+  return item;
 }
 
 /**

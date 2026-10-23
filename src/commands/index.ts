@@ -39,6 +39,7 @@ import { registerHomeCommands } from "./home";
 import { getConnectedRuntime, registerInternalCommands } from "./internal";
 import { registerLocalRuntimeCommands } from "./localRuntime";
 import { registerOutlineCommands } from "./outline";
+import { registerProfileCommands } from "./profile";
 import { registerProjectsCommands } from "./projects";
 import { registerPyodideCommands } from "./pyodide";
 import { registerRuntimeCommands } from "./runtimes";
@@ -127,6 +128,9 @@ export function registerAllCommands(
 
   // Register theme commands (Primer showcase)
   registerThemeCommands(context);
+
+  // The Profile page: the signed-in user, from the Home view's *Profile* row
+  registerProfileCommands(context, services.authProvider);
 
   // *Datalayer: Home*: the sidebar's blocks as one page, read from the same tree providers,
   // in the sidebar's order: Sessions, Agents, Spaces, Outline, Settings
