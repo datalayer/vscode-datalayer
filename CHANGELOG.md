@@ -2,6 +2,17 @@
 
 All notable changes to the Datalayer VS Code extension are documented here.
 
+## [0.1.5] - Unreleased
+
+### Added
+
+- **Sign In with Datalayer from the Accounts menu**: the extension's Datalayer sign-in is a VS Code authentication provider, so signed out the Accounts menu (bottom left) shows its badge and a _Sign in with Datalayer_ entry, and signed in it lists your Datalayer account (its handle) with _Sign Out_. Both run the extension's own sign-in and sign-out; the rest of the extension reads your account as before
+
+### Changed
+
+- **The status bar says Sign In with Datalayer when signed out**, in place of _Datalayer: Not Connected_; a click signs in. Signed in, it is unchanged
+- **The Datalayer Chat's sign-in is a button**: signed out, the chat shows a blue **Sign In with Datalayer** button in place of a link
+
 ## [0.1.4] - 2026-10-23
 
 ### Added

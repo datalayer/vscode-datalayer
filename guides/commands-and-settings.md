@@ -14,6 +14,14 @@ All commands are in the command palette (`Ctrl+Shift+P` / `Cmd+Shift+P`) under *
 | Documents    | New Jupyter Notebook, New Datalayer Document (local or in a space); on a space's file: Open, Rename, Delete                                                                   |
 | Runtimes     | Select or switch runtime, Terminate runtimes, View runtime controllers status                                                                                                 |
 
+## Signing in
+
+Signed out, three places offer **Sign In with Datalayer**, each running the same sign-in as **Datalayer: Login to Datalayer**:
+
+- the **Accounts** menu (bottom left), where VS Code shows a badge and a _Sign in with Datalayer_ entry; signed in, the menu lists your Datalayer account, with _Sign Out_;
+- the status bar (bottom right); signed in, it reads _Datalayer_ and opens your account's menu;
+- the **Datalayer Chat** sidebar.
+
 ## Settings
 
 Open the settings (`Ctrl+,` / `Cmd+,`) and search for **Datalayer**.

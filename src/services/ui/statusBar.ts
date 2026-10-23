@@ -16,7 +16,44 @@
 
 import * as vscode from "vscode";
 
-import { DatalayerAuthProvider } from "../core/authProvider";
+import type { DatalayerAuthProvider } from "../core/authProvider";
+
+/** What the status bar item shows, and what a click on it runs. */
+export interface StatusBarLook {
+  text: string;
+  tooltip: string;
+  command: string;
+}
+
+/**
+ * What the status bar item shows: signed in, *Datalayer* with the account
+ * in its tooltip, opening the account's menu; signed out, *Sign In with
+ * Datalayer*, running the sign-in. Neutral colours either way (VS Code only
+ * offers warning and error backgrounds).
+ *
+ * @param state - The sign-in's state.
+ * @param state.isAuthenticated - Whether someone is signed in.
+ * @param state.user - The signed-in user, or null.
+ *
+ * @returns The item's text, tooltip and command.
+ */
+export function statusBarLookOf(state: {
+  isAuthenticated: boolean;
+  user: { displayName?: string; email?: string } | null;
+}): StatusBarLook {
+  if (state.isAuthenticated && state.user) {
+    return {
+      text: "$(datalayer-logo) Datalayer",
+      tooltip: `Connected as ${state.user.displayName || state.user.email}`,
+      command: "datalayer.showAuthStatus",
+    };
+  }
+  return {
+    text: "$(sign-in) Sign In with Datalayer",
+    tooltip: "Sign in to Datalayer",
+    command: "datalayer.login",
+  };
+}
 
 /**
  * Manages the Datalayer status bar item.
@@ -110,7 +147,7 @@ export class DatalayerStatusBar implements vscode.Disposable {
    * This method reads the current authentication state and updates
    * The status bar appearance accordingly:
    * - When authenticated: Shows "Datalayer" with user info in tooltip
-   * - When not authenticated: Shows "Datalayer: Not Connected" with warning colors
+   * - When not authenticated: Shows "Sign In with Datalayer", running the sign-in
    *
    * The status bar item's command and visual style are also updated
    * To reflect the current state.
@@ -118,24 +155,13 @@ export class DatalayerStatusBar implements vscode.Disposable {
    * @internal
    */
   private updateStatus(): void {
-    const authState = this.authProvider.getAuthState();
-
-    if (authState.isAuthenticated && authState.user) {
-      const user = authState.user;
-      const displayName = user.displayName || user.email;
-      this.statusBarItem.text = `$(datalayer-logo) Datalayer`;
-      this.statusBarItem.tooltip = `Connected as ${displayName}`;
-      this.statusBarItem.command = "datalayer.showAuthStatus";
-      this.statusBarItem.color = undefined;
-      this.statusBarItem.backgroundColor = undefined;
-    } else {
-      this.statusBarItem.text = "$(datalayer-logo) Datalayer: Not Connected";
-      this.statusBarItem.tooltip = "Click to login";
-      this.statusBarItem.command = "datalayer.login";
-      // Keep colors consistent - no special warning colors
-      this.statusBarItem.color = undefined;
-      this.statusBarItem.backgroundColor = undefined;
-    }
+    const look = statusBarLookOf(this.authProvider.getAuthState());
+    this.statusBarItem.text = look.text;
+    this.statusBarItem.tooltip = look.tooltip;
+    this.statusBarItem.command = look.command;
+    // Neutral colours, signed in or not.
+    this.statusBarItem.color = undefined;
+    this.statusBarItem.backgroundColor = undefined;
   }
 
   /**

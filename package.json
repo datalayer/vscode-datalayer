@@ -659,6 +659,12 @@
         "category": "Datalayer"
       }
     ],
+    "authentication": [
+      {
+        "id": "datalayer",
+        "label": "Datalayer"
+      }
+    ],
     "viewsContainers": {
       "activitybar": [
         {

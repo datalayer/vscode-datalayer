@@ -31,7 +31,7 @@ import React, {
   useState,
 } from "react";
 import type { ErrorInfo, ReactNode } from "react";
-import { IconButton } from "@primer/react";
+import { Button, IconButton } from "@primer/react";
 import { PlusIcon } from "@primer/octicons-react";
 
 import type { IAgentRuntimesClient } from "@datalayer/agent-runtimes/lib/client/IAgentRuntimesClient";
@@ -677,18 +677,11 @@ function AppInner(props: AppProps): React.JSX.Element {
   if (!auth.authenticated) {
     return (
       <div style={containerStyle}>
-        <p style={messageStyle}>
-          <a
-            href="#"
-            style={linkStyle}
-            onClick={(event) => {
-              event.preventDefault();
-              onLogin();
-            }}
-          >
-            Sign in to Datalayer
-          </a>{" "}
-          to use Agent Chat.
+        <Button variant="primary" onClick={onLogin}>
+          Sign In with Datalayer
+        </Button>
+        <p style={{ ...messageStyle, fontSize: "12px", opacity: 0.7 }}>
+          to use the Datalayer Chat.
         </p>
       </div>
     );
@@ -1113,12 +1106,6 @@ const buttonStyle: React.CSSProperties = {
   borderRadius: "2px",
   cursor: "pointer",
   fontSize: "var(--vscode-font-size)",
-};
-
-const linkStyle: React.CSSProperties = {
-  color: "var(--vscode-textLink-foreground)",
-  textDecoration: "underline",
-  cursor: "pointer",
 };
 
 const secondaryButtonStyle: React.CSSProperties = {

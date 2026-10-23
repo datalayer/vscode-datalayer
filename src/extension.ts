@@ -32,6 +32,7 @@ import {
   notifyExtensionReady,
 } from "./services/bridges/documentBridge";
 import { getValidatedSettingsGroup } from "./services/config/settingsValidator";
+import { registerDatalayerAuthenticationProvider } from "./services/core/authenticationProviderAdapter";
 import { setupAuthStateManagement } from "./services/core/authManager";
 import type { DatalayerAuthProvider } from "./services/core/authProvider";
 import { ServiceContainer } from "./services/core/serviceContainer";
@@ -311,6 +312,19 @@ export async function activate(
       );
       activationTimer.checkpoint("commands_registered");
     });
+
+    // The Accounts menu: the Datalayer sign-in as a VS Code authentication
+    // provider (an adapter over DatalayerAuthProvider, which stays the
+    // source of truth), asking quietly for a sign-in while signed out.
+    await runOptionalActivationStep(
+      "Registering the Datalayer authentication provider",
+      () => {
+        registerDatalayerAuthenticationProvider(
+          context,
+          services!.authProvider as DatalayerAuthProvider,
+        );
+      },
+    );
 
     await runOptionalActivationStep(
       "Registering Jupyter Server Collection",
