@@ -571,7 +571,18 @@ export class NotebookNetworkService {
       ? { type, body, id: requestIdOrId }
       : { type, body, requestId: requestIdOrId };
 
-    panel.webview.postMessage(messageToSend);
+    // The editor may have been closed while the answer was on its way: there
+    // is nobody to tell, and a socket streaming to it is closed.
+    let webview: vscode.Webview;
+    try {
+      webview = panel.webview;
+    } catch {
+      if (isWebSocketMessage) {
+        this._websockets.get(requestIdOrId ?? "")?.close();
+      }
+      return;
+    }
+    void webview.postMessage(messageToSend);
   }
 
   /**
