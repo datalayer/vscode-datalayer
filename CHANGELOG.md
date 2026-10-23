@@ -2,6 +2,18 @@
 
 All notable changes to the Datalayer VS Code extension are documented here.
 
+## [0.1.3] - 2026-10-23
+
+### Added
+
+- **The Datalayer Chat's agents read and edit your open notebook or document**: an agent you talk to in the Datalayer Chat sidebar (one of your runtimes, a session opened from the Sessions view, a deployed application) gets the notebook and document tools GitHub Copilot has: read, insert, update and delete cells or blocks, run them, and run code in the Datalayer notebook (`.ipynb`) or document (`.dlex`) open in VS Code. The calls run in the extension through the same tools Copilot calls, and each result names the file it worked on
+- **Approvals for writes**: a tool that only reads runs at once; a tool that writes (inserts, updates, deletes, runs code) is asked first in the chat's approval banner, which names the file. A deployed application's own rules for a tool, or for reads and writes, are followed: _do it_ runs, _ask first_ asks, _leave to me_ refuses. A declined call is answered _nothing was changed_
+
+### Fixed
+
+- **The agent acts on the file you have open, even when the chat has focus**: Datalayer notebooks and documents are custom editors, so focus in the chat sidebar or another panel could leave no target. A call now runs on the active tab when it is a Datalayer editor of the right kind, else on the one of that kind you focused last (the agent is told which file, and that it was not the active tab), else nowhere, and the agent asks you to open one. The file is located before the call runs, named in the approval banner and in the application's transcript (_App → VS Code: tool on analysis.ipynb_), and the call then runs on that file only; if you close it in the meantime, the call is refused
+- **A tool's call runs in its own editor's webview**: the notebook and document tools (Copilot's too) posted their operations to whichever Datalayer editor was active, even when the call named another file; they now go to the webview of the file they work on. A closed editor is no longer kept as a target
+
 ## [0.1.2] - 2026-10-22
 
 ### Changed
