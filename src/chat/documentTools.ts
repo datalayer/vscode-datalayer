@@ -105,19 +105,56 @@ const ACTIVE_DOCUMENT_TOOL = "datalayer_getActiveDocument";
 
 /** The words the chat says, in one place. */
 export const DOCUMENT_TOOL_WORDS = {
+  /**
+   * The approval banner's line of a call asked of the person.
+   *
+   * @param tool - The tool called.
+   * @param editor - The editor it would run on, when known.
+   *
+   * @returns The line.
+   */
   asked: (tool: string, editor: string) =>
     `The agent asks to run ${tool} on ${editor || "the active Datalayer editor"}.`,
+  /**
+   * A call the person declined, as the run is answered.
+   *
+   * @param tool - The tool called.
+   *
+   * @returns The sentence.
+   */
   refused: (tool: string) =>
     `The person declined ${tool}: nothing was changed.`,
+  /**
+   * A call an application's rule leaves to the person.
+   *
+   * @param tool - The tool called.
+   *
+   * @returns The sentence.
+   */
   leftToPerson: (tool: string) =>
     `A rule of this application leaves ${tool} to the person: VS Code did not run it.`,
+  /**
+   * A call of a tool that is not one of the editors'.
+   *
+   * @param tool - The tool called.
+   *
+   * @returns The sentence.
+   */
   unknown: (tool: string) => `${tool} is not a tool of VS Code's editors.`,
+  /**
+   * No Datalayer editor of the kind the tool needs is active.
+   *
+   * @param target - The editor the tool needs.
+   *
+   * @returns The sentence, which tells the agent what to ask the person.
+   */
   noEditor: (target: DocumentToolTarget) =>
     target === "notebook"
       ? "No Datalayer notebook is the active editor in VS Code: ask the person to open one (or bring it to the front) and call the tool again."
       : target === "lexical"
         ? "No Datalayer document (.dlex) is the active editor in VS Code: ask the person to open one (or bring it to the front) and call the tool again."
         : "No Datalayer notebook or document is the active editor in VS Code.",
+  /** The extension host did not answer the call. */
   notAnswered: "VS Code did not answer in time.",
 } as const;
 
