@@ -22,7 +22,7 @@ import { CenteredSpinner } from "@datalayer/core/lib/components/display/Centered
 import {
   UserIdentity,
   type UserIdentityProfile,
-} from "@datalayer/core/lib/views/profile";
+} from "@datalayer/core/lib/views/profile/UserIdentity";
 import {
   PROFILE_WORDS,
   type ProfileHostMessage,

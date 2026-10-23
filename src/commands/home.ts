@@ -96,14 +96,30 @@ export function registerHomeCommands(
 
 /**
  * The sidebar's Home view rows: *Open Datalayer*, then *Profile* while
- * signed in.
+ * signed in, *Sign In with Datalayer* while not.
  *
  * @param signedIn - Whether someone is signed in.
  *
  * @returns The rows, in order.
  */
 export function homeRowItems(signedIn: boolean): vscode.TreeItem[] {
-  return signedIn ? [homeButtonItem(), profileItem()] : [homeButtonItem()];
+  return [homeButtonItem(), signedIn ? profileItem() : signInItem()];
+}
+
+/**
+ * The sidebar's row that signs in (`datalayer.login`), while nobody is.
+ *
+ * @returns The row.
+ */
+export function signInItem(): vscode.TreeItem {
+  const item = new vscode.TreeItem("Sign In with Datalayer");
+  item.iconPath = new vscode.ThemeIcon("sign-in");
+  item.tooltip = "Sign in to Datalayer";
+  item.command = {
+    command: "datalayer.login",
+    title: "Sign In with Datalayer",
+  };
+  return item;
 }
 
 /**

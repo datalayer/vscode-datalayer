@@ -181,10 +181,16 @@ const ada = {
 const settle = () => new Promise((done) => setTimeout(done, 0));
 
 describe("the Home view's rows", () => {
-  it("signed out: Open Datalayer only", () => {
-    expect(homeRowItems(false).map((item) => item.label)).toEqual([
+  it("signed out: Open Datalayer, then Sign In with Datalayer", () => {
+    const rows = homeRowItems(false);
+    expect(rows.map((item) => item.label)).toEqual([
       "Open Datalayer",
+      "Sign In with Datalayer",
     ]);
+    expect(rows[1]!.command).toEqual({
+      command: "datalayer.login",
+      title: "Sign In with Datalayer",
+    });
   });
 
   it("signed in: Open Datalayer, then Profile, which opens the Profile page", () => {
@@ -202,7 +208,7 @@ describe("the Home view's rows", () => {
 });
 
 describe("the Home view", () => {
-  it("shows Profile once signed in, and is read again on each sign-in and sign-out", () => {
+  it("shows Sign In, then Profile once signed in, read again on each sign-in and sign-out", () => {
     const auth = makeAuth(null);
     registerHomeCommands({ subscriptions: [] } as never, {
       authProvider: auth as never,
@@ -215,6 +221,7 @@ describe("the Home view", () => {
     });
     expect(tree.getChildren().map((item) => item.label)).toEqual([
       "Open Datalayer",
+      "Sign In with Datalayer",
     ]);
     auth.sign(ada);
     expect(changes).toBe(1);
@@ -224,7 +231,10 @@ describe("the Home view", () => {
     ]);
     auth.sign(null);
     expect(changes).toBe(2);
-    expect(tree.getChildren()).toHaveLength(1);
+    expect(tree.getChildren().map((item) => item.label)).toEqual([
+      "Open Datalayer",
+      "Sign In with Datalayer",
+    ]);
   });
 });
 
