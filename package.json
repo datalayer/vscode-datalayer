@@ -3,7 +3,7 @@
   "publisher": "Datalayer",
   "displayName": "Datalayer",
   "description": "✨ 🤖 Managed AI Agents for Data Analysis. LLM are bad at data — we fix that.",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "cache_version": "2",
   "icon": "images/datalayer-logo.png",
   "categories": [
@@ -87,7 +87,7 @@
     "@codemirror/search": "^6.5.11",
     "@codemirror/state": "^6.5.2",
     "@codemirror/view": "^6.38.3",
-    "@datalayer/agent-runtimes": "^1.5.83",
+    "@datalayer/agent-runtimes": "^1.5.85",
     "@datalayer/core": "^1.2.23",
     "@datalayer/jupyter-lexical": "^2.0.21",
     "@datalayer/jupyter-react": "^2.0.21",
