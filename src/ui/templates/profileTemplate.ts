@@ -58,6 +58,11 @@ export function getProfileHtml(
 </head>
 <body>
   <div id="root"></div>
+  <script nonce="${nonce}">
+    // The nonce for the <script> tags of the chunks webpack loads later
+    // (core's avatar loads its emoji lazily): the CSP refuses one without it.
+    window.__webpack_nonce__ = '${nonce}';
+  </script>
   <script nonce="${nonce}" src="${scriptUri}"></script>
 </body>
 </html>`;

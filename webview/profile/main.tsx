@@ -11,6 +11,14 @@
  * @module webview/profile/main
  */
 
+// Tell webpack the nonce for the <script> tags of the chunks it loads lazily
+// (set by the page's template): the webview's CSP refuses one without it.
+// eslint-disable-next-line @typescript-eslint/naming-convention, camelcase
+declare let __webpack_nonce__: string | undefined;
+// eslint-disable-next-line @typescript-eslint/naming-convention, camelcase, prefer-const
+__webpack_nonce__ = (window as unknown as { __webpack_nonce__?: string })
+  .__webpack_nonce__;
+
 import React from "react";
 import { createRoot } from "react-dom/client";
 import { ProfilePage } from "./ProfilePage";
