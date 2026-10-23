@@ -2,7 +2,7 @@
 
 All notable changes to the Datalayer VS Code extension are documented here.
 
-## [0.1.5] - Unreleased
+## [0.1.5] - 2026-10-23
 
 ### Added
 
