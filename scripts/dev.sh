@@ -45,7 +45,24 @@ until grep -q "Compiler 'extension' finished" "$LOG"; do
   sleep 1
 done
 
-code --new-window --extensionDevelopmentPath="$PWD" ${FOLDER:+"$FOLDER"}
+# The window is a VS Code instance of its own (its own profile directory,
+# the person's extensions and settings): a window of the running VS Code
+# closed at once (extension host exit 55) once VS Code was updated under it,
+# and the instance can be stopped without touching the person's own. One
+# left by a previous run is stopped first; signed in once, it stays signed in.
+PROFILE=${DEV_PROFILE:-"${XDG_CACHE_HOME:-$HOME/.cache}/datalayer-vscode-dev"}
+mkdir -p "$PROFILE/User"
+for settings in "$HOME/.config/Code/User/settings.json" "$HOME/Library/Application Support/Code/User/settings.json"; do
+  if [ -f "$settings" ] && [ ! -f "$PROFILE/User/settings.json" ]; then
+    cp "$settings" "$PROFILE/User/settings.json"
+  fi
+done
+if pkill -f -- "--user-data-dir=$PROFILE( |$)" 2>/dev/null; then
+  echo "make dev: stopped the development window of a previous run."
+  sleep 2
+fi
+code --user-data-dir="$PROFILE" --extensions-dir="$HOME/.vscode/extensions" \
+  --new-window --extensionDevelopmentPath="$PWD" ${FOLDER:+"$FOLDER"}
 
 cat <<'EOF'
 
