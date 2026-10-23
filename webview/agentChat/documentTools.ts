@@ -32,6 +32,7 @@ import {
   documentToolDecision,
   type DocumentToolOutcome,
   type DocumentToolSpec,
+  documentToolSummaryOf,
   isDocumentToolAsk,
   type TargetEditor,
 } from "../../src/chat/documentTools";
@@ -160,6 +161,9 @@ export function useDocumentTools(
         description: spec.description,
         parameters: spec.parameters,
         location: "frontend",
+        // Its card names the file it ran on.
+        summaryOf: (_args: Record<string, unknown>, result: unknown) =>
+          documentToolSummaryOf(result),
         // Never throws: a run whose tool threw would wait on it forever.
         handler: async (args: Record<string, unknown>) => {
           const decision = documentToolDecision(spec, host);

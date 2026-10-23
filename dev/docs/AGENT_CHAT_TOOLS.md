@@ -112,7 +112,10 @@ notebook and document tools reached Copilot only.
    throws: a thrown frontend tool would leave the run waiting.
 
 An application's transcript shows these calls as _App → VS Code: tool on
-analysis.ipynb_. The file name is added once the call is located.
+analysis.ipynb_. The file name is added once the call is located. In the chat
+with the person's own runtimes, the tool's card says _on analysis.ipynb_ once
+the call returned (`summaryOf`, which agent-runtimes' `<Chat>` reads from a
+frontend tool), in place of its arguments' summary.
 
 ## The target editor
 

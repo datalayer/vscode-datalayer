@@ -822,6 +822,11 @@ export interface AppChatFrontendTool {
   location: "frontend";
   /** What answers it. */
   handler: (args: Record<string, unknown>) => Promise<unknown>;
+  /** What its card says of a call once it returned (the file it ran on). */
+  summaryOf?: (
+    args: Record<string, unknown>,
+    result: unknown,
+  ) => string | undefined;
 }
 
 /**

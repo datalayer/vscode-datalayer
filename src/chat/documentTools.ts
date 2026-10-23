@@ -143,6 +143,15 @@ const ACTIVE_DOCUMENT_TOOL = "datalayer_getActiveDocument";
 /** The words the chat says, in one place. */
 export const DOCUMENT_TOOL_WORDS = {
   /**
+   * The tool card's line of a call that ran on an editor, in the chat with
+   * the person's own runtimes: *on analysis.ipynb*.
+   *
+   * @param editor - The file it ran on.
+   *
+   * @returns The line.
+   */
+  ranOn: (editor: string) => `on ${editor}`,
+  /**
    * The approval banner's line of a call asked of the person.
    *
    * @param tool - The tool called.
@@ -433,4 +442,23 @@ export function documentToolArgsOf(
     parsed[key] = value;
   }
   return parsed;
+}
+
+/**
+ * What a tool's card says of a call that returned: the file it ran on, from
+ * the `editor` its answer names; nothing when it named none (no editor
+ * open, a call left to the person).
+ *
+ * @param result - The tool's answer.
+ *
+ * @returns The line, or `undefined`.
+ */
+export function documentToolSummaryOf(result: unknown): string | undefined {
+  const editor =
+    result && typeof result === "object"
+      ? (result as { editor?: { name?: unknown } }).editor
+      : undefined;
+  return typeof editor?.name === "string" && editor.name
+    ? DOCUMENT_TOOL_WORDS.ranOn(editor.name)
+    : undefined;
 }

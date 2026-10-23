@@ -25,6 +25,7 @@ import {
   documentToolDecision,
   type DocumentToolSpec,
   documentToolSpecsOf,
+  documentToolSummaryOf,
   documentToolTargetOf,
   editorNameOf,
   isDocumentToolAsk,
@@ -273,6 +274,25 @@ describe("which editor a tool runs on", () => {
     expect(
       documentToolArgsOf({ cells: '[{"source":"1"}]', index: 2, text: "{x" }),
     ).toEqual({ cells: [{ source: "1" }], index: 2, text: "{x" });
+  });
+});
+
+describe("what a tool's card says", () => {
+  it("names the file the call ran on", () => {
+    expect(
+      documentToolSummaryOf({
+        success: true,
+        editor: { kind: "notebook", name: "analysis.ipynb", uri: "file:///a" },
+      }),
+    ).toBe("on analysis.ipynb");
+  });
+
+  it("says nothing when no editor was named", () => {
+    expect(
+      documentToolSummaryOf({ success: false, error: "No notebook" }),
+    ).toBeUndefined();
+    expect(documentToolSummaryOf("text")).toBeUndefined();
+    expect(documentToolSummaryOf(null)).toBeUndefined();
   });
 });
 
