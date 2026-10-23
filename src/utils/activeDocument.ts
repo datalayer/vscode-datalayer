@@ -85,3 +85,33 @@ export function getActiveDocumentInfo(): ActiveDocumentInfo | undefined {
     viewType,
   };
 }
+
+/**
+ * The document a tool's operation works on: the one its caller located
+ * (`extras.targetDocument`, the Datalayer Chat's calls), else the active
+ * tab's.
+ *
+ * @param extras - The operation's context extras.
+ *
+ * @returns The document's info, or undefined when there is none.
+ */
+export function targetDocumentInfo(
+  extras: Record<string, unknown> | undefined,
+): ActiveDocumentInfo | undefined {
+  const target = extras?.targetDocument as
+    { uri?: unknown; kind?: unknown } | undefined;
+  if (
+    typeof target?.uri === "string" &&
+    (target.kind === "notebook" || target.kind === "lexical")
+  ) {
+    const notebook = target.kind === "notebook";
+    return {
+      uri: vscode.Uri.parse(target.uri),
+      editorType: notebook ? "datalayer-notebook" : "datalayer-lexical",
+      viewType: notebook
+        ? "datalayer.jupyter-notebook"
+        : "datalayer.lexical-editor",
+    };
+  }
+  return getActiveDocumentInfo();
+}

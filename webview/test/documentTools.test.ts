@@ -23,9 +23,9 @@ import {
   DOCUMENT_TOOL_WORDS,
   documentToolArgsOf,
   documentToolDecision,
-  documentToolRefusal,
   type DocumentToolSpec,
   documentToolSpecsOf,
+  documentToolTargetOf,
   editorNameOf,
   isDocumentToolAsk,
 } from "../../src/chat/documentTools";
@@ -180,23 +180,88 @@ describe("which editor a tool runs on", () => {
     name: "notes.dlex",
   };
 
-  it("runs a notebook's tool only on a Datalayer notebook", () => {
-    expect(documentToolRefusal("notebook", notebook)).toBe("");
-    expect(documentToolRefusal("notebook", lexical)).toBe(
-      DOCUMENT_TOOL_WORDS.noEditor("notebook"),
-    );
-    expect(documentToolRefusal("notebook", undefined)).toContain(
-      "No Datalayer notebook",
-    );
+  const open = (
+    editor: typeof notebook | typeof lexical,
+    focusedAt: number,
+  ) => ({ ...editor, focusedAt });
+  const other = { kind: "other" as const, uri: "file:///x.py", name: "x.py" };
+
+  it("runs on the active tab when it is a Datalayer editor of the tool's kind", () => {
+    expect(
+      documentToolTargetOf("notebook", notebook, [open(notebook, 1)]),
+    ).toEqual({ editor: notebook });
+    expect(documentToolTargetOf("any", lexical, [])).toEqual({
+      editor: lexical,
+    });
   });
 
-  it("runs a document's tool only on a Datalayer document, either tool on either", () => {
-    expect(documentToolRefusal("lexical", lexical)).toBe("");
-    expect(documentToolRefusal("lexical", notebook)).toContain(".dlex");
-    expect(documentToolRefusal("any", notebook)).toBe("");
+  it("falls back to the one of its kind focused last, and says so", () => {
+    const older = {
+      kind: "notebook" as const,
+      uri: "file:///work/old.ipynb",
+      name: "old.ipynb",
+    };
+    // The chat sidebar or a Python file in front: the active tab is no target.
+    const located = documentToolTargetOf("notebook", other, [
+      open(older, 3),
+      open(notebook, 7),
+      open(lexical, 9),
+    ]);
+    expect(located.editor).toEqual(notebook);
+    expect(located.note).toBe(DOCUMENT_TOOL_WORDS.lastFocused(notebook, 2));
+    expect(located.note).toContain("My Analysis.ipynb");
+    expect(located.note).toContain("of 2 open");
+    // A document active, a notebook's tool: the notebook focused last.
     expect(
-      documentToolRefusal("any", { kind: "other", uri: "x", name: "x" }),
-    ).not.toBe("");
+      documentToolTargetOf("notebook", lexical, [open(notebook, 1)]).editor,
+    ).toEqual(notebook);
+    // Either kind for a tool of either: the editor focused last.
+    expect(
+      documentToolTargetOf("any", undefined, [
+        open(notebook, 1),
+        open(lexical, 2),
+      ]).editor,
+    ).toEqual(lexical);
+  });
+
+  it("never runs on an editor of the other kind", () => {
+    expect(
+      documentToolTargetOf("lexical", notebook, [open(notebook, 5)]),
+    ).toEqual({ error: DOCUMENT_TOOL_WORDS.noEditor("lexical") });
+  });
+
+  it("tells the agent to ask for one when none of its kind is open", () => {
+    const located = documentToolTargetOf("notebook", undefined, []);
+    expect(located).toEqual({
+      error: DOCUMENT_TOOL_WORDS.noEditor("notebook"),
+    });
+    expect(located.error).toContain("ask the person to open one");
+    expect(documentToolTargetOf("lexical", other, []).error).toContain(".dlex");
+  });
+
+  it("runs on the editor located before while it is open, never another", () => {
+    expect(
+      documentToolTargetOf(
+        "notebook",
+        lexical,
+        [open(notebook, 1)],
+        notebook.uri,
+      ),
+    ).toEqual({ editor: notebook });
+    // Closed meanwhile, with another notebook active: refused.
+    const elsewhere = {
+      kind: "notebook" as const,
+      uri: "file:///work/b.ipynb",
+      name: "b.ipynb",
+    };
+    expect(
+      documentToolTargetOf(
+        "notebook",
+        elsewhere,
+        [open(elsewhere, 4)],
+        notebook.uri,
+      ),
+    ).toEqual({ error: DOCUMENT_TOOL_WORDS.closed(notebook.uri) });
   });
 
   it("names the editor by its file name", () => {
@@ -220,10 +285,23 @@ describe("useDocumentTools", () => {
   function Probe(props: {
     call: Parameters<typeof useDocumentTools>[1];
     host?: Parameters<typeof useDocumentTools>[3];
+    onTarget?: Parameters<typeof useDocumentTools>[4];
   }): null {
-    latest = useDocumentTools(specs, props.call, "agent-1", props.host);
+    latest = useDocumentTools(
+      specs,
+      props.call,
+      "agent-1",
+      props.host,
+      props.onTarget,
+    );
     return null;
   }
+
+  const editor = {
+    kind: "notebook" as const,
+    name: "a.ipynb",
+    uri: "file:///work/a.ipynb",
+  };
 
   const tool = (name: string): AppChatFrontendTool =>
     latest.frontendTools.find((entry) => entry.name === name)!;
@@ -254,18 +332,49 @@ describe("useDocumentTools", () => {
     });
   });
 
-  it("runs a tool that reads at once, naming the editor", async () => {
-    const editor = { kind: "notebook" as const, name: "a.ipynb", uri: "u" };
+  it("runs a tool that reads at once, on the editor located, naming it", async () => {
     const call = vi.fn(async () => ({ editor, result: "cells" }));
-    act(() => root.render(React.createElement(Probe, { call })));
+    const onTarget = vi.fn();
+    act(() => root.render(React.createElement(Probe, { call, onTarget })));
     const answer = await tool("datalayer_readAllCells").handler({});
-    expect(call).toHaveBeenCalledWith("datalayer_readAllCells", {});
+    expect(call.mock.calls).toEqual([
+      ["datalayer_readAllCells", {}, { locate: true }],
+      ["datalayer_readAllCells", {}, { target: editor.uri }],
+    ]);
+    expect(onTarget).toHaveBeenCalledWith("datalayer_readAllCells", editor);
     expect(answer).toEqual({ success: true, editor, result: "cells" });
     expect(latest.asks).toEqual([]);
   });
 
-  it("asks before a tool that writes, and runs it once approved", async () => {
-    const call = vi.fn(async () => ({ result: "inserted" }));
+  it("passes on why the editor is not the active tab", async () => {
+    const note = DOCUMENT_TOOL_WORDS.lastFocused(editor, 2);
+    const call = vi.fn(
+      async (_name: string, _args: unknown, options?: { locate?: boolean }) =>
+        options?.locate ? { editor, note } : { editor, result: "cells" },
+    );
+    act(() => root.render(React.createElement(Probe, { call })));
+    expect(await tool("datalayer_readAllCells").handler({})).toEqual({
+      success: true,
+      editor,
+      note,
+      result: "cells",
+    });
+  });
+
+  it("runs nothing and asks nothing when no editor of its kind is open", async () => {
+    const error = DOCUMENT_TOOL_WORDS.noEditor("notebook");
+    const call = vi.fn(async () => ({ error }));
+    act(() => root.render(React.createElement(Probe, { call })));
+    expect(await tool("datalayer_insertCell").handler({})).toEqual({
+      success: false,
+      error,
+    });
+    expect(call).toHaveBeenCalledTimes(1);
+    expect(latest.asks).toEqual([]);
+  });
+
+  it("asks before a tool that writes, naming the file, and runs it there once approved", async () => {
+    const call = vi.fn(async () => ({ editor, result: "inserted" }));
     act(() => root.render(React.createElement(Probe, { call })));
     let answered: unknown;
     await act(async () => {
@@ -275,27 +384,37 @@ describe("useDocumentTools", () => {
           answered = value;
         });
     });
-    expect(call).not.toHaveBeenCalled();
+    // Located only: nothing ran yet.
+    expect(call.mock.calls).toEqual([
+      ["datalayer_insertCell", {}, { locate: true }],
+    ]);
     expect(latest.asks).toHaveLength(1);
     const ask = latest.asks[0]!;
     expect(isDocumentToolAsk(ask.id)).toBe(true);
     expect(ask).toMatchObject({
       toolName: "datalayer_insertCell",
+      toolDescription: DOCUMENT_TOOL_WORDS.asked(
+        "datalayer_insertCell",
+        "a.ipynb",
+      ),
       args: { source: "1+1" },
       agentId: "agent-1",
     });
+    expect(ask.toolDescription).toContain("a.ipynb");
     await act(async () => {
       expect(latest.decide(ask.id, true)).toBe(true);
     });
-    expect(call).toHaveBeenCalledWith("datalayer_insertCell", {
-      source: "1+1",
-    });
+    expect(call).toHaveBeenLastCalledWith(
+      "datalayer_insertCell",
+      { source: "1+1" },
+      { target: editor.uri },
+    );
     expect(answered).toMatchObject({ success: true, result: "inserted" });
     expect(latest.asks).toEqual([]);
   });
 
   it("changes nothing when the person declines", async () => {
-    const call = vi.fn();
+    const call = vi.fn(async () => ({ editor }));
     act(() => root.render(React.createElement(Probe, { call })));
     let answered: unknown;
     await act(async () => {
@@ -308,15 +427,16 @@ describe("useDocumentTools", () => {
     await act(async () => {
       latest.decide(latest.asks[0]!.id, false);
     });
-    expect(call).not.toHaveBeenCalled();
+    expect(call).toHaveBeenCalledTimes(1);
     expect(answered).toEqual({
       success: false,
+      editor,
       error: DOCUMENT_TOOL_WORDS.refused("datalayer_updateBlock"),
     });
   });
 
   it("declines what was asked when another agent is talked to", async () => {
-    const call = vi.fn();
+    const call = vi.fn(async () => ({ editor }));
     function Switch(props: { agentId: string }): null {
       latest = useDocumentTools(specs, call, props.agentId);
       return null;
@@ -336,7 +456,8 @@ describe("useDocumentTools", () => {
     });
     expect(latest.asks).toEqual([]);
     expect(answered).toMatchObject({ success: false });
-    expect(call).not.toHaveBeenCalled();
+    // Located only, never run.
+    expect(call).toHaveBeenCalledTimes(1);
   });
 
   it("leaves another approval to its own route", () => {
@@ -345,7 +466,7 @@ describe("useDocumentTools", () => {
   });
 
   it("follows the application's rules: do_it runs, leave_to_me refuses", async () => {
-    const call = vi.fn(async () => ({ result: "ok" }));
+    const call = vi.fn(async () => ({ editor, result: "ok" }));
     const host = {
       rules: [
         { appliesTo: ["datalayer_insertCell"], behaviour: "do_it" },
@@ -360,7 +481,8 @@ describe("useDocumentTools", () => {
       success: false,
       error: DOCUMENT_TOOL_WORDS.leftToPerson("datalayer_readAllCells"),
     });
-    expect(call).toHaveBeenCalledTimes(1);
+    // Located, then run: the read refused never asked VS Code.
+    expect(call).toHaveBeenCalledTimes(2);
   });
 
   it("says a failure as the tool's answer, never throws", async () => {

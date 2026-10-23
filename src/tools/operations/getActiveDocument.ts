@@ -9,7 +9,12 @@
  * This tool directly accesses VS Code API and is not part of the core operations
  */
 
-import { getActiveCustomEditorUri } from "../../utils/activeDocument";
+import type * as vscode from "vscode";
+
+import {
+  getActiveCustomEditorUri,
+  targetDocumentInfo,
+} from "../../utils/activeDocument";
 
 /**
  * Result of detecting the active document in VS Code, including its type and URI.
@@ -25,9 +30,13 @@ export interface ActiveDocumentResult {
 /**
  * Gets the currently active document's URI and filename.
  * Works with Lexical, Notebook, and other file types.
+ * @param target - The document the caller located; without it, the active tab's.
+ *
  * @returns Active document info with type, URI, and filename.
  */
-export async function getActiveDocument(): Promise<ActiveDocumentResult> {
+export async function getActiveDocument(
+  target?: vscode.Uri,
+): Promise<ActiveDocumentResult> {
   // eslint-disable-next-line no-console
   console.log("[Datalayer getActiveDocument] Tool invoked");
 
@@ -35,7 +44,7 @@ export async function getActiveDocument(): Promise<ActiveDocumentResult> {
     // Check for active custom editor (lexical/notebook)
     // eslint-disable-next-line no-console
     console.log("[Datalayer getActiveDocument] Checking for custom editors");
-    const uri = getActiveCustomEditorUri();
+    const uri = target ?? getActiveCustomEditorUri();
 
     if (!uri) {
       // eslint-disable-next-line no-console
@@ -111,12 +120,17 @@ export const getActiveDocumentOperation: import("@datalayer/jupyter-react").Tool
 
   async execute(
     _params: Record<string, never>,
-    _context: import("@datalayer/jupyter-react").ToolExecutionContext,
+    context: import("@datalayer/jupyter-react").ToolExecutionContext,
   ): Promise<ActiveDocumentResult> {
     // eslint-disable-next-line no-console
     console.log("[Datalayer getActiveDocument] Operation execute() called");
 
-    const result = await getActiveDocument();
+    // The document the caller located (the Datalayer Chat), else the active tab's.
+    const result = await getActiveDocument(
+      context.extras?.targetDocument
+        ? targetDocumentInfo(context.extras)?.uri
+        : undefined,
+    );
 
     // eslint-disable-next-line no-console
     console.log("[Datalayer getActiveDocument] Returning result:", result);

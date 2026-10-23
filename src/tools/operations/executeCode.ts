@@ -10,7 +10,7 @@ import * as vscode from "vscode";
 
 import { getRuntimesTreeProvider, getServiceContainer } from "../../extension";
 import { ActiveRuntimeStrategy } from "../../services/autoConnect/strategies/activeRuntimeStrategy";
-import { getActiveDocumentInfo } from "../../utils/activeDocument";
+import { targetDocumentInfo } from "../../utils/activeDocument";
 import { executeOnRuntime } from "../utils/runtimeExecutor";
 
 /**
@@ -43,7 +43,8 @@ export const executeCodeOperation: ToolOperation<ExecuteCodeParams, unknown> = {
     const { code } = params;
 
     // PRIMARY PATH: Check for active document and which editor is being used
-    const docInfo = getActiveDocumentInfo();
+    // The document the caller located, else the active tab's.
+    const docInfo = targetDocumentInfo(context.extras);
 
     // Route to appropriate executeCode based on editor type
     if (docInfo) {

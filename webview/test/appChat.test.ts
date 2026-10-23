@@ -360,6 +360,16 @@ describe("the transcript's lines (A-06)", () => {
         "datalayer_insertCell",
       ]),
     ).toBe("Desk → VS Code: datalayer_insertCell");
+    // Once located, the line names the file the tool runs on.
+    expect(
+      toolLineOf(
+        "Desk",
+        "datalayer_insertCell",
+        host,
+        ["datalayer_insertCell"],
+        "analysis.ipynb",
+      ),
+    ).toBe("Desk → VS Code: datalayer_insertCell on analysis.ipynb");
   });
 });
 

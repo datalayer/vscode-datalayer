@@ -37,7 +37,7 @@ import { executeCodeOperation } from "../operations/executeCode";
 import { getActiveDocumentOperation } from "../operations/getActiveDocument";
 import { listKernelsOperation } from "../operations/listKernels";
 import { selectKernelOperation } from "../operations/selectKernel";
-import { VSCodeToolAdapter } from "./toolAdapter";
+import { type ToolTargetDocument, VSCodeToolAdapter } from "./toolAdapter";
 
 /**
  * Combined operations registry type.
@@ -127,6 +127,8 @@ export function registeredToolDefinitions(): ToolDefinition[] {
  *
  * @param name - The tool's name (`datalayer_insertCell`).
  * @param input - Its arguments.
+ * @param target - The editor it runs on, as the chat located it: its
+ *   operation's messages go to that editor's webview.
  *
  * @returns Its result, formatted as the `datalayer.tools.responseFormat` setting says.
  *
@@ -135,12 +137,13 @@ export function registeredToolDefinitions(): ToolDefinition[] {
 export async function runRegisteredTool(
   name: string,
   input: unknown,
+  target?: ToolTargetDocument,
 ): Promise<unknown> {
   const tool = registered.get(name);
   if (!tool) {
     throw new Error(`No tool ${name} is registered.`);
   }
-  return tool.adapter.run(input);
+  return tool.adapter.run(input, target);
 }
 
 /**

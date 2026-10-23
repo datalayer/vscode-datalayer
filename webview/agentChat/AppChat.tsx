@@ -69,7 +69,10 @@ import {
   decisionOutcome,
   stillPending,
 } from "../../src/chat/attention";
-import type { DocumentToolSpec } from "../../src/chat/documentTools";
+import type {
+  DocumentToolSpec,
+  TargetEditor,
+} from "../../src/chat/documentTools";
 import { type CallDocumentTool, useDocumentTools } from "./documentTools";
 import {
   answerTextOf,
@@ -366,22 +369,54 @@ export default function AppChat(props: AppChatProps): React.JSX.Element {
     };
   }, [chatOpen, services.aiAgentsUrl, readApprovals]);
 
-  // The active Datalayer notebook's or document's tools, decided by the
-  // application's rules (the runtime hands their calls back to the view).
+  const documentToolNames = useMemo(
+    () => documentTools.map((tool) => tool.name),
+    [documentTools],
+  );
+  // The transcript's line of an editor's tool names its file once located:
+  // the last line of that call gets "on <file>".
+  const nameToolTarget = useCallback(
+    (tool: string, editor: TargetEditor) => {
+      const appName = handle.name;
+      const bare = toolLineOf(
+        appName,
+        tool,
+        host ?? undefined,
+        documentToolNames,
+      );
+      setLines((said) => {
+        const at = said.lastIndexOf(bare);
+        if (at < 0) {
+          return said;
+        }
+        const next = [...said];
+        next[at] = toolLineOf(
+          appName,
+          tool,
+          host ?? undefined,
+          documentToolNames,
+          editor.name,
+        );
+        return next;
+      });
+    },
+    [handle.name, host, documentToolNames],
+  );
+
+  // The Datalayer notebook's or document's tools (the active tab, else the
+  // one focused last), decided by the application's rules (the runtime
+  // hands their calls back to the view).
   const editorTools = useDocumentTools(
     documentTools,
     callDocumentTool,
     handle.agentId,
     host && !revisionRefusal(handle, host) ? host : undefined,
+    nameToolTarget,
   );
   const decideEditorTool = editorTools.decide;
   const pending = useMemo(
     () => [...approvals, ...editorTools.asks],
     [approvals, editorTools.asks],
-  );
-  const documentToolNames = useMemo(
-    () => documentTools.map((tool) => tool.name),
-    [documentTools],
   );
 
   // The turn's phase, for the status bar: waiting for the person while an

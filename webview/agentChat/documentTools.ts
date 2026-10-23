@@ -9,9 +9,11 @@
  * each tool the extension host lists is given to `<Chat frontendTools>`,
  * whose run lists it in its `tools`; a call the runtime hands back is
  * decided here (run, asked in the chat's approval banner, or refused, as
- * the application's rules say), then run by the extension host on the
- * active Datalayer notebook or document, and its outcome — the editor it
- * ran on and what the tool answered — goes back to the run.
+ * the application's rules say). The extension host first says which
+ * Datalayer notebook or document it would run on (the active tab, else the
+ * one focused last); the banner names that file, and the call then runs
+ * on that one — never on another, should focus move meanwhile. Its outcome
+ * — the editor it ran on and what the tool answered — goes back to the run.
  *
  * @module webview/agentChat/documentTools
  */
@@ -26,17 +28,26 @@ import type {
 import {
   DOCUMENT_TOOL_WORDS,
   documentToolAskId,
+  type DocumentToolCallOptions,
   documentToolDecision,
   type DocumentToolOutcome,
   type DocumentToolSpec,
   isDocumentToolAsk,
+  type TargetEditor,
 } from "../../src/chat/documentTools";
 
-/** Runs a tool through the extension host. */
+/**
+ * Runs a tool through the extension host — or, with `locate`, only asks
+ * which editor it would run on.
+ */
 export type CallDocumentTool = (
   name: string,
   args: Record<string, unknown>,
+  options?: DocumentToolCallOptions,
 ) => Promise<DocumentToolOutcome>;
+
+/** Told which editor a call runs on, before it runs (the chat's tool line). */
+export type OnDocumentToolTarget = (tool: string, editor: TargetEditor) => void;
 
 /** What {@link useDocumentTools} gives the chat. */
 export interface DocumentTools {
@@ -73,9 +84,15 @@ function answerOf(outcome: DocumentToolOutcome): Record<string, unknown> {
       success: false,
       error: outcome.error,
       ...(outcome.editor ? { editor: outcome.editor } : {}),
+      ...(outcome.note ? { note: outcome.note } : {}),
     };
   }
-  return { success: true, editor: outcome.editor, result: outcome.result };
+  return {
+    success: true,
+    editor: outcome.editor,
+    ...(outcome.note ? { note: outcome.note } : {}),
+    result: outcome.result,
+  };
 }
 
 /**
@@ -87,6 +104,7 @@ function answerOf(outcome: DocumentToolOutcome): Record<string, unknown> {
  * @param agentId - The agent talked to, for the approval banner.
  * @param host - The application's Appspec (its rules); none for an agent
  *   of the person's own runtime.
+ * @param onTarget - Told the editor a call runs on, before it runs.
  *
  * @returns The tools, the asks and their answer.
  */
@@ -95,6 +113,7 @@ export function useDocumentTools(
   call: CallDocumentTool,
   agentId: string,
   host?: Pick<AppHost, "rules">,
+  onTarget?: OnDocumentToolTarget,
 ): DocumentTools {
   const [asks, setAsks] = useState<Ask[]>([]);
   const asksRef = useRef<Ask[]>([]);
@@ -114,13 +133,17 @@ export function useDocumentTools(
   );
 
   const ask = useCallback(
-    (spec: DocumentToolSpec, args: Record<string, unknown>) =>
+    (
+      spec: DocumentToolSpec,
+      args: Record<string, unknown>,
+      editor: TargetEditor,
+    ) =>
       new Promise<boolean>((resolve) => {
         askCount += 1;
         const approval: AppChatApproval = {
           id: documentToolAskId(askCount),
           toolName: spec.name,
-          toolDescription: DOCUMENT_TOOL_WORDS.asked(spec.name, ""),
+          toolDescription: DOCUMENT_TOOL_WORDS.asked(spec.name, editor.name),
           args,
           agentId,
           requestedAt: new Date().toISOString(),
@@ -145,11 +168,34 @@ export function useDocumentTools(
               error: DOCUMENT_TOOL_WORDS.leftToPerson(spec.name),
             });
           }
-          if (decision === "ask_first" && !(await ask(spec, args ?? {}))) {
-            return answerOf({ error: DOCUMENT_TOOL_WORDS.refused(spec.name) });
-          }
           try {
-            return answerOf(await call(spec.name, args ?? {}));
+            // Which editor it runs on, before anything runs: named in the
+            // banner and the tool line, then pinned for the call.
+            const located = await call(spec.name, {}, { locate: true });
+            const editor = located.editor;
+            if (located.error || !editor) {
+              return answerOf({
+                error:
+                  located.error || DOCUMENT_TOOL_WORDS.noEditor(spec.target),
+              });
+            }
+            onTarget?.(spec.name, editor);
+            if (
+              decision === "ask_first" &&
+              !(await ask(spec, args ?? {}, editor))
+            ) {
+              return answerOf({
+                editor,
+                error: DOCUMENT_TOOL_WORDS.refused(spec.name),
+              });
+            }
+            const outcome = await call(spec.name, args ?? {}, {
+              target: editor.uri,
+            });
+            return answerOf({
+              ...outcome,
+              ...(located.note && !outcome.note ? { note: located.note } : {}),
+            });
           } catch (error) {
             return answerOf({
               error: error instanceof Error ? error.message : String(error),
@@ -157,7 +203,7 @@ export function useDocumentTools(
           }
         },
       })),
-    [specs, host, call, ask],
+    [specs, host, call, ask, onTarget],
   );
 
   const decide = useCallback((approvalId: string, approved: boolean) => {

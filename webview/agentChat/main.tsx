@@ -21,6 +21,7 @@ import type { AppChatChoice, EditorContext } from "../../src/chat/appChat";
 import type { ApprovalRaised } from "../../src/chat/attention";
 import {
   DOCUMENT_TOOL_WORDS,
+  type DocumentToolCallOptions,
   type DocumentToolOutcome,
   type DocumentToolSpec,
 } from "../../src/chat/documentTools";
@@ -116,23 +117,33 @@ const toolCalls = new Map<string, (outcome: DocumentToolOutcome) => void>();
 const TOOL_CALL_TIMEOUT_MS = 120_000;
 
 /**
- * Asks the extension host to run a notebook or document tool on the active
- * Datalayer editor, as Copilot's calls run it.
+ * Asks the extension host to run a notebook or document tool, as Copilot's
+ * calls run it — or, with `locate`, which Datalayer editor it would run on
+ * (the active tab, else the one focused last).
  *
  * @param name - The tool called.
  * @param args - Its arguments.
+ * @param options - `locate` to only ask the editor; `target` to run on the
+ *   one located before.
  *
  * @returns The outcome: the editor it ran on and the result, or why not.
  */
 function requestDocumentTool(
   name: string,
   args: Record<string, unknown>,
+  options: DocumentToolCallOptions = {},
 ): Promise<DocumentToolOutcome> {
   editorRequestCount += 1;
   const requestId = `tool-${editorRequestCount}`;
   return new Promise((resolve) => {
     toolCalls.set(requestId, resolve);
-    vscode.postMessage({ type: "document-tool-call", requestId, name, args });
+    vscode.postMessage({
+      type: "document-tool-call",
+      requestId,
+      name,
+      args,
+      ...options,
+    });
     setTimeout(() => {
       if (toolCalls.delete(requestId)) {
         resolve({ error: DOCUMENT_TOOL_WORDS.notAnswered });

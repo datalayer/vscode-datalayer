@@ -888,6 +888,8 @@ export function hostContextTool(
  * @param host - What its Appspec says, for its connections.
  * @param editorTools - The tools VS Code runs on its editors
  *   (`chat/documentTools`): said as *VS Code*'s too.
+ * @param editorName - The file an editor's tool runs on, once located:
+ *   *Desk → VS Code: tool on analysis.ipynb*.
  *
  * @returns The line, as the transcript says it.
  */
@@ -896,9 +898,10 @@ export function toolLineOf(
   tool: string,
   host: Pick<AppHost, "connections"> | undefined,
   editorTools: readonly string[] = [],
+  editorName = "",
 ): string {
   if (tool === HOST_CONTEXT_TOOL || editorTools.includes(tool)) {
-    return `${appName} → VS Code: ${tool}`;
+    return `${appName} → VS Code: ${tool}${editorName && editorTools.includes(tool) ? ` on ${editorName}` : ""}`;
   }
   const connection = (host?.connections ?? []).find(
     ({ server, tools }) =>

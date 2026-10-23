@@ -15,9 +15,11 @@
  * Tools API; the agents talked to in the Datalayer Chat call the same ones
  * as frontend tools — the chat lists them in each run's `tools` (AG-UI
  * `RunAgentInput.tools`, the Vercel AI body's `tools`), the runtime hands a
- * call back to the view, the view asks the extension host to run it on the
- * active Datalayer notebook or document, and the result goes back to the
- * run, naming the editor it was run on.
+ * call back to the view, the view asks the extension host which Datalayer
+ * notebook or document it would run on ({@link documentToolTargetOf}: the
+ * active tab, else the one focused last), shows that file to the person,
+ * has the host run it there, and the result goes back to the run, naming
+ * the editor it was run on.
  *
  * A call the runtime hands back never passes its own approvals (the runtime
  * never runs it), so the view decides it here: a rule of the application
@@ -73,14 +75,49 @@ export interface ActiveEditor {
   name: string;
 }
 
+/** A Datalayer editor a tool runs on, as its result names it. */
+export interface TargetEditor {
+  /** `notebook` or `lexical`. */
+  kind: "notebook" | "lexical";
+  /** Its file name. */
+  name: string;
+  /** Its URI. */
+  uri: string;
+}
+
+/** A Datalayer editor open in VS Code (its webview panel not disposed). */
+export interface OpenEditor extends TargetEditor {
+  /**
+   * When it was last focused: a counter, larger is later; `0` when it was
+   * never focused (opened in the background).
+   */
+  focusedAt: number;
+}
+
 /** What the extension host answers a call with. */
 export interface DocumentToolOutcome {
-  /** The editor it was run on, when it ran on one. */
-  editor?: { kind: "notebook" | "lexical"; name: string; uri: string };
+  /** The editor it was run on (or, located only, would run on). */
+  editor?: TargetEditor;
+  /**
+   * Why that editor, when it is not the active tab: the one of its kind
+   * focused last, which the agent should name to the person.
+   */
+  note?: string;
   /** What the tool answered (formatted as the `tools.responseFormat` setting says). */
   result?: unknown;
   /** Why it did not run, in a sentence. */
   error?: string;
+}
+
+/** How the page asks the host about a call. */
+export interface DocumentToolCallOptions {
+  /** Only say which editor the call would run on; run nothing. */
+  locate?: boolean;
+  /**
+   * The URI of the editor located (and shown to the person) before: the
+   * call runs on that one, or is refused when it was closed meanwhile.
+   */
+  target?: string;
 }
 
 /** The prefix of an approval the chat asks for a tool of the editor. */
@@ -116,6 +153,25 @@ export const DOCUMENT_TOOL_WORDS = {
   asked: (tool: string, editor: string) =>
     `The agent asks to run ${tool} on ${editor || "the active Datalayer editor"}.`,
   /**
+   * Why the call runs on an editor that is not the active tab.
+   *
+   * @param editor - The editor chosen.
+   * @param open - How many Datalayer editors of its kind are open.
+   *
+   * @returns The sentence, for the agent to tell the person.
+   */
+  lastFocused: (editor: TargetEditor, open: number) =>
+    `${editor.name} is not the active tab: it is the Datalayer ${editor.kind === "notebook" ? "notebook" : "document"} focused last${open > 1 ? ` (of ${open} open)` : ""}. Tell the person which file you acted on.`,
+  /**
+   * The editor located before was closed before the call ran.
+   *
+   * @param uri - Its URI.
+   *
+   * @returns The sentence.
+   */
+  closed: (uri: string) =>
+    `${editorNameOf(uri)} was closed before the tool ran: nothing was changed. Ask the person to open it again and call the tool again.`,
+  /**
    * A call the person declined, as the run is answered.
    *
    * @param tool - The tool called.
@@ -150,10 +206,10 @@ export const DOCUMENT_TOOL_WORDS = {
    */
   noEditor: (target: DocumentToolTarget) =>
     target === "notebook"
-      ? "No Datalayer notebook is the active editor in VS Code: ask the person to open one (or bring it to the front) and call the tool again."
+      ? "No Datalayer notebook is open in VS Code: ask the person to open one and call the tool again."
       : target === "lexical"
-        ? "No Datalayer document (.dlex) is the active editor in VS Code: ask the person to open one (or bring it to the front) and call the tool again."
-        : "No Datalayer notebook or document is the active editor in VS Code.",
+        ? "No Datalayer document (.dlex) is open in VS Code: ask the person to open one and call the tool again."
+        : "No Datalayer notebook or document is open in VS Code: ask the person to open one and call the tool again.",
   /** The extension host did not answer the call. */
   notAnswered: "VS Code did not answer in time.",
 } as const;
@@ -241,24 +297,69 @@ export function documentToolDecision(
 }
 
 /**
- * Why a tool cannot run on the active editor, or `""` when it can.
+ * Whether an editor is of the kind a tool needs.
  *
  * @param target - The editor the tool needs.
- * @param active - The editor active in VS Code, if any.
+ * @param kind - The editor's kind.
  *
- * @returns The sentence, or `""`.
+ * @returns Whether it fits.
  */
-export function documentToolRefusal(
+function fits(target: DocumentToolTarget, kind: ActiveEditor["kind"]): boolean {
+  return kind !== "other" && (target === "any" || kind === target);
+}
+
+/**
+ * The editor a tool runs on:
+ *
+ * 1. the one located before (`pinned`, shown to the person), while it is
+ *    still open — else refused, never run on another;
+ * 2. the active tab, when it is a Datalayer editor of the kind the tool
+ *    needs;
+ * 3. else the open one of that kind focused last (focus moves into the
+ *    chat sidebar or another panel), with a note that names it;
+ * 4. else none: the agent is told to ask the person to open one.
+ *
+ * @param target - The editor the tool needs.
+ * @param active - The active tab, if any.
+ * @param open - The Datalayer editors open (webview panels not disposed).
+ * @param pinned - The URI of the editor located before, if any.
+ *
+ * @returns The editor (and a note when it is not the active tab), or why none.
+ */
+export function documentToolTargetOf(
   target: DocumentToolTarget,
   active: ActiveEditor | undefined,
-): string {
-  if (!active || active.kind === "other") {
-    return DOCUMENT_TOOL_WORDS.noEditor(target);
+  open: readonly OpenEditor[],
+  pinned?: string,
+): Pick<DocumentToolOutcome, "editor" | "note" | "error"> {
+  const editorOf = ({ kind, name, uri }: TargetEditor): TargetEditor => ({
+    kind,
+    name,
+    uri,
+  });
+  if (pinned) {
+    const still = open.find(
+      (editor) => editor.uri === pinned && fits(target, editor.kind),
+    );
+    return still
+      ? { editor: editorOf(still) }
+      : { error: DOCUMENT_TOOL_WORDS.closed(pinned) };
   }
-  if (target !== "any" && active.kind !== target) {
-    return DOCUMENT_TOOL_WORDS.noEditor(target);
+  if (active && active.kind !== "other" && fits(target, active.kind)) {
+    return { editor: editorOf({ ...active, kind: active.kind }) };
   }
-  return "";
+  const candidates = open
+    .filter((editor) => fits(target, editor.kind))
+    .sort((a, b) => b.focusedAt - a.focusedAt);
+  const last = candidates[0];
+  if (!last) {
+    return { error: DOCUMENT_TOOL_WORDS.noEditor(target) };
+  }
+  const editor = editorOf(last);
+  return {
+    editor,
+    note: DOCUMENT_TOOL_WORDS.lastFocused(editor, candidates.length),
+  };
 }
 
 /**

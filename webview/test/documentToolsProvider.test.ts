@@ -7,9 +7,11 @@
 /**
  * The editor's tools of the Agent Chat sidebar, on the extension host's
  * side: the provider lists the registered notebook and document tools to
- * the view (`document-tools`) and runs a call of one on the active
- * Datalayer editor through the same registry Copilot's calls go through
- * (`document-tool-call` -> `document-tool-result`), naming the editor.
+ * the view (`document-tools`) and runs a call of one on a Datalayer editor
+ * — the active tab, else the one of its kind focused last, or the one the
+ * page located before — through the same registry Copilot's calls go
+ * through, handing it the editor so its webview messages go to that
+ * editor's panel (`document-tool-call` -> `document-tool-result`).
  */
 
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -57,6 +59,21 @@ const registry = vi.hoisted(() => ({
 const active = vi.hoisted(() => ({
   info: undefined as
     { uri: { toString: () => string }; editorType: string } | undefined,
+}));
+
+// The Datalayer editors open, as the document registry tracks them.
+const opened = vi.hoisted(() => ({
+  editors: [] as Array<{
+    documentUri: string;
+    type: "notebook" | "lexical";
+    focusedAt: number;
+  }>,
+}));
+
+vi.mock("../../src/extension", () => ({
+  getServiceContainer: () => ({
+    documentRegistry: { openEditors: () => opened.editors },
+  }),
 }));
 
 vi.mock("vscode", () => ({
@@ -178,7 +195,7 @@ function makeProvider() {
 const settle = () => new Promise((done) => setTimeout(done, 0));
 
 /** A provider resolved on a view that said it listens. */
-async function opened() {
+async function openChat() {
   const { provider } = makeProvider();
   const made = makeView();
   provider.resolveWebviewView(made.view as never);
@@ -196,6 +213,7 @@ const notebook = (uri: string) => ({
 describe("the editor's tools of the chat", () => {
   afterEach(() => {
     active.info = undefined;
+    opened.editors = [];
     registry.runRegisteredTool.mockClear();
   });
 
@@ -207,7 +225,7 @@ describe("the editor's tools of the chat", () => {
         json: async () => ({ deployments: [] }),
       })),
     );
-    const { posted } = await opened();
+    const { posted } = await openChat();
     vi.unstubAllGlobals();
     const listed = posted.find((m) => m.type === "document-tools");
     expect(listed?.tools).toEqual([
@@ -236,7 +254,7 @@ describe("the editor's tools of the chat", () => {
         json: async () => ({ deployments: [] }),
       })),
     );
-    const { posted, send } = await opened();
+    const { posted, send } = await openChat();
     vi.unstubAllGlobals();
     active.info = notebook("file:///work/My%20Analysis.ipynb");
     send({
@@ -250,6 +268,7 @@ describe("the editor's tools of the chat", () => {
     expect(registry.runRegisteredTool).toHaveBeenCalledWith(
       "datalayer_insertCell",
       { source: "1+1", cells: [{ a: 1 }] },
+      { uri: "file:///work/My%20Analysis.ipynb", kind: "notebook" },
     );
     expect(posted.find((m) => m.type === "document-tool-result")).toEqual({
       type: "document-tool-result",
@@ -273,7 +292,7 @@ describe("the editor's tools of the chat", () => {
         json: async () => ({ deployments: [] }),
       })),
     );
-    const { posted, send } = await opened();
+    const { posted, send } = await openChat();
     vi.unstubAllGlobals();
     active.info = notebook("file:///work/a.ipynb");
     send({
@@ -310,7 +329,7 @@ describe("the editor's tools of the chat", () => {
         json: async () => ({ deployments: [] }),
       })),
     );
-    const { posted, send } = await opened();
+    const { posted, send } = await openChat();
     vi.unstubAllGlobals();
     active.info = notebook("file:///work/a.ipynb");
     registry.runRegisteredTool.mockRejectedValueOnce(
@@ -333,6 +352,130 @@ describe("the editor's tools of the chat", () => {
         uri: "file:///work/a.ipynb",
       },
       error: "Tool execution timeout (30s): insertCell",
+    });
+  });
+
+  /** Sends a call and returns its outcome. */
+  async function outcomeOf(
+    send: (message: unknown) => void,
+    posted: Array<Record<string, unknown>>,
+    message: Record<string, unknown>,
+  ) {
+    send({ type: "document-tool-call", args: {}, ...message });
+    await settle();
+    await settle();
+    return posted.find(
+      (m) =>
+        m.type === "document-tool-result" && m.requestId === message.requestId,
+    )?.outcome;
+  }
+
+  async function quietChat() {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => ({
+        ok: true,
+        json: async () => ({ deployments: [] }),
+      })),
+    );
+    const made = await openChat();
+    vi.unstubAllGlobals();
+    return made;
+  }
+
+  it("runs on the notebook focused last when the active tab is no Datalayer editor, routed to it", async () => {
+    const { posted, send } = await quietChat();
+    // Focus moved into the chat sidebar or a Python file: no Datalayer tab active.
+    active.info = {
+      uri: { toString: () => "file:///work/x.py" },
+      editorType: "other",
+    };
+    opened.editors = [
+      { documentUri: "file:///work/a.ipynb", type: "notebook", focusedAt: 2 },
+      { documentUri: "file:///work/b.ipynb", type: "notebook", focusedAt: 5 },
+      { documentUri: "file:///work/c.dlex", type: "lexical", focusedAt: 9 },
+    ];
+    const outcome = await outcomeOf(send, posted, {
+      requestId: "t5",
+      name: "datalayer_insertCell",
+    });
+    expect(registry.runRegisteredTool).toHaveBeenCalledWith(
+      "datalayer_insertCell",
+      {},
+      { uri: "file:///work/b.ipynb", kind: "notebook" },
+    );
+    expect(outcome).toEqual({
+      editor: {
+        kind: "notebook",
+        name: "b.ipynb",
+        uri: "file:///work/b.ipynb",
+      },
+      note: expect.stringContaining("b.ipynb is not the active tab"),
+      result: "cell 2 inserted",
+    });
+  });
+
+  it("only says the editor when asked to locate, running nothing", async () => {
+    const { posted, send } = await quietChat();
+    opened.editors = [
+      { documentUri: "file:///work/c.dlex", type: "lexical", focusedAt: 1 },
+    ];
+    const outcome = await outcomeOf(send, posted, {
+      requestId: "t6",
+      name: "datalayer_readBlock",
+      locate: true,
+    });
+    expect(registry.runRegisteredTool).not.toHaveBeenCalled();
+    expect(outcome).toEqual({
+      editor: { kind: "lexical", name: "c.dlex", uri: "file:///work/c.dlex" },
+      note: expect.stringContaining("c.dlex"),
+    });
+  });
+
+  it("runs on the editor located before, and refuses once it was closed", async () => {
+    const { posted, send } = await quietChat();
+    // Another notebook came to the front after the person approved.
+    active.info = notebook("file:///work/other.ipynb");
+    opened.editors = [
+      { documentUri: "file:///work/a.ipynb", type: "notebook", focusedAt: 1 },
+      {
+        documentUri: "file:///work/other.ipynb",
+        type: "notebook",
+        focusedAt: 2,
+      },
+    ];
+    await outcomeOf(send, posted, {
+      requestId: "t7",
+      name: "datalayer_insertCell",
+      target: "file:///work/a.ipynb",
+    });
+    expect(registry.runRegisteredTool).toHaveBeenLastCalledWith(
+      "datalayer_insertCell",
+      {},
+      { uri: "file:///work/a.ipynb", kind: "notebook" },
+    );
+    registry.runRegisteredTool.mockClear();
+    opened.editors = opened.editors.slice(1);
+    const outcome = await outcomeOf(send, posted, {
+      requestId: "t8",
+      name: "datalayer_insertCell",
+      target: "file:///work/a.ipynb",
+    });
+    expect(registry.runRegisteredTool).not.toHaveBeenCalled();
+    expect(outcome).toEqual({
+      error: expect.stringContaining("a.ipynb was closed"),
+    });
+  });
+
+  it("tells the agent to ask for a notebook when none is open", async () => {
+    const { posted, send } = await quietChat();
+    const outcome = await outcomeOf(send, posted, {
+      requestId: "t9",
+      name: "datalayer_insertCell",
+    });
+    expect(registry.runRegisteredTool).not.toHaveBeenCalled();
+    expect(outcome).toEqual({
+      error: expect.stringContaining("ask the person to open one"),
     });
   });
 });

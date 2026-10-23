@@ -18,6 +18,7 @@ import type {
 import { formatResponse } from "@datalayer/jupyter-react";
 import * as vscode from "vscode";
 
+import { editorNameOf } from "../../chat/documentTools";
 import { getServiceContainer } from "../../extension";
 import type { Document } from "../../models/spaceItem";
 import { getValidatedSettingsGroup } from "../../services/config/settingsValidator";
@@ -27,6 +28,18 @@ import {
   getActiveDatalayerNotebook,
   validateDatalayerNotebook,
 } from "../../utils/notebookValidation";
+
+/**
+ * The Datalayer editor a call runs on, as the Datalayer Chat located it
+ * (`chat/documentTools`): its operation's webview messages go to that
+ * editor's panel, never to whichever one is active.
+ */
+export interface ToolTargetDocument {
+  /** The document's URI. */
+  uri: string;
+  /** Its editor's kind. */
+  kind: "notebook" | "lexical";
+}
 
 /**
  * VS Code Tool Adapter
@@ -108,13 +121,15 @@ export class VSCodeToolAdapter<
    * Datalayer Chat's agents' calls (`runRegisteredTool`) both run.
    *
    * @param input - The tool's arguments.
+   * @param target - The editor to run on (the Datalayer Chat's calls);
+   *   without it, the one the arguments name or the active one (Copilot's).
    *
    * @returns The operation's result, formatted (TOON or JSON) as the
    *   `datalayer.tools.responseFormat` setting says.
    */
-  async run(input: TParams): Promise<unknown> {
+  async run(input: TParams, target?: ToolTargetDocument): Promise<unknown> {
     // Build execution context (includes format from VS Code config)
-    const context = await this.buildExecutionContext(input);
+    const context = await this.buildExecutionContext(input, target);
 
     // Step 1: Execute the core operation (returns pure typed data)
     const result = await this.operation.execute(input, context);
@@ -157,11 +172,13 @@ export class VSCodeToolAdapter<
   /**
    * Builds the execution context for the operation.
    * @param params - Tool input parameters for context resolution.
+   * @param target - The editor to run on, when the caller located it.
    *
    * @returns Execution context with document ID, format, and extras.
    */
   private async buildExecutionContext(
     params: TParams,
+    target?: ToolTargetDocument,
   ): Promise<ToolExecutionContext> {
     const services = getServiceContainer();
 
@@ -177,24 +194,34 @@ export class VSCodeToolAdapter<
     const needsBlockDocument = this.definition.tags?.includes("lexical");
     const isCreateOperation = this.definition.tags?.includes("create");
 
+    // The document the operation works on: the one the caller located, else
+    // the one the arguments name, else the active one. Create operations
+    // need none.
+    const targetUri = isCreateOperation
+      ? undefined
+      : (target?.uri ??
+        (needsCellDocument
+          ? await this.resolveNotebookUri(params)
+          : needsBlockDocument
+            ? await this.resolveLexicalUri(params)
+            : undefined));
+
     const context: ToolExecutionContext = {
       format: responseFormat,
 
-      // Provide executor that calls VS Code internal commands
+      // Provide executor that calls VS Code internal commands, in the
+      // webview of the target document's editor.
       executor: {
         execute: async (command: string, args: unknown): Promise<unknown> => {
-          return this.executeVSCodeCommand(command, args);
+          return this.executeVSCodeCommand(command, args, targetUri);
         },
       },
 
       // Universal documentId for both notebooks and lexicals
-      // Skip document ID resolution for create operations (they don't need an active document)
       documentId:
-        !isCreateOperation && needsCellDocument
-          ? await this.resolveNotebookId(params)
-          : !isCreateOperation && needsBlockDocument
-            ? await this.resolveLexicalId(params)
-            : undefined,
+        targetUri && (needsCellDocument || needsBlockDocument)
+          ? this.documentIdOf(targetUri)
+          : undefined,
 
       // Put platform-specific services in extras
       extras: {
@@ -217,6 +244,12 @@ export class VSCodeToolAdapter<
     // ENSURE documentsContext is ALWAYS present in extras
     // (in case buildCreateNotebookExtras or buildDefaultExtras overwrites extras)
     context.extras.documentsContext = documentsContext;
+
+    // The operations of either editor (`executeCode`, `getActiveDocument`)
+    // read the target here before the active tab.
+    if (target) {
+      context.extras.targetDocument = target;
+    }
 
     return context;
   }
@@ -419,14 +452,14 @@ export class VSCodeToolAdapter<
   }
 
   /**
-   * Resolves notebook ID from parameters or active editor with retry logic.
+   * Resolves the notebook's URI from parameters or active editor with retry logic.
    * @param params - Tool parameters potentially containing notebook_uri.
    *
-   * @returns Resolved notebook ID or URI string.
+   * @returns The notebook's URI string.
    *
    * @throws Error if no active Datalayer notebook is found after retries.
    */
-  private async resolveNotebookId(params: TParams): Promise<string> {
+  private async resolveNotebookUri(params: TParams): Promise<string> {
     // Try to get URI from parameters (with retry logic for async notebook initialization)
     const paramsWithUri = params as { notebook_uri?: string };
     const uriString = paramsWithUri.notebook_uri;
@@ -459,28 +492,34 @@ export class VSCodeToolAdapter<
       );
     }
 
-    // Return the notebookId (URI string for local, or documentId for remote)
-    const uriStr = targetUri.toString();
+    return targetUri.toString();
+  }
 
-    // Try to get the ID from the registry (if it's already registered)
+  /**
+   * The document's ID the operations take: the registry's (a remote
+   * document's UID), else its URI (a local document not registered yet).
+   * @param uri - The document's URI string.
+   *
+   * @returns Its document ID.
+   */
+  private documentIdOf(uri: string): string {
     const services = getServiceContainer();
     try {
-      return services.documentRegistry.getIdFromUri(uriStr);
+      return services.documentRegistry.getIdFromUri(uri);
     } catch {
-      // Not registered yet, use URI as ID (this is fine for local notebooks)
-      return uriStr;
+      return uri;
     }
   }
 
   /**
-   * Resolves Lexical document ID from parameters or active editor.
+   * Resolves the Lexical document's URI from parameters or active editor.
    * @param params - Tool parameters potentially containing documentUri.
    *
-   * @returns Resolved lexical document ID or URI string.
+   * @returns The document's URI string.
    *
    * @throws Error if no active Lexical document is found.
    */
-  private async resolveLexicalId(params: TParams): Promise<string> {
+  private async resolveLexicalUri(params: TParams): Promise<string> {
     // Try to get URI from parameters
     const paramsWithUri = params as { documentUri?: string };
     const uriString = paramsWithUri.documentUri;
@@ -520,17 +559,7 @@ export class VSCodeToolAdapter<
       }
     }
 
-    // Return the lexicalId (URI string for local, or documentId for remote)
-    const uriStr = targetUri.toString();
-
-    // Try to get the ID from the registry (if it's already registered)
-    const services = getServiceContainer();
-    try {
-      return services.documentRegistry.getIdFromUri(uriStr);
-    } catch {
-      // Not registered yet, use URI as ID (this is fine for local lexicals)
-      return uriStr;
-    }
+    return targetUri.toString();
   }
 
   /**
@@ -569,24 +598,36 @@ export class VSCodeToolAdapter<
   }
 
   /**
-   * Executes operation by sending message to active webview.
+   * Executes operation by sending message to the target document's webview.
    * Uses the Runner pattern: extension -> webview message -> DefaultExecutor.
    * @param operationName - Name of the operation to execute in the webview.
    * @param args - Arguments to pass to the operation.
+   * @param targetUri - The document whose editor runs it; without it, the
+   *   active editor's.
    *
    * @returns Promise resolving to the operation result from the webview.
    *
-   * @throws Error if no active webview is found or operation times out.
+   * @throws Error if the target's webview is not open or operation times out.
    */
   private async executeVSCodeCommand<T>(
     operationName: string,
     args: unknown,
+    targetUri?: string,
   ): Promise<T> {
     const services = getServiceContainer();
 
-    // Get the active webview panel from the document registry
-    const webviewPanel = services.documentRegistry.getActiveWebviewPanel();
+    // The webview panel of the target document's editor, never whichever
+    // one happens to be active.
+    const webviewPanel = targetUri
+      ? services.documentRegistry.getWebviewPanel(targetUri)
+      : services.documentRegistry.getActiveWebviewPanel();
 
+    if (!webviewPanel && targetUri) {
+      throw new Error(
+        `${editorNameOf(targetUri)} is not open in a Datalayer editor (or its editor is still loading): ` +
+          `cannot run ${operationName}.`,
+      );
+    }
     if (!webviewPanel) {
       throw new Error(
         `No active webview found for operation: ${operationName}. ` +

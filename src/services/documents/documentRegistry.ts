@@ -58,6 +58,16 @@ class DocumentRegistry {
   private uriToId = new Map<string, string>();
 
   /**
+   * When each document's editor was last focused (`documentUri` → a
+   * counter, larger is later): the chat's tools run on the one focused
+   * last when the active tab is not a Datalayer editor.
+   */
+  private focusedAt = new Map<string, number>();
+
+  /** The focus counter. */
+  private focusCount = 0;
+
+  /**
    * Register a document with its ID, URI, and type.
    *
    * @param documentId - Document identifier (UID for remote, URI for local).
@@ -79,6 +89,55 @@ class DocumentRegistry {
     };
     this.idToEntry.set(documentId, entry);
     this.uriToId.set(documentUri, documentId);
+    if (!webviewPanel) {
+      return;
+    }
+    // Opened in front, it is the one focused last; in the background, never
+    // focused yet.
+    if (webviewPanel.active !== false) {
+      this.markFocused(documentUri);
+    }
+    webviewPanel.onDidChangeViewState?.((event) => {
+      if (event.webviewPanel.active) {
+        this.markFocused(documentUri);
+      }
+    });
+    // Closed: no tool may be routed to its disposed webview.
+    webviewPanel.onDidDispose?.(() => {
+      if (this.getWebviewPanel(documentUri) === webviewPanel) {
+        this.unregisterByUri(documentUri);
+      }
+    });
+  }
+
+  /**
+   * Notes that a document's editor was focused.
+   *
+   * @param documentUri - String representation of the document's VS Code URI.
+   */
+  markFocused(documentUri: string): void {
+    this.focusCount += 1;
+    this.focusedAt.set(documentUri, this.focusCount);
+  }
+
+  /**
+   * The documents whose editor is open (a webview panel registered and not
+   * disposed), with when each was last focused (`0`: never).
+   *
+   * @returns Each one's URI, type and focus counter.
+   */
+  openEditors(): Array<{
+    documentUri: string;
+    type: DocumentType;
+    focusedAt: number;
+  }> {
+    return [...this.idToEntry.values()]
+      .filter((entry) => entry.webviewPanel)
+      .map((entry) => ({
+        documentUri: entry.documentUri,
+        type: entry.type,
+        focusedAt: this.focusedAt.get(entry.documentUri) ?? 0,
+      }));
   }
 
   /**
@@ -123,6 +182,7 @@ class DocumentRegistry {
       const entry = this.idToEntry.get(documentId);
       this.idToEntry.delete(documentId);
       this.uriToId.delete(documentUri);
+      this.focusedAt.delete(documentUri);
 
       ServiceLoggers.main.debug(
         `[DocumentRegistry] Unregistered ${entry?.type || "unknown"}: ${documentUri.substring(0, 50)}...`,
@@ -245,6 +305,7 @@ class DocumentRegistry {
   clear(): void {
     this.idToEntry.clear();
     this.uriToId.clear();
+    this.focusedAt.clear();
     ServiceLoggers.main.debug("[DocumentRegistry] Cleared all registrations");
   }
 

@@ -75,10 +75,12 @@ import {
   type ActiveEditor,
   DOCUMENT_TOOL_WORDS,
   documentToolArgsOf,
+  type DocumentToolCallOptions,
   type DocumentToolOutcome,
-  documentToolRefusal,
   documentToolSpecsOf,
+  documentToolTargetOf,
   editorNameOf,
+  type OpenEditor,
 } from "../chat/documentTools";
 import { recordTranscriptOf, sessionRecordUrl } from "../chat/sessionRecord";
 import type { OpenSessionRequest } from "../chat/sessionVerbs";
@@ -764,10 +766,12 @@ export class AgentChatViewProvider implements vscode.WebviewViewProvider {
     if (type !== "document-tool-call") {
       return false;
     }
-    const { requestId, name, args } = raw as {
+    const { requestId, name, args, locate, target } = raw as {
       requestId?: unknown;
       name?: unknown;
       args?: unknown;
+      locate?: unknown;
+      target?: unknown;
     };
     if (typeof requestId === "string" && typeof name === "string") {
       const outcome = await this.runDocumentTool(
@@ -775,6 +779,10 @@ export class AgentChatViewProvider implements vscode.WebviewViewProvider {
         args && typeof args === "object" && !Array.isArray(args)
           ? (args as Record<string, unknown>)
           : {},
+        {
+          locate: locate === true,
+          ...(typeof target === "string" && target ? { target } : {}),
+        },
       );
       void this.view?.webview.postMessage({
         type: "document-tool-result",
@@ -807,19 +815,24 @@ export class AgentChatViewProvider implements vscode.WebviewViewProvider {
   }
 
   /**
-   * Runs a tool a chat's agent called on the active Datalayer notebook or
-   * document, as Copilot's calls run it, and says which editor it ran on.
-   * Never throws: what failed is said in the outcome, which goes back to
-   * the run.
+   * Runs a tool a chat's agent called on a Datalayer notebook or document,
+   * as Copilot's calls run it, and says which editor it ran on. The editor
+   * is `documentToolTargetOf`'s: the one the page located before (shown to
+   * the person), else the active tab, else the one of its kind focused
+   * last. The call's webview messages go to that editor's panel. Never
+   * throws: what failed is said in the outcome, which goes back to the run.
    *
    * @param name - The tool called.
    * @param args - Its arguments, as the model sent them.
+   * @param options - `locate` to only say the editor; `target` to run on
+   *   the one located before.
    *
    * @returns The outcome: the editor and the result, or why not.
    */
   private async runDocumentTool(
     name: string,
     args: Record<string, unknown>,
+    options: DocumentToolCallOptions = {},
   ): Promise<DocumentToolOutcome> {
     const { registeredToolDefinitions, runRegisteredTool } =
       await import("../tools/core/registration");
@@ -829,27 +842,28 @@ export class AgentChatViewProvider implements vscode.WebviewViewProvider {
     if (!spec) {
       return { error: DOCUMENT_TOOL_WORDS.unknown(name) };
     }
-    const info = getActiveDocumentInfo();
-    const active: ActiveEditor | undefined = info
-      ? {
-          kind:
-            info.editorType === "datalayer-notebook"
-              ? "notebook"
-              : info.editorType === "datalayer-lexical"
-                ? "lexical"
-                : "other",
-          uri: info.uri.toString(),
-          name: editorNameOf(info.uri.toString()),
-        }
-      : undefined;
-    const refused = documentToolRefusal(spec.target, active);
-    if (refused || !active || active.kind === "other") {
-      return { error: refused };
+    const located = documentToolTargetOf(
+      spec.target,
+      activeEditorOf(getActiveDocumentInfo()),
+      await openDatalayerEditors(),
+      options.target,
+    );
+    const { editor, note } = located;
+    if (!editor) {
+      return {
+        error: located.error ?? DOCUMENT_TOOL_WORDS.noEditor(spec.target),
+      };
     }
-    const editor = { kind: active.kind, name: active.name, uri: active.uri };
+    const where = { editor, ...(note ? { note } : {}) };
+    if (options.locate) {
+      return where;
+    }
     try {
-      const result = await runRegisteredTool(name, documentToolArgsOf(args));
-      return { editor, result };
+      const result = await runRegisteredTool(name, documentToolArgsOf(args), {
+        uri: editor.uri,
+        kind: editor.kind,
+      });
+      return { ...where, result };
     } catch (failure) {
       const error =
         failure instanceof Error ? failure.message : String(failure);
@@ -857,7 +871,7 @@ export class AgentChatViewProvider implements vscode.WebviewViewProvider {
         name,
         error,
       });
-      return { editor, error };
+      return { ...where, error };
     }
   }
 
@@ -1038,4 +1052,49 @@ export class AgentChatViewProvider implements vscode.WebviewViewProvider {
     }
     return "light";
   }
+}
+
+/**
+ * The active tab, as the chat's tools see it.
+ *
+ * @param info - The active tab's document, if any.
+ *
+ * @returns Its kind, URI and name, or `undefined`.
+ */
+function activeEditorOf(
+  info: ReturnType<typeof getActiveDocumentInfo>,
+): ActiveEditor | undefined {
+  if (!info) {
+    return undefined;
+  }
+  const uri = info.uri.toString();
+  return {
+    kind:
+      info.editorType === "datalayer-notebook"
+        ? "notebook"
+        : info.editorType === "datalayer-lexical"
+          ? "lexical"
+          : "other",
+    uri,
+    name: editorNameOf(uri),
+  };
+}
+
+/**
+ * The Datalayer editors open (their webview panels registered and not
+ * disposed), with when each was last focused. The service container is
+ * loaded lazily, as the tools' registry is.
+ *
+ * @returns Each one's kind, URI, file name and focus counter.
+ */
+async function openDatalayerEditors(): Promise<OpenEditor[]> {
+  const { getServiceContainer } = await import("../extension");
+  return getServiceContainer()
+    .documentRegistry.openEditors()
+    .map(({ documentUri, type, focusedAt }) => ({
+      kind: type,
+      uri: documentUri,
+      name: editorNameOf(documentUri),
+      focusedAt,
+    }));
 }
